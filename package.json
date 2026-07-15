@@ -1,0 +1,20 @@
+{
+  "name": "tnl-social-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Social backend for TNL Labs — auth, posts, likes, shares, collabs, follows, live feed.",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node --experimental-sqlite src/server.js",
+    "dev": "node --watch --experimental-sqlite src/server.js",
+    "seed": "node --experimental-sqlite src/seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}
