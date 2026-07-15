@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TNLLABS 🧪</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root{--bg:#000;--card:#0A0A0A;--el:#141414;--line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.28);
+--tx:#fff;--dim:#8A8A8A;--green:#22C55E;}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--tx);font-family:'Archivo',system-ui,sans-serif;overflow:hidden}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em}
+.dim{color:var(--dim)}
+button{font-family:inherit;cursor:pointer}
+input,textarea{font-family:inherit}
+h1,h2,h3{text-transform:uppercase;letter-spacing:-.01em}
+.app{height:100dvh;display:flex;flex-direction:column}
+/* controls */
+.in{width:100%;background:var(--el);border:1px solid var(--line);border-radius:9px;color:var(--tx);padding:11px 13px;font-size:14px}
+.in:focus{outline:none;border-color:var(--line2)}
+.btn{display:inline-flex;align-items:center;gap:7px;background:var(--tx);color:#000;border:none;border-radius:9px;padding:10px 15px;font-weight:700;font-size:13px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.wide{width:100%;justify-content:center;padding:13px;margin-top:16px}
+.btn.ghost{background:transparent;color:var(--tx);border:1px solid var(--line2)}
+.btn.green{background:var(--green)}
+.link{background:none;border:none;color:var(--dim);font-size:12px;margin-top:12px}
+.err{color:#F87171;font-size:12px;margin-top:10px;font-family:'IBM Plex Mono',monospace}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--el);border:1px solid var(--line);color:var(--tx);border-radius:999px;padding:8px 13px;font-size:12px}
+.chip.on{background:var(--tx);color:#000;border-color:var(--tx)}
+/* auth */
+.gate{height:100dvh;display:flex;align-items:center;justify-content:center;padding:22px}
+.gatecard{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 24px}
+.brand{font-weight:900;font-size:14px;letter-spacing:.03em}
+.brand .fl{font-size:.9em}
+.gate h1{font-size:28px;font-weight:900;margin:18px 0 8px}
+.gate p{font-size:13px;line-height:1.6;color:var(--dim);margin-bottom:14px}
+.lbl{display:block;margin:13px 0 6px;color:var(--dim)}
+.roles{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.switch{text-decoration:underline;cursor:pointer;color:var(--tx)}
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
+.top-user{display:flex;align-items:center;gap:7px;background:var(--el);border:1px solid var(--line);color:var(--tx);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700}
+.udot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+/* nav */
+.nav{display:flex;border-top:1px solid var(--line);background:var(--card)}
+.navb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--dim);padding:10px 0 12px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.08em}
+.navb.on{color:var(--tx)}
+.navb.on .ic{color:var(--green)}
+.ic{font-size:17px;line-height:1;font-style:normal}
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+/* landing */
+.hero{padding:56px 22px 28px;border-bottom:1px solid var(--line)}
+.hero .eyebrow{color:var(--green);letter-spacing:.16em;margin-bottom:16px}
+.hero h1{font-size:clamp(38px,10vw,72px);font-weight:900;line-height:.93;margin-bottom:18px}
+.hero p{font-size:14px;line-height:1.65;color:#C4C4C4;max-width:500px;margin-bottom:22px}
+.ctas{display:flex;gap:10px;flex-wrap:wrap}
+.sec{padding:26px 22px;border-bottom:1px solid var(--line)}
+.sec-h{color:var(--dim);letter-spacing:.14em;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline}
+.sec-h button{background:none;border:none;color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em}
+.sec-h button:hover{color:var(--green)}
+.labgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px}
+.labcard{text-align:left;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px;color:var(--tx)}
+.labcard:hover{border-color:var(--line2)}
+.labcard .k{color:var(--green);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em}
+.labcard .n{font-weight:900;font-size:15px;margin-top:18px}
+.labcard .l{font-size:12px;color:var(--dim);line-height:1.5;margin-top:4px}
+.foot{padding:32px 22px 40px}
+.foot .big{font-weight:900;font-size:clamp(15px,4vw,20px);text-transform:uppercase;margin-bottom:6px}
+/* labs view */
+.labs-wrap{flex:1;display:flex;overflow:hidden}
+.rail{width:190px;flex-shrink:0;border-right:1px solid var(--line);overflow-y:auto;padding:12px 8px;background:var(--card)}
+.railh{color:var(--dim);padding:4px 8px;margin-top:8px}
+.railc{display:flex;align-items:center;gap:7px;width:100%;background:none;border:none;color:var(--dim);padding:7px 8px;border-radius:7px;font-size:13px;text-align:left;font-family:'Archivo'}
+.railc:hover,.railc.on{background:var(--el);color:var(--tx)}
+.room{flex:1;display:flex;flex-direction:column;min-width:0}
+.roomh{display:flex;align-items:center;gap:8px;padding:11px 15px;border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
+.roomh .desc{font-weight:400;font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* feed */
+.feed{flex:1;overflow-y:auto;padding:14px 15px;display:flex;flex-direction:column;gap:10px}
+.post{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 13px}
+.post-h{display:flex;align-items:center;gap:9px}
+.av{width:32px;height:32px;border-radius:50%;background:var(--el);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;flex-shrink:0;cursor:pointer}
+.post-by{font-weight:700;font-size:13px;cursor:pointer}
+.post-by:hover{color:var(--green)}
+.lvl{background:var(--green);color:#000;font-family:'IBM Plex Mono',monospace;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:5px}
+.post-meta{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:.06em}
+.post-body{font-size:14px;line-height:1.55;color:#E5E2DA;margin:8px 0 2px;word-break:break-word}
+.shared-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--green);letter-spacing:.08em;margin-bottom:5px}
+.post-acts{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}
+.act{display:inline-flex;align-items:center;gap:5px;background:var(--el);border:1px solid var(--line);color:var(--dim);border-radius:999px;padding:3px 11px;font-size:11px;font-family:'IBM Plex Mono',monospace}
+.act:hover{border-color:var(--green);color:var(--green)}
+.act.on{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.12)}
+.collab-row{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.ctag{font-family:'IBM Plex Mono',monospace;font-size:9px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--dim)}
+.ctag.acc{border-color:var(--green);color:var(--green)}
+.composer{display:flex;gap:8px;padding:11px 15px 13px;border-top:1px solid var(--line)}
+.composer .in{flex:1}
+.send{width:44px;background:var(--tx);color:#000;border:none;border-radius:9px;font-weight:900}
+.send:disabled{opacity:.3}
+/* beat lab */
+.beat{border:1px solid var(--line);border-radius:14px;margin:14px 15px;padding:16px;background:var(--card)}
+.beat-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.beat-h{font-weight:900;font-size:15px;text-transform:uppercase;margin-top:2px}
+.beat-ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.circle{width:38px;height:38px;border-radius:50%;border:none;background:var(--tx);color:#000;font-size:14px}
+.circle.on{background:var(--green)}
+.beat-ctl input[type=range]{accent-color:var(--green);width:88px}
+.sq{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--el);color:var(--dim)}
+.grid{display:flex;flex-direction:column;gap:6px}
+.grow{display:flex;align-items:center;gap:9px}
+.tname{width:40px;flex-shrink:0;color:var(--dim)}
+.cells{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;flex:1}
+.cell{aspect-ratio:1/1;border-radius:4px;border:1px solid var(--line);background:var(--el);padding:0}
+.cell.bar{border-color:var(--line2)}
+.cell.on{background:var(--tx);border-color:var(--tx)}
+.cell.now{outline:2px solid var(--green);outline-offset:-1px}
+.beat-pub{display:flex;gap:8px;margin-top:14px}
+.beat-pub .in{flex:1}
+.beatmsg{display:flex;align-items:center;gap:10px;background:var(--el);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px}
+.beatmsg .nm{font-weight:700;font-size:12px}
+/* market */
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:0 22px 28px}
+.prod{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;text-decoration:none;color:var(--tx);display:block}
+.prod:hover{border-color:var(--line2)}
+.prod-img{aspect-ratio:1/1;background:var(--el);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:var(--dim)}
+.prod-n{font-size:12.5px;font-weight:700;padding:9px 11px 2px}
+.prod-p{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:0 11px 11px;display:block}
+.was{text-decoration:line-through;color:var(--dim);margin-right:6px}
+.page-head{padding:24px 22px 12px}
+.page-head h2{font-size:26px;font-weight:900;margin:4px 0}
+.page-head p{color:var(--dim);font-size:13px;line-height:1.6}
+/* profile sheet */
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;justify-content:flex-end;z-index:60}
+.sheetc{width:100%;max-width:390px;height:100%;background:var(--card);border-left:1px solid var(--line);overflow-y:auto;padding:22px 20px 50px}
+.sheeth{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.sheeth h2{font-size:19px;font-weight:900}
+.x{background:none;border:none;color:var(--tx);opacity:.6;font-size:18px}
+.pid{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.pav{width:50px;height:50px;border-radius:50%;background:var(--el);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px}
+.pname{font-weight:900;font-size:16px}
+.plvl{background:var(--el);border-radius:12px;padding:13px;margin-bottom:16px}
+.plr{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.pbadge{background:var(--green);color:#000;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:4px 8px;border-radius:6px}
+.ptrack{height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}
+.pfill{height:100%;background:var(--green);transition:width .3s}
+.ladder{display:flex;flex-direction:column;gap:4px;margin:14px 0}
+.lstep{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 2px;opacity:.4}
+.lstep.done{opacity:1}
+.ldot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.lstep.done .ldot{background:var(--green)}
+.lstep span:nth-child(3){flex:1}
+/* portfolio */
+.pbio{font-size:13.5px;line-height:1.6;color:#D6D2C8;margin:2px 0 8px;white-space:pre-wrap}
+.plink{display:inline-block;color:var(--green);text-decoration:none;margin-bottom:12px;letter-spacing:.06em}
+.pstats{display:flex;gap:6px;margin:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0}
+.pstat{flex:1;display:flex;flex-direction:column;gap:3px}
+.pstat b{font-size:17px;font-weight:900}
+.pactions{display:flex;gap:8px;margin-bottom:14px}
+.pactions .btn{flex:1;justify-content:center}
+.ptabs{display:flex;gap:6px;margin:14px 0 10px}
+.ptab{flex:1;background:var(--el);border:1px solid var(--line);color:var(--dim);border-radius:8px;padding:8px 4px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em}
+.ptab.on{background:var(--tx);color:#000;border-color:var(--tx)}
+.worklist{display:flex;flex-direction:column;gap:9px}
+.work{background:var(--el);border:1px solid var(--line);border-radius:10px;padding:10px 11px;cursor:pointer}
+.work:hover{border-color:var(--line2)}
+.work-top{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
+.work-kind{color:var(--green);letter-spacing:.08em}
+.work-collab{color:var(--dim)}
+.work-body{font-size:13px;line-height:1.5;color:#D6D2C8;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.work-beat{display:flex;align-items:center;gap:8px}
+.work-beat .nm{font-size:12.5px;font-weight:700}
+.work-foot{display:flex;gap:10px;align-items:center;margin-top:8px;color:var(--dim);font-size:9px;flex-wrap:wrap}
+.work-cnames{color:var(--green)}
+textarea.in{resize:vertical;line-height:1.5}
+/* images */
+.attach{width:38px;flex-shrink:0;background:var(--el);border:1px solid var(--line);color:var(--dim);border-radius:9px;font-size:18px;font-weight:400;line-height:1}
+.attach:hover{color:var(--green);border-color:var(--green)}
+.attach-bar{display:flex;align-items:center;gap:9px;padding:8px 15px;border-top:1px solid var(--line);background:var(--card)}
+.attach-bar img{width:42px;height:42px;object-fit:cover;border-radius:7px;border:1px solid var(--line2)}
+.attach-x{margin-left:auto;background:none;border:none;color:var(--dim);font-size:14px}
+.attach-x:hover{color:#F87171}
+.post-img{width:100%;max-height:420px;object-fit:cover;border-radius:9px;margin-top:8px;border:1px solid var(--line);cursor:zoom-in;display:block}
+.work-img{width:100%;max-height:180px;object-fit:cover;border-radius:7px;display:block}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:90;display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:100%;object-fit:contain}
+/* verification + publish */
+.verifybar{display:flex;align-items:center;gap:9px;background:rgba(34,197,94,.1);border-bottom:1px solid rgba(34,197,94,.3);padding:9px 15px;font-size:12px;color:#D6D2C8;flex-wrap:wrap}
+.vb-btn{background:var(--green);color:#000;border:none;border-radius:7px;padding:5px 11px;font-size:11px;font-weight:700;text-decoration:none;display:inline-block}
+.publink{display:block;color:var(--green);text-decoration:none;font-size:10px;letter-spacing:.06em;margin-bottom:12px;word-break:break-all}
+/* showroom — the front page */
+.sr-head{padding:34px 20px 22px;border-bottom:1px solid var(--line)}
+.sr-eyebrow{color:var(--green);letter-spacing:.16em;margin-bottom:14px}
+.sr-h{font-size:clamp(34px,9vw,58px);font-weight:900;line-height:.94;margin-bottom:12px}
+.sr-p{font-size:13.5px;line-height:1.6;color:var(--dim);max-width:440px;margin-bottom:18px}
+.sr-cta{display:flex;gap:9px;flex-wrap:wrap}
+.sr-feedhead{display:flex;justify-content:space-between;align-items:baseline;padding:16px 20px 10px;color:var(--dim);letter-spacing:.12em}
+.sr-builders{padding:0 20px}
+.brow{display:flex;gap:9px;overflow-x:auto;padding-bottom:8px}
+.bcard{flex-shrink:0;width:112px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px 10px;text-align:center;color:var(--tx)}
+.bcard:hover{border-color:var(--green)}
+.bcard .av{margin:0 auto 8px}
+.bname{font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bstat{color:var(--green);margin-top:5px;font-size:9px}
+.sr-grid{columns:2;column-gap:11px;padding:0 20px 30px}
+@media(max-width:600px){.sr-grid{columns:1}}
+@media(min-width:1000px){.sr-grid{columns:3}}
+.sr-card{break-inside:avoid;margin-bottom:11px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.sr-card:hover{border-color:var(--line2)}
+.sr-img{width:100%;display:block;cursor:zoom-in}
+.sr-beat{display:flex;align-items:center;gap:10px;padding:20px 14px;background:var(--el)}
+.sr-beatname{font-weight:900;font-size:13px}
+.sr-meta{padding:11px}
+.sr-who{display:flex;align-items:center;gap:8px;cursor:pointer}
+.sr-name{font-size:12.5px;font-weight:900}
+.sr-collab{color:var(--green);font-size:9px;letter-spacing:.06em;margin-top:8px}
+.sr-body{font-size:12.5px;line-height:1.5;color:#C9C5BB;margin-top:7px}
+.sr-acts{display:flex;gap:7px;margin-top:9px}
+/* beat maker */
+.beat-name{background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--tx);font-family:'Archivo';font-weight:900;font-size:17px;text-transform:uppercase;padding:3px 0;margin-top:3px;width:180px}
+.beat-name:focus{outline:none;border-color:var(--green)}
+.knob{display:flex;align-items:center;gap:5px}
+.knob input[type=range]{accent-color:var(--green);width:66px}
+.knob.wide input[type=range]{width:100%;flex:1}
+.knob b{font-size:10px;min-width:22px}
+.sel{background:var(--el);border:1px solid var(--line);color:var(--tx);border-radius:7px;padding:5px 7px;font-family:'IBM Plex Mono',monospace;font-size:10px}
+.barbar{display:flex;align-items:center;gap:8px;margin:12px 0;flex-wrap:wrap}
+.bars{display:flex;gap:4px}
+.barb{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:var(--el);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:10px}
+.barb.active{color:var(--tx)}
+.barb.on{background:var(--tx);color:#000;border-color:var(--tx)}
+.grow.muted{opacity:.32}
+.tctl{width:62px;flex-shrink:0}
+.tname{background:none;border:none;color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;padding:0;text-align:left;display:block}
+.tname:hover{color:var(--green)}
+.tbtns{display:flex;gap:3px;margin-top:3px}
+.tb{width:16px;height:14px;border-radius:3px;border:1px solid var(--line);background:transparent;color:var(--dim);font-size:7px;line-height:1;padding:0}
+.tb.on{background:var(--green);color:#000;border-color:var(--green)}
+.cell{position:relative;aspect-ratio:1/1;border-radius:4px;border:1px solid var(--line);background:var(--el);padding:0;touch-action:manipulation}
+.cell.bar{border-color:var(--line2)}
+.cell.on.v1{background:rgba(255,255,255,.32);border-color:rgba(255,255,255,.4)}
+.cell.on.v2{background:rgba(255,255,255,.7);border-color:rgba(255,255,255,.8)}
+.cell.on.v3{background:#fff;border-color:#fff;box-shadow:0 0 7px rgba(255,255,255,.5)}
+.cell.now{outline:2px solid var(--green);outline-offset:-1px}
+.cell i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:6px;color:#000;font-weight:600}
+.tpanel{background:var(--el);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
+.tpanel-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px}
+.variants{display:flex;flex-wrap:wrap;gap:6px}
+.variants .chip{padding:5px 10px;font-size:11px}
+.beat-hint{margin-top:12px;letter-spacing:.05em;font-size:8.5px}
+.beat-pub{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.beat-pub .btn{flex:1;justify-content:center;white-space:nowrap}
+.drafts{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.draft{display:flex;align-items:center;gap:8px;padding:6px 0}
+.dname{flex:1;background:none;border:none;color:var(--tx);text-align:left;font-family:'Archivo';font-size:13px;font-weight:700}
+.dname:hover{color:var(--green)}
+.sq.sm{width:24px;height:24px;font-size:10px}
+.toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:var(--tx);color:#000;font-weight:700;font-size:13px;border-radius:999px;padding:9px 18px;z-index:80}
+.empty{padding:30px 20px;text-align:center;color:var(--dim);font-size:13px;line-height:1.7}
+@media (max-width:680px){
+  .rail{width:100%}
+  .labs-wrap.roomopen .rail{display:none}
+  .labs-wrap:not(.roomopen) .room{display:none}
+  .backb{display:inline-flex!important}
+}
+.backb{display:none;background:none;border:none;color:var(--tx);font-size:16px;padding:0 6px 0 0}
+</style>
+</head>
+<body>
+<div id="app" class="app"></div>
+<script>
+/* ================================================================
+   TNL LABS — one system, separate venues.
+   Vanilla JS client talking to the real backend at the same origin.
+================================================================ */
+const API = location.origin;
+let TOKEN = localStorage.getItem("tnl-token") || null;
+let ME = null;
+let LEVELS = [{id:1,name:"Entry",at:0},{id:2,name:"Verified",at:40},{id:3,name:"Collaborator",at:120},{id:4,name:"Core",at:280},{id:5,name:"Leadership",at:560}];
+const ROLES = ["Graphic Designer","Illustrator","Photographer","Content Creator","Producer","Lyricist / Singer","Editor","Model / Actor"];
+const LABS = [
+  {id:"community",name:"COMMUNITY",channels:[
+    {id:"general",label:"general",desc:"The main floor."},
+    {id:"collab-posts",label:"collab-posts",desc:"Looking for a collaborator? Post here."}]},
+  {id:"music",name:"MUSIC",channels:[
+    {id:"beats",label:"beats",desc:"The Beat Lab. Loops become collabs.",beatlab:true},
+    {id:"finished-songs",label:"finished-songs",desc:"Done tracks only.",gate:2}]},
+  {id:"art",name:"ART",channels:[
+    {id:"graphic-design",label:"graphic-design",desc:"Graphic work, feedback, process."},
+    {id:"photography",label:"photography",desc:"Shots and edits."}]},
+  {id:"fashion",name:"FASHION",channels:[
+    {id:"clothing-design",label:"clothing-design",desc:"Design work and concepts."},
+    {id:"clothing-drops",label:"clothing-drops",desc:"What's releasing."}]},
+];
+const PRODUCTS=[
+  {n:'"Free Me" Tee',p:"$54.99",w:"$65.00",u:"https://tnllabs.com/products/free-me-tee"},
+  {n:"TNL x XSTART JDM Tee",p:"$50.00",w:null,u:"https://tnllabs.com/products/tnl-x-xstart-jdm-tee"}];
+const levelFor=r=>LEVELS.reduce((a,l)=>r>=l.at?l:a,LEVELS[0]);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---- api ---- */
+async function req(path,opts={}){
+  const h={"Content-Type":"application/json"};
+  if(TOKEN)h.Authorization="Bearer "+TOKEN;
+  const r=await fetch(API+path,{method:opts.method||"GET",headers:h,body:opts.body?JSON.stringify(opts.body):undefined});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||("HTTP "+r.status));
+  return d;
+}
+const api={
+  register:b=>req("/api/auth/register",{method:"POST",body:b}),
+  login:b=>req("/api/auth/login",{method:"POST",body:b}),
+  me:()=>req("/api/me"),
+  updateMe:b=>req("/api/me",{method:"PATCH",body:b}),
+  resend:()=>req("/api/auth/resend",{method:"POST"}),
+  publish:on=>req("/api/me/publish",{method:"POST",body:{published:on}}),
+  feed:ch=>req("/api/feed"+(ch?("?channel="+encodeURIComponent(ch)):"")),
+  showroom:()=>req("/api/feed/showroom"),
+  builders:()=>req("/api/builders"),
+  post:b=>req("/api/posts",{method:"POST",body:b}),
+  upload:data=>req("/api/upload",{method:"POST",body:{data}}),
+  beats:()=>req("/api/beats"),
+  beat:id=>req("/api/beats/"+id),
+  saveBeat:b=>req("/api/beats",{method:"POST",body:b}),
+  delBeat:id=>req("/api/beats/"+id,{method:"DELETE"}),
+  like:id=>req("/api/posts/"+id+"/like",{method:"POST"}),
+  share:(id,b)=>req("/api/posts/"+id+"/share",{method:"POST",body:b||{}}),
+  invite:(id,username)=>req("/api/posts/"+id+"/collab",{method:"POST",body:{username}}),
+  accept:id=>req("/api/posts/"+id+"/collab/accept",{method:"POST"}),
+  profile:u=>req("/api/users/"+encodeURIComponent(u)),
+  follow:u=>req("/api/users/"+encodeURIComponent(u)+"/follow",{method:"POST"}),
+  levels:()=>req("/api/levels"),
+};
+
+/* ---- state ---- */
+let TAB="showroom", LAB=LABS[0], CH=LABS[0].channels[0], ROOMOPEN=false, POSTS=[], PROFILE=null, TOASTT=null;
+let PTAB="work", EDITING=false, EDITROLE="", PENDIMG=null, LIGHTBOX=null, VERIFYURL=null;
+let EBAR=0, OPENTRACK="", PITCHSEL=0, DRAFTS=null;
+const $=sel=>document.querySelector(sel);
+function toast(t){TOASTT=t;render();setTimeout(()=>{TOASTT=null;render()},2200)}
+
+/* ================================================================
+   BEAT ENGINE
+   Scheduling uses a lookahead loop against the Web Audio clock, not
+   setTimeout, because setTimeout drifts and drifting beats are useless.
+   A timer fires every 25ms and schedules any notes falling inside the
+   next 100ms window with sample-accurate timing.
+================================================================ */
+const STEPS=16, BARS=4;
+const NOTES=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const KITS={
+  kick:["808 Kick","Punch","Sub Thump"],
+  snare:["Classic","Rim","Trap"],
+  hat:["Closed","Open","Tight"],
+  clap:["Clap","Snap"],
+  perc:["Tom","Block","Cowbell"],
+};
+const TRACKS=[
+  {id:"kick",name:"KICK"},
+  {id:"snare",name:"SNARE"},
+  {id:"hat",name:"HAT"},
+  {id:"clap",name:"CLAP"},
+  {id:"perc",name:"PERC"},
+  {id:"bass",name:"808",pitched:true},
+];
+const emptyBar=()=>Object.fromEntries(TRACKS.map(t=>[t.id,Array(STEPS).fill(null)]));
+function newProject(){
+  return {
+    name:"",
+    bpm:140,
+    swing:0,
+    bars:[emptyBar(),emptyBar(),emptyBar(),emptyBar()],
+    chain:1,                       // how many bars loop
+    mix:Object.fromEntries(TRACKS.map(t=>[t.id,{vol:.8,mute:false,solo:false,variant:0}])),
+    key:0,                         // root note for the 808
+  };
+}
+/* A cell is null (off) or {v:velocity 1-3, n:semitone offset for pitched} */
+
+let actx=null;
+function ctx(){
+  if(!actx){const AC=window.AudioContext||window.webkitAudioContext;actx=new AC()}
+  if(actx.state==="suspended")actx.resume();
+  return actx;
+}
+function noiseBuf(c,len){
+  const b=c.createBuffer(1,Math.max(1,Math.floor(c.sampleRate*len)),c.sampleRate);
+  const d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  return b;
+}
+function env(c,g,when,peak,dec,atk=.002){
+  g.gain.setValueAtTime(.0001,when);
+  g.gain.linearRampToValueAtTime(peak,when+atk);
+  g.gain.exponentialRampToValueAtTime(.0001,when+dec);
+}
+/* Each voice takes gain (velocity*mix) and when (audio-clock time). */
+function voice(id,when,gain,variant,semi){
+  const c=ctx(),out=c.destination;
+  const g0=c.createGain();g0.gain.value=gain;g0.connect(out);
+  if(id==="kick"){
+    const o=c.createOscillator(),g=c.createGain();
+    const specs=[[150,45,.12,.34],[220,55,.07,.2],[110,35,.2,.5]][variant]||[150,45,.12,.34];
+    o.frequency.setValueAtTime(specs[0],when);
+    o.frequency.exponentialRampToValueAtTime(specs[1],when+specs[2]);
+    env(c,g,when,1,specs[3]);
+    o.connect(g);g.connect(g0);o.start(when);o.stop(when+specs[3]+.02);
+  } else if(id==="snare"){
+    const specs=[[1800,.18,.7],[3000,.08,.5],[1200,.26,.85]][variant]||[1800,.18,.7];
+    const n=c.createBufferSource();n.buffer=noiseBuf(c,specs[1]);
+    const f=c.createBiquadFilter();f.type="bandpass";f.frequency.value=specs[0];f.Q.value=.9;
+    const g=c.createGain();env(c,g,when,specs[2],specs[1]);
+    n.connect(f);f.connect(g);g.connect(g0);n.start(when);
+    if(variant!==1){
+      const o=c.createOscillator(),og=c.createGain();
+      o.type="triangle";o.frequency.value=190;env(c,og,when,.5,.1);
+      o.connect(og);og.connect(g0);o.start(when);o.stop(when+.12);
+    }
+  } else if(id==="hat"){
+    const specs=[[9000,.05],[8000,.28],[11000,.03]][variant]||[9000,.05];
+    const n=c.createBufferSource();n.buffer=noiseBuf(c,specs[1]);
+    const f=c.createBiquadFilter();f.type="highpass";f.frequency.value=specs[0];
+    const g=c.createGain();env(c,g,when,.4,specs[1]);
+    n.connect(f);f.connect(g);g.connect(g0);n.start(when);
+  } else if(id==="clap"){
+    const spread=variant===1?[0,.008]:[0,.01,.02,.032];
+    spread.forEach((off,i)=>{
+      const n=c.createBufferSource();n.buffer=noiseBuf(c,.2);
+      const f=c.createBiquadFilter();f.type="bandpass";f.frequency.value=1100;f.Q.value=1.5;
+      const g=c.createGain();env(c,g,when+off,i===spread.length-1?.7:.32,i===spread.length-1?.2:.03);
+      n.connect(f);f.connect(g);g.connect(g0);n.start(when+off);
+    });
+  } else if(id==="perc"){
+    if(variant===2){ // cowbell
+      [540,800].forEach(fr=>{const o=c.createOscillator(),g=c.createGain();
+        o.type="square";o.frequency.value=fr;env(c,g,when,.28,.12);
+        o.connect(g);g.connect(g0);o.start(when);o.stop(when+.14)});
+    } else if(variant===1){ // block
+      const o=c.createOscillator(),g=c.createGain();
+      o.type="square";o.frequency.setValueAtTime(1100,when);
+      env(c,g,when,.3,.05);o.connect(g);g.connect(g0);o.start(when);o.stop(when+.06);
+    } else { // tom
+      const o=c.createOscillator(),g=c.createGain();
+      o.type="sine";o.frequency.setValueAtTime(260,when);
+      o.frequency.exponentialRampToValueAtTime(110,when+.22);
+      env(c,g,when,.7,.28);o.connect(g);g.connect(g0);o.start(when);o.stop(when+.3);
+    }
+  } else if(id==="bass"){
+    // 808: pitched sine with a click transient and long decay
+    const freq=41.2*Math.pow(2,(semi||0)/12); // E1 root
+    const o=c.createOscillator(),g=c.createGain();
+    o.type="sine";
+    o.frequency.setValueAtTime(freq*3,when);
+    o.frequency.exponentialRampToValueAtTime(freq,when+.045);
+    const dec=[.55,.85,.3][variant]||.55;
+    env(c,g,when,.95,dec,.004);
+    const sat=c.createWaveShaper();
+    const curve=new Float32Array(257);
+    for(let i=0;i<257;i++){const x=i/128-1;curve[i]=Math.tanh(x*2.2)}
+    sat.curve=curve;
+    o.connect(sat);sat.connect(g);g.connect(g0);
+    o.start(when);o.stop(when+dec+.05);
+  }
+}
+
+/* ---- transport ---- */
+let PROJ=newProject();
+let playing=false, curStep=-1, curBar=0;
+let schedTimer=null, nextNoteTime=0, schedStep=0, schedBar=0;
+const LOOKAHEAD=.1, TICK=25;
+
+function stepDur(){return 60/PROJ.bpm/4}
+function audible(tid){
+  const anySolo=TRACKS.some(t=>PROJ.mix[t.id].solo);
+  const m=PROJ.mix[tid];
+  return anySolo?m.solo:!m.mute;
+}
+function scheduleStep(step,bar,time){
+  const b=PROJ.bars[bar];
+  for(const t of TRACKS){
+    const cell=b[t.id][step];
+    if(!cell)continue;
+    if(!audible(t.id))continue;
+    const m=PROJ.mix[t.id];
+    const vel=[0,.45,.72,1][cell.v||2];
+    voice(t.id,time,vel*m.vol,m.variant,(cell.n||0)+PROJ.key);
+  }
+}
+function scheduler(){
+  const c=ctx();
+  while(nextNoteTime<c.currentTime+LOOKAHEAD){
+    // swing: delay every other 16th
+    const sw=(schedStep%2===1)?stepDur()*(PROJ.swing/100)*.6:0;
+    scheduleStep(schedStep,schedBar,nextNoteTime+sw);
+    const s=schedStep,b=schedBar,t=nextNoteTime+sw;
+    // paint the playhead at the right moment
+    setTimeout(()=>{curStep=s;curBar=b;paintStep()},Math.max(0,(t-c.currentTime)*1000));
+    nextNoteTime+=stepDur();
+    schedStep++;
+    if(schedStep>=STEPS){schedStep=0;schedBar=(schedBar+1)%Math.max(1,PROJ.chain)}
+  }
+  schedTimer=setTimeout(scheduler,TICK);
+}
+function play(){
+  if(playing)return;
+  const c=ctx();
+  playing=true;schedStep=0;schedBar=0;nextNoteTime=c.currentTime+.06;
+  scheduler();paintTransport();
+}
+function stop(){
+  playing=false;curStep=-1;
+  if(schedTimer)clearTimeout(schedTimer);
+  paintStep();paintTransport();
+}
+function paintStep(){
+  document.querySelectorAll(".cell[data-i]").forEach(el=>{
+    el.classList.toggle("now",+el.dataset.i===curStep&&+el.dataset.bar===curBar);
+  });
+  const bi=document.querySelector("#barind");
+  if(bi&&playing)bi.textContent=`BAR ${curBar+1}/${PROJ.chain}`;
+}
+function paintTransport(){
+  document.querySelectorAll("[data-play]").forEach(b=>{
+    b.classList.toggle("on",playing);b.textContent=playing?"■":"▶";
+  });
+}
+
+/* Play a published loop (read-only preview) without touching the editor. */
+let previewing=false, prevTimer=null;
+function previewBeat(beat){
+  if(previewing){stopPreview();return}
+  const saved=PROJ;
+  const data=beat&&beat.data?beat.data:null;
+  if(!data){ // legacy single-bar format
+    const p=newProject();
+    p.bpm=beat.bpm||120;
+    const src=beat.pattern||{};
+    for(const t of TRACKS){const arr=src[t.id]||src[t.id==="bass"?"eight":t.id];
+      if(Array.isArray(arr))p.bars[0][t.id]=arr.map(v=>v?{v:2,n:0}:null)}
+    PROJ=p;
+  } else PROJ=data;
+  previewing=true;play();
+  const ms=(60/PROJ.bpm/4)*STEPS*Math.max(1,PROJ.chain)*1000*2;
+  prevTimer=setTimeout(()=>{stopPreview();PROJ=saved},ms);
+  window.__restore=()=>{PROJ=saved};
+}
+function stopPreview(){previewing=false;stop();if(prevTimer)clearTimeout(prevTimer);if(window.__restore){window.__restore();window.__restore=null}}
+
+
+/* ---- images ----
+   Phone photos are 5–12MB. Resize to max 1400px and re-encode as JPEG
+   before upload so posting is fast and storage stays sane. */
+function compressImage(file,maxDim=1400,quality=.82){
+  return new Promise((resolve,reject)=>{
+    if(!file.type.startsWith("image/"))return reject(new Error("Not an image"));
+    const fr=new FileReader();
+    fr.onerror=()=>reject(new Error("Couldn't read that file"));
+    fr.onload=()=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error("Couldn't decode that image"));
+      img.onload=()=>{
+        let{width:w,height:h}=img;
+        if(w>maxDim||h>maxDim){const s=Math.min(maxDim/w,maxDim/h);w=Math.round(w*s);h=Math.round(h*s)}
+        const c=document.createElement("canvas");c.width=w;c.height=h;
+        const ctx=c.getContext("2d");ctx.drawImage(img,0,0,w,h);
+        // GIFs lose animation through canvas — keep small ones as-is
+        if(file.type==="image/gif"&&file.size<4*1024*1024)return resolve(fr.result);
+        resolve(c.toDataURL("image/jpeg",quality));
+      };
+      img.src=fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+/* ---- live updates ---- */
+let es=null;
+function startStream(){
+  if(es)es.close();
+  es=new EventSource(API+"/api/stream");
+  const refresh=()=>{if(TAB==="labs")loadFeed();if(TAB==="showroom")loadShowroom()};
+  ["post","like","collab-invite","collab-accepted"].forEach(t=>es.addEventListener(t,refresh));
+}
+
+/* ---- data ---- */
+async function loadFeed(){try{const d=await api.feed(CH.id);POSTS=d.posts;renderRoomFeed()}catch(e){/* not fatal */}}
+async function refreshMe(){try{const d=await api.me();ME=d.user}catch(e){TOKEN=null;localStorage.removeItem("tnl-token")}}
+
+/* ================================================================
+   RENDERING
+================================================================ */
+function render(){
+  const app=$("#app");
+  if(!TOKEN||!ME){app.innerHTML=gateHTML();wireGate();return}
+  app.innerHTML=`
+    ${topHTML()}
+    ${(!ME.emailVerified)?`<div class="verifybar">
+      <span>Confirm your email to post, react, and publish.</span>
+      <button class="vb-btn" id="resendb">Resend</button>
+      ${VERIFYURL?`<a class="vb-btn" href="${esc(VERIFYURL)}" target="_blank">Open link</a>`:""}
+    </div>`:""}
+    <div class="content">${TAB==="showroom"?showroomHTML():TAB==="labs"?labsHTML():TAB==="market"?marketHTML():studioHTML()}</div>
+    ${navHTML()}
+    ${PROFILE?sheetHTML():""}
+    ${LIGHTBOX?`<div class="lightbox" id="lb"><img src="${esc(LIGHTBOX)}" alt="full size"></div>`:""}
+    ${TOASTT?`<div class="toast">${esc(TOASTT)}</div>`:""}`;
+  wire();
+  if(TAB==="labs")loadFeed();
+  if(TAB==="showroom")loadShowroom();
+}
+function topHTML(){const l=levelFor(ME.rep);return `
+  <div class="top">
+    <div class="brand">TNLLABS <span class="fl">🧪</span></div>
+    <button class="top-user" id="meBtn"><span class="udot"></span>${esc(ME.displayName)} <span class="mono dim">L${l.id}</span></button>
+  </div>`}
+function navHTML(){const t=[["showroom","◱","SHOWROOM"],["labs","#","LABS"],["studio","♫","STUDIO"],["market","▣","MARKET"]];
+  return `<nav class="nav">${t.map(([id,ic,lb])=>`<button class="navb ${TAB===id?"on":""}" data-tab="${id}"><i class="ic">${ic}</i><span>${lb}</span></button>`).join("")}</nav>`}
+
+function gateHTML(){return `
+<div class="gate"><div class="gatecard" id="gate">
+  <div class="brand">TNLLABS <span class="fl">🧪</span></div>
+  <div id="gatebody"></div>
+</div></div>`}
+function wireGate(){
+  let mode="register",step=1,f={displayName:"",username:"",email:"",password:"",role:""},err="";
+  const body=()=>$("#gatebody");
+  function draw(){
+    if(mode==="login"){body().innerHTML=`
+      <h1>Log in.</h1><p>Back to the lab.</p>
+      <label class="mono lbl">USERNAME</label><input class="in" id="u" value="${esc(f.username)}">
+      <label class="mono lbl">PASSWORD</label><input class="in" id="p" type="password">
+      ${err?`<div class="err">${esc(err)}</div>`:""}
+      <button class="btn wide" id="go">Enter</button>
+      <p style="margin-top:14px;font-size:12px" class="dim">New here? <span class="switch" id="sw">Create an account</span></p>`;
+      $("#go").onclick=async()=>{try{const d=await api.login({username:$("#u").value.toLowerCase(),password:$("#p").value});TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;startStream();render()}catch(e){err=e.message;draw()}};
+      $("#sw").onclick=()=>{mode="register";step=1;err="";draw()};
+      return}
+    if(step===1){body().innerHTML=`
+      <h1>Post your work.</h1><p>A workshop for designers and the people they build with. Your work, your record, your circle — one account.</p>
+      <label class="mono lbl">DISPLAY NAME</label><input class="in" id="dn" value="${esc(f.displayName)}" maxlength="28">
+      <label class="mono lbl">USERNAME</label><input class="in" id="un" value="${esc(f.username)}" maxlength="20" placeholder="lowercase, unique">
+      <label class="mono lbl">EMAIL</label><input class="in" id="em" value="${esc(f.email)}" type="email">
+      <label class="mono lbl">PASSWORD</label><input class="in" id="pw" type="password" placeholder="6+ characters">
+      ${err?`<div class="err">${esc(err)}</div>`:""}
+      <button class="btn wide" id="next">Continue</button>
+      <p style="margin-top:14px;font-size:12px" class="dim">Already in? <span class="switch" id="sw">Log in</span></p>`;
+      $("#next").onclick=()=>{f.displayName=$("#dn").value;f.username=$("#un").value.toLowerCase();f.email=$("#em").value;f.password=$("#pw").value;
+        if(!f.displayName.trim()){err="Add a display name.";return draw()}
+        if(!/^[a-z0-9._]{2,20}$/.test(f.username)){err="Username: 2–20 chars, lowercase, numbers, . or _";return draw()}
+        if(!/^\S+@\S+\.\S+$/.test(f.email)){err="Enter a valid email.";return draw()}
+        if((f.password||"").length<6){err="Password: 6+ characters.";return draw()}
+        err="";step=2;draw()};
+      $("#sw").onclick=()=>{mode="login";err="";draw()};
+      return}
+    body().innerHTML=`
+      <h1>What do you make?</h1><p>This sets your lane and where your work lands. You can post in any lab.</p>
+      <div class="roles">${ROLES.map(r=>`<button class="chip ${f.role===r?"on":""}" data-r="${esc(r)}">${esc(r)}</button>`).join("")}</div>
+      ${err?`<div class="err">${esc(err)}</div>`:""}
+      <button class="btn wide" id="fin">Enter the Lab ↗</button>
+      <button class="link" id="bk">← Back</button>`;
+    document.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{f.role=b.dataset.r;err="";draw()});
+    $("#bk").onclick=()=>{step=1;draw()};
+    $("#fin").onclick=async()=>{if(!f.role){err="Pick what you make.";return draw()}
+      try{const d=await api.register(f);TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;
+        if(d.verifyUrl)VERIFYURL=d.verifyUrl;
+        startStream();render()}catch(e){err=e.message;draw()}};
+  }
+  draw();
+}
+
+function showroomHTML(){return `<div class="scroll" id="showroom">
+  <section class="sr-head">
+    <div class="mono sr-eyebrow">TNLLABS® 🧪 · SHOWROOM</div>
+    <h1 class="sr-h">The work.</h1>
+    <p class="sr-p">Everything being built and validated inside the network right now. Collaborations rise to the top.</p>
+    <div class="sr-cta">
+      <button class="btn green" id="sr-post">＋ Post your work</button>
+      <button class="btn ghost" data-goto="labs">Enter the labs</button>
+    </div>
+  </section>
+
+  <div class="sr-builders" id="sr-builders"></div>
+
+  <div class="sr-feedhead mono"><span>LATEST WORK</span><span class="dim">COLLABS RANK HIGHEST</span></div>
+  <div class="sr-grid" id="sr-grid"><div class="empty">Loading the work…</div></div>
+</div>`}
+
+function srCardHTML(p){
+  const accepted=p.collaborators.filter(c=>c.status==="accepted");
+  return `<div class="sr-card">
+    ${p.imageUrl?`<img class="sr-img" src="${esc(p.imageUrl)}" alt="work by ${esc(p.author.displayName)}" loading="lazy" data-zoom="${esc(p.imageUrl)}">`
+      :`<div class="sr-beat"><button class="circle" style="width:34px;height:34px;font-size:12px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button>
+         <div><div class="sr-beatname">${esc(p.beat?.name||"untitled loop")}</div><div class="mono dim">${p.beat?.bpm||120} BPM · LOOP</div></div></div>`}
+    <div class="sr-meta">
+      <div class="sr-who" data-u="${esc(p.author.username)}">
+        <div class="av sm">${esc(p.author.displayName.slice(0,2).toUpperCase())}</div>
+        <div><div class="sr-name">${esc(p.author.displayName)}<span class="lvl">L${p.author.level}</span></div>
+        <div class="mono dim">${esc(p.author.role.toUpperCase())} · #${esc(p.channel)}</div></div>
+      </div>
+      ${accepted.length?`<div class="sr-collab mono">↔ BUILT WITH ${accepted.map(c=>esc((c.display_name||c.username).toUpperCase())).join(" + ")}</div>`:""}
+      ${p.body?`<div class="sr-body">${esc(p.body)}</div>`:""}
+      <div class="sr-acts">
+        <button class="act ${p.likedByMe?"on":""}" data-like="${p.id}">🔥 ${p.likeCount||""}</button>
+        <button class="act" data-share="${p.id}">↻ ${p.shareCount||""}</button>
+        ${p.author.username===ME.username?`<button class="act" data-collab="${p.id}">+ collab</button>`:""}
+        ${p.collaborators.find(c=>c.username===ME.username&&c.status==="pending")?`<button class="act on" data-accept="${p.id}">accept ✓</button>`:""}
+      </div>
+    </div>
+  </div>`}
+
+async function loadShowroom(){
+  try{
+    const [d,b]=await Promise.all([api.showroom(),api.builders()]);
+    const g=$("#sr-grid");
+    if(g)g.innerHTML=d.posts.length?d.posts.map(srCardHTML).join("")
+      :`<div class="empty">No work posted yet.<br><br>Be the first — post a piece and it lands here.</div>`;
+    const bb=$("#sr-builders");
+    if(bb&&b.builders.length)bb.innerHTML=`<div class="mono sr-feedhead" style="padding-left:0"><span>WHO'S BUILDING</span></div>
+      <div class="brow">${b.builders.map(x=>`<button class="bcard" data-u="${esc(x.username)}">
+        <div class="av">${esc(x.display_name.slice(0,2).toUpperCase())}</div>
+        <div class="bname">${esc(x.display_name)}</div>
+        <div class="mono dim">${esc(x.role.toUpperCase())}</div>
+        <div class="mono bstat">L${x.level} · ${x.validations}🔥 · ${x.collabs}↔</div>
+      </button>`).join("")}</div>`;
+    wireFeed();
+  }catch(e){/* offline */}
+}
+
+function labsHTML(){return `<div class="labs-wrap ${ROOMOPEN?"roomopen":""}">
+  <aside class="rail">${LABS.map(l=>`
+    <div class="railh mono">${l.name}</div>
+    ${l.channels.map(c=>{const locked=c.gate&&levelFor(ME.rep).id<c.gate;
+      return `<button class="railc ${CH.id===c.id?"on":""}" data-ch="${c.id}">${locked?"🔒":"#"} ${c.label}</button>`}).join("")}`).join("")}
+  </aside>
+  <section class="room">
+    <div class="roomh"><button class="backb" id="backb">←</button>#${esc(CH.label)} <span class="desc">${esc(CH.desc)}</span></div>
+    ${CH.beatlab?beatLabHTML(true):""}
+    ${(CH.gate&&levelFor(ME.rep).id<CH.gate)?`<div class="empty">🔒 #${esc(CH.label)} opens at ${LEVELS.find(l=>l.id===CH.gate).name}.<br>Earn rep through work others validate.</div>`
+      :`<div class="feed" id="feed"><div class="empty">Loading…</div></div>
+    ${PENDIMG?`<div class="attach-bar"><img src="${PENDIMG}" alt="attachment preview"><span class="mono dim">IMAGE ATTACHED</span><button class="attach-x" id="dropimg">✕</button></div>`:""}
+    <div class="composer">
+      <input type="file" id="filein" accept="image/*" hidden>
+      <button class="attach" id="attachb" title="Attach image">+</button>
+      <input class="in" id="draft" placeholder="Message #${esc(CH.label)}"><button class="send" id="sendb">→</button>
+    </div>`}
+  </section>
+</div>`}
+
+function beatLabHTML(withFeed){
+  const anySolo=TRACKS.some(t=>PROJ.mix[t.id].solo);
+  return `<div class="beat">
+  <div class="beat-top">
+    <div><div class="mono" style="color:var(--green)">THE BEAT LAB</div>
+      <input class="beat-name" id="bname" placeholder="untitled beat" value="${esc(PROJ.name)}" maxlength="40"></div>
+    <div class="beat-ctl">
+      <button class="circle" data-play id="mainplay">${playing?"■":"▶"}</button>
+      <div class="knob"><span class="mono dim">BPM</span><input type="range" min="60" max="200" value="${PROJ.bpm}" id="bpm"><b class="mono" id="bpmv">${PROJ.bpm}</b></div>
+      <div class="knob"><span class="mono dim">SWING</span><input type="range" min="0" max="100" value="${PROJ.swing}" id="swing"><b class="mono" id="swingv">${PROJ.swing}</b></div>
+      <div class="knob"><span class="mono dim">KEY</span>
+        <select class="sel" id="keysel">${NOTES.map((n,i)=>`<option value="${i}" ${PROJ.key===i?"selected":""}>${n}</option>`).join("")}</select></div>
+    </div>
+  </div>
+
+  <div class="barbar">
+    <span class="mono dim" id="barind">BAR ${EBAR+1}/${PROJ.chain}</span>
+    <div class="bars">${[0,1,2,3].map(i=>`<button class="barb ${EBAR===i?"on":""} ${i<PROJ.chain?"active":""}" data-bar="${i}">${i+1}</button>`).join("")}</div>
+    <span class="mono dim">LOOP</span>
+    <select class="sel" id="chain">${[1,2,3,4].map(n=>`<option value="${n}" ${PROJ.chain===n?"selected":""}>${n} bar${n>1?"s":""}</option>`).join("")}</select>
+    <button class="sq" id="copyb" title="Copy bar to next">⧉</button>
+    <button class="sq" id="clearb" title="Clear bar">✕</button>
+  </div>
+
+  <div class="grid">${TRACKS.map(t=>{
+    const m=PROJ.mix[t.id];
+    const dimmed=anySolo?!m.solo:m.mute;
+    return `<div class="grow ${dimmed?"muted":""}">
+      <div class="tctl">
+        <button class="tname mono" data-open="${t.id}">${t.name}</button>
+        <div class="tbtns">
+          <button class="tb ${m.mute?"on":""}" data-mute="${t.id}">M</button>
+          <button class="tb ${m.solo?"on":""}" data-solo="${t.id}">S</button>
+        </div>
+      </div>
+      <div class="cells">${PROJ.bars[EBAR][t.id].map((cell,i)=>{
+        const lvl=cell?cell.v:0;
+        return `<button class="cell ${cell?"on v"+lvl:""} ${i%4===0?"bar":""}" data-t="${t.id}" data-i="${i}" data-bar="${EBAR}"
+          ${cell&&t.pitched?`title="${NOTES[((cell.n||0)%12+12)%12]}"`:""}>${cell&&t.pitched?`<i>${NOTES[((cell.n||0)%12+12)%12]}</i>`:""}</button>`;
+      }).join("")}</div>
+    </div>`;
+  }).join("")}</div>
+
+  ${OPENTRACK?(()=>{const t=TRACKS.find(x=>x.id===OPENTRACK),m=PROJ.mix[OPENTRACK];
+    return `<div class="tpanel">
+      <div class="tpanel-h"><b>${t.name}</b><button class="x" data-open="">✕</button></div>
+      <div class="knob wide"><span class="mono dim">VOLUME</span><input type="range" min="0" max="100" value="${Math.round(m.vol*100)}" data-vol="${t.id}"><b class="mono">${Math.round(m.vol*100)}</b></div>
+      ${!t.pitched?`<div class="mono dim" style="margin:10px 0 6px">SOUND</div>
+      <div class="variants">${KITS[t.id].map((n,i)=>`<button class="chip ${m.variant===i?"on":""}" data-var="${t.id}:${i}">${n}</button>`).join("")}</div>`
+      :`<div class="mono dim" style="margin:10px 0 6px">808 DECAY</div>
+      <div class="variants">${["Medium","Long","Short"].map((n,i)=>`<button class="chip ${m.variant===i?"on":""}" data-var="${t.id}:${i}">${n}</button>`).join("")}</div>
+      <div class="mono dim" style="margin:12px 0 6px">TAP A STEP TO SET PITCH · ${NOTES[PROJ.key]} ROOT</div>
+      <div class="variants">${NOTES.map((n,i)=>`<button class="chip ${PITCHSEL===i?"on":""}" data-pitch="${i}">${n}</button>`).join("")}</div>`}
+    </div>`})():""}
+
+  <div class="beat-hint mono dim">TAP = ON · TAP AGAIN = ACCENT (3 LEVELS) · LONG-PRESS = CLEAR${OPENTRACK==="bass"?" · PITCH SET ABOVE":""}</div>
+
+  <div class="beat-pub">
+    <button class="btn ghost" id="saveb">${PROJ.id?"Save":"Save draft"}</button>
+    <button class="btn ghost" id="loadb">Drafts</button>
+    <button class="btn green" id="pubb">Publish to #beats</button>
+  </div>
+  ${DRAFTS?`<div class="drafts">${DRAFTS.length?DRAFTS.map(d=>`<div class="draft"><button class="dname" data-load="${d.id}">${esc(d.name||"untitled")}</button><span class="mono dim">${new Date(d.updated_at).toLocaleDateString()}</span><button class="sq sm" data-del="${d.id}">✕</button></div>`).join(""):`<div class="mono dim" style="padding:8px">No drafts yet.</div>`}</div>`:""}
+</div>${withFeed?`<div class="feed" id="feed" style="flex:1"><div class="empty">Loading…</div></div>`:""}`}
+
+function postHTML(p){const canCollab=p.author.username===ME.username;
+  const myPending=p.collaborators.find(c=>c.username===ME.username&&c.status==="pending");
+  return `<div class="post">
+  ${p.sharedFrom?`<div class="shared-tag">↻ SHARED</div>`:""}
+  <div class="post-h"><div class="av" data-u="${esc(p.author.username)}">${esc(p.author.displayName.slice(0,2).toUpperCase())}</div>
+    <div><span class="post-by" data-u="${esc(p.author.username)}">${esc(p.author.displayName)}</span><span class="lvl">L${p.author.level}</span>
+    <div class="post-meta">${esc(p.author.role.toUpperCase())} · ${new Date(p.createdAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}</div></div></div>
+  ${p.body?`<div class="post-body">${esc(p.body)}</div>`:""}
+  ${p.imageUrl?`<img class="post-img" src="${esc(p.imageUrl)}" alt="attached work" loading="lazy" data-zoom="${esc(p.imageUrl)}">`:""}
+  ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM · TAP TO HEAR</div></div></div>`:""}
+  ${p.collaborators.length?`<div class="collab-row">${p.collaborators.map(c=>`<span class="ctag ${c.status==="accepted"?"acc":""}">${c.status==="accepted"?"✓":"…"} ${esc(c.display_name||c.username)}</span>`).join("")}</div>`:""}
+  <div class="post-acts">
+    <button class="act ${p.likedByMe?"on":""}" data-like="${p.id}">🔥 ${p.likeCount||""}</button>
+    <button class="act" data-share="${p.id}">↻ ${p.shareCount||""}</button>
+    ${canCollab?`<button class="act" data-collab="${p.id}">+ collab</button>`:""}
+    ${myPending?`<button class="act on" data-accept="${p.id}">accept collab ✓</button>`:""}
+  </div></div>`}
+
+function renderRoomFeed(){const f=$("#feed");if(!f)return;
+  f.innerHTML=POSTS.length?POSTS.map(postHTML).join(""):`<div class="empty">Nothing here yet. Be the first — post something real.</div>`;
+  wireFeed();}
+
+function marketHTML(){return `<div class="scroll">
+  <div class="page-head"><div class="mono dim">MATERIAL EXPRESSION</div><h2>Market</h2>
+  <p>One market for every lab. Product comes out of the culture — selling unlocks with standing.</p></div>
+  <div class="shop">${PRODUCTS.map(p=>`<a class="prod" href="${p.u}" target="_blank" rel="noreferrer"><div class="prod-img">${esc(p.n.slice(0,1))}</div><div class="prod-n">${esc(p.n)}</div><span class="prod-p">${p.w?`<span class="was">${p.w}</span>`:""}${p.p}</span></a>`).join("")}
+  <div class="prod" style="border-style:dashed;opacity:.55"><div class="prod-img">＋</div><div class="prod-n">Next drop — born in the labs</div><span class="prod-p mono">UNLOCKS AT CORE</span></div></div>
+</div>`}
+
+function studioHTML(){return `<div class="scroll">
+  <div class="page-head"><div class="mono dim">MUSIC LAB · TOOLS</div><h2>Studio</h2>
+  <p>Make a loop here, publish it into #beats, let a lyricist find it. More tools coming to every lab.</p></div>
+  ${beatLabHTML(false)}
+</div>`}
+
+function workCardHTML(p,collab){
+  const kind=p.beat?"BEAT":p.imageUrl?"IMAGE":"POST";
+  const glyph=p.beat?"♫":"✎";
+  return `<div class="work" data-openpost="${p.id}">
+    <div class="work-top"><span class="mono work-kind">${kind} · #${esc(p.channel)}</span>
+      ${collab?`<span class="mono work-collab">↔ WITH ${esc(p.author.displayName.toUpperCase())}</span>`:""}</div>
+    ${p.beat?`<div class="work-beat"><button class="circle" style="width:28px;height:28px;font-size:10px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button><span class="nm">${esc(p.beat.name||"untitled loop")}</span><span class="mono dim">${p.beat.bpm}BPM</span></div>`
+      :p.imageUrl?`<img class="work-img" src="${esc(p.imageUrl)}" alt="work" loading="lazy">${p.body?`<div class="work-body" style="margin-top:6px">${esc(p.body)}</div>`:""}`
+      :`<div class="work-body">${esc(p.body||"—")}</div>`}
+    <div class="work-foot mono"><span>🔥 ${p.likeCount}</span><span>↻ ${p.shareCount}</span>
+      ${p.collaborators.filter(c=>c.status==="accepted").length?`<span class="work-cnames">✓ ${p.collaborators.filter(c=>c.status==="accepted").map(c=>esc(c.display_name||c.username)).join(", ")}</span>`:""}
+      <span class="dim" style="margin-left:auto">${new Date(p.createdAt).toLocaleDateString()}</span></div>
+  </div>`}
+
+function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.at>u.rep);
+  const pct=nx?Math.round((u.rep-l.at)/(nx.at-l.at)*100):100;
+  const mine=u.username===ME.username;
+  const st=PROFILE.stats||{posts:0,likesReceived:0,collabs:0};
+  const list=PTAB==="collabs"?PROFILE.collabs:PROFILE.posts;
+
+  if(EDITING&&mine){return `<div class="sheet" id="sheetbg"><div class="sheetc">
+    <div class="sheeth"><div><div class="mono dim">EDIT PROFILE</div><h2>Your portfolio</h2></div><button class="x" id="sheetx">✕</button></div>
+    <label class="mono lbl">DISPLAY NAME</label><input class="in" id="ed-name" value="${esc(u.displayName)}" maxlength="40">
+    <label class="mono lbl">WHAT YOU MAKE</label>
+    <div class="roles">${ROLES.map(r=>`<button class="chip ${EDITROLE===r?"on":""}" data-er="${esc(r)}">${esc(r)}</button>`).join("")}</div>
+    <label class="mono lbl">BIO</label><textarea class="in" id="ed-bio" rows="4" maxlength="300" placeholder="What you make, who you build with, what you're looking for.">${esc(u.bio)}</textarea>
+    <label class="mono lbl">LINK</label><input class="in" id="ed-link" value="${esc(u.link)}" placeholder="instagram.com/yourhandle">
+    <button class="btn wide" id="ed-save">Save</button>
+    <button class="link" id="ed-cancel">Cancel</button>
+  </div></div>`}
+
+  return `<div class="sheet" id="sheetbg"><div class="sheetc">
+  <div class="sheeth"><div class="mono dim">${mine?"YOUR PORTFOLIO":"PORTFOLIO"}</div><button class="x" id="sheetx">✕</button></div>
+
+  <div class="pid"><div class="pav">${esc(u.displayName.slice(0,2).toUpperCase())}</div>
+    <div><div class="pname">${esc(u.displayName)}</div>
+    <div class="mono dim">@${esc(u.username)} · ${esc(u.role.toUpperCase())}</div></div></div>
+
+  ${u.bio?`<div class="pbio">${esc(u.bio)}</div>`:mine?`<div class="pbio dim">No bio yet — tell people what you make.</div>`:""}
+  ${u.link?`<a class="plink mono" href="${/^https?:\/\//.test(u.link)?esc(u.link):"https://"+esc(u.link)}" target="_blank" rel="noreferrer">↗ ${esc(u.link.replace(/^https?:\/\//,""))}</a>`:""}
+
+  <div class="pstats">
+    <div class="pstat"><b>${st.posts}</b><span class="mono dim">WORK</span></div>
+    <div class="pstat"><b>${st.likesReceived}</b><span class="mono dim">🔥 RECEIVED</span></div>
+    <div class="pstat"><b>${st.collabs}</b><span class="mono dim">COLLABS</span></div>
+    <div class="pstat"><b>${PROFILE.followers}</b><span class="mono dim">FOLLOWERS</span></div>
+  </div>
+
+  <div class="pactions">
+    ${mine?`<button class="btn ghost" id="editb">Edit profile</button>
+      <button class="btn ${u.published?"":"green"}" id="pubtoggle">${u.published?"Unpublish":"Publish portfolio"}</button>`
+      :`<button class="btn ${PROFILE.youFollow?"ghost":""}" id="followb">${PROFILE.youFollow?"Following ✓":"Follow"}</button>`}
+  </div>
+  ${mine&&u.published?`<a class="publink mono" href="/u/${esc(u.username)}" target="_blank">↗ LIVE AT /u/${esc(u.username)} — TAP TO VIEW · SHARE THIS ANYWHERE</a>`:""}
+  ${mine&&!u.published?`<div class="mono dim" style="margin-bottom:12px">Private to the network. Publish to get a public link anyone can open.</div>`:""}
+
+  <div class="plvl"><div class="plr"><span class="pbadge">L${l.id}</span><div><div style="font-weight:700;font-size:14px">${l.name}</div><div class="mono dim">${u.rep} REP${nx?` · ${nx.at-u.rep} TO ${nx.name.toUpperCase()}`:" · MAX"}</div></div></div>
+    <div class="ptrack"><div class="pfill" style="width:${pct}%"></div></div></div>
+
+  <div class="ptabs">
+    <button class="ptab ${PTAB==="work"?"on":""}" data-ptab="work">WORK ${st.posts}</button>
+    <button class="ptab ${PTAB==="collabs"?"on":""}" data-ptab="collabs">COLLABS ${PROFILE.collabs.length}</button>
+    <button class="ptab ${PTAB==="ladder"?"on":""}" data-ptab="ladder">STANDING</button>
+  </div>
+
+  ${PTAB==="ladder"?`
+    <div class="mono dim" style="margin:12px 0">REP IS EARNED, NOT SPENT — LIKES RECEIVED +6 · SHARES +3 · CONFIRMED COLLABS +20 EACH</div>
+    <div class="ladder">${LEVELS.map(x=>`<div class="lstep ${u.rep>=x.at?"done":""}"><span class="ldot"></span><span class="mono">${x.at}</span><span>${x.name}</span>${u.rep>=x.at?"✓":""}</div>`).join("")}</div>
+    <div class="mono dim" style="margin-top:14px">MEMBER SINCE ${new Date(u.createdAt).toLocaleDateString()}</div>`
+  :list.length?`<div class="worklist">${list.map(p=>workCardHTML(p,PTAB==="collabs")).join("")}</div>`
+  :`<div class="empty">${PTAB==="collabs"?"No confirmed collabs yet. Invite someone onto a piece — you both rise.":mine?"Nothing published yet. Post in a lab and it lands here.":"Nothing published yet."}</div>`}
+
+  ${mine?`<button class="link" id="logoutb">Log out</button>`:""}
+</div></div>`}
+
+/* ---- wiring ---- */
+function wire(){
+  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;stop();DRAFTS=null;render()});
+  document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{TAB=b.dataset.goto;render()});
+  const srp=$("#sr-post");if(srp)srp.onclick=()=>{
+    // designers land in #graphic-design; everyone else in their home lab
+    const target=/design/i.test(ME.role)?"graphic-design":/photo/i.test(ME.role)?"photography":/produc|lyric|sing/i.test(ME.role)?"beats":"graphic-design";
+    for(const l of LABS){const c=l.channels.find(x=>x.id===target);if(c){LAB=l;CH=c;break}}
+    TAB="labs";ROOMOPEN=true;render();
+    setTimeout(()=>{const fi=$("#filein");if(fi)fi.click()},250);
+  };
+  document.querySelectorAll("[data-lab]").forEach(b=>b.onclick=()=>{const l=LABS.find(x=>x.id===b.dataset.lab);LAB=l;CH=l.channels[0];TAB="labs";ROOMOPEN=true;render()});
+  const meBtn=$("#meBtn");if(meBtn)meBtn.onclick=async()=>{PROFILE=await api.profile(ME.username);PTAB="work";render()};
+  const rs=$("#resendb");if(rs)rs.onclick=async()=>{
+    try{const d=await api.resend();
+      if(d.already){await refreshMe();toast("Already verified");return render()}
+      if(d.verifyUrl){VERIFYURL=d.verifyUrl;toast("Mail not configured — tap Open link");render()}
+      else toast("Verification email sent");
+    }catch(e){toast(e.message)}};
+  document.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>{
+    for(const l of LABS){const c=l.channels.find(x=>x.id===b.dataset.ch);if(c){LAB=l;CH=c}}
+    ROOMOPEN=true;stop();render()});
+  const bb=$("#backb");if(bb)bb.onclick=()=>{ROOMOPEN=false;render()};
+  const sendb=$("#sendb");if(sendb){const go=async()=>{
+    const t=$("#draft").value.trim();
+    if(!t&&!PENDIMG)return;
+    const body={channel:CH.id,body:t};
+    $("#draft").value="";
+    try{
+      if(PENDIMG){
+        const staged=PENDIMG;PENDIMG=null;
+        toast("Uploading…");
+        const up=await api.upload(staged);
+        body.imageUrl=up.url;
+      }
+      await api.post(body);loadFeed();render();
+    }catch(e){toast(e.message)}};
+    sendb.onclick=go;$("#draft").onkeydown=e=>{if(e.key==="Enter")go()}}
+
+  const ab=$("#attachb");if(ab)ab.onclick=()=>$("#filein").click();
+  const fi=$("#filein");if(fi)fi.onchange=async()=>{
+    const f=fi.files&&fi.files[0];if(!f)return;
+    if(f.size>25*1024*1024){toast("That image is too big");fi.value="";return}
+    try{PENDIMG=await compressImage(f);render()}catch(e){toast(e.message)}
+    fi.value="";
+  };
+  const di=$("#dropimg");if(di)di.onclick=()=>{PENDIMG=null;render()};
+  wireBeat();wireFeed();wireSheet();
+  const lb=$("#lb");if(lb)lb.onclick=()=>{LIGHTBOX=null;render()};
+}
+function wireBeat(){
+  // step cells: tap cycles velocity, long-press clears
+  document.querySelectorAll(".cell[data-t]").forEach(c=>{
+    let timer=null,long=false;
+    const tid=c.dataset.t,i=+c.dataset.i;
+    const track=TRACKS.find(t=>t.id===tid);
+    const clear=()=>{PROJ.bars[EBAR][tid][i]=null;render()};
+    const cycle=()=>{
+      const cur=PROJ.bars[EBAR][tid][i];
+      if(!cur)PROJ.bars[EBAR][tid][i]={v:2,n:track.pitched?PITCHSEL:0};
+      else if(cur.v<3)cur.v++;
+      else PROJ.bars[EBAR][tid][i]=null;
+      if(cur&&track.pitched)cur.n=PITCHSEL;
+      render();
+    };
+    c.onpointerdown=()=>{long=false;timer=setTimeout(()=>{long=true;clear()},450)};
+    c.onpointerup=()=>{clearTimeout(timer);if(!long)cycle()};
+    c.onpointerleave=()=>clearTimeout(timer);
+  });
+
+  const mp=$("#mainplay");if(mp)mp.onclick=()=>{playing?stop():play()};
+  const bp=$("#bpm");if(bp)bp.oninput=()=>{PROJ.bpm=+bp.value;$("#bpmv").textContent=PROJ.bpm};
+  const sw=$("#swing");if(sw)sw.oninput=()=>{PROJ.swing=+sw.value;$("#swingv").textContent=PROJ.swing};
+  const ks=$("#keysel");if(ks)ks.onchange=()=>{PROJ.key=+ks.value};
+  const ch=$("#chain");if(ch)ch.onchange=()=>{PROJ.chain=+ch.value;if(EBAR>=PROJ.chain)EBAR=0;render()};
+  document.querySelectorAll("[data-bar]").forEach(b=>{if(b.classList.contains("barb"))b.onclick=()=>{
+    const i=+b.dataset.bar;if(i>=PROJ.chain){PROJ.chain=i+1}EBAR=i;render()}});
+  const cp=$("#copyb");if(cp)cp.onclick=()=>{
+    const nxt=(EBAR+1)%4;
+    PROJ.bars[nxt]=JSON.parse(JSON.stringify(PROJ.bars[EBAR]));
+    if(PROJ.chain<nxt+1)PROJ.chain=nxt+1;
+    EBAR=nxt;toast("Bar copied");render()};
+  const cb=$("#clearb");if(cb)cb.onclick=()=>{PROJ.bars[EBAR]=emptyBar();render()};
+
+  document.querySelectorAll("[data-mute]").forEach(b=>b.onclick=()=>{const t=b.dataset.mute;PROJ.mix[t].mute=!PROJ.mix[t].mute;render()});
+  document.querySelectorAll("[data-solo]").forEach(b=>b.onclick=()=>{const t=b.dataset.solo;PROJ.mix[t].solo=!PROJ.mix[t].solo;render()});
+  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{OPENTRACK=b.dataset.open===OPENTRACK?"":b.dataset.open;render()});
+  document.querySelectorAll("[data-vol]").forEach(r=>r.oninput=()=>{PROJ.mix[r.dataset.vol].vol=(+r.value)/100;
+    const lab=r.parentElement.querySelector("b");if(lab)lab.textContent=r.value});
+  document.querySelectorAll("[data-var]").forEach(b=>b.onclick=()=>{
+    const [t,i]=b.dataset.var.split(":");PROJ.mix[t].variant=+i;
+    voice(t,ctx().currentTime+.02,.8,+i,PROJ.key);render()});
+  document.querySelectorAll("[data-pitch]").forEach(b=>b.onclick=()=>{
+    PITCHSEL=+b.dataset.pitch;
+    voice("bass",ctx().currentTime+.02,.8,PROJ.mix.bass.variant,PITCHSEL);render()});
+
+  const sb=$("#saveb");if(sb)sb.onclick=async()=>{
+    PROJ.name=$("#bname").value.trim();
+    try{const d=await api.saveBeat({id:PROJ.id,name:PROJ.name||"untitled",data:stripProject(PROJ)});
+      PROJ.id=d.id;toast("Draft saved")}catch(e){toast(e.message)}};
+  const lb=$("#loadb");if(lb)lb.onclick=async()=>{
+    if(DRAFTS){DRAFTS=null;return render()}
+    try{const d=await api.beats();DRAFTS=d.projects;render()}catch(e){toast(e.message)}};
+  document.querySelectorAll("[data-load]").forEach(b=>b.onclick=async()=>{
+    try{const d=await api.beat(b.dataset.load);
+      PROJ={...newProject(),...d.project.data,id:d.project.id,name:d.project.name};
+      DRAFTS=null;EBAR=0;stop();toast("Loaded");render()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{
+    try{await api.delBeat(b.dataset.del);DRAFTS=DRAFTS.filter(x=>String(x.id)!==b.dataset.del);render()}catch(e){toast(e.message)}});
+
+  const pb=$("#pubb");if(pb)pb.onclick=async()=>{
+    const has=PROJ.bars.slice(0,PROJ.chain).some(bar=>TRACKS.some(t=>bar[t.id].some(Boolean)));
+    if(!has)return toast("Empty beat — put some notes down");
+    PROJ.name=$("#bname").value.trim();
+    try{
+      await api.post({channel:"beats",body:"",beat:{name:PROJ.name||"untitled loop",bpm:PROJ.bpm,data:stripProject(PROJ)}});
+      stop();toast("Published to #beats");
+      if(TAB==="studio"){TAB="labs";LAB=LABS.find(l=>l.id==="music");CH=LAB.channels.find(c=>c.id==="beats");ROOMOPEN=true}
+      render();
+    }catch(e){toast(e.message)}};
+}
+function stripProject(p){const {id,...rest}=p;return rest}
+
+function wireFeed(){
+  document.querySelectorAll("[data-like]").forEach(b=>b.onclick=async()=>{try{await api.like(b.dataset.like);loadFeed()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-share]").forEach(b=>b.onclick=async()=>{
+    const ch=prompt("Share into which channel? (e.g. general, graphic-design, clothing-design)",CH.id);
+    if(!ch)return;try{await api.share(b.dataset.share,{channel:ch.trim()});toast("Shared — original author earned rep")}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-collab]").forEach(b=>b.onclick=async()=>{
+    const u=prompt("Invite a collaborator (their username):");if(!u)return;
+    try{await api.invite(b.dataset.collab,u.trim().toLowerCase());toast("Collab invite sent — pending their accept")}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-accept]").forEach(b=>b.onclick=async()=>{try{await api.accept(b.dataset.accept);await refreshMe();toast("Collab confirmed — you both earned +20");render()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-beatplay]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();previewBeat(JSON.parse(b.dataset.beatplay))});
+  document.querySelectorAll("[data-zoom]").forEach(el=>el.onclick=()=>{LIGHTBOX=el.dataset.zoom;render()});
+  document.querySelectorAll("[data-u]").forEach(el=>el.onclick=async()=>{try{PROFILE=await api.profile(el.dataset.u);PTAB="work";render()}catch(e){toast(e.message)}});
+}
+function wireSheet(){
+  const bg=$("#sheetbg");if(!bg)return;
+  bg.onclick=e=>{if(e.target===bg){PROFILE=null;EDITING=false;render()}};
+  $("#sheetx").onclick=()=>{PROFILE=null;EDITING=false;render()};
+  const fb=$("#followb");if(fb)fb.onclick=async()=>{await api.follow(PROFILE.user.username);PROFILE=await api.profile(PROFILE.user.username);render()};
+  const lo=$("#logoutb");if(lo)lo.onclick=()=>{TOKEN=null;ME=null;localStorage.removeItem("tnl-token");render()};
+
+  document.querySelectorAll("[data-ptab]").forEach(b=>b.onclick=()=>{PTAB=b.dataset.ptab;render()});
+
+  const eb=$("#editb");if(eb)eb.onclick=()=>{EDITING=true;EDITROLE=PROFILE.user.role;render()};
+  const pt=$("#pubtoggle");if(pt)pt.onclick=async()=>{
+    try{const d=await api.publish(!PROFILE.user.published);ME=d.user;
+      PROFILE=await api.profile(ME.username);
+      toast(d.user.published?"Portfolio published — link is live":"Portfolio unpublished");render();
+    }catch(e){toast(e.needsVerify?"Verify your email first":e.message)}};
+  const ec=$("#ed-cancel");if(ec)ec.onclick=()=>{EDITING=false;render()};
+  document.querySelectorAll("[data-er]").forEach(b=>b.onclick=()=>{EDITROLE=b.dataset.er;render()});
+  const es_=$("#ed-save");if(es_)es_.onclick=async()=>{
+    try{
+      const d=await api.updateMe({displayName:$("#ed-name").value,bio:$("#ed-bio").value,link:$("#ed-link").value,role:EDITROLE||PROFILE.user.role});
+      ME=d.user;EDITING=false;PROFILE=await api.profile(ME.username);toast("Profile updated");render();
+    }catch(e){toast(e.message)}};
+
+  // beat playback + opening a piece from the portfolio
+  document.querySelectorAll("[data-beatplay]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();previewBeat(JSON.parse(b.dataset.beatplay))});
+  document.querySelectorAll("[data-openpost]").forEach(el=>el.onclick=()=>{
+    const p=[...PROFILE.posts,...PROFILE.collabs].find(x=>String(x.id)===el.dataset.openpost);
+    if(!p)return;
+    for(const l of LABS){const c=l.channels.find(x=>x.id===p.channel);if(c){LAB=l;CH=c;TAB="labs";ROOMOPEN=true;PROFILE=null;render();return}}
+    toast("That channel isn't in your labs list");
+  });
+}
+
+/* ---- boot ---- */
+(async()=>{
+  try{const d=await api.levels();LEVELS=d.levels}catch(e){/* offline default */}
+  if(TOKEN){await refreshMe()}
+  if(ME)startStream();
+  render();
+})();
+</script>
+</body>
+</html>
