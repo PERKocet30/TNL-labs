@@ -108,6 +108,9 @@ function publicUser(u) {
     email: u.email,
     role: u.role,
     rep: u.rep,
+    bio: u.bio || "",
+    link: u.link || "",
+    createdAt: u.created_at,
     level: levelFor(u.rep).id,
     levelName: levelFor(u.rep).name,
   };
@@ -294,16 +297,55 @@ app.post("/api/users/:username/follow", auth, (req, res) => {
   res.json({ following: true });
 });
 
+/* Edit your own profile — bio, link, display name, role. */
+app.patch("/api/me", auth, (req, res) => {
+  const { displayName, bio, link, role } = req.body || {};
+  const next = {
+    displayName: (displayName ?? req.user.display_name).toString().slice(0, 40).trim() || req.user.display_name,
+    bio: (bio ?? req.user.bio).toString().slice(0, 300),
+    link: (link ?? req.user.link).toString().slice(0, 200).trim(),
+    role: (role ?? req.user.role).toString().slice(0, 40),
+  };
+  db.prepare(`UPDATE users SET display_name = ?, bio = ?, link = ?, role = ? WHERE id = ?`)
+    .run(next.displayName, next.bio, next.link, next.role, req.user.id);
+  res.json({ user: publicUser(q.userById.get(req.user.id)) });
+});
+
+/* Full profile = the portfolio. Everything they've published, plus the
+   stats that make standing legible: work, validation received, collabs. */
 app.get("/api/users/:username", maybeAuth, (req, res) => {
   const u = q.userByName.get(req.params.username);
   if (!u) return res.status(404).json({ error: "no such user" });
-  const posts = feedRows({ authorId: u.id, viewerId: req.user?.id }).map(shapePost);
+  const posts = feedRows({ authorId: u.id, viewerId: req.user?.id, limit: 200 }).map(shapePost);
+
+  // work they collaborated ON (someone else's post they accepted)
+  const collabRows = db.prepare(`
+    SELECT p.*, au.username AS author_username, au.display_name AS author_name,
+           au.role AS author_role, au.rep AS author_rep,
+      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
+      (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) AS share_count,
+      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = ?) AS liked_by_me
+    FROM collaborators c
+    JOIN posts p ON p.id = c.post_id
+    JOIN users au ON au.id = p.author_id
+    WHERE c.user_id = ? AND c.status = 'accepted' AND p.author_id != ?
+    ORDER BY p.created_at DESC LIMIT 100`).all(req.user?.id || 0, u.id, u.id);
+
+  const likesReceived = db.prepare(
+    `SELECT COUNT(*) n FROM likes l JOIN posts p ON p.id = l.post_id WHERE p.author_id = ?`
+  ).get(u.id).n;
+  const collabCount = db.prepare(
+    `SELECT COUNT(*) n FROM collaborators WHERE user_id = ? AND status = 'accepted'`
+  ).get(u.id).n;
+
   res.json({
     user: publicUser(u),
     followers: q.followerCount.get(u.id).n,
-    followingYou: req.user ? !!q.followExists.get(u.id, req.user.id) : false,
+    following: db.prepare(`SELECT COUNT(*) n FROM follows WHERE follower_id = ?`).get(u.id).n,
     youFollow: req.user ? !!q.followExists.get(req.user.id, u.id) : false,
+    stats: { posts: posts.length, likesReceived, collabs: collabCount },
     posts,
+    collabs: collabRows.map(shapePost),
   });
 });
 
