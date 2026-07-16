@@ -1,5 +1,3 @@
-// tnl-social/public/export-engine.js
-
 class TNLExportEngine {
   constructor(sequencerEngine) {
     this.engine = sequencerEngine;
