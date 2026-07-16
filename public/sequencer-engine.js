@@ -1,5 +1,3 @@
-// tnl-social/public/sequencer-engine.js
-
 class TNLSequencerEngine {
   constructor(audioContext = new (window.AudioContext || window.webkitAudioContext)()) {
     this.ctx = audioContext;
