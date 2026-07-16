@@ -188,7 +188,7 @@ textarea.in{resize:vertical;line-height:1.5}
 .attach-bar img{width:42px;height:42px;object-fit:cover;border-radius:7px;border:1px solid var(--line2)}
 .attach-x{margin-left:auto;background:none;border:none;color:var(--dim);font-size:14px}
 .attach-x:hover{color:#F87171}
-.post-img{width:100%;max-height:420px;object-fit:cover;border-radius:9px;margin-top:8px;border:1px solid var(--line);cursor:zoom-in;display:block}
+.post-img{width:100%;max-height:520px;object-fit:contain;border-radius:9px;margin-top:8px;border:1px solid var(--line);cursor:zoom-in;display:block;background:var(--el)}
 .work-img{width:100%;max-height:180px;object-fit:cover;border-radius:7px;display:block}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:90;display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
 .lightbox img{max-width:100%;max-height:100%;object-fit:contain}
@@ -385,6 +385,165 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:#000}
 .paybar.ok{background:rgba(34,197,94,.06)}
 .paybar b{font-size:13px}
 .paybar .mono{margin-top:3px;line-height:1.5;display:block}
+/* studio */
+.st{padding:0 16px 30px;max-width:900px}
+.st-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--line)}
+.st-play{width:44px;height:44px;border-radius:50%;border:none;background:var(--tx);color:#000;font-size:15px;flex-shrink:0}
+.st-play.on{background:var(--green)}
+.st-rec{width:36px;height:36px;border-radius:50%;border:1px solid var(--line2);background:var(--el);color:#F87171;font-size:12px;flex-shrink:0}
+.st-rec.on{background:#F87171;color:#fff;border-color:#F87171;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.45}}
+.st-name{flex:1;min-width:110px;background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--tx);font-family:'Archivo';font-weight:900;font-size:15px;text-transform:uppercase;padding:4px 0}
+.st-name:focus{outline:none;border-color:var(--green)}
+.st-knobs{display:flex;gap:12px;flex-wrap:wrap}
+.st-knobs label{display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--dim)}
+.st-knobs input{accent-color:var(--green);width:56px}
+.st-knobs b{color:var(--tx);min-width:22px;font-size:10px}
+.st-mini{display:flex;gap:4px;margin-left:auto}
+.st-ic{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--el);color:var(--dim);font-size:12px;padding:0}
+.st-ic:hover:not(:disabled){color:var(--tx);border-color:var(--green)}
+.st-ic.on{background:var(--green);color:#000;border-color:var(--green)}
+.st-ic:disabled{opacity:.3}
+.st-bar2{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}
+.st-bars{display:flex;align-items:center;gap:4px}
+.st-b{width:24px;height:24px;border-radius:5px;border:1px solid var(--line);background:var(--el);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:10px;padding:0}
+.st-b.on{background:var(--tx);color:#000;border-color:var(--tx)}
+.st-bar2 select{background:var(--el);border:1px solid var(--line);color:var(--tx);border-radius:6px;padding:4px 6px;font-family:'IBM Plex Mono',monospace;font-size:10px}
+.st-views{display:flex;gap:4px;margin-left:auto}
+.st-v{padding:5px 11px;border-radius:6px;border:1px solid var(--line);background:var(--el);color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.08em}
+.st-v.on{background:var(--tx);color:#000;border-color:var(--tx)}
+.st-tracks{display:flex;gap:5px;overflow-x:auto;padding:10px 0}
+.st-t{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:var(--el);color:var(--dim)}
+.st-t.on{border-color:var(--green);color:var(--tx);background:rgba(34,197,94,.1)}
+.st-t.dim{opacity:.35}
+.st-tn{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em}
+.st-tk{font-size:8px;opacity:.6}
+.st-seq{padding:6px 0}
+.st-grid{display:flex;flex-direction:column;gap:5px}
+.st-row{display:flex;align-items:center;gap:8px}
+.st-row.sel .st-rl{color:var(--green)}
+.st-rl{width:46px;flex-shrink:0;background:none;border:none;color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.05em;text-align:left;padding:0}
+.st-cells{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;flex:1}
+.st-c{aspect-ratio:1/1;border-radius:3px;border:1px solid var(--line);background:var(--el);padding:0;touch-action:none;min-height:16px}
+.st-c.bt{border-color:var(--line2)}
+.st-c.on.v1{background:rgba(255,255,255,.3);border-color:rgba(255,255,255,.4)}
+.st-c.on.v2{background:rgba(255,255,255,.68);border-color:rgba(255,255,255,.75)}
+.st-c.on.v3{background:#fff;border-color:#fff;box-shadow:0 0 6px rgba(255,255,255,.45)}
+.st-c.now{outline:2px solid var(--green);outline-offset:-1px}
+.st-rollhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.st-oct{display:flex;align-items:center;gap:6px}
+.st-roll{display:flex;flex-direction:column;gap:2px;max-height:44vh;overflow-y:auto;padding-right:3px}
+.st-rr{display:flex;align-items:center;gap:8px}
+.st-key{width:46px;flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--dim)}
+.st-key.blk{opacity:.5}
+.st-rr .st-c{min-height:13px}
+.st-vars{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
+.st-chip{padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--el);color:var(--dim);font-size:11px}
+.st-chip.on{background:var(--tx);color:#000;border-color:var(--tx)}
+.st-hint{margin-top:10px;font-size:8px;letter-spacing:.05em}
+.st-mix{display:flex;gap:8px;overflow-x:auto;padding:12px 0}
+.st-strip{flex-shrink:0;width:56px;display:flex;flex-direction:column;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:9px 5px}
+.st-master{border-color:var(--green)}
+.st-sn{font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--dim);letter-spacing:.05em}
+.st-fader{writing-mode:vertical-lr;direction:rtl;width:20px;height:96px;accent-color:var(--green)}
+.st-pan{display:flex;flex-direction:column;align-items:center;gap:2px}
+.st-pan input{width:44px;accent-color:var(--dim)}
+.st-pan span{font-size:7px}
+.st-ms{display:flex;gap:3px}
+.st-mb{width:18px;height:16px;border-radius:3px;border:1px solid var(--line);background:transparent;color:var(--dim);font-size:7px;padding:0}
+.st-mb.on{background:var(--green);color:#000;border-color:var(--green)}
+.st-fx{padding:14px 0;display:flex;flex-direction:column;gap:9px;max-width:420px}
+.st-f{display:flex;align-items:center;gap:9px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;color:var(--dim)}
+.st-f input{flex:1;accent-color:var(--green)}
+.st-f b{color:var(--tx);min-width:44px;text-align:right;font-size:10px}
+.st-foot{display:flex;gap:7px;margin-top:16px;flex-wrap:wrap}
+.st-btn{flex:1;min-width:88px;justify-content:center;background:var(--el);border:1px solid var(--line);color:var(--tx);border-radius:9px;padding:10px;font-size:12px;font-weight:700}
+.st-btn:hover{border-color:var(--green)}
+.st-btn.green{background:var(--green);color:#000;border-color:var(--green)}
+.st-drafts{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.st-draft{display:flex;align-items:center;gap:8px;padding:6px 0}
+.st-dn{flex:1;background:none;border:none;color:var(--tx);text-align:left;font-family:'Archivo';font-size:13px;font-weight:700}
+.st-dn:hover{color:var(--green)}
+/* loading skeletons — something on screen the instant you tap */
+@keyframes shim{0%{opacity:.35}50%{opacity:.7}100%{opacity:.35}}
+.work.skel{pointer-events:none}
+.skelbar{height:11px;border-radius:5px;background:var(--el);animation:shim 1.1s infinite}
+.skelbar.sh{width:58%;margin-top:8px}
+.skelbtn{height:38px;border-radius:9px;background:var(--el);animation:shim 1.1s infinite;flex:1}
+.pstats.sk b{color:var(--dim)}
+/* unread indicators */
+.railc{position:relative}
+.railc.unread{color:var(--tx);font-weight:700}
+.railc.unread::before{content:"";position:absolute;left:-4px;top:50%;transform:translateY(-50%);width:3px;height:14px;border-radius:2px;background:var(--green)}
+.cbadge{margin-left:auto;background:var(--green);color:#000;font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;flex-shrink:0}
+/* mentions + links */
+.mention{color:var(--green);font-weight:700;cursor:pointer}
+.mention:hover{text-decoration:underline}
+.lnk{color:var(--green);text-decoration:none;word-break:break-all}
+.lnk:hover{text-decoration:underline}
+.lcard{display:flex;align-items:center;gap:10px;background:var(--el);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-top:8px;text-decoration:none;color:var(--tx)}
+.lcard:hover{border-color:var(--green)}
+.lfav{width:26px;height:26px;border-radius:6px;flex-shrink:0;background:var(--card)}
+.lcard-t{font-size:12.5px;font-weight:700}
+.lcard-go{margin-left:auto;color:var(--dim);font-size:12px}
+.lcard.yt{position:relative;padding:0;display:block;overflow:hidden;aspect-ratio:16/9}
+.lcard.yt img{width:100%;height:100%;object-fit:cover;display:block}
+.lcard-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;background:rgba(0,0,0,.3)}
+.lcard-host{position:absolute;bottom:7px;left:9px;color:#fff;font-size:8px;letter-spacing:.12em;text-shadow:0 1px 3px #000}
+/* mention autocomplete */
+.mlist{border-top:1px solid var(--line);background:var(--card);max-height:180px;overflow-y:auto}
+.mrow{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;color:var(--tx);padding:8px 15px;text-align:left;font-size:13px}
+.mrow:hover{background:var(--el)}
+/* picker */
+.pick{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center;z-index:70}
+@media(min-width:620px){.pick{align-items:center}}
+.pickc{width:100%;max-width:440px;max-height:78vh;background:var(--card);border:1px solid var(--line);border-radius:16px 16px 0 0;padding:20px;overflow-y:auto}
+@media(min-width:620px){.pickc{border-radius:16px}}
+.pickh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.pickh h2{font-size:19px;font-weight:900;margin-top:3px}
+.picknote{line-height:1.6;margin-bottom:12px}
+.picklist{display:flex;flex-direction:column;gap:2px;margin-top:10px}
+.pickrow{display:flex;align-items:center;gap:10px;background:none;border:none;color:var(--tx);padding:10px 6px;border-radius:8px;text-align:left;width:100%}
+.pickrow:hover{background:var(--el)}
+.pickic{width:32px;height:32px;border-radius:50%;background:var(--el);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);flex-shrink:0}
+.pickbody{min-width:0;flex:1}
+.pickbody b{font-size:13.5px}
+/* empty states */
+.estate{padding:34px 20px}
+.eh{font-family:'Archivo',sans-serif;font-weight:900;font-size:17px;text-transform:uppercase;color:var(--tx);margin-bottom:6px}
+.ep{font-size:13px;line-height:1.6;max-width:280px;margin:0 auto 16px}
+/* optimistic states */
+.post.pending{opacity:.62}
+.post.failed{border-color:#F87171}
+.crow.pending{opacity:.55}
+.sending{color:var(--green);font-size:8px;letter-spacing:.12em;margin-bottom:5px}
+.failbar{display:flex;align-items:center;gap:8px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.4);border-radius:8px;padding:7px 10px;margin-bottom:8px;font-size:12px;flex-wrap:wrap}
+.retryb{background:#F87171;color:#000;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;margin-left:auto}
+.retryb.ghost{background:transparent;color:var(--dim);border:1px solid var(--line);margin-left:0}
+/* images: reserve space so the feed doesn't jump while loading */
+.post-img{background:var(--el)}
+.sr-img{background:var(--el)}
+img.post-img,img.sr-img{height:auto}
+/* commission rate */
+.ratebar{display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,rgba(34,197,94,.12),transparent);border:1px solid rgba(34,197,94,.3);border-radius:11px;padding:13px 14px;margin-bottom:10px;flex-wrap:wrap}
+.ratenow{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.ratenow b{font-size:26px;font-weight:900;color:var(--green);line-height:1}
+.ratenow span{margin-top:3px;font-size:7px;letter-spacing:.1em}
+.rateinfo{flex:1;min-width:150px}
+.rateinfo .mono{font-size:8px;line-height:1.5;letter-spacing:.05em}
+.ratenext{font-size:12px;font-weight:700;margin-top:5px}
+.ratenext b{color:var(--green)}
+.ratelad{background:none;border:none;color:var(--dim);font-size:9px;letter-spacing:.08em;padding:0}
+.ratelad:hover{color:var(--green)}
+/* profile work: visual trades get a grid, sound/word/build get a list */
+.worklist.asgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:520px){.worklist.asgrid{grid-template-columns:repeat(3,1fr)}}
+.worklist.asgrid .work{padding:0;overflow:hidden}
+.worklist.asgrid .work-top{padding:8px 9px 0}
+.worklist.asgrid .work-img{max-height:none;aspect-ratio:1/1;border-radius:0}
+.worklist.asgrid .work-body{padding:0 9px;font-size:11.5px;-webkit-line-clamp:2}
+.worklist.asgrid .work-foot{padding:6px 9px 8px;margin-top:4px}
+.worklist.asgrid .work-beat{padding:9px}
 .toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:var(--tx);color:#000;font-weight:700;font-size:13px;border-radius:999px;padding:9px 18px;z-index:80}
 .empty{padding:30px 20px;text-align:center;color:var(--dim);font-size:13px;line-height:1.7}
 @media (max-width:680px){
@@ -398,6 +557,7 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:#000}
 </head>
 <body>
 <div id="app" class="app"></div>
+<script src="/studio.js"></script>
 <script>
 /* ================================================================
    TNL LABS — one system, separate venues.
@@ -407,9 +567,63 @@ const API = location.origin;
 let TOKEN = localStorage.getItem("tnl-token") || null;
 let ME = null;
 let LEVELS = [{id:1,name:"Entry",at:0},{id:2,name:"Verified",at:40},{id:3,name:"Collaborator",at:120},{id:4,name:"Core",at:280},{id:5,name:"Leadership",at:560}];
-const ROLES = ["Graphic Designer","Illustrator","Fashion Designer","Stylist","Photographer","Videographer","Video Editor",
-"3D Artist","Motion Designer","Animator","Producer","Beatmaker","Lyricist / Singer","Rapper","DJ","Model","Actor",
-"Content Creator","Art Director","Tattoo Artist","Painter","Sculptor","Writer","Curator","Marketer","Developer"];
+const ROLES = [
+  // visual
+  "Graphic Designer","Illustrator","3D Artist","Motion Designer","Animator","Art Director",
+  "Painter","Sculptor","Tattoo Artist","Curator","Manga Artist","Character Designer",
+  // lens
+  "Photographer","Videographer","Video Editor","Cinematographer","AMV Editor",
+  // fashion
+  "Fashion Designer","Stylist","Model","Tailor","Sneaker Customizer","Cosplayer",
+  // music
+  "Producer","Beatmaker","Lyricist / Singer","Rapper","DJ","Audio Engineer","Musician",
+  // word + screen
+  "Writer","Copywriter","Journalist","Content Creator","Actor",
+  // build
+  "Web Designer","Web Developer","App Developer","UI/UX Designer","Product Designer",
+  // business
+  "Entrepreneur","Founder","Brand Strategist","Marketer","Manager","A&R","Photographer's Agent","Event Organizer",
+];
+
+/* Every profile shouldn't look the same. A producer's page and a fashion
+   designer's page are different objects — different words, different shape.
+   This maps a role to how their profile reads. Kind comes from their FIRST
+   role, which is the one they picked first. */
+const KINDS={
+  visual:{tag:"VISUAL",work:"WORK",one:"piece",collabLine:"Designed with",empty:"No work up yet.",
+    blurb:"Visual work — posters, graphics, and the archive behind them.",grid:true,home:"graphic-design"},
+  lens:{tag:"LENS",work:"SHOTS",one:"shot",collabLine:"Shot with",empty:"No shots up yet.",
+    blurb:"Photography and film.",grid:true,home:"photography"},
+  fashion:{tag:"FASHION",work:"PIECES",one:"piece",collabLine:"Made with",empty:"No pieces up yet.",
+    blurb:"Garments, styling, and the material end of the network.",grid:true,home:"clothing-design"},
+  music:{tag:"SOUND",work:"TRACKS",one:"track",collabLine:"Made with",empty:"No sound up yet.",
+    blurb:"Beats, records, and the people on them.",grid:false,home:"beats"},
+  word:{tag:"WORD",work:"WRITING",one:"piece",collabLine:"Written with",empty:"Nothing published yet.",
+    blurb:"Words, stories, and coverage of the scene.",grid:false,home:"magazine"},
+  build:{tag:"BUILD",work:"PROJECTS",one:"project",collabLine:"Built with",empty:"No projects up yet.",
+    blurb:"Sites, apps, and the interfaces the culture runs on.",grid:false,home:"coding"},
+  business:{tag:"BUILDER",work:"VENTURES",one:"venture",collabLine:"Building with",empty:"Nothing shipped here yet.",
+    blurb:"Building the thing behind the thing.",grid:false,home:"opportunities"},
+  anime:{tag:"AKATSUKI",work:"PANELS",one:"panel",collabLine:"Drawn with",empty:"No panels up yet.",
+    blurb:"Anime, manga, and the visual language it hands the rest of the network.",grid:true,home:"anime-chat"},
+};
+const ROLE_KIND={
+  "Graphic Designer":"visual","Illustrator":"visual","3D Artist":"visual","Motion Designer":"visual",
+  "Animator":"visual","Art Director":"visual","Painter":"visual","Sculptor":"visual",
+  "Tattoo Artist":"visual","Curator":"visual","Manga Artist":"visual","Character Designer":"visual","Manga Artist":"anime","Cosplayer":"anime","AMV Editor":"anime",
+  "Photographer":"lens","Videographer":"lens","Video Editor":"lens","Cinematographer":"lens","AMV Editor":"lens",
+  "Fashion Designer":"fashion","Stylist":"fashion","Model":"fashion","Tailor":"fashion","Sneaker Customizer":"fashion","Cosplayer":"fashion",
+  "Producer":"music","Beatmaker":"music","Lyricist / Singer":"music","Rapper":"music","DJ":"music",
+  "Audio Engineer":"music","Musician":"music",
+  "Writer":"word","Copywriter":"word","Journalist":"word","Content Creator":"word","Actor":"word",
+  "Web Designer":"build","Web Developer":"build","App Developer":"build","UI/UX Designer":"build","Product Designer":"build",
+  "Entrepreneur":"business","Founder":"business","Brand Strategist":"business","Marketer":"business",
+  "Manager":"business","A&R":"business","Photographer's Agent":"business","Event Organizer":"business",
+};
+function kindOf(u){
+  const rs=(u&&u.roles&&u.roles.length)?u.roles:(u&&u.role?[u.role]:[]);
+  return KINDS[ROLE_KIND[rs[0]]||"visual"]||KINDS.visual;
+}
 const LABS = [
   {id:"community",name:"COMMUNITY",channels:[
     {id:"general",label:"general",desc:"The main floor."},
@@ -423,12 +637,46 @@ const LABS = [
   {id:"fashion",name:"FASHION",channels:[
     {id:"clothing-design",label:"clothing-design",desc:"Design work and concepts."},
     {id:"clothing-drops",label:"clothing-drops",desc:"What's releasing."}]},
+  {id:"akatsuki",name:"AKATSUKI",channels:[
+    {id:"anime-chat",label:"anime-chat",desc:"Anime discourse that feeds the design language."},
+    {id:"manga",label:"manga",desc:"Panels, arcs, and the art of the page."},
+    {id:"anime-news",label:"anime-news",desc:"Seasons, releases, and what's worth your time."},
+    {id:"anime-ideas",label:"ideas",desc:"Half-formed concepts. This is where AKATSUKI started."}]},
+  {id:"words",name:"WORDS",channels:[
+    {id:"magazine",label:"magazine",desc:"Longer reads, features, and coverage of the scene."},
+    {id:"news",label:"news",desc:"What's happening in and around the network."}]},
+  {id:"build",name:"BUILD",channels:[
+    {id:"coding",label:"coding",desc:"Sites, apps, and the interfaces the culture runs on."},
+    {id:"opportunities",label:"opportunities",desc:"Gigs, briefs, and open calls inside the network."}]},
 ];
 const PRODUCTS=[
   {n:'"Free Me" Tee',p:"$54.99",w:"$65.00",u:"https://tnllabs.com/products/free-me-tee"},
   {n:"TNL x XSTART JDM Tee",p:"$50.00",w:null,u:"https://tnllabs.com/products/tnl-x-xstart-jdm-tee"}];
 const levelFor=r=>LEVELS.reduce((a,l)=>r>=l.at?l:a,LEVELS[0]);
 const avHTML=(u,cls)=>u&&u.avatarUrl?`<img class="av ${cls||""}" src="${esc(u.avatarUrl)}" alt="">`:`<div class="av ${cls||""}">${esc((u&&u.displayName||"?").slice(0,2).toUpperCase())}</div>`;
+// Turn a raw body into safe HTML: escape first, THEN linkify. Never the
+// other way round, or you've built an XSS hole.
+function rich(t){
+  let h=esc(t);
+  h=h.replace(/(https?:\/\/[^\s<]+)/g,(u)=>`<a class="lnk" href="${u}" target="_blank" rel="noreferrer nofollow">${u.replace(/^https?:\/\//,"").slice(0,42)}${u.length>50?"…":""}</a>`);
+  h=h.replace(/@([a-z0-9._]{2,20})/gi,(m,u)=>`<span class="mention" data-u="${esc(u.toLowerCase())}">@${esc(u)}</span>`);
+  return h;
+}
+function firstUrl(t){const m=/(https?:\/\/[^\s<]+)/.exec(t||"");return m?m[1]:null}
+function linkCard(url){
+  try{
+    const u=new URL(url);
+    const host=u.hostname.replace(/^www\./,"");
+    const yt=/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{11})/.exec(url);
+    if(yt)return `<a class="lcard yt" href="${esc(url)}" target="_blank" rel="noreferrer nofollow">
+      <img src="https://img.youtube.com/vi/${esc(yt[1])}/hqdefault.jpg" alt="" loading="lazy">
+      <div class="lcard-play">▶</div><div class="lcard-host mono">YOUTUBE</div></a>`;
+    return `<a class="lcard" href="${esc(url)}" target="_blank" rel="noreferrer nofollow">
+      <img class="lfav" src="https://www.google.com/s2/favicons?domain=${esc(host)}&sz=64" alt="" loading="lazy">
+      <div><div class="lcard-t">${esc(host)}</div><div class="mono dim">${esc(u.pathname.slice(0,38))}</div></div>
+      <span class="lcard-go">↗</span></a>`;
+  }catch(e){return ""}
+}
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 /* ---- api ---- */
@@ -467,6 +715,9 @@ const api={
   dmSend:(u,body,imageUrl)=>req("/api/dm/"+encodeURIComponent(u),{method:"POST",body:{body,imageUrl}}),
   forgot:email=>req("/api/auth/forgot",{method:"POST",body:{email}}),
   search:(q,role)=>req("/api/search?q="+encodeURIComponent(q||"")+"&role="+encodeURIComponent(role||"")),
+  unreads:()=>req("/api/unreads"),
+  readChannel:ch=>req("/api/channels/"+encodeURIComponent(ch)+"/read",{method:"POST"}),
+  mentionable:q=>req("/api/mentionable?q="+encodeURIComponent(q||"")),
   block:u=>req("/api/users/"+encodeURIComponent(u)+"/block",{method:"POST"}),
   report:b=>req("/api/report",{method:"POST",body:b}),
   mktMeta:()=>req("/api/market/meta"),
@@ -506,223 +757,19 @@ let PENDVID=null, PENDKIND=null, ASWORK=false, EDITID=null, EDITROLES=[];
 let NOTIFS=null, UNREAD=0, DMS=null, DMUNREAD=0, DMOPEN=null, DMDATA=null, SEARCHQ="", SEARCHROLE="", SEARCHRES=null;
 let OPENCOMMENTS=null, COMMENTS=[], CEDIT=null;
 let NOTIFOPEN=false, DMOPENPANEL=false, SEARCHOPEN=false;
+let SEARCHING=false, UNREADS={}, PICKER=null, MENTIONS=null, MENTIONQ="";
 let MKT=null, MKTMETA={categories:[],conditions:[],paymentsEnabled:false}, MKTFILT={}, MKTVIEW="browse";
 let MKTONE=null, MKTOFFERS=[], SELLFORM=null, SELLIMGS=[], ORDERS=null, ORDTAB="buying";
 const $=sel=>document.querySelector(sel);
 function toast(t){TOASTT=t;render();setTimeout(()=>{TOASTT=null;render()},2200)}
 
-/* ================================================================
-   BEAT ENGINE
-   Scheduling uses a lookahead loop against the Web Audio clock, not
-   setTimeout, because setTimeout drifts and drifting beats are useless.
-   A timer fires every 25ms and schedules any notes falling inside the
-   next 100ms window with sample-accurate timing.
-================================================================ */
-const STEPS=16, BARS=4;
-const NOTES=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-const KITS={
-  kick:["808 Kick","Punch","Sub Thump"],
-  snare:["Classic","Rim","Trap"],
-  hat:["Closed","Open","Tight"],
-  clap:["Clap","Snap"],
-  perc:["Tom","Block","Cowbell"],
-};
-const TRACKS=[
-  {id:"kick",name:"KICK"},
-  {id:"snare",name:"SNARE"},
-  {id:"hat",name:"HAT"},
-  {id:"clap",name:"CLAP"},
-  {id:"perc",name:"PERC"},
-  {id:"bass",name:"808",pitched:true},
-];
-const emptyBar=()=>Object.fromEntries(TRACKS.map(t=>[t.id,Array(STEPS).fill(null)]));
-function newProject(){
-  return {
-    name:"",
-    bpm:140,
-    swing:0,
-    bars:[emptyBar(),emptyBar(),emptyBar(),emptyBar()],
-    chain:1,                       // how many bars loop
-    mix:Object.fromEntries(TRACKS.map(t=>[t.id,{vol:.8,mute:false,solo:false,variant:0}])),
-    key:0,                         // root note for the 808
-  };
-}
-/* A cell is null (off) or {v:velocity 1-3, n:semitone offset for pitched} */
-
-let actx=null;
-function ctx(){
-  if(!actx){const AC=window.AudioContext||window.webkitAudioContext;actx=new AC()}
-  if(actx.state==="suspended")actx.resume();
-  return actx;
-}
-function noiseBuf(c,len){
-  const b=c.createBuffer(1,Math.max(1,Math.floor(c.sampleRate*len)),c.sampleRate);
-  const d=b.getChannelData(0);
-  for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
-  return b;
-}
-function env(c,g,when,peak,dec,atk=.002){
-  g.gain.setValueAtTime(.0001,when);
-  g.gain.linearRampToValueAtTime(peak,when+atk);
-  g.gain.exponentialRampToValueAtTime(.0001,when+dec);
-}
-/* Each voice takes gain (velocity*mix) and when (audio-clock time). */
-function voice(id,when,gain,variant,semi){
-  const c=ctx(),out=c.destination;
-  const g0=c.createGain();g0.gain.value=gain;g0.connect(out);
-  if(id==="kick"){
-    const o=c.createOscillator(),g=c.createGain();
-    const specs=[[150,45,.12,.34],[220,55,.07,.2],[110,35,.2,.5]][variant]||[150,45,.12,.34];
-    o.frequency.setValueAtTime(specs[0],when);
-    o.frequency.exponentialRampToValueAtTime(specs[1],when+specs[2]);
-    env(c,g,when,1,specs[3]);
-    o.connect(g);g.connect(g0);o.start(when);o.stop(when+specs[3]+.02);
-  } else if(id==="snare"){
-    const specs=[[1800,.18,.7],[3000,.08,.5],[1200,.26,.85]][variant]||[1800,.18,.7];
-    const n=c.createBufferSource();n.buffer=noiseBuf(c,specs[1]);
-    const f=c.createBiquadFilter();f.type="bandpass";f.frequency.value=specs[0];f.Q.value=.9;
-    const g=c.createGain();env(c,g,when,specs[2],specs[1]);
-    n.connect(f);f.connect(g);g.connect(g0);n.start(when);
-    if(variant!==1){
-      const o=c.createOscillator(),og=c.createGain();
-      o.type="triangle";o.frequency.value=190;env(c,og,when,.5,.1);
-      o.connect(og);og.connect(g0);o.start(when);o.stop(when+.12);
-    }
-  } else if(id==="hat"){
-    const specs=[[9000,.05],[8000,.28],[11000,.03]][variant]||[9000,.05];
-    const n=c.createBufferSource();n.buffer=noiseBuf(c,specs[1]);
-    const f=c.createBiquadFilter();f.type="highpass";f.frequency.value=specs[0];
-    const g=c.createGain();env(c,g,when,.4,specs[1]);
-    n.connect(f);f.connect(g);g.connect(g0);n.start(when);
-  } else if(id==="clap"){
-    const spread=variant===1?[0,.008]:[0,.01,.02,.032];
-    spread.forEach((off,i)=>{
-      const n=c.createBufferSource();n.buffer=noiseBuf(c,.2);
-      const f=c.createBiquadFilter();f.type="bandpass";f.frequency.value=1100;f.Q.value=1.5;
-      const g=c.createGain();env(c,g,when+off,i===spread.length-1?.7:.32,i===spread.length-1?.2:.03);
-      n.connect(f);f.connect(g);g.connect(g0);n.start(when+off);
-    });
-  } else if(id==="perc"){
-    if(variant===2){ // cowbell
-      [540,800].forEach(fr=>{const o=c.createOscillator(),g=c.createGain();
-        o.type="square";o.frequency.value=fr;env(c,g,when,.28,.12);
-        o.connect(g);g.connect(g0);o.start(when);o.stop(when+.14)});
-    } else if(variant===1){ // block
-      const o=c.createOscillator(),g=c.createGain();
-      o.type="square";o.frequency.setValueAtTime(1100,when);
-      env(c,g,when,.3,.05);o.connect(g);g.connect(g0);o.start(when);o.stop(when+.06);
-    } else { // tom
-      const o=c.createOscillator(),g=c.createGain();
-      o.type="sine";o.frequency.setValueAtTime(260,when);
-      o.frequency.exponentialRampToValueAtTime(110,when+.22);
-      env(c,g,when,.7,.28);o.connect(g);g.connect(g0);o.start(when);o.stop(when+.3);
-    }
-  } else if(id==="bass"){
-    // 808: pitched sine with a click transient and long decay
-    const freq=41.2*Math.pow(2,(semi||0)/12); // E1 root
-    const o=c.createOscillator(),g=c.createGain();
-    o.type="sine";
-    o.frequency.setValueAtTime(freq*3,when);
-    o.frequency.exponentialRampToValueAtTime(freq,when+.045);
-    const dec=[.55,.85,.3][variant]||.55;
-    env(c,g,when,.95,dec,.004);
-    const sat=c.createWaveShaper();
-    const curve=new Float32Array(257);
-    for(let i=0;i<257;i++){const x=i/128-1;curve[i]=Math.tanh(x*2.2)}
-    sat.curve=curve;
-    o.connect(sat);sat.connect(g);g.connect(g0);
-    o.start(when);o.stop(when+dec+.05);
-  }
-}
-
-/* ---- transport ---- */
-let PROJ=newProject();
-let playing=false, curStep=-1, curBar=0;
-let schedTimer=null, nextNoteTime=0, schedStep=0, schedBar=0;
-const LOOKAHEAD=.1, TICK=25;
-
-function stepDur(){return 60/PROJ.bpm/4}
-function audible(tid){
-  const anySolo=TRACKS.some(t=>PROJ.mix[t.id].solo);
-  const m=PROJ.mix[tid];
-  return anySolo?m.solo:!m.mute;
-}
-function scheduleStep(step,bar,time){
-  const b=PROJ.bars[bar];
-  for(const t of TRACKS){
-    const cell=b[t.id][step];
-    if(!cell)continue;
-    if(!audible(t.id))continue;
-    const m=PROJ.mix[t.id];
-    const vel=[0,.45,.72,1][cell.v||2];
-    voice(t.id,time,vel*m.vol,m.variant,(cell.n||0)+PROJ.key);
-  }
-}
-function scheduler(){
-  const c=ctx();
-  while(nextNoteTime<c.currentTime+LOOKAHEAD){
-    // swing: delay every other 16th
-    const sw=(schedStep%2===1)?stepDur()*(PROJ.swing/100)*.6:0;
-    scheduleStep(schedStep,schedBar,nextNoteTime+sw);
-    const s=schedStep,b=schedBar,t=nextNoteTime+sw;
-    // paint the playhead at the right moment
-    setTimeout(()=>{curStep=s;curBar=b;paintStep()},Math.max(0,(t-c.currentTime)*1000));
-    nextNoteTime+=stepDur();
-    schedStep++;
-    if(schedStep>=STEPS){schedStep=0;schedBar=(schedBar+1)%Math.max(1,PROJ.chain)}
-  }
-  schedTimer=setTimeout(scheduler,TICK);
-}
-function play(){
-  if(playing)return;
-  const c=ctx();
-  playing=true;schedStep=0;schedBar=0;nextNoteTime=c.currentTime+.06;
-  scheduler();paintTransport();
-}
-function stop(){
-  playing=false;curStep=-1;
-  if(schedTimer)clearTimeout(schedTimer);
-  paintStep();paintTransport();
-}
-function paintStep(){
-  document.querySelectorAll(".cell[data-i]").forEach(el=>{
-    el.classList.toggle("now",+el.dataset.i===curStep&&+el.dataset.bar===curBar);
-  });
-  const bi=document.querySelector("#barind");
-  if(bi&&playing)bi.textContent=`BAR ${curBar+1}/${PROJ.chain}`;
-}
-function paintTransport(){
-  document.querySelectorAll("[data-play]").forEach(b=>{
-    b.classList.toggle("on",playing);b.textContent=playing?"■":"▶";
-  });
-}
-
-/* Play a published loop (read-only preview) without touching the editor. */
-let previewing=false, prevTimer=null;
-function previewBeat(beat){
-  if(previewing){stopPreview();return}
-  const saved=PROJ;
-  const data=beat&&beat.data?beat.data:null;
-  if(!data){ // legacy single-bar format
-    const p=newProject();
-    p.bpm=beat.bpm||120;
-    const src=beat.pattern||{};
-    for(const t of TRACKS){const arr=src[t.id]||src[t.id==="bass"?"eight":t.id];
-      if(Array.isArray(arr))p.bars[0][t.id]=arr.map(v=>v?{v:2,n:0}:null)}
-    PROJ=p;
-  } else PROJ=data;
-  previewing=true;play();
-  const ms=(60/PROJ.bpm/4)*STEPS*Math.max(1,PROJ.chain)*1000*2;
-  prevTimer=setTimeout(()=>{stopPreview();PROJ=saved},ms);
-  window.__restore=()=>{PROJ=saved};
-}
-function stopPreview(){previewing=false;stop();if(prevTimer)clearTimeout(prevTimer);if(window.__restore){window.__restore();window.__restore=null}}
-
-
 /* ---- images ----
    Phone photos are 5–12MB. Resize to max 1400px and re-encode as JPEG
    before upload so posting is fast and storage stays sane. */
-function compressImage(file,maxDim=1400,quality=.82){
+/* Decode once, then emit whatever sizes we need. Returns dimensions so
+   the feed can reserve space — an <img> with no width/height is what
+   makes a feed jump around while it loads. */
+function loadImage(file){
   return new Promise((resolve,reject)=>{
     if(!file.type.startsWith("image/"))return reject(new Error("Not an image"));
     const fr=new FileReader();
@@ -730,18 +777,34 @@ function compressImage(file,maxDim=1400,quality=.82){
     fr.onload=()=>{
       const img=new Image();
       img.onerror=()=>reject(new Error("Couldn't decode that image"));
-      img.onload=()=>{
-        let{width:w,height:h}=img;
-        if(w>maxDim||h>maxDim){const s=Math.min(maxDim/w,maxDim/h);w=Math.round(w*s);h=Math.round(h*s)}
-        const c=document.createElement("canvas");c.width=w;c.height=h;
-        const ctx=c.getContext("2d");ctx.drawImage(img,0,0,w,h);
-        // GIFs lose animation through canvas — keep small ones as-is
-        if(file.type==="image/gif"&&file.size<4*1024*1024)return resolve(fr.result);
-        resolve(c.toDataURL("image/jpeg",quality));
-      };
+      img.onload=()=>resolve({img,dataUrl:fr.result});
       img.src=fr.result;
     };
     fr.readAsDataURL(file);
+  });
+}
+function resize(img,maxDim,quality){
+  let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  if(w>maxDim||h>maxDim){const s=Math.min(maxDim/w,maxDim/h);w=Math.round(w*s);h=Math.round(h*s)}
+  const c=document.createElement("canvas");c.width=w;c.height=h;
+  c.getContext("2d").drawImage(img,0,0,w,h);
+  return {data:c.toDataURL("image/jpeg",quality),w,h};
+}
+/* Full-size for the lightbox + a small thumb for the feed. The feed used
+   to download every full-res image at once — rough on cellular. */
+async function prepImage(file,asWork){
+  const {img,dataUrl}=await loadImage(file);
+  const W=img.naturalWidth||img.width, H=img.naturalHeight||img.height;
+  if(file.type==="image/gif"&&file.size<4*1024*1024)
+    return {full:dataUrl,thumb:dataUrl,w:W,h:H,gif:true};
+  const full=resize(img,asWork?2400:1600,asWork?.92:.85);
+  const thumb=resize(img,700,.72);
+  return {full:full.data,thumb:thumb.data,w:full.w,h:full.h};
+}
+function compressImage(file,maxDim=1400,quality=.82){
+  return loadImage(file).then(({img,dataUrl})=>{
+    if(file.type==="image/gif"&&file.size<4*1024*1024)return dataUrl;
+    return resize(img,maxDim,quality).data;
   });
 }
 
@@ -768,7 +831,26 @@ function startStream(){
 }
 
 /* ---- data ---- */
-async function loadFeed(){try{const d=await api.feed(CH.id);POSTS=d.posts;renderRoomFeed()}catch(e){/* not fatal */}}
+async function loadFeed(){
+  try{const d=await api.feed(CH.id);POSTS=d.posts;renderRoomFeed()}catch(e){/* not fatal */}
+  // opening a channel clears its dot
+  if(UNREADS[CH.id]){delete UNREADS[CH.id];paintUnreads()}
+  try{await api.readChannel(CH.id)}catch(e){}
+}
+function paintUnreads(){
+  document.querySelectorAll("[data-ch]").forEach(el=>{
+    const n=UNREADS[el.dataset.ch]||0;
+    el.classList.toggle("unread",!!n);
+    const b=el.querySelector(".cbadge");
+    if(n&&!b){const sp=document.createElement("span");sp.className="cbadge";sp.textContent=n>9?"9+":n;el.appendChild(sp)}
+    else if(n&&b)b.textContent=n>9?"9+":n;
+    else if(!n&&b)b.remove();
+  });
+}
+async function loadUnreads(){
+  if(!ME)return;
+  try{const d=await api.unreads();UNREADS=d.unreads;paintUnreads()}catch(e){}
+}
 async function refreshMe(){try{const d=await api.me();ME=d.user}catch(e){TOKEN=null;localStorage.removeItem("tnl-token")}}
 
 /* ================================================================
@@ -790,12 +872,14 @@ function render(){
     ${NOTIFOPEN?notifPanelHTML():""}
     ${DMOPENPANEL?dmPanelHTML():""}
     ${SEARCHOPEN?searchPanelHTML():""}
+    ${PICKER?pickerHTML():""}
     ${LIGHTBOX?`<div class="lightbox" id="lb"><img src="${esc(LIGHTBOX)}" alt="full size"></div>`:""}
     ${TOASTT?`<div class="toast">${esc(TOASTT)}</div>`:""}`;
   wire();
   if(TAB==="labs")loadFeed();
   if(TAB==="showroom")loadShowroom();
   if(TAB==="market"&&MKTVIEW==="browse"&&!MKT)loadMarket();
+  if(TAB==="studio"||(TAB==="labs"&&CH.beatlab))setTimeout(mountStudio,0);
 }
 function topHTML(){const l=levelFor(ME.rep);return `
   <div class="top">
@@ -822,6 +906,74 @@ function notifPanelHTML(){
       </div>`).join("")}
   </div></div>`}
 
+async function openProfile(username){
+  // Open the sheet on the same tick as the tap. Waiting for the network
+  // before showing anything is what made this feel broken.
+  SEARCHOPEN=false; DMOPENPANEL=false; NOTIFOPEN=false;
+  PTAB="work"; EDITING=false;
+  const cached=PROFCACHE.get(username);
+  PROFILE=cached||{loading:true,user:{username,displayName:username,avatarUrl:"",role:"",roles:[],rep:0,bio:"",link:"",createdAt:Date.now()},
+    followers:0,following:0,youFollow:false,stats:{posts:0,likesReceived:0,collabs:0},posts:[],collabs:[]};
+  render();
+  try{
+    const d=await api.profile(username);
+    PROFCACHE.set(username,d);
+    if(PROFILE&&PROFILE.user.username===username){PROFILE=d;render()}
+  }catch(e){
+    if(PROFILE&&PROFILE.user.username===username){PROFILE=null;render();toast(e.message)}
+  }
+}
+const PROFCACHE=new Map();
+
+function pickerHTML(){
+  if(!PICKER)return "";
+  const P=PICKER;
+  return `<div class="pick" id="pickbg"><div class="pickc">
+    <div class="pickh"><div><div class="mono dim">${esc(P.eyebrow||"")}</div><h2>${esc(P.title)}</h2></div>
+      <button class="x" id="pickx">✕</button></div>
+    ${P.note?`<div class="mono dim picknote">${esc(P.note)}</div>`:""}
+    ${P.search?`<input class="in" id="pickq" placeholder="${esc(P.search)}" value="${esc(P.q||"")}">`:""}
+    <div class="picklist">
+      ${P.loading?`<div class="empty">Loading…</div>`
+      :P.items.length?P.items.map((it,i)=>`<button class="pickrow" data-pick="${i}">
+        ${it.avatar!==undefined?avHTML({displayName:it.label,avatarUrl:it.avatar},"sm"):`<span class="pickic">${esc(it.icon||"#")}</span>`}
+        <div class="pickbody"><b>${esc(it.label)}</b>${it.sub?`<div class="mono dim">${esc(it.sub)}</div>`:""}</div>
+      </button>`).join(""):`<div class="empty">${esc(P.empty||"Nothing here.")}</div>`}
+    </div>
+  </div></div>`}
+
+function openPicker(cfg){PICKER=Object.assign({items:[]},cfg);render();}
+function closePicker(){PICKER=null;render();}
+
+function wirePicker(){
+  const bg=$("#pickbg");if(!bg)return;
+  bg.onclick=e=>{if(e.target===bg)closePicker()};
+  const x=$("#pickx");if(x)x.onclick=closePicker;
+  document.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{
+    const it=PICKER.items[+b.dataset.pick];
+    const fn=PICKER.onPick;
+    closePicker();
+    if(fn)fn(it);
+  });
+  const q=$("#pickq");
+  if(q){
+    q.focus();
+    let t=null;
+    q.oninput=()=>{
+      PICKER.q=q.value;
+      if(!PICKER.onSearch)return;
+      clearTimeout(t);
+      t=setTimeout(async()=>{
+        const mine=PICKER.q;
+        PICKER.loading=true;render();
+        const items=await PICKER.onSearch(mine);
+        if(!PICKER||PICKER.q!==mine)return;
+        PICKER.items=items;PICKER.loading=false;render();
+      },200);
+    };
+  }
+}
+
 function timeAgo(t){const s=(Date.now()-t)/1000;
   if(s<60)return "JUST NOW";if(s<3600)return Math.floor(s/60)+"M AGO";
   if(s<86400)return Math.floor(s/3600)+"H AGO";if(s<604800)return Math.floor(s/86400)+"D AGO";
@@ -838,7 +990,7 @@ function dmPanelHTML(){
       <div class="dmfeed" id="dmfeed">
         ${DMDATA.messages.length?DMDATA.messages.map(m=>`<div class="dmm ${m.mine?"mine":""}">
           ${m.imageUrl?`<img class="dmimg" src="${esc(m.imageUrl)}" data-zoom="${esc(m.imageUrl)}">`:""}
-          ${m.body?`<div class="dmb">${esc(m.body)}</div>`:""}
+          ${m.body?`<div class="dmb">${rich(m.body)}</div>`:""}
           <div class="mono dim dmt">${new Date(m.createdAt).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}</div>
         </div>`).join(""):`<div class="empty">No messages yet. Say something.</div>`}
       </div>
@@ -865,7 +1017,7 @@ function searchPanelHTML(){return `<div class="sheet" id="sbg"><div class="sheet
   <input class="in" id="sq" placeholder="Name, username, or bio" value="${esc(SEARCHQ)}">
   <div class="mono lbl">FILTER BY ROLE</div>
   <div class="roles">${ROLES.slice(0,12).map(r=>`<button class="chip ${SEARCHROLE===r?"on":""}" data-sr="${esc(r)}">${esc(r)}</button>`).join("")}</div>
-  ${SEARCHRES?`
+  ${SEARCHING?`<div class="empty">Searching…</div>`:SEARCHRES?`
     ${SEARCHRES.people.length?`<div class="mono dim" style="margin:16px 0 8px">PEOPLE</div>
       ${SEARCHRES.people.map(u=>`<div class="nrow" data-u="${esc(u.username)}">
         ${avHTML(u,"sm")}<div class="nbody"><b>${esc(u.displayName)}</b>
@@ -975,7 +1127,9 @@ function showroomHTML(){return `<div class="scroll" id="showroom">
 function srCardHTML(p){
   const accepted=p.collaborators.filter(c=>c.status==="accepted");
   return `<div class="sr-card">
-    ${p.imageUrl?`<img class="sr-img" src="${esc(p.imageUrl)}" alt="work by ${esc(p.author.displayName)}" loading="lazy" data-zoom="${esc(p.imageUrl)}">`
+    ${p.imageUrl?`<img class="sr-img" src="${esc(p.thumbUrl||p.imageUrl)}" alt="work by ${esc(p.author.displayName)}" loading="lazy" decoding="async"
+      ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
+      data-zoom="${esc(p.imageUrl)}">`
       :p.videoUrl?`<video class="sr-img" src="${esc(p.videoUrl)}" controls playsinline preload="metadata"></video>`
       :`<div class="sr-beat"><button class="circle" style="width:34px;height:34px;font-size:12px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button>
          <div><div class="sr-beatname">${esc(p.beat?.name||"untitled loop")}</div><div class="mono dim">${p.beat?.bpm||120} BPM · LOOP</div></div></div>`}
@@ -986,7 +1140,7 @@ function srCardHTML(p){
         <div class="mono dim">${esc(p.author.role.toUpperCase())} · #${esc(p.channel)}</div></div>
       </div>
       ${accepted.length?`<div class="sr-collab mono">↔ BUILT WITH ${accepted.map(c=>esc((c.display_name||c.username).toUpperCase())).join(" + ")}</div>`:""}
-      ${p.body?`<div class="sr-body">${esc(p.body)}</div>`:""}
+      ${p.body?`<div class="sr-body">${rich(p.body)}</div>`:""}
       <div class="sr-acts">
         <button class="act ${p.likedByMe?"on":""}" data-like="${p.id}">${p.likedByMe?"♥":"♡"} ${p.likeCount||""}</button>
         <button class="act" data-share="${p.id}">↻ ${p.shareCount||""}</button>
@@ -1018,11 +1172,12 @@ function labsHTML(){return `<div class="labs-wrap ${ROOMOPEN?"roomopen":""}">
   <aside class="rail">${LABS.map(l=>`
     <div class="railh mono">${l.name}</div>
     ${l.channels.map(c=>{const locked=c.gate&&levelFor(ME.rep).id<c.gate;
-      return `<button class="railc ${CH.id===c.id?"on":""}" data-ch="${c.id}">${locked?"🔒":"#"} ${c.label}</button>`}).join("")}`).join("")}
+      const n=UNREADS[c.id]||0;
+      return `<button class="railc ${CH.id===c.id?"on":""} ${n?"unread":""}" data-ch="${c.id}">${locked?"🔒":"#"} ${c.label}${n?`<span class="cbadge">${n>9?"9+":n}</span>`:""}</button>`}).join("")}`).join("")}
   </aside>
   <section class="room">
     <div class="roomh"><button class="backb" id="backb">←</button>#${esc(CH.label)} <span class="desc">${esc(CH.desc)}</span></div>
-    ${CH.beatlab?beatLabHTML(true):""}
+    ${CH.beatlab?`<div id="studiomount"></div>`:""}
     ${(CH.gate&&levelFor(ME.rep).id<CH.gate)?`<div class="empty">🔒 #${esc(CH.label)} opens at ${LEVELS.find(l=>l.id===CH.gate).name}.<br>Earn rep through work others validate.</div>`
       :`<div class="feed" id="feed"><div class="empty">Loading…</div></div>
     ${(PENDIMG||PENDVID)?`<div class="attach-bar">
@@ -1032,6 +1187,9 @@ function labsHTML(){return `<div class="labs-wrap ${ROOMOPEN?"roomopen":""}">
         <label class="workcheck"><input type="checkbox" id="aswork" ${ASWORK?"checked":""}> <span>Publish to my portfolio</span></label>
       </div>
       <button class="attach-x" id="dropimg">✕</button></div>`:""}
+    ${MENTIONS?`<div class="mlist">${MENTIONS.map((u,i)=>`<button class="mrow" data-mpick="${i}">
+      ${avHTML(u,"sm")}<div><b>${esc(u.displayName)}</b> <span class="mono dim">@${esc(u.username)}</span></div>
+    </button>`).join("")}</div>`:""}
     <div class="composer">
       <input type="file" id="filein" accept="image/*,video/*" hidden>
       <button class="attach" id="attachb" title="Attach image or video">+</button>
@@ -1042,82 +1200,22 @@ function labsHTML(){return `<div class="labs-wrap ${ROOMOPEN?"roomopen":""}">
   </section>
 </div>`}
 
-function beatLabHTML(withFeed){
-  const anySolo=TRACKS.some(t=>PROJ.mix[t.id].solo);
-  return `<div class="beat">
-  <div class="beat-top">
-    <div><div class="mono" style="color:var(--green)">THE BEAT LAB</div>
-      <input class="beat-name" id="bname" placeholder="untitled beat" value="${esc(PROJ.name)}" maxlength="40"></div>
-    <div class="beat-ctl">
-      <button class="circle" data-play id="mainplay">${playing?"■":"▶"}</button>
-      <div class="knob"><span class="mono dim">BPM</span><input type="range" min="60" max="200" value="${PROJ.bpm}" id="bpm"><b class="mono" id="bpmv">${PROJ.bpm}</b></div>
-      <div class="knob"><span class="mono dim">SWING</span><input type="range" min="0" max="100" value="${PROJ.swing}" id="swing"><b class="mono" id="swingv">${PROJ.swing}</b></div>
-      <div class="knob"><span class="mono dim">KEY</span>
-        <select class="sel" id="keysel">${NOTES.map((n,i)=>`<option value="${i}" ${PROJ.key===i?"selected":""}>${n}</option>`).join("")}</select></div>
-    </div>
-  </div>
-
-  <div class="barbar">
-    <span class="mono dim" id="barind">BAR ${EBAR+1}/${PROJ.chain}</span>
-    <div class="bars">${[0,1,2,3].map(i=>`<button class="barb ${EBAR===i?"on":""} ${i<PROJ.chain?"active":""}" data-bar="${i}">${i+1}</button>`).join("")}</div>
-    <span class="mono dim">LOOP</span>
-    <select class="sel" id="chain">${[1,2,3,4].map(n=>`<option value="${n}" ${PROJ.chain===n?"selected":""}>${n} bar${n>1?"s":""}</option>`).join("")}</select>
-    <button class="sq" id="copyb" title="Copy bar to next">⧉</button>
-    <button class="sq" id="clearb" title="Clear bar">✕</button>
-  </div>
-
-  <div class="grid">${TRACKS.map(t=>{
-    const m=PROJ.mix[t.id];
-    const dimmed=anySolo?!m.solo:m.mute;
-    return `<div class="grow ${dimmed?"muted":""}">
-      <div class="tctl">
-        <button class="tname mono" data-open="${t.id}">${t.name}</button>
-        <div class="tbtns">
-          <button class="tb ${m.mute?"on":""}" data-mute="${t.id}">M</button>
-          <button class="tb ${m.solo?"on":""}" data-solo="${t.id}">S</button>
-        </div>
-      </div>
-      <div class="cells">${PROJ.bars[EBAR][t.id].map((cell,i)=>{
-        const lvl=cell?cell.v:0;
-        return `<button class="cell ${cell?"on v"+lvl:""} ${i%4===0?"bar":""}" data-t="${t.id}" data-i="${i}" data-bar="${EBAR}"
-          ${cell&&t.pitched?`title="${NOTES[((cell.n||0)%12+12)%12]}"`:""}>${cell&&t.pitched?`<i>${NOTES[((cell.n||0)%12+12)%12]}</i>`:""}</button>`;
-      }).join("")}</div>
-    </div>`;
-  }).join("")}</div>
-
-  ${OPENTRACK?(()=>{const t=TRACKS.find(x=>x.id===OPENTRACK),m=PROJ.mix[OPENTRACK];
-    return `<div class="tpanel">
-      <div class="tpanel-h"><b>${t.name}</b><button class="x" data-open="">✕</button></div>
-      <div class="knob wide"><span class="mono dim">VOLUME</span><input type="range" min="0" max="100" value="${Math.round(m.vol*100)}" data-vol="${t.id}"><b class="mono">${Math.round(m.vol*100)}</b></div>
-      ${!t.pitched?`<div class="mono dim" style="margin:10px 0 6px">SOUND</div>
-      <div class="variants">${KITS[t.id].map((n,i)=>`<button class="chip ${m.variant===i?"on":""}" data-var="${t.id}:${i}">${n}</button>`).join("")}</div>`
-      :`<div class="mono dim" style="margin:10px 0 6px">808 DECAY</div>
-      <div class="variants">${["Medium","Long","Short"].map((n,i)=>`<button class="chip ${m.variant===i?"on":""}" data-var="${t.id}:${i}">${n}</button>`).join("")}</div>
-      <div class="mono dim" style="margin:12px 0 6px">TAP A STEP TO SET PITCH · ${NOTES[PROJ.key]} ROOT</div>
-      <div class="variants">${NOTES.map((n,i)=>`<button class="chip ${PITCHSEL===i?"on":""}" data-pitch="${i}">${n}</button>`).join("")}</div>`}
-    </div>`})():""}
-
-  <div class="beat-hint mono dim">TAP = ON · TAP AGAIN = ACCENT (3 LEVELS) · LONG-PRESS = CLEAR${OPENTRACK==="bass"?" · PITCH SET ABOVE":""}</div>
-
-  <div class="beat-pub">
-    <button class="btn ghost" id="saveb">${PROJ.id?"Save":"Save draft"}</button>
-    <button class="btn ghost" id="loadb">Drafts</button>
-    <button class="btn green" id="pubb">Publish to #beats</button>
-  </div>
-  ${DRAFTS?`<div class="drafts">${DRAFTS.length?DRAFTS.map(d=>`<div class="draft"><button class="dname" data-load="${d.id}">${esc(d.name||"untitled")}</button><span class="mono dim">${new Date(d.updated_at).toLocaleDateString()}</span><button class="sq sm" data-del="${d.id}">✕</button></div>`).join(""):`<div class="mono dim" style="padding:8px">No drafts yet.</div>`}</div>`:""}
-</div>${withFeed?`<div class="feed" id="feed" style="flex:1"><div class="empty">Loading…</div></div>`:""}`}
-
 function postHTML(p){const mine=p.author.username===ME.username;
   const myPending=p.collaborators.find(c=>c.username===ME.username&&c.status==="pending");
-  return `<div class="post">
+  return `<div class="post ${p.pending?"pending":""} ${p.failed?"failed":""}">
+  ${p.pending?`<div class="mono sending">SENDING…</div>`:""}
+  ${p.failed?`<div class="failbar"><span>Didn't send.</span><button class="retryb" data-retry="${p.id}">Retry</button><button class="retryb ghost" data-discard="${p.id}">Discard</button></div>`:""}
   ${p.sharedFrom?`<div class="shared-tag">↻ SHARED</div>`:""}
   <div class="post-h">${avHTML(p.author)}
     <div><span class="post-by" data-u="${esc(p.author.username)}">${esc(p.author.displayName)}</span><span class="lvl">L${p.author.level}</span>
     <div class="post-meta">${esc(p.author.role.toUpperCase())} · ${new Date(p.createdAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}${p.editedAt?" · EDITED":""}${p.isWork?` · <span style="color:var(--green)">PORTFOLIO</span>`:""}</div></div>
     ${mine?`<div class="post-menu"><button class="pm" data-edit="${p.id}">✎</button><button class="pm" data-delpost="${p.id}">🗑</button></div>`:""}
   </div>
-  ${p.body?`<div class="post-body">${esc(p.body)}</div>`:""}
-  ${p.imageUrl?`<img class="post-img" src="${esc(p.imageUrl)}" alt="attached work" loading="lazy" data-zoom="${esc(p.imageUrl)}">`:""}
+  ${p.body?`<div class="post-body">${rich(p.body)}</div>`:""}
+  ${(!p.imageUrl&&!p.videoUrl&&!p.beat&&firstUrl(p.body))?linkCard(firstUrl(p.body)):""}
+  ${p.imageUrl?`<img class="post-img" src="${esc(p.thumbUrl||p.imageUrl)}" alt="attached work" loading="lazy" decoding="async"
+    ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
+    data-zoom="${esc(p.imageUrl)}">`:""}
   ${p.videoUrl?`<video class="post-vid" src="${esc(p.videoUrl)}" controls playsinline preload="metadata"></video>`:""}
   ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM · TAP TO HEAR</div></div></div>`:""}
   ${p.collaborators.length?`<div class="collab-row">${p.collaborators.map(c=>`<span class="ctag ${c.status==="accepted"?"acc":""}">${c.status==="accepted"?"✓":"…"} ${esc(c.display_name||c.username)}</span>`).join("")}</div>`:""}
@@ -1134,12 +1232,12 @@ function postHTML(p){const mine=p.author.username===ME.username;
   </div>`}
 
 function commentsHTML(p){return `<div class="cwrap">
-  ${COMMENTS.map(c=>`<div class="crow">
+  ${COMMENTS.map(c=>`<div class="crow ${c.pending?"pending":""}">
     ${avHTML(c.author,"sm")}
     <div class="cbody">
       <span class="cby" data-u="${esc(c.author.username)}">${esc(c.author.displayName)}</span>
       <span class="mono dim">${timeAgo(c.createdAt)}${c.editedAt?" · EDITED":""}</span>
-      <div class="ctext">${esc(c.body)}</div>
+      <div class="ctext">${rich(c.body)}</div>
     </div>
     ${c.author.username===ME.username||p.author.username===ME.username?`<div class="post-menu">
       ${c.author.username===ME.username?`<button class="pm" data-cedit="${c.id}">✎</button>`:""}
@@ -1152,9 +1250,39 @@ function commentsHTML(p){return `<div class="cwrap">
   </div>
 </div>`}
 
+const EMPTY={
+  "general":["Say what you make.","Post one line about what you're working on. Someone here does the thing you need."],
+  "collab-posts":["Looking for someone?","Say what you're building and what you're missing. That's how collabs start."],
+  "graphic-design":["Post a piece.","Finished, half-done, or a bad first draft. This room is for the work.","＋ Post your work"],
+  "photography":["Drop a shot.","Raw or edited. Tap ＋ to add one."],
+  "clothing-design":["Show a design.","Sketch, mockup, or the real thing."],
+  "clothing-drops":["What's releasing?","Post the drop before it goes live."],
+  "beats":["Make something.","Open the Studio, build a loop, hit publish. Someone here writes to it."],
+  "finished-songs":["Done tracks only.","This is the room for the finished thing."],
+  "anime-chat":["Start the discourse.","Anime is half the design language here. Say what's moving you."],
+  "manga":["Post a panel.","Art, paneling, a page that made you stop. Bring the reference."],
+  "anime-news":["What's dropping?","Seasons, announcements, releases worth the network's time."],
+  "anime-ideas":["Half-formed is fine.","AKATSUKI started as idea-sharing. Post the thought before it's finished."],
+  "magazine":["Write something.","A feature, a review, a rant about the scene. Long is fine."],
+  "news":["What's happening?","Drops, shows, moves. Keep the network current."],
+  "coding":["Show what you're building.","A site, an app, a tool. Screenshot or link it."],
+  "opportunities":["What do you need?","A gig, a brief, a person. Say it plainly and someone answers."],
+  "anime-chat":["Start the argument.","Best arc, worst ending, the frame you can't stop thinking about."],
+  "anime-news":["What dropped?","Seasons, trailers, announcements."],
+  "manga":["Post the panel.","The page that made you want to draw. Or the one you drew."],
+};
+function emptyHTML(ch){
+  const e=EMPTY[ch.id]||["Nothing here yet.","Be the first — post something real."];
+  return `<div class="empty estate">
+    <div class="eh">${esc(e[0])}</div>
+    <div class="ep">${esc(e[1])}</div>
+    ${e[2]?`<button class="btn green" id="epost">${esc(e[2])}</button>`:""}
+  </div>`;
+}
 function renderRoomFeed(){const f=$("#feed");if(!f)return;
-  f.innerHTML=POSTS.length?POSTS.map(postHTML).join(""):`<div class="empty">Nothing here yet. Be the first — post something real.</div>`;
-  wireFeed();}
+  f.innerHTML=POSTS.length?POSTS.map(postHTML).join(""):emptyHTML(CH);
+  wireFeed();
+  const ep=$("#epost");if(ep)ep.onclick=()=>$("#filein")?.click();}
 
 const money=c=>"$"+(c/100).toFixed(2);
 
@@ -1248,17 +1376,37 @@ function detailHTML(){
     </div>
   </div>`}
 
+function nextRate(){
+  const lad=MKTMETA.feeLadder||[];
+  const lvl=levelFor(ME.rep).id;
+  const nxt=lad.find(x=>x.level===lvl+1);
+  if(!nxt)return null;
+  return {need:nxt.at-ME.rep,fee:nxt.fee,name:nxt.name};
+}
+function rateHTML(){
+  const fee=MKTMETA.feePct??10;
+  const n=nextRate();
+  return `<div class="ratebar">
+    <div class="ratenow"><b>${fee}%</b><span class="mono dim">YOUR RATE</span></div>
+    <div class="rateinfo">
+      <div class="mono dim">DEPOP TAKES 10% FOREVER. HERE IT DROPS AS PEOPLE VOUCH FOR YOU.</div>
+      ${n?`<div class="ratenext">${n.need} more rep → <b>${n.fee}%</b> at ${esc(n.name)}</div>`
+        :`<div class="ratenext">You're at the best rate in the network.</div>`}
+    </div>
+    <button class="ratelad mono" id="rateladder">SEE ALL →</button>
+  </div>`}
+
 function payoutBannerHTML(){
   if(!MKTMETA.paymentsEnabled)return `<div class="paybar off">
     <div><b>Card payments aren't switched on yet.</b>
     <div class="mono dim">You can still list — buyers reserve the item and you settle up directly.</div></div></div>`;
-  if(ME.payoutsReady)return `<div class="paybar ok">
+  if(ME.payoutsReady)return `${rateHTML()}<div class="paybar ok">
     <div><b>✓ Payouts connected</b>
-    <div class="mono dim">Stripe pays you directly. TNL takes ${MKTMETA.feePct}% commission.</div></div>
+    <div class="mono dim">Stripe pays you directly.</div></div>
     <button class="btn sm ghost" id="paydash">Stripe dashboard</button></div>`;
-  return `<div class="paybar">
+  return `${rateHTML()}<div class="paybar">
     <div><b>Set up payouts to get paid by card</b>
-    <div class="mono dim">Connect your own Stripe account — it pays you directly, TNL never holds your money. ${MKTMETA.feePct}% commission per sale.</div></div>
+    <div class="mono dim">Connect your own Stripe account — it pays you directly, TNL never holds your money.</div></div>
     <button class="btn sm green" id="payconnect">${ME.hasStripe?"Finish setup":"Connect Stripe"}</button></div>`}
 
 function sellHTML(){const f=SELLFORM||{};
@@ -1329,24 +1477,9 @@ function ordersHTML(){
 
 function studioHTML(){return `<div class="scroll">
   <div class="page-head"><div class="mono dim">MUSIC LAB · TOOLS</div><h2>Studio</h2>
-  <p>Make a loop here, publish it into #beats, let a lyricist find it. More tools coming to every lab.</p></div>
-  ${beatLabHTML(false)}
+  <p class="page-sub">Drums, 808, synths, your voice. Make it, export it, or publish it straight to #beats.</p></div>
+  <div id="studiomount"></div>
 </div>`}
-
-function workCardHTML(p,collab){
-  const kind=p.beat?"BEAT":p.videoUrl?"VIDEO":p.imageUrl?"IMAGE":"POST";
-  const glyph=p.beat?"♫":"✎";
-  return `<div class="work" data-openpost="${p.id}">
-    <div class="work-top"><span class="mono work-kind">${kind} · #${esc(p.channel)}</span>
-      ${collab?`<span class="mono work-collab">↔ WITH ${esc(p.author.displayName.toUpperCase())}</span>`:""}</div>
-    ${p.beat?`<div class="work-beat"><button class="circle" style="width:28px;height:28px;font-size:10px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button><span class="nm">${esc(p.beat.name||"untitled loop")}</span><span class="mono dim">${p.beat.bpm}BPM</span></div>`
-      :p.imageUrl?`<img class="work-img" src="${esc(p.imageUrl)}" alt="work" loading="lazy">${p.body?`<div class="work-body" style="margin-top:6px">${esc(p.body)}</div>`:""}`
-      :p.videoUrl?`<video class="work-img" src="${esc(p.videoUrl)}" controls playsinline preload="metadata"></video>`
-      :`<div class="work-body">${esc(p.body||"—")}</div>`}
-    <div class="work-foot mono"><span>♥ ${p.likeCount}</span><span>↻ ${p.shareCount}</span>
-      ${p.collaborators.filter(c=>c.status==="accepted").length?`<span class="work-cnames">✓ ${p.collaborators.filter(c=>c.status==="accepted").map(c=>esc(c.display_name||c.username)).join(", ")}</span>`:""}
-      <span class="dim" style="margin-left:auto">${new Date(p.createdAt).toLocaleDateString()}</span></div>
-  </div>`}
 
 function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.at>u.rep);
   const pct=nx?Math.round((u.rep-l.at)/(nx.at-l.at)*100):100;
@@ -1370,26 +1503,27 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.
     <button class="link" id="ed-cancel">Cancel</button>
   </div></div>`}
 
+  const K=kindOf(u);
   return `<div class="sheet" id="sheetbg"><div class="sheetc">
-  <div class="sheeth"><div class="mono dim">${mine?"YOUR PORTFOLIO":"PORTFOLIO"}</div><button class="x" id="sheetx">✕</button></div>
+  <div class="sheeth"><div class="mono dim">${mine?"YOUR ":""}${esc(K.tag)}</div><button class="x" id="sheetx">✕</button></div>
 
   <div class="pid">${u.avatarUrl?`<img class="pav" src="${esc(u.avatarUrl)}" alt="">`:`<div class="pav">${esc(u.displayName.slice(0,2).toUpperCase())}</div>`}
     <div><div class="pname">${esc(u.displayName)}</div>
     <div class="mono dim">@${esc(u.username)}</div></div></div>
   <div class="rolechips">${(u.roles&&u.roles.length?u.roles:[u.role]).map(r=>`<span class="rchip">${esc(r)}</span>`).join("")}</div>
 
-  ${u.bio?`<div class="pbio">${esc(u.bio)}</div>`:mine?`<div class="pbio dim">No bio yet — tell people what you make.</div>`:""}
+  ${u.bio?`<div class="pbio">${esc(u.bio)}</div>`:mine?`<div class="pbio dim">No bio yet — tell people what you make.</div>`:`<div class="pbio dim">${esc(K.blurb)}</div>`}
   ${u.link?`<a class="plink mono" href="${/^https?:\/\//.test(u.link)?esc(u.link):"https://"+esc(u.link)}" target="_blank" rel="noreferrer">↗ ${esc(u.link.replace(/^https?:\/\//,""))}</a>`:""}
 
-  <div class="pstats">
-    <div class="pstat"><b>${st.posts}</b><span class="mono dim">WORK</span></div>
-    <div class="pstat"><b>${st.likesReceived}</b><span class="mono dim">LIKES</span></div>
-    <div class="pstat"><b>${st.collabs}</b><span class="mono dim">COLLABS</span></div>
-    <div class="pstat"><b>${PROFILE.followers}</b><span class="mono dim">FOLLOWERS</span></div>
+  <div class="pstats ${PROFILE.loading?"sk":""}">
+    <div class="pstat"><b>${PROFILE.loading?"—":st.posts}</b><span class="mono dim">${esc(K.work)}</span></div>
+    <div class="pstat"><b>${PROFILE.loading?"—":st.likesReceived}</b><span class="mono dim">LIKES</span></div>
+    <div class="pstat"><b>${PROFILE.loading?"—":st.collabs}</b><span class="mono dim">COLLABS</span></div>
+    <div class="pstat"><b>${PROFILE.loading?"—":PROFILE.followers}</b><span class="mono dim">FOLLOWERS</span></div>
   </div>
 
   <div class="pactions">
-    ${mine?`<button class="btn ghost" id="editb">Edit profile</button>
+    ${PROFILE.loading?`<div class="skelbtn"></div>`:mine?`<button class="btn ghost" id="editb">Edit profile</button>
       <button class="btn ${u.published?"":"green"}" id="pubtoggle">${u.published?"Unpublish":"Publish portfolio"}</button>`
       :`<button class="btn ${PROFILE.youFollow?"ghost":""}" id="followb">${PROFILE.youFollow?"Following ✓":"Follow"}</button>
         <button class="btn ghost" id="msgb">Message</button>`}
@@ -1402,34 +1536,39 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.
     <div class="ptrack"><div class="pfill" style="width:${pct}%"></div></div></div>
 
   <div class="ptabs">
-    <button class="ptab ${PTAB==="work"?"on":""}" data-ptab="work">WORK ${st.posts}</button>
+    <button class="ptab ${PTAB==="work"?"on":""}" data-ptab="work">${esc(K.work)} ${st.posts}</button>
     <button class="ptab ${PTAB==="collabs"?"on":""}" data-ptab="collabs">COLLABS ${PROFILE.collabs.length}</button>
     <button class="ptab ${PTAB==="ladder"?"on":""}" data-ptab="ladder">STANDING</button>
   </div>
 
   ${PTAB==="ladder"?`
-    <div class="mono dim" style="margin:12px 0">REP IS EARNED, NOT SPENT — LIKES RECEIVED +6 · SHARES +3 · CONFIRMED COLLABS +20 EACH</div>
+    <div class="mono dim" style="margin:12px 0">REP IS EARNED, NOT SPENT — LIKES +6 · SHARES +3 · COLLABS +20 EACH · SALES +15 · DELIVERED +10</div>
+    <div class="mono dim" style="margin:-4px 0 12px;line-height:1.6">Every point comes from someone else acting. Nothing you can do alone moves it.</div>
     <div class="ladder">${LEVELS.map(x=>`<div class="lstep ${u.rep>=x.at?"done":""}"><span class="ldot"></span><span class="mono">${x.at}</span><span>${x.name}</span>${u.rep>=x.at?"✓":""}</div>`).join("")}</div>
     <div class="mono dim" style="margin-top:14px">MEMBER SINCE ${new Date(u.createdAt).toLocaleDateString()}</div>`
-  :list.length?`<div class="worklist">${list.map(p=>workCardHTML(p,PTAB==="collabs")).join("")}</div>`
-  :`<div class="empty">${PTAB==="collabs"?"No confirmed collabs yet. Invite someone onto a piece — you both rise.":mine?"Nothing published yet. Post in a lab and it lands here.":"Nothing published yet."}</div>`}
+  :PROFILE.loading?`<div class="worklist">${[0,1,2].map(()=>`<div class="work skel"><div class="skelbar"></div><div class="skelbar sh"></div></div>`).join("")}</div>`
+  :list.length?`<div class="worklist ${K.grid?"asgrid":""}">${list.map(p=>workCardHTML(p,PTAB==="collabs",K)).join("")}</div>`
+  :`<div class="empty">${PTAB==="collabs"?"No confirmed collabs yet. Invite someone onto a "+K.one+" — you both rise.":mine?K.empty+" Post in a lab and it lands here.":esc(K.empty)}</div>`}
 
+  ${mine&&ME.isAdmin?`<a class="btn ghost" href="/admin" style="display:flex;justify-content:center;margin-top:16px;text-decoration:none">Admin dashboard ↗</a>`:""}
   ${mine?`<button class="link" id="logoutb">Log out</button>`:""}
 </div></div>`}
 
 /* ---- wiring ---- */
 function wire(){
-  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;stop();DRAFTS=null;if(TAB==="market"){MKTVIEW="browse";loadMarket()}render()});
+  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;if(window.TNLStudio)TNLStudio.unmount();if(TAB==="market"){MKTVIEW="browse";loadMarket()}render()});
   document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{TAB=b.dataset.goto;render()});
   const srp=$("#sr-post");if(srp)srp.onclick=()=>{
-    // designers land in #graphic-design; everyone else in their home lab
-    const target=/design/i.test(ME.role)?"graphic-design":/photo/i.test(ME.role)?"photography":/produc|lyric|sing/i.test(ME.role)?"beats":"graphic-design";
-    for(const l of LABS){const c=l.channels.find(x=>x.id===target);if(c){LAB=l;CH=c;break}}
+    // land them in the room their trade lives in
+    const target=kindOf(ME).home;
+    let found=false;
+    for(const l of LABS){const c=l.channels.find(x=>x.id===target);if(c){LAB=l;CH=c;found=true;break}}
+    if(!found){LAB=LABS.find(l=>l.id==="art")||LABS[0];CH=LAB.channels[0]}
     TAB="labs";ROOMOPEN=true;render();
-    setTimeout(()=>{const fi=$("#filein");if(fi)fi.click()},250);
+    if(!CH.beatlab)setTimeout(()=>{const fi=$("#filein");if(fi)fi.click()},250);
   };
   document.querySelectorAll("[data-lab]").forEach(b=>b.onclick=()=>{const l=LABS.find(x=>x.id===b.dataset.lab);LAB=l;CH=l.channels[0];TAB="labs";ROOMOPEN=true;render()});
-  const meBtn=$("#meBtn");if(meBtn)meBtn.onclick=async()=>{PROFILE=await api.profile(ME.username);PTAB="work";render()};
+  const meBtn=$("#meBtn");if(meBtn)meBtn.onclick=()=>{PROFCACHE.delete(ME.username);openProfile(ME.username)};
   const nb=$("#notifBtn");if(nb)nb.onclick=async()=>{
     NOTIFOPEN=true;NOTIFS=null;render();
     try{const d=await api.notifs();NOTIFS=d.notifications;render();
@@ -1447,30 +1586,79 @@ function wire(){
     }catch(e){toast(e.message)}};
   document.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>{
     for(const l of LABS){const c=l.channels.find(x=>x.id===b.dataset.ch);if(c){LAB=l;CH=c}}
-    ROOMOPEN=true;stop();render()});
+    ROOMOPEN=true;if(window.TNLStudio)TNLStudio.unmount();render()});
   const bb=$("#backb");if(bb)bb.onclick=()=>{ROOMOPEN=false;render()};
   const sendb=$("#sendb");if(sendb){const go=async()=>{
     const t=$("#draft").value.trim();
     if(EDITID){
-      try{await api.editPost(EDITID,t);EDITID=null;$("#draft").value="";loadFeed();render()}catch(e){toast(e.message)}
+      const id=EDITID;
+      try{await api.editPost(id,t);EDITID=null;$("#draft").value="";loadFeed();render()}catch(e){toast(e.message)}
       return;
     }
     if(!t&&!PENDIMG&&!PENDVID)return;
-    const body={channel:CH.id,body:t,isWork:ASWORK};
+    const prep=PENDPREP, vid=PENDVID, kind=PENDKIND, work=ASWORK;
+    const draftText=t;
+    // clear the composer immediately — waiting on the network to empty a
+    // text box is what makes an app feel slow
     $("#draft").value="";
+    PENDIMG=null;PENDVID=null;PENDKIND=null;PENDFILE=null;PENDPREP=null;ASWORK=false;
+
+    // show it in the feed right away, flagged as pending
+    const temp={id:"tmp"+Date.now(),channel:CH.id,body:draftText,beat:null,
+      imageUrl:prep?prep.full:null,thumbUrl:prep?prep.thumb:null,mediaW:prep?prep.w:null,mediaH:prep?prep.h:null,
+      videoUrl:null,isWork:work,editedAt:null,sharedFrom:null,createdAt:Date.now(),
+      author:{username:ME.username,displayName:ME.displayName,role:ME.role,avatarUrl:ME.avatarUrl,rep:ME.rep,level:levelFor(ME.rep).id},
+      likeCount:0,shareCount:0,commentCount:0,likedByMe:false,collaborators:[],pending:true};
+    POSTS=[...POSTS,temp];
+    renderRoomFeed();
+    const feed=$("#feed");if(feed)feed.scrollTop=feed.scrollHeight;
+
     try{
-      if(PENDIMG||PENDVID){
-        const staged=PENDIMG||PENDVID;const kind=PENDKIND;
-        PENDIMG=null;PENDVID=null;PENDKIND=null;
-        toast(kind==="video"?"Uploading video…":"Uploading…");render();
-        const up=await api.upload(staged);
+      const body={channel:CH.id,body:draftText,isWork:work};
+      if(prep){
+        const up=await api.upload(prep.full);
+        body.imageUrl=up.url;
+        const th=await api.upload(prep.thumb);
+        body.thumbUrl=th.url;
+        body.mediaW=prep.w;body.mediaH=prep.h;
+      } else if(vid){
+        const up=await api.upload(vid);
         if(up.kind==="video")body.videoUrl=up.url;else body.imageUrl=up.url;
       }
-      ASWORK=false;
-      await api.post(body);loadFeed();render();
-    }catch(e){toast(e.message);render()}};
-    sendb.onclick=go;$("#draft").onkeydown=e=>{if(e.key==="Enter")go()}}
+      await api.post(body);
+      POSTS=POSTS.filter(p=>p.id!==temp.id);
+      loadFeed();
+    }catch(e){
+      // mark the pending post as failed rather than silently dropping it
+      const p=POSTS.find(x=>x.id===temp.id);
+      if(p){p.pending=false;p.failed=true;p.retry={body:draftText,prep,vid,kind,work};renderRoomFeed()}
+      toast(e.message);
+    }};
+    sendb.onclick=go;
+    const dr=$("#draft");
+    dr.onkeydown=e=>{if(e.key==="Enter"&&!MENTIONS)go()};
+    let mt=null;
+    dr.oninput=async()=>{
+      const upto=dr.value.slice(0,dr.selectionStart||dr.value.length);
+      const m=/@([a-z0-9._]*)$/i.exec(upto);
+      if(!m){if(MENTIONS){MENTIONS=null;render()}return}
+      MENTIONQ=m[1];
+      clearTimeout(mt);
+      mt=setTimeout(async()=>{
+        try{const d=await api.mentionable(MENTIONQ);
+          MENTIONS=d.people.length?d.people:null;render();
+          const f=$("#draft");if(f){f.focus();f.setSelectionRange(f.value.length,f.value.length)}
+        }catch(e){}
+      },160);
+    };}
   const ce=$("#canceledit");if(ce)ce.onclick=()=>{EDITID=null;render()};
+  document.querySelectorAll("[data-mpick]").forEach(b=>b.onclick=()=>{
+    const u=MENTIONS[+b.dataset.mpick];
+    const dr=$("#draft");
+    dr.value=dr.value.replace(/@([a-z0-9._]*)$/i,"@"+u.username+" ");
+    MENTIONS=null;render();
+    const f=$("#draft");if(f){f.focus();f.setSelectionRange(f.value.length,f.value.length)}
+  });
 
   const ab=$("#attachb");if(ab)ab.onclick=()=>$("#filein").click();
   const fi=$("#filein");if(fi)fi.onchange=async()=>{
@@ -1483,16 +1671,17 @@ function wire(){
     }
     if(f.size>25*1024*1024)return toast("That image is too big");
     PENDFILE=f;
-    try{PENDIMG=await compressImage(f,ASWORK?2400:1400,ASWORK?.92:.82);PENDVID=null;PENDKIND="image";render()}catch(e){toast(e.message)}
+    try{PENDPREP=await prepImage(f,ASWORK);PENDIMG=PENDPREP.thumb;PENDVID=null;PENDKIND="image";render()}
+    catch(e){toast(e.message)}
   };
-  const di=$("#dropimg");if(di)di.onclick=()=>{PENDIMG=null;PENDVID=null;PENDKIND=null;PENDFILE=null;ASWORK=false;render()};
+  const di=$("#dropimg");if(di)di.onclick=()=>{PENDIMG=null;PENDVID=null;PENDKIND=null;PENDFILE=null;PENDPREP=null;ASWORK=false;render()};
   const aw=$("#aswork");if(aw)aw.onchange=async()=>{
     ASWORK=aw.checked;
     if(PENDFILE&&PENDKIND==="image"){
-      try{PENDIMG=await compressImage(PENDFILE,ASWORK?2400:1400,ASWORK?.92:.82);
+      try{PENDPREP=await prepImage(PENDFILE,ASWORK);PENDIMG=PENDPREP.thumb;
         toast(ASWORK?"Full quality for your portfolio":"Standard quality")}catch(e){}
     }};
-  wireBeat();wireFeed();wireSheet();wireMarket();
+  wireFeed();wireSheet();wireMarket();wirePicker();
   const lb=$("#lb");if(lb)lb.onclick=()=>{LIGHTBOX=null;render()};
 }
 function wireMarket(){
@@ -1502,6 +1691,16 @@ function wireMarket(){
     if(MKTVIEW==="orders"){ORDERS=null;render();try{ORDERS=await api.orders()}catch(e){toast(e.message)}}
     render()});
   document.querySelectorAll("[data-ot]").forEach(b=>b.onclick=()=>{ORDTAB=b.dataset.ot;render()});
+  const rl=$("#rateladder");if(rl)rl.onclick=()=>{
+    const lvl=levelFor(ME.rep).id;
+    openPicker({eyebrow:"COMMISSION",title:"Your rate falls as you rise",
+      note:"Rep only comes from other people — likes, shares, accepted collabs, and completed sales. Listing more doesn't move it.",
+      items:(MKTMETA.feeLadder||[]).map(x=>({
+        label:x.fee+"% · "+x.name,
+        sub:x.level===lvl?"You are here":(x.at>ME.rep?(x.at-ME.rep)+" rep away":"Unlocked"),
+        icon:"L"+x.level})),
+      onPick:()=>{}});
+  };
   const pc=$("#payconnect");if(pc)pc.onclick=async()=>{
     try{toast("Opening Stripe…");const d=await api.connectStart();location.href=d.url}catch(e){toast(e.message)}};
   const pd=$("#paydash");if(pd)pd.onclick=async()=>{
@@ -1545,7 +1744,8 @@ function wireMarket(){
 
   // detail actions
   document.querySelectorAll("[data-offer]").forEach(b=>b.onclick=async()=>{
-    const v=prompt("Your offer in dollars:");if(!v)return;
+    const ask=MKTONE?MKTONE.price:0;
+    const v=prompt("Your offer in dollars (asking "+money(ask)+"):");if(!v)return;
     try{await api.mktOffer(b.dataset.offer,Number(v));toast("Offer sent");
       const d=await api.mktOne(b.dataset.offer);MKTONE=d.listing;MKTOFFERS=d.offers||[];render()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-oa]").forEach(b=>b.onclick=async()=>{
@@ -1631,11 +1831,22 @@ function wirePanels(){
   // search
   const sbg=$("#sbg");if(sbg)sbg.onclick=e=>{if(e.target===sbg){SEARCHOPEN=false;render()}};
   const sx=$("#sx");if(sx)sx.onclick=()=>{SEARCHOPEN=false;render()};
-  const sq=$("#sq");if(sq){let t=null;sq.oninput=()=>{SEARCHQ=sq.value;clearTimeout(t);
-    t=setTimeout(async()=>{try{SEARCHRES=await api.search(SEARCHQ,SEARCHROLE);renderSearchOnly()}catch(e){}},300)}}
+  const sq=$("#sq");if(sq){let t=null;sq.oninput=()=>{
+    SEARCHQ=sq.value;clearTimeout(t);
+    if(!SEARCHQ.trim()&&!SEARCHROLE){SEARCHRES=null;SEARCHING=false;return renderSearchOnly()}
+    SEARCHING=true;renderSearchOnly();
+    t=setTimeout(async()=>{
+      const mine=SEARCHQ;
+      try{const r=await api.search(SEARCHQ,SEARCHROLE);
+        if(mine!==SEARCHQ)return;            // a newer keystroke won
+        SEARCHRES=r;SEARCHING=false;renderSearchOnly();
+      }catch(e){SEARCHING=false;renderSearchOnly()}
+    },250)}}
   document.querySelectorAll("[data-sr]").forEach(b=>b.onclick=async()=>{
     SEARCHROLE=SEARCHROLE===b.dataset.sr?"":b.dataset.sr;
-    try{SEARCHRES=await api.search(SEARCHQ,SEARCHROLE)}catch(e){}render();setTimeout(()=>$("#sq")?.focus(),50)});
+    SEARCHING=true;renderSearchOnly();
+    try{SEARCHRES=await api.search(SEARCHQ,SEARCHROLE)}catch(e){}
+    SEARCHING=false;renderSearchOnly()});
 }
 function renderSearchOnly(){
   const c=document.querySelector("#sbg .sheetc");if(!c)return;
@@ -1651,92 +1862,89 @@ async function openDM(username){
     const d=await api.dmList();DMUNREAD=d.unreadTotal;
   }catch(e){toast(e.message)}
 }
-let DMPEND=null, PENDFILE=null;
+let DMPEND=null, PENDFILE=null, PENDPREP=null;
 
-function wireBeat(){
-  // step cells: tap cycles velocity, long-press clears
-  document.querySelectorAll(".cell[data-t]").forEach(c=>{
-    let timer=null,long=false;
-    const tid=c.dataset.t,i=+c.dataset.i;
-    const track=TRACKS.find(t=>t.id===tid);
-    const clear=()=>{PROJ.bars[EBAR][tid][i]=null;render()};
-    const cycle=()=>{
-      const cur=PROJ.bars[EBAR][tid][i];
-      if(!cur)PROJ.bars[EBAR][tid][i]={v:2,n:track.pitched?PITCHSEL:0};
-      else if(cur.v<3)cur.v++;
-      else PROJ.bars[EBAR][tid][i]=null;
-      if(cur&&track.pitched)cur.n=PITCHSEL;
-      render();
-    };
-    c.onpointerdown=()=>{long=false;timer=setTimeout(()=>{long=true;clear()},450)};
-    c.onpointerup=()=>{clearTimeout(timer);if(!long)cycle()};
-    c.onpointerleave=()=>clearTimeout(timer);
+function mountStudio(){
+  const el=$("#studiomount");
+  if(!el||!window.TNLStudio)return;
+  TNLStudio.mount(el,{
+    api,
+    toast,
+    onPublish:()=>{TAB="labs";LAB=LABS.find(l=>l.id==="music");CH=LAB.channels.find(c=>c.id==="beats");ROOMOPEN=true;render()},
+    uploadAudio:async(blob)=>{
+      const data=await new Promise((res,rej)=>{const fr=new FileReader();fr.onerror=rej;fr.onload=()=>res(fr.result);fr.readAsDataURL(blob)});
+      const up=await api.upload(data);
+      return up.url;
+    },
   });
-
-  const mp=$("#mainplay");if(mp)mp.onclick=()=>{playing?stop():play()};
-  const bp=$("#bpm");if(bp)bp.oninput=()=>{PROJ.bpm=+bp.value;$("#bpmv").textContent=PROJ.bpm};
-  const sw=$("#swing");if(sw)sw.oninput=()=>{PROJ.swing=+sw.value;$("#swingv").textContent=PROJ.swing};
-  const ks=$("#keysel");if(ks)ks.onchange=()=>{PROJ.key=+ks.value};
-  const ch=$("#chain");if(ch)ch.onchange=()=>{PROJ.chain=+ch.value;if(EBAR>=PROJ.chain)EBAR=0;render()};
-  document.querySelectorAll("[data-bar]").forEach(b=>{if(b.classList.contains("barb"))b.onclick=()=>{
-    const i=+b.dataset.bar;if(i>=PROJ.chain){PROJ.chain=i+1}EBAR=i;render()}});
-  const cp=$("#copyb");if(cp)cp.onclick=()=>{
-    const nxt=(EBAR+1)%4;
-    PROJ.bars[nxt]=JSON.parse(JSON.stringify(PROJ.bars[EBAR]));
-    if(PROJ.chain<nxt+1)PROJ.chain=nxt+1;
-    EBAR=nxt;toast("Bar copied");render()};
-  const cb=$("#clearb");if(cb)cb.onclick=()=>{PROJ.bars[EBAR]=emptyBar();render()};
-
-  document.querySelectorAll("[data-mute]").forEach(b=>b.onclick=()=>{const t=b.dataset.mute;PROJ.mix[t].mute=!PROJ.mix[t].mute;render()});
-  document.querySelectorAll("[data-solo]").forEach(b=>b.onclick=()=>{const t=b.dataset.solo;PROJ.mix[t].solo=!PROJ.mix[t].solo;render()});
-  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{OPENTRACK=b.dataset.open===OPENTRACK?"":b.dataset.open;render()});
-  document.querySelectorAll("[data-vol]").forEach(r=>r.oninput=()=>{PROJ.mix[r.dataset.vol].vol=(+r.value)/100;
-    const lab=r.parentElement.querySelector("b");if(lab)lab.textContent=r.value});
-  document.querySelectorAll("[data-var]").forEach(b=>b.onclick=()=>{
-    const [t,i]=b.dataset.var.split(":");PROJ.mix[t].variant=+i;
-    voice(t,ctx().currentTime+.02,.8,+i,PROJ.key);render()});
-  document.querySelectorAll("[data-pitch]").forEach(b=>b.onclick=()=>{
-    PITCHSEL=+b.dataset.pitch;
-    voice("bass",ctx().currentTime+.02,.8,PROJ.mix.bass.variant,PITCHSEL);render()});
-
-  const sb=$("#saveb");if(sb)sb.onclick=async()=>{
-    PROJ.name=$("#bname").value.trim();
-    try{const d=await api.saveBeat({id:PROJ.id,name:PROJ.name||"untitled",data:stripProject(PROJ)});
-      PROJ.id=d.id;toast("Draft saved")}catch(e){toast(e.message)}};
-  const lb=$("#loadb");if(lb)lb.onclick=async()=>{
-    if(DRAFTS){DRAFTS=null;return render()}
-    try{const d=await api.beats();DRAFTS=d.projects;render()}catch(e){toast(e.message)}};
-  document.querySelectorAll("[data-load]").forEach(b=>b.onclick=async()=>{
-    try{const d=await api.beat(b.dataset.load);
-      PROJ={...newProject(),...d.project.data,id:d.project.id,name:d.project.name};
-      DRAFTS=null;EBAR=0;stop();toast("Loaded");render()}catch(e){toast(e.message)}});
-  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{
-    try{await api.delBeat(b.dataset.del);DRAFTS=DRAFTS.filter(x=>String(x.id)!==b.dataset.del);render()}catch(e){toast(e.message)}});
-
-  const pb=$("#pubb");if(pb)pb.onclick=async()=>{
-    const has=PROJ.bars.slice(0,PROJ.chain).some(bar=>TRACKS.some(t=>bar[t.id].some(Boolean)));
-    if(!has)return toast("Empty beat — put some notes down");
-    PROJ.name=$("#bname").value.trim();
-    try{
-      await api.post({channel:"beats",body:"",beat:{name:PROJ.name||"untitled loop",bpm:PROJ.bpm,data:stripProject(PROJ)}});
-      stop();toast("Published to #beats");
-      if(TAB==="studio"){TAB="labs";LAB=LABS.find(l=>l.id==="music");CH=LAB.channels.find(c=>c.id==="beats");ROOMOPEN=true}
-      render();
-    }catch(e){toast(e.message)}};
 }
-function stripProject(p){const {id,...rest}=p;return rest}
 
 function wireFeed(){
-  document.querySelectorAll("[data-like]").forEach(b=>b.onclick=async()=>{try{await api.like(b.dataset.like);loadFeed()}catch(e){toast(e.message)}});
-  document.querySelectorAll("[data-share]").forEach(b=>b.onclick=async()=>{
-    const ch=prompt("Share into which channel? (e.g. general, graphic-design, clothing-design)",CH.id);
-    if(!ch)return;try{await api.share(b.dataset.share,{channel:ch.trim()});toast("Shared — original author earned rep")}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-like]").forEach(b=>b.onclick=async()=>{
+    const id=b.dataset.like;
+    const p=POSTS.find(x=>String(x.id)===id)||(SEARCHRES&&SEARCHRES.posts.find(x=>String(x.id)===id))
+      ||(PROFILE&&[...PROFILE.posts,...PROFILE.collabs].find(x=>String(x.id)===id));
+    // flip it now, reconcile after. Repaint ONLY this button — a full
+    // re-render here throws away your scroll position.
+    const was=p?p.likedByMe:b.classList.contains("on");
+    const now=!was;
+    if(p){p.likedByMe=now;p.likeCount=Math.max(0,p.likeCount+(now?1:-1))}
+    b.classList.toggle("on",now);
+    b.textContent=(now?"♥":"♡")+" "+(p?(p.likeCount||""):"");
+    try{
+      const liked=await api.like(id);
+      if(p&&liked!==now){ // server disagreed — trust it
+        p.likedByMe=liked;p.likeCount=Math.max(0,p.likeCount+(liked?1:-1));
+        b.classList.toggle("on",liked);
+        b.textContent=(liked?"♥":"♡")+" "+(p.likeCount||"");
+      }
+    }catch(e){
+      if(p){p.likedByMe=was;p.likeCount=Math.max(0,p.likeCount+(was?1:-1));
+        b.classList.toggle("on",was);b.textContent=(was?"♥":"♡")+" "+(p.likeCount||"")}
+      toast(e.message);
+    }});
+  document.querySelectorAll("[data-share]").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.share;
+    const items=[];
+    for(const l of LABS)for(const c of l.channels){
+      if(c.beatlab||c.gate&&levelFor(ME.rep).id<c.gate)continue;
+      items.push({label:"#"+c.label,sub:l.name,icon:"#",ch:c.id});
+    }
+    openPicker({eyebrow:"CROSS-LAB",title:"Share into",note:"The original author earns rep when their work travels.",
+      items,onPick:async(it)=>{
+        try{await api.share(id,{channel:it.ch});toast("Shared to #"+it.ch.replace(/^#/,""))}catch(e){toast(e.message)}}});
+  });
   document.querySelectorAll("[data-collab]").forEach(b=>b.onclick=async()=>{
-    const u=prompt("Invite a collaborator (their username):");if(!u)return;
-    try{await api.invite(b.dataset.collab,u.trim().toLowerCase());toast("Collab invite sent — pending their accept")}catch(e){toast(e.message)}});
+    const id=b.dataset.collab;
+    const toItems=(people)=>people.map(u=>({label:u.displayName,sub:"@"+u.username+" · "+u.role,avatar:u.avatarUrl,username:u.username}));
+    openPicker({eyebrow:"TWO-SIDED",title:"Invite a collaborator",
+      note:"They have to accept. When they do, you both earn +20.",
+      search:"Search people…",loading:true,
+      onSearch:async(q)=>toItems((await api.mentionable(q)).people),
+      onPick:async(it)=>{
+        try{await api.invite(id,it.username);toast("Invite sent to "+it.label)}catch(e){toast(e.message)}}});
+    try{const d=await api.mentionable("");
+      if(PICKER){PICKER.items=toItems(d.people);PICKER.loading=false;render()}}catch(e){}
+  });
   document.querySelectorAll("[data-accept]").forEach(b=>b.onclick=async()=>{try{await api.accept(b.dataset.accept);await refreshMe();toast("Collab confirmed — you both earned +20");render()}catch(e){toast(e.message)}});
-  document.querySelectorAll("[data-beatplay]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();previewBeat(JSON.parse(b.dataset.beatplay))});
+  document.querySelectorAll("[data-beatplay]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();if(window.TNLStudio)TNLStudio.preview(JSON.parse(b.dataset.beatplay))});
   document.querySelectorAll("[data-zoom]").forEach(el=>el.onclick=()=>{LIGHTBOX=el.dataset.zoom;render()});
+  document.querySelectorAll("[data-discard]").forEach(b=>b.onclick=()=>{
+    POSTS=POSTS.filter(x=>String(x.id)!==b.dataset.discard);renderRoomFeed()});
+  document.querySelectorAll("[data-retry]").forEach(b=>b.onclick=async()=>{
+    const p=POSTS.find(x=>String(x.id)===b.dataset.retry);if(!p||!p.retry)return;
+    const r=p.retry;p.failed=false;p.pending=true;renderRoomFeed();
+    try{
+      const body={channel:CH.id,body:r.body,isWork:r.work};
+      if(r.prep){const up=await api.upload(r.prep.full);body.imageUrl=up.url;
+        const th=await api.upload(r.prep.thumb);body.thumbUrl=th.url;
+        body.mediaW=r.prep.w;body.mediaH=r.prep.h}
+      else if(r.vid){const up=await api.upload(r.vid);
+        if(up.kind==="video")body.videoUrl=up.url;else body.imageUrl=up.url}
+      await api.post(body);
+      POSTS=POSTS.filter(x=>x.id!==p.id);loadFeed();
+    }catch(e){p.pending=false;p.failed=true;renderRoomFeed();toast(e.message)}});
+  document.querySelectorAll(".mention[data-u]").forEach(el=>el.onclick=e=>{e.stopPropagation();openProfile(el.dataset.u)});
   document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{
     const p=POSTS.find(x=>String(x.id)===b.dataset.edit);if(!p)return;
     EDITID=p.id;render();const d=$("#draft");if(d){d.value=p.body||"";d.focus()}});
@@ -1750,39 +1958,66 @@ function wireFeed(){
     try{COMMENTS=(await api.comments(id)).comments;render();setTimeout(()=>$("#cdraft")?.focus(),80)}catch(e){toast(e.message)}});
   const cs=$("#csend");if(cs){const go=async()=>{
     const t=$("#cdraft").value.trim();if(!t)return;
+    const id=OPENCOMMENTS, editing=CEDIT;
+    $("#cdraft").value="";
+    if(!editing){
+      // show it immediately
+      COMMENTS=[...COMMENTS,{id:"tmp"+Date.now(),body:t,createdAt:Date.now(),editedAt:null,pending:true,
+        author:{username:ME.username,displayName:ME.displayName,avatarUrl:ME.avatarUrl,role:ME.role,level:levelFor(ME.rep).id}}];
+      const p=POSTS.find(x=>x.id===id);if(p)p.commentCount=(p.commentCount||0)+1;
+      render();setTimeout(()=>$("#cdraft")?.focus(),40);
+    }
     try{
-      if(CEDIT){await api.editComment(CEDIT,t);CEDIT=null}
-      else await api.addComment(OPENCOMMENTS,t);
-      COMMENTS=(await api.comments(OPENCOMMENTS)).comments;
-      loadFeed();render();setTimeout(()=>$("#cdraft")?.focus(),80);
-    }catch(e){toast(e.message)}};
+      if(editing){await api.editComment(editing,t);CEDIT=null}
+      else await api.addComment(id,t);
+      COMMENTS=(await api.comments(id)).comments;
+      render();setTimeout(()=>$("#cdraft")?.focus(),40);
+    }catch(e){
+      COMMENTS=COMMENTS.filter(c=>!c.pending);
+      const p=POSTS.find(x=>x.id===id);if(p)p.commentCount=Math.max(0,(p.commentCount||1)-1);
+      toast(e.message);render();
+    }};
     cs.onclick=go;$("#cdraft").onkeydown=e=>{if(e.key==="Enter")go()}}
   const cc=$("#ccancel");if(cc)cc.onclick=()=>{CEDIT=null;render()};
   document.querySelectorAll("[data-cedit]").forEach(b=>b.onclick=()=>{CEDIT=+b.dataset.cedit;render();setTimeout(()=>$("#cdraft")?.focus(),80)});
   document.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=async()=>{
     if(!confirm("Delete this comment?"))return;
     try{await api.delComment(b.dataset.cdel);COMMENTS=(await api.comments(OPENCOMMENTS)).comments;loadFeed();render()}catch(e){toast(e.message)}});
-  document.querySelectorAll("[data-report]").forEach(b=>b.onclick=async()=>{
-    const reason=prompt("What's wrong with this post?");if(!reason)return;
-    try{await api.report({postId:+b.dataset.report,reason});toast("Reported — thank you")}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>{
+    const id=+b.dataset.report;
+    openPicker({eyebrow:"REPORT",title:"What's wrong?",
+      items:["Spam","Harassment","Stolen work","Nudity or gore","Something else"].map(r=>({label:r,icon:"⚐",reason:r})),
+      onPick:async(it)=>{try{await api.report({postId:id,reason:it.reason});toast("Reported — thank you")}catch(e){toast(e.message)}}});
+  });
   document.querySelectorAll("[data-work]").forEach(b=>b.onclick=async()=>{
     const [id,on]=b.dataset.work.split(":");
     try{await api.markWork(id,on==="1");toast(on==="1"?"Added to your portfolio":"Removed from portfolio");loadFeed()}catch(e){toast(e.message)}});
-  document.querySelectorAll("[data-u]").forEach(el=>el.onclick=async()=>{try{PROFILE=await api.profile(el.dataset.u);PTAB="work";render()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-u]").forEach(el=>el.onclick=()=>openProfile(el.dataset.u));
 }
 function wireSheet(){
   const bg=$("#sheetbg");if(!bg)return;
   bg.onclick=e=>{if(e.target===bg){PROFILE=null;EDITING=false;render()}};
   $("#sheetx").onclick=()=>{PROFILE=null;EDITING=false;render()};
-  const fb=$("#followb");if(fb)fb.onclick=async()=>{await api.follow(PROFILE.user.username);PROFILE=await api.profile(PROFILE.user.username);render()};
+  const fb=$("#followb");if(fb)fb.onclick=async()=>{
+    const u=PROFILE.user.username;
+    // optimistic — the button responds now, the server catches up
+    PROFILE.youFollow=!PROFILE.youFollow;
+    PROFILE.followers+=PROFILE.youFollow?1:-1;
+    render();
+    try{await api.follow(u);PROFCACHE.delete(u);const d=await api.profile(u);
+      if(PROFILE&&PROFILE.user.username===u){PROFILE=d;PROFCACHE.set(u,d);render()}}
+    catch(e){toast(e.message);PROFCACHE.delete(u)}};
   const lo=$("#logoutb");if(lo)lo.onclick=()=>{TOKEN=null;ME=null;localStorage.removeItem("tnl-token");render()};
   const mb=$("#msgb");if(mb)mb.onclick=()=>openDM(PROFILE.user.username);
   const bb=$("#blockb");if(bb)bb.onclick=async()=>{
     if(!confirm("Block "+PROFILE.user.displayName+"? You won't see each other's work."))return;
     try{const d=await api.block(PROFILE.user.username);toast(d.blocked?"Blocked":"Unblocked");PROFILE=null;render()}catch(e){toast(e.message)}};
-  const ru=$("#reportu");if(ru)ru.onclick=async()=>{
-    const reason=prompt("Why are you reporting this person?");if(!reason)return;
-    try{await api.report({username:PROFILE.user.username,reason});toast("Reported — thank you")}catch(e){toast(e.message)}};
+  const ru=$("#reportu");if(ru)ru.onclick=()=>{
+    const un=PROFILE.user.username;
+    openPicker({eyebrow:"REPORT",title:"Why?",
+      items:["Spam","Harassment","Stolen work","Impersonation","Something else"].map(r=>({label:r,icon:"⚐",reason:r})),
+      onPick:async(it)=>{try{await api.report({username:un,reason:it.reason});toast("Reported — thank you")}catch(e){toast(e.message)}}});
+  };
 
   document.querySelectorAll("[data-ptab]").forEach(b=>b.onclick=()=>{PTAB=b.dataset.ptab;render()});
 
@@ -1791,9 +2026,10 @@ function wireSheet(){
   const avi=$("#avin");if(avi)avi.onchange=async()=>{
     const f=avi.files&&avi.files[0];if(!f)return;avi.value="";
     try{const data=await compressImage(f,600,.85);const d=await api.avatar(data);
-      ME=d.user;PROFILE=await api.profile(ME.username);toast("Photo updated");render()}catch(e){toast(e.message)}};
+      ME=d.user;PROFCACHE.delete(ME.username);PROFILE=await api.profile(ME.username);toast("Photo updated");render()}catch(e){toast(e.message)}};
   const pt=$("#pubtoggle");if(pt)pt.onclick=async()=>{
     try{const d=await api.publish(!PROFILE.user.published);ME=d.user;
+      PROFCACHE.delete(ME.username);
       PROFILE=await api.profile(ME.username);
       toast(d.user.published?"Portfolio published — link is live":"Portfolio unpublished");render();
     }catch(e){toast(e.needsVerify?"Verify your email first":e.message)}};
@@ -1807,11 +2043,11 @@ function wireSheet(){
   const es_=$("#ed-save");if(es_)es_.onclick=async()=>{
     try{
       const d=await api.updateMe({displayName:$("#ed-name").value,bio:$("#ed-bio").value,link:$("#ed-link").value,roles:EDITROLES});
-      ME=d.user;EDITING=false;PROFILE=await api.profile(ME.username);toast("Profile updated");render();
+      ME=d.user;EDITING=false;PROFCACHE.delete(ME.username);PROFILE=await api.profile(ME.username);toast("Profile updated");render();
     }catch(e){toast(e.message)}};
 
   // beat playback + opening a piece from the portfolio
-  document.querySelectorAll("[data-beatplay]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();previewBeat(JSON.parse(b.dataset.beatplay))});
+  document.querySelectorAll("[data-beatplay]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();if(window.TNLStudio)TNLStudio.preview(JSON.parse(b.dataset.beatplay))});
   document.querySelectorAll("[data-openpost]").forEach(el=>el.onclick=()=>{
     const p=[...PROFILE.posts,...PROFILE.collabs].find(x=>String(x.id)===el.dataset.openpost);
     if(!p)return;
@@ -1826,6 +2062,7 @@ async function refreshBadges(){
   try{const [n,d]=await Promise.all([api.notifs(),api.dmList()]);
     const changed=n.unread!==UNREAD||d.unreadTotal!==DMUNREAD;
     UNREAD=n.unread;DMUNREAD=d.unreadTotal;
+    loadUnreads();
     if(changed&&!NOTIFOPEN&&!DMOPENPANEL)render();
   }catch(e){/* offline */}
 }

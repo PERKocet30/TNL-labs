@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>TNLLABS — Admin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root{--bg:#000;--card:#0A0A0A;--el:#141414;--line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.28);
+--tx:#fff;--dim:#8A8A8A;--green:#22C55E;--red:#F87171;--amber:#FBBF24}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--tx);font-family:'Archivo',system-ui,sans-serif;min-height:100vh}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.09em}
+.dim{color:var(--dim)}
+button{font-family:inherit;cursor:pointer}
+a{color:var(--green);text-decoration:none}
+h1,h2,h3{text-transform:uppercase;letter-spacing:-.01em}
+
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center}
+.gate h1{font-size:24px;margin:12px 0 8px}
+.gate p{color:var(--dim);font-size:13px;line-height:1.6;max-width:320px;margin:0 auto 18px}
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--tx);color:#000;border:none;border-radius:9px;padding:11px 18px;font-weight:700;font-size:13px;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--tx);border:1px solid var(--line2)}
+.btn.sm{padding:5px 10px;font-size:11px}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(0,0,0,.92);backdrop-filter:blur(8px);z-index:10}
+.brand{font-weight:900;font-size:14px;letter-spacing:.03em}
+.brand span{color:var(--green)}
+.tag{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.14em;border:1px solid var(--line2);border-radius:999px;padding:3px 8px;color:var(--dim);margin-left:7px}
+.nav{display:flex;gap:4px;overflow-x:auto;padding:10px 18px;border-bottom:1px solid var(--line)}
+.nav button{flex-shrink:0;background:var(--el);border:1px solid var(--line);color:var(--dim);border-radius:8px;padding:7px 13px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;white-space:nowrap}
+.nav button.on{background:var(--tx);color:#000;border-color:var(--tx)}
+.wrap{padding:18px;max-width:1200px;margin:0 auto}
+
+.hero{margin-bottom:18px}
+.hero h1{font-size:clamp(22px,5vw,32px);font-weight:900}
+.hero p{color:var(--dim);font-size:13px;margin-top:4px}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-bottom:11px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card .k{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.12em;color:var(--dim)}
+.card .v{font-size:26px;font-weight:900;margin-top:7px;line-height:1}
+.card .s{font-size:11px;color:var(--dim);margin-top:4px}
+.card.hero-card{border-color:var(--green);background:linear-gradient(160deg,rgba(34,197,94,.12),transparent)}
+.card.hero-card .v{color:var(--green)}
+.card .up{color:var(--green)}
+.card .warn{color:var(--amber)}
+
+.spark{display:flex;align-items:flex-end;gap:3px;height:44px;margin-top:10px}
+.spark div{flex:1;background:var(--el);border-radius:2px 2px 0 0;min-height:2px;position:relative}
+.spark div.has{background:var(--green)}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:11px}
+.panel h3{font-size:12px;margin-bottom:12px;color:var(--dim);font-family:'IBM Plex Mono',monospace;letter-spacing:.1em}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.1em;color:var(--dim);padding:0 8px 9px;font-weight:400;white-space:nowrap}
+td{padding:10px 8px;border-top:1px solid var(--line);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+.who{display:flex;align-items:center;gap:8px;min-width:0}
+.av{width:28px;height:28px;border-radius:50%;background:var(--el);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;flex-shrink:0;object-fit:cover}
+.nm{font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lv{background:var(--green);color:#000;font-family:'IBM Plex Mono',monospace;font-size:8px;padding:2px 5px;border-radius:4px;margin-left:5px}
+.pill{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.08em;border:1px solid var(--line2);border-radius:999px;padding:2px 7px;color:var(--dim)}
+.pill.ok{border-color:var(--green);color:var(--green)}
+.pill.no{border-color:var(--red);color:var(--red)}
+.pill.warn{border-color:var(--amber);color:var(--amber)}
+.scrollx{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+.thumb{width:44px;height:44px;object-fit:cover;border-radius:7px;background:var(--el);flex-shrink:0}
+.rowin{display:flex;align-items:center;gap:10px}
+.trunc{max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:#D6D2C8}
+.search{width:100%;background:var(--el);border:1px solid var(--line);border-radius:9px;color:var(--tx);padding:10px 13px;font-size:13px;margin-bottom:12px;font-family:inherit}
+.search:focus{outline:none;border-color:var(--green)}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar{display:flex;align-items:center;gap:9px;font-size:12px}
+.bar .lab{width:96px;flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--dim)}
+.bar .track{flex:1;height:7px;background:var(--el);border-radius:4px;overflow:hidden}
+.bar .fill{height:100%;background:var(--green);border-radius:4px}
+.bar .n{width:26px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10px}
+.empty{padding:26px;text-align:center;color:var(--dim);font-size:13px;line-height:1.7}
+.status{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.rep{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.35);border-radius:9px;padding:11px 13px;margin-bottom:8px}
+.rep .rt{font-size:12.5px;font-weight:700}
+.rep .rb{font-size:11.5px;color:var(--dim);margin-top:4px;line-height:1.5}
+.acts{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--tx);color:#000;font-weight:700;font-size:13px;border-radius:999px;padding:9px 18px;z-index:80}
+@media(max-width:640px){
+  .hide-sm{display:none}
+  .wrap{padding:14px}
+  td,th{padding-left:5px;padding-right:5px}
+}
+</style>
+</head>
+<body><div id="app"></div>
+<script>
+const API=location.origin;
+let TOKEN=localStorage.getItem("tnl-token")||null;
+let ME=null,TAB="overview",DATA={},Q="",TOASTT=null;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=c=>"$"+((c||0)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const ago=t=>{if(!t)return "never";const s=(Date.now()-t)/1000;
+  if(s<3600)return Math.floor(s/60)+"m";if(s<86400)return Math.floor(s/3600)+"h";
+  if(s<2592000)return Math.floor(s/86400)+"d";return new Date(t).toLocaleDateString()};
+const av=(u,n)=>u?`<img class="av" src="${esc(u)}" alt="">`:`<div class="av">${esc((n||"?").slice(0,2).toUpperCase())}</div>`;
+
+async function req(path,opts={}){
+  const h={"Content-Type":"application/json"};
+  if(TOKEN)h.Authorization="Bearer "+TOKEN;
+  const r=await fetch(API+path,{method:opts.method||"GET",headers:h,body:opts.body?JSON.stringify(opts.body):undefined});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||("HTTP "+r.status));
+  return d;
+}
+function toast(m){TOASTT=m;paint();setTimeout(()=>{TOASTT=null;paint()},2200)}
+
+/* ---------- gate ---------- */
+function gateHTML(msg){return `<div class="gate"><div>
+  <div class="brand">TNLLABS <span>🧪</span></div>
+  <h1>${esc(msg||"Admin only")}</h1>
+  <p>${TOKEN?"This account doesn't have admin access. Every endpoint here is locked server-side, so there's nothing to see.":"Sign in to the app first, then come back to this page."}</p>
+  <a class="btn" href="/">Open the app</a>
+</div></div>`}
+
+/* ---------- shell ---------- */
+function paint(){
+  const app=$("#app");
+  if(!ME){app.innerHTML=gateHTML(TOKEN?"Not an admin":"Sign in first");return}
+  app.innerHTML=`
+    <div class="top">
+      <div class="brand">TNLLABS <span>🧪</span><span class="tag">ADMIN</span></div>
+      <div style="display:flex;align-items:center;gap:9px">
+        <span class="mono dim hide-sm">${esc(ME.displayName)}</span>
+        <a class="btn ghost sm" href="/">App ↗</a>
+      </div>
+    </div>
+    <div class="nav">
+      ${[["overview","OVERVIEW"],["members","MEMBERS"],["content","CONTENT"],["orders","ORDERS"],["reports","REPORTS"+(DATA.overview?.openReports?" ("+DATA.overview.openReports+")":"")]]
+        .map(([id,l])=>`<button class="${TAB===id?"on":""}" data-tab="${id}">${l}</button>`).join("")}
+    </div>
+    <div class="wrap">${
+      TAB==="overview"?overviewHTML():
+      TAB==="members"?membersHTML():
+      TAB==="content"?contentHTML():
+      TAB==="orders"?ordersHTML():reportsHTML()}</div>
+    ${TOASTT?`<div class="toast">${esc(TOASTT)}</div>`:""}`;
+  wire();
+}
+
+/* ---------- overview ---------- */
+function overviewHTML(){
+  const d=DATA.overview;
+  if(!d)return `<div class="empty">Loading…</div>`;
+  const maxDay=Math.max(1,...d.daily.map(x=>x.posts));
+  const flywheel=d.collabs>0;
+  return `
+  <div class="hero">
+    <h1>The lab</h1>
+    <p>${d.members} member${d.members===1?"":"s"} · ${d.active} posted this week · ${d.collabs} confirmed collab${d.collabs===1?"":"s"}</p>
+  </div>
+  <div class="status">
+    <span class="pill ${d.mailOn?"ok":"warn"}">${d.mailOn?"EMAIL ON":"EMAIL OFF"}</span>
+    <span class="pill ${d.paymentsOn?"ok":"warn"}">${d.paymentsOn?"PAYMENTS ON":"PAYMENTS OFF"}</span>
+    ${d.openReports?`<span class="pill no">${d.openReports} OPEN REPORT${d.openReports===1?"":"S"}</span>`:""}
+    ${d.pendingCollabs?`<span class="pill warn">${d.pendingCollabs} COLLAB${d.pendingCollabs===1?"":"S"} PENDING</span>`:""}
+  </div>
+
+  <div class="cards">
+    <div class="card hero-card">
+      <div class="k">CONFIRMED COLLABS</div>
+      <div class="v">${d.collabs}</div>
+      <div class="s">${d.collabsWeek} this week · <span class="dim">the only number that proves the model</span></div>
+    </div>
+    <div class="card"><div class="k">MEMBERS</div><div class="v">${d.members}</div>
+      <div class="s">${d.newWeek?`<span class="up">+${d.newWeek}</span> this week`:"none this week"} · ${d.verified} verified</div></div>
+    <div class="card"><div class="k">POSTED THIS WEEK</div><div class="v">${d.active}</div>
+      <div class="s">of ${d.members} · ${d.activeMonth} in 30d</div></div>
+    <div class="card"><div class="k">WORK PUBLISHED</div><div class="v">${d.work}</div>
+      <div class="s">${d.workWeek} this week · ${d.posts} posts total</div></div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="k">CROSS-LAB SHARES</div><div class="v">${d.crossLab}</div>
+      <div class="s">work that travelled between labs</div></div>
+    <div class="card"><div class="k">GMV</div><div class="v">${money(d.gmv)}</div>
+      <div class="s">${d.sold} sale${d.sold===1?"":"s"} · ${d.listings} listed</div></div>
+    <div class="card"><div class="k">COMMISSION</div><div class="v">${money(d.earned)}</div>
+      <div class="s">tiered by seller level</div></div>
+    <div class="card"><div class="k">BEATS MADE</div><div class="v">${d.beats}</div>
+      <div class="s">${d.dms} DMs sent</div></div>
+  </div>
+
+  ${!flywheel?`<div class="rep"><div class="rt">No collabs yet.</div>
+    <div class="rb">Posting is happening, but nobody's built together inside the app. That's the whole thesis — until it fires once, this is a feed. Get two people on one piece.</div></div>`:""}
+
+  <div class="panel">
+    <h3>POSTS · LAST 14 DAYS</h3>
+    <div class="spark">${d.daily.map(x=>`<div class="${x.posts?"has":""}" style="height:${Math.max(4,(x.posts/maxDay)*100)}%" title="${x.d}: ${x.posts} posts"></div>`).join("")}</div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px" class="mono dim">
+      <span>${d.daily[0].d}</span><span>${d.daily[d.daily.length-1].d}</span></div>
+  </div>
+
+  <div class="panel">
+    <h3>WHERE PEOPLE SIT</h3>
+    <div class="bars">${d.levels.map(l=>{
+      const max=Math.max(1,...d.levels.map(x=>x.n));
+      return `<div class="bar"><span class="lab">L${l.level} ${esc(l.name.toUpperCase())}</span>
+        <div class="track"><div class="fill" style="width:${(l.n/max)*100}%"></div></div>
+        <span class="n">${l.n}</span></div>`}).join("")}</div>
+  </div>`;
+}
+
+/* ---------- members ---------- */
+function membersHTML(){
+  const m=DATA.members;
+  return `
+  <div class="hero"><h1>Members</h1><p>Everyone in the lab, ranked by rep.</p></div>
+  <input class="search" id="q" placeholder="Search name, username, or email…" value="${esc(Q)}">
+  ${!m?`<div class="empty">Loading…</div>`:!m.length?`<div class="empty">Nobody found.</div>`:`
+  <div class="panel scrollx"><table>
+    <thead><tr><th>MEMBER</th><th>REP</th><th class="hide-sm">RATE</th><th>WORK</th><th>COLLABS</th>
+      <th class="hide-sm">LIKES</th><th class="hide-sm">LAST POST</th><th>STATUS</th><th></th></tr></thead>
+    <tbody>${m.map(u=>`<tr>
+      <td><div class="who">${av(u.avatarUrl,u.displayName)}
+        <div style="min-width:0"><div class="nm">${esc(u.displayName)}<span class="lv">L${u.level}</span></div>
+        <div class="mono dim">@${esc(u.username)}${u.isAdmin?" · ADMIN":""}</div></div></div></td>
+      <td><b>${u.rep}</b></td>
+      <td class="hide-sm"><span class="pill ${u.fee<=6?"ok":""}">${u.fee}%</span></td>
+      <td>${u.work}<span class="dim"> / ${u.posts}</span></td>
+      <td>${u.collabs?`<b style="color:var(--green)">${u.collabs}</b>`:`<span class="dim">0</span>`}</td>
+      <td class="hide-sm">${u.likes}</td>
+      <td class="hide-sm mono dim">${ago(u.lastPost)}</td>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+        ${u.verified?`<span class="pill ok">✓</span>`:`<span class="pill no">UNVERIFIED</span>`}
+        ${u.published?`<span class="pill ok">PUBLIC</span>`:""}
+        ${u.payouts?`<span class="pill ok">$</span>`:""}
+      </div></td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn ghost sm" data-feature="${esc(u.username)}" title="Award +40 rep">★</button>
+        ${!u.verified?`<button class="btn ghost sm" data-verify="${esc(u.username)}">Verify</button>`:""}
+      </div></td>
+    </tr>`).join("")}</tbody>
+  </table></div>`}`;
+}
+
+/* ---------- content ---------- */
+function contentHTML(){
+  const p=DATA.content;
+  return `
+  <div class="hero"><h1>Content</h1><p>Everything posted, newest first.</p></div>
+  ${!p?`<div class="empty">Loading…</div>`:!p.length?`<div class="empty">Nothing posted yet.</div>`:`
+  <div class="panel scrollx"><table>
+    <thead><tr><th>POST</th><th class="hide-sm">WHO</th><th>CHANNEL</th><th>♥</th><th>💬</th><th>↔</th><th class="hide-sm">WHEN</th><th></th></tr></thead>
+    <tbody>${p.map(x=>`<tr>
+      <td><div class="rowin">
+        ${x.thumbUrl?`<img class="thumb" src="${esc(x.thumbUrl)}" alt="">`:x.isBeat?`<div class="thumb" style="display:flex;align-items:center;justify-content:center;color:var(--green)">♫</div>`:x.videoUrl?`<div class="thumb" style="display:flex;align-items:center;justify-content:center">▶</div>`:`<div class="thumb"></div>`}
+        <div><div class="trunc">${esc(x.body||"—")}</div>
+        ${x.isWork?`<span class="pill ok">PORTFOLIO</span>`:`<span class="pill">CHAT</span>`}</div>
+      </div></td>
+      <td class="hide-sm"><div class="who">${av(x.author.avatarUrl,x.author.displayName)}<span class="nm">${esc(x.author.displayName)}</span></div></td>
+      <td><span class="mono dim">#${esc(x.channel)}</span></td>
+      <td>${x.likes}</td><td>${x.comments}</td>
+      <td>${x.collabs?`<b style="color:var(--green)">${x.collabs}</b>`:`<span class="dim">0</span>`}</td>
+      <td class="hide-sm mono dim">${ago(x.createdAt)}</td>
+      <td><button class="btn ghost sm" data-del="${x.id}">Delete</button></td>
+    </tr>`).join("")}</tbody>
+  </table></div>`}`;
+}
+
+/* ---------- orders ---------- */
+function ordersHTML(){
+  const o=DATA.orders;
+  return `
+  <div class="hero"><h1>Orders</h1><p>Every sale, and what it earned.</p></div>
+  ${!o?`<div class="empty">Loading…</div>`:!o.length?`<div class="empty">No orders yet.<br>When someone buys, it lands here.</div>`:`
+  <div class="panel scrollx"><table>
+    <thead><tr><th>ITEM</th><th>SELLER</th><th class="hide-sm">BUYER</th><th>TOTAL</th><th>YOUR CUT</th><th>STATUS</th><th class="hide-sm">WHEN</th></tr></thead>
+    <tbody>${o.map(x=>`<tr>
+      <td><div class="trunc">${esc(x.title)}</div></td>
+      <td class="mono">@${esc(x.seller)}</td>
+      <td class="hide-sm mono dim">@${esc(x.buyer)}</td>
+      <td><b>${money(x.amount+x.shipping)}</b></td>
+      <td><b style="color:var(--green)">${money(x.fee)}</b> <span class="mono dim">${x.feePct}%</span></td>
+      <td><span class="pill ${x.status==="complete"?"ok":x.status==="pending"?"warn":""}">${x.status.toUpperCase()}</span>
+        ${!x.paid?`<span class="pill warn">UNPAID</span>`:""}</td>
+      <td class="hide-sm mono dim">${ago(x.createdAt)}</td>
+    </tr>`).join("")}</tbody>
+  </table></div>`}`;
+}
+
+/* ---------- reports ---------- */
+function reportsHTML(){
+  const r=DATA.reports;
+  return `
+  <div class="hero"><h1>Reports</h1><p>Flagged by members. Nothing here is good news.</p></div>
+  ${!r?`<div class="empty">Loading…</div>`:!r.length?`<div class="empty">Nothing reported. 🧪</div>`:
+  r.map(x=>`<div class="rep">
+    <div class="rt">${esc(x.reason||"No reason given")}</div>
+    <div class="rb">from <b>@${esc(x.reporter||"?")}</b>${x.reported?` about <b>@${esc(x.reported)}</b>`:""}
+      ${x.post_body?` · <span class="dim">"${esc((x.post_body||"").slice(0,90))}"</span>`:""}
+      ${x.post_channel?` · #${esc(x.post_channel)}`:""} · ${ago(x.created_at)}</div>
+    <div class="acts">
+      ${x.post_id?`<button class="btn sm" data-del="${x.post_id}">Delete post</button>`:""}
+      <button class="btn ghost sm" data-handle="${x.id}">Dismiss</button>
+    </div>
+  </div>`).join("")}`;
+}
+
+/* ---------- wiring ---------- */
+function wire(){
+  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;paint();load()});
+  const q=$("#q");
+  if(q){let t=null;q.oninput=()=>{Q=q.value;clearTimeout(t);t=setTimeout(async()=>{
+    try{DATA.members=(await req("/api/admin/members?q="+encodeURIComponent(Q))).members;
+      const v=Q;paint();const f=$("#q");if(f){f.value=v;f.focus();f.setSelectionRange(v.length,v.length)}
+    }catch(e){toast(e.message)}},260)}}
+  document.querySelectorAll("[data-feature]").forEach(b=>b.onclick=async()=>{
+    if(!confirm("Award +40 rep to @"+b.dataset.feature+"? This is the 'feature' award — it's permanent and audited."))return;
+    try{await req("/api/admin/members/"+b.dataset.feature+"/feature",{method:"POST"});toast("Featured — +40 rep");load()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-verify]").forEach(b=>b.onclick=async()=>{
+    try{await req("/api/admin/members/"+b.dataset.verify+"/verify",{method:"POST"});toast("Verified");load()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{
+    if(!confirm("Delete this post? Can't be undone."))return;
+    try{await req("/api/admin/posts/"+b.dataset.del,{method:"DELETE"});toast("Deleted");load()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-handle]").forEach(b=>b.onclick=async()=>{
+    try{await req("/api/admin/reports/"+b.dataset.handle+"/handle",{method:"POST"});toast("Dismissed");load()}catch(e){toast(e.message)}});
+}
+
+async function load(){
+  try{
+    if(TAB==="overview")DATA.overview=await req("/api/admin/overview");
+    if(TAB==="members")DATA.members=(await req("/api/admin/members?q="+encodeURIComponent(Q))).members;
+    if(TAB==="content")DATA.content=(await req("/api/admin/content")).posts;
+    if(TAB==="orders")DATA.orders=(await req("/api/admin/orders")).orders;
+    if(TAB==="reports")DATA.reports=(await req("/api/admin/reports")).reports;
+    if(!DATA.overview&&TAB!=="overview")DATA.overview=await req("/api/admin/overview");
+    paint();
+  }catch(e){ if(/admins only|token/i.test(e.message)){ME=null;paint()} else toast(e.message) }
+}
+
+(async()=>{
+  if(!TOKEN){paint();return}
+  try{
+    const d=await req("/api/me");
+    if(!d.user.isAdmin){ME=null;paint();return}
+    ME=d.user;
+    await load();
+    setInterval(()=>{if(TAB==="overview")load()},30000);
+  }catch(e){ME=null;paint()}
+})();
+</script>
+</body>
+</html>
