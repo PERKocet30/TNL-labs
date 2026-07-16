@@ -21,11 +21,13 @@
 
 const KEY = process.env.STRIPE_SECRET_KEY || "";
 export const PAYMENTS_ENABLED = !!KEY;
-export const PLATFORM_FEE_PCT = Math.min(30, Math.max(0, Number(process.env.PLATFORM_FEE_PCT ?? 10)));
 
-/** Your commission on a sale, in cents. Never applied to shipping. */
-export function platformFee(amountCents) {
-  return Math.round(amountCents * (PLATFORM_FEE_PCT / 100));
+/* The fee is no longer one flat number — it's set by the seller's level,
+   so this just clamps whatever the caller worked out. See FEE_BY_LEVEL
+   in db.js for the ladder. */
+export function platformFee(amountCents, pct) {
+  const p = Math.min(30, Math.max(0, Number(pct ?? 10)));
+  return Math.round(amountCents * (p / 100));
 }
 
 function formEncode(obj, prefix = "", out = []) {
@@ -108,7 +110,7 @@ export async function loginLink(accountId) {
  */
 export async function createCheckout({
   orderId, title, amountCents, shippingCents, currency = "usd",
-  successUrl, cancelUrl, buyerEmail, sellerAccount,
+  successUrl, cancelUrl, buyerEmail, sellerAccount, feePct,
 }) {
   if (!KEY) return { error: "payments not configured" };
   if (!sellerAccount) return { error: "seller hasn't connected payouts yet" };
@@ -135,7 +137,7 @@ export async function createCheckout({
       metadata: { order_id: String(orderId) },
       line_items,
       // commission on the item only — we don't skim postage
-      payment_intent_data: { application_fee_amount: platformFee(amountCents) },
+      payment_intent_data: { application_fee_amount: platformFee(amountCents, feePct) },
     },
   });
   if (out.error) return out;

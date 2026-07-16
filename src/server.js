@@ -5,9 +5,9 @@ import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { db, awardRep, revokeRep, levelFor, LEVELS, DATA_DIR, notify, ensureAdmin } from "./db.js";
+import { db, awardRep, revokeRep, levelFor, LEVELS, DATA_DIR, notify, ensureAdmin, feeForRep, FEE_BY_LEVEL } from "./db.js";
 import { sendVerifyEmail, sendResetEmail, MAIL_ENABLED } from "./mail.js";
-import { createCheckout, verifySession, PAYMENTS_ENABLED, PLATFORM_FEE_PCT, platformFee,
+import { createCheckout, verifySession, PAYMENTS_ENABLED, platformFee,
          createSellerAccount, onboardingLink, accountStatus, loginLink } from "./pay.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -68,8 +68,8 @@ const q = {
   deleteSession: db.prepare(`DELETE FROM sessions WHERE token = ?`),
 
   createPost: db.prepare(
-    `INSERT INTO posts (author_id, channel, body, beat_json, image_url, video_url, is_work, shared_from, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO posts (author_id, channel, body, beat_json, image_url, video_url, thumb_url, media_w, media_h, is_work, shared_from, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ),
   postById: db.prepare(`SELECT * FROM posts WHERE id = ?`),
 
@@ -111,7 +111,7 @@ function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false })
   const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
   const sql = `
     SELECT
-      p.id, p.channel, p.body, p.beat_json, p.image_url, p.video_url, p.is_work, p.edited_at, p.shared_from, p.created_at,
+      p.id, p.channel, p.body, p.beat_json, p.image_url, p.video_url, p.thumb_url, p.media_w, p.media_h, p.is_work, p.edited_at, p.shared_from, p.created_at,
       u.username AS author_username, u.display_name AS author_name, u.role AS author_role,
       u.avatar_url AS author_avatar, u.rep AS author_rep,
       (SELECT COUNT(*) FROM likes  l WHERE l.post_id = p.id) AS like_count,
@@ -127,13 +127,50 @@ function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false })
   return db.prepare(sql).all(params);
 }
 
-function shapePost(row) {
+/* Shaping a post used to fire two extra queries EACH — a 60-post profile
+   meant 120 round trips, with a fresh db.prepare() compiled every time.
+   Now a whole page gets its comment counts and collaborators in two
+   queries, mapped up front. This was the profile-load slowness. */
+const cntOne = db.prepare(`SELECT COUNT(*) n FROM comments WHERE post_id = ?`);
+const collabOne = db.prepare(
+  `SELECT c.status, u.username, u.display_name FROM collaborators c
+   JOIN users u ON u.id = c.user_id WHERE c.post_id = ?`
+);
+
+function sidecar(rows) {
+  const ids = rows.map((r) => r.id);
+  const comments = new Map(), collabs = new Map();
+  if (!ids.length) return { comments, collabs };
+  const holes = ids.map(() => "?").join(",");
+  for (const r of db.prepare(
+    `SELECT post_id, COUNT(*) n FROM comments WHERE post_id IN (${holes}) GROUP BY post_id`
+  ).all(...ids)) comments.set(r.post_id, r.n);
+  for (const r of db.prepare(
+    `SELECT c.post_id, c.status, u.username, u.display_name FROM collaborators c
+     JOIN users u ON u.id = c.user_id WHERE c.post_id IN (${holes})`
+  ).all(...ids)) {
+    if (!collabs.has(r.post_id)) collabs.set(r.post_id, []);
+    collabs.get(r.post_id).push({ status: r.status, username: r.username, display_name: r.display_name });
+  }
+  return { comments, collabs };
+}
+
+/** Shape a whole page in 2 queries. Prefer this over rows. */
+function shapePosts(rows) {
+  const side = sidecar(rows);
+  return rows.map((r) => shapePost(r, side));
+}
+
+function shapePost(row, side) {
   return {
     id: row.id,
     channel: row.channel,
     body: row.body,
     beat: row.beat_json ? JSON.parse(row.beat_json) : null,
     imageUrl: row.image_url || null,
+    thumbUrl: row.thumb_url || row.image_url || null,
+    mediaW: row.media_w || null,
+    mediaH: row.media_h || null,
     videoUrl: row.video_url || null,
     isWork: !!row.is_work,
     editedAt: row.edited_at || null,
@@ -149,9 +186,9 @@ function shapePost(row) {
     },
     likeCount: row.like_count,
     shareCount: row.share_count,
-    commentCount: db.prepare(`SELECT COUNT(*) n FROM comments WHERE post_id = ?`).get(row.id).n,
+    commentCount: side ? (side.comments.get(row.id) || 0) : (cntOne.get(row.id)?.n || 0),
     likedByMe: !!row.liked_by_me,
-    collaborators: q.collabsForPost.all(row.id),
+    collaborators: side ? (side.collabs.get(row.id) || []) : collabOne.all(row.id),
   };
 }
 
@@ -327,21 +364,25 @@ app.get("/api/feed", maybeAuth, (req, res) => {
     workOnly,
     limit: workOnly ? 120 : 50,
   });
-  res.json({ posts: rows.map(shapePost) });
+  const hidden = req.user ? blockedIds(req.user.id) : new Set();
+  res.json({ posts: shapePosts(rows.filter((r) => !hidden.has(r.author_username))) });
 });
 
 app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
-  const { channel, body, beat, imageUrl, videoUrl, isWork } = req.body || {};
+  const { channel, body, beat, imageUrl, videoUrl, thumbUrl, mediaW, mediaH, isWork } = req.body || {};
   if (!body?.trim() && !beat && !imageUrl && !videoUrl) return res.status(400).json({ error: "empty post" });
   // Beats are always work. Chat media is only work if the author says so.
   const work = beat ? 1 : (isWork ? 1 : 0);
   const info = q.createPost.run(
     req.user.id, channel || "general", (body || "").trim(),
-    beat ? JSON.stringify(beat) : null, imageUrl || null, videoUrl || null, work, null, Date.now()
+    beat ? JSON.stringify(beat) : null, imageUrl || null, videoUrl || null,
+    thumbUrl || null, Number(mediaW) || null, Number(mediaH) || null,
+    work, null, Date.now()
   );
   const row = feedRows({ authorId: req.user.id, viewerId: req.user.id, limit: 1 })
     .find((r) => r.id === Number(info.lastInsertRowid));
   const post = shapePost(row);
+  notifyMentions(post.body, req.user.id, post.id, "mention");
   broadcast("post", post);
   res.json({ post });
 });
@@ -372,7 +413,8 @@ app.post("/api/posts/:id/share", auth, verified, (req, res) => {
   const target = (req.body?.channel || original.channel).trim();
   const info = q.createPost.run(
     req.user.id, target, req.body?.comment?.trim() || "",
-    original.beat_json, original.image_url, original.video_url, 0, original.id, Date.now()
+    original.beat_json, original.image_url, original.video_url,
+    original.thumb_url, original.media_w, original.media_h, 0, original.id, Date.now()
   );
   if (original.author_id !== req.user.id) { awardRep(original.author_id, "share_received", original.id); notify(original.author_id, req.user.id, "share", original.id); }
   const row = feedRows({ authorId: req.user.id, viewerId: req.user.id, limit: 1 })
@@ -399,30 +441,43 @@ function sniff(buf) {
   for (const m of MAGIC) {
     if (m.bytes.every((b, i) => buf[i] === b)) {
       if (m.ext === "webp" && buf.slice(8, 12).toString("ascii") !== "WEBP") continue;
+      if (m.ext === "webp" && buf.slice(8, 12).toString("ascii") === "WAVE") continue;
       return m;
     }
   }
+  // RIFF containers: WEBP handled above, WAVE is audio
+  if (buf.slice(0, 4).toString("ascii") === "RIFF" && buf.slice(8, 12).toString("ascii") === "WAVE") {
+    return { ext: "wav", kind: "audio" };
+  }
+  // MP3: ID3 tag or a raw frame sync
+  if (buf.slice(0, 3).toString("ascii") === "ID3") return { ext: "mp3", kind: "audio" };
+  if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return { ext: "mp3", kind: "audio" };
+  // OGG/Opus — what Firefox tends to record
+  if (buf.slice(0, 4).toString("ascii") === "OggS") return { ext: "ogg", kind: "audio" };
   // Video containers identify themselves a few bytes in, not at byte 0.
   const brand = buf.slice(4, 8).toString("ascii");
   if (brand === "ftyp") {
     const sub = buf.slice(8, 12).toString("ascii");
+    if (/^M4A/.test(sub)) return { ext: "m4a", kind: "audio" };
     if (/^(qt| )/.test(sub)) return { ext: "mov", kind: "video" };
     return { ext: "mp4", kind: "video" }; // isom, mp42, avc1, M4V …
   }
-  // WebM / Matroska
+  // WebM / Matroska — Chrome records audio into this too, so we can't
+  // tell audio from video by the magic alone. Treated as video; harmless,
+  // the file still plays and decodes either way.
   if (buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3) {
     return { ext: "webm", kind: "video" };
   }
   return null;
 }
 
-const LIMITS = { image: 8 * 1024 * 1024, video: 60 * 1024 * 1024 };
+const LIMITS = { image: 8 * 1024 * 1024, video: 60 * 1024 * 1024, audio: 30 * 1024 * 1024 };
 
 app.post("/api/upload", auth, verified, rateLimit({ max: 30, windowMs: 300000, key: "user" }), (req, res) => {
   const { data } = req.body || {};
   if (typeof data !== "string") return res.status(400).json({ error: "no file data" });
-  const m = /^data:(image|video)\/[a-z0-9+.-]+;base64,(.+)$/i.exec(data);
-  if (!m) return res.status(400).json({ error: "not a base64 image or video" });
+  const m = /^data:(image|video|audio)\/[a-z0-9+.-]+;base64,(.+)$/i.exec(data);
+  if (!m) return res.status(400).json({ error: "not a base64 image, video or audio file" });
 
   let buf;
   try { buf = Buffer.from(m[2], "base64"); }
@@ -522,6 +577,7 @@ app.post("/api/posts/:id/comments", auth, verified, rateLimit({ max: 20, windowM
   const info = db.prepare(`INSERT INTO comments (post_id, author_id, body, created_at) VALUES (?,?,?,?)`)
     .run(post.id, req.user.id, body, Date.now());
   notify(post.author_id, req.user.id, "comment", post.id, body.slice(0, 80));
+  notifyMentions(body, req.user.id, post.id, "mention");
   broadcast("comment", { postId: post.id });
   res.json({ id: Number(info.lastInsertRowid) });
 });
@@ -737,7 +793,7 @@ app.get("/api/search", maybeAuth, (req, res) => {
       role: p.role, roles: (() => { try { return JSON.parse(p.roles || "[]"); } catch { return [p.role]; } })(),
       rep: p.rep, level: levelFor(p.rep).id, bio: p.bio,
     })),
-    posts: posts.filter((p) => !hidden.has(p.author_username)).map(shapePost),
+    posts: shapePosts(posts.filter((p) => !hidden.has(p.author_username))),
   });
 });
 
@@ -772,24 +828,179 @@ function admin(req, res, next) {
   if (!req.user.is_admin) return res.status(403).json({ error: "admins only" });
   next();
 }
+
+/* ================================================================
+   ADMIN DASHBOARD
+   The numbers here measure THIS model, not a generic app. Follower count
+   never tells you whether the flywheel is turning — confirmed collabs do.
+   Every query sits behind admin(), enforced server-side. Hiding a button
+   in the UI is not access control.
+================================================================ */
+const DAY = 86400000;
+
+app.get("/api/admin/overview", auth, admin, (req, res) => {
+  const now = Date.now();
+  const since = (d) => now - d * DAY;
+  const one = (sql, ...p) => db.prepare(sql).get(...p)?.n ?? 0;
+
+  const feeRows = db.prepare(`
+    SELECT o.amount_cents, u.rep FROM orders o JOIN users u ON u.id = o.seller_id
+    WHERE o.status IN ('paid','shipped','complete')`).all();
+  const earned = feeRows.reduce((s, r) => s + Math.round(r.amount_cents * (feeForRep(r.rep) / 100)), 0);
+
+  const levels = LEVELS.map((l, i) => ({
+    level: l.id, name: l.name,
+    n: i < LEVELS.length - 1
+      ? one(`SELECT COUNT(*) n FROM users WHERE rep >= ? AND rep < ?`, l.at, LEVELS[i + 1].at)
+      : one(`SELECT COUNT(*) n FROM users WHERE rep >= ?`, l.at),
+  }));
+
+  const daily = [];
+  for (let i = 13; i >= 0; i--) {
+    const from = now - (i + 1) * DAY, to = now - i * DAY;
+    daily.push({
+      d: new Date(to).toISOString().slice(5, 10),
+      posts: one(`SELECT COUNT(*) n FROM posts WHERE created_at > ? AND created_at <= ?`, from, to),
+      joins: one(`SELECT COUNT(*) n FROM users WHERE created_at > ? AND created_at <= ?`, from, to),
+    });
+  }
+
+  res.json({
+    members: one(`SELECT COUNT(*) n FROM users`),
+    verified: one(`SELECT COUNT(*) n FROM users WHERE email_verified = 1`),
+    newWeek: one(`SELECT COUNT(*) n FROM users WHERE created_at > ?`, since(7)),
+    active: one(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE created_at > ?`, since(7)),
+    activeMonth: one(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE created_at > ?`, since(30)),
+    posts: one(`SELECT COUNT(*) n FROM posts`),
+    work: one(`SELECT COUNT(*) n FROM posts WHERE is_work = 1`),
+    workWeek: one(`SELECT COUNT(*) n FROM posts WHERE is_work = 1 AND created_at > ?`, since(7)),
+    // the flywheel metric — if this is zero, nothing else matters
+    collabs: one(`SELECT COUNT(*) n FROM collaborators WHERE status = 'accepted'`),
+    collabsWeek: one(`SELECT COUNT(*) n FROM collaborators WHERE status = 'accepted' AND created_at > ?`, since(7)),
+    pendingCollabs: one(`SELECT COUNT(*) n FROM collaborators WHERE status = 'pending'`),
+    shares: one(`SELECT COUNT(*) n FROM posts WHERE shared_from IS NOT NULL`),
+    crossLab: one(`SELECT COUNT(*) n FROM posts s JOIN posts o ON o.id = s.shared_from WHERE s.channel != o.channel`),
+    listings: one(`SELECT COUNT(*) n FROM listings WHERE status = 'active'`),
+    sold: one(`SELECT COUNT(*) n FROM orders WHERE status IN ('paid','shipped','complete')`),
+    gmv: db.prepare(`SELECT COALESCE(SUM(amount_cents + shipping_cents),0) n FROM orders WHERE status IN ('paid','shipped','complete')`).get().n,
+    earned,
+    openReports: one(`SELECT COUNT(*) n FROM reports WHERE handled_at IS NULL`),
+    dms: one(`SELECT COUNT(*) n FROM dm_messages`),
+    beats: one(`SELECT COUNT(*) n FROM beat_projects`),
+    levels, daily,
+    paymentsOn: PAYMENTS_ENABLED,
+    mailOn: MAIL_ENABLED,
+  });
+});
+
+app.get("/api/admin/members", auth, admin, (req, res) => {
+  const term = (req.query.q || "").toString().toLowerCase();
+  const where = term ? `WHERE LOWER(u.username) LIKE ? OR LOWER(u.display_name) LIKE ? OR LOWER(u.email) LIKE ?` : "";
+  const rows = db.prepare(`
+    SELECT u.id, u.username, u.display_name, u.email, u.avatar_url, u.role, u.roles, u.rep,
+           u.email_verified, u.published, u.is_admin, u.stripe_ready, u.created_at,
+      (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) AS posts,
+      (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id AND p.is_work = 1) AS work,
+      (SELECT COUNT(*) FROM collaborators c WHERE c.user_id = u.id AND c.status='accepted') AS collabs,
+      (SELECT COUNT(*) FROM likes l JOIN posts p ON p.id = l.post_id WHERE p.author_id = u.id) AS likes,
+      (SELECT MAX(created_at) FROM posts p WHERE p.author_id = u.id) AS last_post
+    FROM users u ${where}
+    ORDER BY u.rep DESC, u.created_at DESC LIMIT 200`)
+    .all(...(term ? [`%${term}%`, `%${term}%`, `%${term}%`] : []));
+  res.json({
+    members: rows.map((r) => ({
+      id: r.id, username: r.username, displayName: r.display_name, email: r.email,
+      avatarUrl: r.avatar_url || "", role: r.role,
+      roles: (() => { try { return JSON.parse(r.roles || "[]"); } catch { return []; } })(),
+      rep: r.rep, level: levelFor(r.rep).id, levelName: levelFor(r.rep).name, fee: feeForRep(r.rep),
+      verified: !!r.email_verified, published: !!r.published, isAdmin: !!r.is_admin, payouts: !!r.stripe_ready,
+      posts: r.posts, work: r.work, collabs: r.collabs, likes: r.likes,
+      lastPost: r.last_post, joined: r.created_at,
+    })),
+  });
+});
+
+/* Manual rep — the "feature" award from the model, auditable like the rest. */
+app.post("/api/admin/members/:username/feature", auth, admin, (req, res) => {
+  const u = q.userByName.get(req.params.username);
+  if (!u) return res.status(404).json({ error: "no such user" });
+  awardRep(u.id, "feature", null);
+  notify(u.id, req.user.id, "feature", null, "featured your work");
+  res.json({ ok: true, rep: q.userById.get(u.id).rep });
+});
+
+app.post("/api/admin/members/:username/verify", auth, admin, (req, res) => {
+  const u = q.userByName.get(req.params.username);
+  if (!u) return res.status(404).json({ error: "no such user" });
+  db.prepare(`UPDATE users SET email_verified = 1 WHERE id = ?`).run(u.id);
+  res.json({ ok: true });
+});
+
+app.get("/api/admin/content", auth, admin, (req, res) => {
+  const rows = db.prepare(`
+    SELECT p.id, p.channel, p.body, p.image_url, p.thumb_url, p.video_url, p.beat_json, p.is_work, p.created_at,
+           u.username, u.display_name, u.avatar_url,
+      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS likes,
+      (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comments,
+      (SELECT COUNT(*) FROM collaborators c WHERE c.post_id = p.id AND c.status='accepted') AS collabs
+    FROM posts p JOIN users u ON u.id = p.author_id
+    ORDER BY p.created_at DESC LIMIT 60`).all();
+  res.json({
+    posts: rows.map((r) => ({
+      id: r.id, channel: r.channel, body: r.body,
+      thumbUrl: r.thumb_url || r.image_url, videoUrl: r.video_url, isBeat: !!r.beat_json,
+      isWork: !!r.is_work, createdAt: r.created_at,
+      author: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "" },
+      likes: r.likes, comments: r.comments, collabs: r.collabs,
+    })),
+  });
+});
+
+app.get("/api/admin/orders", auth, admin, (req, res) => {
+  const rows = db.prepare(`
+    SELECT o.*, l.title, b.username AS buyer, s.username AS seller, s.rep AS seller_rep
+    FROM orders o
+    JOIN listings l ON l.id = o.listing_id
+    JOIN users b ON b.id = o.buyer_id
+    JOIN users s ON s.id = o.seller_id
+    ORDER BY o.created_at DESC LIMIT 80`).all();
+  res.json({
+    orders: rows.map((r) => ({
+      id: r.id, title: r.title, buyer: r.buyer, seller: r.seller,
+      amount: r.amount_cents, shipping: r.shipping_cents,
+      fee: Math.round(r.amount_cents * (feeForRep(r.seller_rep) / 100)),
+      feePct: feeForRep(r.seller_rep),
+      status: r.status, tracking: r.tracking, paid: !!r.payment_ref, createdAt: r.created_at,
+    })),
+  });
+});
+
 app.get("/api/admin/reports", auth, admin, (req, res) => {
   const rows = db.prepare(`
-    SELECT r.*, ru.username AS reporter, tu.username AS reported
+    SELECT r.*, ru.username AS reporter, tu.username AS reported,
+           p.body AS post_body, p.channel AS post_channel, p.image_url AS post_img
     FROM reports r
     LEFT JOIN users ru ON ru.id = r.reporter_id
     LEFT JOIN users tu ON tu.id = r.user_id
+    LEFT JOIN posts p ON p.id = r.post_id
     WHERE r.handled_at IS NULL ORDER BY r.created_at DESC LIMIT 50`).all();
   res.json({ reports: rows });
 });
+
 app.post("/api/admin/reports/:id/handle", auth, admin, (req, res) => {
   db.prepare(`UPDATE reports SET handled_at = ? WHERE id = ?`).run(Date.now(), Number(req.params.id));
   res.json({ ok: true });
 });
+
 app.delete("/api/admin/posts/:id", auth, admin, (req, res) => {
   db.prepare(`DELETE FROM posts WHERE id = ?`).run(Number(req.params.id));
   broadcast("post-delete", { id: Number(req.params.id) });
   res.json({ ok: true });
 });
+
+/* The dashboard page. Gated in the browser too, but the real gate is every
+   endpoint above — the page is inert without a valid admin token. */
+app.get("/admin", (_req, res) => res.sendFile(join(__dirname, "..", "public", "admin.html")));
 
 /* ================================================================
    MARKET — peer-to-peer listings. Anyone verified can sell.
@@ -797,7 +1008,28 @@ app.delete("/api/admin/posts/:id", auth, admin, (req, res) => {
 const CATEGORIES = ["Tops", "Bottoms", "Outerwear", "Footwear", "Accessories", "Headwear", "Bags", "Jewellery", "Art / Prints", "Other"];
 const CONDITIONS = ["Deadstock", "Like New", "Good", "Worn", "Distressed"];
 
-function shapeListing(r, viewerId) {
+/* Same N+1 problem the feed had: two queries per listing. Batched. */
+function listingSidecar(rows, viewerId) {
+  const ids = rows.map((r) => r.id);
+  const counts = new Map(), mine = new Set();
+  if (!ids.length) return { counts, mine };
+  const holes = ids.map(() => "?").join(",");
+  for (const r of db.prepare(
+    `SELECT listing_id, COUNT(*) n FROM listing_likes WHERE listing_id IN (${holes}) GROUP BY listing_id`
+  ).all(...ids)) counts.set(r.listing_id, r.n);
+  if (viewerId) {
+    for (const r of db.prepare(
+      `SELECT listing_id FROM listing_likes WHERE user_id = ? AND listing_id IN (${holes})`
+    ).all(viewerId, ...ids)) mine.add(r.listing_id);
+  }
+  return { counts, mine };
+}
+function shapeListings(rows, viewerId) {
+  const side = listingSidecar(rows, viewerId);
+  return rows.map((r) => shapeListing(r, viewerId, side));
+}
+
+function shapeListing(r, viewerId, side) {
   let images = [];
   try { images = JSON.parse(r.images || "[]"); } catch {}
   return {
@@ -818,8 +1050,10 @@ function shapeListing(r, viewerId) {
     status: r.status,
     views: r.views,
     createdAt: r.created_at,
-    likeCount: db.prepare(`SELECT COUNT(*) n FROM listing_likes WHERE listing_id = ?`).get(r.id).n,
-    likedByMe: viewerId ? !!db.prepare(`SELECT 1 FROM listing_likes WHERE listing_id = ? AND user_id = ?`).get(r.id, viewerId) : false,
+    likeCount: side ? (side.counts.get(r.id) || 0)
+      : db.prepare(`SELECT COUNT(*) n FROM listing_likes WHERE listing_id = ?`).get(r.id).n,
+    likedByMe: side ? side.mine.has(r.id)
+      : (viewerId ? !!db.prepare(`SELECT 1 FROM listing_likes WHERE listing_id = ? AND user_id = ?`).get(r.id, viewerId) : false),
     seller: {
       username: r.seller_username,
       displayName: r.seller_name,
@@ -835,8 +1069,12 @@ const LISTING_SELECT = `
          u.avatar_url AS seller_avatar, u.rep AS seller_rep
   FROM listings l JOIN users u ON u.id = l.seller_id`;
 
-app.get("/api/market/meta", (_req, res) => {
-  res.json({ categories: CATEGORIES, conditions: CONDITIONS, paymentsEnabled: PAYMENTS_ENABLED, feePct: PLATFORM_FEE_PCT });
+app.get("/api/market/meta", maybeAuth, (req, res) => {
+  res.json({
+    categories: CATEGORIES, conditions: CONDITIONS, paymentsEnabled: PAYMENTS_ENABLED,
+    feePct: req.user ? feeForRep(req.user.rep) : FEE_BY_LEVEL[1],
+    feeLadder: LEVELS.map((l) => ({ level: l.id, name: l.name, at: l.at, fee: FEE_BY_LEVEL[l.id] })),
+  });
 });
 
 /* ---- seller payouts (Stripe Standard Connect) ----
@@ -895,7 +1133,7 @@ app.get("/api/market", maybeAuth, (req, res) => {
     : sort === "liked" ? `(SELECT COUNT(*) FROM listing_likes ll WHERE ll.listing_id = l.id) DESC` : `l.created_at DESC`;
   const rows = db.prepare(`${LISTING_SELECT} WHERE ${where.join(" AND ")} ORDER BY ${order} LIMIT 60`).all(...params);
   const hidden = req.user ? blockedIds(req.user.id) : new Set();
-  res.json({ listings: rows.filter((r) => !hidden.has(r.seller_username)).map((r) => shapeListing(r, req.user?.id)) });
+  res.json({ listings: shapeListings(rows.filter((r) => !hidden.has(r.seller_username)), req.user?.id) });
 });
 
 app.get("/api/market/:id", maybeAuth, (req, res) => {
@@ -1046,6 +1284,7 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
       cancelUrl: `${base}/?checkout=cancelled`,
       buyerEmail: req.user.email,
       sellerAccount: seller.stripe_account,
+      feePct: feeForRep(seller.rep),   // their level sets their rate
     });
     if (out.error) return res.status(502).json({ error: out.error });
     db.prepare(`UPDATE orders SET payment_ref = ? WHERE id = ?`).run(out.id, orderId);
@@ -1053,6 +1292,10 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
   }
 
   // No payment provider configured: reserve the item and let them settle up.
+  // NOTE: no rep is awarded here, deliberately. Nothing verifiable happened —
+  // two friends could "buy" from each other all day for free. Rep needs
+  // evidence, and in arrange mode there is none. Once Stripe is on, a sale
+  // costs real money to fake, so it earns rep.
   db.prepare(`UPDATE listings SET status='sold', updated_at=? WHERE id=?`).run(now, l.id);
   notify(l.seller_id, req.user.id, "sale", null, `bought "${l.title}" — arrange payment & shipping`);
   res.json({ orderId, arrange: true });
@@ -1069,6 +1312,8 @@ app.get("/api/market/checkout/done", async (req, res) => {
     db.prepare(`UPDATE orders SET status='paid', updated_at=? WHERE id=?`).run(Date.now(), order.id);
     db.prepare(`UPDATE listings SET status='sold', updated_at=? WHERE id=?`).run(Date.now(), order.listing_id);
     const l = db.prepare(`SELECT title FROM listings WHERE id=?`).get(order.listing_id);
+    // A sale is validation with money behind it — the hardest signal to fake.
+    awardRep(order.seller_id, "sale_made", order.id);
     notify(order.seller_id, order.buyer_id, "sale", null, `paid for "${l?.title || "your listing"}" — ship it`);
   }
   res.redirect("/?checkout=paid");
@@ -1106,9 +1351,73 @@ app.post("/api/orders/:id/received", auth, (req, res) => {
   const o = db.prepare(`SELECT * FROM orders WHERE id = ?`).get(Number(req.params.id));
   if (!o) return res.status(404).json({ error: "no order" });
   if (o.buyer_id !== req.user.id) return res.status(403).json({ error: "not your order" });
+  // Only pay rep for deliveries on orders that were actually PAID. An
+  // arrange-mode order is two people clicking buttons — no evidence, no rep.
+  if (o.status !== "complete" && (o.status === "shipped" || o.status === "paid") && o.payment_ref) {
+    awardRep(o.seller_id, "delivery_confirmed", o.id);
+  }
   db.prepare(`UPDATE orders SET status='complete', updated_at=? WHERE id=?`).run(Date.now(), o.id);
   notify(o.seller_id, req.user.id, "order_complete", null, "confirmed delivery");
   res.json({ ok: true });
+});
+
+/* ================================================================
+   UNREADS — the dot next to a channel name. Without this nobody knows
+   anything happened, so nobody comes back.
+================================================================ */
+app.get("/api/unreads", auth, (req, res) => {
+  // Never counts your own posts — you know what you wrote.
+  const rows = db.prepare(`
+    SELECT p.channel, COUNT(*) n FROM posts p
+    LEFT JOIN channel_reads r ON r.user_id = ? AND r.channel = p.channel
+    WHERE p.author_id != ? AND p.created_at > COALESCE(r.last_read_at, 0)
+    GROUP BY p.channel`).all(req.user.id, req.user.id);
+  const out = {};
+  for (const r of rows) out[r.channel] = r.n;
+  res.json({ unreads: out });
+});
+
+app.post("/api/channels/:channel/read", auth, (req, res) => {
+  db.prepare(
+    `INSERT INTO channel_reads (user_id, channel, last_read_at) VALUES (?,?,?)
+     ON CONFLICT(user_id, channel) DO UPDATE SET last_read_at = excluded.last_read_at`
+  ).run(req.user.id, String(req.params.channel).slice(0, 40), Date.now());
+  res.json({ ok: true });
+});
+
+/* ================================================================
+   MENTIONS — @someone is how a conversation becomes a collaboration.
+================================================================ */
+const MENTION_RE = /@([a-z0-9._]{2,20})/gi;
+function notifyMentions(text, actorId, postId, kind) {
+  if (!text) return;
+  const seen = new Set();
+  let m;
+  MENTION_RE.lastIndex = 0;
+  while ((m = MENTION_RE.exec(text))) {
+    const name = m[1].toLowerCase();
+    if (seen.has(name)) continue;
+    seen.add(name);
+    const u = q.userByName.get(name);
+    if (u && u.id !== actorId) {
+      notify(u.id, actorId, kind || "mention", postId, text.slice(0, 80));
+    }
+  }
+}
+
+/* People you can @ — used by the mention picker. */
+app.get("/api/mentionable", auth, (req, res) => {
+  const term = (req.query.q || "").toString().toLowerCase().slice(0, 20);
+  const hidden = blockedIds(req.user.id);
+  const rows = db.prepare(`
+    SELECT username, display_name, avatar_url, role FROM users
+    WHERE username != ? AND (? = '' OR username LIKE ? OR LOWER(display_name) LIKE ?)
+    ORDER BY rep DESC LIMIT 8`).all(req.user.username, term, `${term}%`, `${term}%`);
+  res.json({
+    people: rows.filter((r) => !hidden.has(r.username)).map((r) => ({
+      username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", role: r.role,
+    })),
+  });
 });
 
 /* ================================================================
@@ -1142,6 +1451,40 @@ app.post("/api/posts/:id/collab/accept", auth, verified, (req, res) => {
   res.json({ ok: true, status: "accepted" });
 });
 
+/* Same role→identity map the app uses, so a public portfolio reads in the
+   language of the trade rather than a generic "WORK". Kept in step with
+   KINDS/ROLE_KIND in public/index.html. */
+const KINDS = {
+  visual:   { tag: "VISUAL",  work: "WORK",     blurb: "Visual work — posters, graphics, and the archive behind them." },
+  lens:     { tag: "LENS",    work: "SHOTS",    blurb: "Photography and film." },
+  fashion:  { tag: "FASHION", work: "PIECES",   blurb: "Garments, styling, and the material end of the network." },
+  music:    { tag: "SOUND",   work: "TRACKS",   blurb: "Beats, records, and the people on them." },
+  word:     { tag: "WORD",    work: "WRITING",  blurb: "Words, stories, and coverage of the scene." },
+  build:    { tag: "BUILD",   work: "PROJECTS", blurb: "Sites, apps, and the interfaces the culture runs on." },
+  business: { tag: "BUILDER", work: "VENTURES", blurb: "Building the thing behind the thing." },
+  anime:    { tag: "AKATSUKI", work: "PANELS",   blurb: "Anime, manga, and the visual language it hands the rest of the network." },
+};
+const ROLE_KIND = {
+  "Graphic Designer": "visual", "Illustrator": "visual", "3D Artist": "visual", "Motion Designer": "visual",
+  "Animator": "visual", "Art Director": "visual", "Painter": "visual", "Sculptor": "visual",
+  "Tattoo Artist": "visual", "Curator": "visual", "Manga Artist": "visual", "Character Designer": "visual",
+  "Manga Artist": "anime", "Cosplayer": "anime", "AMV Editor": "anime",
+  "Photographer": "lens", "Videographer": "lens", "Video Editor": "lens", "Cinematographer": "lens", "AMV Editor": "lens",
+  "Fashion Designer": "fashion", "Stylist": "fashion", "Model": "fashion", "Tailor": "fashion", "Sneaker Customizer": "fashion", "Cosplayer": "fashion",
+  "Producer": "music", "Beatmaker": "music", "Lyricist / Singer": "music", "Rapper": "music", "DJ": "music",
+  "Audio Engineer": "music", "Musician": "music",
+  "Writer": "word", "Copywriter": "word", "Journalist": "word", "Content Creator": "word", "Actor": "word",
+  "Web Designer": "build", "Web Developer": "build", "App Developer": "build", "UI/UX Designer": "build", "Product Designer": "build",
+  "Entrepreneur": "business", "Founder": "business", "Brand Strategist": "business", "Marketer": "business",
+  "Manager": "business", "A&R": "business", "Photographer's Agent": "business", "Event Organizer": "business",
+};
+function kindFor(rolesJson, role) {
+  let rs = [];
+  try { rs = JSON.parse(rolesJson || "[]"); } catch {}
+  if (!rs.length && role) rs = [role];
+  return KINDS[ROLE_KIND[rs[0]] || "visual"] || KINDS.visual;
+}
+
 /* ================================================================
    PUBLISH — a portfolio is private to the network until you publish
    it. Published profiles get a public URL anyone can open without an
@@ -1170,10 +1513,11 @@ app.get("/u/:username", (req, res) => {
 <p style="color:#8A8A8A;font-size:14px">This portfolio is private or doesn't exist.</p>
 <a href="/" style="display:inline-block;margin-top:16px;background:#fff;color:#000;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:9px">Enter the lab</a></div></body>`);
   }
-  const posts = feedRows({ authorId: u.id, viewerId: 0, limit: 60, workOnly: true }).map(shapePost);
+  const posts = shapePosts(feedRows({ authorId: u.id, viewerId: 0, limit: 60, workOnly: true }));
   const likes = db.prepare(`SELECT COUNT(*) n FROM likes l JOIN posts p ON p.id=l.post_id WHERE p.author_id=?`).get(u.id).n;
   const collabs = db.prepare(`SELECT COUNT(*) n FROM collaborators WHERE user_id=? AND status='accepted'`).get(u.id).n;
   const lvl = levelFor(u.rep);
+  const K = kindFor(u.roles, u.role);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   const work = posts.map((p) => `
@@ -1190,12 +1534,13 @@ app.get("/u/:username", (req, res) => {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(u.display_name)} — TNL LABS</title>
 <meta property="og:title" content="${esc(u.display_name)} — TNL LABS">
-<meta property="og:description" content="${esc(u.bio || u.role)}">
-<meta name="description" content="${esc(u.bio || u.role)}">
+<meta property="og:description" content="${esc(u.bio || K.blurb)}">
+<meta name="description" content="${esc(u.bio || K.blurb)}">
 </head>
 <body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif">
 <div style="max-width:640px;margin:0 auto;padding:28px 18px 60px">
   <a href="/" style="color:#22C55E;font-family:monospace;font-size:11px;letter-spacing:.16em;text-decoration:none">TNLLABS &#129514;</a>
+  <div style="font-family:monospace;font-size:9px;letter-spacing:.14em;color:#8A8A8A;margin-top:14px">${esc(K.tag)}</div>
   <div style="display:flex;align-items:center;gap:13px;margin-top:22px">
     ${u.avatar_url ? `<img src="${esc(u.avatar_url)}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #22C55E">` : `<div style="width:56px;height:56px;border-radius:50%;background:#141414;border:2px solid #22C55E;display:flex;align-items:center;justify-content:center;font-family:monospace">${esc(u.display_name.slice(0, 2).toUpperCase())}</div>`}
     <div><div style="font-size:20px;font-weight:900;text-transform:uppercase">${esc(u.display_name)}</div>
@@ -1205,7 +1550,7 @@ app.get("/u/:username", (req, res) => {
   ${u.bio ? `<p style="font-size:14px;line-height:1.6;color:#D6D2C8;margin:16px 0 8px;white-space:pre-wrap">${esc(u.bio)}</p>` : ""}
   ${u.link ? `<a href="${/^https?:\/\//.test(u.link) ? esc(u.link) : "https://" + esc(u.link)}" target="_blank" rel="noreferrer nofollow" style="color:#22C55E;font-family:monospace;font-size:11px;text-decoration:none">↗ ${esc(u.link.replace(/^https?:\/\//, ""))}</a>` : ""}
   <div style="display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12);padding:14px 0;margin:16px 0 20px">
-    <div style="flex:1"><b style="font-size:17px">${posts.length}</b><div style="font-family:monospace;font-size:9px;color:#8A8A8A">WORK</div></div>
+    <div style="flex:1"><b style="font-size:17px">${posts.length}</b><div style="font-family:monospace;font-size:9px;color:#8A8A8A">${esc(K.work)}</div></div>
     <div style="flex:1"><b style="font-size:17px">${likes}</b><div style="font-family:monospace;font-size:9px;color:#8A8A8A">LIKES</div></div>
     <div style="flex:1"><b style="font-size:17px">${collabs}</b><div style="font-family:monospace;font-size:9px;color:#8A8A8A">COLLABS</div></div>
   </div>
@@ -1281,7 +1626,7 @@ app.get("/api/feed/showroom", maybeAuth, (req, res) => {
     ) DESC
     LIMIT 60`).all(req.user?.id || 0, Date.now());
   const hidden = req.user ? blockedIds(req.user.id) : new Set();
-  res.json({ posts: rows.filter((r) => !hidden.has(r.author_username)).map(shapePost) });
+  res.json({ posts: shapePosts(rows.filter((r) => !hidden.has(r.author_username))) });
 });
 
 /* Builders — people whose work is being validated right now. */
@@ -1337,7 +1682,7 @@ app.patch("/api/me", auth, (req, res) => {
 app.get("/api/users/:username", maybeAuth, (req, res) => {
   const u = q.userByName.get(req.params.username);
   if (!u) return res.status(404).json({ error: "no such user" });
-  const posts = feedRows({ authorId: u.id, viewerId: req.user?.id, limit: 200, workOnly: true }).map(shapePost);
+  const posts = shapePosts(feedRows({ authorId: u.id, viewerId: req.user?.id, limit: 40, workOnly: true }));
 
   // work they collaborated ON (someone else's post they accepted)
   const collabRows = db.prepare(`
@@ -1366,7 +1711,7 @@ app.get("/api/users/:username", maybeAuth, (req, res) => {
     youFollow: req.user ? !!q.followExists.get(req.user.id, u.id) : false,
     stats: { posts: posts.length, likesReceived, collabs: collabCount },
     posts,
-    collabs: collabRows.map(shapePost),
+    collabs: shapePosts(collabRows),
   });
 });
 
@@ -1385,7 +1730,7 @@ app.get("/api/feed/following", auth, (req, res) => {
     WHERE p.author_id IN (${placeholders})
     ORDER BY p.created_at DESC LIMIT 60`;
   const rows = db.prepare(sql).all(req.user.id, ...ids);
-  res.json({ posts: rows.map(shapePost) });
+  res.json({ posts: shapePosts(rows) });
 });
 
 /* ---- meta ---- */

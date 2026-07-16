@@ -235,7 +235,28 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_orders_seller ON orders(seller_id, created_at);
 
+CREATE TABLE IF NOT EXISTS channel_reads (
+  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  channel      TEXT NOT NULL,
+  last_read_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, channel)
+);
+
 CREATE INDEX IF NOT EXISTS idx_posts_channel ON posts(channel, created_at);
+/* These back the hot paths: every feed counts likes per post, every
+   profile pulls a person's work, every load resolves a session token. */
+CREATE INDEX IF NOT EXISTS idx_likes_post ON likes(post_id);
+CREATE INDEX IF NOT EXISTS idx_likes_user ON likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_posts_shared ON posts(shared_from);
+CREATE INDEX IF NOT EXISTS idx_posts_work ON posts(is_work, created_at);
+CREATE INDEX IF NOT EXISTS idx_collab_user ON collaborators(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_collab_post ON collaborators(post_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_follows_followee ON follows(followee_id);
+CREATE INDEX IF NOT EXISTS idx_notifs_unread ON notifications(user_id, read_at);
+CREATE INDEX IF NOT EXISTS idx_dm_unread ON dm_messages(thread_id, sender_id, read_at);
+CREATE INDEX IF NOT EXISTS idx_llikes_listing ON listing_likes(listing_id);
+CREATE INDEX IF NOT EXISTS idx_users_rep ON users(rep);
 CREATE INDEX IF NOT EXISTS idx_posts_author  ON posts(author_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_rep_user      ON rep_events(user_id, created_at);
 `);
@@ -269,6 +290,11 @@ if (!cols.includes("roles")) {
 const pcols = db.prepare(`PRAGMA table_info(posts)`).all().map((c) => c.name);
 if (!pcols.includes("video_url")) db.exec(`ALTER TABLE posts ADD COLUMN video_url TEXT`);
 if (!pcols.includes("edited_at")) db.exec(`ALTER TABLE posts ADD COLUMN edited_at INTEGER`);
+/* Thumbnails + intrinsic size. Without width/height the browser can't
+   reserve space, so the feed jumps while you scroll. */
+if (!pcols.includes("thumb_url")) db.exec(`ALTER TABLE posts ADD COLUMN thumb_url TEXT`);
+if (!pcols.includes("media_w")) db.exec(`ALTER TABLE posts ADD COLUMN media_w INTEGER`);
+if (!pcols.includes("media_h")) db.exec(`ALTER TABLE posts ADD COLUMN media_h INTEGER`);
 if (!pcols.includes("is_work")) {
   db.exec(`ALTER TABLE posts ADD COLUMN is_work INTEGER NOT NULL DEFAULT 0`);
   // everything with media that already existed was, in effect, published work
@@ -281,8 +307,24 @@ if (!cols.includes("stripe_ready")) db.exec(`ALTER TABLE users ADD COLUMN stripe
 if (!cols.includes("is_admin")) db.exec(`ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0`);
 
 /** The founder needs moderation powers. Runs on every boot so it works on
- *  a fresh install too, not just on migration. No-op once an admin exists. */
+ *  a fresh install too, not just on migration. No-op once an admin exists.
+ *
+ *  Set ADMIN_EMAIL to claim the account by email — that's deliberately not
+ *  a hardcoded password. A password in source is a password in the repo,
+ *  and anyone who reads it owns your admin account. Sign up normally with
+ *  that address and you're promoted automatically, on this boot or the
+ *  moment you register. */
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+
 export function ensureAdmin() {
+  if (ADMIN_EMAIL) {
+    const owner = db.prepare(`SELECT id, username, is_admin FROM users WHERE LOWER(email) = ?`).get(ADMIN_EMAIL);
+    if (owner && !owner.is_admin) {
+      db.prepare(`UPDATE users SET is_admin = 1 WHERE id = ?`).run(owner.id);
+      console.log(`[db] @${owner.username} promoted to admin (ADMIN_EMAIL)`);
+    }
+    if (owner) return; // the named owner is the admin; don't also promote user #1
+  }
   const has = db.prepare(`SELECT COUNT(*) n FROM users WHERE is_admin = 1`).get().n;
   if (has) return;
   const first = db.prepare(`SELECT id, username FROM users ORDER BY id LIMIT 1`).get();
@@ -296,18 +338,31 @@ ensureAdmin();
 const insNotif = db.prepare(
   `INSERT INTO notifications (user_id, actor_id, kind, post_id, body, created_at) VALUES (?, ?, ?, ?, ?, ?)`
 );
-/** Never notify someone about their own action. Returns the row id or null. */
+/** Award a notification. Never throws: a notification is a side effect,
+ *  and it must never take down the action that triggered it. If a post
+ *  is deleted mid-flight the FK fails — that's a log line, not a 500. */
 export function notify(userId, actorId, kind, postId = null, body = "") {
   if (!userId || userId === actorId) return null;
-  const info = insNotif.run(userId, actorId, kind, postId, body, Date.now());
-  return Number(info.lastInsertRowid);
+  try {
+    const info = insNotif.run(userId, actorId, kind, postId, body, Date.now());
+    return Number(info.lastInsertRowid);
+  } catch (e) {
+    console.error("[notify] skipped:", kind, e.message);
+    return null;
+  }
 }
 
-/* ---- rep rules — the ONLY ways rep is created ---- */
+/* ---- rep rules — the ONLY ways rep is created ----
+   Every single one requires SOMEONE ELSE to act. Nothing here can be
+   farmed alone, which is the whole point: listing earns nothing,
+   because listing is free and proves nothing. Selling earns, because
+   a buyer chose it. Delivering earns, because they confirmed it. */
 export const REP = {
   like_received: 6,     // someone validated your work
   share_received: 3,    // your work was worth re-circulating
   collab_accepted: 20,  // a confirmed, two-sided collaboration
+  sale_made: 15,        // someone paid for your work
+  delivery_confirmed: 10, // and the buyer confirmed you delivered
   feature: 40,          // founder/mod feature (manual)
 };
 
@@ -346,4 +401,17 @@ export const LEVELS = [
 ];
 export function levelFor(rep) {
   return LEVELS.reduce((a, l) => (rep >= l.at ? l : a), LEVELS[0]);
+}
+
+/* Commission by level. Depop is ~10% flat forever. Here it falls as the
+   community vouches for you — the loyalty system paying out in money
+   rather than badges.
+
+   This can't be farmed, and that's the point: rep only comes from other
+   people acting (likes, shares, accepted collabs, and now completed
+   sales). Listing costs nothing and proves nothing, so it earns nothing.
+   A lower rate means you were validated, not that you posted more junk. */
+export const FEE_BY_LEVEL = { 1: 10, 2: 8, 3: 6, 4: 4, 5: 2 };
+export function feeForRep(rep) {
+  return FEE_BY_LEVEL[levelFor(rep).id] ?? 10;
 }
