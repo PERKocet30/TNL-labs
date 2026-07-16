@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync, createWriteStream, rename, rm } from "node:fs";
 import { db, awardRep, revokeRep, levelFor, LEVELS, DATA_DIR, notify, ensureAdmin, feeForRep, FEE_BY_LEVEL } from "./db.js";
 import { sendVerifyEmail, sendResetEmail, MAIL_ENABLED } from "./mail.js";
 import { createCheckout, verifySession, PAYMENTS_ENABLED, platformFee,
@@ -49,9 +49,25 @@ setInterval(() => {
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "12mb" })); // images arrive as base64 in the body
+/* Real media does NOT come through here — it streams to disk via
+   /api/upload/stream. This limit only covers small base64 payloads
+   (avatars, beat audio), and stays low on purpose: anything parsed as
+   JSON is held in RAM in full. */
+app.use(express.json({ limit: "12mb" })); // only the small base64 route uses this now
 app.use(express.static(join(__dirname, "..", "public")));
 app.use("/uploads", express.static(UPLOAD_DIR, { maxAge: "365d" }));
+
+/* Express's own body-parser errors are ugly and unhandled by default.
+   Turn "PayloadTooLargeError" into something a person can act on. */
+app.use((err, req, res, next) => {
+  if (err?.type === "entity.too.large") {
+    return res.status(413).json({ error: "That file's too big — 25MB max for video, 8MB for images" });
+  }
+  if (err?.type === "entity.parse.failed") {
+    return res.status(400).json({ error: "bad request body" });
+  }
+  next(err);
+});
 
 /* ================================================================
    PREPARED STATEMENTS
@@ -298,30 +314,60 @@ app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (
   res.json({ token, user: publicUser(fresh), mailSent: mail.sent, verifyUrl: mail.url });
 });
 
-/* Click-through from the email. Renders a small page, not JSON. */
+/* Click-through from the email. A real page, not JSON — this is often the
+   first thing a new member sees, so it shouldn't look like an API error. */
 app.get("/api/auth/verify", (req, res) => {
   const row = q.verifyToken.get(String(req.query.token || ""));
-  const page = (title, msg, ok) => `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
-<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center">
-<div style="max-width:340px;padding:24px">
+  const page = (title, msg, state) => `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${title} — TNL LABS</title></head>
+<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px">
+<div style="max-width:360px">
   <div style="color:#22C55E;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS &#129514;</div>
-  <h1 style="font-size:24px;margin:14px 0 8px;text-transform:uppercase">${title}</h1>
-  <p style="color:#8A8A8A;font-size:14px;line-height:1.6">${msg}</p>
-  ${ok ? `<a href="/" style="display:inline-block;margin-top:18px;background:#fff;color:#000;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:9px">Open the app</a>` : ""}
-</div></body>`;
-  if (!row) return res.status(400).send(page("Invalid link", "That verification link isn't recognised. Request a new one from the app.", false));
+  <div style="font-size:44px;margin:18px 0 6px">${state === "ok" ? "&#10003;" : "&#9888;"}</div>
+  <h1 style="font-size:24px;margin:8px 0;text-transform:uppercase;letter-spacing:-.5px">${title}</h1>
+  <p style="color:#8A8A8A;font-size:14px;line-height:1.65;margin:0 0 22px">${msg}</p>
+  <a href="/" style="display:inline-block;background:${state === "ok" ? "#22C55E" : "#fff"};color:#000;text-decoration:none;font-weight:700;font-size:14px;padding:13px 24px;border-radius:9px">
+    ${state === "ok" ? "Enter the lab" : "Back to TNL LABS"}</a>
+  ${state === "expired" ? `<p style="color:#5A5A5A;font-size:12px;margin-top:18px;line-height:1.6">Sign in and hit <b style="color:#8A8A8A">Resend</b> on the banner at the top — a new link takes a second.</p>` : ""}
+</div>
+${state === "ok" ? `<script>setTimeout(()=>location.href="/",2500)</script>` : ""}
+</body></html>`;
+
+  if (!row) {
+    // Either a bad link, or one that already worked — those look identical
+    // once the token is consumed, so don't accuse anyone of anything.
+    return res.status(400).send(page("Link already used",
+      "This link's been used or it isn't valid any more. If you already verified, you're good — just sign in.", "used"));
+  }
   if (row.expires_at < Date.now()) {
-    return res.status(400).send(page("Link expired", "Verification links last 24 hours. Request a new one from the app.", false));
+    return res.status(400).send(page("Link expired", "Verification links last 24 hours.", "expired"));
   }
   q.markVerified.run(row.user_id);
   q.clearVerifyTokens.run(row.user_id);
-  res.send(page("Email confirmed", "You're verified. Your account is live and your work can be published.", true));
+  const u = q.userById.get(row.user_id);
+  console.log(`[auth] @${u?.username} verified`);
+  res.send(page("You're in", "Email confirmed. Your account's live — post work, collab, and sell.", "ok"));
 });
 
+/* Resend, with a real cooldown. Without one, an impatient person taps five
+   times, sends five links, and the first four stop working — which reads
+   as "the app is broken". */
 app.post("/api/auth/resend", auth, rateLimit({ max: 4, windowMs: 900000, key: "user" }), async (req, res) => {
   if (req.user.email_verified) return res.json({ ok: true, already: true });
+  const last = db.prepare(`SELECT created_at FROM verify_tokens WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`)
+    .get(req.user.id);
+  if (last && Date.now() - last.created_at < 60000) {
+    const wait = Math.ceil((60000 - (Date.now() - last.created_at)) / 1000);
+    return res.status(429).json({ error: `Just sent one — check your inbox, or try again in ${wait}s` });
+  }
   const mail = await issueVerification(req.user, req);
-  res.json({ ok: true, mailSent: mail.sent, verifyUrl: mail.url });
+  res.json({ ok: true, mailSent: mail.sent, verifyUrl: mail.url, email: req.user.email });
+});
+
+/* Lets the app notice you verified in another tab without a reload. */
+app.get("/api/auth/status", auth, (req, res) => {
+  res.json({ verified: !!req.user.email_verified, email: req.user.email });
 });
 
 app.post("/api/auth/login", rateLimit({ max: 8, windowMs: 900000 }), async (req, res) => {
@@ -356,7 +402,12 @@ function verified(req, res, next) {
 /* The Showroom feed — work across every lab, newest first. `work=1`
    returns only posts carrying actual output (an image or a beat), so
    the front page is a portfolio wall, not chatter. */
-app.get("/api/feed", maybeAuth, (req, res) => {
+/* The line between the storefront and the workshop.
+   PUBLIC: the Showroom, the Market, profiles, search — the things that
+   explain what TNL is to someone who's never heard of it.
+   MEMBERS ONLY: the labs. That's where people actually talk, and it's not
+   a marketing surface. You get in by joining. */
+app.get("/api/feed", auth, (req, res) => {
   const workOnly = req.query.work === "1";
   const rows = feedRows({
     channel: req.query.channel,
@@ -431,6 +482,22 @@ app.post("/api/posts/:id/share", auth, verified, (req, res) => {
    trusting the declared mime type, then write a random filename —
    never anything derived from user input.
 ================================================================ */
+/* ================================================================
+   UPLOAD
+   Two paths, deliberately:
+
+   /api/upload        — small stuff (avatars, beat audio) as base64 JSON.
+                        Convenient, capped low, memory-safe.
+   /api/upload/stream — everything real. The raw file is the request body
+                        and gets piped to disk in chunks, so memory stays
+                        FLAT no matter how big the file is. This is what
+                        makes 650MB video possible at all: the old base64
+                        path held ~1.5GB in RAM for a 650MB clip and would
+                        take the container down.
+
+   We still sniff magic bytes — but from the FIRST CHUNK, before we agree
+   to write the rest. A liar gets one chunk, not a whole file.
+================================================================ */
 const MAGIC = [
   { ext: "jpg", kind: "image", bytes: [0xff, 0xd8, 0xff] },
   { ext: "png", kind: "image", bytes: [0x89, 0x50, 0x4e, 0x47] },
@@ -445,33 +512,84 @@ function sniff(buf) {
       return m;
     }
   }
-  // RIFF containers: WEBP handled above, WAVE is audio
   if (buf.slice(0, 4).toString("ascii") === "RIFF" && buf.slice(8, 12).toString("ascii") === "WAVE") {
     return { ext: "wav", kind: "audio" };
   }
-  // MP3: ID3 tag or a raw frame sync
   if (buf.slice(0, 3).toString("ascii") === "ID3") return { ext: "mp3", kind: "audio" };
   if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return { ext: "mp3", kind: "audio" };
-  // OGG/Opus — what Firefox tends to record
   if (buf.slice(0, 4).toString("ascii") === "OggS") return { ext: "ogg", kind: "audio" };
-  // Video containers identify themselves a few bytes in, not at byte 0.
   const brand = buf.slice(4, 8).toString("ascii");
   if (brand === "ftyp") {
     const sub = buf.slice(8, 12).toString("ascii");
     if (/^M4A/.test(sub)) return { ext: "m4a", kind: "audio" };
     if (/^(qt| )/.test(sub)) return { ext: "mov", kind: "video" };
-    return { ext: "mp4", kind: "video" }; // isom, mp42, avc1, M4V …
+    return { ext: "mp4", kind: "video" };
   }
-  // WebM / Matroska — Chrome records audio into this too, so we can't
-  // tell audio from video by the magic alone. Treated as video; harmless,
-  // the file still plays and decodes either way.
   if (buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3) {
     return { ext: "webm", kind: "video" };
   }
   return null;
 }
 
-const LIMITS = { image: 8 * 1024 * 1024, video: 60 * 1024 * 1024, audio: 30 * 1024 * 1024 };
+/* Instagram: 650MB Reels, 30MB photos. We match on video and beat them on
+   images, because a designer's poster is the whole point here. */
+const LIMITS = { image: 30 * 1024 * 1024, video: 650 * 1024 * 1024, audio: 100 * 1024 * 1024 };
+const B64_LIMIT = 8 * 1024 * 1024; // the JSON path stays small on purpose
+
+app.post("/api/upload/stream", auth, verified, rateLimit({ max: 40, windowMs: 300000, key: "user" }), (req, res) => {
+  const declared = Number(req.get("content-length") || 0);
+  if (declared > LIMITS.video) {
+    return res.status(413).json({ error: `That file's too big — ${LIMITS.video / 1048576}MB max` });
+  }
+
+  const tmp = join(UPLOAD_DIR, `.part-${randomBytes(10).toString("hex")}`);
+  const out = createWriteStream(tmp);
+  let head = Buffer.alloc(0), type = null, written = 0, done = false;
+
+  const fail = (code, msg) => {
+    if (done) return; done = true;
+    req.unpipe?.(out);
+    out.destroy();
+    rm(tmp, { force: true }, () => {});
+    if (!res.headersSent) res.status(code).json({ error: msg });
+    req.destroy();
+  };
+
+  req.on("data", (chunk) => {
+    if (done) return;
+    written += chunk.length;
+    if (written > LIMITS.video) return fail(413, "file too big");
+
+    // decide what this is from the first 16 bytes, then hold it to that limit
+    if (!type) {
+      head = Buffer.concat([head, chunk]);
+      if (head.length < 16) return;
+      type = sniff(head);
+      if (!type) return fail(400, "unsupported file type");
+      if (written > LIMITS[type.kind]) {
+        return fail(413, `That ${type.kind} is too big — ${LIMITS[type.kind] / 1048576}MB max`);
+      }
+    } else if (written > LIMITS[type.kind]) {
+      return fail(413, `That ${type.kind} is too big — ${LIMITS[type.kind] / 1048576}MB max`);
+    }
+  });
+
+  req.pipe(out);
+
+  req.on("aborted", () => fail(499, "upload cancelled"));
+  out.on("error", () => fail(500, "write failed"));
+
+  out.on("finish", () => {
+    if (done) return;
+    if (!type) { done = true; rm(tmp, { force: true }, () => {}); return res.status(400).json({ error: "empty file" }); }
+    done = true;
+    const name = `${Date.now()}-${randomBytes(8).toString("hex")}.${type.ext}`;
+    rename(tmp, join(UPLOAD_DIR, name), (err) => {
+      if (err) return res.status(500).json({ error: "couldn't save" });
+      res.json({ url: `/uploads/${name}`, kind: type.kind, bytes: written });
+    });
+  });
+});
 
 app.post("/api/upload", auth, verified, rateLimit({ max: 30, windowMs: 300000, key: "user" }), (req, res) => {
   const { data } = req.body || {};
@@ -485,8 +603,8 @@ app.post("/api/upload", auth, verified, rateLimit({ max: 30, windowMs: 300000, k
 
   const type = sniff(buf);
   if (!type) return res.status(400).json({ error: "unsupported file type" });
-  if (buf.length > LIMITS[type.kind]) {
-    return res.status(413).json({ error: `${type.kind} too large (max ${LIMITS[type.kind] / 1048576}MB)` });
+  if (buf.length > B64_LIMIT) {
+    return res.status(413).json({ error: "too big for this route — use the streaming upload" });
   }
 
   const name = `${Date.now()}-${randomBytes(8).toString("hex")}.${type.ext}`;
@@ -1741,13 +1859,17 @@ const PORT = process.env.PORT || 8787;
 app.listen(PORT, () => {
   /* A deploy log that only says "started" tells you nothing. This says what
      is actually switched on — so you can see at a glance whether the thing
-     you just set in Railway took effect, without clicking into the app. */
-  const admins = db.prepare(`SELECT username FROM users WHERE is_admin = 1`).all().map((u) => "@" + u.username);
-  const users = db.prepare(`SELECT COUNT(*) n FROM users`).get().n;
-  const posts = db.prepare(`SELECT COUNT(*) n FROM posts`).get().n;
-  const collabs = db.prepare(`SELECT COUNT(*) n FROM collaborators WHERE status='accepted'`).get().n;
-  const ok = (b) => (b ? "on " : "OFF");
-  console.log(`
+     you just set in Railway took effect.
+     Wrapped in try/catch on purpose: this is a LOG. If a query in here ever
+     throws, it would take down a server that had already bound the port —
+     killing the app to print a banner is a terrible trade. */
+  try {
+    const admins = db.prepare(`SELECT username FROM users WHERE is_admin = 1`).all().map((u) => "@" + u.username);
+    const users = db.prepare(`SELECT COUNT(*) n FROM users`).get().n;
+    const posts = db.prepare(`SELECT COUNT(*) n FROM posts`).get().n;
+    const collabs = db.prepare(`SELECT COUNT(*) n FROM collaborators WHERE status='accepted'`).get().n;
+    const ok = (b) => (b ? "on " : "OFF");
+    console.log(`
 ┌─ TNL LABS ─────────────────────────────────
 │ listening   :${PORT}
 │ data        ${DATA_DIR}${process.env.TNL_DATA ? "" : "   ⚠ NOT a volume — data dies on redeploy"}
@@ -1757,4 +1879,13 @@ app.listen(PORT, () => {
 │ admin       ${admins.length ? admins.join(", ") : "(none)"}
 │ in the lab  ${users} member${users === 1 ? "" : "s"} · ${posts} post${posts === 1 ? "" : "s"} · ${collabs} confirmed collab${collabs === 1 ? "" : "s"}
 └────────────────────────────────────────────`);
+  } catch (e) {
+    console.log(`TNL LABS listening on :${PORT} (banner failed: ${e.message})`);
+  }
 });
+
+/* Last line of defence. An unhandled rejection anywhere — a Stripe call, a
+   Resend call, a stray await — would otherwise take the whole process down
+   and log everyone out. Log it and keep serving. */
+process.on("unhandledRejection", (e) => console.error("[unhandled rejection]", e?.message || e));
+process.on("uncaughtException", (e) => console.error("[uncaught]", e?.message || e));
