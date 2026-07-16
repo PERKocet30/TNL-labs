@@ -185,6 +185,8 @@ textarea.in{resize:vertical;line-height:1.5}
 .attach{width:38px;flex-shrink:0;background:var(--el);border:1px solid var(--line);color:var(--dim);border-radius:9px;font-size:18px;font-weight:400;line-height:1}
 .attach:hover{color:var(--green);border-color:var(--green)}
 .attach-bar{display:flex;align-items:center;gap:9px;padding:8px 15px;border-top:1px solid var(--line);background:var(--card)}
+.uptrack{height:3px;background:var(--el);border-radius:2px;overflow:hidden;margin-top:5px}
+.upbar{height:100%;background:var(--green);width:0;transition:width .2s linear}
 .attach-bar img{width:42px;height:42px;object-fit:cover;border-radius:7px;border:1px solid var(--line2)}
 .attach-x{margin-left:auto;background:none;border:none;color:var(--dim);font-size:14px}
 .attach-x:hover{color:#F87171}
@@ -194,15 +196,34 @@ textarea.in{resize:vertical;line-height:1.5}
 .lightbox img{max-width:100%;max-height:100%;object-fit:contain}
 /* verification + publish */
 .verifybar{display:flex;align-items:center;gap:9px;background:rgba(34,197,94,.1);border-bottom:1px solid rgba(34,197,94,.3);padding:9px 15px;font-size:12px;color:#D6D2C8;flex-wrap:wrap}
+.verifybar b{color:var(--tx)}
+/* guest mode */
+.gatetop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.gatewhy{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:9px;padding:10px 12px;font-size:12.5px;line-height:1.55;color:#D6D2C8;margin:14px 0 -4px}
+.wall{padding:44px 22px 60px;max-width:520px;margin:0 auto;text-align:center}
+.wall-ic{font-size:36px;margin-bottom:14px}
+.wall-h{font-size:clamp(22px,5vw,30px);font-weight:900;margin:10px 0 12px;line-height:1.05}
+.wall-p{font-size:13.5px;line-height:1.7;color:var(--dim);margin-bottom:20px}
+.wall-labs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:22px}
+.wall-lab{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;border:1px solid var(--line2);border-radius:999px;padding:5px 11px;color:var(--dim)}
+.wall-cta{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+.tryline{color:var(--green);font-size:9px;letter-spacing:.12em;margin-top:8px}
 .vb-btn{background:var(--green);color:#000;border:none;border-radius:7px;padding:5px 11px;font-size:11px;font-weight:700;text-decoration:none;display:inline-block}
 .publink{display:block;color:var(--green);text-decoration:none;font-size:10px;letter-spacing:.06em;margin-bottom:12px;word-break:break-all}
 /* showroom — the front page */
 .sr-head{padding:34px 20px 22px;border-bottom:1px solid var(--line)}
 .sr-eyebrow{color:var(--green);letter-spacing:.16em;margin-bottom:14px}
 .sr-h{font-size:clamp(34px,9vw,58px);font-weight:900;line-height:.94;margin-bottom:12px}
-.sr-p{font-size:13.5px;line-height:1.6;color:var(--dim);max-width:440px;margin-bottom:18px}
+.sr-p{font-size:14px;line-height:1.65;color:var(--dim);max-width:430px;margin-bottom:18px}
+.sr-p b{color:var(--tx);font-weight:700}
 .sr-cta{display:flex;gap:9px;flex-wrap:wrap}
 .sr-feedhead{display:flex;justify-content:space-between;align-items:baseline;padding:16px 20px 10px;color:var(--dim);letter-spacing:.12em}
+/* what this is — four lines, guests only */
+.whatis{padding:4px 20px 20px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:11px;max-width:620px}
+.wi{display:flex;gap:12px;align-items:baseline}
+.wi-k{color:var(--green);letter-spacing:.12em;width:98px;flex-shrink:0;font-size:9px}
+.wi-v{font-size:13px;line-height:1.55;color:var(--dim)}
+@media(max-width:520px){.wi{flex-direction:column;gap:2px}.wi-k{width:auto}}
 .sr-builders{padding:0 20px}
 .brow{display:flex;gap:9px;overflow-x:auto;padding-bottom:8px}
 .bcard{flex-shrink:0;width:112px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px 10px;text-align:center;color:var(--tx)}
@@ -309,6 +330,8 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:#000}
 .cby:hover{color:var(--green)}
 .ctext{font-size:13px;line-height:1.5;color:#D6D2C8;margin-top:2px;word-break:break-word}
 .cform{display:flex;gap:6px;margin-top:8px}
+.cjoin{width:100%;margin-top:8px;background:var(--el);border:1px dashed var(--line2);color:var(--dim);border-radius:9px;padding:10px;font-size:12px;font-family:'Archivo'}
+.cjoin:hover{border-color:var(--green);color:var(--green)}
 .cform .in{flex:1;padding:8px 11px;font-size:13px}
 .cform .send{width:36px}
 .modrow{display:flex;gap:12px;margin:-6px 0 14px}
@@ -694,6 +717,7 @@ const api={
   me:()=>req("/api/me"),
   updateMe:b=>req("/api/me",{method:"PATCH",body:b}),
   resend:()=>req("/api/auth/resend",{method:"POST"}),
+  authStatus:()=>req("/api/auth/status"),
   publish:on=>req("/api/me/publish",{method:"POST",body:{published:on}}),
   feed:ch=>req("/api/feed"+(ch?("?channel="+encodeURIComponent(ch)):"")),
   showroom:()=>req("/api/feed/showroom"),
@@ -758,6 +782,18 @@ let NOTIFS=null, UNREAD=0, DMS=null, DMUNREAD=0, DMOPEN=null, DMDATA=null, SEARC
 let OPENCOMMENTS=null, COMMENTS=[], CEDIT=null;
 let NOTIFOPEN=false, DMOPENPANEL=false, SEARCHOPEN=false;
 let SEARCHING=false, UNREADS={}, PICKER=null, MENTIONS=null, MENTIONQ="";
+/* Guest mode: you can see the Showroom, the Market and anyone's portfolio
+   without an account. The labs are members-only — that's where people
+   actually talk, and it isn't a marketing surface. */
+let GATE=null;                       // null = browsing, "join"/"login" = the door
+const guest=()=>!ME;
+const myName=()=>ME?ME.username:null;
+const myRep=()=>ME?ME.rep:0;
+function needAccount(why){
+  GATE="join"; GATEWHY=why||"";
+  render();
+}
+let GATEWHY="";
 let MKT=null, MKTMETA={categories:[],conditions:[],paymentsEnabled:false}, MKTFILT={}, MKTVIEW="browse";
 let MKTONE=null, MKTOFFERS=[], SELLFORM=null, SELLIMGS=[], ORDERS=null, ORDTAB="buying";
 const $=sel=>document.querySelector(sel);
@@ -808,6 +844,36 @@ function compressImage(file,maxDim=1400,quality=.82){
   });
 }
 
+/* Streams the raw file straight to the server — no base64, no giant string
+   in memory, and we get real progress. XHR rather than fetch because fetch
+   still can't report UPLOAD progress, and a 600MB upload with no feedback
+   is indistinguishable from a hang. */
+function uploadStream(fileOrBlob,onProgress){
+  return new Promise((resolve,reject)=>{
+    const x=new XMLHttpRequest();
+    x.open("POST",API+"/api/upload/stream");
+    x.setRequestHeader("Content-Type","application/octet-stream");
+    if(TOKEN)x.setRequestHeader("Authorization","Bearer "+TOKEN);
+    x.upload.onprogress=e=>{if(e.lengthComputable&&onProgress)onProgress(e.loaded/e.total)};
+    x.onload=()=>{
+      let d={};try{d=JSON.parse(x.responseText)}catch(e){}
+      if(x.status>=200&&x.status<300)resolve(d);
+      else reject(new Error(d.error||("upload failed ("+x.status+")")));
+    };
+    x.onerror=()=>reject(new Error("Upload failed — check your connection"));
+    x.onabort=()=>reject(new Error("Upload cancelled"));
+    UPLOADXHR=x;
+    x.send(fileOrBlob);
+  });
+}
+function dataUrlToBlob(d){
+  const [meta,b64]=d.split(",");
+  const mime=(/data:([^;]+)/.exec(meta)||[])[1]||"application/octet-stream";
+  const bin=atob(b64); const arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+  return new Blob([arr],{type:mime});
+}
+
 function readFile(file){
   return new Promise((res,rej)=>{
     const fr=new FileReader();
@@ -822,8 +888,8 @@ let es=null;
 function startStream(){
   if(es)es.close();
   es=new EventSource(API+"/api/stream");
-  const refresh=()=>{if(TAB==="labs")loadFeed();if(TAB==="showroom")loadShowroom();refreshBadges()};
-  es.addEventListener("dm",e=>{try{const d=JSON.parse(e.data);
+  const refresh=()=>{if(!ME)return;if(TAB==="labs")loadFeed();if(TAB==="showroom")loadShowroom();refreshBadges()};
+  es.addEventListener("dm",e=>{try{if(!ME)return;const d=JSON.parse(e.data);
     if(d.to===ME.username){refreshBadges();if(DMOPEN===d.from)openDM(d.from)}}catch(x){}});
   es.addEventListener("comment",e=>{try{const d=JSON.parse(e.data);
     if(OPENCOMMENTS===d.postId)api.comments(d.postId).then(r=>{COMMENTS=r.comments;render()})}catch(x){}});
@@ -832,6 +898,7 @@ function startStream(){
 
 /* ---- data ---- */
 async function loadFeed(){
+  if(guest())return;
   try{const d=await api.feed(CH.id);POSTS=d.posts;renderRoomFeed()}catch(e){/* not fatal */}
   // opening a channel clears its dot
   if(UNREADS[CH.id]){delete UNREADS[CH.id];paintUnreads()}
@@ -858,11 +925,12 @@ async function refreshMe(){try{const d=await api.me();ME=d.user}catch(e){TOKEN=n
 ================================================================ */
 function render(){
   const app=$("#app");
-  if(!TOKEN||!ME){app.innerHTML=gateHTML();wireGate();return}
+  // Guests see the app. Only the explicit door shows the sign-up form.
+  if(GATE){app.innerHTML=gateHTML();wireGate();return}
   app.innerHTML=`
     ${topHTML()}
-    ${(!ME.emailVerified)?`<div class="verifybar">
-      <span>Confirm your email to post, react, and publish.</span>
+    ${(ME&&!ME.emailVerified)?`<div class="verifybar">
+      <span>Check <b>${esc(ME.email)}</b> to confirm your account. You can look around meanwhile.</span>
       <button class="vb-btn" id="resendb">Resend</button>
       ${VERIFYURL?`<a class="vb-btn" href="${esc(VERIFYURL)}" target="_blank">Open link</a>`:""}
     </div>`:""}
@@ -881,7 +949,17 @@ function render(){
   if(TAB==="market"&&MKTVIEW==="browse"&&!MKT)loadMarket();
   if(TAB==="studio"||(TAB==="labs"&&CH.beatlab))setTimeout(mountStudio,0);
 }
-function topHTML(){const l=levelFor(ME.rep);return `
+function topHTML(){
+  if(guest())return `
+  <div class="top">
+    <div class="brand">TNLLABS <span class="fl">🧪</span></div>
+    <div class="topact">
+      <button class="ib" id="searchBtn" aria-label="Search">⌕</button>
+      <button class="btn sm ghost" id="loginBtn">Sign in</button>
+      <button class="btn sm green" id="joinBtn">Join</button>
+    </div>
+  </div>`;
+  const l=levelFor(ME.rep);return `
   <div class="top">
     <div class="brand">TNLLABS <span class="fl">🧪</span></div>
     <div class="topact">
@@ -1029,15 +1107,22 @@ function searchPanelHTML(){return `<div class="sheet" id="sbg"><div class="sheet
   `:`<div class="empty">Search for people to build with.</div>`}
 </div></div>`}
 function navHTML(){const t=[["showroom","◱","SHOWROOM"],["labs","#","LABS"],["studio","♫","STUDIO"],["market","▣","MARKET"]];
-  return `<nav class="nav">${t.map(([id,ic,lb])=>`<button class="navb ${TAB===id?"on":""}" data-tab="${id}"><i class="ic">${ic}</i><span>${lb}</span></button>`).join("")}</nav>`}
+  return `<nav class="nav">${t.map(([id,ic,lb])=>
+    `<button class="navb ${TAB===id?"on":""}" data-tab="${id}"><i class="ic">${ic}</i>
+      <span>${lb}${guest()&&id==="labs"?" 🔒":""}</span></button>`).join("")}</nav>`}
 
 function gateHTML(){return `
 <div class="gate"><div class="gatecard" id="gate">
-  <div class="brand">TNLLABS <span class="fl">🧪</span></div>
+  <div class="gatetop">
+    <div class="brand">TNLLABS <span class="fl">🧪</span></div>
+    <button class="x" id="gatex" title="Keep looking around">✕</button>
+  </div>
+  ${GATEWHY?`<div class="gatewhy">${esc(GATEWHY)}</div>`:""}
   <div id="gatebody"></div>
 </div></div>`}
 function wireGate(){
-  let mode="register",step=1,f={displayName:"",username:"",email:"",password:"",roles:[]},err="";
+  const gx=$("#gatex");if(gx)gx.onclick=()=>{GATE=null;GATEWHY="";render()};
+  let mode=GATE==="login"?"login":"register",step=1,f={displayName:"",username:"",email:"",password:"",roles:[]},err="";
   const body=()=>$("#gatebody");
   function draw(){
     if(mode==="forgot"){body().innerHTML=`
@@ -1065,11 +1150,13 @@ function wireGate(){
       <p style="margin-top:12px;font-size:12px" class="dim"><span class="switch" id="fp">Forgot password?</span></p>
       <p style="margin-top:8px;font-size:12px" class="dim">New here? <span class="switch" id="sw">Create an account</span></p>`;
       $("#fp").onclick=()=>{mode="forgot";err="";draw()};
-      $("#go").onclick=async()=>{try{const d=await api.login({username:$("#u").value.toLowerCase(),password:$("#p").value});TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;startStream();render()}catch(e){err=e.message;draw()}};
+      $("#go").onclick=async()=>{try{const d=await api.login({username:$("#u").value.toLowerCase(),password:$("#p").value});
+        TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;GATE=null;GATEWHY="";
+        startStream();refreshBadges();loadUnreads();render()}catch(e){err=e.message;draw()}};
       $("#sw").onclick=()=>{mode="register";step=1;err="";draw()};
       return}
     if(step===1){body().innerHTML=`
-      <h1>Post your work.</h1><p>A workshop for designers and the people they build with. Your work, your record, your circle — one account.</p>
+      <h1>Join the workshop.</h1><p>One account across every lab. Your work, your collaborators, and the standing you build — all in one place.</p>
       <label class="mono lbl">DISPLAY NAME</label><input class="in" id="dn" value="${esc(f.displayName)}" maxlength="28">
       <label class="mono lbl">USERNAME</label><input class="in" id="un" value="${esc(f.username)}" maxlength="20" placeholder="lowercase, unique">
       <label class="mono lbl">EMAIL</label><input class="in" id="em" value="${esc(f.email)}" type="email">
@@ -1086,7 +1173,7 @@ function wireGate(){
       $("#sw").onclick=()=>{mode="login";err="";draw()};
       return}
     body().innerHTML=`
-      <h1>What do you make?</h1><p>Pick everything that fits — most people do more than one thing. This sets your lanes.</p>
+      <h1>What do you make?</h1><p>Pick everything that fits — most people here do more than one thing. This is how collaborators find you.</p>
       <div class="roles">${ROLES.map(r=>`<button class="chip ${f.roles.includes(r)?"on":""}" data-r="${esc(r)}">${esc(r)}</button>`).join("")}</div>
       ${f.roles.length?`<div class="mono dim" style="margin-top:10px">${f.roles.length} SELECTED</div>`:""}
       ${err?`<div class="err">${esc(err)}</div>`:""}
@@ -1102,21 +1189,36 @@ function wireGate(){
     $("#fin").onclick=async()=>{if(!f.roles.length){err="Pick at least one.";return draw()}
       try{const d=await api.register({...f,roles:f.roles});TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;
         if(d.verifyUrl)VERIFYURL=d.verifyUrl;
-        startStream();render()}catch(e){err=e.message;draw()}};
+        GATE=null;GATEWHY="";
+        startStream();refreshBadges();render();
+        toast(d.mailSent?"Check your email to confirm":"You're in");
+      }catch(e){err=e.message;draw()}};
   }
   draw();
 }
 
 function showroomHTML(){return `<div class="scroll" id="showroom">
   <section class="sr-head">
-    <div class="mono sr-eyebrow">TNLLABS® 🧪 · SHOWROOM</div>
-    <h1 class="sr-h">The work.</h1>
-    <p class="sr-p">Everything being built and validated inside the network right now. Collaborations rise to the top.</p>
+    <div class="mono sr-eyebrow">TNLLABS® 🧪 · ${guest()?"CULTIVATORS":"SHOWROOM"}</div>
+    <h1 class="sr-h">${guest()?"Cultivators.":"The work."}</h1>
+    <p class="sr-p">${guest()
+      ?`Artists, designers, musicians, entrepreneurs. Creatives don't just meet here — <b>they multiply.</b>`
+      :"Everything being built and validated inside the network right now. Collaborations rise to the top."}</p>
     <div class="sr-cta">
-      <button class="btn green" id="sr-post">＋ Post your work</button>
-      <button class="btn ghost" data-goto="labs">Enter the labs</button>
+      ${guest()
+        ?`<button class="btn green" id="joinBtn2">Join the workshop</button>
+          <button class="btn ghost" id="loginBtn2">Sign in</button>`
+        :`<button class="btn green" id="sr-post">＋ Post your work</button>
+          <button class="btn ghost" data-goto="labs">Enter the labs</button>`}
     </div>
   </section>
+
+  ${guest()?`<section class="whatis">
+    <div class="wi"><span class="wi-k mono">WORKSHOP</span><span class="wi-v">A place to make things, not perform. Post the half-finished version.</span></div>
+    <div class="wi"><span class="wi-k mono">COLLABORATION</span><span class="wi-v">Work made together rises to the top. That's the algorithm, not a slogan.</span></div>
+    <div class="wi"><span class="wi-k mono">NETWORK</span><span class="wi-v">Seven labs — music, art, fashion, anime, words, build. Enter through what you make, meet everyone else.</span></div>
+    <div class="wi"><span class="wi-k mono">ELEVATION</span><span class="wi-v">Standing is earned when others back your work. It unlocks tools, rooms, and a better rate when you sell.</span></div>
+  </section>`:""}
 
   <div class="sr-builders" id="sr-builders"></div>
 
@@ -1144,8 +1246,8 @@ function srCardHTML(p){
       <div class="sr-acts">
         <button class="act ${p.likedByMe?"on":""}" data-like="${p.id}">${p.likedByMe?"♥":"♡"} ${p.likeCount||""}</button>
         <button class="act" data-share="${p.id}">↻ ${p.shareCount||""}</button>
-        ${p.author.username===ME.username?`<button class="act" data-collab="${p.id}">+ collab</button>`:""}
-        ${p.collaborators.find(c=>c.username===ME.username&&c.status==="pending")?`<button class="act on" data-accept="${p.id}">accept ✓</button>`:""}
+        ${p.author.username===myName()?`<button class="act" data-collab="${p.id}">+ collab</button>`:""}
+        ${p.collaborators.find(c=>c.username===myName()&&c.status==="pending")?`<button class="act on" data-accept="${p.id}">accept ✓</button>`:""}
       </div>
     </div>
   </div>`}
@@ -1168,17 +1270,27 @@ async function loadShowroom(){
   }catch(e){/* offline */}
 }
 
-function labsHTML(){return `<div class="labs-wrap ${ROOMOPEN?"roomopen":""}">
+function labsHTML(){
+  if(guest())return `<div class="scroll"><div class="wall">
+    <div class="wall-ic">🧪</div>
+    <div class="mono dim">MEMBERS ONLY</div>
+    <h2 class="wall-h">This is the workshop.</h2>
+    <p class="wall-p">Seven rooms where people post half-finished work, give each other real feedback, and walk out with a collaborator they didn't have that morning.<br><br>The Showroom shows you what came out. The labs are where it happened.</p>
+    <div class="wall-labs">${LABS.map(l=>`<span class="wall-lab">${esc(l.name)}</span>`).join("")}</div>
+    <div class="wall-cta"><button class="btn green" id="joinBtn3">Join the workshop</button>
+      <button class="btn ghost" id="loginBtn3">Sign in</button></div>
+  </div></div>`;
+  return `<div class="labs-wrap ${ROOMOPEN?"roomopen":""}">
   <aside class="rail">${LABS.map(l=>`
     <div class="railh mono">${l.name}</div>
-    ${l.channels.map(c=>{const locked=c.gate&&levelFor(ME.rep).id<c.gate;
+    ${l.channels.map(c=>{const locked=c.gate&&levelFor(myRep()).id<c.gate;
       const n=UNREADS[c.id]||0;
       return `<button class="railc ${CH.id===c.id?"on":""} ${n?"unread":""}" data-ch="${c.id}">${locked?"🔒":"#"} ${c.label}${n?`<span class="cbadge">${n>9?"9+":n}</span>`:""}</button>`}).join("")}`).join("")}
   </aside>
   <section class="room">
     <div class="roomh"><button class="backb" id="backb">←</button>#${esc(CH.label)} <span class="desc">${esc(CH.desc)}</span></div>
     ${CH.beatlab?`<div id="studiomount"></div>`:""}
-    ${(CH.gate&&levelFor(ME.rep).id<CH.gate)?`<div class="empty">🔒 #${esc(CH.label)} opens at ${LEVELS.find(l=>l.id===CH.gate).name}.<br>Earn rep through work others validate.</div>`
+    ${(CH.gate&&levelFor(myRep()).id<CH.gate)?`<div class="empty">🔒 #${esc(CH.label)} opens at ${LEVELS.find(l=>l.id===CH.gate).name}.<br>Earn rep through work others validate.</div>`
       :`<div class="feed" id="feed"><div class="empty">Loading…</div></div>
     ${(PENDIMG||PENDVID)?`<div class="attach-bar">
       ${PENDIMG?`<img src="${PENDIMG}" alt="preview">`:`<div class="vthumb">▶</div>`}
@@ -1200,10 +1312,10 @@ function labsHTML(){return `<div class="labs-wrap ${ROOMOPEN?"roomopen":""}">
   </section>
 </div>`}
 
-function postHTML(p){const mine=p.author.username===ME.username;
-  const myPending=p.collaborators.find(c=>c.username===ME.username&&c.status==="pending");
+function postHTML(p){const mine=p.author.username===myName();
+  const myPending=p.collaborators.find(c=>c.username===myName()&&c.status==="pending");
   return `<div class="post ${p.pending?"pending":""} ${p.failed?"failed":""}">
-  ${p.pending?`<div class="mono sending">SENDING…</div>`:""}
+  ${p.pending?`<div class="mono sending">${UPPROG!==null&&UPPROG<1?`UPLOADING ${Math.round(UPPROG*100)}%`:"SENDING…"}</div>${UPPROG!==null&&UPPROG<1?`<div class="uptrack"><div class="upbar" id="upbar" style="width:${Math.round(UPPROG*100)}%"></div></div>`:""}`:""}
   ${p.failed?`<div class="failbar"><span>Didn't send.</span><button class="retryb" data-retry="${p.id}">Retry</button><button class="retryb ghost" data-discard="${p.id}">Discard</button></div>`:""}
   ${p.sharedFrom?`<div class="shared-tag">↻ SHARED</div>`:""}
   <div class="post-h">${avHTML(p.author)}
@@ -1239,15 +1351,17 @@ function commentsHTML(p){return `<div class="cwrap">
       <span class="mono dim">${timeAgo(c.createdAt)}${c.editedAt?" · EDITED":""}</span>
       <div class="ctext">${rich(c.body)}</div>
     </div>
-    ${c.author.username===ME.username||p.author.username===ME.username?`<div class="post-menu">
-      ${c.author.username===ME.username?`<button class="pm" data-cedit="${c.id}">✎</button>`:""}
+    ${!guest()&&(c.author.username===myName()||p.author.username===myName())?`<div class="post-menu">
+      ${c.author.username===myName()?`<button class="pm" data-cedit="${c.id}">✎</button>`:""}
       <button class="pm" data-cdel="${c.id}">🗑</button></div>`:""}
   </div>`).join("")}
-  <div class="cform">
-    <input class="in" id="cdraft" placeholder="${CEDIT?"Edit comment…":"Add feedback…"}" value="${CEDIT?esc(COMMENTS.find(x=>x.id===CEDIT)?.body||""):""}">
-    <button class="send" id="csend">${CEDIT?"✓":"→"}</button>
-    ${CEDIT?`<button class="send ghostsend" id="ccancel">✕</button>`:""}
-  </div>
+  ${guest()
+    ?`<button class="cjoin" id="cjoinb">Join to give feedback — it's where collabs start</button>`
+    :`<div class="cform">
+      <input class="in" id="cdraft" placeholder="${CEDIT?"Edit comment…":"Add feedback…"}" value="${CEDIT?esc(COMMENTS.find(x=>x.id===CEDIT)?.body||""):""}">
+      <button class="send" id="csend">${CEDIT?"✓":"→"}</button>
+      ${CEDIT?`<button class="send ghostsend" id="ccancel">✕</button>`:""}
+    </div>`}
 </div>`}
 
 const EMPTY={
@@ -1331,7 +1445,7 @@ function mktCardHTML(l){return `<div class="mcard" data-mopen="${l.id}">
 
 function detailHTML(){
   if(!MKTONE)return `<div class="scroll"><div class="empty">Loading…</div></div>`;
-  const l=MKTONE, mine=l.seller.username===ME.username;
+  const l=MKTONE, mine=l.seller.username===myName();
   return `<div class="scroll">
     <div class="dnav"><button class="backb2" data-mv="browse">← Market</button></div>
     <div class="dimgs">${l.images.map(i=>`<img src="${esc(i)}" data-zoom="${esc(i)}" loading="lazy">`).join("")}</div>
@@ -1377,6 +1491,7 @@ function detailHTML(){
   </div>`}
 
 function nextRate(){
+  if(!ME)return null;
   const lad=MKTMETA.feeLadder||[];
   const lvl=levelFor(ME.rep).id;
   const nxt=lad.find(x=>x.level===lvl+1);
@@ -1384,6 +1499,7 @@ function nextRate(){
   return {need:nxt.at-ME.rep,fee:nxt.fee,name:nxt.name};
 }
 function rateHTML(){
+  if(!ME)return "";
   const fee=MKTMETA.feePct??10;
   const n=nextRate();
   return `<div class="ratebar">
@@ -1397,6 +1513,7 @@ function rateHTML(){
   </div>`}
 
 function payoutBannerHTML(){
+  if(guest())return "";
   if(!MKTMETA.paymentsEnabled)return `<div class="paybar off">
     <div><b>Card payments aren't switched on yet.</b>
     <div class="mono dim">You can still list — buyers reserve the item and you settle up directly.</div></div></div>`;
@@ -1477,7 +1594,10 @@ function ordersHTML(){
 
 function studioHTML(){return `<div class="scroll">
   <div class="page-head"><div class="mono dim">MUSIC LAB · TOOLS</div><h2>Studio</h2>
-  <p class="page-sub">Drums, 808, synths, your voice. Make it, export it, or publish it straight to #beats.</p></div>
+  <p class="page-sub">${guest()
+    ?"A full beat maker in the app — drums, a tuned 808, synths with a scale-locked piano roll. Have a play. Joining lets you save it, export a WAV, or publish it to #beats for someone to write to."
+    :"Drums, 808, synths, your voice. Make it, export it, or publish it straight to #beats."}</p>
+  ${guest()?`<div class="tryline mono">TRY IT — NOTHING SAVES UNTIL YOU JOIN</div>`:""}</div>
   <div id="studiomount"></div>
 </div>`}
 
@@ -1502,7 +1622,7 @@ function workCardHTML(p, collab, K) {
 
 function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.at>u.rep);
   const pct=nx?Math.round((u.rep-l.at)/(nx.at-l.at)*100):100;
-  const mine=u.username===ME.username;
+  const mine=u.username===myName();
   const st=PROFILE.stats||{posts:0,likesReceived:0,collabs:0};
   const list=PTAB==="collabs"?PROFILE.collabs:PROFILE.posts;
 
@@ -1596,12 +1716,14 @@ function wire(){
     DMOPENPANEL=true;DMOPEN=null;DMS=null;render();
     try{const d=await api.dmList();DMS=d.threads;DMUNREAD=d.unreadTotal;render()}catch(e){toast(e.message)}};
   const sb_=$("#searchBtn");if(sb_)sb_.onclick=()=>{SEARCHOPEN=true;render();setTimeout(()=>$("#sq")?.focus(),100)};
+  ["#joinBtn","#joinBtn2","#joinBtn3"].forEach(id=>{const b=$(id);if(b)b.onclick=()=>{GATE="join";GATEWHY="";render()}});
+  ["#loginBtn","#loginBtn2","#loginBtn3"].forEach(id=>{const b=$(id);if(b)b.onclick=()=>{GATE="login";GATEWHY="";render()}});
   wirePanels();
   const rs=$("#resendb");if(rs)rs.onclick=async()=>{
     try{const d=await api.resend();
-      if(d.already){await refreshMe();toast("Already verified");return render()}
-      if(d.verifyUrl){VERIFYURL=d.verifyUrl;toast("Mail not configured — tap Open link");render()}
-      else toast("Verification email sent");
+      if(d.already){await refreshMe();toast("Already verified — you're good");return render()}
+      if(d.verifyUrl){VERIFYURL=d.verifyUrl;toast("Email isn't set up — tap Open link");render()}
+      else toast("Sent to "+(d.email||"your inbox")+" — check spam too");
     }catch(e){toast(e.message)}};
   document.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>{
     for(const l of LABS){const c=l.channels.find(x=>x.id===b.dataset.ch);if(c){LAB=l;CH=c}}
@@ -1634,15 +1756,20 @@ function wire(){
 
     try{
       const body={channel:CH.id,body:draftText,isWork:work};
+      const bump=(f)=>{UPPROG=f;const el=$("#upbar");if(el)el.style.width=Math.round(f*100)+"%"};
       if(prep){
-        const up=await api.upload(prep.full);
+        UPPROG=0;renderRoomFeed();
+        const up=await uploadStream(dataUrlToBlob(prep.full),bump);
         body.imageUrl=up.url;
-        const th=await api.upload(prep.thumb);
+        const th=await uploadStream(dataUrlToBlob(prep.thumb));
         body.thumbUrl=th.url;
         body.mediaW=prep.w;body.mediaH=prep.h;
+        UPPROG=null;
       } else if(vid){
-        const up=await api.upload(vid);
+        UPPROG=0;renderRoomFeed();
+        const up=await uploadStream(vid,bump);   // vid is the raw File — streamed
         if(up.kind==="video")body.videoUrl=up.url;else body.imageUrl=up.url;
+        UPPROG=null;
       }
       await api.post(body);
       POSTS=POSTS.filter(p=>p.id!==temp.id);
@@ -1684,11 +1811,12 @@ function wire(){
     const f=fi.files&&fi.files[0];if(!f)return;
     fi.value="";
     if(f.type.startsWith("video/")){
-      if(f.size>60*1024*1024)return toast("Video too big — 60MB max");
-      try{PENDVID=await readFile(f);PENDIMG=null;PENDKIND="video";render()}catch(e){toast(e.message)}
+      if(f.size>650*1024*1024)return toast("Video too big — 650MB max");
+      // keep the File itself — we stream it, never base64 it
+      PENDVID=f;PENDIMG=null;PENDKIND="video";PENDFILE=f;render();
       return;
     }
-    if(f.size>25*1024*1024)return toast("That image is too big");
+    if(f.size>30*1024*1024)return toast("That image is too big — 30MB max");
     PENDFILE=f;
     try{PENDPREP=await prepImage(f,ASWORK);PENDIMG=PENDPREP.thumb;PENDVID=null;PENDKIND="image";render()}
     catch(e){toast(e.message)}
@@ -1705,6 +1833,8 @@ function wire(){
 }
 function wireMarket(){
   document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=async()=>{
+    if(guest()&&(b.dataset.mv==="sell"||b.dataset.mv==="orders"))
+      return needAccount(b.dataset.mv==="sell"?"Join to sell. Everyone in the lab can — and your rate drops as people vouch for you.":"Join to see your orders.");
     MKTVIEW=b.dataset.mv;
     if(MKTVIEW==="sell"&&!SELLFORM)SELLFORM={category:"Tops",condition:"Good",acceptsOffers:true};
     if(MKTVIEW==="orders"){ORDERS=null;render();try{ORDERS=await api.orders()}catch(e){toast(e.message)}}
@@ -1730,6 +1860,7 @@ function wireMarket(){
     try{const d=await api.mktOne(el.dataset.mopen);MKTONE=d.listing;MKTOFFERS=d.offers||[];render()}catch(x){toast(x.message)}});
   document.querySelectorAll("[data-mlike]").forEach(b=>b.onclick=async e=>{
     e.stopPropagation();
+    if(guest())return needAccount("Join to save items.");
     try{await api.mktLike(b.dataset.mlike);
       if(MKTVIEW==="detail"){const d=await api.mktOne(b.dataset.mlike);MKTONE=d.listing;MKTOFFERS=d.offers||[]}
       else await loadMarket();
@@ -1744,7 +1875,7 @@ function wireMarket(){
   const sf=$("#sfile");if(sf)sf.onchange=async()=>{
     const f=sf.files&&sf.files[0];if(!f)return;sf.value="";
     if(f.size>25*1024*1024)return toast("Image too big");
-    try{toast("Uploading…");const data=await compressImage(f,1800,.88);const up=await api.upload(data);
+    try{toast("Uploading…");const data=await compressImage(f,1800,.88);const up=await uploadStream(dataUrlToBlob(data));
       SELLIMGS=[...SELLIMGS,up.url];render()}catch(e){toast(e.message)}};
   document.querySelectorAll("[data-simgx]").forEach(b=>b.onclick=()=>{SELLIMGS=SELLIMGS.filter((_,i)=>i!==+b.dataset.simgx);render()});
   document.querySelectorAll("[data-scat]").forEach(b=>b.onclick=()=>{stashSell();SELLFORM.category=b.dataset.scat;render()});
@@ -1763,6 +1894,7 @@ function wireMarket(){
 
   // detail actions
   document.querySelectorAll("[data-offer]").forEach(b=>b.onclick=async()=>{
+    if(guest())return needAccount("Join to make an offer.");
     const ask=MKTONE?MKTONE.price:0;
     const v=prompt("Your offer in dollars (asking "+money(ask)+"):");if(!v)return;
     try{await api.mktOffer(b.dataset.offer,Number(v));toast("Offer sent");
@@ -1772,6 +1904,7 @@ function wireMarket(){
     try{await api.offerAct(id,a);toast(a==="accept"?"Offer accepted":"Offer declined");
       const d=await api.mktOne(MKTONE.id);MKTONE=d.listing;MKTOFFERS=d.offers||[];render()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-buy]").forEach(b=>b.onclick=async()=>{
+    if(guest())return needAccount("Join to buy — you'll need an account to track the order.");
     const name=prompt("Shipping name:");if(!name)return;
     const address=prompt("Shipping address:");if(!address)return;
     try{const d=await api.mktBuy(b.dataset.buy,{name,address});
@@ -1786,7 +1919,9 @@ function wireMarket(){
   document.querySelectorAll("[data-mdel]").forEach(b=>b.onclick=async()=>{
     if(!confirm("Delete this listing?"))return;
     try{await api.mktDelete(b.dataset.mdel);toast("Deleted");MKTVIEW="browse";await loadMarket();render()}catch(e){toast(e.message)}});
-  document.querySelectorAll("[data-dmseller]").forEach(b=>b.onclick=()=>openDM(b.dataset.dmseller));
+  document.querySelectorAll("[data-dmseller]").forEach(b=>b.onclick=()=>{
+    if(guest())return needAccount("Message people directly. Most collabs start with a DM.");
+    openDM(b.dataset.dmseller)});
   document.querySelectorAll("[data-ship]").forEach(b=>b.onclick=async()=>{
     const t=prompt("Tracking number (optional):")||"";
     try{await api.shipOrder(b.dataset.ship,t);ORDERS=await api.orders();toast("Marked shipped");render()}catch(e){toast(e.message)}});
@@ -1836,7 +1971,7 @@ function wirePanels(){
     $("#dmdraft").value="";
     try{
       let img=null;
-      if(DMPEND){const up=await api.upload(DMPEND);img=up.url;DMPEND=null}
+      if(DMPEND){const up=await uploadStream(dataUrlToBlob(DMPEND));img=up.url;DMPEND=null}
       await api.dmSend(DMOPEN,t,img);
       DMDATA=await api.dmThread(DMOPEN);render();
       const f=$("#dmfeed");if(f)f.scrollTop=f.scrollHeight;
@@ -1881,7 +2016,7 @@ async function openDM(username){
     const d=await api.dmList();DMUNREAD=d.unreadTotal;
   }catch(e){toast(e.message)}
 }
-let DMPEND=null, PENDFILE=null, PENDPREP=null;
+let DMPEND=null, PENDFILE=null, PENDPREP=null, UPPROG=null, UPLOADXHR=null;
 
 function mountStudio(){
   const el=$("#studiomount");
@@ -1891,8 +2026,7 @@ function mountStudio(){
     toast,
     onPublish:()=>{TAB="labs";LAB=LABS.find(l=>l.id==="music");CH=LAB.channels.find(c=>c.id==="beats");ROOMOPEN=true;render()},
     uploadAudio:async(blob)=>{
-      const data=await new Promise((res,rej)=>{const fr=new FileReader();fr.onerror=rej;fr.onload=()=>res(fr.result);fr.readAsDataURL(blob)});
-      const up=await api.upload(data);
+      const up=await uploadStream(blob);   // streamed — a long take can be big
       return up.url;
     },
   });
@@ -1900,6 +2034,7 @@ function mountStudio(){
 
 function wireFeed(){
   document.querySelectorAll("[data-like]").forEach(b=>b.onclick=async()=>{
+    if(guest())return needAccount("Back someone's work. Likes are how people earn standing here — it's the whole point.");
     const id=b.dataset.like;
     const p=POSTS.find(x=>String(x.id)===id)||(SEARCHRES&&SEARCHRES.posts.find(x=>String(x.id)===id))
       ||(PROFILE&&[...PROFILE.posts,...PROFILE.collabs].find(x=>String(x.id)===id));
@@ -1923,10 +2058,11 @@ function wireFeed(){
       toast(e.message);
     }});
   document.querySelectorAll("[data-share]").forEach(b=>b.onclick=()=>{
+    if(guest())return needAccount("Carry someone's work into another lab. That's how a designer meets a producer.");
     const id=b.dataset.share;
     const items=[];
     for(const l of LABS)for(const c of l.channels){
-      if(c.beatlab||c.gate&&levelFor(ME.rep).id<c.gate)continue;
+      if(c.beatlab||c.gate&&levelFor(myRep()).id<c.gate)continue;
       items.push({label:"#"+c.label,sub:l.name,icon:"#",ch:c.id});
     }
     openPicker({eyebrow:"CROSS-LAB",title:"Share into",note:"The original author earns rep when their work travels.",
@@ -1955,10 +2091,10 @@ function wireFeed(){
     const r=p.retry;p.failed=false;p.pending=true;renderRoomFeed();
     try{
       const body={channel:CH.id,body:r.body,isWork:r.work};
-      if(r.prep){const up=await api.upload(r.prep.full);body.imageUrl=up.url;
-        const th=await api.upload(r.prep.thumb);body.thumbUrl=th.url;
+      if(r.prep){const up=await uploadStream(dataUrlToBlob(r.prep.full));body.imageUrl=up.url;
+        const th=await uploadStream(dataUrlToBlob(r.prep.thumb));body.thumbUrl=th.url;
         body.mediaW=r.prep.w;body.mediaH=r.prep.h}
-      else if(r.vid){const up=await api.upload(r.vid);
+      else if(r.vid){const up=await uploadStream(r.vid);
         if(up.kind==="video")body.videoUrl=up.url;else body.imageUrl=up.url}
       await api.post(body);
       POSTS=POSTS.filter(x=>x.id!==p.id);loadFeed();
@@ -1998,6 +2134,7 @@ function wireFeed(){
     }};
     cs.onclick=go;$("#cdraft").onkeydown=e=>{if(e.key==="Enter")go()}}
   const cc=$("#ccancel");if(cc)cc.onclick=()=>{CEDIT=null;render()};
+  const cj=$("#cjoinb");if(cj)cj.onclick=()=>needAccount("Give real feedback. It's where most collabs start.");
   document.querySelectorAll("[data-cedit]").forEach(b=>b.onclick=()=>{CEDIT=+b.dataset.cedit;render();setTimeout(()=>$("#cdraft")?.focus(),80)});
   document.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=async()=>{
     if(!confirm("Delete this comment?"))return;
@@ -2018,6 +2155,7 @@ function wireSheet(){
   bg.onclick=e=>{if(e.target===bg){PROFILE=null;EDITING=false;render()}};
   $("#sheetx").onclick=()=>{PROFILE=null;EDITING=false;render()};
   const fb=$("#followb");if(fb)fb.onclick=async()=>{
+    if(guest())return needAccount("Follow the people you want to build with.");
     const u=PROFILE.user.username;
     // optimistic — the button responds now, the server catches up
     PROFILE.youFollow=!PROFILE.youFollow;
@@ -2026,8 +2164,12 @@ function wireSheet(){
     try{await api.follow(u);PROFCACHE.delete(u);const d=await api.profile(u);
       if(PROFILE&&PROFILE.user.username===u){PROFILE=d;PROFCACHE.set(u,d);render()}}
     catch(e){toast(e.message);PROFCACHE.delete(u)}};
-  const lo=$("#logoutb");if(lo)lo.onclick=()=>{TOKEN=null;ME=null;localStorage.removeItem("tnl-token");render()};
-  const mb=$("#msgb");if(mb)mb.onclick=()=>openDM(PROFILE.user.username);
+  const lo=$("#logoutb");if(lo)lo.onclick=()=>{
+    TOKEN=null;ME=null;PROFILE=null;UNREADS={};UNREAD=0;DMUNREAD=0;
+    localStorage.removeItem("tnl-token");
+    if(es)es.close();
+    TAB="showroom";GATE=null;render();toast("Signed out")};
+  const mb=$("#msgb");if(mb)mb.onclick=()=>{if(guest())return needAccount("Message people directly. Most collabs start with a DM.");openDM(PROFILE.user.username)};
   const bb=$("#blockb");if(bb)bb.onclick=async()=>{
     if(!confirm("Block "+PROFILE.user.displayName+"? You won't see each other's work."))return;
     try{const d=await api.block(PROFILE.user.username);toast(d.blocked?"Blocked":"Unblocked");PROFILE=null;render()}catch(e){toast(e.message)}};
@@ -2078,6 +2220,12 @@ function wireSheet(){
 /* ---- boot ---- */
 async function refreshBadges(){
   if(!ME)return;
+  // If they verified in the email tab, notice it here without a reload.
+  if(!ME.emailVerified){
+    try{const st=await api.authStatus();
+      if(st.verified){await refreshMe();toast("Email confirmed — you're in");render();return}
+    }catch(e){}
+  }
   try{const [n,d]=await Promise.all([api.notifs(),api.dmList()]);
     const changed=n.unread!==UNREAD||d.unreadTotal!==DMUNREAD;
     UNREAD=n.unread;DMUNREAD=d.unreadTotal;
@@ -2087,9 +2235,10 @@ async function refreshBadges(){
 }
 (async()=>{
   try{const d=await api.levels();LEVELS=d.levels}catch(e){/* offline default */}
-  if(TOKEN){await refreshMe()}
-  if(ME){startStream();refreshBadges();setInterval(refreshBadges,20000);
-    api.mktMeta().then(m=>{MKTMETA=m}).catch(()=>{});
+  if(TOKEN)await refreshMe();          // invalid token just leaves ME null -> guest
+  if(ME){
+    startStream();refreshBadges();loadUnreads();
+    setInterval(refreshBadges,20000);
     const p=new URLSearchParams(location.search);
     if(p.get("connect")==="done"){try{await api.connectStatus();await refreshMe();
       toast(ME.payoutsReady?"Payouts connected":"Stripe needs a bit more info")}catch(e){}
@@ -2097,6 +2246,7 @@ async function refreshBadges(){
     if(p.get("checkout")==="paid"){toast("Paid — the seller's been told to ship");history.replaceState({},"","/")}
     if(p.get("checkout")==="failed"){toast("Payment didn't go through");history.replaceState({},"","/")}
   }
+  try{MKTMETA=await api.mktMeta()}catch(e){}   // public — guests see the Market too
   render();
   if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
 })();
