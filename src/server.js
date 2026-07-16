@@ -1738,4 +1738,23 @@ app.get("/api/levels", (_req, res) => res.json({ levels: LEVELS }));
 app.get("/api/health", (_req, res) => res.json({ ok: true, time: Date.now() }));
 
 const PORT = process.env.PORT || 8787;
-app.listen(PORT, () => console.log(`TNL social backend on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  /* A deploy log that only says "started" tells you nothing. This says what
+     is actually switched on — so you can see at a glance whether the thing
+     you just set in Railway took effect, without clicking into the app. */
+  const admins = db.prepare(`SELECT username FROM users WHERE is_admin = 1`).all().map((u) => "@" + u.username);
+  const users = db.prepare(`SELECT COUNT(*) n FROM users`).get().n;
+  const posts = db.prepare(`SELECT COUNT(*) n FROM posts`).get().n;
+  const collabs = db.prepare(`SELECT COUNT(*) n FROM collaborators WHERE status='accepted'`).get().n;
+  const ok = (b) => (b ? "on " : "OFF");
+  console.log(`
+┌─ TNL LABS ─────────────────────────────────
+│ listening   :${PORT}
+│ data        ${DATA_DIR}${process.env.TNL_DATA ? "" : "   ⚠ NOT a volume — data dies on redeploy"}
+│ public url  ${process.env.PUBLIC_URL || "(unset — verification links will be wrong)"}
+│ email       ${ok(MAIL_ENABLED)}${MAIL_ENABLED ? "" : "  ⚠ links shown on screen instead of sent"}
+│ payments    ${ok(PAYMENTS_ENABLED)}${PAYMENTS_ENABLED ? "" : "  ⚠ buyers arrange payment directly"}
+│ admin       ${admins.length ? admins.join(", ") : "(none)"}
+│ in the lab  ${users} member${users === 1 ? "" : "s"} · ${posts} post${posts === 1 ? "" : "s"} · ${collabs} confirmed collab${collabs === 1 ? "" : "s"}
+└────────────────────────────────────────────`);
+});
