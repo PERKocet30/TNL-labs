@@ -1481,6 +1481,25 @@ function studioHTML(){return `<div class="scroll">
   <div id="studiomount"></div>
 </div>`}
 
+/* Renders one piece of work on a profile. Takes the account's KIND so the
+   collab credit reads in their language — "Designed with" vs "Made with". */
+function workCardHTML(p, collab, K) {
+  K = K || KINDS.visual;
+  const accepted = p.collaborators.filter(c => c.status === "accepted");
+  const kind = p.beat ? "BEAT" : p.videoUrl ? "VIDEO" : p.imageUrl ? "IMAGE" : "POST";
+  return `<div class="work" data-openpost="${p.id}">
+    <div class="work-top"><span class="mono work-kind">${kind} · #${esc(p.channel)}</span>
+      ${collab ? `<span class="mono work-collab">↔ ${esc(K.collabLine.toUpperCase())} ${esc(p.author.displayName.toUpperCase())}</span>` : ""}</div>
+    ${p.beat ? `<div class="work-beat"><button class="circle" style="width:28px;height:28px;font-size:10px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button><span class="nm">${esc(p.beat.name || "untitled loop")}</span><span class="mono dim">${p.beat.bpm}BPM</span></div>`
+      : p.imageUrl ? `<img class="work-img" src="${esc(p.thumbUrl || p.imageUrl)}" alt="work" loading="lazy" decoding="async">${p.body ? `<div class="work-body" style="margin-top:6px">${esc(p.body)}</div>` : ""}`
+      : p.videoUrl ? `<video class="work-img" src="${esc(p.videoUrl)}" controls playsinline preload="metadata"></video>`
+      : `<div class="work-body">${esc(p.body || "—")}</div>`}
+    <div class="work-foot mono"><span>♥ ${p.likeCount}</span><span>↻ ${p.shareCount}</span>
+      ${accepted.length ? `<span class="work-cnames">✓ ${accepted.map(c => esc(c.display_name || c.username)).join(", ")}</span>` : ""}
+      <span class="dim" style="margin-left:auto">${new Date(p.createdAt).toLocaleDateString()}</span></div>
+  </div>`;
+}
+
 function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.at>u.rep);
   const pct=nx?Math.round((u.rep-l.at)/(nx.at-l.at)*100):100;
   const mine=u.username===ME.username;
