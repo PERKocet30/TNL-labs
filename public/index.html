@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TNL LABS — STUDIO</title>
+  <style>
+    :root {
+      --bg-color: #0a0a0a;
+      --panel-color: #121212;
+      --border-color: #222;
+      --accent-color: #ffffff;
+      --accent-dim: #555;
+      --pad-active: #ffffff;
+      --pad-inactive: #1a1a1a;
+      --text-color: #eaeaea;
+    }
+
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .studio-container {
+      width: 100%;
+      max-width: 900px;
+      background: var(--panel-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 30px;
+      box-sizing: border-box;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 20px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      background: #222;
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid #333;
+      color: #888;
+    }
+
+    /* Controls */
+    .controls-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .control-group label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #888;
+    }
+
+    .control-group input[type="range"] {
+      width: 100%;
+      background: #222;
+      height: 4px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .control-group input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: var(--accent-color);
+      cursor: pointer;
+    }
+
+    .control-value {
+      font-size: 0.85rem;
+      font-family: monospace;
+    }
+
+    /* Action Buttons */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    button {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 10px 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      background: var(--accent-color);
+      color: var(--bg-color);
+      border-color: var(--accent-color);
+    }
+
+    button.active {
+      background: var(--accent-color);
+      color: var(--bg-color);
+    }
+
+    /* Sequencer Grid */
+    .sequencer-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .channel-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .channel-label {
+      width: 100px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #888;
+      font-family: monospace;
+    }
+
+    .pads {
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 6px;
+      flex-grow: 1;
+    }
+
+    .pad {
+      aspect-ratio: 1;
+      background: var(--pad-inactive);
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: transform 0.1s ease, background 0.1s ease;
+    }
+
+    .pad:hover {
+      background: #2a2a2a;
+    }
+
+    .pad.active {
+      background: var(--pad-active);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+
+    .pad.playing {
+      transform: scale(1.08);
+      border-color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="studio-container">
+    <header>
+      <h1>Studio Sequencer</h1>
+      <span class="status-badge">TNL v1.0.0</span>
+    </header>
+
+    <div class="controls-panel">
+      <div class="control-group">
+        <label>Tempo (BPM)</label>
+        <input type="range" id="tempo-slider" min="60" max="200" value="140">
+        <div class="control-value" id="tempo-val">140 BPM</div>
+      </div>
+
+      <div class="control-group">
+        <label>Swing</label>
+        <input type="range" id="swing-slider" min="0" max="100" value="0">
+        <div class="control-value" id="swing-val">0%</div>
+      </div>
+
+      <div class="control-group">
+        <label>Humanization</label>
+        <input type="range" id="humanize-slider" min="0" max="100" value="0">
+        <div class="control-value" id="humanize-val">0%</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button id="play-btn">Play</button>
+      <button id="export-stems-btn">Export Stems (WAV)</button>
+    </div>
+
+    <div class="sequencer-grid" id="grid"></div>
+  </div>
+
+  <script src="/sequencer-engine.js"></script>
+  <script src="/export-engine.js"></script>
+
+  <script>
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const sequencer = new TNLSequencerEngine(audioContext);
+    const exporter = new TNLExportEngine(sequencer);
+
+    const instruments = [
+      { id: 'Kick', url: '/samples/kick.wav' },
+      { id: 'Snare', url: '/samples/snare.wav' },
+      { id: 'OpenHat', url: '/samples/open_hat.wav', options: { chokeGroup: 'hats' } },
+      { id: 'ClosedHat', url: '/samples/closed_hat.wav', options: { chokeGroup: 'hats' } }
+    ];
+
+    async function loadSample(url) {
+      try {
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        return await audioContext.decodeAudioData(arrayBuffer);
+      } catch (e) {
+        // Fallback synthetic square wave buffer if local assets are missing
+        const sampleRate = audioContext.sampleRate;
+        const buffer = audioContext.createBuffer(1, sampleRate * 0.15, sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < buffer.length; i++) {
+          data[i] = Math.sin(i * 0.05) * Math.exp(-i * 0.01);
+        }
+        return buffer;
+      }
+    }
+
+    async function initStudio() {
+      for (const inst of instruments) {
+        const buffer = await loadSample(inst.url);
+        sequencer.addChannel(inst.id, buffer, inst.options || {});
+      }
+      buildUI();
+    }
+
+    function buildUI() {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+
+      Object.keys(sequencer.channels).forEach(channelId => {
+        const row = document.createElement('div');
+        row.className = 'channel-row';
+
+        const label = document.createElement('div');
+        label.className = 'channel-label';
+        label.textContent = channelId;
+        row.appendChild(label);
+
+        const padsContainer = document.createElement('div');
+        padsContainer.className = 'pads';
+
+        for (let i = 0; i < sequencer.totalSteps; i++) {
+          const pad = document.createElement('div');
+          pad.className = 'pad';
+          pad.dataset.channel = channelId;
+          pad.dataset.step = i;
+
+          // Velocity adjustments via vertical sliding click
+          let dragStartVal = 0;
+          let targetStep = null;
+
+          pad.addEventListener('pointerdown', (e) => {
+            pad.releasePointerCapture(e.pointerId);
+            targetStep = sequencer.channels[channelId].steps[i];
+            targetStep.active = !targetStep.active;
+            pad.classList.toggle('active', targetStep.active);
+            dragStartVal = e.clientY;
+          });
+
+          pad.addEventListener('pointermove', (e) => {
+            if (targetStep && targetStep.active) {
+              const deltaY = dragStartVal - e.clientY;
+              const change = deltaY * 0.005;
+              targetStep.velocity = Math.max(0.1, Math.min(1.0, targetStep.velocity + change));
+              pad.style.opacity = targetStep.velocity;
+            }
+          });
+
+          pad.addEventListener('pointerup', () => {
+            targetStep = null;
+          });
+
+          padsContainer.appendChild(pad);
+        }
+
+        row.appendChild(padsContainer);
+        grid.appendChild(row);
+      });
+    }
+
+    // Step tracker visualization
+    setInterval(() => {
+      if (!sequencer.isPlaying) return;
+      const step = sequencer.currentStep;
+      document.querySelectorAll('.pad').forEach(pad => {
+        const padStep = parseInt(pad.dataset.step);
+        pad.classList.toggle('playing', padStep === step);
+      });
+    }, 50);
+
+    // Controls
+    document.getElementById('play-btn').addEventListener('click', (e) => {
+      if (sequencer.isPlaying) {
+        sequencer.stop();
+        e.target.textContent = 'Play';
+        e.target.classList.remove('active');
+        document.querySelectorAll('.pad').forEach(pad => pad.classList.remove('playing'));
+      } else {
+        sequencer.start();
+        e.target.textContent = 'Stop';
+        e.target.classList.add('active');
+      }
+    });
+
+    const tempoSlider = document.getElementById('tempo-slider');
+    tempoSlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value);
+      sequencer.tempo = val;
+      document.getElementById('tempo-val').textContent = `${val} BPM`;
+    });
+
+    const swingSlider = document.getElementById('swing-slider');
+    swingSlider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      sequencer.swing = val / 100;
+      document.getElementById('swing-val').textContent = `${val}%`;
+    });
+
+    const humanizeSlider = document.getElementById('humanize-slider');
+    humanizeSlider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      sequencer.humanize = val / 100;
+      document.getElementById('humanize-val').textContent = `${val}%`;
+    });
+
+    document.getElementById('export-stems-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('export-stems-btn');
+      btn.textContent = 'Rendering...';
+      btn.disabled = true;
+      await exporter.downloadAllStems();
+      btn.textContent = 'Export Stems (WAV)';
+      btn.disabled = false;
+    });
+
+    initStudio();
+  </script>
+</body>
+</html>
