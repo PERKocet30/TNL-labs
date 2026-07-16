@@ -390,7 +390,10 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:#000}
 .simg{position:relative;width:72px;height:72px}
 .simg img{width:100%;height:100%;object-fit:cover;border-radius:9px;border:1px solid var(--line2)}
 .simgx{position:absolute;top:-5px;right:-5px;width:19px;height:19px;border-radius:50%;background:#000;border:1px solid var(--line2);color:var(--tx);font-size:9px;padding:0}
-.simgadd{width:72px;height:72px;border-radius:9px;border:1px dashed var(--line2);background:var(--el);color:var(--dim);font-size:20px}
+.simgadd{width:72px;height:72px;border-radius:9px;border:1px dashed var(--line2);background:var(--el);color:var(--dim);font-size:20px;display:flex;align-items:center;justify-content:center}
+.simgadd.busy{border-style:solid;border-color:var(--green)}
+.spin{width:16px;height:16px;border:2px solid var(--line2);border-top-color:var(--green);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
 .simgadd:hover{border-color:var(--green);color:var(--green)}
 .srow{display:flex;gap:10px}
 .srow>div{flex:1}
@@ -399,6 +402,7 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:#000}
 .ordimg{width:58px;height:58px;object-fit:cover;border-radius:8px;background:var(--el);flex-shrink:0}
 .ordbody{flex:1;min-width:120px}
 .ordstatus{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;margin-top:5px;color:var(--dim)}
+.unpaid{font-size:11px;line-height:1.5;color:#FBBF24;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.35);border-radius:7px;padding:6px 9px;margin-top:6px}
 .st-paid,.st-shipped{color:var(--green)}
 .st-complete{color:var(--dim)}
 .ordaddr{margin-top:5px;font-size:9px;line-height:1.5}
@@ -795,7 +799,7 @@ function needAccount(why){
 }
 let GATEWHY="";
 let MKT=null, MKTMETA={categories:[],conditions:[],paymentsEnabled:false}, MKTFILT={}, MKTVIEW="browse";
-let MKTONE=null, MKTOFFERS=[], SELLFORM=null, SELLIMGS=[], ORDERS=null, ORDTAB="buying";
+let MKTONE=null, MKTOFFERS=[], SELLFORM=null, SELLIMGS=[], ORDERS=null, ORDTAB="buying", SELLUP=false;
 const $=sel=>document.querySelector(sel);
 function toast(t){TOASTT=t;render();setTimeout(()=>{TOASTT=null;render()},2200)}
 
@@ -847,7 +851,11 @@ function compressImage(file,maxDim=1400,quality=.82){
 /* Streams the raw file straight to the server — no base64, no giant string
    in memory, and we get real progress. XHR rather than fetch because fetch
    still can't report UPLOAD progress, and a 600MB upload with no feedback
-   is indistinguishable from a hang. */
+   is indistinguishable from a hang.
+
+   Falls back to the older base64 route if the server doesn't have the
+   streaming one yet. Frontend and backend get deployed separately and
+   sometimes drift; a photo upload shouldn't just die because of that. */
 function uploadStream(fileOrBlob,onProgress){
   return new Promise((resolve,reject)=>{
     const x=new XMLHttpRequest();
@@ -855,16 +863,39 @@ function uploadStream(fileOrBlob,onProgress){
     x.setRequestHeader("Content-Type","application/octet-stream");
     if(TOKEN)x.setRequestHeader("Authorization","Bearer "+TOKEN);
     x.upload.onprogress=e=>{if(e.lengthComputable&&onProgress)onProgress(e.loaded/e.total)};
-    x.onload=()=>{
+    x.onload=async()=>{
       let d={};try{d=JSON.parse(x.responseText)}catch(e){}
-      if(x.status>=200&&x.status<300)resolve(d);
-      else reject(new Error(d.error||("upload failed ("+x.status+")")));
+      if(x.status>=200&&x.status<300)return resolve(d);
+      if(x.status===404){                     // server predates streaming
+        try{return resolve(await uploadB64(fileOrBlob))}catch(e){return reject(e)}
+      }
+      reject(new Error(uploadError(x.status,d)));
     };
     x.onerror=()=>reject(new Error("Upload failed — check your connection"));
     x.onabort=()=>reject(new Error("Upload cancelled"));
     UPLOADXHR=x;
     x.send(fileOrBlob);
   });
+}
+/* The old route. Kept only as a safety net for a stale server. */
+async function uploadB64(blob){
+  const data=await new Promise((res,rej)=>{
+    const fr=new FileReader();fr.onerror=()=>rej(new Error("Couldn't read that file"));
+    fr.onload=()=>res(fr.result);fr.readAsDataURL(blob);
+  });
+  return req("/api/upload",{method:"POST",body:{data}});
+}
+/* Say what actually went wrong. "Upload failed" helps nobody. */
+function uploadError(status,d){
+  if(d&&d.error){
+    if(d.needsVerify)return "Confirm your email first — check your inbox, or hit Resend up top";
+    return d.error;
+  }
+  if(status===401)return "You've been signed out — sign in and try again";
+  if(status===403)return "Confirm your email first — check your inbox, or hit Resend up top";
+  if(status===413)return "That file's too big";
+  if(status===429)return "Too many uploads — give it a minute";
+  return "Upload failed ("+status+")";
 }
 function dataUrlToBlob(d){
   const [meta,b64]=d.split(",");
@@ -1531,12 +1562,15 @@ function sellHTML(){const f=SELLFORM||{};
     <div class="dnav"><button class="backb2" data-mv="browse">← Market</button></div>
     <div class="page-head"><div class="mono dim">NEW LISTING</div><h2 class="page-h">Sell an item</h2>
     <p class="page-sub">Photos first — that's what sells it.</p></div>
+    ${(ME&&!ME.emailVerified)?`<div class="paybar off" style="margin:0 20px 14px">
+      <div><b>Confirm your email to list.</b>
+      <div class="mono dim">Check your inbox — or hit Resend on the banner at the top.</div></div></div>`:""}
     ${payoutBannerHTML()}
     <div class="sellform">
       <div class="mono lbl">PHOTOS (UP TO 8)</div>
       <div class="simgs">
         ${SELLIMGS.map((im,i)=>`<div class="simg"><img src="${im}"><button class="simgx" data-simgx="${i}">✕</button></div>`).join("")}
-        ${SELLIMGS.length<8?`<button class="simgadd" id="saddimg">＋</button>`:""}
+        ${SELLUP?`<div class="simgadd busy"><span class="spin"></span></div>`:SELLIMGS.length<8?`<button class="simgadd" id="saddimg">＋</button>`:""}
       </div>
       <input type="file" id="sfile" accept="image/*" hidden>
       <label class="mono lbl">TITLE</label><input class="in" id="s-title" value="${esc(f.title||"")}" maxlength="120" placeholder="e.g. Vintage Carhartt Detroit Jacket">
@@ -1581,6 +1615,7 @@ function ordersHTML(){
           <div class="mtitle">${esc(o.listing.title)}</div>
           <div class="mono dim">${money(o.amount+o.shipping)} · ${ORDTAB==="buying"?"from":"to"} ${esc(o.other.displayName)}</div>
           <div class="ordstatus st-${o.status}">${o.status.toUpperCase()}${o.tracking?` · ${esc(o.tracking)}`:""}</div>
+          ${!o.paid&&o.status!=="complete"?`<div class="unpaid">⚠ No payment taken — ${ORDTAB==="buying"?"pay the seller directly":"collect from the buyer directly"}</div>`:""}
           ${ORDTAB==="selling"&&o.status!=="complete"?`<div class="mono dim ordaddr">${esc(o.shipName)} — ${esc(o.shipAddress)}</div>`:""}
         </div>
         <div class="obtns">
@@ -1874,9 +1909,17 @@ function wireMarket(){
   const add=$("#saddimg");if(add)add.onclick=()=>$("#sfile").click();
   const sf=$("#sfile");if(sf)sf.onchange=async()=>{
     const f=sf.files&&sf.files[0];if(!f)return;sf.value="";
-    if(f.size>25*1024*1024)return toast("Image too big");
-    try{toast("Uploading…");const data=await compressImage(f,1800,.88);const up=await uploadStream(dataUrlToBlob(data));
-      SELLIMGS=[...SELLIMGS,up.url];render()}catch(e){toast(e.message)}};
+    if(!f.type.startsWith("image/"))return toast("Photos only for listings");
+    if(f.size>30*1024*1024)return toast("That photo's too big — 30MB max");
+    if(ME&&!ME.emailVerified)return toast("Confirm your email first — check your inbox, or hit Resend up top");
+    SELLUP=true;render();
+    try{
+      const data=await compressImage(f,1800,.88);
+      const up=await uploadStream(dataUrlToBlob(data));
+      SELLIMGS=[...SELLIMGS,up.url];
+    }catch(e){toast(e.message)}
+    SELLUP=false;render();
+  };
   document.querySelectorAll("[data-simgx]").forEach(b=>b.onclick=()=>{SELLIMGS=SELLIMGS.filter((_,i)=>i!==+b.dataset.simgx);render()});
   document.querySelectorAll("[data-scat]").forEach(b=>b.onclick=()=>{stashSell();SELLFORM.category=b.dataset.scat;render()});
   document.querySelectorAll("[data-scond]").forEach(b=>b.onclick=()=>{stashSell();SELLFORM.condition=b.dataset.scond;render()});
@@ -1909,7 +1952,10 @@ function wireMarket(){
     const address=prompt("Shipping address:");if(!address)return;
     try{const d=await api.mktBuy(b.dataset.buy,{name,address});
       if(d.checkoutUrl){location.href=d.checkoutUrl;return}
-      toast("Reserved — message the seller to settle up");
+      // arrange mode — be blunt, they have NOT paid
+      alert(d.sellerNotConnected
+        ? "Reserved — but no payment was taken.\n\nThis seller hasn't set up card payments yet, so you'll need to pay them directly. Message them to sort it out."
+        : "Reserved — but no payment was taken.\n\nCard payments aren't switched on yet. Message the seller to settle up directly.");
       MKTVIEW="orders";ORDERS=await api.orders();ORDTAB="buying";render();
     }catch(e){toast(e.message)}});
   document.querySelectorAll("[data-medit]").forEach(b=>b.onclick=async()=>{
@@ -2218,20 +2264,38 @@ function wireSheet(){
 }
 
 /* ---- boot ---- */
+/* Runs every 20s in the background. It must NEVER call render() — a full
+   rebuild mid-action detaches the file input you just opened, wipes text
+   you're typing, and jumps your scroll. That's what made image upload fail
+   "the first few tries": a poll landing while the picker was open. Paints
+   the two badges surgically instead. */
 async function refreshBadges(){
   if(!ME)return;
-  // If they verified in the email tab, notice it here without a reload.
   if(!ME.emailVerified){
     try{const st=await api.authStatus();
-      if(st.verified){await refreshMe();toast("Email confirmed — you're in");render();return}
+      if(st.verified){await refreshMe();toast("Email confirmed — you're in");paintVerifyBar()}
     }catch(e){}
   }
   try{const [n,d]=await Promise.all([api.notifs(),api.dmList()]);
-    const changed=n.unread!==UNREAD||d.unreadTotal!==DMUNREAD;
     UNREAD=n.unread;DMUNREAD=d.unreadTotal;
+    paintBadges();
     loadUnreads();
-    if(changed&&!NOTIFOPEN&&!DMOPENPANEL)render();
   }catch(e){/* offline */}
+}
+function paintBadges(){
+  const set=(sel,count)=>{
+    const b=$(sel);if(!b)return;
+    let el=b.querySelector(".badge");
+    if(count&&!el){el=document.createElement("span");el.className="badge";b.appendChild(el)}
+    if(count&&el)el.textContent=count>9?"9+":count;
+    else if(el)el.remove();
+  };
+  set("#notifBtn",UNREAD);
+  set("#dmBtn",DMUNREAD);
+}
+function paintVerifyBar(){
+  const bar=document.querySelector(".verifybar");
+  if(bar&&ME&&ME.emailVerified)bar.remove();
 }
 (async()=>{
   try{const d=await api.levels();LEVELS=d.levels}catch(e){/* offline default */}
