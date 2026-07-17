@@ -137,14 +137,21 @@ function paint(){
       </div>
     </div>
     <div class="nav">
-      ${[["overview","OVERVIEW"],["members","MEMBERS"],["content","CONTENT"],["orders","ORDERS"],["reports","REPORTS"+(DATA.overview?.openReports?" ("+DATA.overview.openReports+")":"")]]
+      ${[["overview","OVERVIEW"],["funnel","FUNNEL"],["retention","RETENTION"],["market","MARKET"],
+         ["members","MEMBERS"],["content","CONTENT"],["orders","ORDERS"],
+         ["reports","REPORTS"+(DATA.overview?.openReports?" ("+DATA.overview.openReports+")":"")],
+         ["health","HEALTH"]]
         .map(([id,l])=>`<button class="${TAB===id?"on":""}" data-tab="${id}">${l}</button>`).join("")}
     </div>
     <div class="wrap">${
       TAB==="overview"?overviewHTML():
+      TAB==="funnel"?funnelHTML():
+      TAB==="retention"?retentionHTML():
+      TAB==="market"?marketHTML():
       TAB==="members"?membersHTML():
       TAB==="content"?contentHTML():
-      TAB==="orders"?ordersHTML():reportsHTML()}</div>
+      TAB==="orders"?ordersHTML():
+      TAB==="health"?healthHTML():reportsHTML()}</div>
     ${TOASTT?`<div class="toast">${esc(TOASTT)}</div>`:""}`;
   wire();
 }
@@ -212,6 +219,186 @@ function overviewHTML(){
   </div>`;
 }
 
+
+/* ---------- funnel ---------- */
+function funnelHTML(){
+  const d=DATA.funnel;
+  if(!d)return `<div class="empty">Loading…</div>`;
+  const max=d.steps[0].n||1;
+  return `
+  <div class="hero"><h1>Funnel</h1><p>Where people stop. The biggest drop is your only real to-do.</p></div>
+  <div class="panel">
+    <div class="bars">${d.steps.map((s,i)=>{
+      const prev=i?d.steps[i-1].n:s.n;
+      const drop=prev-s.n;
+      const dropPct=prev?Math.round((drop/prev)*100):0;
+      const bad=i>0&&dropPct>=50;
+      return `<div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+          <span style="font-size:13px;font-weight:700">${esc(s.label)}</span>
+          <span class="mono dim">${s.n} · ${s.pct}%</span>
+        </div>
+        <div class="track"><div class="fill" style="width:${(s.n/max)*100}%;${bad?"background:var(--red)":""}"></div></div>
+        ${i>0&&drop>0?`<div class="mono ${bad?"":"dim"}" style="margin-top:4px;font-size:9px;${bad?"color:var(--red)":""}">
+          ↓ ${drop} dropped off here (${dropPct}%)${bad?" — biggest leak":""}</div>`:""}
+      </div>`}).join("")}</div>
+  </div>
+  <div class="panel">
+    <h3>READ THIS AS</h3>
+    <p style="font-size:13px;line-height:1.7;color:var(--dim)">
+      Signups are easy. <b style="color:var(--tx)">Published work</b> is the first real signal —
+      someone who publishes has decided this place is worth their reputation.
+      <b style="color:var(--green)">Confirmed collabs</b> is the one that proves the model;
+      if that row is near zero, everything above it is vanity.
+    </p>
+  </div>`;
+}
+
+/* ---------- retention ---------- */
+function retentionHTML(){
+  const d=DATA.retention;
+  if(!d)return `<div class="empty">Loading…</div>`;
+  return `
+  <div class="hero"><h1>Retention</h1><p>Not who joined. Who stayed.</p></div>
+  <div class="panel">
+    <h3>WEEKLY COHORTS · STILL POSTING IN THE LAST 7 DAYS</h3>
+    <div class="bars">${d.cohorts.map(c=>`
+      <div class="bar"><span class="lab">${esc(c.week)}</span>
+        <div class="track"><div class="fill" style="width:${c.pct}%"></div></div>
+        <span class="n">${c.stillPosting}/${c.joined}</span></div>`).join("")}
+    </div>
+    ${d.cohorts.every(c=>!c.joined)?`<div class="empty">Nobody's joined in the last month.</div>`:""}
+  </div>
+
+  <div class="panel">
+    <h3>SIGNED UP, NEVER POSTED (${d.silent.length})</h3>
+    ${d.silent.length?`<div class="scrollx"><table><tbody>${d.silent.map(u=>`<tr>
+      <td><b>${esc(u.display_name)}</b> <span class="mono dim">@${esc(u.username)}</span></td>
+      <td class="mono dim">joined ${ago(u.created_at)}</td>
+      <td><button class="btn ghost sm" data-dm="${esc(u.username)}">Nudge</button></td>
+    </tr>`).join("")}</tbody></table></div>
+    <p class="mono dim" style="margin-top:10px;line-height:1.6">These people signed up and stopped. At this size that's a text, not a campaign.</p>`
+    :`<div class="empty">Everyone who joined has posted. That's rare — good.</div>`}
+  </div>
+
+  <div class="panel">
+    <h3>GONE QUIET · POSTED BEFORE, NOT IN 14 DAYS (${d.quiet.length})</h3>
+    ${d.quiet.length?`<div class="scrollx"><table><tbody>${d.quiet.map(u=>`<tr>
+      <td><b>${esc(u.display_name)}</b> <span class="mono dim">@${esc(u.username)}</span></td>
+      <td class="mono dim">${u.posts} posts · last ${ago(u.last_post)}</td>
+      <td><button class="btn ghost sm" data-dm="${esc(u.username)}">Nudge</button></td>
+    </tr>`).join("")}</tbody></table></div>`
+    :`<div class="empty">Nobody's gone quiet.</div>`}
+  </div>
+
+  <div class="panel">
+    <h3>MESSAGE EVERYONE</h3>
+    <p class="mono dim" style="margin-bottom:10px;line-height:1.6">Lands as a DM from you. At this size that's worth more than a push notification.</p>
+    <textarea class="search" id="bcast" rows="3" placeholder="Say something worth opening the app for…"></textarea>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn sm" data-bcast="all">Send to everyone</button>
+      <button class="btn ghost sm" data-bcast="silent">Only the silent (${d.silent.length})</button>
+      <button class="btn ghost sm" data-bcast="quiet">Only the quiet (${d.quiet.length})</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- market ---------- */
+function marketHTML(){
+  const d=DATA.market;
+  if(!d)return `<div class="empty">Loading…</div>`;
+  const maxG=Math.max(1,...d.daily.map(x=>x.gmv));
+  return `
+  <div class="hero"><h1>Market</h1><p>The business, not the vibes.</p></div>
+  <div class="cards">
+    <div class="card hero-card"><div class="k">YOUR REVENUE</div><div class="v">${money(d.revenue)}</div>
+      <div class="s">commission on ${d.orders} order${d.orders===1?"":"s"}</div></div>
+    <div class="card"><div class="k">GMV</div><div class="v">${money(d.gmv)}</div>
+      <div class="s">avg order ${money(d.aov)}</div></div>
+    <div class="card"><div class="k">LISTINGS</div><div class="v">${d.active}</div>
+      <div class="s">${d.sold} sold · ${d.sellers} sellers</div></div>
+    <div class="card"><div class="k">PAYOUTS CONNECTED</div><div class="v">${d.connected}</div>
+      <div class="s">${d.connected<d.sellers?`<span class="warn">${d.sellers-d.connected} can't get paid</span>`:"everyone can sell"}</div></div>
+  </div>
+  ${d.unshipped?`<div class="rep"><div class="rt">${d.unshipped} paid order${d.unshipped===1?"":"s"} not shipped</div>
+    <div class="rb">Someone's money is sitting there. This is the fastest way to lose a buyer for good.</div></div>`:""}
+  <div class="cards">
+    <div class="card"><div class="k">SELLER RATING</div><div class="v">${d.reviews?d.avgRating.toFixed(1)+"★":"—"}</div>
+      <div class="s">${d.reviews} review${d.reviews===1?"":"s"}</div></div>
+  </div>
+
+  <div class="panel">
+    <h3>GMV · LAST 14 DAYS</h3>
+    <div class="spark">${d.daily.map(x=>`<div class="${x.gmv?"has":""}" style="height:${Math.max(4,(x.gmv/maxG)*100)}%" title="${x.d}: ${money(x.gmv)} (${x.n})"></div>`).join("")}</div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px" class="mono dim">
+      <span>${d.daily[0].d}</span><span>${d.daily[d.daily.length-1].d}</span></div>
+  </div>
+
+  <div class="panel">
+    <h3>TOP SELLERS</h3>
+    ${d.topSellers.length?`<div class="scrollx"><table>
+      <thead><tr><th>SELLER</th><th>SALES</th><th>GROSS</th><th>YOUR CUT</th></tr></thead>
+      <tbody>${d.topSellers.map(x=>`<tr>
+        <td><div class="who">${av(x.avatar_url,x.display_name)}<span class="nm">${esc(x.display_name)}</span></div></td>
+        <td>${x.sales}</td><td>${money(x.gross)}</td>
+        <td style="color:var(--green)"><b>${money(Math.round(x.gross*(feeFor(x.rep)/100)))}</b></td>
+      </tr>`).join("")}</tbody></table></div>`:`<div class="empty">No sales yet.</div>`}
+  </div>
+
+  <div class="panel">
+    <h3>STALE LISTINGS · UP 2+ WEEKS, BARELY SEEN</h3>
+    ${d.stale.length?`<div class="scrollx"><table><tbody>${d.stale.map(x=>`<tr>
+      <td><b>${esc(x.title)}</b> <span class="mono dim">@${esc(x.username)}</span></td>
+      <td class="mono dim">${money(x.price_cents)} · ${x.views} views</td>
+      <td class="mono dim">${ago(x.created_at)}</td>
+    </tr>`).join("")}</tbody></table></div>
+    <p class="mono dim" style="margin-top:10px;line-height:1.6">Priced wrong, shot badly, or the market's too small yet. Worth a look before you blame the code.</p>`
+    :`<div class="empty">Nothing going stale.</div>`}
+  </div>`;
+}
+const feeFor=(rep)=>rep>=560?2:rep>=280?4:rep>=120?6:rep>=40?8:10;
+
+/* ---------- health ---------- */
+function healthHTML(){
+  const d=DATA.health;
+  if(!d)return `<div class="empty">Loading…</div>`;
+  const mb=(b)=>(b/1048576).toFixed(1)+" MB";
+  return `
+  <div class="hero"><h1>Health</h1><p>Is anything actually wrong right now?</p></div>
+  <div class="status">
+    <span class="pill ${d.onVolume?"ok":"no"}">${d.onVolume?"DATA ON VOLUME":"⚠ NOT ON A VOLUME"}</span>
+    <span class="pill ${d.mail?"ok":"warn"}">${d.mail?"EMAIL ON":"EMAIL OFF"}</span>
+    <span class="pill ${d.payments?"ok":"warn"}">${d.payments?"PAYMENTS ON":"PAYMENTS OFF"}</span>
+    <span class="pill ${d.publicUrl?"ok":"no"}">${d.publicUrl?"URL SET":"⚠ PUBLIC_URL UNSET"}</span>
+  </div>
+  ${!d.onVolume?`<div class="rep"><div class="rt">Your data is temporary.</div>
+    <div class="rb">TNL_DATA isn't set to a mounted volume. Everything — accounts, posts, images — dies on the next redeploy.</div></div>`:""}
+  <div class="cards">
+    <div class="card"><div class="k">DATABASE</div><div class="v">${mb(d.dbBytes)}</div><div class="s">${d.sessions} live sessions</div></div>
+    <div class="card"><div class="k">UPLOADS</div><div class="v">${mb(d.uploadBytes)}</div><div class="s">${d.uploadCount} files</div></div>
+    <div class="card"><div class="k">MEMORY</div><div class="v">${d.memMB} MB</div><div class="s">up ${Math.floor(d.uptimeS/3600)}h ${Math.floor(d.uptimeS%3600/60)}m</div></div>
+    <div class="card ${d.orphans?"":""}"><div class="k">ORPHANED FILES</div><div class="v">${d.orphans}</div>
+      <div class="s">${d.orphans?mb(d.orphanBytes)+" reclaimable":"nothing to clean"}</div></div>
+  </div>
+  ${d.orphans?`<div class="panel">
+    <h3>CLEAN UP</h3>
+    <p style="font-size:13px;line-height:1.6;color:var(--dim);margin-bottom:12px">
+      ${d.orphans} file${d.orphans===1?"":"s"} on the volume that nothing points at any more — deleted posts,
+      abandoned uploads, replaced avatars. ${mb(d.orphanBytes)} you're paying to store for no reason.
+    </p>
+    <button class="btn" data-cleanup>Delete ${d.orphans} orphaned file${d.orphans===1?"":"s"}</button>
+  </div>`:""}
+  <div class="panel">
+    <h3>DETAIL</h3>
+    <div class="scrollx"><table><tbody>
+      <tr><td class="mono dim">PUBLIC URL</td><td>${d.publicUrl?esc(d.publicUrl):`<span style="color:var(--red)">unset — verification links will be wrong</span>`}</td></tr>
+      <tr><td class="mono dim">NODE</td><td>${esc(d.node)}</td></tr>
+      <tr><td class="mono dim">AWAITING VERIFY</td><td>${d.pendingVerify}</td></tr>
+      <tr><td class="mono dim">OPEN REPORTS</td><td>${d.unhandledReports}</td></tr>
+    </tbody></table></div>
+  </div>`;
+}
+
 /* ---------- members ---------- */
 function membersHTML(){
   const m=DATA.members;
@@ -233,13 +420,17 @@ function membersHTML(){
       <td class="hide-sm">${u.likes}</td>
       <td class="hide-sm mono dim">${ago(u.lastPost)}</td>
       <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+        ${u.suspended?`<span class="pill no">SUSPENDED</span>`:""}
         ${u.verified?`<span class="pill ok">✓</span>`:`<span class="pill no">UNVERIFIED</span>`}
         ${u.published?`<span class="pill ok">PUBLIC</span>`:""}
         ${u.payouts?`<span class="pill ok">$</span>`:""}
       </div></td>
-      <td><div style="display:flex;gap:4px">
-        <button class="btn ghost sm" data-feature="${esc(u.username)}" title="Award +40 rep">★</button>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn ghost sm" data-feature="${esc(u.username)}" title="Feature — award +40 rep">★</button>
+        <button class="btn ghost sm" data-rep="${esc(u.username)}:10" title="+10 rep">+</button>
+        <button class="btn ghost sm" data-rep="${esc(u.username)}:-10" title="−10 rep">−</button>
         ${!u.verified?`<button class="btn ghost sm" data-verify="${esc(u.username)}">Verify</button>`:""}
+        ${!u.isAdmin?`<button class="btn ghost sm" data-suspend="${esc(u.username)}:${u.suspended?"0":"1"}" title="${u.suspended?"Restore":"Suspend"}" style="${u.suspended?"color:var(--red);border-color:var(--red)":""}">${u.suspended?"↺":"⊘"}</button>`:""}
       </div></td>
     </tr>`).join("")}</tbody>
   </table></div>`}`;
@@ -324,6 +515,36 @@ function wire(){
   document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{
     if(!confirm("Delete this post? Can't be undone."))return;
     try{await req("/api/admin/posts/"+b.dataset.del,{method:"DELETE"});toast("Deleted");load()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-dm]").forEach(b=>b.onclick=()=>{
+    // open a DM with them in the app — a nudge from you, not a system mail
+    window.open("/?dm="+encodeURIComponent(b.dataset.dm),"_blank");
+  });
+  document.querySelectorAll("[data-bcast]").forEach(b=>b.onclick=async()=>{
+    const body=$("#bcast")?.value.trim();
+    if(!body)return toast("Write something first");
+    const target=b.dataset.bcast;
+    const who=target==="all"?"everyone":target==="silent"?"everyone who's never posted":"everyone who's gone quiet";
+    if(!confirm("Send this as a DM to "+who+"?\n\n\""+body.slice(0,120)+(body.length>120?"…":"")+"\"\n\nThis can't be undone."))return;
+    try{const d=await req("/api/admin/broadcast",{method:"POST",body:{body,target}});
+      toast("Sent to "+d.sent);$("#bcast").value=""}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-cleanup]").forEach(b=>b.onclick=async()=>{
+    if(!confirm("Delete files nothing points at?\n\nThis only removes uploads with no post, listing, avatar or message referencing them. It can't be undone."))return;
+    try{const d=await req("/api/admin/cleanup",{method:"POST"});
+      toast("Removed "+d.removed+" files, freed "+(d.freed/1048576).toFixed(1)+"MB");load()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-rep]").forEach(b=>b.onclick=async()=>{
+    const [u,delta]=b.dataset.rep.split(":");
+    if(!confirm((delta>0?"Grant +":"Deduct ")+Math.abs(delta)+" rep to @"+u+"?\n\nThis is logged and permanent."))return;
+    try{const d=await req("/api/admin/members/"+u+"/rep",{method:"POST",body:{delta:+delta}});
+      toast("@"+u+" now "+d.rep+" rep");load()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-suspend]").forEach(b=>b.onclick=async()=>{
+    const [u,on]=b.dataset.suspend.split(":");
+    const susp=on==="1";
+    if(!confirm(susp?("Suspend @"+u+"?\n\nThey're signed out immediately and can't log back in. Their work stays up."):("Restore @"+u+"?"))) return;
+    try{await req("/api/admin/members/"+u+"/suspend",{method:"POST",body:{suspended:susp}});
+      toast(susp?"@"+u+" suspended":"@"+u+" restored");load()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-dellist]").forEach(b=>b.onclick=async()=>{
+    if(!confirm("Remove this listing? The seller gets told."))return;
+    try{await req("/api/admin/listings/"+b.dataset.dellist,{method:"DELETE"});toast("Removed");load()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-handle]").forEach(b=>b.onclick=async()=>{
     try{await req("/api/admin/reports/"+b.dataset.handle+"/handle",{method:"POST"});toast("Dismissed");load()}catch(e){toast(e.message)}});
 }
@@ -335,6 +556,10 @@ async function load(){
     if(TAB==="content")DATA.content=(await req("/api/admin/content")).posts;
     if(TAB==="orders")DATA.orders=(await req("/api/admin/orders")).orders;
     if(TAB==="reports")DATA.reports=(await req("/api/admin/reports")).reports;
+    if(TAB==="funnel")DATA.funnel=await req("/api/admin/funnel");
+    if(TAB==="retention")DATA.retention=await req("/api/admin/retention");
+    if(TAB==="market")DATA.market=await req("/api/admin/market");
+    if(TAB==="health")DATA.health=await req("/api/admin/health");
     if(!DATA.overview&&TAB!=="overview")DATA.overview=await req("/api/admin/overview");
     paint();
   }catch(e){ if(/admins only|token/i.test(e.message)){ME=null;paint()} else toast(e.message) }

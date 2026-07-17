@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="TNLLABS">
-<link rel="apple-touch-icon" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon-512.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap');
 :root{--bg:#000;--card:#0A0A0A;--el:#141414;--line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.28);
@@ -289,6 +289,18 @@ img.av{object-fit:cover}
 .miniav{width:18px;height:18px;border-radius:50%;object-fit:cover}
 .pav{object-fit:cover}
 .avedit{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+/* the logo mark */
+.brand{display:flex;align-items:center;gap:7px}
+.mark{height:19px;width:auto;flex-shrink:0}
+.bt{font-weight:900;font-size:14px;letter-spacing:.03em}
+/* accent swatches */
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.swatch{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:none;padding:2px;opacity:.5}
+.swatch.on{opacity:1}
+.swatch span{width:30px;height:30px;border-radius:50%;border:2px solid transparent;display:block}
+.swatch.on span{border-color:var(--tx);box-shadow:0 0 0 2px #000 inset}
+.swatch i{font-style:normal;font-size:8px;letter-spacing:.06em;color:var(--dim)}
+.swatch.on i{color:var(--tx)}
 .rolechips{display:flex;flex-wrap:wrap;gap:5px;margin:-6px 0 12px}
 .rchip{font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.06em;border:1px solid var(--line2);border-radius:999px;padding:3px 8px;color:#D6D2C8}
 .post-vid,.sr-img video{width:100%;border-radius:9px;margin-top:8px;background:#000;display:block}
@@ -386,6 +398,11 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:#000}
 .obtns{display:flex;gap:6px}
 .btn.sm{padding:6px 11px;font-size:11px}
 .sellform{padding:0 20px 40px;max-width:560px}
+.paywall{margin:0 20px 30px;max-width:460px;background:linear-gradient(160deg,rgba(34,197,94,.12),transparent);border:1px solid rgba(34,197,94,.4);border-radius:14px;padding:24px;text-align:center}
+.paywall-ic{width:44px;height:44px;border-radius:50%;background:var(--green);color:#000;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;margin:0 auto 14px}
+.paywall-h{font-size:19px;font-weight:900;margin-bottom:10px}
+.paywall-p{font-size:13px;line-height:1.65;color:var(--dim);margin-bottom:14px}
+.paywall-rate{color:var(--green);letter-spacing:.08em;margin-bottom:16px;line-height:1.5;font-size:9px}
 .simgs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
 .simg{position:relative;width:72px;height:72px}
 .simg img{width:100%;height:100%;object-fit:cover;border-radius:9px;border:1px solid var(--line2)}
@@ -571,6 +588,25 @@ img.post-img,img.sr-img{height:auto}
 .worklist.asgrid .work-body{padding:0 9px;font-size:11.5px;-webkit-line-clamp:2}
 .worklist.asgrid .work-foot{padding:6px 9px 8px;margin-top:4px}
 .worklist.asgrid .work-beat{padding:9px}
+/* market: trust + filters + similar */
+.trust{font-size:9px;letter-spacing:.06em;margin-top:3px;color:var(--dim)}
+.star{color:#FBBF24}
+.protect{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.28);border-radius:8px;padding:8px 10px;margin-top:10px;font-size:8.5px;letter-spacing:.06em;color:var(--green);line-height:1.5}
+.clearf{background:none;border:none;color:var(--dim);font-size:9px;letter-spacing:.08em;padding:4px 0;text-align:left}
+.clearf:hover{color:var(--red)}
+.simwrap{margin-top:30px;border-top:1px solid var(--line);padding-top:18px}
+.sim-h{letter-spacing:.12em;margin-bottom:10px}
+.simrow{display:flex;gap:9px;overflow-x:auto;padding-bottom:6px}
+.simcard{flex-shrink:0;width:112px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;padding:0;text-align:left;color:var(--tx)}
+.simcard:hover{border-color:var(--green)}
+.simcard img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:var(--el)}
+.simt{font-size:11px;font-weight:700;padding:7px 8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.simp{font-size:12px;font-weight:900;padding:2px 8px 8px}
+/* reviews */
+.revitem{display:flex;gap:10px;align-items:center;background:var(--el);border-radius:10px;padding:10px}
+.stars{display:flex;gap:5px}
+.star-btn{background:none;border:none;font-size:30px;color:var(--line2);padding:0;line-height:1}
+.star-btn.on{color:#FBBF24}
 .toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:var(--tx);color:#000;font-weight:700;font-size:13px;border-radius:999px;padding:9px 18px;z-index:80}
 .empty{padding:30px 20px;text-align:center;color:var(--dim);font-size:13px;line-height:1.7}
 @media (max-width:680px){
@@ -732,6 +768,7 @@ const api={
   editPost:(id,body)=>req("/api/posts/"+id,{method:"PATCH",body:{body}}),
   delPost:id=>req("/api/posts/"+id,{method:"DELETE"}),
   markWork:(id,isWork)=>req("/api/posts/"+id+"/work",{method:"POST",body:{isWork}}),
+  sendPost:(id,to,note)=>req("/api/posts/"+id+"/send",{method:"POST",body:{to,note}}),
   comments:id=>req("/api/posts/"+id+"/comments"),
   addComment:(id,body)=>req("/api/posts/"+id+"/comments",{method:"POST",body:{body}}),
   editComment:(id,body)=>req("/api/comments/"+id,{method:"PATCH",body:{body}}),
@@ -762,6 +799,10 @@ const api={
   offerAct:(id,a)=>req("/api/offers/"+id+"/"+a,{method:"POST"}),
   mktBuy:(id,b)=>req("/api/market/"+id+"/buy",{method:"POST",body:b}),
   orders:()=>req("/api/orders"),
+  sellerCard:u=>req("/api/sellers/"+encodeURIComponent(u)),
+  review:(id,stars,body)=>req("/api/orders/"+id+"/review",{method:"POST",body:{stars,body}}),
+  saved:()=>req("/api/market/saved"),
+  recentlyViewed:()=>req("/api/market/recent"),
   shipOrder:(id,tracking)=>req("/api/orders/"+id+"/ship",{method:"POST",body:{tracking}}),
   received:id=>req("/api/orders/"+id+"/received",{method:"POST"}),
   beats:()=>req("/api/beats"),
@@ -794,12 +835,14 @@ const guest=()=>!ME;
 const myName=()=>ME?ME.username:null;
 const myRep=()=>ME?ME.rep:0;
 function needAccount(why){
+  pushView("gate");
   GATE="join"; GATEWHY=why||"";
   render();
 }
 let GATEWHY="";
 let MKT=null, MKTMETA={categories:[],conditions:[],paymentsEnabled:false}, MKTFILT={}, MKTVIEW="browse";
 let MKTONE=null, MKTOFFERS=[], SELLFORM=null, SELLIMGS=[], ORDERS=null, ORDTAB="buying", SELLUP=false;
+let MKTSELLER=null, MKTSIMILAR=[], SAVED=null, REVIEWING=null, REVSTARS=5;
 const $=sel=>document.querySelector(sel);
 function toast(t){TOASTT=t;render();setTimeout(()=>{TOASTT=null;render()},2200)}
 
@@ -954,6 +997,45 @@ async function refreshMe(){try{const d=await api.me();ME=d.user}catch(e){TOKEN=n
 /* ================================================================
    RENDERING
 ================================================================ */
+/* ================================================================
+   HISTORY
+   Everything lived in memory, so the back button (and iOS swipe-back)
+   exited the whole app instead of closing a sheet. That's the single most
+   jarring thing about using this on a phone.
+   Anything that feels like "a screen" pushes state; back pops it.
+================================================================ */
+let HISTINIT=false, POPPING=false;
+function pushView(kind, val){
+  if(POPPING)return;
+  const st={kind,val,tab:TAB};
+  try{history.pushState(st,"", kind==="profile"?("/u/"+val):kind==="listing"?("/m/"+val):location.pathname);}
+  catch(e){/* some in-app browsers block this */}
+}
+function initHistory(){
+  if(HISTINIT)return; HISTINIT=true;
+  try{history.replaceState({kind:"root",tab:TAB},"",location.pathname)}catch(e){}
+  window.addEventListener("popstate",()=>{
+    POPPING=true;
+    // close whatever's on top, innermost first — same order a person expects
+    if(LIGHTBOX){LIGHTBOX=null}
+    else if(PICKER){PICKER=null}
+    else if(GATE){GATE=null;GATEWHY=""}
+    else if(EDITING){EDITING=false}
+    else if(PROFILE){PROFILE=null}
+    else if(DMOPEN){DMOPEN=null;DMDATA=null}
+    else if(DMOPENPANEL){DMOPENPANEL=false}
+    else if(NOTIFOPEN){NOTIFOPEN=false}
+    else if(SEARCHOPEN){SEARCHOPEN=false}
+    else if(OPENCOMMENTS){OPENCOMMENTS=null}
+    else if(TAB==="market"&&MKTVIEW!=="browse"){MKTVIEW="browse";MKTONE=null}
+    else if(TAB==="labs"&&ROOMOPEN){ROOMOPEN=false}
+    else if(TAB!=="showroom"){TAB="showroom"}
+    else{POPPING=false;return}   // at the root — let the browser leave
+    render();
+    POPPING=false;
+  });
+}
+
 function render(){
   const app=$("#app");
   // Guests see the app. Only the explicit door shows the sign-up form.
@@ -972,6 +1054,7 @@ function render(){
     ${DMOPENPANEL?dmPanelHTML():""}
     ${SEARCHOPEN?searchPanelHTML():""}
     ${PICKER?pickerHTML():""}
+    ${REVIEWING?reviewHTML():""}
     ${LIGHTBOX?`<div class="lightbox" id="lb"><img src="${esc(LIGHTBOX)}" alt="full size"></div>`:""}
     ${TOASTT?`<div class="toast">${esc(TOASTT)}</div>`:""}`;
   wire();
@@ -983,7 +1066,7 @@ function render(){
 function topHTML(){
   if(guest())return `
   <div class="top">
-    <div class="brand">TNLLABS <span class="fl">🧪</span></div>
+    <div class="brand"><img class="mark" src="/logo-white.png" alt="TNL"><span class="bt">TNLLABS</span> <span class="fl">🧪</span></div>
     <div class="topact">
       <button class="ib" id="searchBtn" aria-label="Search">⌕</button>
       <button class="btn sm ghost" id="loginBtn">Sign in</button>
@@ -992,7 +1075,7 @@ function topHTML(){
   </div>`;
   const l=levelFor(ME.rep);return `
   <div class="top">
-    <div class="brand">TNLLABS <span class="fl">🧪</span></div>
+    <div class="brand"><img class="mark" src="/logo-white.png" alt="TNL"><span class="bt">TNLLABS</span> <span class="fl">🧪</span></div>
     <div class="topact">
       <button class="ib" id="searchBtn" aria-label="Search">⌕</button>
       <button class="ib" id="dmBtn" aria-label="Messages">✉${DMUNREAD?`<span class="badge">${DMUNREAD>9?"9+":DMUNREAD}</span>`:""}</button>
@@ -1018,6 +1101,7 @@ function notifPanelHTML(){
 async function openProfile(username){
   // Open the sheet on the same tick as the tap. Waiting for the network
   // before showing anything is what made this feel broken.
+  pushView("profile",username);
   SEARCHOPEN=false; DMOPENPANEL=false; NOTIFOPEN=false;
   PTAB="work"; EDITING=false;
   const cached=PROFCACHE.get(username);
@@ -1051,7 +1135,7 @@ function pickerHTML(){
     </div>
   </div></div>`}
 
-function openPicker(cfg){PICKER=Object.assign({items:[]},cfg);render();}
+function openPicker(cfg){pushView("picker");PICKER=Object.assign({items:[]},cfg);render();}
 function closePicker(){PICKER=null;render();}
 
 function wirePicker(){
@@ -1145,7 +1229,7 @@ function navHTML(){const t=[["showroom","◱","SHOWROOM"],["labs","#","LABS"],["
 function gateHTML(){return `
 <div class="gate"><div class="gatecard" id="gate">
   <div class="gatetop">
-    <div class="brand">TNLLABS <span class="fl">🧪</span></div>
+    <div class="brand"><img class="mark" src="/logo-white.png" alt="TNL"><span class="bt">TNLLABS</span> <span class="fl">🧪</span></div>
     <button class="x" id="gatex" title="Keep looking around">✕</button>
   </div>
   ${GATEWHY?`<div class="gatewhy">${esc(GATEWHY)}</div>`:""}
@@ -1183,7 +1267,7 @@ function wireGate(){
       $("#fp").onclick=()=>{mode="forgot";err="";draw()};
       $("#go").onclick=async()=>{try{const d=await api.login({username:$("#u").value.toLowerCase(),password:$("#p").value});
         TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;GATE=null;GATEWHY="";
-        startStream();refreshBadges();loadUnreads();render()}catch(e){err=e.message;draw()}};
+        applyAccent(ME.accentHex);startStream();refreshBadges();loadUnreads();render()}catch(e){err=e.message;draw()}};
       $("#sw").onclick=()=>{mode="register";step=1;err="";draw()};
       return}
     if(step===1){body().innerHTML=`
@@ -1434,6 +1518,7 @@ const money=c=>"$"+(c/100).toFixed(2);
 function marketHTML(){
   if(MKTVIEW==="sell")return sellHTML();
   if(MKTVIEW==="orders")return ordersHTML();
+  if(MKTVIEW==="saved")return savedHTML();
   if(MKTVIEW==="detail")return detailHTML();
   return `<div class="scroll" id="mktscroll">
     <div class="mkt-head">
@@ -1442,6 +1527,7 @@ function marketHTML(){
       <p class="page-sub">Everyone in the lab can sell. Culture into product, direct from the people who make it.</p>
       <div class="mkt-actions">
         <button class="btn green" data-mv="sell">＋ Sell an item</button>
+        <button class="btn ghost" data-mv="saved">♥ Saved</button>
         <button class="btn ghost" data-mv="orders">My orders</button>
       </div>
     </div>
@@ -1451,11 +1537,28 @@ function marketHTML(){
         <button class="chip ${!MKTFILT.category?"on":""}" data-cat="">All</button>
         ${MKTMETA.categories.map(c=>`<button class="chip ${MKTFILT.category===c?"on":""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}
       </div>
+      ${(MKTMETA.sizes&&MKTMETA.sizes.length)?`<div class="fchips">
+        <span class="mono dim" style="align-self:center">SIZE</span>
+        <button class="chip sm ${!MKTFILT.size?"on":""}" data-size="">Any</button>
+        ${MKTMETA.sizes.map(z=>`<button class="chip sm ${MKTFILT.size===z?"on":""}" data-size="${esc(z)}">${esc(z)}</button>`).join("")}
+      </div>`:""}
+      <div class="fchips">
+        <span class="mono dim" style="align-self:center">CONDITION</span>
+        <button class="chip sm ${!MKTFILT.condition?"on":""}" data-cond="">Any</button>
+        ${(MKTMETA.conditions||[]).map(c=>`<button class="chip sm ${MKTFILT.condition===c?"on":""}" data-cond="${esc(c)}">${esc(c)}</button>`).join("")}
+      </div>
+      <div class="fchips">
+        <span class="mono dim" style="align-self:center">PRICE</span>
+        ${[["","Any"],["0-25","Under $25"],["25-50","$25–50"],["50-100","$50–100"],["100-","$100+"]].map(([v,l])=>
+          `<button class="chip sm ${(MKTFILT.range||"")===v?"on":""}" data-range="${v}">${l}</button>`).join("")}
+      </div>
       <div class="fchips">
         <span class="mono dim" style="align-self:center">SORT</span>
-        ${[["new","Newest"],["low","Price ↑"],["high","Price ↓"],["liked","Most liked"]].map(([v,l])=>
+        ${[["new","Newest"],["low","Price ↑"],["high","Price ↓"],["liked","Most saved"]].map(([v,l])=>
           `<button class="chip sm ${(MKTFILT.sort||"new")===v?"on":""}" data-sort="${v}">${l}</button>`).join("")}
       </div>
+      ${(MKTFILT.category||MKTFILT.size||MKTFILT.condition||MKTFILT.range||MKTFILT.q)?
+        `<button class="clearf mono" id="clearfilt">✕ CLEAR FILTERS</button>`:""}
     </div>
     <div class="mkt-grid" id="mktgrid">${!MKT?`<div class="empty">Loading…</div>`
       :!MKT.length?`<div class="empty">Nothing listed yet.<br><br>Be the first — hit “Sell an item”.</div>`
@@ -1494,9 +1597,20 @@ function detailHTML(){
       ${l.description?`<p class="ddesc">${esc(l.description)}</p>`:""}
       <div class="dseller" data-u="${esc(l.seller.username)}">
         ${avHTML(l.seller,"sm")}
-        <div><div style="font-weight:900;font-size:13px">${esc(l.seller.displayName)}</div>
-        <div class="mono dim">@${esc(l.seller.username)} · L${l.seller.level} · ${l.views} views</div></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:900;font-size:13px">${esc(l.seller.displayName)}</div>
+          <div class="mono dim">@${esc(l.seller.username)} · L${l.seller.level}</div>
+          ${MKTSELLER?`<div class="trust mono">
+            ${MKTSELLER.rating!==null?`<span class="star">★ ${MKTSELLER.rating.toFixed(1)}</span> <span class="dim">(${MKTSELLER.reviews})</span>`:`<span class="dim">No reviews yet</span>`}
+            ${MKTSELLER.sold?` · ${MKTSELLER.sold} sold`:""}
+            ${MKTSELLER.shipRate!==null&&MKTSELLER.sold>2?` · ${MKTSELLER.shipRate}% shipped`:""}
+          </div>`:""}
+        </div>
+        <span class="mono dim">${l.views} views</span>
       </div>
+      ${MKTMETA.paymentsEnabled?`<div class="protect mono">
+        🔒 PAID THROUGH TNL — YOUR CARD DETAILS NEVER TOUCH THE SELLER
+      </div>`:""}
       ${mine?`
         <div class="mono dim" style="margin:16px 0 8px">OFFERS</div>
         ${MKTOFFERS.length?MKTOFFERS.map(o=>`<div class="orow">
@@ -1518,7 +1632,26 @@ function detailHTML(){
         ${MKTOFFERS.filter(o=>o.status==="accepted").length?`<div class="acceptbar">✓ Your offer of ${money(MKTOFFERS.find(o=>o.status==="accepted").amount_cents)} was accepted — buy now to lock it in</div>`:""}
         ${!MKTMETA.paymentsEnabled?`<div class="mono dim" style="margin-top:12px;line-height:1.6">Card payments aren't switched on yet — buying reserves the item and connects you with the seller to settle up directly.</div>`:""}
       `:`<div class="mono dim" style="margin-top:14px">This item is sold.</div>`}
+
+      ${MKTSIMILAR.length?`<div class="simwrap">
+        <div class="mono dim sim-h">MORE LIKE THIS</div>
+        <div class="simrow">${MKTSIMILAR.map(x=>`<button class="simcard" data-mopen="${x.id}">
+          <img src="${esc(x.images[0]||"")}" alt="" loading="lazy">
+          <div class="simt">${esc(x.title)}</div>
+          <div class="simp">${money(x.price)}</div>
+        </button>`).join("")}</div>
+      </div>`:""}
     </div>
+  </div>`}
+
+function savedHTML(){
+  return `<div class="scroll">
+    <div class="dnav"><button class="backb2" data-mv="browse">← Market</button></div>
+    <div class="page-head"><div class="mono dim">SAVED</div><h2 class="page-h">Your list</h2>
+    <p class="page-sub">Everything you've hearted. Sold items stay so you can see what went.</p></div>
+    <div class="mkt-grid">${!SAVED?`<div class="empty">Loading…</div>`
+      :!SAVED.length?`<div class="empty">Nothing saved yet.<br><br>Tap ♡ on anything in the Market.</div>`
+      :SAVED.map(mktCardHTML).join("")}</div>
   </div>`}
 
 function nextRate(){
@@ -1565,6 +1698,15 @@ function sellHTML(){const f=SELLFORM||{};
     ${(ME&&!ME.emailVerified)?`<div class="paybar off" style="margin:0 20px 14px">
       <div><b>Confirm your email to list.</b>
       <div class="mono dim">Check your inbox — or hit Resend on the banner at the top.</div></div></div>`:""}
+    ${(MKTMETA.paymentsEnabled&&ME&&!ME.payoutsReady)?`
+      <div class="paywall">
+        <div class="paywall-ic">$</div>
+        <h3 class="paywall-h">Set up payouts to list</h3>
+        <p class="paywall-p">Every sale runs through the platform — that's how you get paid safely and how the buyer's protected. Connect your own Stripe account: it pays you directly, TNL never holds your money.</p>
+        <div class="mono dim paywall-rate">YOUR RATE: ${MKTMETA.feePct??10}% · DROPS TO ${(MKTMETA.feeLadder||[]).slice(-1)[0]?.fee??2}% AS PEOPLE VOUCH FOR YOU</div>
+        <button class="btn green" id="payconnect2">${ME.hasStripe?"Finish setup":"Connect Stripe"}</button>
+      </div>
+    `:`
     ${payoutBannerHTML()}
     <div class="sellform">
       <div class="mono lbl">PHOTOS (UP TO 8)</div>
@@ -1594,8 +1736,28 @@ function sellHTML(){const f=SELLFORM||{};
       <textarea class="in" id="s-desc" rows="4" maxlength="2000" placeholder="Fit, flaws, measurements, story.">${esc(f.description||"")}</textarea>
       <label class="workcheck" style="margin-top:12px"><input type="checkbox" id="s-offers" ${f.acceptsOffers!==false?"checked":""}> <span>Accept offers</span></label>
       <button class="btn green wide" id="s-post">List it</button>
-    </div>
+    </div>`}
   </div>`}
+
+function reviewHTML(){
+  if(!REVIEWING)return "";
+  const o=REVIEWING;
+  return `<div class="sheet" id="revbg"><div class="sheetc" style="max-width:420px">
+    <div class="sheeth"><div><div class="mono dim">REVIEW</div><h2>How did it go?</h2></div>
+      <button class="x" id="revx">✕</button></div>
+    <div class="revitem">
+      <img class="ordimg" src="${esc(o.listing.images[0]||"")}" alt="">
+      <div><div class="mtitle">${esc(o.listing.title)}</div>
+      <div class="mono dim">from ${esc(o.other.displayName)}</div></div>
+    </div>
+    <div class="mono dim" style="margin:16px 0 8px">YOUR RATING</div>
+    <div class="stars">${[1,2,3,4,5].map(n=>`<button class="star-btn ${n<=REVSTARS?"on":""}" data-star="${n}">★</button>`).join("")}</div>
+    <div class="mono dim" style="margin-top:6px">${["","Bad","Poor","Fine","Good","Perfect"][REVSTARS]}</div>
+    <div class="mono lbl" style="margin-top:16px">A WORD (OPTIONAL)</div>
+    <textarea class="in" id="revbody" rows="3" maxlength="500" placeholder="Did it arrive as described? Packed well? Quick?"></textarea>
+    <button class="btn green wide" id="revsend">Post review</button>
+    <div class="mono dim" style="margin-top:10px;line-height:1.6">Reviews are public and permanent. Only buyers who confirmed delivery can leave one — that's what makes them mean something.</div>
+  </div></div>`}
 
 function ordersHTML(){
   const list=ORDERS?(ORDTAB==="buying"?ORDERS.buying:ORDERS.selling):[];
@@ -1621,6 +1783,8 @@ function ordersHTML(){
         <div class="obtns">
           ${ORDTAB==="selling"&&(o.status==="pending"||o.status==="paid")?`<button class="btn sm green" data-ship="${o.id}">Mark shipped</button>`:""}
           ${ORDTAB==="buying"&&o.status==="shipped"?`<button class="btn sm green" data-recv="${o.id}">Received</button>`:""}
+          ${ORDTAB==="buying"&&o.status==="complete"&&!o.reviewed?`<button class="btn sm green" data-review="${o.id}">Leave a review</button>`:""}
+          ${ORDTAB==="buying"&&o.reviewed?`<span class="mono dim">✓ reviewed</span>`:""}
           <button class="btn sm ghost" data-dmseller="${esc(o.other.username)}">Message</button>
         </div>
       </div>`).join("")}
@@ -1673,12 +1837,19 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.
     <div class="roles">${ROLES.map(r=>`<button class="chip ${EDITROLES.includes(r)?"on":""}" data-er="${esc(r)}">${esc(r)}</button>`).join("")}</div>
     <label class="mono lbl">BIO</label><textarea class="in" id="ed-bio" rows="4" maxlength="300" placeholder="What you make, who you build with, what you're looking for.">${esc(u.bio)}</textarea>
     <label class="mono lbl">LINK</label><input class="in" id="ed-link" value="${esc(u.link)}" placeholder="instagram.com/yourhandle">
+    <label class="mono lbl">YOUR COLOUR</label>
+    <div class="mono dim" style="margin:-2px 0 8px;line-height:1.5">Black stays. The accent is yours — it themes your app and your profile.</div>
+    <div class="swatches">${Object.entries(ACCENTS).map(([k,a])=>`
+      <button class="swatch ${(EDITACCENT||u.accent||"lab")===k?"on":""}" data-accent="${esc(k)}" title="${esc(a.name)}">
+        <span style="background:${esc(a.hex)}"></span><i class="mono">${esc(a.name)}</i>
+      </button>`).join("")}</div>
     <button class="btn wide" id="ed-save">Save</button>
     <button class="link" id="ed-cancel">Cancel</button>
   </div></div>`}
 
   const K=kindOf(u);
-  return `<div class="sheet" id="sheetbg"><div class="sheetc">
+  const acc=u.accentHex||"#22C55E";
+  return `<div class="sheet" id="sheetbg"><div class="sheetc" style="--green:${acc}">
   <div class="sheeth"><div class="mono dim">${mine?"YOUR ":""}${esc(K.tag)}</div><button class="x" id="sheetx">✕</button></div>
 
   <div class="pid">${u.avatarUrl?`<img class="pav" src="${esc(u.avatarUrl)}" alt="">`:`<div class="pav">${esc(u.displayName.slice(0,2).toUpperCase())}</div>`}
@@ -1873,6 +2044,9 @@ function wireMarket(){
     MKTVIEW=b.dataset.mv;
     if(MKTVIEW==="sell"&&!SELLFORM)SELLFORM={category:"Tops",condition:"Good",acceptsOffers:true};
     if(MKTVIEW==="orders"){ORDERS=null;render();try{ORDERS=await api.orders()}catch(e){toast(e.message)}}
+    if(MKTVIEW==="saved"){
+      if(guest()){MKTVIEW="browse";return needAccount("Join to save items you want.")}
+      SAVED=null;render();try{SAVED=(await api.saved()).listings}catch(e){toast(e.message)}}
     render()});
   document.querySelectorAll("[data-ot]").forEach(b=>b.onclick=()=>{ORDTAB=b.dataset.ot;render()});
   const rl=$("#rateladder");if(rl)rl.onclick=()=>{
@@ -1885,14 +2059,19 @@ function wireMarket(){
         icon:"L"+x.level})),
       onPick:()=>{}});
   };
-  const pc=$("#payconnect");if(pc)pc.onclick=async()=>{
-    try{toast("Opening Stripe…");const d=await api.connectStart();location.href=d.url}catch(e){toast(e.message)}};
+  ["#payconnect","#payconnect2"].forEach(id=>{const b=$(id);if(b)b.onclick=async()=>{
+    try{toast("Opening Stripe…");const d=await api.connectStart();location.href=d.url}catch(e){toast(e.message)}}});
+
   const pd=$("#paydash");if(pd)pd.onclick=async()=>{
     try{const d=await api.connectDash();window.open(d.url,"_blank")}catch(e){toast(e.message)}};
   document.querySelectorAll("[data-mopen]").forEach(el=>el.onclick=async e=>{
     if(e.target.closest("[data-mlike]"))return;
     MKTVIEW="detail";MKTONE=null;render();
-    try{const d=await api.mktOne(el.dataset.mopen);MKTONE=d.listing;MKTOFFERS=d.offers||[];render()}catch(x){toast(x.message)}});
+    try{const d=await api.mktOne(el.dataset.mopen);
+      MKTONE=d.listing;MKTOFFERS=d.offers||[];MKTSELLER=d.seller||null;MKTSIMILAR=d.similar||[];
+      pushView("listing",d.listing.id);render();
+      const sc=document.querySelector("#mktscroll");if(sc)sc.scrollTop=0;
+    }catch(x){toast(x.message)}});
   document.querySelectorAll("[data-mlike]").forEach(b=>b.onclick=async e=>{
     e.stopPropagation();
     if(guest())return needAccount("Join to save items.");
@@ -1903,6 +2082,14 @@ function wireMarket(){
 
   const mq=$("#mktq");if(mq){let t=null;mq.oninput=()=>{MKTFILT.q=mq.value;clearTimeout(t);t=setTimeout(loadMarket,300)}}
   document.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{MKTFILT.category=b.dataset.cat||undefined;loadMarket().then(render)});
+  document.querySelectorAll("[data-size]").forEach(b=>b.onclick=()=>{MKTFILT.size=b.dataset.size||undefined;loadMarket().then(render)});
+  document.querySelectorAll("[data-cond]").forEach(b=>b.onclick=()=>{MKTFILT.condition=b.dataset.cond||undefined;loadMarket().then(render)});
+  document.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{
+    const v=b.dataset.range;MKTFILT.range=v||undefined;
+    if(v){const [lo,hi]=v.split("-");MKTFILT.min=lo||undefined;MKTFILT.max=hi||undefined}
+    else{MKTFILT.min=undefined;MKTFILT.max=undefined}
+    loadMarket().then(render)});
+  const cf=$("#clearfilt");if(cf)cf.onclick=()=>{MKTFILT={};loadMarket().then(render)};
   document.querySelectorAll("[data-sort]").forEach(b=>b.onclick=()=>{MKTFILT.sort=b.dataset.sort;loadMarket().then(render)});
 
   // sell form
@@ -1957,7 +2144,11 @@ function wireMarket(){
         ? "Reserved — but no payment was taken.\n\nThis seller hasn't set up card payments yet, so you'll need to pay them directly. Message them to sort it out."
         : "Reserved — but no payment was taken.\n\nCard payments aren't switched on yet. Message the seller to settle up directly.");
       MKTVIEW="orders";ORDERS=await api.orders();ORDTAB="buying";render();
-    }catch(e){toast(e.message)}});
+    }catch(e){
+      if(/hasn't finished setting up payments/i.test(e.message))
+        alert("Can't buy this yet.\n\n"+e.message+"\n\nWe've told the seller. Nothing's been charged.");
+      else toast(e.message);
+    }});
   document.querySelectorAll("[data-medit]").forEach(b=>b.onclick=async()=>{
     const now=MKTONE.status==="sold"?"active":"sold";
     try{await api.mktUpdate(b.dataset.medit,{status:now});
@@ -1971,6 +2162,17 @@ function wireMarket(){
   document.querySelectorAll("[data-ship]").forEach(b=>b.onclick=async()=>{
     const t=prompt("Tracking number (optional):")||"";
     try{await api.shipOrder(b.dataset.ship,t);ORDERS=await api.orders();toast("Marked shipped");render()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-review]").forEach(b=>b.onclick=()=>{
+    const o=(ORDERS?.buying||[]).find(x=>String(x.id)===b.dataset.review);
+    if(!o)return; REVIEWING=o; REVSTARS=5; pushView("review"); render();});
+  const rvx=$("#revx");if(rvx)rvx.onclick=()=>{REVIEWING=null;render()};
+  const rvbg=$("#revbg");if(rvbg)rvbg.onclick=e=>{if(e.target===rvbg){REVIEWING=null;render()}};
+  document.querySelectorAll("[data-star]").forEach(b=>b.onclick=()=>{REVSTARS=+b.dataset.star;render()});
+  const rvs=$("#revsend");if(rvs)rvs.onclick=async()=>{
+    const body=$("#revbody")?.value||"";
+    try{await api.review(REVIEWING.id,REVSTARS,body);
+      REVIEWING=null;ORDERS=await api.orders();toast("Review posted — thanks");render();
+    }catch(e){toast(e.message)}};
   document.querySelectorAll("[data-recv]").forEach(b=>b.onclick=async()=>{
     try{await api.received(b.dataset.recv);ORDERS=await api.orders();toast("Confirmed — thanks");render()}catch(e){toast(e.message)}});
 }
@@ -1996,7 +2198,21 @@ async function loadMarket(){
   }catch(e){}
 }
 
+/* Every [data-u] on screen becomes a tappable profile link. This has to be
+   callable from ANY code path that injects HTML — search results, feeds,
+   comments, the DM list. It used to live inside wireFeed() only, which is
+   why searching for someone and tapping their name did nothing: the search
+   panel repaints itself and never called wireFeed. */
+function wireProfileLinks(root){
+  (root||document).querySelectorAll("[data-u]").forEach(el=>{
+    if(el.dataset.uBound)return;          // don't stack listeners on repaint
+    el.dataset.uBound="1";
+    el.onclick=e=>{e.stopPropagation();openProfile(el.dataset.u)};
+  });
+}
+
 function wirePanels(){
+  wireProfileLinks();
   // notifications
   const npb=$("#npbg");if(npb)npb.onclick=e=>{if(e.target===npb){NOTIFOPEN=false;render()}};
   const npx=$("#npx");if(npx)npx.onclick=()=>{NOTIFOPEN=false;render()};
@@ -2104,16 +2320,59 @@ function wireFeed(){
       toast(e.message);
     }});
   document.querySelectorAll("[data-share]").forEach(b=>b.onclick=()=>{
-    if(guest())return needAccount("Carry someone's work into another lab. That's how a designer meets a producer.");
+    if(guest())return needAccount("Join to carry work across the labs.");
     const id=b.dataset.share;
-    const items=[];
-    for(const l of LABS)for(const c of l.channels){
-      if(c.beatlab||c.gate&&levelFor(myRep()).id<c.gate)continue;
-      items.push({label:"#"+c.label,sub:l.name,icon:"#",ch:c.id});
+    const post=POSTS.find(x=>String(x.id)===id)
+      ||(SEARCHRES&&SEARCHRES.posts.find(x=>String(x.id)===id))
+      ||(PROFILE&&[...PROFILE.posts,...PROFILE.collabs].find(x=>String(x.id)===id));
+    const link=location.origin+"/p/"+id;
+    const shareable=post&&post.isWork;   // only work has a public page
+
+    const items=[
+      {label:"Send to someone",sub:"Lands in their DMs",icon:"✉",act:"dm"},
+      {label:"Share into a lab",sub:"The author earns rep when it travels",icon:"↻",act:"lab"},
+    ];
+    if(shareable){
+      if(navigator.share)items.push({label:"Share…",sub:"Anywhere off the app",icon:"↗",act:"native"});
+      items.push({label:"Copy link",sub:link.replace(/^https?:\/\//,""),icon:"⧉",act:"copy"});
     }
-    openPicker({eyebrow:"CROSS-LAB",title:"Share into",note:"The original author earns rep when their work travels.",
-      items,onPick:async(it)=>{
-        try{await api.share(id,{channel:it.ch});toast("Shared to #"+it.ch.replace(/^#/,""))}catch(e){toast(e.message)}}});
+
+    openPicker({eyebrow:"SHARE",title:"Where to?",
+      note:shareable?"":"Only published work gets a public link — this one lives in the labs.",
+      items,
+      onPick:async(it)=>{
+        if(it.act==="dm"){
+          const toItems=(people)=>people.map(u=>({label:u.displayName,sub:"@"+u.username+" · "+u.role,avatar:u.avatarUrl,username:u.username}));
+          openPicker({eyebrow:"SEND",title:"Send to",search:"Search people…",loading:true,
+            onSearch:async(q)=>toItems((await api.mentionable(q)).people),
+            onPick:async(p2)=>{
+              try{await api.sendPost(id,p2.username);toast("Sent to "+p2.label)}catch(e){toast(e.message)}}});
+          try{const d=await api.mentionable("");
+            if(PICKER){PICKER.items=toItems(d.people);PICKER.loading=false;render()}}catch(e){}
+          return;
+        }
+        if(it.act==="lab"){
+          const chans=[];
+          for(const l of LABS)for(const c of l.channels){
+            if(c.beatlab||(c.gate&&levelFor(myRep()).id<c.gate))continue;
+            chans.push({label:"#"+c.label,sub:l.name,icon:"#",ch:c.id});
+          }
+          openPicker({eyebrow:"CROSS-LAB",title:"Share into",
+            note:"The original author earns rep when their work travels.",
+            items:chans,onPick:async(c)=>{
+              try{await api.share(id,{channel:c.ch});toast("Shared to #"+c.ch)}catch(e){toast(e.message)}}});
+          return;
+        }
+        if(it.act==="native"){
+          try{await navigator.share({title:(post.author.displayName)+" on TNL LABS",text:post.body||"",url:link})}
+          catch(e){/* they cancelled */}
+          return;
+        }
+        if(it.act==="copy"){
+          try{await navigator.clipboard.writeText(link);toast("Link copied")}
+          catch(e){prompt("Copy this link:",link)}
+        }
+      }});
   });
   document.querySelectorAll("[data-collab]").forEach(b=>b.onclick=async()=>{
     const id=b.dataset.collab;
@@ -2145,7 +2404,7 @@ function wireFeed(){
       await api.post(body);
       POSTS=POSTS.filter(x=>x.id!==p.id);loadFeed();
     }catch(e){p.pending=false;p.failed=true;renderRoomFeed();toast(e.message)}});
-  document.querySelectorAll(".mention[data-u]").forEach(el=>el.onclick=e=>{e.stopPropagation();openProfile(el.dataset.u)});
+  wireProfileLinks();   // covers .mention[data-u] too
   document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{
     const p=POSTS.find(x=>String(x.id)===b.dataset.edit);if(!p)return;
     EDITID=p.id;render();const d=$("#draft");if(d){d.value=p.body||"";d.focus()}});
@@ -2194,7 +2453,7 @@ function wireFeed(){
   document.querySelectorAll("[data-work]").forEach(b=>b.onclick=async()=>{
     const [id,on]=b.dataset.work.split(":");
     try{await api.markWork(id,on==="1");toast(on==="1"?"Added to your portfolio":"Removed from portfolio");loadFeed()}catch(e){toast(e.message)}});
-  document.querySelectorAll("[data-u]").forEach(el=>el.onclick=()=>openProfile(el.dataset.u));
+  wireProfileLinks();
 }
 function wireSheet(){
   const bg=$("#sheetbg");if(!bg)return;
@@ -2211,7 +2470,7 @@ function wireSheet(){
       if(PROFILE&&PROFILE.user.username===u){PROFILE=d;PROFCACHE.set(u,d);render()}}
     catch(e){toast(e.message);PROFCACHE.delete(u)}};
   const lo=$("#logoutb");if(lo)lo.onclick=()=>{
-    TOKEN=null;ME=null;PROFILE=null;UNREADS={};UNREAD=0;DMUNREAD=0;
+    TOKEN=null;ME=null;PROFILE=null;UNREADS={};UNREAD=0;DMUNREAD=0;applyAccent((ACCENTS.lab||{}).hex);
     localStorage.removeItem("tnl-token");
     if(es)es.close();
     TAB="showroom";GATE=null;render();toast("Signed out")};
@@ -2228,7 +2487,13 @@ function wireSheet(){
 
   document.querySelectorAll("[data-ptab]").forEach(b=>b.onclick=()=>{PTAB=b.dataset.ptab;render()});
 
-  const eb=$("#editb");if(eb)eb.onclick=()=>{EDITING=true;EDITROLES=(PROFILE.user.roles&&PROFILE.user.roles.length?[...PROFILE.user.roles]:[PROFILE.user.role]).filter(Boolean);render()};
+  const eb=$("#editb");if(eb)eb.onclick=()=>{EDITING=true;EDITACCENT=PROFILE.user.accent||"lab";
+    EDITROLES=(PROFILE.user.roles&&PROFILE.user.roles.length?[...PROFILE.user.roles]:[PROFILE.user.role]).filter(Boolean);render()};
+  document.querySelectorAll("[data-accent]").forEach(b=>b.onclick=()=>{
+    EDITACCENT=b.dataset.accent;
+    applyAccent((ACCENTS[EDITACCENT]||{}).hex);   // see it immediately, not after saving
+    render();
+  });
   const avb=$("#avbtn");if(avb)avb.onclick=()=>$("#avin").click();
   const avi=$("#avin");if(avi)avi.onchange=async()=>{
     const f=avi.files&&avi.files[0];if(!f)return;avi.value="";
@@ -2240,7 +2505,7 @@ function wireSheet(){
       PROFILE=await api.profile(ME.username);
       toast(d.user.published?"Portfolio published — link is live":"Portfolio unpublished");render();
     }catch(e){toast(e.needsVerify?"Verify your email first":e.message)}};
-  const ec=$("#ed-cancel");if(ec)ec.onclick=()=>{EDITING=false;render()};
+  const ec=$("#ed-cancel");if(ec)ec.onclick=()=>{EDITING=false;applyAccent(ME.accentHex);render()};
   document.querySelectorAll("[data-er]").forEach(b=>b.onclick=()=>{
     const r=b.dataset.er;
     if(EDITROLES.includes(r))EDITROLES=EDITROLES.filter(x=>x!==r);
@@ -2249,8 +2514,8 @@ function wireSheet(){
     render()});
   const es_=$("#ed-save");if(es_)es_.onclick=async()=>{
     try{
-      const d=await api.updateMe({displayName:$("#ed-name").value,bio:$("#ed-bio").value,link:$("#ed-link").value,roles:EDITROLES});
-      ME=d.user;EDITING=false;PROFCACHE.delete(ME.username);PROFILE=await api.profile(ME.username);toast("Profile updated");render();
+      const d=await api.updateMe({displayName:$("#ed-name").value,bio:$("#ed-bio").value,link:$("#ed-link").value,roles:EDITROLES,accent:EDITACCENT});
+      ME=d.user;EDITING=false;applyAccent(ME.accentHex);PROFCACHE.delete(ME.username);PROFILE=await api.profile(ME.username);toast("Profile updated");render();
     }catch(e){toast(e.message)}};
 
   // beat playback + opening a piece from the portfolio
@@ -2298,8 +2563,9 @@ function paintVerifyBar(){
   if(bar&&ME&&ME.emailVerified)bar.remove();
 }
 (async()=>{
-  try{const d=await api.levels();LEVELS=d.levels}catch(e){/* offline default */}
+  try{const d=await api.levels();LEVELS=d.levels;if(d.accents)ACCENTS=d.accents}catch(e){/* offline default */}
   if(TOKEN)await refreshMe();          // invalid token just leaves ME null -> guest
+  if(ME&&ME.accentHex)applyAccent(ME.accentHex);
   if(ME){
     startStream();refreshBadges();loadUnreads();
     setInterval(refreshBadges,20000);
@@ -2311,7 +2577,15 @@ function paintVerifyBar(){
     if(p.get("checkout")==="failed"){toast("Payment didn't go through");history.replaceState({},"","/")}
   }
   try{MKTMETA=await api.mktMeta()}catch(e){}   // public — guests see the Market too
+  // deep links — a shared /u/ or /m/ URL should land where it says
+  const path=location.pathname;
+  const mu=/^\/u\/([a-z0-9._]+)$/i.exec(path);
+  const mm=/^\/m\/(\d+)$/.exec(path);
+  if(mu){openProfile(mu[1])}
+  else if(mm){TAB="market";MKTVIEW="detail";
+    try{const d=await api.mktOne(mm[1]);MKTONE=d.listing;MKTOFFERS=d.offers||[]}catch(e){}}
   render();
+  initHistory();
   if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
 })();
 </script>
