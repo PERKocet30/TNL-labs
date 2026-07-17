@@ -18,6 +18,22 @@ const KEY = process.env.RESEND_API_KEY || "";
 const FROM = process.env.MAIL_FROM || "TNL LABS <onboarding@resend.dev>";
 export const MAIL_ENABLED = !!KEY;
 
+/* Resend's test sender delivers ONLY to the address that owns the Resend
+   account. Everyone else gets nothing — and Resend still returns 200, so
+   nothing in the logs looks wrong. It is the single most confusing failure
+   in this whole stack, so we call it out at boot rather than let you find
+   out when a friend says "I never got an email". */
+export const MAIL_TEST_SENDER = /@resend\.dev/i.test(FROM);
+if (KEY && MAIL_TEST_SENDER) {
+  console.warn(`
+⚠  MAIL_FROM is Resend's test sender (${FROM}).
+   It will ONLY deliver to the email that owns your Resend account.
+   Everyone else gets nothing — silently, with no error.
+   Fix: verify tnllabs.com in Resend, then set
+        MAIL_FROM=TNL LABS <noreply@tnllabs.com>
+`);
+}
+
 function verifyTemplate(name, url) {
   return `<!doctype html>
 <html><body style="margin:0;background:#000;font-family:Helvetica,Arial,sans-serif">
@@ -87,7 +103,7 @@ async function send(to, subject, html, logLine) {
   if (!KEY) {
     console.log(`\n[mail] NOT CONFIGURED — no email sent to ${to}`);
     console.log(`[mail] ${logLine}\n`);
-    return { sent: false, error: "mail not configured" };
+    return { sent: false, error: "mail not configured", reason: "no_key" };
   }
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -97,12 +113,29 @@ async function send(to, subject, html, logLine) {
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      console.error("[mail] send failed:", res.status, body);
-      return { sent: false, error: `provider returned ${res.status}` };
+      /* A status code alone sends you hunting. Name the actual cause —
+         these three account for essentially every failure, and they need
+         completely different fixes. */
+      const why =
+        res.status === 401 ? "RESEND_API_KEY is wrong or was regenerated — Railway still has the old one"
+        : res.status === 403 ? `Resend won't send from "${FROM}" — the domain isn't verified for this account`
+        : res.status === 422 ? `Resend rejected the payload — usually a malformed MAIL_FROM ("${FROM}")`
+        : res.status === 429 ? "rate limited by Resend"
+        : `Resend returned ${res.status}`;
+      console.error(`[mail] FAILED -> ${to}`);
+      console.error(`[mail]   why: ${why}`);
+      console.error(`[mail]   from: ${FROM}`);
+      console.error(`[mail]   resend said: ${body.slice(0, 300)}`);
+      console.error(`[mail]   the link, since they won't get it: ${logLine}`);
+      return { sent: false, error: why, status: res.status, raw: body.slice(0, 300) };
     }
-    return { sent: true };
+    const out = await res.json().catch(() => ({}));
+    console.log(`[mail] sent -> ${to} (resend id ${out.id || "?"})`);
+    return { sent: true, id: out.id };
   } catch (e) {
-    console.error("[mail] send threw:", e.message);
-    return { sent: false, error: e.message };
+    // DNS, network, Railway egress — the send never left the building
+    console.error(`[mail] THREW before reaching Resend: ${e.message}`);
+    console.error(`[mail]   the link: ${logLine}`);
+    return { sent: false, error: `couldn't reach Resend: ${e.message}`, reason: "network" };
   }
 }

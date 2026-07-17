@@ -5,8 +5,9 @@ import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { writeFileSync, mkdirSync, existsSync, createWriteStream, rename, rm, statSync, readdirSync, rmSync } from "node:fs";
-import { db, awardRep, revokeRep, levelFor, LEVELS, DATA_DIR, notify, ensureAdmin, feeForRep, FEE_BY_LEVEL, ACCENTS, accentHex } from "./db.js";
-import { sendVerifyEmail, sendResetEmail, MAIL_ENABLED } from "./mail.js";
+import { db, awardRep, revokeRep, levelFor, LEVELS, DATA_DIR, notify, ensureAdmin, feeForRep, FEE_BY_LEVEL, ACCENTS, accentHex,
+         setting, settingBool, setSetting, allSettings, SETTING_DEFAULTS } from "./db.js";
+import { sendVerifyEmail, sendResetEmail, MAIL_ENABLED, MAIL_TEST_SENDER } from "./mail.js";
 import { createCheckout, verifySession, PAYMENTS_ENABLED, platformFee,
          createSellerAccount, onboardingLink, accountStatus, loginLink } from "./pay.js";
 
@@ -306,6 +307,10 @@ async function issueVerification(user, req) {
 }
 
 app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (req, res) => {
+  // The door can be closed from the dashboard.
+  if (!settingBool("signupsOpen")) {
+    return res.status(403).json({ error: "TNL LABS is invite-only right now." });
+  }
   const { username, displayName, email, role, roles, password } = req.body || {};
   const roleList = Array.isArray(roles) ? roles.filter(r=>typeof r==="string"&&r.trim()).slice(0,5) : (role ? [role] : []);
   if (!/^[a-z0-9._]{2,20}$/.test(username || "")) return res.status(400).json({ error: "bad username" });
@@ -324,6 +329,14 @@ app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (
   q.createSession.run(token, user.id, Date.now());
   ensureAdmin(); // the very first signup becomes the founder/admin
   const fresh = q.userById.get(user.id);
+  /* If email is broken, this is the switch that stops it costing you
+     members. Flip it in the dashboard; people are verified on arrival. */
+  if (settingBool("autoVerify")) {
+    q.markVerified.run(user.id);
+    const done = q.userById.get(user.id);
+    console.log(`[auth] @${done.username} auto-verified (autoVerify is on)`);
+    return res.json({ token, user: publicUser(done), mailSent: false, autoVerified: true });
+  }
   const mail = await issueVerification(fresh, req);
   res.json({ token, user: publicUser(fresh), mailSent: mail.sent, verifyUrl: mail.url });
 });
@@ -529,6 +542,13 @@ function sniff(buf) {
   if (buf.slice(0, 4).toString("ascii") === "RIFF" && buf.slice(8, 12).toString("ascii") === "WAVE") {
     return { ext: "wav", kind: "audio" };
   }
+  /* AIFF is Logic's native format — a Mac producer's kit is full of them,
+     and rejecting it would make the sound library useless to half of them.
+     FLAC turns up in sample packs. */
+  if (buf.slice(0, 4).toString("ascii") === "FORM" && /^AIF[FC]$/.test(buf.slice(8, 12).toString("ascii"))) {
+    return { ext: "aiff", kind: "audio" };
+  }
+  if (buf.slice(0, 4).toString("ascii") === "fLaC") return { ext: "flac", kind: "audio" };
   if (buf.slice(0, 3).toString("ascii") === "ID3") return { ext: "mp3", kind: "audio" };
   if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return { ext: "mp3", kind: "audio" };
   if (buf.slice(0, 4).toString("ascii") === "OggS") return { ext: "ogg", kind: "audio" };
@@ -1371,6 +1391,64 @@ app.post("/api/admin/cleanup", auth, admin, (req, res) => {
   res.json({ removed, freed });
 });
 
+/* Email is the one system that fails silently — Resend returns 200 whether
+   it delivers or bins it, and a missing send looks identical to a broken
+   one. This makes it answerable in one tap instead of a guess. */
+app.post("/api/admin/test-email", auth, admin, rateLimit({ max: 10, windowMs: 600000, key: "user" }), async (req, res) => {
+  const to = (req.body?.to || req.user.email).toString().trim();
+  if (!/^\S+@\S+\.\S+$/.test(to)) return res.status(400).json({ error: "bad address" });
+  if (!MAIL_ENABLED) {
+    return res.json({ ok: false, reason: "no_key", detail: "RESEND_API_KEY isn't set — the app shows links on screen instead." });
+  }
+  const started = Date.now();
+  const out = await sendVerifyEmail(to, req.user.display_name, `${baseUrl(req)}/?test=1`);
+  res.json({
+    ok: out.sent,
+    ms: Date.now() - started,
+    to,
+    from: process.env.MAIL_FROM || "(default — TEST SENDER)",
+    testSender: MAIL_TEST_SENDER,
+    error: out.error || null,
+    detail: out.sent
+      ? "Resend accepted it. If it doesn't arrive, check spam — new sending domains land there until they build reputation."
+      : "Resend rejected it. The error above is exactly why.",
+  });
+});
+
+/* Every verification we've ever tried to send, and what happened. If a
+   member says "I got no email", this says whether we even attempted it. */
+app.get("/api/admin/mail-log", auth, admin, (req, res) => {
+  const rows = db.prepare(`
+    SELECT u.username, u.display_name, u.email, u.email_verified, u.created_at,
+      (SELECT COUNT(*) FROM verify_tokens t WHERE t.user_id = u.id) AS pending
+    FROM users u ORDER BY u.created_at DESC LIMIT 40`).all();
+  res.json({
+    mailOn: MAIL_ENABLED,
+    testSender: MAIL_TEST_SENDER,
+    from: process.env.MAIL_FROM || null,
+    publicUrl: process.env.PUBLIC_URL || null,
+    members: rows.map((r) => ({
+      username: r.username, displayName: r.display_name, email: r.email,
+      verified: !!r.email_verified, pendingToken: r.pending > 0, joined: r.created_at,
+    })),
+  });
+});
+
+/* ---- settings. Change the app without a deploy. ---- */
+app.get("/api/admin/settings", auth, admin, (req, res) => {
+  res.json({ settings: allSettings(), defaults: SETTING_DEFAULTS });
+});
+
+app.patch("/api/admin/settings", auth, admin, (req, res) => {
+  const patch = req.body || {};
+  const changed = [];
+  for (const [k, v] of Object.entries(patch)) {
+    if (setSetting(k, v, req.user.id)) changed.push(k);
+  }
+  if (changed.length) console.log(`[admin] @${req.user.username} changed: ${changed.join(", ")}`);
+  res.json({ ok: true, changed, settings: allSettings() });
+});
+
 /* The dashboard page. Gated in the browser too, but the real gate is every
    endpoint above — the page is inert without a valid admin token. */
 app.get("/admin", (_req, res) => res.sendFile(join(__dirname, "..", "public", "admin.html")));
@@ -1380,6 +1458,13 @@ app.get("/admin", (_req, res) => res.sendFile(join(__dirname, "..", "public", "a
 ================================================================ */
 const CATEGORIES = ["Tops", "Bottoms", "Outerwear", "Footwear", "Accessories", "Headwear", "Bags", "Jewellery", "Art / Prints", "Other"];
 const CONDITIONS = ["Deadstock", "Like New", "Good", "Worn", "Distressed"];
+/* Loops are listings with kind='loop'. They inherit offers, saves, reviews,
+   search and the fee ladder for free — no parallel system to maintain. What
+   differs: they deliver instantly, they can be free, and there's nothing to
+   ship. */
+const LOOP_CATEGORIES = ["Loop", "Drum Kit", "One Shot", "Sample Pack", "Acapella", "Stem"];
+const KEYS = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B",
+  "Cm","C#m","Dm","D#m","Em","Fm","F#m","Gm","G#m","Am","A#m","Bm"];
 
 /* Same N+1 problem the feed had: two queries per listing. Batched. */
 function listingSidecar(rows, viewerId) {
@@ -1419,6 +1504,13 @@ function shapeListing(r, viewerId, side) {
     colour: r.colour,
     images,
     shipsFrom: r.ships_from,
+    kind: r.kind || "physical",
+    audioUrl: r.audio_url || null,
+    bpm: r.bpm || null,
+    musicalKey: r.musical_key || "",
+    stems: !!r.stems,
+    downloads: r.downloads || 0,
+    isFree: (r.price_cents || 0) === 0,
     acceptsOffers: !!r.accepts_offers,
     status: r.status,
     views: r.views,
@@ -1446,7 +1538,9 @@ app.get("/api/market/meta", maybeAuth, (req, res) => {
   const sizes = db.prepare(`SELECT DISTINCT size FROM listings WHERE status='active' AND size != '' ORDER BY size`).all().map((r) => r.size);
   const brands = db.prepare(`SELECT brand, COUNT(*) n FROM listings WHERE status='active' AND brand != '' GROUP BY brand ORDER BY n DESC LIMIT 20`).all().map((r) => r.brand);
   res.json({
-    categories: CATEGORIES, conditions: CONDITIONS, sizes, brands, paymentsEnabled: PAYMENTS_ENABLED,
+    categories: CATEGORIES, conditions: CONDITIONS, sizes, brands,
+    loopCategories: LOOP_CATEGORIES, keys: KEYS,
+    paymentsEnabled: PAYMENTS_ENABLED,
     feePct: req.user ? feeForRep(req.user.rep) : FEE_BY_LEVEL[1],
     feeLadder: LEVELS.map((l) => ({ level: l.id, name: l.name, at: l.at, fee: FEE_BY_LEVEL[l.id] })),
   });
@@ -1493,9 +1587,13 @@ app.get("/api/market/connect/dashboard", auth, async (req, res) => {
 });
 
 app.get("/api/market", maybeAuth, (req, res) => {
-  const { category, size, condition, brand, q: term, sort, seller, max, min } = req.query;
+  const { category, size, condition, brand, q: term, sort, seller, max, min, kind, key, bpm, free } = req.query;
   const where = [`l.status = 'active'`];
   const params = [];
+  if (kind) { where.push(`l.kind = ?`); params.push(kind); }
+  if (key) { where.push(`l.musical_key = ?`); params.push(key); }
+  if (free === "1") where.push(`l.price_cents = 0`);
+  if (bpm) { const b = Number(bpm); where.push(`l.bpm BETWEEN ? AND ?`); params.push(b - 5, b + 5); }
   if (category) { where.push(`l.category = ?`); params.push(category); }
   if (size) { where.push(`l.size = ?`); params.push(size); }
   if (condition) { where.push(`l.condition = ?`); params.push(condition); }
@@ -1543,33 +1641,65 @@ app.get("/api/market/:id", maybeAuth, (req, res) => {
 });
 
 app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, key: "user" }), (req, res) => {
-  /* Payouts first, always. Your commission only exists INSIDE the Stripe
-     charge — if a buyer and seller settle on Venmo, the platform earns
-     nothing and the whole market is just a classifieds board. So the
-     moment card payments are switched on, connecting is the price of
-     listing. Same rule Depop and StockX run. */
-  if (PAYMENTS_ENABLED && !req.user.stripe_ready) {
+  const body = req.body || {};
+  const isLoop = body.kind === "loop";
+  const cents = Math.round(Number(body.price) * 100) || 0;
+  const free = isLoop && cents === 0;
+
+  /* Payouts first — but ONLY if money is involved. A producer giving a loop
+     away shouldn't have to hand Stripe their bank details first; that would
+     kill the exact behaviour we most want. Free loops list with nothing. */
+  if (!settingBool("marketOpen")) return res.status(403).json({ error: "The market's closed right now." });
+  const minRep = Number(setting("minRepToSell")) || 0;
+  if (req.user.rep < minRep) {
+    return res.status(403).json({ error: `You need ${minRep} rep to sell — post work and let people back it first.` });
+  }
+  if (PAYMENTS_ENABLED && !free && !req.user.stripe_ready) {
     return res.status(403).json({
-      error: "Set up payouts before you list — it takes a minute and it's how you get paid",
+      error: isLoop
+        ? "Set up payouts to sell loops — or set the price to 0 and give it away free"
+        : "Set up payouts before you list — it takes a minute and it's how you get paid",
       needsPayouts: true,
     });
   }
-  const { title, description, price, shipping, category, brand, size, condition, colour, images, shipsFrom, acceptsOffers } = req.body || {};
+
+  const { title, description, price, shipping, category, brand, size, condition, colour, images, shipsFrom, acceptsOffers,
+          audioUrl, bpm, musicalKey, stems } = body;
   if (!title?.trim()) return res.status(400).json({ error: "title required" });
-  const cents = Math.round(Number(price) * 100);
-  if (!Number.isFinite(cents) || cents < 100) return res.status(400).json({ error: "price must be at least 1.00" });
+
+  if (isLoop) {
+    if (!audioUrl || !String(audioUrl).startsWith("/uploads/")) {
+      return res.status(400).json({ error: "upload the audio first" });
+    }
+    if (cents !== 0 && cents < 100) return res.status(400).json({ error: "either free, or at least $1" });
+  } else {
+    if (!Number.isFinite(cents) || cents < 100) return res.status(400).json({ error: "price must be at least 1.00" });
+  }
   if (cents > 5000000) return res.status(400).json({ error: "price too high" });
+
   const imgs = Array.isArray(images) ? images.filter((i) => typeof i === "string").slice(0, 8) : [];
-  if (!imgs.length) return res.status(400).json({ error: "add at least one photo" });
-  const shipCents = Math.max(0, Math.round(Number(shipping || 0) * 100));
+  // A loop is heard, not seen — artwork is optional.
+  if (!isLoop && !imgs.length) return res.status(400).json({ error: "add at least one photo" });
+
+  const cat = isLoop
+    ? (LOOP_CATEGORIES.includes(category) ? category : "Loop")
+    : (CATEGORIES.includes(category) ? category : "Other");
+  const shipCents = isLoop ? 0 : Math.max(0, Math.round(Number(shipping || 0) * 100));
   const now = Date.now();
   const info = db.prepare(`
-    INSERT INTO listings (seller_id, title, description, price_cents, shipping_cents, category, brand, size, condition, colour, images, ships_from, accepts_offers, created_at, updated_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    INSERT INTO listings (seller_id, title, description, price_cents, shipping_cents, category, brand, size, condition, colour, images, ships_from, accepts_offers, kind, audio_url, bpm, musical_key, stems, created_at, updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     req.user.id, title.trim().slice(0, 120), (description || "").slice(0, 2000), cents, shipCents,
-    CATEGORIES.includes(category) ? category : "Other", (brand || "").slice(0, 60), (size || "").slice(0, 20),
-    CONDITIONS.includes(condition) ? condition : "Good", (colour || "").slice(0, 30),
-    JSON.stringify(imgs), (shipsFrom || "").slice(0, 60), acceptsOffers === false ? 0 : 1, now, now);
+    cat, (brand || "").slice(0, 60), (size || "").slice(0, 20),
+    isLoop ? "" : (CONDITIONS.includes(condition) ? condition : "Good"), (colour || "").slice(0, 30),
+    JSON.stringify(imgs), isLoop ? "" : (shipsFrom || "").slice(0, 60),
+    (isLoop && free) ? 0 : (acceptsOffers === false ? 0 : 1),
+    isLoop ? "loop" : "physical",
+    isLoop ? audioUrl : null,
+    isLoop ? (Number(bpm) || null) : null,
+    isLoop && KEYS.includes(musicalKey) ? musicalKey : "",
+    isLoop && stems ? 1 : 0,
+    now, now);
   res.json({ id: Number(info.lastInsertRowid) });
 });
 
@@ -1657,8 +1787,12 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
   if (!l) return res.status(404).json({ error: "no listing" });
   if (l.status !== "active") return res.status(400).json({ error: "already sold" });
   if (l.seller_id === req.user.id) return res.status(400).json({ error: "can't buy your own listing" });
+  const isLoop = l.kind === "loop";
   const { name, address } = req.body || {};
-  if (!name?.trim() || !address?.trim()) return res.status(400).json({ error: "shipping name and address required" });
+  // Nothing to ship a loop to. Asking for an address would be theatre.
+  if (!isLoop && (!name?.trim() || !address?.trim())) {
+    return res.status(400).json({ error: "shipping name and address required" });
+  }
 
   // an accepted offer beats the sticker price
   const accepted = db.prepare(`SELECT * FROM offers WHERE listing_id=? AND buyer_id=? AND status='accepted' ORDER BY created_at DESC LIMIT 1`)
@@ -1685,7 +1819,8 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
   const info = db.prepare(`
     INSERT INTO orders (listing_id, buyer_id, seller_id, amount_cents, shipping_cents, ship_name, ship_address, created_at, updated_at)
     VALUES (?,?,?,?,?,?,?,?,?)`).run(l.id, req.user.id, l.seller_id, amount, l.shipping_cents,
-    name.trim().slice(0, 80), address.trim().slice(0, 300), now, now);
+    isLoop ? "" : name.trim().slice(0, 80),
+    isLoop ? "" : address.trim().slice(0, 300), now, now);
   const orderId = Number(info.lastInsertRowid);
 
   if (PAYMENTS_ENABLED) {
@@ -2106,6 +2241,109 @@ app.get("/api/market/recent", auth, (req, res) => {
 });
 
 /* ================================================================
+   SAMPLES — a producer's own sounds.
+   The Studio synthesises everything, which is why it opens instantly and
+   why a producer with a kit they like can't use it. This closes that:
+   upload once, drop onto any track, in any project.
+================================================================ */
+const SLOTS = ["kick", "snare", "hat", "clap", "perc", "bass", "other"];
+
+app.get("/api/samples", auth, (req, res) => {
+  const rows = db.prepare(
+    `SELECT id, name, url, kit, slot, bytes, created_at FROM samples WHERE user_id = ? ORDER BY kit, slot, created_at DESC`
+  ).all(req.user.id);
+  const kits = {};
+  for (const r of rows) {
+    const k = r.kit || "Loose sounds";
+    (kits[k] = kits[k] || []).push(r);
+  }
+  const used = rows.reduce((s, r) => s + r.bytes, 0);
+  res.json({ samples: rows, kits, count: rows.length, bytes: used, slots: SLOTS });
+});
+
+app.post("/api/samples", auth, verified, rateLimit({ max: 60, windowMs: 3600000, key: "user" }), (req, res) => {
+  const { name, url, kit, slot, bytes } = req.body || {};
+  if (!url || typeof url !== "string" || !url.startsWith("/uploads/")) {
+    return res.status(400).json({ error: "upload the file first" });
+  }
+  // A kit is ~10 sounds. 200 is a generous ceiling that still stops someone
+  // quietly turning the volume into their personal Dropbox.
+  const n = db.prepare(`SELECT COUNT(*) n FROM samples WHERE user_id = ?`).get(req.user.id).n;
+  if (n >= 200) return res.status(400).json({ error: "200 sounds max — delete some first" });
+  const info = db.prepare(
+    `INSERT INTO samples (user_id, name, url, kit, slot, bytes, created_at) VALUES (?,?,?,?,?,?,?)`
+  ).run(req.user.id, (name || "sound").toString().slice(0, 60), url,
+    (kit || "").toString().slice(0, 40), SLOTS.includes(slot) ? slot : "other",
+    Number(bytes) || 0, Date.now());
+  res.json({ id: Number(info.lastInsertRowid) });
+});
+
+app.patch("/api/samples/:id", auth, (req, res) => {
+  const s = db.prepare(`SELECT * FROM samples WHERE id = ? AND user_id = ?`).get(Number(req.params.id), req.user.id);
+  if (!s) return res.status(404).json({ error: "not yours" });
+  const { name, kit, slot } = req.body || {};
+  db.prepare(`UPDATE samples SET name = ?, kit = ?, slot = ? WHERE id = ?`).run(
+    (name ?? s.name).toString().slice(0, 60),
+    (kit ?? s.kit).toString().slice(0, 40),
+    SLOTS.includes(slot) ? slot : s.slot, s.id);
+  res.json({ ok: true });
+});
+
+app.delete("/api/samples/:id", auth, (req, res) => {
+  db.prepare(`DELETE FROM samples WHERE id = ? AND user_id = ?`).run(Number(req.params.id), req.user.id);
+  res.json({ ok: true });
+});
+
+/* Free loops are the point of the whole thing. A producer giving a loop away
+   costs them nothing and starts a collab — so this path must work with no
+   Stripe, no order, no friction. Grab it and go. */
+app.post("/api/market/:id/download", auth, verified, rateLimit({ max: 60, windowMs: 3600000, key: "user" }), (req, res) => {
+  const l = db.prepare(`SELECT * FROM listings WHERE id = ?`).get(Number(req.params.id));
+  if (!l) return res.status(404).json({ error: "no listing" });
+  if (l.kind !== "loop") return res.status(400).json({ error: "not a loop" });
+  if (l.status !== "active") return res.status(400).json({ error: "not available" });
+
+  const free = (l.price_cents || 0) === 0;
+  if (!free) {
+    // Paid loops go through checkout like anything else. Only a completed
+    // order unlocks the file.
+    const bought = db.prepare(`
+      SELECT 1 FROM orders WHERE listing_id = ? AND buyer_id = ? AND status IN ('paid','shipped','complete')`)
+      .get(l.id, req.user.id);
+    if (!bought) return res.status(402).json({ error: "buy it first", needsPurchase: true });
+  }
+
+  const firstTime = !db.prepare(`SELECT 1 FROM loop_downloads WHERE listing_id = ? AND user_id = ?`)
+    .get(l.id, req.user.id);
+  if (firstTime && l.seller_id !== req.user.id) {
+    db.prepare(`INSERT INTO loop_downloads (listing_id, user_id, created_at) VALUES (?,?,?)`)
+      .run(l.id, req.user.id, Date.now());
+    db.prepare(`UPDATE listings SET downloads = downloads + 1 WHERE id = ?`).run(l.id);
+    /* No rep for downloads — a handful of friends could farm it in a minute.
+       But the producer absolutely should know their loop got taken: that
+       notification IS the start of the conversation. */
+    notify(l.seller_id, req.user.id, "download", null,
+      `grabbed "${l.title}"${free ? " — free" : ""}`);
+  }
+  res.json({ url: l.audio_url, name: l.title, bpm: l.bpm, key: l.musical_key });
+});
+
+/* Who's using your loops. A producer wants this more than a download count. */
+app.get("/api/market/:id/downloads", auth, (req, res) => {
+  const l = db.prepare(`SELECT * FROM listings WHERE id = ?`).get(Number(req.params.id));
+  if (!l) return res.status(404).json({ error: "no listing" });
+  if (l.seller_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: "not yours" });
+  const rows = db.prepare(`
+    SELECT u.username, u.display_name, u.avatar_url, u.role, d.created_at
+    FROM loop_downloads d JOIN users u ON u.id = d.user_id
+    WHERE d.listing_id = ? ORDER BY d.created_at DESC LIMIT 50`).all(l.id);
+  res.json({ downloads: rows.map((r) => ({
+    username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "",
+    role: r.role, at: r.created_at,
+  })) });
+});
+
+/* ================================================================
    COLLABORATION — two-sided. Invite, then the invitee accepts.
    On accept, BOTH parties earn rep. This is the cross-lab engine.
 ================================================================ */
@@ -2420,7 +2658,19 @@ app.get("/api/feed/following", auth, (req, res) => {
 });
 
 /* ---- meta ---- */
-app.get("/api/levels", (_req, res) => res.json({ levels: LEVELS, accents: ACCENTS }));
+app.get("/api/levels", (_req, res) => res.json({
+  levels: LEVELS, accents: ACCENTS,
+  site: {
+    headline: setting("headline"),
+    tagline: setting("tagline"),
+    announcement: setting("announcement"),
+    signupsOpen: settingBool("signupsOpen"),
+    guestAccess: settingBool("guestAccess"),
+    marketOpen: settingBool("marketOpen"),
+    studioOpen: settingBool("studioOpen"),
+    loopsOpen: settingBool("loopsOpen"),
+  },
+}));
 app.get("/api/health", (_req, res) => res.json({ ok: true, time: Date.now() }));
 
 const PORT = process.env.PORT || 8787;
@@ -2442,7 +2692,7 @@ app.listen(PORT, () => {
 │ listening   :${PORT}
 │ data        ${DATA_DIR}${process.env.TNL_DATA ? "" : "   ⚠ NOT a volume — data dies on redeploy"}
 │ public url  ${process.env.PUBLIC_URL || "(unset — verification links will be wrong)"}
-│ email       ${ok(MAIL_ENABLED)}${MAIL_ENABLED ? "" : "  ⚠ links shown on screen instead of sent"}
+│ email       ${ok(MAIL_ENABLED)}${!MAIL_ENABLED ? "  ⚠ links shown on screen instead of sent" : MAIL_TEST_SENDER ? "  ⚠ TEST SENDER — only YOUR inbox gets mail" : ""}
 │ payments    ${ok(PAYMENTS_ENABLED)}${PAYMENTS_ENABLED ? "" : "  ⚠ buyers arrange payment directly"}
 │ admin       ${admins.length ? admins.join(", ") : "(none)"}
 │ in the lab  ${users} member${users === 1 ? "" : "s"} · ${posts} post${posts === 1 ? "" : "s"} · ${collabs} confirmed collab${collabs === 1 ? "" : "s"}

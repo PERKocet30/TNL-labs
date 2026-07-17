@@ -267,6 +267,41 @@ CREATE TABLE IF NOT EXISTS listing_views (
 );
 CREATE INDEX IF NOT EXISTS idx_views_user ON listing_views(user_id, viewed_at);
 
+/* A producer's own sounds. The Studio synthesises everything, which is
+   great for opening instantly and useless if you have a kit you actually
+   like. Uploaded once, droppable onto any track, in any project. */
+CREATE TABLE IF NOT EXISTS samples (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  url        TEXT NOT NULL,
+  kit        TEXT NOT NULL DEFAULT '',      -- optional grouping: "808 Mafia", "my kit"
+  slot       TEXT NOT NULL DEFAULT '',      -- kick | snare | hat | clap | perc | bass | other
+  bytes      INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_samples_user ON samples(user_id, created_at);
+
+/* Downloads of free loops. Not for rep — it's farmable — but a producer
+   deserves to know their loop got used, and it's the seed of a collab. */
+CREATE TABLE IF NOT EXISTS loop_downloads (
+  listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (listing_id, user_id)
+);
+
+/* Things you should be able to change without me and without a deploy.
+   Everything here was hardcoded — the tagline, whether signups are open,
+   the commission floor. That meant every copy tweak was a code change,
+   which is exactly the dependency you don't want. */
+CREATE TABLE IF NOT EXISTS settings (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at INTEGER NOT NULL,
+  updated_by INTEGER
+);
+
 CREATE INDEX IF NOT EXISTS idx_posts_channel ON posts(channel, created_at);
 /* These back the hot paths: every feed counts likes per post, every
    profile pulls a person's work, every load resolves a session token. */
@@ -340,6 +375,56 @@ if (!cols.includes("suspended")) db.exec(`ALTER TABLE users ADD COLUMN suspended
 
 const lcols = db.prepare(`PRAGMA table_info(listings)`).all().map((c) => c.name);
 if (!lcols.includes("sold_at")) db.exec(`ALTER TABLE listings ADD COLUMN sold_at INTEGER`);
+/* Loops are listings too — same offers, likes, saves, reviews. They just
+   deliver instantly instead of shipping, and can be free. */
+if (!lcols.includes("kind")) db.exec(`ALTER TABLE listings ADD COLUMN kind TEXT NOT NULL DEFAULT 'physical'`);
+if (!lcols.includes("audio_url")) db.exec(`ALTER TABLE listings ADD COLUMN audio_url TEXT`);
+if (!lcols.includes("bpm")) db.exec(`ALTER TABLE listings ADD COLUMN bpm INTEGER`);
+if (!lcols.includes("musical_key")) db.exec(`ALTER TABLE listings ADD COLUMN musical_key TEXT NOT NULL DEFAULT ''`);
+if (!lcols.includes("stems")) db.exec(`ALTER TABLE listings ADD COLUMN stems INTEGER NOT NULL DEFAULT 0`);
+if (!lcols.includes("downloads")) db.exec(`ALTER TABLE listings ADD COLUMN downloads INTEGER NOT NULL DEFAULT 0`);
+
+/* ================================================================
+   SETTINGS
+   Defaults live in code; overrides live in the database. That way a fresh
+   install works with no setup, and you can change your mind at 2am without
+   asking me for a deploy.
+================================================================ */
+export const SETTING_DEFAULTS = {
+  tagline:        "Artists, designers, musicians, entrepreneurs. Creatives don't just meet here — they multiply.",
+  headline:       "Cultivators.",
+  signupsOpen:    "1",     // "0" locks the door — invite-only
+  guestAccess:    "1",     // "0" hides everything behind the wall
+  marketOpen:     "1",     // "0" hides the Market entirely
+  studioOpen:     "1",
+  loopsOpen:      "1",
+  minRepToSell:   "0",     // gate selling behind standing if it gets messy
+  autoVerify:     "0",     // "1" skips email verification — use if mail breaks
+  announcement:   "",      // a banner across the top of the app
+};
+
+const getSetting = db.prepare(`SELECT value FROM settings WHERE key = ?`);
+const putSetting = db.prepare(
+  `INSERT INTO settings (key, value, updated_at, updated_by) VALUES (?,?,?,?)
+   ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at, updated_by=excluded.updated_by`
+);
+export function setting(key) {
+  const row = getSetting.get(key);
+  return row ? row.value : (SETTING_DEFAULTS[key] ?? "");
+}
+export function settingBool(key) { return setting(key) === "1"; }
+export function setSetting(key, value, byUserId) {
+  if (!(key in SETTING_DEFAULTS)) return false;
+  putSetting.run(key, String(value).slice(0, 2000), Date.now(), byUserId || null);
+  return true;
+}
+export function allSettings() {
+  const out = { ...SETTING_DEFAULTS };
+  for (const r of db.prepare(`SELECT key, value FROM settings`).all()) {
+    if (r.key in out) out[r.key] = r.value;
+  }
+  return out;
+}
 
 /** The founder needs moderation powers. Runs on every boot so it works on
  *  a fresh install too, not just on migration. No-op once an admin exists.
