@@ -242,6 +242,31 @@ CREATE TABLE IF NOT EXISTS channel_reads (
   PRIMARY KEY (user_id, channel)
 );
 
+/* A marketplace without reviews is a leap of faith. Depop and eBay both
+   live on this: it's the only reason a stranger buys from a stranger.
+   One review per order, only after delivery is confirmed, so it can't be
+   faked without a real paid transaction behind it. */
+CREATE TABLE IF NOT EXISTS reviews (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id   INTEGER NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+  seller_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  buyer_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  stars      INTEGER NOT NULL,
+  body       TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_reviews_seller ON reviews(seller_id, created_at);
+
+/* "Recently viewed" and "X views" both need this, and it's how we'd ever
+   know which listings get looked at but never bought. */
+CREATE TABLE IF NOT EXISTS listing_views (
+  listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  viewed_at  INTEGER NOT NULL,
+  PRIMARY KEY (listing_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_views_user ON listing_views(user_id, viewed_at);
+
 CREATE INDEX IF NOT EXISTS idx_posts_channel ON posts(channel, created_at);
 /* These back the hot paths: every feed counts likes per post, every
    profile pulls a person's work, every load resolves a session token. */
@@ -303,8 +328,18 @@ if (!pcols.includes("is_work")) {
 }
 
 if (!cols.includes("stripe_account")) db.exec(`ALTER TABLE users ADD COLUMN stripe_account TEXT NOT NULL DEFAULT ''`);
+/* Everyone gets black. The accent is theirs. Green is the flask, so it's
+   the default — but a fashion designer's page has no reason to look like
+   a producer's. Stored as a key, never a raw hex from the client. */
+if (!cols.includes("accent")) db.exec(`ALTER TABLE users ADD COLUMN accent TEXT NOT NULL DEFAULT 'lab'`);
 if (!cols.includes("stripe_ready")) db.exec(`ALTER TABLE users ADD COLUMN stripe_ready INTEGER NOT NULL DEFAULT 0`);
 if (!cols.includes("is_admin")) db.exec(`ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0`);
+/* Suspension, not deletion. Deleting a member cascades their work out of
+   everyone else's collabs and threads — that punishes the wrong people. */
+if (!cols.includes("suspended")) db.exec(`ALTER TABLE users ADD COLUMN suspended INTEGER NOT NULL DEFAULT 0`);
+
+const lcols = db.prepare(`PRAGMA table_info(listings)`).all().map((c) => c.name);
+if (!lcols.includes("sold_at")) db.exec(`ALTER TABLE listings ADD COLUMN sold_at INTEGER`);
 
 /** The founder needs moderation powers. Runs on every boot so it works on
  *  a fresh install too, not just on migration. No-op once an admin exists.
@@ -357,6 +392,21 @@ export function notify(userId, actorId, kind, postId = null, body = "") {
    farmed alone, which is the whole point: listing earns nothing,
    because listing is free and proves nothing. Selling earns, because
    a buyer chose it. Delivering earns, because they confirmed it. */
+/* Accents. Named, not free-form hex — otherwise someone picks #000000 and
+   their profile is unreadable, or slips something into a style attribute.
+   Each of these is legible on the black background. */
+export const ACCENTS = {
+  lab:    { name: "Lab",    hex: "#22C55E" },   // the flask. the default.
+  heat:   { name: "Heat",   hex: "#FF5A1F" },
+  blood:  { name: "Blood",  hex: "#EF4444" },
+  bloom:  { name: "Bloom",  hex: "#EC4899" },
+  violet: { name: "Violet", hex: "#A855F7" },
+  ice:    { name: "Ice",    hex: "#38BDF8" },
+  gold:   { name: "Gold",   hex: "#FBBF24" },
+  bone:   { name: "Bone",   hex: "#E7E1D2" },
+};
+export const accentHex = (key) => (ACCENTS[key] || ACCENTS.lab).hex;
+
 export const REP = {
   like_received: 6,     // someone validated your work
   share_received: 3,    // your work was worth re-circulating

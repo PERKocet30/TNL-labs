@@ -4,8 +4,8 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { writeFileSync, mkdirSync, existsSync, createWriteStream, rename, rm } from "node:fs";
-import { db, awardRep, revokeRep, levelFor, LEVELS, DATA_DIR, notify, ensureAdmin, feeForRep, FEE_BY_LEVEL } from "./db.js";
+import { writeFileSync, mkdirSync, existsSync, createWriteStream, rename, rm, statSync, readdirSync, rmSync } from "node:fs";
+import { db, awardRep, revokeRep, levelFor, LEVELS, DATA_DIR, notify, ensureAdmin, feeForRep, FEE_BY_LEVEL, ACCENTS, accentHex } from "./db.js";
 import { sendVerifyEmail, sendResetEmail, MAIL_ENABLED } from "./mail.js";
 import { createCheckout, verifySession, PAYMENTS_ENABLED, platformFee,
          createSellerAccount, onboardingLink, accountStatus, loginLink } from "./pay.js";
@@ -118,9 +118,10 @@ const q = {
 
 /* Feed query builder — returns posts enriched with author, counts, and
    whether the current viewer liked them. */
-function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false }) {
+function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false, postId = null }) {
   const where = [];
   const params = {};
+  if (postId) { where.push(`p.id = $postId`); params.postId = postId; }
   if (channel) { where.push(`p.channel = $channel`); params.channel = channel; }
   if (authorId) { where.push(`p.author_id = $authorId`); params.authorId = authorId; }
   if (workOnly) where.push(`p.is_work = 1`);
@@ -129,7 +130,7 @@ function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false })
     SELECT
       p.id, p.channel, p.body, p.beat_json, p.image_url, p.video_url, p.thumb_url, p.media_w, p.media_h, p.is_work, p.edited_at, p.shared_from, p.created_at,
       u.username AS author_username, u.display_name AS author_name, u.role AS author_role,
-      u.avatar_url AS author_avatar, u.rep AS author_rep,
+      u.avatar_url AS author_avatar, u.accent AS author_accent, u.rep AS author_rep,
       (SELECT COUNT(*) FROM likes  l WHERE l.post_id = p.id) AS like_count,
       (SELECT COUNT(*) FROM posts  s WHERE s.shared_from = p.id) AS share_count,
       (SELECT COUNT(*) FROM likes  l WHERE l.post_id = p.id AND l.user_id = $viewer) AS liked_by_me
@@ -197,8 +198,10 @@ function shapePost(row, side) {
       displayName: row.author_name,
       role: row.author_role,
       avatarUrl: row.author_avatar || "",
+      accent: row.author_accent || "#22C55E",
       rep: row.author_rep,
       level: levelFor(row.author_rep).id,
+      accentHex: accentHex(row.author_accent),
     },
     likeCount: row.like_count,
     shareCount: row.share_count,
@@ -216,12 +219,15 @@ function publicUser(u) {
     role: u.role,
     roles: (() => { try { const r = JSON.parse(u.roles || "[]"); return r.length ? r : (u.role ? [u.role] : []); } catch { return u.role ? [u.role] : []; } })(),
     avatarUrl: u.avatar_url || "",
+    accent: u.accent || "#22C55E",
     rep: u.rep,
     bio: u.bio || "",
     link: u.link || "",
     emailVerified: !!u.email_verified,
     published: !!u.published,
     isAdmin: !!u.is_admin,
+    accent: u.accent || "lab",
+    accentHex: accentHex(u.accent),
     payoutsReady: !!u.stripe_ready,
     hasStripe: !!u.stripe_account,
     createdAt: u.created_at,
@@ -254,6 +260,8 @@ app.get("/api/stream", (req, res) => {
 /* ================================================================
    AUTH
 ================================================================ */
+/* Checked on EVERY authenticated request. A suspension that only removes
+   sessions is worthless the moment they log back in. */
 function auth(req, res, next) {
   const header = req.get("authorization") || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
@@ -263,6 +271,12 @@ function auth(req, res, next) {
   req.user = q.userById.get(s.user_id);
   req.token = token;
   if (!req.user) return res.status(401).json({ error: "user gone" });
+  /* Checked on EVERY request, not just at login. A suspension that only
+     kills existing sessions is undone the moment they sign back in. */
+  if (req.user.suspended) {
+    db.prepare(`DELETE FROM sessions WHERE user_id = ?`).run(req.user.id);
+    return res.status(403).json({ error: "This account is suspended.", suspended: true });
+  }
   next();
 }
 // optional auth: attaches req.user if a valid token is present, else continues
@@ -899,7 +913,7 @@ app.get("/api/search", maybeAuth, (req, res) => {
     ORDER BY rep DESC LIMIT 24`).all(term, like, like, like, role, `%"${role}"%`, role);
   const posts = term ? db.prepare(`
     SELECT p.*, u.username AS author_username, u.display_name AS author_name, u.role AS author_role,
-           u.avatar_url AS author_avatar, u.rep AS author_rep,
+           u.avatar_url AS author_avatar, u.accent AS author_accent, u.rep AS author_rep,
       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
       (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) AS share_count,
       0 AS liked_by_me
@@ -1016,7 +1030,7 @@ app.get("/api/admin/members", auth, admin, (req, res) => {
   const where = term ? `WHERE LOWER(u.username) LIKE ? OR LOWER(u.display_name) LIKE ? OR LOWER(u.email) LIKE ?` : "";
   const rows = db.prepare(`
     SELECT u.id, u.username, u.display_name, u.email, u.avatar_url, u.role, u.roles, u.rep,
-           u.email_verified, u.published, u.is_admin, u.stripe_ready, u.created_at,
+           u.email_verified, u.published, u.is_admin, u.stripe_ready, u.suspended, u.created_at,
       (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) AS posts,
       (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id AND p.is_work = 1) AS work,
       (SELECT COUNT(*) FROM collaborators c WHERE c.user_id = u.id AND c.status='accepted') AS collabs,
@@ -1032,6 +1046,7 @@ app.get("/api/admin/members", auth, admin, (req, res) => {
       roles: (() => { try { return JSON.parse(r.roles || "[]"); } catch { return []; } })(),
       rep: r.rep, level: levelFor(r.rep).id, levelName: levelFor(r.rep).name, fee: feeForRep(r.rep),
       verified: !!r.email_verified, published: !!r.published, isAdmin: !!r.is_admin, payouts: !!r.stripe_ready,
+      suspended: !!r.suspended,
       posts: r.posts, work: r.work, collabs: r.collabs, likes: r.likes,
       lastPost: r.last_post, joined: r.created_at,
     })),
@@ -1116,6 +1131,246 @@ app.delete("/api/admin/posts/:id", auth, admin, (req, res) => {
   res.json({ ok: true });
 });
 
+
+/* ---- the funnel. Where people fall out is the only growth question. ---- */
+app.get("/api/admin/funnel", auth, admin, (req, res) => {
+  const one = (sql, ...p) => db.prepare(sql).get(...p)?.n ?? 0;
+  const members = one(`SELECT COUNT(*) n FROM users`);
+  const verified = one(`SELECT COUNT(*) n FROM users WHERE email_verified = 1`);
+  const posted = one(`SELECT COUNT(DISTINCT author_id) n FROM posts`);
+  const published = one(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE is_work = 1`);
+  const collabed = one(`SELECT COUNT(DISTINCT user_id) n FROM collaborators WHERE status='accepted'`);
+  const listed = one(`SELECT COUNT(DISTINCT seller_id) n FROM listings`);
+  const sold = one(`SELECT COUNT(DISTINCT seller_id) n FROM orders WHERE status IN ('paid','shipped','complete')`);
+  const pct = (n) => (members ? Math.round((n / members) * 100) : 0);
+  res.json({
+    steps: [
+      { label: "Signed up", n: members, pct: 100 },
+      { label: "Verified email", n: verified, pct: pct(verified) },
+      { label: "Posted anything", n: posted, pct: pct(posted) },
+      { label: "Published work", n: published, pct: pct(published) },
+      { label: "Confirmed a collab", n: collabed, pct: pct(collabed) },
+      { label: "Listed an item", n: listed, pct: pct(listed) },
+      { label: "Sold something", n: sold, pct: pct(sold) },
+    ],
+  });
+});
+
+/* ---- retention. Are the same people still here, or is it churn? ---- */
+app.get("/api/admin/retention", auth, admin, (req, res) => {
+  const now = Date.now(), D = 86400000;
+  const cohorts = [];
+  for (let w = 3; w >= 0; w--) {
+    const from = now - (w + 1) * 7 * D, to = now - w * 7 * D;
+    const joined = db.prepare(`SELECT id FROM users WHERE created_at > ? AND created_at <= ?`).all(from, to);
+    const stillActive = joined.filter((u) =>
+      db.prepare(`SELECT 1 FROM posts WHERE author_id = ? AND created_at > ?`).get(u.id, now - 7 * D)
+    ).length;
+    cohorts.push({
+      week: w === 0 ? "This week" : w === 1 ? "Last week" : `${w} weeks ago`,
+      joined: joined.length,
+      stillPosting: stillActive,
+      pct: joined.length ? Math.round((stillActive / joined.length) * 100) : 0,
+    });
+  }
+  // silent members — signed up, never posted
+  const silent = db.prepare(`
+    SELECT u.username, u.display_name, u.created_at,
+      (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) AS posts
+    FROM users u WHERE (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) = 0
+    ORDER BY u.created_at DESC LIMIT 20`).all();
+  // who's gone quiet — used to post, hasn't in 14 days
+  const quiet = db.prepare(`
+    SELECT u.username, u.display_name,
+      (SELECT MAX(created_at) FROM posts p WHERE p.author_id = u.id) AS last_post,
+      (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) AS posts
+    FROM users u
+    WHERE posts > 0 AND last_post < ?
+    ORDER BY last_post DESC LIMIT 20`).all(now - 14 * D);
+  res.json({ cohorts, silent, quiet });
+});
+
+/* ---- the market, as a business ---- */
+app.get("/api/admin/market", auth, admin, (req, res) => {
+  const now = Date.now(), D = 86400000;
+  const one = (sql, ...p) => db.prepare(sql).get(...p)?.n ?? 0;
+  const paidOrders = db.prepare(`
+    SELECT o.*, u.rep AS seller_rep FROM orders o JOIN users u ON u.id = o.seller_id
+    WHERE o.status IN ('paid','shipped','complete')`).all();
+  const rev = paidOrders.reduce((s, o) => s + Math.round(o.amount_cents * (feeForRep(o.seller_rep) / 100)), 0);
+
+  const daily = [];
+  for (let i = 13; i >= 0; i--) {
+    const from = now - (i + 1) * D, to = now - i * D;
+    const rows = paidOrders.filter((o) => o.created_at > from && o.created_at <= to);
+    daily.push({
+      d: new Date(to).toISOString().slice(5, 10),
+      gmv: rows.reduce((s, o) => s + o.amount_cents + o.shipping_cents, 0),
+      fee: rows.reduce((s, o) => s + Math.round(o.amount_cents * (feeForRep(o.seller_rep) / 100)), 0),
+      n: rows.length,
+    });
+  }
+  const topSellers = db.prepare(`
+    SELECT u.username, u.display_name, u.avatar_url, u.rep,
+      COUNT(o.id) AS sales,
+      COALESCE(SUM(o.amount_cents),0) AS gross
+    FROM orders o JOIN users u ON u.id = o.seller_id
+    WHERE o.status IN ('paid','shipped','complete')
+    GROUP BY o.seller_id ORDER BY gross DESC LIMIT 10`).all();
+  const stale = db.prepare(`
+    SELECT l.id, l.title, l.price_cents, l.views, l.created_at, u.username
+    FROM listings l JOIN users u ON u.id = l.seller_id
+    WHERE l.status='active' AND l.created_at < ?
+    ORDER BY l.views ASC LIMIT 10`).all(now - 14 * D);
+
+  res.json({
+    gmv: paidOrders.reduce((s, o) => s + o.amount_cents + o.shipping_cents, 0),
+    revenue: rev,
+    orders: paidOrders.length,
+    aov: paidOrders.length ? Math.round(paidOrders.reduce((s, o) => s + o.amount_cents + o.shipping_cents, 0) / paidOrders.length) : 0,
+    active: one(`SELECT COUNT(*) n FROM listings WHERE status='active'`),
+    sold: one(`SELECT COUNT(*) n FROM listings WHERE status='sold'`),
+    sellers: one(`SELECT COUNT(DISTINCT seller_id) n FROM listings`),
+    connected: one(`SELECT COUNT(*) n FROM users WHERE stripe_ready = 1`),
+    unshipped: one(`SELECT COUNT(*) n FROM orders WHERE status = 'paid'`),
+    avgRating: db.prepare(`SELECT COALESCE(AVG(stars),0) n FROM reviews`).get().n,
+    reviews: one(`SELECT COUNT(*) n FROM reviews`),
+    daily, topSellers, stale,
+  });
+});
+
+/* ---- controls. A dashboard you can't act from is a wall poster. ---- */
+app.post("/api/admin/members/:username/rep", auth, admin, (req, res) => {
+  const u = q.userByName.get(req.params.username);
+  if (!u) return res.status(404).json({ error: "no such user" });
+  const delta = Math.round(Number(req.body?.delta));
+  if (!Number.isFinite(delta) || Math.abs(delta) > 500) return res.status(400).json({ error: "±500 max" });
+  const next = Math.max(0, u.rep + delta);
+  db.prepare(`UPDATE users SET rep = ? WHERE id = ?`).run(next, u.id);
+  db.prepare(`INSERT INTO rep_events (user_id, kind, points, post_id, created_at) VALUES (?,?,?,?,?)`)
+    .run(u.id, delta > 0 ? "admin_grant" : "admin_deduct", delta, null, Date.now());
+  console.log(`[admin] @${req.user.username} adjusted @${u.username} rep by ${delta} -> ${next}`);
+  res.json({ ok: true, rep: next });
+});
+
+app.post("/api/admin/members/:username/suspend", auth, admin, (req, res) => {
+  const u = q.userByName.get(req.params.username);
+  if (!u) return res.status(404).json({ error: "no such user" });
+  if (u.is_admin) return res.status(400).json({ error: "can't suspend an admin" });
+  const on = !!req.body?.suspended;
+  db.prepare(`UPDATE users SET suspended = ? WHERE id = ?`).run(on ? 1 : 0, u.id);
+  if (on) db.prepare(`DELETE FROM sessions WHERE user_id = ?`).run(u.id); // kick them now
+  console.log(`[admin] @${req.user.username} ${on ? "suspended" : "restored"} @${u.username}`);
+  res.json({ ok: true, suspended: on });
+});
+
+app.delete("/api/admin/listings/:id", auth, admin, (req, res) => {
+  const l = db.prepare(`SELECT * FROM listings WHERE id = ?`).get(Number(req.params.id));
+  if (!l) return res.status(404).json({ error: "no listing" });
+  db.prepare(`UPDATE listings SET status='removed', updated_at=? WHERE id=?`).run(Date.now(), l.id);
+  notify(l.seller_id, req.user.id, "removed", null, `"${l.title}" was removed by a mod`);
+  res.json({ ok: true });
+});
+
+/* The founder's megaphone. Lands as a DM from you, which at this size is
+   worth more than a push notification. */
+app.post("/api/admin/broadcast", auth, admin, rateLimit({ max: 3, windowMs: 3600000, key: "user" }), (req, res) => {
+  const body = (req.body?.body || "").toString().trim();
+  if (!body) return res.status(400).json({ error: "say something" });
+  const target = req.body?.target || "all";
+  let users = [];
+  if (target === "all") users = db.prepare(`SELECT id FROM users WHERE id != ?`).all(req.user.id);
+  else if (target === "silent") users = db.prepare(
+    `SELECT id FROM users WHERE id != ? AND (SELECT COUNT(*) FROM posts p WHERE p.author_id = users.id) = 0`).all(req.user.id);
+  else if (target === "quiet") users = db.prepare(
+    `SELECT id FROM users WHERE id != ? AND (SELECT MAX(created_at) FROM posts p WHERE p.author_id = users.id) < ?`)
+    .all(req.user.id, Date.now() - 14 * 86400000);
+  const now = Date.now();
+  let sent = 0;
+  for (const u of users) {
+    try {
+      const t = threadFor(req.user.id, u.id);
+      db.prepare(`INSERT INTO dm_messages (thread_id, sender_id, body, created_at) VALUES (?,?,?,?)`)
+        .run(t.id, req.user.id, body.slice(0, 2000), now);
+      db.prepare(`UPDATE dm_threads SET updated_at = ? WHERE id = ?`).run(now, t.id);
+      notify(u.id, req.user.id, "dm", null, body.slice(0, 80));
+      sent++;
+    } catch (e) { /* one bad row shouldn't stop the rest */ }
+  }
+  console.log(`[admin] broadcast to ${sent} (${target})`);
+  res.json({ ok: true, sent });
+});
+
+/* System health — is anything actually wrong right now? */
+app.get("/api/admin/health", auth, admin, (req, res) => {
+  const one = (sql, ...p) => db.prepare(sql).get(...p)?.n ?? 0;
+  let dbBytes = 0, uploadBytes = 0, uploadCount = 0;
+  try { dbBytes = statSync(join(DATA_DIR, "tnl.db")).size; } catch {}
+  try {
+    const files = readdirSync(UPLOAD_DIR);
+    uploadCount = files.length;
+    for (const f of files) { try { uploadBytes += statSync(join(UPLOAD_DIR, f)).size; } catch {} }
+  } catch {}
+  // uploads nobody references any more — dead weight on the volume
+  const referenced = new Set();
+  for (const r of db.prepare(`SELECT image_url, thumb_url, video_url FROM posts`).all())
+    [r.image_url, r.thumb_url, r.video_url].forEach((u) => u && referenced.add(u.replace("/uploads/", "")));
+  for (const r of db.prepare(`SELECT avatar_url FROM users WHERE avatar_url != ''`).all())
+    referenced.add(r.avatar_url.replace("/uploads/", ""));
+  for (const r of db.prepare(`SELECT images FROM listings`).all()) {
+    try { JSON.parse(r.images || "[]").forEach((u) => referenced.add(u.replace("/uploads/", ""))); } catch {}
+  }
+  for (const r of db.prepare(`SELECT image_url FROM dm_messages WHERE image_url IS NOT NULL`).all())
+    referenced.add(r.image_url.replace("/uploads/", ""));
+  let orphans = 0, orphanBytes = 0;
+  try {
+    for (const f of readdirSync(UPLOAD_DIR)) {
+      if (f.startsWith(".")) continue;
+      if (!referenced.has(f)) { orphans++; try { orphanBytes += statSync(join(UPLOAD_DIR, f)).size; } catch {} }
+    }
+  } catch {}
+  res.json({
+    dbBytes, uploadBytes, uploadCount, orphans, orphanBytes,
+    onVolume: !!process.env.TNL_DATA,
+    publicUrl: process.env.PUBLIC_URL || null,
+    mail: MAIL_ENABLED, payments: PAYMENTS_ENABLED,
+    uptimeS: Math.round(process.uptime()),
+    memMB: Math.round(process.memoryUsage().rss / 1048576),
+    node: process.version,
+    sessions: one(`SELECT COUNT(*) n FROM sessions`),
+    pendingVerify: one(`SELECT COUNT(*) n FROM users WHERE email_verified = 0`),
+    unhandledReports: one(`SELECT COUNT(*) n FROM reports WHERE handled_at IS NULL`),
+  });
+});
+
+/* Delete uploads nothing points at. Explicit, never automatic — I'm not
+   letting a cron job decide which of your artists' files are garbage. */
+app.post("/api/admin/cleanup", auth, admin, (req, res) => {
+  const referenced = new Set();
+  for (const r of db.prepare(`SELECT image_url, thumb_url, video_url FROM posts`).all())
+    [r.image_url, r.thumb_url, r.video_url].forEach((u) => u && referenced.add(u.replace("/uploads/", "")));
+  for (const r of db.prepare(`SELECT avatar_url FROM users WHERE avatar_url != ''`).all())
+    referenced.add(r.avatar_url.replace("/uploads/", ""));
+  for (const r of db.prepare(`SELECT images FROM listings`).all()) {
+    try { JSON.parse(r.images || "[]").forEach((u) => referenced.add(u.replace("/uploads/", ""))); } catch {}
+  }
+  for (const r of db.prepare(`SELECT image_url FROM dm_messages WHERE image_url IS NOT NULL`).all())
+    referenced.add(r.image_url.replace("/uploads/", ""));
+  let removed = 0, freed = 0;
+  try {
+    for (const f of readdirSync(UPLOAD_DIR)) {
+      if (f.startsWith(".part-")) { // abandoned partial uploads
+        try { freed += statSync(join(UPLOAD_DIR, f)).size; rmSync(join(UPLOAD_DIR, f)); removed++; } catch {}
+        continue;
+      }
+      if (f.startsWith(".") || referenced.has(f)) continue;
+      try { freed += statSync(join(UPLOAD_DIR, f)).size; rmSync(join(UPLOAD_DIR, f)); removed++; } catch {}
+    }
+  } catch (e) { return res.status(500).json({ error: e.message }); }
+  console.log(`[admin] cleanup removed ${removed} orphaned files (${(freed / 1048576).toFixed(1)}MB)`);
+  res.json({ removed, freed });
+});
+
 /* The dashboard page. Gated in the browser too, but the real gate is every
    endpoint above — the page is inert without a valid admin token. */
 app.get("/admin", (_req, res) => res.sendFile(join(__dirname, "..", "public", "admin.html")));
@@ -1184,12 +1439,14 @@ function shapeListing(r, viewerId, side) {
 
 const LISTING_SELECT = `
   SELECT l.*, u.username AS seller_username, u.display_name AS seller_name,
-         u.avatar_url AS seller_avatar, u.rep AS seller_rep
+         u.avatar_url AS seller_avatar, u.accent AS seller_accent, u.rep AS seller_rep
   FROM listings l JOIN users u ON u.id = l.seller_id`;
 
 app.get("/api/market/meta", maybeAuth, (req, res) => {
+  const sizes = db.prepare(`SELECT DISTINCT size FROM listings WHERE status='active' AND size != '' ORDER BY size`).all().map((r) => r.size);
+  const brands = db.prepare(`SELECT brand, COUNT(*) n FROM listings WHERE status='active' AND brand != '' GROUP BY brand ORDER BY n DESC LIMIT 20`).all().map((r) => r.brand);
   res.json({
-    categories: CATEGORIES, conditions: CONDITIONS, paymentsEnabled: PAYMENTS_ENABLED,
+    categories: CATEGORIES, conditions: CONDITIONS, sizes, brands, paymentsEnabled: PAYMENTS_ENABLED,
     feePct: req.user ? feeForRep(req.user.rep) : FEE_BY_LEVEL[1],
     feeLadder: LEVELS.map((l) => ({ level: l.id, name: l.name, at: l.at, fee: FEE_BY_LEVEL[l.id] })),
   });
@@ -1257,17 +1514,46 @@ app.get("/api/market", maybeAuth, (req, res) => {
 app.get("/api/market/:id", maybeAuth, (req, res) => {
   const r = db.prepare(`${LISTING_SELECT} WHERE l.id = ?`).get(Number(req.params.id));
   if (!r) return res.status(404).json({ error: "no listing" });
-  if (!req.user || req.user.id !== r.seller_id) db.prepare(`UPDATE listings SET views = views + 1 WHERE id = ?`).run(r.id);
+  if (!req.user || req.user.id !== r.seller_id) {
+    db.prepare(`UPDATE listings SET views = views + 1 WHERE id = ?`).run(r.id);
+    if (req.user) db.prepare(
+      `INSERT INTO listing_views (listing_id, user_id, viewed_at) VALUES (?,?,?)
+       ON CONFLICT(listing_id, user_id) DO UPDATE SET viewed_at = excluded.viewed_at`
+    ).run(r.id, req.user.id, Date.now());
+  }
   const offers = req.user && (req.user.id === r.seller_id)
     ? db.prepare(`SELECT o.*, u.username, u.display_name FROM offers o JOIN users u ON u.id = o.buyer_id
                   WHERE o.listing_id = ? AND o.status = 'pending' ORDER BY o.amount_cents DESC`).all(r.id)
     : req.user
       ? db.prepare(`SELECT * FROM offers WHERE listing_id = ? AND buyer_id = ? ORDER BY created_at DESC LIMIT 5`).all(r.id, req.user.id)
       : [];
-  res.json({ listing: shapeListing(r, req.user?.id), offers });
+  /* Same category, similar price, still for sale. The cheapest useful
+     version of "you might also like" — no ML, just relevance. */
+  const similar = db.prepare(`${LISTING_SELECT}
+    WHERE l.status='active' AND l.id != ? AND l.category = ?
+      AND l.price_cents BETWEEN ? AND ?
+    ORDER BY ABS(l.price_cents - ?) ASC LIMIT 6`)
+    .all(r.id, r.category, Math.round(r.price_cents * 0.4), Math.round(r.price_cents * 2.2), r.price_cents);
+  res.json({
+    listing: shapeListing(r, req.user?.id),
+    offers,
+    seller: sellerStats(r.seller_id),
+    similar: shapeListings(similar, req.user?.id),
+  });
 });
 
 app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, key: "user" }), (req, res) => {
+  /* Payouts first, always. Your commission only exists INSIDE the Stripe
+     charge — if a buyer and seller settle on Venmo, the platform earns
+     nothing and the whole market is just a classifieds board. So the
+     moment card payments are switched on, connecting is the price of
+     listing. Same rule Depop and StockX run. */
+  if (PAYMENTS_ENABLED && !req.user.stripe_ready) {
+    return res.status(403).json({
+      error: "Set up payouts before you list — it takes a minute and it's how you get paid",
+      needsPayouts: true,
+    });
+  }
   const { title, description, price, shipping, category, brand, size, condition, colour, images, shipsFrom, acceptsOffers } = req.body || {};
   if (!title?.trim()) return res.status(400).json({ error: "title required" });
   const cents = Math.round(Number(price) * 100);
@@ -1379,6 +1665,22 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
     .get(l.id, req.user.id);
   const amount = accepted ? accepted.amount_cents : l.price_cents;
 
+  /* Check we can actually route the money BEFORE writing an order row.
+     Doing it after leaves orphaned orders every time someone bumps into
+     an unconfigured seller. */
+  const seller = q.userById.get(l.seller_id);
+  if (PAYMENTS_ENABLED && (!seller?.stripe_account || !seller.stripe_ready)) {
+    /* Don't hand this off to a DM. Every sale goes through the platform or
+       it doesn't happen — that's the only way the commission exists, and
+       the only way the buyer has any protection. Tell the seller instead. */
+    notify(l.seller_id, req.user.id, "sale", null,
+      `Someone tried to buy "${l.title}" — finish your payout setup so you can actually sell it`);
+    return res.status(409).json({
+      error: "This seller hasn't finished setting up payments yet. We've let them know — check back shortly.",
+      sellerNotConnected: true,
+    });
+  }
+
   const now = Date.now();
   const info = db.prepare(`
     INSERT INTO orders (listing_id, buyer_id, seller_id, amount_cents, shipping_cents, ship_name, ship_address, created_at, updated_at)
@@ -1387,13 +1689,6 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
   const orderId = Number(info.lastInsertRowid);
 
   if (PAYMENTS_ENABLED) {
-    const seller = q.userById.get(l.seller_id);
-    if (!seller?.stripe_account || !seller.stripe_ready) {
-      // Don't take money we can't route. Fall back to arranging directly.
-      db.prepare(`UPDATE listings SET status='sold', updated_at=? WHERE id=?`).run(now, l.id);
-      notify(l.seller_id, req.user.id, "sale", null, `bought "${l.title}" — you haven't set up payouts, so arrange payment directly`);
-      return res.json({ orderId, arrange: true, sellerNotConnected: true });
-    }
     const base = baseUrl(req);
     const out = await createCheckout({
       orderId, title: l.title, amountCents: amount, shippingCents: l.shipping_cents,
@@ -1404,7 +1699,10 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
       sellerAccount: seller.stripe_account,
       feePct: feeForRep(seller.rep),   // their level sets their rate
     });
-    if (out.error) return res.status(502).json({ error: out.error });
+    if (out.error) {
+      db.prepare(`DELETE FROM orders WHERE id = ?`).run(orderId); // don't leave a ghost
+      return res.status(502).json({ error: out.error });
+    }
     db.prepare(`UPDATE orders SET payment_ref = ? WHERE id = ?`).run(out.id, orderId);
     return res.json({ orderId, checkoutUrl: out.url });
   }
@@ -1414,7 +1712,7 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
   // two friends could "buy" from each other all day for free. Rep needs
   // evidence, and in arrange mode there is none. Once Stripe is on, a sale
   // costs real money to fake, so it earns rep.
-  db.prepare(`UPDATE listings SET status='sold', updated_at=? WHERE id=?`).run(now, l.id);
+  db.prepare(`UPDATE listings SET status='sold', sold_at=?, updated_at=? WHERE id=?`).run(now, now, l.id);
   notify(l.seller_id, req.user.id, "sale", null, `bought "${l.title}" — arrange payment & shipping`);
   res.json({ orderId, arrange: true });
 });
@@ -1428,7 +1726,7 @@ app.get("/api/market/checkout/done", async (req, res) => {
   if (!out.paid) return res.redirect("/?checkout=failed");
   if (order.status === "pending") {
     db.prepare(`UPDATE orders SET status='paid', updated_at=? WHERE id=?`).run(Date.now(), order.id);
-    db.prepare(`UPDATE listings SET status='sold', updated_at=? WHERE id=?`).run(Date.now(), order.listing_id);
+    db.prepare(`UPDATE listings SET status='sold', sold_at=?, updated_at=? WHERE id=?`).run(Date.now(), Date.now(), order.listing_id);
     const l = db.prepare(`SELECT title FROM listings WHERE id=?`).get(order.listing_id);
     // A sale is validation with money behind it — the hardest signal to fake.
     awardRep(order.seller_id, "sale_made", order.id);
@@ -1438,8 +1736,10 @@ app.get("/api/market/checkout/done", async (req, res) => {
 });
 
 app.get("/api/orders", auth, (req, res) => {
+  const reviewed = new Set(db.prepare(`SELECT order_id FROM reviews WHERE buyer_id = ?`).all(req.user.id).map((x) => x.order_id));
   const shape = (r) => ({
     id: r.id, amount: r.amount_cents, shipping: r.shipping_cents, status: r.status,
+    paid: !!r.payment_ref, reviewed: reviewed.has(r.id),
     tracking: r.tracking, shipName: r.ship_name, shipAddress: r.ship_address, createdAt: r.created_at,
     listing: { id: r.listing_id, title: r.title, images: (() => { try { return JSON.parse(r.images || "[]"); } catch { return []; } })() },
     other: { username: r.other_username, displayName: r.other_name, avatarUrl: r.other_avatar || "" },
@@ -1536,6 +1836,273 @@ app.get("/api/mentionable", auth, (req, res) => {
       username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", role: r.role,
     })),
   });
+});
+
+/* ================================================================
+   SHARING
+   Three different things people mean by "share":
+     1. send it to a person      -> lands in their DMs
+     2. put it in another lab    -> the reshare we already had
+     3. send it OUT of the app   -> needs a public page a stranger can open
+   This is (1) and (3). Cross-lab reshare stays where it was.
+================================================================ */
+app.post("/api/posts/:id/send", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
+  const post = q.postById.get(Number(req.params.id));
+  if (!post) return res.status(404).json({ error: "no post" });
+  const to = q.userByName.get(req.body?.username || "");
+  if (!to) return res.status(404).json({ error: "no such user" });
+  if (to.id === req.user.id) return res.status(400).json({ error: "that's you" });
+  if (isBlocked(req.user.id, to.id)) return res.status(403).json({ error: "unavailable" });
+
+  const author = q.userById.get(post.author_id);
+  const note = (req.body?.note || "").toString().trim().slice(0, 500);
+  const link = `${baseUrl(req)}/p/${post.id}`;
+  const body = (note ? note + "\n" : "") + link;
+
+  const t = threadFor(req.user.id, to.id);
+  const now = Date.now();
+  db.prepare(`INSERT INTO dm_messages (thread_id, sender_id, body, created_at) VALUES (?,?,?,?)`)
+    .run(t.id, req.user.id, body, now);
+  db.prepare(`UPDATE dm_threads SET updated_at = ? WHERE id = ?`).run(now, t.id);
+  notify(to.id, req.user.id, "dm", post.id, `sent you ${author ? "@" + author.username + "'s" : "a"} post`);
+  broadcast("dm", { to: to.username, from: req.user.username });
+  res.json({ ok: true });
+});
+
+/* A single post, open to anyone with the link. This is what makes sharing
+   out of the app worth anything — otherwise you're sending people to a
+   sign-up wall and they just leave. Server-rendered so it previews in
+   iMessage, Discord, and IG DMs. */
+app.get("/p/:id", (req, res) => {
+  const rows = feedRows({ viewerId: 0, limit: 400 });
+  const post = shapePosts(rows).find((x) => String(x.id) === String(req.params.id));
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  /* Only PUBLISHED WORK gets a public page. A chat message with a photo in
+     it is still chat — the whole point of the portfolio/chat split is that
+     the labs aren't a public surface. If it isn't marked as work, there's
+     no link to share. */
+  if (!post || !post.isWork) {
+    return res.status(404).send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center">
+<div><div style="color:#22C55E;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS</div>
+<h1 style="text-transform:uppercase;font-size:22px;margin:14px 0 8px">Not found</h1>
+<p style="color:#8A8A8A;font-size:14px">This post is private or has been removed.</p>
+<a href="/" style="display:inline-block;margin-top:16px;background:#fff;color:#000;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:9px">Enter the lab</a></div></body>`);
+  }
+
+  const a = post.author;
+  const accent = a.accentHex || "#22C55E";
+  const img = post.imageUrl ? `${baseUrl(req)}${post.imageUrl}` : null;
+  const desc = post.body || `${a.displayName} on TNL LABS`;
+  const accepted = post.collaborators.filter((c) => c.status === "accepted");
+
+  res.send(`<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(a.displayName)} — TNL LABS</title>
+<meta property="og:title" content="${esc(a.displayName)} on TNL LABS">
+<meta property="og:description" content="${esc(desc.slice(0, 140))}">
+${img ? `<meta property="og:image" content="${esc(img)}"><meta name="twitter:card" content="summary_large_image">` : ""}
+<meta name="theme-color" content="#000000">
+</head>
+<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:24px 18px 60px">
+  <a href="/" style="color:${accent};font-family:monospace;font-size:11px;letter-spacing:.16em;text-decoration:none">TNLLABS &#129514;</a>
+  <div style="display:flex;align-items:center;gap:11px;margin:22px 0 14px">
+    ${a.avatarUrl ? `<img src="${esc(a.avatarUrl)}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid ${accent}">`
+      : `<div style="width:42px;height:42px;border-radius:50%;background:#141414;border:2px solid ${accent};display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:12px">${esc(a.displayName.slice(0, 2).toUpperCase())}</div>`}
+    <div><div style="font-weight:900;font-size:15px">${esc(a.displayName)}</div>
+    <div style="font-family:monospace;font-size:9px;color:#8A8A8A;letter-spacing:.08em">@${esc(a.username)} · ${esc(a.role.toUpperCase())}</div></div>
+  </div>
+  ${post.body ? `<p style="font-size:15px;line-height:1.6;color:#E5E2DA;margin:0 0 14px;white-space:pre-wrap">${esc(post.body)}</p>` : ""}
+  ${post.imageUrl ? `<img src="${esc(post.imageUrl)}" style="width:100%;border-radius:11px;display:block;background:#141414" ${post.mediaW ? `width="${post.mediaW}" height="${post.mediaH}"` : ""}>` : ""}
+  ${post.videoUrl ? `<video src="${esc(post.videoUrl)}" controls playsinline style="width:100%;border-radius:11px;background:#000"></video>` : ""}
+  ${post.beat ? `<div style="background:#141414;border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:20px;text-align:center">
+    <div style="font-size:26px;color:${accent}">&#9834;</div>
+    <div style="font-weight:900;margin-top:6px">${esc(post.beat.name || "untitled loop")}</div>
+    <div style="font-family:monospace;font-size:10px;color:#8A8A8A;margin-top:4px">${post.beat.bpm} BPM · OPEN THE APP TO HEAR IT</div></div>` : ""}
+  ${accepted.length ? `<div style="font-family:monospace;font-size:9px;color:${accent};letter-spacing:.08em;margin-top:12px">↔ BUILT WITH ${accepted.map((c) => esc((c.display_name || c.username).toUpperCase())).join(" + ")}</div>` : ""}
+  <div style="font-family:monospace;font-size:10px;color:#8A8A8A;margin-top:12px">♥ ${post.likeCount} &nbsp; ↻ ${post.shareCount} &nbsp; 💬 ${post.commentCount}</div>
+  <a href="/u/${esc(a.username)}" style="display:block;text-align:center;margin-top:26px;background:${accent};color:#000;text-decoration:none;font-weight:700;padding:13px;border-radius:9px">See more from ${esc(a.displayName)}</a>
+  <a href="/" style="display:block;text-align:center;margin-top:9px;border:1px solid rgba(255,255,255,.25);color:#fff;text-decoration:none;font-weight:700;padding:13px;border-radius:9px">What is TNL LABS?</a>
+</div></body></html>`);
+});
+
+/* ================================================================
+   SHARING
+   Two kinds, deliberately different:
+   • to a person  — lands in their DMs. How you actually get someone to
+                    look at a thing.
+   • off the app  — a public URL anyone can open, no account. This is how
+                    work travels to Instagram and gets people back here.
+================================================================ */
+app.post("/api/posts/:id/send", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
+  const post = q.postById.get(Number(req.params.id));
+  if (!post) return res.status(404).json({ error: "no post" });
+  const to = q.userByName.get(String(req.body?.to || ""));
+  if (!to) return res.status(404).json({ error: "no such person" });
+  if (to.id === req.user.id) return res.status(400).json({ error: "that's you" });
+  if (isBlocked(req.user.id, to.id)) return res.status(403).json({ error: "unavailable" });
+
+  const author = q.userById.get(post.author_id);
+  const note = (req.body?.note || "").toString().trim().slice(0, 500);
+  const t = threadFor(req.user.id, to.id);
+  const now = Date.now();
+  // The DM carries the link; the recipient's client renders a preview.
+  const body = `${note ? note + "\n" : ""}${baseUrl(req)}/p/${post.id}`;
+  db.prepare(`INSERT INTO dm_messages (thread_id, sender_id, body, created_at) VALUES (?,?,?,?)`)
+    .run(t.id, req.user.id, body, now);
+  db.prepare(`UPDATE dm_threads SET updated_at = ? WHERE id = ?`).run(now, t.id);
+  notify(to.id, req.user.id, "dm", post.id, `sent you ${author ? "@" + author.username + "'s" : "a"} post`);
+  broadcast("dm", { to: to.username, from: req.user.username });
+  res.json({ ok: true });
+});
+
+/* A single piece of work, public, no account. Built for link previews —
+   this is what an Instagram story or a text message unfurls. */
+app.get("/p/:id", (req, res) => {
+  const rows = feedRows({ viewerId: 0, limit: 1, postId: Number(req.params.id) });
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const notFound = `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center">
+<div><h1 style="text-transform:uppercase;font-size:22px">Not found</h1>
+<p style="color:#8A8A8A;font-size:14px">This work isn't public, or it's been removed.</p>
+<a href="/" style="display:inline-block;margin-top:16px;background:#fff;color:#000;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:9px">Enter the lab</a></div></body>`;
+  if (!rows.length) return res.status(404).send(notFound);
+  const p = shapePost(rows[0]);
+  // Only published work is shareable. Chat stays private, by design.
+  if (!p.isWork) return res.status(404).send(notFound);
+
+  const u = q.userByName.get(p.author.username);
+  const accent = /^#[0-9a-f]{6}$/i.test(u?.accent || "") ? u.accent : "#22C55E";
+  const abs = (path) => path ? `${baseUrl(req)}${path}` : null;
+  const img = abs(p.imageUrl);
+  const title = `${p.author.displayName} — TNL LABS`;
+  const desc = p.body ? p.body.slice(0, 150) : `Work by ${p.author.displayName} in the ${p.channel} lab.`;
+  const accepted = p.collaborators.filter((c) => c.status === "accepted");
+
+  res.send(`<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)}</title>
+<meta property="og:type" content="article">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(desc)}">
+${img ? `<meta property="og:image" content="${esc(img)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${esc(img)}">` : `<meta name="twitter:card" content="summary">`}
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(desc)}">
+<meta name="description" content="${esc(desc)}">
+</head>
+<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:24px 18px 60px">
+  <a href="/" style="color:${accent};font-family:monospace;font-size:11px;letter-spacing:.16em;text-decoration:none">TNLLABS &#129514;</a>
+  <a href="/u/${esc(p.author.username)}" style="display:flex;align-items:center;gap:11px;margin:24px 0 16px;text-decoration:none;color:#fff">
+    ${p.author.avatarUrl ? `<img src="${esc(abs(p.author.avatarUrl))}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid ${accent}">`
+      : `<div style="width:42px;height:42px;border-radius:50%;background:#141414;border:2px solid ${accent};display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:12px">${esc(p.author.displayName.slice(0, 2).toUpperCase())}</div>`}
+    <div><div style="font-weight:900;font-size:16px">${esc(p.author.displayName)}</div>
+    <div style="font-family:monospace;font-size:10px;color:#8A8A8A">@${esc(p.author.username)} · ${esc(p.author.role.toUpperCase())}</div></div>
+  </a>
+  ${p.body ? `<p style="font-size:15px;line-height:1.6;color:#D6D2C8;margin:0 0 14px;white-space:pre-wrap">${esc(p.body)}</p>` : ""}
+  ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" style="width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.12);display:block">` : ""}
+  ${p.videoUrl ? `<video src="${esc(p.videoUrl)}" controls playsinline style="width:100%;border-radius:12px;background:#000"></video>` : ""}
+  ${p.beat ? `<div style="background:#141414;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:20px;text-align:center">
+    <div style="font-size:30px;color:${accent}">♫</div>
+    <div style="font-weight:900;margin-top:6px">${esc(p.beat.name || "untitled loop")}</div>
+    <div style="font-family:monospace;font-size:10px;color:#8A8A8A;margin-top:3px">${p.beat.bpm} BPM · MADE IN THE TNL STUDIO</div></div>` : ""}
+  ${accepted.length ? `<div style="font-family:monospace;font-size:10px;color:${accent};letter-spacing:.08em;margin-top:12px">↔ BUILT WITH ${accepted.map((c) => esc((c.display_name || c.username).toUpperCase())).join(" + ")}</div>` : ""}
+  <div style="font-family:monospace;font-size:10px;color:#8A8A8A;margin-top:12px">♥ ${p.likeCount} &nbsp; ↻ ${p.shareCount} &nbsp; #${esc(p.channel)}</div>
+  <a href="/" style="display:block;text-align:center;margin-top:26px;background:${accent};color:#000;text-decoration:none;font-weight:700;padding:14px;border-radius:9px">See what else is being made</a>
+</div></body></html>`);
+});
+
+/* ================================================================
+   TRUST
+   A stranger buying from a stranger needs a reason. Rep says "the
+   community backs this person"; reviews say "they actually shipped it".
+   Both are earned, neither can be self-issued.
+================================================================ */
+function sellerStats(userId) {
+  const sold = db.prepare(
+    `SELECT COUNT(*) n FROM orders WHERE seller_id = ? AND status IN ('paid','shipped','complete')`
+  ).get(userId).n;
+  const r = db.prepare(
+    `SELECT COUNT(*) n, COALESCE(AVG(stars),0) avg FROM reviews WHERE seller_id = ?`
+  ).get(userId);
+  const shipped = db.prepare(
+    `SELECT COUNT(*) n FROM orders WHERE seller_id = ? AND status IN ('shipped','complete')`
+  ).get(userId).n;
+  return {
+    sold,
+    reviews: r.n,
+    rating: r.n ? Math.round(r.avg * 10) / 10 : null,
+    shipRate: sold ? Math.round((shipped / sold) * 100) : null,
+  };
+}
+
+app.get("/api/sellers/:username", maybeAuth, (req, res) => {
+  const u = q.userByName.get(req.params.username);
+  if (!u) return res.status(404).json({ error: "no such seller" });
+  const rows = db.prepare(`
+    SELECT r.stars, r.body, r.created_at, b.username, b.display_name, b.avatar_url,
+           l.title, l.images
+    FROM reviews r
+    JOIN users b ON b.id = r.buyer_id
+    JOIN orders o ON o.id = r.order_id
+    JOIN listings l ON l.id = o.listing_id
+    WHERE r.seller_id = ? ORDER BY r.created_at DESC LIMIT 30`).all(u.id);
+  res.json({
+    seller: {
+      username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url || "",
+      rep: u.rep, level: levelFor(u.rep).id, levelName: levelFor(u.rep).name,
+      fee: feeForRep(u.rep), payouts: !!u.stripe_ready, joined: u.created_at,
+    },
+    stats: sellerStats(u.id),
+    reviews: rows.map((r) => ({
+      stars: r.stars, body: r.body, createdAt: r.created_at,
+      item: r.title,
+      itemImage: (() => { try { return JSON.parse(r.images || "[]")[0] || null; } catch { return null; } })(),
+      buyer: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "" },
+    })),
+  });
+});
+
+/* Only a buyer, only after they confirmed delivery, only once. That's what
+   makes the number mean anything. */
+app.post("/api/orders/:id/review", auth, verified, (req, res) => {
+  const o = db.prepare(`SELECT * FROM orders WHERE id = ?`).get(Number(req.params.id));
+  if (!o) return res.status(404).json({ error: "no order" });
+  if (o.buyer_id !== req.user.id) return res.status(403).json({ error: "not your order" });
+  if (o.status !== "complete") return res.status(400).json({ error: "confirm delivery first" });
+  if (db.prepare(`SELECT 1 FROM reviews WHERE order_id = ?`).get(o.id)) {
+    return res.status(409).json({ error: "you already reviewed this" });
+  }
+  const stars = Math.round(Number(req.body?.stars));
+  if (!(stars >= 1 && stars <= 5)) return res.status(400).json({ error: "1 to 5 stars" });
+  const body = (req.body?.body || "").toString().trim().slice(0, 500);
+  db.prepare(`INSERT INTO reviews (order_id, seller_id, buyer_id, stars, body, created_at) VALUES (?,?,?,?,?,?)`)
+    .run(o.id, o.seller_id, req.user.id, stars, body, Date.now());
+  notify(o.seller_id, req.user.id, "review", null, `left you ${stars}★${body ? ": " + body.slice(0, 60) : ""}`);
+  res.json({ ok: true });
+});
+
+/* Liking an item did nothing but increment a counter — there was nowhere
+   to SEE what you saved. Every marketplace has this. */
+app.get("/api/market/saved", auth, (req, res) => {
+  const rows = db.prepare(`${LISTING_SELECT}
+    JOIN listing_likes ll ON ll.listing_id = l.id
+    WHERE ll.user_id = ? AND l.status != 'removed'
+    ORDER BY ll.created_at DESC LIMIT 60`).all(req.user.id);
+  res.json({ listings: shapeListings(rows, req.user.id) });
+});
+
+app.get("/api/market/recent", auth, (req, res) => {
+  const rows = db.prepare(`${LISTING_SELECT}
+    JOIN listing_views v ON v.listing_id = l.id
+    WHERE v.user_id = ? AND l.status = 'active'
+    ORDER BY v.viewed_at DESC LIMIT 12`).all(req.user.id);
+  res.json({ listings: shapeListings(rows, req.user.id) });
 });
 
 /* ================================================================
@@ -1728,7 +2295,7 @@ app.delete("/api/beats/:id", auth, (req, res) => {
 app.get("/api/feed/showroom", maybeAuth, (req, res) => {
   const rows = db.prepare(`
     SELECT p.*, u.username AS author_username, u.display_name AS author_name,
-           u.role AS author_role, u.avatar_url AS author_avatar, u.rep AS author_rep,
+           u.role AS author_role, u.avatar_url AS author_avatar, u.accent AS author_accent, u.rep AS author_rep,
       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
       (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) AS share_count,
       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = ?) AS liked_by_me,
@@ -1778,7 +2345,7 @@ app.post("/api/users/:username/follow", auth, (req, res) => {
 
 /* Edit your own profile — bio, link, display name, role. */
 app.patch("/api/me", auth, (req, res) => {
-  const { displayName, bio, link, roles } = req.body || {};
+  const { displayName, bio, link, roles, accent } = req.body || {};
   let roleList = null;
   if (Array.isArray(roles)) {
     roleList = roles.filter((r) => typeof r === "string" && r.trim()).slice(0, 5).map((r) => r.slice(0, 40));
@@ -1789,9 +2356,10 @@ app.patch("/api/me", auth, (req, res) => {
     link: (link ?? req.user.link).toString().slice(0, 200).trim(),
     roles: roleList ?? JSON.parse(req.user.roles || "[]"),
   };
-  db.prepare(`UPDATE users SET display_name = ?, bio = ?, link = ?, roles = ?, role = ? WHERE id = ?`)
+  const nextAccent = (accent && ACCENTS[accent]) ? accent : (req.user.accent || "lab");
+  db.prepare(`UPDATE users SET display_name = ?, bio = ?, link = ?, roles = ?, role = ?, accent = ? WHERE id = ?`)
     .run(next.displayName, next.bio, next.link, JSON.stringify(next.roles),
-         next.roles[0] || req.user.role, req.user.id);
+         next.roles[0] || req.user.role, nextAccent, req.user.id);
   res.json({ user: publicUser(q.userById.get(req.user.id)) });
 });
 
@@ -1805,7 +2373,7 @@ app.get("/api/users/:username", maybeAuth, (req, res) => {
   // work they collaborated ON (someone else's post they accepted)
   const collabRows = db.prepare(`
     SELECT p.*, au.username AS author_username, au.display_name AS author_name,
-           au.role AS author_role, au.avatar_url AS author_avatar, au.rep AS author_rep,
+           au.role AS author_role, au.avatar_url AS author_avatar, au.accent AS author_accent, au.rep AS author_rep,
       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
       (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) AS share_count,
       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = ?) AS liked_by_me
@@ -1840,7 +2408,7 @@ app.get("/api/feed/following", auth, (req, res) => {
   const placeholders = ids.map(() => "?").join(",");
   const sql = `
     SELECT p.*, u.username AS author_username, u.display_name AS author_name, u.role AS author_role,
-      u.avatar_url AS author_avatar, u.rep AS author_rep,
+      u.avatar_url AS author_avatar, u.accent AS author_accent, u.rep AS author_rep,
       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
       (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) AS share_count,
       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = ?) AS liked_by_me
@@ -1852,7 +2420,7 @@ app.get("/api/feed/following", auth, (req, res) => {
 });
 
 /* ---- meta ---- */
-app.get("/api/levels", (_req, res) => res.json({ levels: LEVELS }));
+app.get("/api/levels", (_req, res) => res.json({ levels: LEVELS, accents: ACCENTS }));
 app.get("/api/health", (_req, res) => res.json({ ok: true, time: Date.now() }));
 
 const PORT = process.env.PORT || 8787;
