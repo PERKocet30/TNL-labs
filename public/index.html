@@ -12,6 +12,9 @@
 <link rel="apple-touch-icon" href="/icon-512.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@supports not (color: color-mix(in srgb, red 50%, transparent)) {
+  /* older Safari: no tint, but the accent still applies to text/borders */
+}
 :root{--bg:#000;--card:#0A0A0A;--el:#141414;--line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.28);
 --tx:#fff;--dim:#8A8A8A;--green:#22C55E;}
 *{box-sizing:border-box;margin:0}
@@ -98,7 +101,7 @@ h1,h2,h3{text-transform:uppercase;letter-spacing:-.01em}
 .post-acts{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}
 .act{display:inline-flex;align-items:center;gap:5px;background:var(--el);border:1px solid var(--line);color:var(--dim);border-radius:999px;padding:3px 11px;font-size:11px;font-family:'IBM Plex Mono',monospace}
 .act:hover{border-color:var(--green);color:var(--green)}
-.act.on{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.12)}
+.act.on{border-color:var(--green);color:var(--green);background:color-mix(in srgb, var(--green) 12%, transparent)}
 .collab-row{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
 .ctag{font-family:'IBM Plex Mono',monospace;font-size:9px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--dim)}
 .ctag.acc{border-color:var(--green);color:var(--green)}
@@ -195,11 +198,11 @@ textarea.in{resize:vertical;line-height:1.5}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:90;display:flex;align-items:center;justify-content:center;padding:16px;cursor:zoom-out}
 .lightbox img{max-width:100%;max-height:100%;object-fit:contain}
 /* verification + publish */
-.verifybar{display:flex;align-items:center;gap:9px;background:rgba(34,197,94,.1);border-bottom:1px solid rgba(34,197,94,.3);padding:9px 15px;font-size:12px;color:#D6D2C8;flex-wrap:wrap}
+.verifybar{display:flex;align-items:center;gap:9px;background:color-mix(in srgb, var(--green) 10%, transparent);border-bottom:1px solid color-mix(in srgb, var(--green) 30%, transparent);padding:9px 15px;font-size:12px;color:#D6D2C8;flex-wrap:wrap}
 .verifybar b{color:var(--tx)}
 /* guest mode */
 .gatetop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
-.gatewhy{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:9px;padding:10px 12px;font-size:12.5px;line-height:1.55;color:#D6D2C8;margin:14px 0 -4px}
+.gatewhy{background:color-mix(in srgb, var(--green) 10%, transparent);border:1px solid color-mix(in srgb, var(--green) 30%, transparent);border-radius:9px;padding:10px 12px;font-size:12.5px;line-height:1.55;color:#D6D2C8;margin:14px 0 -4px}
 .wall{padding:44px 22px 60px;max-width:520px;margin:0 auto;text-align:center}
 .wall-ic{font-size:36px;margin-bottom:14px}
 .wall-h{font-size:clamp(22px,5vw,30px);font-weight:900;margin:10px 0 12px;line-height:1.05}
@@ -321,7 +324,7 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:#000}
 .badge{position:absolute;top:-5px;right:-5px;background:var(--green);color:#000;font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
 .nrow{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer;position:relative}
 .nrow:hover{background:rgba(255,255,255,.03)}
-.nrow.unread{background:rgba(34,197,94,.06)}
+.nrow.unread{background:color-mix(in srgb, var(--green) 6%, transparent)}
 .nbody{flex:1;min-width:0;font-size:13px;line-height:1.4}
 .nbody b{font-weight:900}
 .nsnip{color:var(--dim);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
@@ -393,12 +396,12 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:#000}
 .dseller:hover{background:#1c1c1c}
 .dactions{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
 .dactions .btn{flex:1;justify-content:center;min-width:110px}
-.acceptbar{margin-top:12px;background:rgba(34,197,94,.12);border:1px solid var(--green);color:var(--green);border-radius:9px;padding:10px;font-size:12px;font-weight:700}
+.acceptbar{margin-top:12px;background:color-mix(in srgb, var(--green) 12%, transparent);border:1px solid var(--green);color:var(--green);border-radius:9px;padding:10px;font-size:12px;font-weight:700}
 .orow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .obtns{display:flex;gap:6px}
 .btn.sm{padding:6px 11px;font-size:11px}
 .sellform{padding:0 20px 40px;max-width:560px}
-.paywall{margin:0 20px 30px;max-width:460px;background:linear-gradient(160deg,rgba(34,197,94,.12),transparent);border:1px solid rgba(34,197,94,.4);border-radius:14px;padding:24px;text-align:center}
+.paywall{margin:0 20px 30px;max-width:460px;background:linear-gradient(160deg,color-mix(in srgb, var(--green) 12%, transparent),transparent);border:1px solid color-mix(in srgb, var(--green) 40%, transparent);border-radius:14px;padding:24px;text-align:center}
 .paywall-ic{width:44px;height:44px;border-radius:50%;background:var(--green);color:#000;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;margin:0 auto 14px}
 .paywall-h{font-size:19px;font-weight:900;margin-bottom:10px}
 .paywall-p{font-size:13px;line-height:1.65;color:var(--dim);margin-bottom:14px}
@@ -424,9 +427,9 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:#000}
 .st-complete{color:var(--dim)}
 .ordaddr{margin-top:5px;font-size:9px;line-height:1.5}
 /* payouts */
-.paybar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(34,197,94,.09);border:1px solid rgba(34,197,94,.35);border-radius:11px;padding:12px 14px;margin-bottom:16px;flex-wrap:wrap}
+.paybar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:color-mix(in srgb, var(--green) 9%, transparent);border:1px solid color-mix(in srgb, var(--green) 35%, transparent);border-radius:11px;padding:12px 14px;margin-bottom:16px;flex-wrap:wrap}
 .paybar.off{background:var(--el);border-color:var(--line)}
-.paybar.ok{background:rgba(34,197,94,.06)}
+.paybar.ok{background:color-mix(in srgb, var(--green) 6%, transparent)}
 .paybar b{font-size:13px}
 .paybar .mono{margin-top:3px;line-height:1.5;display:block}
 /* studio */
@@ -458,7 +461,7 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:#000}
 .st-v.on{background:var(--tx);color:#000;border-color:var(--tx)}
 .st-tracks{display:flex;gap:5px;overflow-x:auto;padding:10px 0}
 .st-t{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:var(--el);color:var(--dim)}
-.st-t.on{border-color:var(--green);color:var(--tx);background:rgba(34,197,94,.1)}
+.st-t.on{border-color:var(--green);color:var(--tx);background:color-mix(in srgb, var(--green) 10%, transparent)}
 .st-t.dim{opacity:.35}
 .st-tn{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em}
 .st-tk{font-size:8px;opacity:.6}
@@ -569,7 +572,7 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:#000}
 .sr-img{background:var(--el)}
 img.post-img,img.sr-img{height:auto}
 /* commission rate */
-.ratebar{display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,rgba(34,197,94,.12),transparent);border:1px solid rgba(34,197,94,.3);border-radius:11px;padding:13px 14px;margin-bottom:10px;flex-wrap:wrap}
+.ratebar{display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,color-mix(in srgb, var(--green) 12%, transparent),transparent);border:1px solid color-mix(in srgb, var(--green) 30%, transparent);border-radius:11px;padding:13px 14px;margin-bottom:10px;flex-wrap:wrap}
 .ratenow{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
 .ratenow b{font-size:26px;font-weight:900;color:var(--green);line-height:1}
 .ratenow span{margin-top:3px;font-size:7px;letter-spacing:.1em}
@@ -591,7 +594,7 @@ img.post-img,img.sr-img{height:auto}
 /* market: trust + filters + similar */
 .trust{font-size:9px;letter-spacing:.06em;margin-top:3px;color:var(--dim)}
 .star{color:#FBBF24}
-.protect{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.28);border-radius:8px;padding:8px 10px;margin-top:10px;font-size:8.5px;letter-spacing:.06em;color:var(--green);line-height:1.5}
+.protect{background:color-mix(in srgb, var(--green) 8%, transparent);border:1px solid color-mix(in srgb, var(--green) 28%, transparent);border-radius:8px;padding:8px 10px;margin-top:10px;font-size:8.5px;letter-spacing:.06em;color:var(--green);line-height:1.5}
 .clearf{background:none;border:none;color:var(--dim);font-size:9px;letter-spacing:.08em;padding:4px 0;text-align:left}
 .clearf:hover{color:var(--red)}
 .simwrap{margin-top:30px;border-top:1px solid var(--line);padding-top:18px}
@@ -616,6 +619,18 @@ img.post-img,img.sr-img{height:auto}
   .backb{display:inline-flex!important}
 }
 .backb{display:none;background:none;border:none;color:var(--tx);font-size:16px;padding:0 6px 0 0}
+
+/* ── iOS: any input under 16px triggers an auto-zoom that never reverses.
+   That's what makes the whole app look blown up after you tap a field.
+   16px is the floor. Disabling zoom via the viewport tag would "fix" it
+   too, but that breaks pinch-zoom for anyone who needs to magnify — not a
+   trade worth making. ── */
+input, textarea, select, .in, .search { font-size: 16px !important; }
+.cform .in { font-size: 16px !important; }
+.st-bar2 select, .knob select, .sel { font-size: 16px !important; }
+/* keep them from looking oversized now they're bigger */
+.in { padding: 11px 13px; }
+.cform .in { padding: 9px 12px; }
 </style>
 </head>
 <body>
@@ -822,6 +837,10 @@ const api={
 let TAB="showroom", LAB=LABS[0], CH=LABS[0].channels[0], ROOMOPEN=false, POSTS=[], PROFILE=null, TOASTT=null;
 let PTAB="work", EDITING=false, EDITROLE="", PENDIMG=null, LIGHTBOX=null, VERIFYURL=null;
 let EBAR=0, OPENTRACK="", PITCHSEL=0, DRAFTS=null;
+/* Overwritten by /api/levels on boot. Declared here with a sane default so
+   that a failed call — or an offline start — can't take the app down. */
+let ACCENTS={lab:{name:"Lab",hex:"#22C55E"}};
+let EDITACCENT=null;
 let PENDVID=null, PENDKIND=null, ASWORK=false, EDITID=null, EDITROLES=[];
 let NOTIFS=null, UNREAD=0, DMS=null, DMUNREAD=0, DMOPEN=null, DMDATA=null, SEARCHQ="", SEARCHROLE="", SEARCHRES=null;
 let OPENCOMMENTS=null, COMMENTS=[], CEDIT=null;
