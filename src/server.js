@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { writeFileSync, mkdirSync, existsSync, createWriteStream, rename, rm, statSync, readdirSync, rmSync } from "node:fs";
 import { db, awardRep, revokeRep, levelFor, LEVELS, DATA_DIR, notify, ensureAdmin, feeForRep, FEE_BY_LEVEL, ACCENTS, accentHex,
-         setting, settingBool, setSetting, allSettings, SETTING_DEFAULTS } from "./db.js";
+         setting, settingBool, setSetting, allSettings, SETTING_DEFAULTS, logError, backupTo } from "./db.js";
 import { sendVerifyEmail, sendResetEmail, MAIL_ENABLED, MAIL_TEST_SENDER } from "./mail.js";
 import { createCheckout, verifySession, PAYMENTS_ENABLED, platformFee,
          createSellerAccount, onboardingLink, accountStatus, loginLink } from "./pay.js";
@@ -1402,6 +1402,7 @@ app.post("/api/admin/test-email", auth, admin, rateLimit({ max: 10, windowMs: 60
   }
   const started = Date.now();
   const out = await sendVerifyEmail(to, req.user.display_name, `${baseUrl(req)}/?test=1`);
+  if (!out.sent) logError("mail", out.error || "send failed", out.raw || "", "/api/admin/test-email", req.user.username);
   res.json({
     ok: out.sent,
     ms: Date.now() - started,
@@ -1434,6 +1435,89 @@ app.get("/api/admin/mail-log", auth, admin, (req, res) => {
   });
 });
 
+/* ================================================================
+   BACKUPS
+   The database IS the business. Six years of relationships live in it.
+   Railway volumes are durable, not immortal — and there is no undo for a
+   bad migration, a wrong DELETE, or a platform incident.
+
+   Daily, automatic, keeps 7. Plus a button, because a backup you can't
+   download is a backup you don't have.
+================================================================ */
+const BACKUP_DIR = join(DATA_DIR, "backups");
+try { mkdirSync(BACKUP_DIR, { recursive: true }); } catch {}
+
+function makeBackup(tag = "auto") {
+  const name = `tnl-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}-${tag}.db`;
+  const path = join(BACKUP_DIR, name);
+  backupTo(path);
+  // keep 7 — enough to notice something went wrong last week
+  try {
+    const files = readdirSync(BACKUP_DIR).filter((f) => f.endsWith(".db")).sort().reverse();
+    for (const old of files.slice(7)) rmSync(join(BACKUP_DIR, old));
+  } catch {}
+  return { name, path, bytes: statSync(path).size };
+}
+
+app.get("/api/admin/backups", auth, admin, (req, res) => {
+  let files = [];
+  try {
+    files = readdirSync(BACKUP_DIR).filter((f) => f.endsWith(".db")).sort().reverse().map((f) => {
+      const st = statSync(join(BACKUP_DIR, f));
+      return { name: f, bytes: st.size, at: st.mtimeMs };
+    });
+  } catch {}
+  res.json({ backups: files, dir: BACKUP_DIR });
+});
+
+app.post("/api/admin/backups", auth, admin, (req, res) => {
+  try { res.json({ ok: true, ...makeBackup("manual") }); }
+  catch (e) { logError("server", "backup failed", e.message); res.status(500).json({ error: e.message }); }
+});
+
+/* Download it. A backup sitting on the same volume as the database it's
+   backing up protects you from your own mistakes, not from losing the
+   volume. Get a copy off the box. */
+app.get("/api/admin/backups/:name", auth, admin, (req, res) => {
+  const name = String(req.params.name);
+  if (!/^tnl-[\w-]+\.db$/.test(name)) return res.status(400).json({ error: "bad name" });
+  const path = join(BACKUP_DIR, name);
+  if (!existsSync(path)) return res.status(404).json({ error: "gone" });
+  res.download(path, name);
+});
+
+app.delete("/api/admin/backups/:name", auth, admin, (req, res) => {
+  const name = String(req.params.name);
+  if (!/^tnl-[\w-]+\.db$/.test(name)) return res.status(400).json({ error: "bad name" });
+  try { rmSync(join(BACKUP_DIR, name)); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+/* ---- what's actually broken ---- */
+app.get("/api/admin/errors", auth, admin, (req, res) => {
+  const rows = db.prepare(`SELECT * FROM error_log ORDER BY created_at DESC LIMIT 100`).all();
+  const since = Date.now() - 86400000;
+  res.json({
+    errors: rows,
+    last24h: db.prepare(`SELECT COUNT(*) n FROM error_log WHERE created_at > ?`).get(since).n,
+    byKind: db.prepare(`SELECT kind, COUNT(*) n FROM error_log WHERE created_at > ? GROUP BY kind`).all(since),
+  });
+});
+
+app.delete("/api/admin/errors", auth, admin, (req, res) => {
+  db.prepare(`DELETE FROM error_log`).run();
+  res.json({ ok: true });
+});
+
+/* The app reports its own breakage. Without this you only hear about bugs
+   loud enough that someone bothers to message you — which is a small and
+   badly-biased sample. */
+app.post("/api/client-error", maybeAuth, rateLimit({ max: 20, windowMs: 60000 }), (req, res) => {
+  const { message, detail, path } = req.body || {};
+  if (message) logError("client", message, detail || "", path || "", req.user?.username || "");
+  res.json({ ok: true });
+});
+
 /* ---- settings. Change the app without a deploy. ---- */
 app.get("/api/admin/settings", auth, admin, (req, res) => {
   res.json({ settings: allSettings(), defaults: SETTING_DEFAULTS });
@@ -1462,7 +1546,13 @@ const CONDITIONS = ["Deadstock", "Like New", "Good", "Worn", "Distressed"];
    search and the fee ladder for free — no parallel system to maintain. What
    differs: they deliver instantly, they can be free, and there's nothing to
    ship. */
-const LOOP_CATEGORIES = ["Loop", "Drum Kit", "One Shot", "Sample Pack", "Acapella", "Stem"];
+/* What producers actually sell, in their words. Deliberately different from
+   the studio's SLOTS: a slot is where one sound goes on a track, this is
+   what someone puts a price on. "Drum Kit" is 40 slots in one listing. */
+const LOOP_CATEGORIES = [
+  "Loop", "Drum Kit", "One Shot", "Sample Pack",
+  "808 Pack", "Melody Loop", "Acapella", "Stem", "MIDI", "Preset",
+];
 const KEYS = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B",
   "Cm","C#m","Dm","D#m","Em","Fm","F#m","Gm","G#m","Am","A#m","Bm"];
 
@@ -2246,11 +2336,40 @@ app.get("/api/market/recent", auth, (req, res) => {
    why a producer with a kit they like can't use it. This closes that:
    upload once, drop onto any track, in any project.
 ================================================================ */
-const SLOTS = ["kick", "snare", "hat", "clap", "perc", "bass", "other"];
+/* The categories a producer's kit folder actually has.
+
+   Seven slots meant half a kit landed in "other", which is the same as
+   having no categories at all. These are the folders people genuinely
+   organise by — an open hat is a different sound from a closed one, and a
+   riser is not a percussion hit.
+
+   Order matters: this is the order they're shown in, and it runs roughly
+   drums → tops → tonal → everything else, which is how a producer scans. */
+const SLOTS = [
+  "kick", "808", "snare", "clap", "snap",
+  "hat", "openhat", "perc", "rim", "tom", "crash",
+  "bass", "melody", "vocal", "fx", "other",
+];
+/* What to call them on screen. "openhat" is a key, "Open Hat" is a label. */
+const SLOT_LABELS = {
+  kick: "Kick", 808: "808", snare: "Snare", clap: "Clap", snap: "Snap",
+  hat: "Hat", openhat: "Open Hat", perc: "Perc", rim: "Rim", tom: "Tom",
+  crash: "Crash", bass: "Bass", melody: "Melody", vocal: "Vocal", fx: "FX",
+  other: "Other",
+};
+/* Which studio track a slot naturally lands on. A producer dropping an
+   open hat expects it on the hat track, not a lecture about it. */
+const SLOT_TRACK = {
+  kick: "kick", 808: "bass", snare: "snare", clap: "clap", snap: "clap",
+  hat: "hat", openhat: "hat", perc: "perc", rim: "perc", tom: "perc",
+  crash: "perc", bass: "bass", melody: "keys", vocal: "perc", fx: "perc",
+  other: "perc",
+};
 
 app.get("/api/samples", auth, (req, res) => {
   const rows = db.prepare(
-    `SELECT id, name, url, kit, slot, bytes, created_at FROM samples WHERE user_id = ? ORDER BY kit, slot, created_at DESC`
+    `SELECT id, name, url, kit, slot, bytes, shared, uses, created_at
+     FROM samples WHERE user_id = ? ORDER BY kit, slot, created_at DESC`
   ).all(req.user.id);
   const kits = {};
   for (const r of rows) {
@@ -2258,7 +2377,12 @@ app.get("/api/samples", auth, (req, res) => {
     (kits[k] = kits[k] || []).push(r);
   }
   const used = rows.reduce((s, r) => s + r.bytes, 0);
-  res.json({ samples: rows, kits, count: rows.length, bytes: used, slots: SLOTS });
+  res.json({
+    samples: rows.map((r) => ({ ...r, shared: !!r.shared })),
+    kits, count: rows.length, bytes: used, slots: SLOTS,
+    shared: rows.filter((r) => r.shared).length,
+    totalUses: rows.reduce((s, r) => s + (r.uses || 0), 0),
+  });
 });
 
 app.post("/api/samples", auth, verified, rateLimit({ max: 60, windowMs: 3600000, key: "user" }), (req, res) => {
@@ -2276,6 +2400,113 @@ app.post("/api/samples", auth, verified, rateLimit({ max: 60, windowMs: 3600000,
     (kit || "").toString().slice(0, 40), SLOTS.includes(slot) ? slot : "other",
     Number(bytes) || 0, Date.now());
   res.json({ id: Number(info.lastInsertRowid) });
+});
+
+/* The browser sends the numbers it measured while decoding. Nothing here
+   ever sees the audio — by design, not by accident. */
+app.post("/api/samples/:id/shape", auth, (req, res) => {
+  const smp = db.prepare(`SELECT * FROM samples WHERE id = ? AND user_id = ?`)
+    .get(Number(req.params.id), req.user.id);
+  if (!smp) return res.status(404).json({ error: "not yours" });
+  const { fundamental, decayMs, peakDb, rmsDb, centroid, durationMs } = req.body || {};
+  const num = (x, lo, hi) => {
+    const n = Number(x);
+    return Number.isFinite(n) && n >= lo && n <= hi ? n : null;
+  };
+  db.prepare(`
+    INSERT INTO sample_shape (sample_id, slot, fundamental, decay_ms, peak_db, rms_db, centroid, duration_ms, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?)
+    ON CONFLICT(sample_id) DO UPDATE SET
+      fundamental=excluded.fundamental, decay_ms=excluded.decay_ms, peak_db=excluded.peak_db,
+      rms_db=excluded.rms_db, centroid=excluded.centroid, duration_ms=excluded.duration_ms
+  `).run(smp.id, smp.slot, num(fundamental, 10, 20000), num(decayMs, 0, 60000),
+    num(peakDb, -120, 6), num(rmsDb, -120, 6), num(centroid, 10, 22050),
+    num(durationMs, 0, 600000), Date.now());
+  res.json({ ok: true });
+});
+
+/* ================================================================
+   THE LIBRARY
+   Sounds producers CHOSE to give the network. Not a scrape of what people
+   uploaded — a contribution they made, credited to them, that earns them
+   standing when others build with it.
+
+   That distinction is the whole thing. Same library either way; one version
+   is collaboration and one is theft.
+================================================================ */
+app.get("/api/library", auth, (req, res) => {
+  const { slot, q: term } = req.query;
+  const where = [`s.shared = 1`];
+  const params = [];
+  if (slot && SLOTS.includes(slot)) { where.push(`s.slot = ?`); params.push(slot); }
+  if (term) { where.push(`(s.name LIKE ? OR u.username LIKE ?)`); params.push(`%${term}%`, `%${term}%`); }
+
+  const rows = db.prepare(`
+    SELECT s.id, s.name, s.url, s.slot, s.bytes, s.uses, s.created_at,
+           u.username, u.display_name, u.avatar_url, u.rep,
+           sh.fundamental, sh.decay_ms, sh.centroid,
+           (SELECT 1 FROM sample_uses su WHERE su.sample_id = s.id AND su.user_id = ?) AS mine
+    FROM samples s
+    JOIN users u ON u.id = s.user_id
+    LEFT JOIN sample_shape sh ON sh.sample_id = s.id
+    WHERE ${where.join(" AND ")}
+    ORDER BY s.uses DESC, s.created_at DESC LIMIT 120`).all(req.user.id, ...params);
+
+  const bySlot = {};
+  for (const r of rows) (bySlot[r.slot || "other"] = bySlot[r.slot || "other"] || []).push({
+    id: r.id, name: r.name, url: r.url, slot: r.slot, uses: r.uses,
+    fundamental: r.fundamental, decayMs: r.decay_ms,
+    by: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", rep: r.rep },
+    usedByMe: !!r.mine,
+  });
+  res.json({
+    slots: SLOTS, slotLabels: SLOT_LABELS, slotTrack: SLOT_TRACK,
+    bySlot,
+    count: rows.length,
+    contributors: db.prepare(`SELECT COUNT(DISTINCT user_id) n FROM samples WHERE shared = 1`).get().n,
+  });
+});
+
+/* Give a sound to the network, or take it back. Theirs either way. */
+app.post("/api/samples/:id/share", auth, verified, (req, res) => {
+  const s = db.prepare(`SELECT * FROM samples WHERE id = ? AND user_id = ?`).get(Number(req.params.id), req.user.id);
+  if (!s) return res.status(404).json({ error: "not yours" });
+  const on = !!req.body?.shared;
+  db.prepare(`UPDATE samples SET shared = ? WHERE id = ?`).run(on ? 1 : 0, s.id);
+  studioEvent(req.user.id, on ? "sound_shared" : "sound_unshared", { voice: s.slot });
+  res.json({ ok: true, shared: on });
+});
+
+/* Someone built with your sound. That's validation — the purest kind, since
+   they had to actually want it. Rep, once per person per sound: using the
+   same kick in ten beats is one endorsement, not ten. */
+app.post("/api/library/:id/use", auth, verified, rateLimit({ max: 100, windowMs: 3600000, key: "user" }), (req, res) => {
+  const s = db.prepare(`SELECT * FROM samples WHERE id = ? AND shared = 1`).get(Number(req.params.id));
+  if (!s) return res.status(404).json({ error: "not in the library" });
+  if (s.user_id === req.user.id) return res.json({ ok: true, own: true }); // no self-award, ever
+
+  const first = !db.prepare(`SELECT 1 FROM sample_uses WHERE sample_id = ? AND user_id = ?`).get(s.id, req.user.id);
+  if (first) {
+    db.prepare(`INSERT INTO sample_uses (sample_id, user_id, created_at) VALUES (?,?,?)`).run(s.id, req.user.id, Date.now());
+    db.prepare(`UPDATE samples SET uses = uses + 1 WHERE id = ?`).run(s.id);
+    awardRep(s.user_id, "sound_used", null);
+    notify(s.user_id, req.user.id, "sound", null, `is building with your "${s.name}"`);
+  }
+  res.json({ ok: true, url: s.url, name: s.name });
+});
+
+/* Who's building with your sounds. A producer wants the names, not a count. */
+app.get("/api/samples/:id/uses", auth, (req, res) => {
+  const s = db.prepare(`SELECT * FROM samples WHERE id = ? AND user_id = ?`).get(Number(req.params.id), req.user.id);
+  if (!s) return res.status(404).json({ error: "not yours" });
+  const rows = db.prepare(`
+    SELECT u.username, u.display_name, u.avatar_url, u.role, su.created_at
+    FROM sample_uses su JOIN users u ON u.id = su.user_id
+    WHERE su.sample_id = ? ORDER BY su.created_at DESC LIMIT 50`).all(s.id);
+  res.json({ uses: rows.map((r) => ({
+    username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "",
+    role: r.role, at: r.created_at,
+  })) });
 });
 
 app.patch("/api/samples/:id", auth, (req, res) => {
@@ -2665,6 +2896,12 @@ app.get("/api/levels", (_req, res) => res.json({
     tagline: setting("tagline"),
     announcement: setting("announcement"),
     signupsOpen: settingBool("signupsOpen"),
+    distro: settingBool("distroOn") ? {
+      level: Number(setting("distroLevel")) || 4,
+      levelName: (LEVELS.find((l) => l.id === (Number(setting("distroLevel")) || 4)) || {}).name || "Core",
+      at: (LEVELS.find((l) => l.id === (Number(setting("distroLevel")) || 4)) || {}).at ?? 280,
+      blurb: setting("distroBlurb"),
+    } : null,
     guestAccess: settingBool("guestAccess"),
     marketOpen: settingBool("marketOpen"),
     studioOpen: settingBool("studioOpen"),
@@ -2674,6 +2911,25 @@ app.get("/api/levels", (_req, res) => res.json({
 app.get("/api/health", (_req, res) => res.json({ ok: true, time: Date.now() }));
 
 const PORT = process.env.PORT || 8787;
+/* Anything that escapes a route lands here. Previously it 500'd silently
+   and you'd never know it happened. */
+app.use((err, req, res, _next) => {
+  logError("server", err.message || "unknown", (err.stack || "").slice(0, 1500), req.path, req.user?.username || "");
+  console.error("[500]", req.method, req.path, "—", err.message);
+  if (!res.headersSent) res.status(500).json({ error: "Something broke on our end. It's been logged." });
+});
+
+/* Daily snapshot. Runs an hour after boot, then every 24h — deliberately
+   not at boot, because a crash-loop would otherwise spend your disk. */
+setTimeout(() => {
+  try { const b = makeBackup("auto"); console.log(`[backup] ${b.name} (${(b.bytes/1024).toFixed(0)}KB)`); }
+  catch (e) { console.error("[backup] failed:", e.message); }
+  setInterval(() => {
+    try { const b = makeBackup("auto"); console.log(`[backup] ${b.name} (${(b.bytes/1024).toFixed(0)}KB)`); }
+    catch (e) { logError("server", "auto backup failed", e.message); }
+  }, 24 * 3600 * 1000);
+}, 3600 * 1000);
+
 app.listen(PORT, () => {
   /* A deploy log that only says "started" tells you nothing. This says what
      is actually switched on — so you can see at a glance whether the thing

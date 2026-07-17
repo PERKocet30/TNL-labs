@@ -282,6 +282,20 @@ CREATE TABLE IF NOT EXISTS samples (
 );
 CREATE INDEX IF NOT EXISTS idx_samples_user ON samples(user_id, created_at);
 
+/* Who used whose sound. This is what makes the library a network instead of
+   a folder: a producer can see that 12 people built with their kick, and
+   those 12 people know whose kick it was.
+
+   One row per person per sample — using the same kick in ten beats is one
+   endorsement, not ten. Same rule as likes. */
+CREATE TABLE IF NOT EXISTS sample_uses (
+  sample_id  INTEGER NOT NULL REFERENCES samples(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (sample_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_uses_sample ON sample_uses(sample_id);
+
 /* Downloads of free loops. Not for rep — it's farmable — but a producer
    deserves to know their loop got used, and it's the seed of a collab. */
 CREATE TABLE IF NOT EXISTS loop_downloads (
@@ -301,6 +315,73 @@ CREATE TABLE IF NOT EXISTS settings (
   updated_at INTEGER NOT NULL,
   updated_by INTEGER
 );
+
+/* Right now you find out something's broken when a member tells you — which
+   means most breakage is invisible and you only hear about the loud ones.
+   This is a black box recorder: the last N failures, what request caused
+   them, and who hit it. */
+CREATE TABLE IF NOT EXISTS error_log (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind       TEXT NOT NULL,            -- server | client | mail | pay
+  message    TEXT NOT NULL,
+  detail     TEXT NOT NULL DEFAULT '',
+  path       TEXT NOT NULL DEFAULT '',
+  username   TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_errors_time ON error_log(created_at);
+
+/* What the studio learns from being used.
+
+   METADATA ONLY. Never the audio, never any analysis of what someone's
+   music sounds like — a producer's kit is their work, and they didn't
+   agree to it being mined. What's fair game is HOW the tool gets used:
+   which built-in sounds people throw away, what formats they bring, where
+   they give up.
+
+   The most valuable row in here is the "voice_replaced" event: when
+   someone swaps my kick
+   for their own, that's a producer telling me my kick is bad by voting
+   with their own file. No survey gets you that. */
+CREATE TABLE IF NOT EXISTS studio_events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  kind       TEXT NOT NULL,        -- open|play|save|publish|export|sample_upload|voice_replaced|abandon
+  voice      TEXT NOT NULL DEFAULT '',   -- which built-in voice, when relevant
+  fmt        TEXT NOT NULL DEFAULT '',   -- wav|mp3|aiff|m4a…
+  bytes      INTEGER NOT NULL DEFAULT 0,
+  bpm        INTEGER,
+  musical_key TEXT NOT NULL DEFAULT '',
+  detail     TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_studio_kind ON studio_events(kind, created_at);
+CREATE INDEX IF NOT EXISTS idx_studio_user ON studio_events(user_id, created_at);
+
+/* The SHAPE of what producers upload — never the audio.
+
+   The browser already decodes every sample to play it. While it's decoded
+   we measure it: fundamental, decay, brightness, peak. Only those numbers
+   come back here. The file itself is theirs and stays theirs.
+
+   Why it's worth having: if every kick producers upload lands at ~58Hz with
+   a 340ms decay, and my synth kick runs 150→45Hz over 400ms, that's not an
+   opinion about my kick being wrong — it's a measurement. This table is the
+   spec for the built-in sounds.
+
+   Disclosed in the studio. A quiet version of this would be mining. */
+CREATE TABLE IF NOT EXISTS sample_shape (
+  sample_id   INTEGER PRIMARY KEY REFERENCES samples(id) ON DELETE CASCADE,
+  slot        TEXT NOT NULL DEFAULT '',
+  fundamental REAL,      -- Hz — where the pitch actually sits
+  decay_ms    INTEGER,   -- how long until it's gone
+  peak_db     REAL,      -- how hot they print it
+  rms_db      REAL,
+  centroid    REAL,      -- Hz — brightness. a kick's is low, a hat's is high
+  duration_ms INTEGER,
+  created_at  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_shape_slot ON sample_shape(slot);
 
 CREATE INDEX IF NOT EXISTS idx_posts_channel ON posts(channel, created_at);
 /* These back the hot paths: every feed counts likes per post, every
@@ -375,6 +456,12 @@ if (!cols.includes("suspended")) db.exec(`ALTER TABLE users ADD COLUMN suspended
 
 const lcols = db.prepare(`PRAGMA table_info(listings)`).all().map((c) => c.name);
 if (!lcols.includes("sold_at")) db.exec(`ALTER TABLE listings ADD COLUMN sold_at INTEGER`);
+
+const scols = db.prepare(`PRAGMA table_info(samples)`).all().map((c) => c.name);
+/* Opt-in, off by default. A sound only enters the library because someone
+   decided to put it there. */
+if (!scols.includes("shared")) db.exec(`ALTER TABLE samples ADD COLUMN shared INTEGER NOT NULL DEFAULT 0`);
+if (!scols.includes("uses")) db.exec(`ALTER TABLE samples ADD COLUMN uses INTEGER NOT NULL DEFAULT 0`);
 /* Loops are listings too — same offers, likes, saves, reviews. They just
    deliver instantly instead of shipping, and can be free. */
 if (!lcols.includes("kind")) db.exec(`ALTER TABLE listings ADD COLUMN kind TEXT NOT NULL DEFAULT 'physical'`);
@@ -383,6 +470,49 @@ if (!lcols.includes("bpm")) db.exec(`ALTER TABLE listings ADD COLUMN bpm INTEGER
 if (!lcols.includes("musical_key")) db.exec(`ALTER TABLE listings ADD COLUMN musical_key TEXT NOT NULL DEFAULT ''`);
 if (!lcols.includes("stems")) db.exec(`ALTER TABLE listings ADD COLUMN stems INTEGER NOT NULL DEFAULT 0`);
 if (!lcols.includes("downloads")) db.exec(`ALTER TABLE listings ADD COLUMN downloads INTEGER NOT NULL DEFAULT 0`);
+
+/* Studio telemetry. Never throws — a metrics call must never be able to
+   take down the thing it's measuring. */
+const insStudio = db.prepare(
+  `INSERT INTO studio_events (user_id, kind, voice, fmt, bytes, bpm, musical_key, detail, created_at)
+   VALUES (?,?,?,?,?,?,?,?,?)`
+);
+export function studioEvent(userId, kind, d = {}) {
+  try {
+    insStudio.run(userId || null, String(kind).slice(0, 24),
+      String(d.voice || "").slice(0, 20), String(d.fmt || "").slice(0, 10),
+      Number(d.bytes) || 0, d.bpm != null ? Number(d.bpm) : null,
+      String(d.key || "").slice(0, 6), String(d.detail || "").slice(0, 200), Date.now());
+    // bounded — this is a signal, not an archive
+    db.prepare(`DELETE FROM studio_events WHERE id NOT IN (SELECT id FROM studio_events ORDER BY created_at DESC LIMIT 20000)`).run();
+  } catch (e) { /* swallow */ }
+}
+
+/* ================================================================
+   ERRORS + BACKUPS
+   The two things that make this survivable without me nearby.
+================================================================ */
+const insErr = db.prepare(
+  `INSERT INTO error_log (kind, message, detail, path, username, created_at) VALUES (?,?,?,?,?,?)`
+);
+/** Never throws. An error logger that can throw is worse than none. */
+export function logError(kind, message, detail = "", path = "", username = "") {
+  try {
+    insErr.run(String(kind).slice(0, 20), String(message || "").slice(0, 500),
+      String(detail || "").slice(0, 2000), String(path || "").slice(0, 200),
+      String(username || "").slice(0, 40), Date.now());
+    // keep it bounded — this is a black box, not an archive
+    db.prepare(`DELETE FROM error_log WHERE id NOT IN (SELECT id FROM error_log ORDER BY created_at DESC LIMIT 500)`).run();
+  } catch (e) { /* swallow */ }
+}
+
+/* SQLite's own atomic snapshot. Copying the file while it's being written
+   gives you a corrupt backup that looks fine until you need it — VACUUM INTO
+   is the only safe way to do this on a live database. */
+export function backupTo(path) {
+  db.prepare(`VACUUM INTO ?`).run(path);
+  return path;
+}
 
 /* ================================================================
    SETTINGS
@@ -401,6 +531,14 @@ export const SETTING_DEFAULTS = {
   minRepToSell:   "0",     // gate selling behind standing if it gets messy
   autoVerify:     "0",     // "1" skips email verification — use if mail breaks
   announcement:   "",      // a banner across the top of the app
+
+  /* Distribution. A real promise with a real cost, so it's a setting: you
+     can move the bar or turn it off without asking anyone.
+     Tied to a LEVEL, not a vibe — "top contributors" is meaningless until
+     it's a number other people awarded you. */
+  distroOn:       "1",     // "0" hides the offer entirely
+  distroLevel:    "4",     // the level that earns it. 4 = Core (280 rep)
+  distroBlurb:    "TNL covers the distribution. You keep your masters and 100% of your royalties.",
 };
 
 const getSetting = db.prepare(`SELECT value FROM settings WHERE key = ?`);
@@ -499,6 +637,7 @@ export const REP = {
   sale_made: 15,        // someone paid for your work
   delivery_confirmed: 10, // and the buyer confirmed you delivered
   feature: 40,          // founder/mod feature (manual)
+  sound_used: 4,        // someone built with a sound you gave the library
 };
 
 const insertRepEvent = db.prepare(
