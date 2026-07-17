@@ -607,6 +607,57 @@ img.post-img,img.sr-img{height:auto}
 .stars{display:flex;gap:5px}
 .star-btn{background:none;border:none;font-size:30px;color:var(--line2);padding:0;line-height:1}
 .star-btn.on{color:#FBBF24}
+/* autoplaying feed video */
+.vwrap{position:relative;margin-top:8px}
+.vwrap .post-vid{margin-top:0}
+.vmute{position:absolute;bottom:9px;right:9px;width:32px;height:32px;border-radius:50%;
+  background:rgba(0,0,0,.6);border:1px solid var(--line2);color:#fff;font-size:13px;
+  backdrop-filter:blur(4px);padding:0;line-height:1}
+.vmute:active{transform:scale(.92)}
+video[data-auto]{cursor:pointer}
+.sr-card .vwrap{margin:0}
+/* your sounds */
+.st-sounds{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.st-sh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.st-sh b{font-size:14px}
+.st-kit{margin-top:12px}
+.st-kitname{letter-spacing:.12em;margin-bottom:6px}
+.st-snd{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+.st-sp{width:26px;height:26px;border-radius:50%;border:1px solid var(--line2);background:var(--el);color:var(--green);font-size:9px;padding:0;flex-shrink:0}
+.st-sn2{flex:1;min-width:0;font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-use{background:var(--el);border:1px solid var(--line2);color:var(--tx);border-radius:6px;padding:4px 9px;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.05em;white-space:nowrap}
+.st-use:hover{border-color:var(--green);color:var(--green)}
+.st-custom{font-size:10px;color:var(--green);padding:6px 0}
+.st-link{background:none;border:none;color:var(--dim);text-decoration:underline;font-size:10px;padding:0;font-family:inherit}
+.st-link:hover{color:var(--tx)}
+/* selling a sound */
+.kindpick{display:flex;gap:8px;margin-top:14px}
+.kbtn{flex:1;background:var(--el);border:1px solid var(--line);color:var(--dim);border-radius:11px;padding:12px 10px;text-align:left;font-weight:700;font-size:13px;line-height:1.3}
+.kbtn span{display:block;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.06em;margin-top:3px;font-weight:400;opacity:.75}
+.kbtn.on{background:color-mix(in srgb, var(--green) 12%, transparent);border-color:var(--green);color:var(--tx)}
+.audioadd{width:100%;background:var(--el);border:1px dashed var(--line2);color:var(--dim);border-radius:10px;padding:20px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px}
+.audioadd:hover:not(:disabled){border-color:var(--green);color:var(--green)}
+.audioadd.busy{border-style:solid;border-color:var(--green)}
+.audiochip{display:flex;align-items:center;gap:10px;background:var(--el);border:1px solid var(--green);border-radius:10px;padding:10px 12px}
+.freenote{color:var(--green);font-size:8.5px;letter-spacing:.05em;line-height:1.6;margin:5px 0 12px}
+.swrap{display:flex;align-items:center;gap:8px;margin:6px 0 14px;font-size:13px;color:var(--dim)}
+.swrap input{width:auto}
+/* a loop in the grid */
+.mcard.loop .mloop{position:relative;aspect-ratio:1/1;background:linear-gradient(145deg,color-mix(in srgb, var(--green) 18%, transparent),var(--el));display:flex;align-items:center;justify-content:center}
+.mloop-ic{font-size:34px;color:var(--green);opacity:.8}
+.freetag{position:absolute;top:7px;left:7px;background:var(--green);color:#000;font-size:7px;font-weight:600;letter-spacing:.1em;padding:3px 6px;border-radius:4px}
+.bpmtag{position:absolute;bottom:7px;left:7px;background:rgba(0,0,0,.6);color:#fff;font-size:7px;letter-spacing:.06em;padding:3px 6px;border-radius:4px}
+/* loop detail */
+.loopart{position:relative;aspect-ratio:1/1;max-height:300px;border-radius:12px;overflow:hidden;background:var(--el);display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
+.loopart.noart{background:linear-gradient(145deg,color-mix(in srgb, var(--green) 20%, transparent),var(--el))}
+.loopart img{width:100%;height:100%;object-fit:cover}
+.loopglyph{font-size:64px;color:var(--green);opacity:.5}
+.loopplay{position:absolute;width:62px;height:62px;border-radius:50%;background:var(--green);color:#000;border:none;font-size:20px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+.loopplay:active{transform:scale(.94)}
+.freebig{color:var(--green);font-size:20px;font-weight:900}
+.simglyph{width:100%;aspect-ratio:1/1;background:var(--el);display:flex;align-items:center;justify-content:center;color:var(--green);font-size:22px}
+.announce{background:color-mix(in srgb, var(--green) 14%, transparent);border-bottom:1px solid color-mix(in srgb, var(--green) 40%, transparent);padding:9px 15px;font-size:12.5px;line-height:1.5;color:#D6D2C8;text-align:center}
+.closed{border:1px solid var(--line2);border-radius:999px;padding:9px 16px;color:var(--dim);letter-spacing:.1em;font-size:9px;display:inline-block}
 .toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:var(--tx);color:#000;font-weight:700;font-size:13px;border-radius:999px;padding:9px 18px;z-index:80}
 .empty{padding:30px 20px;text-align:center;color:var(--dim);font-size:13px;line-height:1.7}
 @media (max-width:680px){
@@ -659,10 +710,24 @@ input, textarea, select, .in, .search { font-size: 16px !important; }
         'If this persists, screenshot this message — it says exactly what went wrong.</p></div>';
     }catch(e){ document.body.innerHTML="<pre style=\"color:#fff;padding:20px\">"+String(what)+"</pre>" }
   }
+  /* Only fire for things that actually break the app. Media playback throws
+     constantly and harmlessly: AbortError every time a play() is interrupted
+     by a scroll or a re-render, NotAllowedError when autoplay is blocked.
+     Showing a crash screen for those is worse than showing nothing. */
+  function benign(err){
+    var n = (err && err.name) || "";
+    var m = String((err && err.message) || err || "");
+    return n==="AbortError" || n==="NotAllowedError" || n==="NotSupportedError"
+      || /operation was aborted|play\(\) request|interrupted by|removed from the document|user denied|load failed/i.test(m);
+  }
   window.addEventListener("error",function(e){
+    if(benign(e.error)) return;
+    // an <img>/<video> that 404s fires error on the ELEMENT, not the window
+    if(e.target && e.target !== window && e.target.tagName) return;
     crash(e.message||e.error, e.filename?(e.filename.split("/").pop()+":"+e.lineno+":"+e.colno):"");
-  });
+  }, true);
   window.addEventListener("unhandledrejection",function(e){
+    if(benign(e.reason)) { e.preventDefault(); return; }
     crash((e.reason&&e.reason.message)||e.reason,"unhandled promise rejection");
   });
 })();
@@ -849,10 +914,15 @@ const api={
   sellerCard:u=>req("/api/sellers/"+encodeURIComponent(u)),
   review:(id,stars,body)=>req("/api/orders/"+id+"/review",{method:"POST",body:{stars,body}}),
   saved:()=>req("/api/market/saved"),
+  grabLoop:id=>req("/api/market/"+id+"/download",{method:"POST"}),
+  loopGrabs:id=>req("/api/market/"+id+"/downloads"),
   recentlyViewed:()=>req("/api/market/recent"),
   shipOrder:(id,tracking)=>req("/api/orders/"+id+"/ship",{method:"POST",body:{tracking}}),
   received:id=>req("/api/orders/"+id+"/received",{method:"POST"}),
   beats:()=>req("/api/beats"),
+  samples:()=>req("/api/samples"),
+  addSample:b=>req("/api/samples",{method:"POST",body:b}),
+  delSample:id=>req("/api/samples/"+id,{method:"DELETE"}),
   beat:id=>req("/api/beats/"+id),
   saveBeat:b=>req("/api/beats",{method:"POST",body:b}),
   delBeat:id=>req("/api/beats/"+id,{method:"DELETE"}),
@@ -871,6 +941,7 @@ let PTAB="work", EDITING=false, EDITROLE="", PENDIMG=null, LIGHTBOX=null, VERIFY
 let EBAR=0, OPENTRACK="", PITCHSEL=0, DRAFTS=null;
 /* Overwritten by /api/levels on boot. Declared here with a sane default so
    that a failed call — or an offline start — can't take the app down. */
+let SITE={};   // headline, tagline, announcement, feature switches — set by /api/levels
 let ACCENTS={lab:{name:"Lab",hex:"#22C55E"}};
 let EDITACCENT=null;
 /* Repaints the app in someone's colour. Every green thing in the CSS reads
@@ -903,6 +974,7 @@ let GATEWHY="";
 let MKT=null, MKTMETA={categories:[],conditions:[],paymentsEnabled:false}, MKTFILT={}, MKTVIEW="browse";
 let MKTONE=null, MKTOFFERS=[], SELLFORM=null, SELLIMGS=[], ORDERS=null, ORDTAB="buying", SELLUP=false;
 let MKTSELLER=null, MKTSIMILAR=[], SAVED=null, REVIEWING=null, REVSTARS=5;
+let SELLKIND="physical", SELLAUDIO=null, SELLAUDIONAME="";
 const $=sel=>document.querySelector(sel);
 function toast(t){TOASTT=t;render();setTimeout(()=>{TOASTT=null;render()},2200)}
 
@@ -1102,6 +1174,7 @@ function render(){
   if(GATE){app.innerHTML=gateHTML();wireGate();return}
   app.innerHTML=`
     ${topHTML()}
+    ${SITE.announcement?`<div class="announce">${rich(SITE.announcement)}</div>`:""}
     ${(ME&&!ME.emailVerified)?`<div class="verifybar">
       <span>Check <b>${esc(ME.email)}</b> to confirm your account. You can look around meanwhile.</span>
       <button class="vb-btn" id="resendb">Resend</button>
@@ -1281,7 +1354,10 @@ function searchPanelHTML(){return `<div class="sheet" id="sbg"><div class="sheet
     ${!SEARCHRES.people.length&&!SEARCHRES.posts.length?`<div class="empty">Nothing found.</div>`:""}
   `:`<div class="empty">Search for people to build with.</div>`}
 </div></div>`}
-function navHTML(){const t=[["showroom","◱","SHOWROOM"],["labs","#","LABS"],["studio","♫","STUDIO"],["market","▣","MARKET"]];
+function navHTML(){
+  const t=[["showroom","◱","SHOWROOM"],["labs","#","LABS"]];
+  if(SITE.studioOpen!==false)t.push(["studio","♫","STUDIO"]);
+  if(SITE.marketOpen!==false)t.push(["market","▣","MARKET"]);
   return `<nav class="nav">${t.map(([id,ic,lb])=>
     `<button class="navb ${TAB===id?"on":""}" data-tab="${id}"><i class="ic">${ic}</i>
       <span>${lb}${guest()&&id==="labs"?" 🔒":""}</span></button>`).join("")}</nav>`}
@@ -1375,13 +1451,13 @@ function wireGate(){
 function showroomHTML(){return `<div class="scroll" id="showroom">
   <section class="sr-head">
     <div class="mono sr-eyebrow">TNLLABS® 🧪 · ${guest()?"CULTIVATORS":"SHOWROOM"}</div>
-    <h1 class="sr-h">${guest()?"Cultivators.":"The work."}</h1>
+    <h1 class="sr-h">${guest()?esc(SITE.headline||"Cultivators."):"The work."}</h1>
     <p class="sr-p">${guest()
-      ?`Artists, designers, musicians, entrepreneurs. Creatives don't just meet here — <b>they multiply.</b>`
+      ?(SITE.tagline?esc(SITE.tagline).replace(/they multiply\.?$/i,"<b>they multiply.</b>"):`Artists, designers, musicians, entrepreneurs. Creatives don't just meet here — <b>they multiply.</b>`)
       :"Everything being built and validated inside the network right now. Collaborations rise to the top."}</p>
     <div class="sr-cta">
       ${guest()
-        ?`<button class="btn green" id="joinBtn2">Join the workshop</button>
+        ?`${SITE.signupsOpen===false?`<div class="closed mono">INVITE-ONLY RIGHT NOW</div>`:`<button class="btn green" id="joinBtn2">Join the workshop</button>`}
           <button class="btn ghost" id="loginBtn2">Sign in</button>`
         :`<button class="btn green" id="sr-post">＋ Post your work</button>
           <button class="btn ghost" data-goto="labs">Enter the labs</button>`}
@@ -1407,7 +1483,10 @@ function srCardHTML(p){
     ${p.imageUrl?`<img class="sr-img" src="${esc(p.thumbUrl||p.imageUrl)}" alt="work by ${esc(p.author.displayName)}" loading="lazy" decoding="async"
       ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
       data-zoom="${esc(p.imageUrl)}">`
-      :p.videoUrl?`<video class="sr-img" src="${esc(p.videoUrl)}" controls playsinline preload="metadata"></video>`
+      :p.videoUrl?`<div class="vwrap">
+        <video class="sr-img" src="${esc(p.videoUrl)}" muted loop playsinline preload="metadata" data-auto></video>
+        <button class="vmute" data-vmute aria-label="Sound">🔇</button>
+      </div>`
       :`<div class="sr-beat"><button class="circle" style="width:34px;height:34px;font-size:12px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button>
          <div><div class="sr-beatname">${esc(p.beat?.name||"untitled loop")}</div><div class="mono dim">${p.beat?.bpm||120} BPM · LOOP</div></div></div>`}
     <div class="sr-meta">
@@ -1503,7 +1582,11 @@ function postHTML(p){const mine=p.author.username===myName();
   ${p.imageUrl?`<img class="post-img" src="${esc(p.thumbUrl||p.imageUrl)}" alt="attached work" loading="lazy" decoding="async"
     ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
     data-zoom="${esc(p.imageUrl)}">`:""}
-  ${p.videoUrl?`<video class="post-vid" src="${esc(p.videoUrl)}" controls playsinline preload="metadata"></video>`:""}
+  ${p.videoUrl?`<div class="vwrap">
+    <video class="post-vid" src="${esc(p.videoUrl)}" muted loop playsinline preload="metadata" data-auto
+      ${p.mediaW?`style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}></video>
+    <button class="vmute" data-vmute aria-label="Sound">🔇</button>
+  </div>`:""}
   ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM · TAP TO HEAR</div></div></div>`:""}
   ${p.collaborators.length?`<div class="collab-row">${p.collaborators.map(c=>`<span class="ctag ${c.status==="accepted"?"acc":""}">${c.status==="accepted"?"✓":"…"} ${esc(c.display_name||c.username)}</span>`).join("")}</div>`:""}
   <div class="post-acts">
@@ -1613,6 +1696,13 @@ function marketHTML(){
           `<button class="chip sm ${(MKTFILT.range||"")===v?"on":""}" data-range="${v}">${l}</button>`).join("")}
       </div>
       <div class="fchips">
+        <span class="mono dim" style="align-self:center">SHOW</span>
+        <button class="chip sm ${!MKTFILT.kind?"on":""}" data-mkind="">Everything</button>
+        <button class="chip sm ${MKTFILT.kind==="physical"?"on":""}" data-mkind="physical">▣ Physical</button>
+        <button class="chip sm ${MKTFILT.kind==="loop"?"on":""}" data-mkind="loop">♫ Sounds</button>
+        ${MKTFILT.kind==="loop"?`<button class="chip sm ${MKTFILT.free?"on":""}" data-mfree>Free only</button>`:""}
+      </div>
+      <div class="fchips">
         <span class="mono dim" style="align-self:center">SORT</span>
         ${[["new","Newest"],["low","Price ↑"],["high","Price ↓"],["liked","Most saved"]].map(([v,l])=>
           `<button class="chip sm ${(MKTFILT.sort||"new")===v?"on":""}" data-sort="${v}">${l}</button>`).join("")}
@@ -1625,7 +1715,19 @@ function marketHTML(){
       :MKT.map(mktCardHTML).join("")}</div>
   </div>`}
 
-function mktCardHTML(l){return `<div class="mcard" data-mopen="${l.id}">
+function mktCardHTML(l){
+  if(l.kind==="loop")return `<button class="mcard loop" data-mopen="${l.id}">
+    <div class="mloop">
+      <div class="mloop-ic">♫</div>
+      ${l.isFree?`<span class="freetag mono">FREE</span>`:""}
+      ${l.bpm?`<span class="bpmtag mono">${l.bpm} BPM${l.musicalKey?" · "+esc(l.musicalKey):""}</span>`:""}
+    </div>
+    <div class="mbody">
+      <div class="mtitle">${esc(l.title)}</div>
+      <div class="mprice">${l.isFree?"Free":money(l.price)}</div>
+      <div class="mono dim">@${esc(l.seller.username)}${l.downloads?" · "+l.downloads+" grabbed":""}</div>
+    </div>
+  </button>`;return `<div class="mcard" data-mopen="${l.id}">
   <div class="mimgwrap"><img class="mimg" src="${esc(l.images[0]||"")}" alt="${esc(l.title)}" loading="lazy">
     ${l.status==="sold"?`<div class="soldtag">SOLD</div>`:""}
     <button class="mlike ${l.likedByMe?"on":""}" data-mlike="${l.id}">${l.likedByMe?"♥":"♡"}${l.likeCount?" "+l.likeCount:""}</button>
@@ -1637,8 +1739,63 @@ function mktCardHTML(l){return `<div class="mcard" data-mopen="${l.id}">
   </div>
 </div>`}
 
+function loopDetailHTML(l){
+  const mine=l.seller.username===myName();
+  return `<div class="scroll" id="mktscroll">
+    <div class="dnav"><button class="backb2" data-mv="browse">← Market</button>
+      ${mine?`<button class="backb2" data-medit="${l.id}">Edit</button>`:""}</div>
+    <div class="dwrap">
+      <div class="loopart ${l.images[0]?"":"noart"}">
+        ${l.images[0]?`<img src="${esc(l.images[0])}" alt="">`:`<div class="loopglyph">♫</div>`}
+        <button class="loopplay" id="loopplay" aria-label="Play">▶</button>
+      </div>
+      <audio id="loopaudio" src="${esc(l.audioUrl||"")}" preload="none"></audio>
+
+      <div class="dhead">
+        <div>
+          <h2 class="dtitle">${esc(l.title)}</h2>
+          <div class="mono dim">${esc(l.category)}${l.bpm?" · "+l.bpm+" BPM":""}${l.musicalKey?" · "+esc(l.musicalKey):""}${l.stems?" · STEMS":""}</div>
+        </div>
+        <div class="dprice">${l.isFree?`<span class="freebig">FREE</span>`:money(l.price)}</div>
+      </div>
+
+      ${l.description?`<p class="ddesc">${rich(l.description)}</p>`:""}
+
+      <div class="dseller" data-u="${esc(l.seller.username)}">
+        ${avHTML(l.seller,"sm")}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:900;font-size:13px">${esc(l.seller.displayName)}</div>
+          <div class="mono dim">@${esc(l.seller.username)} · L${l.seller.level}</div>
+          ${MKTSELLER&&MKTSELLER.rating!==null?`<div class="trust mono"><span class="star">★ ${MKTSELLER.rating.toFixed(1)}</span> <span class="dim">(${MKTSELLER.reviews})</span></div>`:""}
+        </div>
+        <span class="mono dim">${l.downloads||0} grabbed</span>
+      </div>
+
+      ${l.status==="active"?`
+        ${mine?`<div class="mono dim" style="margin-top:14px">This is yours.${l.downloads?` <button class="st-link" id="whograbbed">See who's grabbed it →</button>`:""}</div>`
+        :l.isFree?`
+          <button class="btn green wide" data-grab="${l.id}">↓ Grab it — free</button>
+          <div class="mono dim" style="margin-top:8px;line-height:1.6">${esc(l.seller.displayName)} gets told you took it. If you build something with it, tell them — that's a collab.</div>`
+        :`
+          <button class="btn green wide" data-buy="${l.id}">Buy — ${money(l.price)}</button>
+          ${l.acceptsOffers?`<button class="btn ghost wide" data-offer="${l.id}">Make an offer</button>`:""}
+          <div class="mono dim" style="margin-top:8px">Instant download. Nothing to ship.</div>`}
+      `:`<div class="mono dim" style="margin-top:14px">No longer available.</div>`}
+
+      ${MKTSIMILAR.length?`<div class="simwrap">
+        <div class="mono dim sim-h">MORE LIKE THIS</div>
+        <div class="simrow">${MKTSIMILAR.map(x=>`<button class="simcard" data-mopen="${x.id}">
+          ${x.images[0]?`<img src="${esc(x.images[0])}" alt="">`:`<div class="simglyph">♫</div>`}
+          <div class="simt">${esc(x.title)}</div>
+          <div class="simp">${x.isFree?"Free":money(x.price)}</div>
+        </button>`).join("")}</div>
+      </div>`:""}
+    </div>
+  </div>`}
+
 function detailHTML(){
   if(!MKTONE)return `<div class="scroll"><div class="empty">Loading…</div></div>`;
+  if(MKTONE.kind==="loop")return loopDetailHTML(MKTONE);   // a loop isn't a jacket
   const l=MKTONE, mine=l.seller.username===myName();
   return `<div class="scroll">
     <div class="dnav"><button class="backb2" data-mv="browse">← Market</button></div>
@@ -1753,8 +1910,15 @@ function payoutBannerHTML(){
 function sellHTML(){const f=SELLFORM||{};
   return `<div class="scroll">
     <div class="dnav"><button class="backb2" data-mv="browse">← Market</button></div>
-    <div class="page-head"><div class="mono dim">NEW LISTING</div><h2 class="page-h">Sell an item</h2>
-    <p class="page-sub">Photos first — that's what sells it.</p></div>
+    <div class="page-head"><div class="mono dim">NEW LISTING</div>
+    <h2 class="page-h">${SELLKIND==="loop"?"Sell a loop":"Sell an item"}</h2>
+    <p class="page-sub">${SELLKIND==="loop"
+      ?"Upload it, name a price — or set it to 0 and give it away. Free loops need no payout setup."
+      :"Photos first — that's what sells it."}</p>
+    <div class="kindpick">
+      <button class="kbtn ${SELLKIND!=="loop"?"on":""}" data-kind="physical">▣ Physical<span>clothes, art, prints</span></button>
+      <button class="kbtn ${SELLKIND==="loop"?"on":""}" data-kind="loop">♫ Sound<span>loops, kits, samples</span></button>
+    </div></div>
     ${(ME&&!ME.emailVerified)?`<div class="paybar off" style="margin:0 20px 14px">
       <div><b>Confirm your email to list.</b>
       <div class="mono dim">Check your inbox — or hit Resend on the banner at the top.</div></div></div>`:""}
@@ -1776,6 +1940,22 @@ function sellHTML(){const f=SELLFORM||{};
       </div>
       <input type="file" id="sfile" accept="image/*" hidden>
       <label class="mono lbl">TITLE</label><input class="in" id="s-title" value="${esc(f.title||"")}" maxlength="120" placeholder="e.g. Vintage Carhartt Detroit Jacket">
+      ${SELLKIND==="loop"?`
+      <label class="mono lbl">PRICE ($) — 0 GIVES IT AWAY</label>
+      <input class="in" id="s-price" type="number" inputmode="decimal" min="0" step="0.01" value="${f.price??""}" placeholder="0">
+      ${Number(f.price||0)===0?`<div class="freenote mono">
+        ↳ FREE. NO PAYOUT SETUP NEEDED. THEY GRAB IT, YOU GET TOLD WHO — THAT'S HOW A COLLAB STARTS.
+      </div>`:`<div class="mono dim" style="margin:5px 0 12px;line-height:1.5">You keep ${100-(MKTMETA.feePct??10)}% — TNL takes ${MKTMETA.feePct??10}%, and that drops as people vouch for you.</div>`}
+      <label class="mono lbl">TYPE</label>
+      <div class="fchips">${(MKTMETA.loopCategories||["Loop"]).map(c=>`<button class="chip sm ${f.category===c?"on":""}" data-scat="${esc(c)}">${esc(c)}</button>`).join("")}</div>
+      <div class="srow">
+        <div><label class="mono lbl">BPM</label><input class="in" id="s-bpm" type="number" inputmode="numeric" min="40" max="300" value="${f.bpm||""}" placeholder="140"></div>
+        <div><label class="mono lbl">KEY</label>
+          <select class="in" id="s-key"><option value="">—</option>
+          ${(MKTMETA.keys||[]).map(k=>`<option ${f.musicalKey===k?"selected":""}>${esc(k)}</option>`).join("")}</select></div>
+      </div>
+      <label class="swrap"><input type="checkbox" id="s-stems" ${f.stems?"checked":""}> <span>Stems included</span></label>
+      `:`
       <div class="srow">
         <div><label class="mono lbl">PRICE ($)</label><input class="in" id="s-price" type="number" inputmode="decimal" min="1" step="0.01" value="${f.price||""}" placeholder="45.00"></div>
         <div><label class="mono lbl">SHIPPING ($)</label><input class="in" id="s-ship" type="number" inputmode="decimal" min="0" step="0.01" value="${f.shipping||""}" placeholder="0 = free"></div>
@@ -1791,7 +1971,7 @@ function sellHTML(){const f=SELLFORM||{};
       <div class="srow">
         <div><label class="mono lbl">COLOUR</label><input class="in" id="s-colour" value="${esc(f.colour||"")}" maxlength="30"></div>
         <div><label class="mono lbl">SHIPS FROM</label><input class="in" id="s-from" value="${esc(f.shipsFrom||"")}" maxlength="60" placeholder="NYC"></div>
-      </div>
+      </div>`}
       <label class="mono lbl">DESCRIPTION</label>
       <textarea class="in" id="s-desc" rows="4" maxlength="2000" placeholder="Fit, flaws, measurements, story.">${esc(f.description||"")}</textarea>
       <label class="workcheck" style="margin-top:12px"><input type="checkbox" id="s-offers" ${f.acceptsOffers!==false?"checked":""}> <span>Accept offers</span></label>
@@ -2143,6 +2323,12 @@ function wireMarket(){
   const mq=$("#mktq");if(mq){let t=null;mq.oninput=()=>{MKTFILT.q=mq.value;clearTimeout(t);t=setTimeout(loadMarket,300)}}
   document.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{MKTFILT.category=b.dataset.cat||undefined;loadMarket().then(render)});
   document.querySelectorAll("[data-size]").forEach(b=>b.onclick=()=>{MKTFILT.size=b.dataset.size||undefined;loadMarket().then(render)});
+  document.querySelectorAll("[data-mkind]").forEach(b=>b.onclick=()=>{
+    MKTFILT.kind=b.dataset.mkind||undefined;
+    if(MKTFILT.kind!=="loop")MKTFILT.free=undefined;
+    MKTFILT.category=undefined;   // the two category sets don't overlap
+    loadMarket().then(render)});
+  const mf=$("[data-mfree]");if(mf)mf.onclick=()=>{MKTFILT.free=MKTFILT.free?undefined:"1";loadMarket().then(render)};
   document.querySelectorAll("[data-cond]").forEach(b=>b.onclick=()=>{MKTFILT.condition=b.dataset.cond||undefined;loadMarket().then(render)});
   document.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{
     const v=b.dataset.range;MKTFILT.range=v||undefined;
@@ -2153,6 +2339,34 @@ function wireMarket(){
   document.querySelectorAll("[data-sort]").forEach(b=>b.onclick=()=>{MKTFILT.sort=b.dataset.sort;loadMarket().then(render)});
 
   // sell form
+  document.querySelectorAll("[data-kind]").forEach(b=>b.onclick=()=>{
+    stashSell();
+    SELLKIND=b.dataset.kind;
+    // categories don't overlap between the two — drop a stale one
+    if(SELLFORM)SELLFORM.category=undefined;
+    render();
+  });
+  const aadd=$("#s-aadd");if(aadd)aadd.onclick=()=>$("#s-audio").click();
+  const adrop=$("#s-adrop");if(adrop)adrop.onclick=()=>{SELLAUDIO=null;SELLAUDIONAME="";render()};
+  const aprev=$("#s-aprev");if(aprev)aprev.onclick=async()=>{
+    try{const a=new Audio(SELLAUDIO);a.play().catch(()=>{})}catch(e){}
+  };
+  const ain=$("#s-audio");if(ain)ain.onchange=async()=>{
+    const f=ain.files&&ain.files[0];if(!f)return;ain.value="";
+    if(f.size>20*1024*1024)return toast("That's too big — 20MB max for a loop");
+    stashSell();
+    SELLUP=true;render();
+    try{
+      const up=await uploadStream(f);
+      if(up.kind!=="audio")throw new Error("That's not an audio file");
+      SELLAUDIO=up.url;SELLAUDIONAME=f.name;
+      // a filename like "dark trap 140.wav" is doing half the work already
+      const m=/(\d{2,3})\s*bpm|\b(\d{2,3})\b/i.exec(f.name);
+      if(m){const b=+(m[1]||m[2]);if(b>=60&&b<=220){SELLFORM=SELLFORM||{};SELLFORM.bpm=String(b)}}
+      if(!SELLFORM||!SELLFORM.title){SELLFORM=SELLFORM||{};SELLFORM.title=f.name.replace(/\.[^.]+$/,"").slice(0,120)}
+    }catch(e){toast(e.message)}
+    SELLUP=false;render();
+  };
   const add=$("#saddimg");if(add)add.onclick=()=>$("#sfile").click();
   const sf=$("#sfile");if(sf)sf.onchange=async()=>{
     const f=sf.files&&sf.files[0];if(!f)return;sf.value="";
@@ -2171,16 +2385,38 @@ function wireMarket(){
   document.querySelectorAll("[data-scat]").forEach(b=>b.onclick=()=>{stashSell();SELLFORM.category=b.dataset.scat;render()});
   document.querySelectorAll("[data-scond]").forEach(b=>b.onclick=()=>{stashSell();SELLFORM.condition=b.dataset.scond;render()});
   const sp=$("#s-post");if(sp)sp.onclick=async()=>{
-    stashSell();
-    if(!SELLIMGS.length)return toast("Add at least one photo");
-    if(!SELLFORM.title)return toast("Add a title");
-    if(!(Number(SELLFORM.price)>=1))return toast("Price must be at least $1");
-    try{
-      const d=await api.mktCreate({...SELLFORM,images:SELLIMGS});
-      SELLFORM=null;SELLIMGS=[];MKTVIEW="detail";MKTONE=null;render();
-      const one=await api.mktOne(d.id);MKTONE=one.listing;MKTOFFERS=one.offers||[];
-      toast("Listed — it's live");render();
-    }catch(e){toast(e.message)}};
+      stashSell();
+      const isLoop=SELLKIND==="loop";
+      if(!SELLFORM||!SELLFORM.title)return toast("Add a title");
+      if(isLoop){
+        if(!SELLAUDIO)return toast("Upload the audio first");
+        const pr=Number(SELLFORM.price||0);
+        if(pr!==0&&pr<1)return toast("Either free, or at least $1");
+      }else{
+        if(!SELLIMGS.length)return toast("Add at least one photo");
+        if(!(Number(SELLFORM.price)>=1))return toast("Price must be at least $1");
+      }
+      try{
+        const body={...SELLFORM,images:SELLIMGS,kind:isLoop?"loop":"physical"};
+        if(isLoop){
+          body.audioUrl=SELLAUDIO;
+          body.bpm=SELLFORM.bpm?Number(SELLFORM.bpm):null;
+          body.musicalKey=SELLFORM.musicalKey||"";
+          body.stems=!!SELLFORM.stems;
+          body.price=Number(SELLFORM.price||0);
+        }
+        const d=await api.mktCreate(body);
+        const free=isLoop&&Number(SELLFORM.price||0)===0;
+        SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME="";
+        MKTVIEW="detail";MKTONE=null;render();
+        const one=await api.mktOne(d.id);
+        MKTONE=one.listing;MKTOFFERS=one.offers||[];MKTSELLER=one.seller||null;MKTSIMILAR=one.similar||[];
+        toast(free?"Live — free for anyone to grab":"Listed — it's live");render();
+      }catch(e){
+        if(/payout/i.test(e.message)&&SELLKIND==="loop")
+          alert("Can't sell a paid loop yet.\n\n"+e.message+"\n\nSet the price to 0 and you can give it away right now — no setup needed.");
+        else toast(e.message);
+      }};
 
   // detail actions
   document.querySelectorAll("[data-offer]").forEach(b=>b.onclick=async()=>{
@@ -2193,10 +2429,40 @@ function wireMarket(){
     const [id,a]=b.dataset.oa.split(":");
     try{await api.offerAct(id,a);toast(a==="accept"?"Offer accepted":"Offer declined");
       const d=await api.mktOne(MKTONE.id);MKTONE=d.listing;MKTOFFERS=d.offers||[];render()}catch(e){toast(e.message)}});
+  const lp=$("#loopplay");
+  if(lp)lp.onclick=()=>{
+    const a=$("#loopaudio");if(!a)return;
+    if(a.paused){a.play().then(()=>{lp.textContent="■"}).catch(()=>toast("Couldn't play that"));
+      a.onended=()=>{lp.textContent="▶"};}
+    else{a.pause();lp.textContent="▶"}
+  };
+  const wg=$("#whograbbed");if(wg)wg.onclick=async()=>{
+    try{const d=await api.loopGrabs(MKTONE.id);
+      openPicker({eyebrow:"YOUR LOOP",title:"Who's grabbed it",
+        note:"Every one of these is someone who might build with you. Message them.",
+        items:d.downloads.map(u=>({label:u.displayName,sub:"@"+u.username+" · "+u.role+" · "+timeAgo(u.at),avatar:u.avatarUrl,username:u.username})),
+        empty:"Nobody yet.",
+        onPick:(it)=>openDM(it.username)});
+    }catch(e){toast(e.message)}
+  };
+  document.querySelectorAll("[data-grab]").forEach(b=>b.onclick=async()=>{
+    if(guest())return needAccount("Join to grab loops — the producer gets told who took it.");
+    try{
+      const d=await api.grabLoop(b.dataset.grab);
+      const a=document.createElement("a");
+      a.href=d.url;a.download=(d.name||"loop")+(d.url.match(/\.[a-z0-9]+$/i)||[""])[0];
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      toast("Grabbed — "+(MKTONE?MKTONE.seller.displayName:"the producer")+" knows you took it");
+      const one=await api.mktOne(b.dataset.grab);MKTONE=one.listing;render();
+    }catch(e){toast(e.message)}});
   document.querySelectorAll("[data-buy]").forEach(b=>b.onclick=async()=>{
     if(guest())return needAccount("Join to buy — you'll need an account to track the order.");
-    const name=prompt("Shipping name:");if(!name)return;
-    const address=prompt("Shipping address:");if(!address)return;
+    const isLoop=MKTONE&&MKTONE.kind==="loop";
+    let name="",address="";
+    if(!isLoop){                       // nothing to ship a loop to
+      name=prompt("Shipping name:");if(!name)return;
+      address=prompt("Shipping address:");if(!address)return;
+    }
     try{const d=await api.mktBuy(b.dataset.buy,{name,address});
       if(d.checkoutUrl){location.href=d.checkoutUrl;return}
       // arrange mode — be blunt, they have NOT paid
@@ -2237,6 +2503,13 @@ function wireMarket(){
     try{await api.received(b.dataset.recv);ORDERS=await api.orders();toast("Confirmed — thanks");render()}catch(e){toast(e.message)}});
 }
 function stashSell(){
+  const bpmEl=$("#s-bpm"), keyEl=$("#s-key"), stEl=$("#s-stems");
+  if(bpmEl||keyEl||stEl){
+    SELLFORM=SELLFORM||{};
+    if(bpmEl)SELLFORM.bpm=bpmEl.value;
+    if(keyEl)SELLFORM.musicalKey=keyEl.value;
+    if(stEl)SELLFORM.stems=stEl.checked;
+  }
   SELLFORM=SELLFORM||{};
   const g=id=>$(id)?.value;
   if($("#s-title"))SELLFORM.title=g("#s-title");
@@ -2348,9 +2621,55 @@ function mountStudio(){
     toast,
     onPublish:()=>{TAB="labs";LAB=LABS.find(l=>l.id==="music");CH=LAB.channels.find(c=>c.id==="beats");ROOMOPEN=true;render()},
     uploadAudio:async(blob)=>{
-      const up=await uploadStream(blob);   // streamed — a long take can be big
+      const up=await uploadStream(blob);   // streamed — a kit file can be big
       return up.url;
     },
+  });
+}
+
+/* Autoplay, the way a feed should do it: muted when it scrolls into view,
+   paused the moment it leaves. Muted is not a style choice — browsers block
+   autoplay WITH sound, so an unmuted autoplay simply never starts.
+
+   One observer, rebuilt each render (the DOM is replaced wholesale), and
+   disconnected first so observers don't pile up on every repaint. */
+let VOBS=null;
+function wireVideos(){
+  if(VOBS){VOBS.disconnect();VOBS=null}
+  const vids=[...document.querySelectorAll("video[data-auto]")];
+  if(!vids.length)return;
+
+  VOBS=new IntersectionObserver((entries)=>{
+    for(const e of entries){
+      const v=e.target;
+      if(e.isIntersecting&&e.intersectionRatio>0.55){
+        // play() rejects if interrupted mid-scroll. Expected, not an error.
+        const p=v.play(); if(p&&p.catch)p.catch(()=>{});
+      }else{
+        try{v.pause()}catch(err){}
+      }
+    }
+  },{threshold:[0,0.55,1]});
+
+  for(const v of vids){
+    v.muted=true;                 // required, or autoplay is refused outright
+    VOBS.observe(v);
+    v.onclick=()=>{
+      v.muted=!v.muted;
+      if(v.muted)v.pause(),v.play().catch(()=>{});
+      const btn=v.parentElement&&v.parentElement.querySelector("[data-vmute]");
+      if(btn)btn.textContent=v.muted?"🔇":"🔊";
+      if(!v.muted){ // only one thing makes noise at a time
+        for(const o of vids) if(o!==v){o.muted=true;
+          const b=o.parentElement&&o.parentElement.querySelector("[data-vmute]");
+          if(b)b.textContent="🔇"}
+      }
+    };
+  }
+  document.querySelectorAll("[data-vmute]").forEach(b=>b.onclick=(e)=>{
+    e.stopPropagation();
+    const v=b.parentElement.querySelector("video");
+    if(v)v.onclick();
   });
 }
 
@@ -2623,7 +2942,7 @@ function paintVerifyBar(){
   if(bar&&ME&&ME.emailVerified)bar.remove();
 }
 (async()=>{
-  try{const d=await api.levels();LEVELS=d.levels;if(d.accents)ACCENTS=d.accents}catch(e){/* offline default */}
+  try{const d=await api.levels();LEVELS=d.levels;if(d.accents)ACCENTS=d.accents;if(d.site)SITE=d.site}catch(e){/* offline default */}
   if(TOKEN)await refreshMe();          // invalid token just leaves ME null -> guest
   if(ME&&ME.accentHex)applyAccent(ME.accentHex);
   if(ME){

@@ -85,6 +85,17 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .rep .rt{font-size:12.5px;font-weight:700}
 .rep .rb{font-size:11.5px;color:var(--dim);margin-top:4px;line-height:1.5}
 .acts{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+.setrow:last-child{border-bottom:none}
+.setinfo b{font-size:13.5px}
+.setdesc{font-size:12px;color:var(--dim);line-height:1.5;margin-top:3px;max-width:440px}
+.setwarn{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.4);color:#FBBF24;border-radius:8px;padding:9px 11px;font-size:12px;line-height:1.5;margin-bottom:10px}
+.toggle{width:44px;height:25px;border-radius:999px;background:var(--el);border:1px solid var(--line2);padding:2px;flex-shrink:0;position:relative;transition:background .15s}
+.toggle span{display:block;width:19px;height:19px;border-radius:50%;background:var(--dim);transition:transform .15s,background .15s}
+.toggle.on{background:var(--green);border-color:var(--green)}
+.toggle.on span{transform:translateX(19px);background:#000}
+.setnum{width:80px;background:var(--el);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:8px;font-size:16px;text-align:center;flex-shrink:0}
+.lbl2{display:block;color:var(--dim);letter-spacing:.1em;margin:12px 0 5px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--tx);color:#000;font-weight:700;font-size:13px;border-radius:999px;padding:9px 18px;z-index:80}
 @media(max-width:640px){
   .hide-sm{display:none}
@@ -97,7 +108,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <script>
 const API=location.origin;
 let TOKEN=localStorage.getItem("tnl-token")||null;
-let ME=null,TAB="overview",DATA={},Q="",TOASTT=null;
+let ME=null,TAB="overview",DATA={},Q="",TOASTT=null,MAILRESULT=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=c=>"$"+((c||0)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -140,7 +151,7 @@ function paint(){
       ${[["overview","OVERVIEW"],["funnel","FUNNEL"],["retention","RETENTION"],["market","MARKET"],
          ["members","MEMBERS"],["content","CONTENT"],["orders","ORDERS"],
          ["reports","REPORTS"+(DATA.overview?.openReports?" ("+DATA.overview.openReports+")":"")],
-         ["health","HEALTH"]]
+         ["health","HEALTH"],["settings","SETTINGS"]]
         .map(([id,l])=>`<button class="${TAB===id?"on":""}" data-tab="${id}">${l}</button>`).join("")}
     </div>
     <div class="wrap">${
@@ -151,7 +162,8 @@ function paint(){
       TAB==="members"?membersHTML():
       TAB==="content"?contentHTML():
       TAB==="orders"?ordersHTML():
-      TAB==="health"?healthHTML():reportsHTML()}</div>
+      TAB==="health"?healthHTML():
+      TAB==="settings"?settingsHTML():reportsHTML()}</div>
     ${TOASTT?`<div class="toast">${esc(TOASTT)}</div>`:""}`;
   wire();
 }
@@ -358,6 +370,62 @@ function marketHTML(){
 }
 const feeFor=(rep)=>rep>=560?2:rep>=280?4:rep>=120?6:rep>=40?8:10;
 
+/* ---------- settings ---------- */
+function settingsHTML(){
+  const s=DATA.settings;
+  if(!s)return `<div class="empty">Loading…</div>`;
+  const g=s.settings;
+  const tog=(k,label,desc,warn)=>`<div class="setrow">
+    <div class="setinfo"><b>${esc(label)}</b><div class="setdesc">${desc}</div></div>
+    <button class="toggle ${g[k]==="1"?"on":""}" data-toggle="${k}" aria-label="${esc(label)}"><span></span></button>
+  </div>${g[k]==="1"&&warn?`<div class="setwarn">${warn}</div>`:""}`;
+  return `
+  <div class="hero"><h1>Settings</h1><p>Change the app without a deploy. Everything here takes effect immediately.</p></div>
+
+  <div class="panel">
+    <h3>THE DOOR</h3>
+    ${tog("signupsOpen","Signups open","Off makes TNL invite-only — nobody new can register.")}
+    ${tog("guestAccess","Guest access","Strangers can see the Showroom, Market and profiles without an account. Off puts everything behind the wall.")}
+    ${tog("autoVerify","Skip email verification","Members are verified the moment they sign up.",
+      "⚠ On. Anyone can register with any address — including one they don't own. Use this while email is broken, not as a permanent setting.")}
+  </div>
+
+  <div class="panel">
+    <h3>WHAT'S OPEN</h3>
+    ${tog("marketOpen","Market","Off hides buying and selling entirely.")}
+    ${tog("studioOpen","Studio","Off hides the beat maker.")}
+    ${tog("loopsOpen","Loop market","Off stops producers listing sounds.")}
+    <div class="setrow">
+      <div class="setinfo"><b>Rep needed to sell</b>
+        <div class="setdesc">0 = anyone can list. Raise it if the market gets messy — sellers have to earn standing first.</div></div>
+      <input class="setnum" id="set-minrep" type="number" min="0" max="1000" value="${esc(g.minRepToSell)}">
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>THE LANDING</h3>
+    <label class="mono lbl2">HEADLINE</label>
+    <input class="search" id="set-headline" value="${esc(g.headline)}" maxlength="60">
+    <label class="mono lbl2">TAGLINE</label>
+    <textarea class="search" id="set-tagline" rows="2" maxlength="300">${esc(g.tagline)}</textarea>
+    <label class="mono lbl2">ANNOUNCEMENT BANNER — BLANK TO HIDE</label>
+    <textarea class="search" id="set-announce" rows="2" maxlength="200" placeholder="e.g. Drop this Friday. Studio's open all week.">${esc(g.announcement)}</textarea>
+    <button class="btn" data-savetext>Save</button>
+    <p class="mono dim" style="margin-top:10px;line-height:1.6">This is what a stranger reads first. It's the whole pitch.</p>
+  </div>
+
+  <div class="panel">
+    <h3>NOT HERE</h3>
+    <p style="font-size:13px;line-height:1.7;color:var(--dim)">
+      <b style="color:var(--tx)">Commission</b> is set by level in code (10% → 2%) — not a dial, because the whole
+      point is that it's earned and predictable. If you want the ladder changed, that's a code change and a
+      conversation, not a slider you nudge at 2am.<br><br>
+      <b style="color:var(--tx)">Rep values</b> are in code for the same reason. A rep economy you can retune on a
+      whim isn't an economy.
+    </p>
+  </div>`;
+}
+
 /* ---------- health ---------- */
 function healthHTML(){
   const d=DATA.health;
@@ -388,6 +456,43 @@ function healthHTML(){
     </p>
     <button class="btn" data-cleanup>Delete ${d.orphans} orphaned file${d.orphans===1?"":"s"}</button>
   </div>`:""}
+  <div class="panel">
+    <h3>EMAIL — TEST IT</h3>
+    <p style="font-size:13px;line-height:1.65;color:var(--dim);margin-bottom:12px">
+      Email fails silently: Resend returns 200 whether it delivers or bins it, so a
+      missing email looks exactly like a working one. Send yourself a real verification
+      email and find out.
+    </p>
+    <input class="search" id="testto" placeholder="Send a test to… (blank = your address)">
+    <button class="btn" data-testmail>Send test email</button>
+    ${MAILRESULT?`<div class="rep" style="margin-top:12px;${MAILRESULT.ok?"background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.35)":""}">
+      <div class="rt" style="${MAILRESULT.ok?"color:var(--green)":"color:var(--red)"}">${MAILRESULT.ok?"✓ Resend accepted it":"✗ Resend rejected it"}</div>
+      <div class="rb">
+        to <b>${esc(MAILRESULT.to||"")}</b> · from <b>${esc(MAILRESULT.from||"")}</b> · ${MAILRESULT.ms||0}ms<br>
+        ${MAILRESULT.error?`<span style="color:var(--red)">${esc(MAILRESULT.error)}</span><br>`:""}
+        ${esc(MAILRESULT.detail||"")}
+        ${MAILRESULT.testSender?`<br><span style="color:var(--amber)">⚠ You're on Resend's test sender — it only delivers to your own address.</span>`:""}
+      </div>
+    </div>`:""}
+  </div>
+
+  <div class="panel">
+    <h3>WHO'S WAITING ON AN EMAIL</h3>
+    ${!DATA.maillog?`<div class="empty">Loading…</div>`:(()=>{
+      const un=DATA.maillog.members.filter(m=>!m.verified);
+      if(!un.length)return `<div class="empty">Everyone's verified.</div>`;
+      return `<div class="scrollx"><table>
+        <thead><tr><th>MEMBER</th><th>EMAIL</th><th>JOINED</th><th></th></tr></thead>
+        <tbody>${un.map(m=>`<tr>
+          <td><b>${esc(m.displayName)}</b> <span class="mono dim">@${esc(m.username)}</span></td>
+          <td class="mono dim">${esc(m.email)}</td>
+          <td class="mono dim">${ago(m.joined)}</td>
+          <td><button class="btn ghost sm" data-verify="${esc(m.username)}">Verify manually</button></td>
+        </tr>`).join("")}</tbody></table></div>
+      <p class="mono dim" style="margin-top:10px;line-height:1.6">Stuck people. Verify them by hand — better than losing them to an inbox.</p>`;
+    })()}
+  </div>
+
   <div class="panel">
     <h3>DETAIL</h3>
     <div class="scrollx"><table><tbody>
@@ -527,6 +632,25 @@ function wire(){
     if(!confirm("Send this as a DM to "+who+"?\n\n\""+body.slice(0,120)+(body.length>120?"…":"")+"\"\n\nThis can't be undone."))return;
     try{const d=await req("/api/admin/broadcast",{method:"POST",body:{body,target}});
       toast("Sent to "+d.sent);$("#bcast").value=""}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=async()=>{
+    const k=b.dataset.toggle, now=DATA.settings.settings[k]==="1";
+    if(k==="autoVerify"&&!now&&!confirm("Turn OFF email verification?\n\nAnyone will be able to register with an address they don't own. Only do this while email is broken."))return;
+    try{const d=await req("/api/admin/settings",{method:"PATCH",body:{[k]:now?"0":"1"}});
+      DATA.settings.settings=d.settings;paint();toast(k+" "+(now?"off":"on"))}catch(e){toast(e.message)}});
+  const mr=$("#set-minrep");if(mr)mr.onchange=async()=>{
+    try{const d=await req("/api/admin/settings",{method:"PATCH",body:{minRepToSell:mr.value}});
+      DATA.settings.settings=d.settings;toast("Saved")}catch(e){toast(e.message)}};
+  document.querySelectorAll("[data-savetext]").forEach(b=>b.onclick=async()=>{
+    try{const d=await req("/api/admin/settings",{method:"PATCH",body:{
+      headline:$("#set-headline").value, tagline:$("#set-tagline").value, announcement:$("#set-announce").value}});
+      DATA.settings.settings=d.settings;toast("Saved — live now")}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-testmail]").forEach(b=>b.onclick=async()=>{
+    const to=$("#testto")?.value.trim()||undefined;
+    b.textContent="Sending…";b.disabled=true;
+    try{MAILRESULT=await req("/api/admin/test-email",{method:"POST",body:{to}})}
+    catch(e){MAILRESULT={ok:false,error:e.message,detail:"The request itself failed."}}
+    paint();
+  });
   document.querySelectorAll("[data-cleanup]").forEach(b=>b.onclick=async()=>{
     if(!confirm("Delete files nothing points at?\n\nThis only removes uploads with no post, listing, avatar or message referencing them. It can't be undone."))return;
     try{const d=await req("/api/admin/cleanup",{method:"POST"});
@@ -559,7 +683,9 @@ async function load(){
     if(TAB==="funnel")DATA.funnel=await req("/api/admin/funnel");
     if(TAB==="retention")DATA.retention=await req("/api/admin/retention");
     if(TAB==="market")DATA.market=await req("/api/admin/market");
-    if(TAB==="health")DATA.health=await req("/api/admin/health");
+    if(TAB==="health"){DATA.health=await req("/api/admin/health");
+      DATA.maillog=await req("/api/admin/mail-log");}
+    if(TAB==="settings")DATA.settings=await req("/api/admin/settings");
     if(!DATA.overview&&TAB!=="overview")DATA.overview=await req("/api/admin/overview");
     paint();
   }catch(e){ if(/admins only|token/i.test(e.message)){ME=null;paint()} else toast(e.message) }

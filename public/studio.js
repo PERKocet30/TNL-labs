@@ -426,6 +426,10 @@
     rec: null,
     drafts: null,
     saving: false,
+    sounds: null,        // the producer's uploaded library
+    soundsOpen: false,
+    soundTarget: null,   // which track we're picking a sound for
+    uploading: false,
   };
 
   const $ = (sel) => S.el ? S.el.querySelector(sel) : null;
@@ -617,6 +621,67 @@
   function toast(m) { if (S.opts.toast) S.opts.toast(m); }
 
   /* ================================================================
+     THE PRODUCER'S OWN SOUNDS
+     Everything here is synthesised, which is why it opens instantly — and
+     exactly why a producer with a kit they already love couldn't use it.
+     Upload once, drop onto any track, in any project. The `sampler` voice
+     that mic takes already use does the playback; this just feeds it files.
+  ================================================================ */
+  async function loadSounds() {
+    if (!S.opts.api) return;
+    try { const d = await S.opts.api.samples(); S.sounds = d.samples; paint(); }
+    catch (e) { S.sounds = []; paint(); }
+  }
+
+  async function uploadSound(file, slot) {
+    if (!S.opts.uploadAudio) return toast("Can't upload right now");
+    if (!/^audio\//.test(file.type) && !/\.(wav|mp3|m4a|ogg|aiff?|flac)$/i.test(file.name)) {
+      return toast("Audio files only — wav, mp3, m4a");
+    }
+    if (file.size > 20 * 1024 * 1024) return toast("That sound's too big — 20MB max");
+    S.uploading = true; paint();
+    try {
+      const url = await S.opts.uploadAudio(file);
+      const name = file.name.replace(/\.[^.]+$/, "").slice(0, 60);
+      await S.opts.api.addSample({ name, url, slot: slot || "other", kit: "", bytes: file.size });
+      await loadSounds();
+      toast('"' + name + '" added to your sounds');
+    } catch (e) { toast(e.message); }
+    S.uploading = false; paint();
+  }
+
+  /* Put a sound on a track. The track stops synthesising and starts playing
+     the file — that's the whole feature. */
+  async function useSound(trackId, sample) {
+    const t = track(trackId);
+    if (!t) return;
+    snapshot();
+    t.voice = "sampler";
+    t.sampleUrl = sample.url;
+    t.sampleName = sample.name;
+    try {
+      const res = await fetch(sample.url);
+      S.buffers[trackId] = await audio().decodeAudioData(await res.arrayBuffer());
+      toast(t.name + " → " + sample.name);
+    } catch (e) { toast("Couldn't load that sound"); }
+    S.soundsOpen = false; S.soundTarget = null;
+    paint();
+  }
+
+  /* Back to the built-in synth voice. */
+  function resetVoice(trackId) {
+    const t = track(trackId);
+    if (!t) return;
+    snapshot();
+    const orig = newProject().tracks.find((x) => x.id === trackId);
+    t.voice = orig ? orig.voice : "kick";
+    t.sampleUrl = ""; t.sampleName = "";
+    delete S.buffers[trackId];
+    toast(t.name + " → built-in");
+    paint();
+  }
+
+  /* ================================================================
      UI
   ================================================================ */
   function paint() {
@@ -672,7 +737,7 @@
           const dim = anySolo ? !t.solo : t.mute;
           return `<button class="st-t ${S.sel === t.id ? "on" : ""} ${dim ? "dim" : ""}" data-sel="${t.id}">
             <span class="st-tn">${esc(t.name)}</span>
-            <span class="mono st-tk">${t.kind === "melodic" ? "♪" : "▣"}</span>
+            <span class="mono st-tk">${t.sampleUrl ? "◈" : t.kind === "melodic" ? "♪" : "▣"}</span>
           </button>`;
         }).join("")}
       </div>
@@ -686,6 +751,39 @@
         <button class="st-btn green" data-publish>Publish to #beats</button>
       </div>
       ${S.drafts ? draftsView() : ""}
+      ${S.soundsOpen ? soundsView() : ""}
+    </div>`;
+  }
+
+  function soundsView() {
+    const t = selTrack();
+    const byKit = {};
+    for (const s2 of (S.sounds || [])) (byKit[s2.kit || "Your sounds"] = byKit[s2.kit || "Your sounds"] || []).push(s2);
+    return `<div class="st-sounds">
+      <div class="st-sh">
+        <div><b>Your sounds</b>
+        <div class="mono dim">Drop your own kit on any track. It replaces the built-in sound.</div></div>
+        <button class="st-ic" data-soundsx>✕</button>
+      </div>
+      <input type="file" id="stsoundin" accept="audio/*,.wav,.mp3,.m4a,.aiff,.aif,.flac" hidden multiple>
+      <button class="st-btn ${S.uploading ? "" : "green"}" data-soundadd ${S.uploading ? "disabled" : ""}>
+        ${S.uploading ? "Uploading…" : "＋ Upload sounds"}</button>
+      ${S.sounds === null ? `<div class="st-hint mono dim" style="margin-top:12px">Loading…</div>`
+        : !S.sounds.length ? `<div class="st-hint mono dim" style="margin-top:12px">
+            NOTHING YET. UPLOAD A KICK, A SNARE, A WHOLE KIT — WAV OR MP3.<br>
+            THEY STAY IN YOUR ACCOUNT AND WORK IN EVERY PROJECT.</div>`
+        : Object.entries(byKit).map(([kit, list]) => `
+          <div class="st-kit">
+            <div class="mono dim st-kitname">${esc(kit).toUpperCase()}</div>
+            ${list.map((s2) => `<div class="st-snd">
+              <button class="st-sp" data-sprev="${s2.id}" title="Hear it">▶</button>
+              <div class="st-sn2">${esc(s2.name)}<div class="mono dim">${esc(s2.slot)}</div></div>
+              <button class="st-use" data-suse="${s2.id}">→ ${esc(t ? t.name : "TRACK")}</button>
+              <button class="st-ic" data-sdel="${s2.id}" title="Delete">✕</button>
+            </div>`).join("")}
+          </div>`).join("")}
+      ${t && t.sampleUrl ? `<button class="st-btn" data-sreset style="margin-top:10px">
+        Reset ${esc(t.name)} to the built-in sound</button>` : ""}
     </div>`;
   }
 
@@ -817,6 +915,51 @@
     $("[data-play]").onclick = () => (S.playing ? stop() : play(false));
     $("[data-rec]").onclick = () => (S.recording ? stopRec() : startRec());
     $("[data-metro]").onclick = () => { S.metro = !S.metro; paint(); };
+    on("[data-sounds]", "click", () => {
+      S.soundsOpen = !S.soundsOpen;
+      if (S.soundsOpen && S.sounds === null) loadSounds();
+      paint();
+    });
+    const sx = $("[data-soundsx]"); if (sx) sx.onclick = () => { S.soundsOpen = false; paint(); };
+    const sadd = $("[data-soundadd]"); if (sadd) sadd.onclick = () => $("#stsoundin").click();
+    const sin = $("#stsoundin");
+    if (sin) sin.onchange = async () => {
+      const files = [...(sin.files || [])]; sin.value = "";
+      // Guess the slot from the filename — a producer's kit is named
+      // "808 kick.wav", not tagged. Saves them sorting 10 files by hand.
+      for (const f of files) {
+        const n = f.name.toLowerCase();
+        const slot = /kick|bd|bass ?drum/.test(n) ? "kick"
+          : /snare|sd|snr/.test(n) ? "snare"
+          : /hat|hh|hi-?hat/.test(n) ? "hat"
+          : /clap|clp/.test(n) ? "clap"
+          : /808|sub/.test(n) ? "bass"
+          : /perc|tom|rim|cow|shak/.test(n) ? "perc" : "other";
+        await uploadSound(f, slot);
+      }
+    };
+    on("[data-sprev]", "click", async (e) => {
+      const s2 = (S.sounds || []).find((x) => String(x.id) === e.currentTarget.dataset.sprev);
+      if (!s2) return;
+      try {
+        const c = audio();
+        const res = await fetch(s2.url);
+        const buf = await c.decodeAudioData(await res.arrayBuffer());
+        const src = c.createBufferSource(); src.buffer = buf;
+        const g = c.createGain(); g.gain.value = 0.9;
+        src.connect(g); g.connect(c.destination); src.start();
+      } catch (err) { toast("Couldn't play that"); }
+    });
+    on("[data-suse]", "click", (e) => {
+      const s2 = (S.sounds || []).find((x) => String(x.id) === e.currentTarget.dataset.suse);
+      if (s2) useSound(S.sel, s2);
+    });
+    on("[data-sdel]", "click", async (e) => {
+      const id = e.currentTarget.dataset.sdel;
+      try { await S.opts.api.delSample(id); S.sounds = S.sounds.filter((x) => String(x.id) !== id); paint(); }
+      catch (err) { toast(err.message); }
+    });
+    on("[data-sreset]", "click", () => resetVoice(S.sel));
     $("[data-undo]").onclick = doUndo;
     $("[data-redo]").onclick = doRedo;
 
