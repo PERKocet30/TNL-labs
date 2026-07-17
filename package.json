@@ -3,14 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Social backend for TNL Labs — auth, posts, likes, shares, collabs, follows, live feed.",
+  "description": "Social backend for TNL Labs \u2014 auth, posts, likes, shares, collabs, follows, live feed.",
   "engines": {
     "node": ">=22.5.0"
   },
   "scripts": {
     "start": "node --experimental-sqlite src/server.js",
     "dev": "node --watch --experimental-sqlite src/server.js",
-    "seed": "node --experimental-sqlite src/seed.js"
+    "seed": "node --experimental-sqlite src/seed.js",
+    "test": "bash test/run.sh"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
