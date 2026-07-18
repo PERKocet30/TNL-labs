@@ -164,6 +164,8 @@ h1,h2,h3{text-transform:uppercase;letter-spacing:-.01em}
 .igact.on svg{fill:var(--green);stroke:var(--green)}
 .igact-n{color:var(--dim);font-size:12px;min-width:6px}
 .post-acts2{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.ig-viewc{background:none;border:0;color:var(--dim);font-size:13px;padding:8px 0 0;cursor:pointer;font-family:inherit;text-align:left}
+.ig-viewc:hover{color:var(--tx)}
 .act{display:inline-flex;align-items:center;gap:5px;background:var(--el);border:1px solid var(--line);color:var(--dim);border-radius:999px;padding:3px 11px;font-size:11px;font-family:'IBM Plex Mono',monospace}
 .act:hover{border-color:var(--green);color:var(--green)}
 .act.on{border-color:var(--green);color:var(--green);background:color-mix(in srgb, var(--green) 12%, transparent)}
@@ -1759,8 +1761,8 @@ function srCardHTML(p){
       ${accepted.length?`<div class="sr-collab mono">↔ BUILT WITH ${accepted.map(c=>esc((c.display_name||c.username).toUpperCase())).join(" + ")}</div>`:""}
       ${p.body?`<div class="sr-body">${rich(p.body)}</div>`:""}
       <div class="sr-acts">
-        <button class="act ${p.likedByMe?"on":""}" data-like="${p.id}">${p.likedByMe?"♥":"♡"} ${p.likeCount||""}</button>
-        <button class="act" data-share="${p.id}">↻ ${p.shareCount||""}</button>
+        <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
+        <button class="igact" data-share="${p.id}" aria-label="Send">${IG_SEND}<span class="igact-n">${p.shareCount||""}</span></button>
         ${p.author.username===myName()?`<button class="act" data-collab="${p.id}">+ collab</button>`:""}
         ${p.collaborators.find(c=>c.username===myName()&&c.status==="pending")?`<button class="act on" data-accept="${p.id}">accept ✓</button>`:""}
       </div>
@@ -2077,7 +2079,7 @@ function postHTML(p){const mine=p.author.username===myName();
   ${p.collaborators.length?`<div class="collab-row">${p.collaborators.map(c=>`<span class="ctag ${c.status==="accepted"?"acc":""}">${c.status==="accepted"?"✓":"…"} ${esc(c.display_name||c.username)}</span>`).join("")}</div>`:""}
   <div class="post-acts">
     <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
-    <button class="igact" data-comments="${p.id}" aria-label="Comment">${IG_COMMENT}<span class="igact-n">${p.commentCount||""}</span></button>
+    <button class="igact" data-comments="${p.id}" aria-label="Comment">${IG_COMMENT}</button>
     <button class="igact" data-share="${p.id}" aria-label="Send">${IG_SEND}<span class="igact-n">${p.shareCount||""}</span></button>
   </div>
   <div class="post-acts2">
@@ -2086,6 +2088,7 @@ function postHTML(p){const mine=p.author.username===myName();
     ${myPending?`<button class="act on" data-accept="${p.id}">accept collab ✓</button>`:""}
     ${!mine?`<button class="act" data-report="${p.id}">⚐ report</button>`:""}
   </div>
+  ${p.commentCount&&OPENCOMMENTS!==p.id?`<button class="ig-viewc" data-comments="${p.id}">View all ${p.commentCount} comment${p.commentCount==1?"":"s"}</button>`:""}
   ${OPENCOMMENTS===p.id?commentsHTML(p):""}
   </div>`}
 
