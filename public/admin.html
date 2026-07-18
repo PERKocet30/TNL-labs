@@ -151,7 +151,7 @@ function paint(){
       ${[["overview","OVERVIEW"],["funnel","FUNNEL"],["retention","RETENTION"],["market","MARKET"],
          ["members","MEMBERS"],["content","CONTENT"],["orders","ORDERS"],
          ["reports","REPORTS"+(DATA.overview?.openReports?" ("+DATA.overview.openReports+")":"")],
-         ["health","HEALTH"],["settings","SETTINGS"]]
+         ["studio","STUDIO"],["health","HEALTH"],["settings","SETTINGS"]]
         .map(([id,l])=>`<button class="${TAB===id?"on":""}" data-tab="${id}">${l}</button>`).join("")}
     </div>
     <div class="wrap">${
@@ -162,6 +162,7 @@ function paint(){
       TAB==="members"?membersHTML():
       TAB==="content"?contentHTML():
       TAB==="orders"?ordersHTML():
+      TAB==="studio"?studioHTML():
       TAB==="health"?healthHTML():
       TAB==="settings"?settingsHTML():reportsHTML()}</div>
     ${TOASTT?`<div class="toast">${esc(TOASTT)}</div>`:""}`;
@@ -370,6 +371,150 @@ function marketHTML(){
 }
 const feeFor=(rep)=>rep>=560?2:rep>=280?4:rep>=120?6:rep>=40?8:10;
 
+/* ---------- studio ---------- */
+function studioHTML(){
+  const d=DATA.studio;
+  if(!d)return `<div class="empty">Loading…</div>`;
+  const f=d.funnel;
+  const maxF=Math.max(1,f.opened);
+  const names={kick:"KICK",snare:"SNARE",hat:"HAT",clap:"CLAP",perc:"PERC",bass:"808",synth:"SYNTH"};
+  return `
+  <div class="hero"><h1>Studio</h1><p>What producers do with it. This decides what gets built next — not my taste, not yours.</p></div>
+
+  <div class="panel">
+    <h3>WHICH BUILT-IN SOUNDS PRODUCERS THROW AWAY</h3>
+    <p style="font-size:13px;line-height:1.7;color:var(--dim);margin-bottom:14px">
+      Someone replacing a built-in voice with their own sample is the most honest quality
+      signal there is: they heard it, didn't like it, and did something about it.
+      <b style="color:var(--tx)">Whatever's at the top of this list is what I fix next.</b>
+    </p>
+    ${d.replaced.length?`<div class="bars">${(()=>{
+      const max=Math.max(...d.replaced.map(x=>x.n));
+      return d.replaced.map(x=>`<div class="bar">
+        <span class="lab">${esc(names[x.voice]||x.voice.toUpperCase())}</span>
+        <div class="track"><div class="fill" style="width:${(x.n/max)*100}%;background:var(--red)"></div></div>
+        <span class="n">${x.n}</span>
+      </div>`).join("");
+    })()}</div>
+    <p class="mono dim" style="margin-top:10px;line-height:1.6">Replaced by ${d.replaced.reduce((s,x)=>s+x.people,0)} producer(s). Red because it's a complaint.</p>`
+    :`<div class="empty">Nobody's replaced a built-in sound yet.<br><br>Either they're fine — or nobody's opened the studio. Check the funnel.</div>`}
+  </div>
+
+  <div class="panel">
+    <h3>DOES ANYONE ACTUALLY USE IT</h3>
+    <div class="bars">${[["Opened the studio",f.opened],["Pressed play",f.played],["Saved a draft",f.saved],["Published to #beats",f.published],["Exported a WAV",f.exported]]
+      .map(([l,n],i,arr)=>{
+        const prev=i?arr[i-1][1]:n; const drop=prev-n;
+        const bad=i>0&&prev>0&&drop/prev>=0.5;
+        return `<div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:13px;font-weight:700">${l}</span><span class="mono dim">${n}</span></div>
+          <div class="track"><div class="fill" style="width:${(n/maxF)*100}%;${bad?"background:var(--red)":""}"></div></div>
+          ${bad?`<div class="mono" style="color:var(--red);font-size:9px;margin-top:3px">↓ lost ${drop} here</div>`:""}
+        </div>`}).join("")}</div>
+    ${!f.opened?`<div class="rep" style="margin-top:12px"><div class="rt">Nobody has opened the studio.</div>
+      <div class="rb">The most technically involved thing in the app and it has zero users. That's not a sound quality problem — you can't be let down by a sound you never heard. Something upstream is stopping them: they don't know it's there, it looks like work, or they came for something else. Ask one person.</div></div>`:""}
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="k">BEATS PUBLISHED</div><div class="v">${d.published}</div>
+      <div class="s">${d.withSamples} used custom sounds · ${d.withSlides} used 808 slides</div></div>
+    <div class="card"><div class="k">SOUNDS UPLOADED</div><div class="v">${d.totalSamples}</div>
+      <div class="s">by ${d.uploaders} producer${d.uploaders===1?"":"s"}</div></div>
+    <div class="card"><div class="k">MEDIAN BPM</div><div class="v">${d.bpm.median||"—"}</div>
+      <div class="s">${d.bpm.min?d.bpm.min+"–"+d.bpm.max+" range":"nothing published yet"}${d.bpm.median&&d.bpm.median!==140?" · default is 140":""}</div></div>
+    <div class="card"><div class="k">MEDIAN LOUDNESS</div><div class="v">${d.medianLoudness!=null?Math.round(d.medianLoudness*100)+"%":"—"}</div>
+      <div class="s">default is 75%${d.medianLoudness!=null&&Math.abs(d.medianLoudness-0.75)>0.15?" — they disagree":""}</div></div>
+  </div>
+
+  <div class="panel">
+    <h3>THE SPEC — WHAT REAL SOUNDS MEASURE vs WHAT I BUILT</h3>
+    <p style="font-size:13px;line-height:1.7;color:var(--dim);margin-bottom:14px">
+      Measured in the browser while each sample was being decoded to play. Numbers only —
+      never the audio. <b style="color:var(--tx)">Where these disagree, mine is wrong.</b>
+      This is the spec for the built-in sounds, written by the people using them.
+    </p>
+    ${d.shape&&d.shape.length?`<div class="scrollx"><table>
+      <thead><tr><th>SLOT</th><th>N</th><th>THEIRS</th><th>MINE</th><th>VERDICT</th></tr></thead>
+      <tbody>${d.shape.map(x=>{
+        const m=d.mine[x.slot]||d.mine[x.slot==="bass"?"bass":x.slot];
+        const fund=x.fund?Math.round(x.fund):null;
+        const rows=[];
+        if(m){
+          if(fund&&m.fund){
+            const off=Math.round((fund-m.fund)/m.fund*100);
+            if(Math.abs(off)>15)rows.push(`pitch ${off>0?"+":""}${off}% — mine sits at ${m.fund}Hz, theirs at ${fund}Hz`);
+          }
+          if(x.decay&&m.decay){
+            const off=Math.round((x.decay-m.decay)/m.decay*100);
+            if(Math.abs(off)>25)rows.push(`decay ${off>0?"+":""}${off}% — mine ${m.decay}ms, theirs ${Math.round(x.decay)}ms`);
+          }
+          if(x.centroid&&m.centroid){
+            const off=Math.round((x.centroid-m.centroid)/m.centroid*100);
+            if(Math.abs(off)>40)rows.push(`${off>0?"brighter":"darker"} — mine ${m.centroid}Hz, theirs ${Math.round(x.centroid)}Hz`);
+          }
+        }
+        return `<tr>
+          <td><b>${esc(x.slot.toUpperCase())}</b></td>
+          <td class="mono dim">${x.n}</td>
+          <td class="mono dim" style="font-size:10px">
+            ${fund?fund+"Hz · ":""}${Math.round(x.decay)}ms<br>
+            <span style="opacity:.7">${Math.round(x.centroid)}Hz bright · ${x.peak.toFixed(1)}dB peak</span></td>
+          <td class="mono dim" style="font-size:10px">${m?esc(m.note):"—"}</td>
+          <td style="max-width:240px">${rows.length
+            ? rows.map(r=>`<div class="mono" style="color:var(--red);font-size:9px;line-height:1.5">→ ${esc(r)}</div>`).join("")
+            : `<span class="mono" style="color:var(--green);font-size:9px">mine's in the ballpark</span>`}</td>
+        </tr>`;}).join("")}</tbody></table></div>
+      <p class="mono dim" style="margin-top:10px;line-height:1.6">
+        Red = a measurable gap between my synth and what producers actually use. Not taste — arithmetic.</p>`
+    :`<div class="empty">No sounds measured yet.<br><br>The moment a producer uploads a kick, this table tells me exactly how wrong mine is.</div>`}
+  </div>
+
+  <div class="panel">
+    <h3>WHAT FORMATS THEY BRING</h3>
+    ${d.formats.length?`<div class="scrollx"><table>
+      <thead><tr><th>FORMAT</th><th>UPLOADS</th><th>PEOPLE</th><th>AVG SIZE</th></tr></thead>
+      <tbody>${d.formats.map(x=>`<tr>
+        <td><b>${esc(x.fmt.toUpperCase())}</b></td><td>${x.n}</td><td>${x.people}</td>
+        <td class="mono dim">${(x.avg_bytes/1024).toFixed(0)} KB</td>
+      </tr>`).join("")}</tbody></table></div>
+      <p class="mono dim" style="margin-top:10px;line-height:1.6">If a format shows up that we reject, that's a silent wall. AIFF was one — a producer's Logic kit would've bounced.</p>`
+    :`<div class="empty">No sounds uploaded yet.</div>`}
+  </div>
+
+  ${d.slots.length?`<div class="panel">
+    <h3>WHAT SOUNDS THEY NEED MOST</h3>
+    <div class="bars">${(()=>{const max=Math.max(...d.slots.map(x=>x.n));
+      return d.slots.map(x=>`<div class="bar"><span class="lab">${esc(x.slot.toUpperCase())}</span>
+        <div class="track"><div class="fill" style="width:${(x.n/max)*100}%"></div></div>
+        <span class="n">${x.n}</span></div>`).join("")})()}</div>
+  </div>`:""}
+
+  ${d.voiceUse.length?`<div class="panel">
+    <h3>WHICH TRACKS GET USED AT ALL</h3>
+    <div class="bars">${(()=>{const max=Math.max(...d.voiceUse.map(x=>x.n));
+      return d.voiceUse.map(x=>`<div class="bar"><span class="lab">${esc((names[x.id]||x.id).toUpperCase())}</span>
+        <div class="track"><div class="fill" style="width:${(x.n/max)*100}%"></div></div>
+        <span class="n">${x.n}</span></div>`).join("")})()}</div>
+    <p class="mono dim" style="margin-top:10px;line-height:1.6">A track nobody touches is a track that should be cut, not improved. Dead weight makes the whole thing look harder than it is.</p>
+  </div>`:""}
+
+  <div class="panel">
+    <h3>WHERE THE LINE IS</h3>
+    <p style="font-size:13px;line-height:1.7;color:var(--dim)">
+      <b style="color:var(--green)">We measure:</b> the shape of an uploaded sound — pitch, length,
+      brightness, level. Computed in the browser while it's already decoded to play. Only the
+      numbers come back. Aggregated by slot, never per person.<br><br>
+      <b style="color:var(--red)">We don't:</b> store or analyse the audio server-side. Build a
+      profile of anyone's sound. Share it. Use it to recreate their kit.<br><br>
+      <b style="color:var(--tx)">And the studio says so</b>, in the upload panel, in plain words.
+      A quiet version of this would be mining — and if that ever got out you wouldn't lose a
+      feature, you'd lose the trust the whole network runs on. Disclosure is what makes it fair,
+      not the code.
+    </p>
+  </div>`;
+}
+
 /* ---------- settings ---------- */
 function settingsHTML(){
   const s=DATA.settings;
@@ -400,6 +545,31 @@ function settingsHTML(){
         <div class="setdesc">0 = anyone can list. Raise it if the market gets messy — sellers have to earn standing first.</div></div>
       <input class="setnum" id="set-minrep" type="number" min="0" max="1000" value="${esc(g.minRepToSell)}">
     </div>
+  </div>
+
+  <div class="panel">
+    <h3>DISTRIBUTION — THE PROMISE</h3>
+    ${tog("distroOn","Offer distribution","Shows in the Studio: reach a level and TNL puts your music on Spotify and the rest.")}
+    ${g.distroOn==="1"?`
+      <div class="setrow">
+        <div class="setinfo"><b>Level that earns it</b>
+          <div class="setdesc">Which level unlocks it. Higher = fewer people = affordable.
+          <b style="color:var(--tx)">This costs real money</b> — distribution runs ~$20–80/yr per artist.
+          At Core you'll have two or three people. At Verified you'd have everyone.</div></div>
+        <select class="setnum" id="set-distrolvl" style="width:auto">
+          ${[[2,"Verified (40)"],[3,"Collaborator (120)"],[4,"Core (280)"],[5,"Leadership (560)"]]
+            .map(([v,l])=>`<option value="${v}" ${String(g.distroLevel)===String(v)?"selected":""}>${l}</option>`).join("")}
+        </select>
+      </div>
+      <label class="mono lbl2">THE TERMS — SAY WHO KEEPS WHAT</label>
+      <textarea class="search" id="set-distroblurb" rows="2" maxlength="200">${esc(g.distroBlurb)}</textarea>
+      <button class="btn sm" data-savedistro>Save</button>
+      <div class="setwarn" style="margin-top:12px">
+        ⚠ This is a promise, not copy. Producers will hold you to it. Before you leave it on:
+        can you actually distribute for everyone who reaches that level, this year?
+        Breaking it costs more trust than never offering it.
+      </div>
+    `:""}
   </div>
 
   <div class="panel">
@@ -456,6 +626,29 @@ function healthHTML(){
     </p>
     <button class="btn" data-cleanup>Delete ${d.orphans} orphaned file${d.orphans===1?"":"s"}</button>
   </div>`:""}
+  ${DATA.errors&&DATA.errors.last24h?`<div class="rep">
+    <div class="rt">${DATA.errors.last24h} error${DATA.errors.last24h===1?"":"s"} in the last 24h</div>
+    <div class="rb">${DATA.errors.byKind.map(k=>k.n+" "+k.kind).join(" · ")} — the app is telling you something's wrong. Scroll down.</div>
+  </div>`:""}
+
+  <div class="panel">
+    <h3>BACKUPS</h3>
+    <p style="font-size:13px;line-height:1.65;color:var(--dim);margin-bottom:12px">
+      The database <b style="color:var(--tx)">is</b> the business — six years of relationships live in it.
+      Automatic daily, keeps 7. <b style="color:var(--tx)">Download one now and again:</b> a backup on the same
+      volume as the database protects you from your own mistakes, not from losing the volume.
+    </p>
+    <button class="btn" data-backup>Back up now</button>
+    ${DATA.backups?(DATA.backups.backups.length?`<div class="scrollx" style="margin-top:12px"><table><tbody>
+      ${DATA.backups.backups.map(b=>`<tr>
+        <td class="mono" style="font-size:11px">${esc(b.name)}</td>
+        <td class="mono dim">${(b.bytes/1024).toFixed(0)} KB</td>
+        <td class="mono dim">${ago(b.at)}</td>
+        <td><button class="btn ghost sm" data-dlbackup="${esc(b.name)}">Download</button></td>
+      </tr>`).join("")}
+    </tbody></table></div>`:`<div class="empty">No backups yet — the first runs an hour after boot. Make one now.</div>`):""}
+  </div>
+
   <div class="panel">
     <h3>EMAIL — TEST IT</h3>
     <p style="font-size:13px;line-height:1.65;color:var(--dim);margin-bottom:12px">
@@ -491,6 +684,22 @@ function healthHTML(){
         </tr>`).join("")}</tbody></table></div>
       <p class="mono dim" style="margin-top:10px;line-height:1.6">Stuck people. Verify them by hand — better than losing them to an inbox.</p>`;
     })()}
+  </div>
+
+  <div class="panel">
+    <h3>WHAT'S ACTUALLY BREAKING</h3>
+    ${!DATA.errors?`<div class="empty">Loading…</div>`
+      :!DATA.errors.errors.length?`<div class="empty">Nothing logged. Either it's healthy or nobody's using it — check the numbers, not this box.</div>`
+      :`<div class="scrollx"><table>
+        <thead><tr><th>WHEN</th><th>KIND</th><th>WHAT</th><th>WHERE</th><th>WHO</th></tr></thead>
+        <tbody>${DATA.errors.errors.slice(0,25).map(e=>`<tr>
+          <td class="mono dim">${ago(e.created_at)}</td>
+          <td><span class="pill ${e.kind==="server"?"no":"warn"}">${esc(e.kind.toUpperCase())}</span></td>
+          <td style="max-width:280px"><div class="trunc" title="${esc(e.detail||"")}">${esc(e.message)}</div></td>
+          <td class="mono dim">${esc(e.path||"—")}</td>
+          <td class="mono dim">${e.username?"@"+esc(e.username):"—"}</td>
+        </tr>`).join("")}</tbody></table></div>
+      <button class="btn ghost sm" data-clearerrors style="margin-top:10px">Clear the log</button>`}
   </div>
 
   <div class="panel">
@@ -632,6 +841,24 @@ function wire(){
     if(!confirm("Send this as a DM to "+who+"?\n\n\""+body.slice(0,120)+(body.length>120?"…":"")+"\"\n\nThis can't be undone."))return;
     try{const d=await req("/api/admin/broadcast",{method:"POST",body:{body,target}});
       toast("Sent to "+d.sent);$("#bcast").value=""}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-backup]").forEach(b=>b.onclick=async()=>{
+    b.textContent="Backing up…";b.disabled=true;
+    try{const d=await req("/api/admin/backups",{method:"POST"});
+      toast("Backed up — "+(d.bytes/1024).toFixed(0)+"KB");load()}
+    catch(e){toast(e.message);b.textContent="Back up now";b.disabled=false}});
+  document.querySelectorAll("[data-dlbackup]").forEach(b=>b.onclick=()=>{
+    // the token has to ride along — this is an authenticated download
+    fetch(API+"/api/admin/backups/"+b.dataset.dlbackup,{headers:{Authorization:"Bearer "+TOKEN}})
+      .then(r=>r.blob()).then(bl=>{
+        const u=URL.createObjectURL(bl);const a=document.createElement("a");
+        a.href=u;a.download=b.dataset.dlbackup;document.body.appendChild(a);a.click();
+        document.body.removeChild(a);URL.revokeObjectURL(u);
+        toast("Downloaded — keep it somewhere that isn't Railway");
+      }).catch(e=>toast("Download failed"));
+  });
+  document.querySelectorAll("[data-clearerrors]").forEach(b=>b.onclick=async()=>{
+    if(!confirm("Clear the error log?"))return;
+    try{await req("/api/admin/errors",{method:"DELETE"});toast("Cleared");load()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=async()=>{
     const k=b.dataset.toggle, now=DATA.settings.settings[k]==="1";
     if(k==="autoVerify"&&!now&&!confirm("Turn OFF email verification?\n\nAnyone will be able to register with an address they don't own. Only do this while email is broken."))return;
@@ -640,6 +867,10 @@ function wire(){
   const mr=$("#set-minrep");if(mr)mr.onchange=async()=>{
     try{const d=await req("/api/admin/settings",{method:"PATCH",body:{minRepToSell:mr.value}});
       DATA.settings.settings=d.settings;toast("Saved")}catch(e){toast(e.message)}};
+  document.querySelectorAll("[data-savedistro]").forEach(b=>b.onclick=async()=>{
+    try{const d=await req("/api/admin/settings",{method:"PATCH",body:{
+      distroLevel:$("#set-distrolvl").value, distroBlurb:$("#set-distroblurb").value}});
+      DATA.settings.settings=d.settings;toast("Saved — live now");paint()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-savetext]").forEach(b=>b.onclick=async()=>{
     try{const d=await req("/api/admin/settings",{method:"PATCH",body:{
       headline:$("#set-headline").value, tagline:$("#set-tagline").value, announcement:$("#set-announce").value}});
@@ -684,8 +915,11 @@ async function load(){
     if(TAB==="retention")DATA.retention=await req("/api/admin/retention");
     if(TAB==="market")DATA.market=await req("/api/admin/market");
     if(TAB==="health"){DATA.health=await req("/api/admin/health");
-      DATA.maillog=await req("/api/admin/mail-log");}
+      DATA.maillog=await req("/api/admin/mail-log");
+      DATA.errors=await req("/api/admin/errors");
+      DATA.backups=await req("/api/admin/backups");}
     if(TAB==="settings")DATA.settings=await req("/api/admin/settings");
+    if(TAB==="studio")DATA.studio=await req("/api/admin/studio");
     if(!DATA.overview&&TAB!=="overview")DATA.overview=await req("/api/admin/overview");
     paint();
   }catch(e){ if(/admins only|token/i.test(e.message)){ME=null;paint()} else toast(e.message) }

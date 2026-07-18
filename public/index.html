@@ -208,6 +208,17 @@ textarea.in{resize:vertical;line-height:1.5}
 .wall-lab{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;border:1px solid var(--line2);border-radius:999px;padding:5px 11px;color:var(--dim)}
 .wall-cta{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
 .tryline{color:var(--green);font-size:9px;letter-spacing:.12em;margin-top:8px}
+/* the distribution offer */
+.distro{margin-top:16px;background:linear-gradient(150deg,color-mix(in srgb, var(--green) 13%, transparent),transparent);border:1px solid color-mix(in srgb, var(--green) 38%, transparent);border-radius:12px;padding:15px;max-width:520px}
+.distro.earned{background:linear-gradient(150deg,color-mix(in srgb, var(--green) 22%, transparent),transparent);border-color:var(--green)}
+.distro-h{display:flex;gap:9px;align-items:flex-start;margin-bottom:7px}
+.distro-h b{font-size:14px;line-height:1.35}
+.distro-ic{color:var(--green);font-size:16px;line-height:1.2;flex-shrink:0}
+.distro p{font-size:12.5px;line-height:1.6;color:var(--dim);margin:0 0 10px}
+.distro-bar{height:4px;background:var(--el);border-radius:2px;overflow:hidden}
+.distro-fill{height:100%;background:var(--green);border-radius:2px}
+.distro-meta{margin-top:6px;font-size:8px;letter-spacing:.06em;line-height:1.6}
+.distro-go{color:var(--green);font-size:9px;letter-spacing:.08em;line-height:1.6}
 .vb-btn{background:var(--green);color:#000;border:none;border-radius:7px;padding:5px 11px;font-size:11px;font-weight:700;text-decoration:none;display:inline-block}
 .publink{display:block;color:var(--green);text-decoration:none;font-size:10px;letter-spacing:.06em;margin-bottom:12px;word-break:break-all}
 /* showroom — the front page */
@@ -610,6 +621,8 @@ img.post-img,img.sr-img{height:auto}
 /* autoplaying feed video */
 .vwrap{position:relative;margin-top:8px}
 .vwrap .post-vid{margin-top:0}
+.vplay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.65);border:1px solid var(--line2);color:#fff;font-size:18px;backdrop-filter:blur(4px);padding:0}
+.vplay:active{transform:translate(-50%,-50%) scale(.94)}
 .vmute{position:absolute;bottom:9px;right:9px;width:32px;height:32px;border-radius:50%;
   background:rgba(0,0,0,.6);border:1px solid var(--line2);color:#fff;font-size:13px;
   backdrop-filter:blur(4px);padding:0;line-height:1}
@@ -628,6 +641,12 @@ video[data-auto]{cursor:pointer}
 .st-use{background:var(--el);border:1px solid var(--line2);color:var(--tx);border-radius:6px;padding:4px 9px;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.05em;white-space:nowrap}
 .st-use:hover{border-color:var(--green);color:var(--green)}
 .st-custom{font-size:10px;color:var(--green);padding:6px 0}
+.st-stabs{display:flex;gap:6px;margin-bottom:10px}
+.st-lslots{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 6px}
+.st-lmeta{letter-spacing:.1em;margin-bottom:8px}
+.st-share{width:26px;height:26px;border-radius:6px;border:1px solid var(--line2);background:var(--el);color:var(--dim);font-size:11px;padding:0;flex-shrink:0}
+.st-share.on{border-color:var(--green);color:var(--green);background:color-mix(in srgb, var(--green) 14%, transparent)}
+.st-privacy{margin-top:8px;font-size:8px;letter-spacing:.05em;line-height:1.7;color:var(--dim);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 .st-link{background:none;border:none;color:var(--dim);text-decoration:underline;font-size:10px;padding:0;font-family:inherit}
 .st-link:hover{color:var(--tx)}
 /* selling a sound */
@@ -658,6 +677,26 @@ video[data-auto]{cursor:pointer}
 .simglyph{width:100%;aspect-ratio:1/1;background:var(--el);display:flex;align-items:center;justify-content:center;color:var(--green);font-size:22px}
 .announce{background:color-mix(in srgb, var(--green) 14%, transparent);border-bottom:1px solid color-mix(in srgb, var(--green) 40%, transparent);padding:9px 15px;font-size:12.5px;line-height:1.5;color:#D6D2C8;text-align:center}
 .closed{border:1px solid var(--line2);border-radius:999px;padding:9px 16px;color:var(--dim);letter-spacing:.1em;font-size:9px;display:inline-block}
+/* held notes + slides */
+.st-c.tail{background:color-mix(in srgb, var(--green) 30%, transparent);border-color:color-mix(in srgb, var(--green) 45%, transparent)}
+.st-c.slide{color:#000;font-size:9px;font-weight:900;line-height:1}
+.st-c.on.slide{background:var(--green);border-color:var(--green)}
+/* note editor */
+.st-noteedit{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center;z-index:75}
+@media(min-width:620px){.st-noteedit{align-items:center}}
+.st-nec{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:16px 16px 0 0;padding:18px;max-height:80vh;overflow-y:auto}
+@media(min-width:620px){.st-nec{border-radius:16px}}
+.st-neh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.st-neh b{font-size:15px}
+.st-nel{letter-spacing:.12em;margin:14px 0 6px}
+.st-vrow,.st-lpre{display:flex;gap:5px;flex-wrap:wrap}
+.st-lrow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.st-lrow input{flex:1;accent-color:var(--green)}
+.st-slide{width:100%;display:flex;align-items:center;gap:11px;background:var(--el);border:1px solid var(--line);border-radius:10px;padding:11px;text-align:left;color:var(--tx)}
+.st-slide.on{border-color:var(--green);background:color-mix(in srgb, var(--green) 12%, transparent)}
+.st-slide b{font-size:13px}
+.st-sglyph{font-size:22px;color:var(--green);width:26px;text-align:center;flex-shrink:0}
+.st-chip.sm{font-size:10px;padding:4px 8px}
 .toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:var(--tx);color:#000;font-weight:700;font-size:13px;border-radius:999px;padding:9px 18px;z-index:80}
 .empty{padding:30px 20px;text-align:center;color:var(--dim);font-size:13px;line-height:1.7}
 @media (max-width:680px){
@@ -691,6 +730,12 @@ input, textarea, select, .in, .search { font-size: 16px !important; }
   var shown=false;
   function crash(what,where){
     if(shown)return; shown=true;
+    /* Tell the server. Otherwise a crash only exists if the person who hit
+       it bothers to screenshot it — and most people just leave. */
+    try{
+      fetch("/api/client-error",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({message:String(what).slice(0,400),detail:String(where||"").slice(0,400),path:location.pathname})}).catch(function(){});
+    }catch(e){}
     try{
       document.getElementById("app").innerHTML=
         '<div style="padding:28px;font-family:-apple-system,Helvetica,sans-serif;color:#fff">'+
@@ -923,6 +968,11 @@ const api={
   samples:()=>req("/api/samples"),
   addSample:b=>req("/api/samples",{method:"POST",body:b}),
   delSample:id=>req("/api/samples/"+id,{method:"DELETE"}),
+  sampleShape:(id,shape)=>req("/api/samples/"+id+"/shape",{method:"POST",body:shape}),
+  library:slot=>req("/api/library"+(slot?"?slot="+encodeURIComponent(slot):"")),
+  shareSample:(id,shared)=>req("/api/samples/"+id+"/share",{method:"POST",body:{shared}}),
+  useLibrary:id=>req("/api/library/"+id+"/use",{method:"POST"}),
+  sampleUses:id=>req("/api/samples/"+id+"/uses"),
   beat:id=>req("/api/beats/"+id),
   saveBeat:b=>req("/api/beats",{method:"POST",body:b}),
   delBeat:id=>req("/api/beats/"+id,{method:"DELETE"}),
@@ -2031,12 +2081,41 @@ function ordersHTML(){
     </div>
   </div>`}
 
-function studioHTML(){return `<div class="scroll">
+function studioHTML(){
+  const d=SITE.distro;
+  /* The distribution offer. It sits here, above the tools, because that's
+     where a producer is when they're deciding whether this place is worth
+     their time. It shows YOUR standing — a generic banner is an advert; a
+     number you're 186 rep away from is a reason. */
+  const distro=()=>{
+    if(!d)return "";
+    if(guest())return `<div class="distro">
+      <div class="distro-h"><span class="distro-ic">↗</span>
+        <b>Reach ${esc(d.levelName)} and we put your music on Spotify.</b></div>
+      <p>${esc(d.blurb)} You get there by making things people back — not by paying, not by knowing anyone.</p>
+    </div>`;
+    const me=levelFor(myRep());
+    const done=me.id>=d.level;
+    const away=Math.max(0,d.at-myRep());
+    return `<div class="distro ${done?"earned":""}">
+      <div class="distro-h"><span class="distro-ic">${done?"✓":"↗"}</span>
+        <b>${done
+          ? "You're "+esc(d.levelName)+". Your music gets distributed."
+          : "At "+esc(d.levelName)+", TNL puts your music on Spotify, Apple Music and the rest."}</b></div>
+      <p>${esc(d.blurb)}</p>
+      ${done
+        ? `<div class="mono distro-go">↗ MESSAGE @TNLLABS WITH A FINISHED TRACK AND IT GOES OUT</div>`
+        : `<div class="distro-bar"><div class="distro-fill" style="width:${Math.min(100,(myRep()/d.at)*100)}%"></div></div>
+           <div class="mono dim distro-meta">${myRep()} / ${d.at} REP · ${away} TO GO — EARNED WHEN OTHERS BACK YOUR WORK, NEVER BY POSTING MORE</div>`}
+    </div>`;
+  };
+  return `<div class="scroll">
   <div class="page-head"><div class="mono dim">MUSIC LAB · TOOLS</div><h2>Studio</h2>
   <p class="page-sub">${guest()
     ?"A full beat maker in the app — drums, a tuned 808, synths with a scale-locked piano roll. Have a play. Joining lets you save it, export a WAV, or publish it to #beats for someone to write to."
     :"Drums, 808, synths, your voice. Make it, export it, or publish it straight to #beats."}</p>
-  ${guest()?`<div class="tryline mono">TRY IT — NOTHING SAVES UNTIL YOU JOIN</div>`:""}</div>
+  ${guest()?`<div class="tryline mono">TRY IT — NOTHING SAVES UNTIL YOU JOIN</div>`:""}
+  ${distro()}</div>
   <div id="studiomount"></div>
 </div>`}
 
@@ -2624,6 +2703,9 @@ function mountStudio(){
       const up=await uploadStream(blob);   // streamed — a kit file can be big
       return up.url;
     },
+    // metadata only — never the audio. see studio_events in db.js.
+    event:(kind,d)=>{ if(!ME)return;
+      req("/api/studio/event",{method:"POST",body:{kind,...d}}).catch(()=>{}) },
   });
 }
 
@@ -2643,8 +2725,21 @@ function wireVideos(){
     for(const e of entries){
       const v=e.target;
       if(e.isIntersecting&&e.intersectionRatio>0.55){
-        // play() rejects if interrupted mid-scroll. Expected, not an error.
-        const p=v.play(); if(p&&p.catch)p.catch(()=>{});
+        const p=v.play();
+        if(p&&p.catch)p.catch((err)=>{
+          /* iOS refuses autoplay outright in Low Power Mode — no code can
+             override that. Don't leave a dead black box: show a play button
+             and let them start it by hand. */
+          if(err&&err.name==="NotAllowedError"){
+            const w=v.parentElement;
+            if(w&&!w.querySelector(".vplay")){
+              const b=document.createElement("button");
+              b.className="vplay"; b.textContent="▶"; b.setAttribute("aria-label","Play");
+              b.onclick=(ev)=>{ev.stopPropagation();v.play().then(()=>b.remove()).catch(()=>{})};
+              w.appendChild(b);
+            }
+          }
+        });
       }else{
         try{v.pause()}catch(err){}
       }
@@ -2653,12 +2748,15 @@ function wireVideos(){
 
   for(const v of vids){
     v.muted=true;                 // required, or autoplay is refused outright
+    /* Without this iOS shows a black rectangle until you press play —
+       #t=0.1 makes it decode one frame so there's something to look at. */
+    if(v.src&&!/#t=/.test(v.src))v.src=v.src+"#t=0.1";
     VOBS.observe(v);
     v.onclick=()=>{
       v.muted=!v.muted;
-      if(v.muted)v.pause(),v.play().catch(()=>{});
       const btn=v.parentElement&&v.parentElement.querySelector("[data-vmute]");
       if(btn)btn.textContent=v.muted?"🔇":"🔊";
+      if(v.paused)v.play().catch(()=>{});
       if(!v.muted){ // only one thing makes noise at a time
         for(const o of vids) if(o!==v){o.muted=true;
           const b=o.parentElement&&o.parentElement.querySelector("[data-vmute]");
@@ -2674,6 +2772,7 @@ function wireVideos(){
 }
 
 function wireFeed(){
+  wireVideos();   // autoplay in view — must run after every feed repaint
   document.querySelectorAll("[data-like]").forEach(b=>b.onclick=async()=>{
     if(guest())return needAccount("Back someone's work. Likes are how people earn standing here — it's the whole point.");
     const id=b.dataset.like;
