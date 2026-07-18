@@ -25,7 +25,11 @@ if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
 const buckets = new Map();
 function rateLimit({ max, windowMs, key = "ip" }) {
   return (req, res, next) => {
-    const who = key === "user" && req.user ? `u${req.user.id}` : req.ip;
+    /* Cloudflare puts the real visitor in CF-Connecting-IP. It's the only
+       one CF guarantees and strips from client-supplied headers, so it
+       can't be spoofed the way X-Forwarded-For can. */
+    const ip = req.get("cf-connecting-ip") || req.ip;
+    const who = key === "user" && req.user ? `u${req.user.id}` : ip;
     const id = `${req.route?.path || req.path}:${who}`;
     const now = Date.now();
     const hits = (buckets.get(id) || []).filter((t) => now - t < windowMs);
@@ -49,14 +53,70 @@ setInterval(() => {
 }, 600000).unref?.();
 
 const app = express();
+
+/* ── BEHIND CLOUDFLARE ───────────────────────────────────────────────
+   Cloudflare (and Railway) proxy every request, so req.ip becomes THEIR
+   IP, not the visitor's. Left unfixed, that silently breaks:
+
+     • rate limiting — everyone shares one "IP". The register limit is
+       5/hour, so the 6th person to sign up EVER gets blocked, and it
+       looks like a bug in your app, not a config.
+     • baseUrl — req.protocol reads "http" behind a proxy, so every
+       verification link and OG image URL would go out as http://.
+
+   `trust proxy` tells Express to read X-Forwarded-For / -Proto instead.
+   The hop count is 2: Cloudflare → Railway → us. Trusting blindly (true)
+   would let anyone spoof their IP by sending the header themselves. */
+app.set("trust proxy", 2);
+
+/* Belt and braces: mark every API response private and uncacheable.
+
+   Cloudflare won't cache JSON by default — but "Cache Everything" is one
+   page rule away, and if it were ever switched on, /api/me would get
+   cached and served to the next person. One account, everyone's session.
+   That's the worst bug this app could have, and it wouldn't be a code bug.
+
+   Explicit beats default when the downside is that bad. */
+app.use("/api", (req, res, next) => {
+  res.set("Cache-Control", "private, no-store, max-age=0");
+  next();
+});
 app.use(cors());
 /* Real media does NOT come through here — it streams to disk via
    /api/upload/stream. This limit only covers small base64 payloads
    (avatars, beat audio), and stays low on purpose: anything parsed as
    JSON is held in RAM in full. */
 app.use(express.json({ limit: "12mb" })); // only the small base64 route uses this now
-app.use(express.static(join(__dirname, "..", "public")));
-app.use("/uploads", express.static(UPLOAD_DIR, { maxAge: "365d" }));
+/* The app shell must NEVER be edge-cached. index.html changes every deploy;
+   a copy cached at Cloudflare means people keep getting the old build no
+   matter what you push, and redeploying doesn't fix it. The service worker
+   already taught us this the hard way.
+   Images and fonts are safe to cache — HTML is not. */
+app.use(express.static(join(__dirname, "..", "public"), {
+  setHeaders: (res, path) => {
+    if (/\.(html|webmanifest)$/.test(path) || path.endsWith("sw.js")) {
+      res.set("Cache-Control", "public, max-age=0, must-revalidate");
+    } else if (/\.(png|jpg|jpeg|svg|woff2?|ico)$/.test(path)) {
+      res.set("Cache-Control", "public, max-age=86400");
+    }
+  },
+}));
+/* ── WHAT CLOUDFLARE SHOULD AND SHOULDN'T CACHE ──────────────────────
+   Getting this backwards is how you serve a broken build to everyone for
+   a week and can't fix it by redeploying. */
+
+/* Uploads are immutable — the filename contains a hash, so a given URL's
+   bytes never change. Cache them forever, at the edge. This is the whole
+   win: your artists' images get served from Cloudflare's network instead
+   of a single Railway box in US-West, and the egress is free. */
+app.use("/uploads", express.static(UPLOAD_DIR, {
+  maxAge: "365d",
+  immutable: true,
+  setHeaders: (res) => {
+    res.set("Cache-Control", "public, max-age=31536000, immutable");
+    res.set("Access-Control-Allow-Origin", "*");   // so previews can fetch them
+  },
+}));
 
 /* Express's own body-parser errors are ugly and unhandled by default.
    Turn "PayloadTooLargeError" into something a person can act on. */
@@ -249,8 +309,14 @@ function broadcast(event, data) {
 app.get("/api/stream", (req, res) => {
   res.set({
     "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
+    /* no-transform stops Cloudflare "optimising" the stream.
+       X-Accel-Buffering is the standard way to tell a proxy not to buffer —
+       without it, realtime events arrive in a clump minutes later, or never
+       arrive at all. That's what a proxy does to a long-lived response by
+       default. */
+    "Cache-Control": "no-cache, no-transform",
     Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
   });
   res.flushHeaders?.();
   res.write(`event: hello\ndata: {"ok":true}\n\n`);
@@ -1518,6 +1584,116 @@ app.post("/api/client-error", maybeAuth, rateLimit({ max: 20, windowMs: 60000 })
   res.json({ ok: true });
 });
 
+/* The studio reports how it's used. Metadata only — see studio_events in
+   db.js for where the line is and why.
+
+   The client has been calling this since telemetry went in; the route
+   itself never landed, so every event 404'd silently. That's worse than
+   having no telemetry: the dashboard would have shown zeros forever and
+   I'd have believed them. */
+app.post("/api/studio/event", auth, rateLimit({ max: 120, windowMs: 300000, key: "user" }), (req, res) => {
+  const { kind, voice, bpm, key, detail } = req.body || {};
+  const ALLOWED = ["open", "play", "save", "publish", "export", "voice_replaced", "abandon"];
+  if (!ALLOWED.includes(kind)) return res.status(400).json({ error: "unknown event" });
+  studioEvent(req.user.id, kind, { voice, bpm, key, detail });
+  res.json({ ok: true });
+});
+
+/* What the studio has learned. This page should decide what gets built
+   next — not my taste, and not yours. */
+app.get("/api/admin/studio", auth, admin, (req, res) => {
+  const one = (sql, ...p) => db.prepare(sql).get(...p)?.n ?? 0;
+
+  /* THE headline. A producer swapping a built-in voice for their own sample
+     is the most honest quality signal available: they heard mine, didn't
+     like it, and did something about it. */
+  const replaced = db.prepare(`
+    SELECT voice, COUNT(*) n, COUNT(DISTINCT user_id) people
+    FROM studio_events WHERE kind = 'voice_replaced' AND voice != ''
+    GROUP BY voice ORDER BY n DESC`).all();
+
+  const formats = db.prepare(`
+    SELECT fmt, COUNT(*) n, COUNT(DISTINCT user_id) people, AVG(bytes) avg_bytes
+    FROM studio_events WHERE kind = 'sample_upload' AND fmt != ''
+    GROUP BY fmt ORDER BY n DESC`).all();
+
+  const slots = db.prepare(`SELECT slot, COUNT(*) n FROM samples WHERE slot != '' GROUP BY slot ORDER BY n DESC`).all();
+
+  const shape = db.prepare(`
+    SELECT slot, COUNT(*) n, AVG(fundamental) fund, AVG(decay_ms) decay,
+           AVG(peak_db) peak, AVG(rms_db) rms, AVG(centroid) centroid, AVG(duration_ms) dur
+    FROM sample_shape WHERE slot != '' GROUP BY slot HAVING n >= 1 ORDER BY n DESC`).all();
+
+  /* Read straight off the synth so this comparison can't drift out of date. */
+  const mine = {
+    kick:  { fund: 45,   decay: 400, centroid: 220,  note: "150→45Hz sweep, 6ms click" },
+    snare: { fund: 190,  decay: 180, centroid: 1800, note: "noise + 2 tones + crack" },
+    hat:   { fund: null, decay: 50,  centroid: 9000, note: "hipassed noise" },
+    clap:  { fund: null, decay: 200, centroid: 1500, note: "4 bursts" },
+    perc:  { fund: 260,  decay: 280, centroid: 600,  note: "pitched sine" },
+    808:   { fund: 45,   decay: 550, centroid: 90,   note: "sine + drive" },
+  };
+
+  // what people actually publish — these should BE the defaults
+  const beats = db.prepare(`SELECT beat_json FROM posts WHERE beat_json IS NOT NULL`).all();
+  const bpms = [], keys = {}, voiceUse = {}, lens = [], loudness = [];
+  let withSamples = 0, withSlides = 0;
+  for (const b of beats) {
+    try {
+      const p = JSON.parse(b.beat_json);
+      const d = p.data || p;
+      if (d.bpm) bpms.push(d.bpm);
+      if (d.key != null && d.scale) keys[`${d.key}:${d.scale}`] = (keys[`${d.key}:${d.scale}`] || 0) + 1;
+      if (d.master && d.master.loudness != null) loudness.push(d.master.loudness);
+      let usedSample = false, usedSlide = false;
+      for (const t of (d.tracks || [])) {
+        if ((t.steps || []).some(Boolean)) voiceUse[t.id] = (voiceUse[t.id] || 0) + 1;
+        if (t.sampleUrl) usedSample = true;
+        for (const c of (t.steps || [])) {
+          if (c && c.slide) usedSlide = true;
+          if (c && c.len > 1) lens.push(c.len);
+        }
+      }
+      if (usedSample) withSamples++;
+      if (usedSlide) withSlides++;
+    } catch {}
+  }
+  const median = (a) => (a.length ? a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)] : null);
+
+  res.json({
+    replaced, formats, slots, shape, mine,
+    published: beats.length,
+    bpm: {
+      median: median(bpms),
+      min: bpms.length ? Math.min(...bpms) : null,
+      max: bpms.length ? Math.max(...bpms) : null,
+    },
+    keys: Object.entries(keys).map(([k, n]) => ({ key: k, n })).sort((a, b) => b.n - a.n),
+    voiceUse: Object.entries(voiceUse).map(([id, n]) => ({ id, n })).sort((a, b) => b.n - a.n),
+    withSamples, withSlides,
+    medianNoteLen: median(lens),
+    medianLoudness: median(loudness),
+    funnel: {
+      opened: one(`SELECT COUNT(DISTINCT user_id) n FROM studio_events WHERE kind='open'`),
+      played: one(`SELECT COUNT(DISTINCT user_id) n FROM studio_events WHERE kind='play'`),
+      saved: one(`SELECT COUNT(DISTINCT user_id) n FROM studio_events WHERE kind='save'`),
+      published: one(`SELECT COUNT(DISTINCT user_id) n FROM studio_events WHERE kind='publish'`),
+      exported: one(`SELECT COUNT(DISTINCT user_id) n FROM studio_events WHERE kind='export'`),
+    },
+    uploaders: one(`SELECT COUNT(DISTINCT user_id) n FROM samples`),
+    totalSamples: one(`SELECT COUNT(*) n FROM samples`),
+    library: {
+      shared: one(`SELECT COUNT(*) n FROM samples WHERE shared = 1`),
+      contributors: one(`SELECT COUNT(DISTINCT user_id) n FROM samples WHERE shared = 1`),
+      uses: one(`SELECT COUNT(*) n FROM sample_uses`),
+      top: db.prepare(`
+        SELECT s.name, s.slot, s.uses, u.username, u.display_name
+        FROM samples s JOIN users u ON u.id = s.user_id
+        WHERE s.shared = 1 AND s.uses > 0 ORDER BY s.uses DESC LIMIT 10`).all(),
+    },
+  });
+});
+
 /* ---- settings. Change the app without a deploy. ---- */
 app.get("/api/admin/settings", auth, admin, (req, res) => {
   res.json({ settings: allSettings(), defaults: SETTING_DEFAULTS });
@@ -2099,94 +2275,6 @@ app.post("/api/posts/:id/send", auth, verified, rateLimit({ max: 20, windowMs: 6
    sign-up wall and they just leave. Server-rendered so it previews in
    iMessage, Discord, and IG DMs. */
 app.get("/p/:id", (req, res) => {
-  const rows = feedRows({ viewerId: 0, limit: 400 });
-  const post = shapePosts(rows).find((x) => String(x.id) === String(req.params.id));
-  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
-  /* Only PUBLISHED WORK gets a public page. A chat message with a photo in
-     it is still chat — the whole point of the portfolio/chat split is that
-     the labs aren't a public surface. If it isn't marked as work, there's
-     no link to share. */
-  if (!post || !post.isWork) {
-    return res.status(404).send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
-<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center">
-<div><div style="color:#22C55E;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS</div>
-<h1 style="text-transform:uppercase;font-size:22px;margin:14px 0 8px">Not found</h1>
-<p style="color:#8A8A8A;font-size:14px">This post is private or has been removed.</p>
-<a href="/" style="display:inline-block;margin-top:16px;background:#fff;color:#000;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:9px">Enter the lab</a></div></body>`);
-  }
-
-  const a = post.author;
-  const accent = a.accentHex || "#22C55E";
-  const img = post.imageUrl ? `${baseUrl(req)}${post.imageUrl}` : null;
-  const desc = post.body || `${a.displayName} on TNL LABS`;
-  const accepted = post.collaborators.filter((c) => c.status === "accepted");
-
-  res.send(`<!doctype html><html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(a.displayName)} — TNL LABS</title>
-<meta property="og:title" content="${esc(a.displayName)} on TNL LABS">
-<meta property="og:description" content="${esc(desc.slice(0, 140))}">
-${img ? `<meta property="og:image" content="${esc(img)}"><meta name="twitter:card" content="summary_large_image">` : ""}
-<meta name="theme-color" content="#000000">
-</head>
-<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif">
-<div style="max-width:560px;margin:0 auto;padding:24px 18px 60px">
-  <a href="/" style="color:${accent};font-family:monospace;font-size:11px;letter-spacing:.16em;text-decoration:none">TNLLABS &#129514;</a>
-  <div style="display:flex;align-items:center;gap:11px;margin:22px 0 14px">
-    ${a.avatarUrl ? `<img src="${esc(a.avatarUrl)}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid ${accent}">`
-      : `<div style="width:42px;height:42px;border-radius:50%;background:#141414;border:2px solid ${accent};display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:12px">${esc(a.displayName.slice(0, 2).toUpperCase())}</div>`}
-    <div><div style="font-weight:900;font-size:15px">${esc(a.displayName)}</div>
-    <div style="font-family:monospace;font-size:9px;color:#8A8A8A;letter-spacing:.08em">@${esc(a.username)} · ${esc(a.role.toUpperCase())}</div></div>
-  </div>
-  ${post.body ? `<p style="font-size:15px;line-height:1.6;color:#E5E2DA;margin:0 0 14px;white-space:pre-wrap">${esc(post.body)}</p>` : ""}
-  ${post.imageUrl ? `<img src="${esc(post.imageUrl)}" style="width:100%;border-radius:11px;display:block;background:#141414" ${post.mediaW ? `width="${post.mediaW}" height="${post.mediaH}"` : ""}>` : ""}
-  ${post.videoUrl ? `<video src="${esc(post.videoUrl)}" controls playsinline style="width:100%;border-radius:11px;background:#000"></video>` : ""}
-  ${post.beat ? `<div style="background:#141414;border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:20px;text-align:center">
-    <div style="font-size:26px;color:${accent}">&#9834;</div>
-    <div style="font-weight:900;margin-top:6px">${esc(post.beat.name || "untitled loop")}</div>
-    <div style="font-family:monospace;font-size:10px;color:#8A8A8A;margin-top:4px">${post.beat.bpm} BPM · OPEN THE APP TO HEAR IT</div></div>` : ""}
-  ${accepted.length ? `<div style="font-family:monospace;font-size:9px;color:${accent};letter-spacing:.08em;margin-top:12px">↔ BUILT WITH ${accepted.map((c) => esc((c.display_name || c.username).toUpperCase())).join(" + ")}</div>` : ""}
-  <div style="font-family:monospace;font-size:10px;color:#8A8A8A;margin-top:12px">♥ ${post.likeCount} &nbsp; ↻ ${post.shareCount} &nbsp; 💬 ${post.commentCount}</div>
-  <a href="/u/${esc(a.username)}" style="display:block;text-align:center;margin-top:26px;background:${accent};color:#000;text-decoration:none;font-weight:700;padding:13px;border-radius:9px">See more from ${esc(a.displayName)}</a>
-  <a href="/" style="display:block;text-align:center;margin-top:9px;border:1px solid rgba(255,255,255,.25);color:#fff;text-decoration:none;font-weight:700;padding:13px;border-radius:9px">What is TNL LABS?</a>
-</div></body></html>`);
-});
-
-/* ================================================================
-   SHARING
-   Two kinds, deliberately different:
-   • to a person  — lands in their DMs. How you actually get someone to
-                    look at a thing.
-   • off the app  — a public URL anyone can open, no account. This is how
-                    work travels to Instagram and gets people back here.
-================================================================ */
-app.post("/api/posts/:id/send", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
-  const post = q.postById.get(Number(req.params.id));
-  if (!post) return res.status(404).json({ error: "no post" });
-  const to = q.userByName.get(String(req.body?.to || ""));
-  if (!to) return res.status(404).json({ error: "no such person" });
-  if (to.id === req.user.id) return res.status(400).json({ error: "that's you" });
-  if (isBlocked(req.user.id, to.id)) return res.status(403).json({ error: "unavailable" });
-
-  const author = q.userById.get(post.author_id);
-  const note = (req.body?.note || "").toString().trim().slice(0, 500);
-  const t = threadFor(req.user.id, to.id);
-  const now = Date.now();
-  // The DM carries the link; the recipient's client renders a preview.
-  const body = `${note ? note + "\n" : ""}${baseUrl(req)}/p/${post.id}`;
-  db.prepare(`INSERT INTO dm_messages (thread_id, sender_id, body, created_at) VALUES (?,?,?,?)`)
-    .run(t.id, req.user.id, body, now);
-  db.prepare(`UPDATE dm_threads SET updated_at = ? WHERE id = ?`).run(now, t.id);
-  notify(to.id, req.user.id, "dm", post.id, `sent you ${author ? "@" + author.username + "'s" : "a"} post`);
-  broadcast("dm", { to: to.username, from: req.user.username });
-  res.json({ ok: true });
-});
-
-/* A single piece of work, public, no account. Built for link previews —
-   this is what an Instagram story or a text message unfurls. */
-app.get("/p/:id", (req, res) => {
   const rows = feedRows({ viewerId: 0, limit: 1, postId: Number(req.params.id) });
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const notFound = `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -2201,24 +2289,42 @@ app.get("/p/:id", (req, res) => {
 
   const u = q.userByName.get(p.author.username);
   const accent = /^#[0-9a-f]{6}$/i.test(u?.accent || "") ? u.accent : "#22C55E";
-  const abs = (path) => path ? `${baseUrl(req)}${path}` : null;
-  const img = abs(p.imageUrl);
-  const title = `${p.author.displayName} — TNL LABS`;
-  const desc = p.body ? p.body.slice(0, 150) : `Work by ${p.author.displayName} in the ${p.channel} lab.`;
+  const abs = (path) => (path ? (/^https?:/.test(path) ? path : `${baseUrl(req)}${path}`) : null);
+  const img = abs(p.imageUrl) || abs(p.author.avatarUrl) || `${baseUrl(req)}/icon-512.png`;
   const accepted = p.collaborators.filter((c) => c.status === "accepted");
+  const title = accepted.length
+    ? `${p.author.displayName} × ${accepted.map((c) => c.display_name || c.username).join(" × ")}`
+    : `${p.author.displayName} — TNL LABS`;
+  /* A collab in the title is the whole pitch: this is what happens here.
+     Two names on one piece is more interesting than either name alone. */
+  const desc = [
+    p.body ? p.body.slice(0, 120) : null,
+    p.beat ? `${p.beat.bpm} BPM beat, made in the TNL studio` : null,
+    `#${p.channel}`,
+    p.likeCount ? `${p.likeCount} ♥` : null,
+  ].filter(Boolean).join(" · ").slice(0, 200);
+  const canonical = `${baseUrl(req)}/p/${p.id}`;
 
   res.send(`<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
+<link rel="canonical" href="${esc(canonical)}">
 <meta property="og:type" content="article">
+<meta property="og:site_name" content="TNL LABS">
+<meta property="og:url" content="${esc(canonical)}">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}">
-${img ? `<meta property="og:image" content="${esc(img)}">
+<meta property="og:image" content="${esc(img)}">
+<meta property="og:image:secure_url" content="${esc(img)}">
+<meta property="og:image:width" content="${p.mediaW || 512}">
+<meta property="og:image:height" content="${p.mediaH || 512}">
+<meta property="og:image:alt" content="${esc(title)}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="${esc(img)}">` : `<meta name="twitter:card" content="summary">`}
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(desc)}">
+<meta name="twitter:image" content="${esc(img)}">
 <meta name="description" content="${esc(desc)}">
+<meta name="theme-color" content="#000000">
 </head>
 <body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif">
 <div style="max-width:560px;margin:0 auto;padding:24px 18px 60px">
@@ -2574,6 +2680,394 @@ app.get("/api/market/:id/downloads", auth, (req, res) => {
   })) });
 });
 
+/* What's actually happening in each lab.
+
+   A list of hashtags is a menu. A room with the last thing made in it,
+   and who's in there, is a place. This is the difference — and it's the
+   only reason the grid is worth building. */
+app.get("/api/labs", auth, (req, res) => {
+  const now = Date.now();
+  const day = now - 86400000;
+  const week = now - 7 * 86400000;
+
+  const rows = db.prepare(`
+    SELECT p.channel,
+           COUNT(*) AS total,
+           SUM(CASE WHEN p.created_at > ? THEN 1 ELSE 0 END) AS today,
+           SUM(CASE WHEN p.created_at > ? THEN 1 ELSE 0 END) AS week,
+           MAX(p.created_at) AS last_at
+    FROM posts p GROUP BY p.channel`).all(day, week);
+  const byChannel = {};
+  for (const r of rows) byChannel[r.channel] = r;
+
+  // the most recent image in each channel — this is what makes it a place
+  const art = {};
+  for (const r of db.prepare(`
+    SELECT p.channel, p.thumb_url, p.image_url, p.created_at, u.username, u.display_name
+    FROM posts p JOIN users u ON u.id = p.author_id
+    WHERE p.image_url IS NOT NULL
+    ORDER BY p.created_at DESC`).all()) {
+    if (!art[r.channel]) art[r.channel] = {
+      url: r.thumb_url || r.image_url,
+      by: r.display_name, username: r.username, at: r.created_at,
+    };
+  }
+
+  // who's been in there this week
+  const people = {};
+  for (const r of db.prepare(`
+    SELECT DISTINCT p.channel, u.username, u.display_name, u.avatar_url
+    FROM posts p JOIN users u ON u.id = p.author_id
+    WHERE p.created_at > ? ORDER BY p.created_at DESC`).all(week)) {
+    (people[r.channel] = people[r.channel] || []).push({
+      username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "",
+    });
+  }
+
+  // unread, per channel, for this person
+  const unread = {};
+  for (const r of db.prepare(`
+    SELECT p.channel, COUNT(*) n FROM posts p
+    LEFT JOIN channel_reads cr ON cr.user_id = ? AND cr.channel = p.channel
+    WHERE p.author_id != ? AND p.created_at > COALESCE(cr.last_read_at, 0)
+    GROUP BY p.channel`).all(req.user.id, req.user.id)) unread[r.channel] = r.n;
+
+  res.json({ byChannel, art, people, unread });
+});
+
+/* ================================================================
+   THE ARCHIVE
+   Every image ever posted, searchable. This is the thing a group chat
+   physically cannot do: 226 people have been posting reference into the
+   PHARMACY for months and none of it can be found again.
+================================================================ */
+app.get("/api/archive", maybeAuth, (req, res) => {
+  const { q: term, channel, by, sort } = req.query;
+  const where = [`p.image_url IS NOT NULL`];
+  const params = [];
+  /* Chat images stay in chat. The archive is published work — otherwise
+     a photo someone dropped mid-conversation becomes a public asset they
+     never agreed to. */
+  where.push(`p.is_work = 1`);
+  if (channel) { where.push(`p.channel = ?`); params.push(channel); }
+  if (by) { where.push(`u.username = ?`); params.push(by); }
+  if (term) { where.push(`(p.body LIKE ? OR u.display_name LIKE ? OR p.channel LIKE ?)`); params.push(`%${term}%`, `%${term}%`, `%${term}%`); }
+
+  const order = sort === "saved" ? `pin_count DESC, p.created_at DESC`
+    : sort === "liked" ? `like_count DESC, p.created_at DESC`
+    : `p.created_at DESC`;
+
+  const rows = db.prepare(`
+    SELECT p.id, p.channel, p.body, p.image_url, p.thumb_url, p.media_w, p.media_h, p.created_at,
+           u.username, u.display_name, u.avatar_url,
+           (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
+           (SELECT COUNT(*) FROM pins pn WHERE pn.post_id = p.id) AS pin_count,
+           ${req.user ? `(SELECT COUNT(*) FROM pins pn WHERE pn.post_id = p.id AND pn.user_id = ${Number(req.user.id)})` : "0"} AS pinned_by_me
+    FROM posts p JOIN users u ON u.id = p.author_id
+    WHERE ${where.join(" AND ")}
+    ORDER BY ${order} LIMIT 100`).all(...params);
+
+  res.json({
+    images: rows.map((r) => ({
+      id: r.id, channel: r.channel, body: r.body,
+      url: r.thumb_url || r.image_url, full: r.image_url,
+      w: r.media_w, h: r.media_h, createdAt: r.created_at,
+      by: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "" },
+      likes: r.like_count, saves: r.pin_count, savedByMe: !!r.pinned_by_me,
+    })),
+    channels: db.prepare(`SELECT DISTINCT channel FROM posts WHERE image_url IS NOT NULL AND is_work = 1`).all().map((r) => r.channel),
+  });
+});
+
+/* ---- boards ---- */
+app.get("/api/boards", auth, (req, res) => {
+  const mine = db.prepare(`
+    SELECT b.*, (SELECT COUNT(*) FROM pins p WHERE p.board_id = b.id) AS n,
+      (SELECT COALESCE(po.thumb_url, po.image_url) FROM pins p LEFT JOIN posts po ON po.id = p.post_id
+       WHERE p.board_id = b.id AND po.image_url IS NOT NULL ORDER BY p.created_at DESC LIMIT 1) AS cover,
+      (SELECT p.img_url FROM pins p WHERE p.board_id = b.id AND p.img_url != '' ORDER BY p.created_at DESC LIMIT 1) AS cover_ext
+    FROM boards b WHERE b.user_id = ? ORDER BY b.updated_at DESC`).all(req.user.id);
+  res.json({ boards: mine.map((b) => ({
+    id: b.id, name: b.name, note: b.note, isPublic: !!b.is_public,
+    count: b.n, cover: b.cover || b.cover_ext || null, updatedAt: b.updated_at,
+  })) });
+});
+
+app.post("/api/boards", auth, verified, rateLimit({ max: 20, windowMs: 3600000, key: "user" }), (req, res) => {
+  const name = (req.body?.name || "").toString().trim().slice(0, 60);
+  if (!name) return res.status(400).json({ error: "name it" });
+  const now = Date.now();
+  const info = db.prepare(`INSERT INTO boards (user_id, name, note, is_public, created_at, updated_at) VALUES (?,?,?,?,?,?)`)
+    .run(req.user.id, name, (req.body?.note || "").toString().slice(0, 200),
+      req.body?.isPublic === false ? 0 : 1, now, now);
+  res.json({ id: Number(info.lastInsertRowid) });
+});
+
+app.get("/api/boards/:id", maybeAuth, (req, res) => {
+  const b = db.prepare(`SELECT b.*, u.username, u.display_name, u.avatar_url FROM boards b JOIN users u ON u.id = b.user_id WHERE b.id = ?`)
+    .get(Number(req.params.id));
+  if (!b) return res.status(404).json({ error: "no board" });
+  if (!b.is_public && b.user_id !== req.user?.id) return res.status(403).json({ error: "private" });
+  const pins = db.prepare(`
+    SELECT p.*, po.image_url, po.thumb_url, po.media_w, po.media_h, po.body AS post_body, po.channel,
+           u.username, u.display_name, u.avatar_url
+    FROM pins p
+    LEFT JOIN posts po ON po.id = p.post_id
+    LEFT JOIN users u ON u.id = po.author_id
+    WHERE p.board_id = ? ORDER BY p.created_at DESC`).all(b.id);
+  res.json({
+    board: { id: b.id, name: b.name, note: b.note, isPublic: !!b.is_public,
+      by: { username: b.username, displayName: b.display_name, avatarUrl: b.avatar_url || "" },
+      mine: b.user_id === req.user?.id },
+    pins: pins.map((p) => ({
+      id: p.id, note: p.note, createdAt: p.created_at,
+      postId: p.post_id,
+      url: p.post_id ? (p.thumb_url || p.image_url) : p.img_url,
+      w: p.media_w, h: p.media_h,
+      body: p.post_body, channel: p.channel,
+      by: p.username ? { username: p.username, displayName: p.display_name, avatarUrl: p.avatar_url || "" } : null,
+      srcUrl: p.src_url || null, srcSite: p.src_site || null,   // always shown, always linked
+    })),
+  });
+});
+
+app.delete("/api/boards/:id", auth, (req, res) => {
+  db.prepare(`DELETE FROM boards WHERE id = ? AND user_id = ?`).run(Number(req.params.id), req.user.id);
+  res.json({ ok: true });
+});
+
+/* Pin a TNL piece. This is the one that matters: the person who made it
+   gets told, and earns for it. Pinterest can't do that — it doesn't know
+   who anyone is. */
+app.post("/api/boards/:id/pin", auth, verified, rateLimit({ max: 120, windowMs: 3600000, key: "user" }), (req, res) => {
+  const b = db.prepare(`SELECT * FROM boards WHERE id = ? AND user_id = ?`).get(Number(req.params.id), req.user.id);
+  if (!b) return res.status(404).json({ error: "not your board" });
+
+  const { postId, srcUrl, imgUrl, note } = req.body || {};
+  const now = Date.now();
+
+  if (postId) {
+    const post = db.prepare(`SELECT * FROM posts WHERE id = ? AND is_work = 1`).get(Number(postId));
+    if (!post) return res.status(404).json({ error: "no such work" });
+    if (db.prepare(`SELECT 1 FROM pins WHERE board_id = ? AND post_id = ?`).get(b.id, post.id)) {
+      return res.status(409).json({ error: "already on this board" });
+    }
+    db.prepare(`INSERT INTO pins (board_id, user_id, post_id, note, created_at) VALUES (?,?,?,?,?)`)
+      .run(b.id, req.user.id, post.id, (note || "").toString().slice(0, 200), now);
+    db.prepare(`UPDATE boards SET updated_at = ? WHERE id = ?`).run(now, b.id);
+
+    /* Once per person per piece — saving the same image to five boards is
+       one endorsement, not five. Same rule as likes. */
+    if (post.author_id !== req.user.id) {
+      const already = db.prepare(`SELECT COUNT(*) n FROM pins p JOIN boards bo ON bo.id = p.board_id
+        WHERE p.post_id = ? AND bo.user_id = ?`).get(post.id, req.user.id).n;
+      if (already === 1) {
+        awardRep(post.author_id, "pinned", post.id);
+        notify(post.author_id, req.user.id, "pin", post.id, `saved your work to "${b.name}"`);
+      }
+    }
+    return res.json({ ok: true });
+  }
+
+  /* An external reference. We store the LINK and the source — we do not
+     rehost the file. The image is hotlinked and credited. If it disappears
+     from its home, it disappears from here; that's correct. It isn't ours. */
+  if (!srcUrl || !/^https?:\/\//i.test(srcUrl)) return res.status(400).json({ error: "need a real link" });
+  let site = "";
+  try { site = new URL(srcUrl).hostname.replace(/^www\./, ""); } catch { return res.status(400).json({ error: "bad link" }); }
+  db.prepare(`INSERT INTO pins (board_id, user_id, src_url, src_site, img_url, note, created_at) VALUES (?,?,?,?,?,?,?)`)
+    .run(b.id, req.user.id, srcUrl.slice(0, 500), site.slice(0, 80),
+      (imgUrl && /^https?:\/\//i.test(imgUrl) ? imgUrl.slice(0, 500) : srcUrl.slice(0, 500)),
+      (note || "").toString().slice(0, 200), now);
+  db.prepare(`UPDATE boards SET updated_at = ? WHERE id = ?`).run(now, b.id);
+  res.json({ ok: true, site });
+});
+
+app.delete("/api/pins/:id", auth, (req, res) => {
+  const p = db.prepare(`SELECT p.* FROM pins p JOIN boards b ON b.id = p.board_id WHERE p.id = ? AND b.user_id = ?`)
+    .get(Number(req.params.id), req.user.id);
+  if (!p) return res.status(404).json({ error: "not yours" });
+  db.prepare(`DELETE FROM pins WHERE id = ?`).run(p.id);
+  res.json({ ok: true });
+});
+
+/* Who saved your work, and onto what. A curator saving your piece into
+   "Fall/Winter refs" is telling you something a like never could. */
+app.get("/api/posts/:id/saves", auth, (req, res) => {
+  const post = db.prepare(`SELECT * FROM posts WHERE id = ?`).get(Number(req.params.id));
+  if (!post) return res.status(404).json({ error: "no post" });
+  if (post.author_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: "not yours" });
+  const rows = db.prepare(`
+    SELECT b.name AS board, b.id AS board_id, b.is_public, u.username, u.display_name, u.avatar_url, p.created_at
+    FROM pins p JOIN boards b ON b.id = p.board_id JOIN users u ON u.id = b.user_id
+    WHERE p.post_id = ? ORDER BY p.created_at DESC LIMIT 50`).all(post.id);
+  res.json({ saves: rows.filter((r) => r.is_public).map((r) => ({
+    board: r.board, boardId: r.board_id, at: r.created_at,
+    by: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "" },
+  })) });
+});
+
+/* Paste a link, get the image. We fetch the page's OG tags server-side and
+   return the image URL — the file stays where it lives, we never rehost it.
+
+   Instagram won't work, and that's Meta's decision, not a bug here: their
+   CDN URLs are signed and expire, and instagram.com serves crawlers a login
+   wall. The official route (oEmbed) needs a Facebook App and app review.
+   Everything else on the web — are.na, Tumblr, blogs, direct image links —
+   works fine. */
+const UNFURL_TIMEOUT = 6000;
+app.post("/api/unfurl", auth, verified, rateLimit({ max: 40, windowMs: 600000, key: "user" }), async (req, res) => {
+  const url = (req.body?.url || "").toString().trim();
+  if (!/^https?:\/\//i.test(url)) return res.status(400).json({ error: "need a real link" });
+
+  let host = "";
+  try { host = new URL(url).hostname.replace(/^www\./, ""); }
+  catch { return res.status(400).json({ error: "bad link" }); }
+
+  /* SSRF guard. Without this, someone pastes http://localhost:8787/api/admin/…
+     or an AWS metadata URL and the server fetches it for them, from inside
+     the network, with whatever access it has. This is the bug that turns a
+     nice feature into a breach. */
+  if (/^(localhost|127\.|0\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|\[?::1)/i.test(host)) {
+    return res.status(400).json({ error: "no" });
+  }
+
+  // A direct image link needs no fetching — it's already the answer.
+  if (/\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(url)) {
+    return res.json({ image: url, title: "", site: host, url });
+  }
+
+  /* Pinterest works, and it's worth saying why it differs from Instagram:
+     i.pinimg.com URLs are unsigned, don't expire, and their pin pages
+     serve og:image to anyone. They want the link spread. Meta doesn't. */
+  if (/^(www\.)?instagram\.com$|^instagr\.am$/i.test(host)) {
+    return res.status(422).json({
+      error: "Instagram blocks this",
+      detail: "Their image URLs are signed and expire, and they serve crawlers a login wall. Screenshot it and upload, or use the are.na/Tumblr source if there is one.",
+      site: host,
+    });
+  }
+
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), UNFURL_TIMEOUT);
+    const r = await fetch(url, {
+      signal: ctrl.signal,
+      redirect: "follow",
+      headers: {
+        // identify honestly. a fake browser UA is how you get blocked properly.
+        "User-Agent": "TNLLabsBot/1.0 (+https://labs.tnllabs.com)",
+        Accept: "text/html,application/xhtml+xml",
+      },
+    });
+    clearTimeout(timer);
+    if (!r.ok) return res.status(422).json({ error: `${host} returned ${r.status}`, site: host });
+
+    // Read the head only — no reason to pull a 5MB page for 4 tags.
+    const reader = r.body.getReader();
+    let html = "", got = 0;
+    while (got < 120000) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      html += Buffer.from(value).toString("utf8");
+      got += value.length;
+      if (/<\/head>/i.test(html)) break;
+    }
+    try { reader.cancel(); } catch {}
+
+    const meta = (prop) => {
+      const m = new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']+)["']`, "i").exec(html)
+        || new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${prop}["']`, "i").exec(html);
+      return m ? m[1] : null;
+    };
+    let image = meta("og:image") || meta("twitter:image") || meta("og:image:url");
+    if (image && !/^https?:\/\//i.test(image)) {
+      try { image = new URL(image, url).href; } catch { image = null; }
+    }
+    const title = meta("og:title") || (/<title>([^<]+)<\/title>/i.exec(html) || [, ""])[1];
+
+    if (!image) return res.status(422).json({ error: `${host} doesn't share an image`, site: host, title: title || "" });
+    res.json({ image, title: (title || "").slice(0, 140), site: host, url });
+  } catch (e) {
+    const why = e.name === "AbortError" ? `${host} took too long` : `couldn't reach ${host}`;
+    res.status(422).json({ error: why, site: host });
+  }
+});
+
+/* ================================================================
+   SOURCING
+   Search the web for reference without becoming a piracy host.
+
+   Two sources, both free, both legal by construction:
+     • are.na — the archive platform your people already use. Public API,
+       no key. Searching and linking back is what it's for; we send them
+       traffic. The aesthetic is a direct match for the PHARMACY.
+     • Openverse — Creative Commons' own index, 700M+ images, every result
+       carries its licence. Built to solve exactly this problem.
+
+   Google Images and scraping stay off the table: that's Pinterest's game
+   and Pinterest has a legal team.
+
+   We return LINKS. Nothing is rehosted, everything is credited, and the
+   source is always one tap away.
+================================================================ */
+app.get("/api/source", auth, verified, rateLimit({ max: 60, windowMs: 600000, key: "user" }), async (req, res) => {
+  const term = (req.query.q || "").toString().trim().slice(0, 80);
+  const from = (req.query.from || "arena").toString();
+  if (!term) return res.json({ results: [], source: from });
+
+  const timeout = (ms) => { const c = new AbortController(); setTimeout(() => c.abort(), ms); return c.signal; };
+  const UA = { "User-Agent": "TNLLabsBot/1.0 (+https://labs.tnllabs.com)" };
+
+  try {
+    if (from === "arena") {
+      const r = await fetch(`https://api.are.na/v2/search/blocks?q=${encodeURIComponent(term)}&per=40`,
+        { signal: timeout(7000), headers: UA });
+      if (!r.ok) return res.status(502).json({ error: `are.na returned ${r.status}`, results: [] });
+      const d = await r.json();
+      const results = (d.blocks || [])
+        .filter((b) => b.image && (b.image.large || b.image.display))
+        .map((b) => ({
+          id: "arena-" + b.id,
+          img: (b.image.display || b.image.large || {}).url,
+          full: (b.image.large || b.image.display || {}).url,
+          title: (b.title || "").slice(0, 100),
+          by: b.user ? b.user.full_name : "",
+          src: `https://www.are.na/block/${b.id}`,
+          site: "are.na",
+          licence: "",
+        }));
+      return res.json({ results, source: "arena" });
+    }
+
+    if (from === "openverse") {
+      const r = await fetch(
+        `https://api.openverse.org/v1/images/?q=${encodeURIComponent(term)}&page_size=40&mature=false`,
+        { signal: timeout(7000), headers: UA });
+      if (!r.ok) return res.status(502).json({ error: `openverse returned ${r.status}`, results: [] });
+      const d = await r.json();
+      const results = (d.results || []).map((x) => ({
+        id: "ov-" + x.id,
+        img: x.thumbnail || x.url,
+        full: x.url,
+        title: (x.title || "").slice(0, 100),
+        by: x.creator || "",
+        src: x.foreign_landing_url || x.url,
+        site: (x.source || "openverse"),
+        /* The licence is the whole point of Openverse. Showing it isn't
+           decoration — it's what makes using the image safe. */
+        licence: (x.license || "").toUpperCase() + (x.license_version ? " " + x.license_version : ""),
+      }));
+      return res.json({ results, source: "openverse" });
+    }
+
+    res.status(400).json({ error: "unknown source" });
+  } catch (e) {
+    const why = e.name === "AbortError" ? "that took too long" : "couldn't reach it";
+    res.status(502).json({ error: why, results: [] });
+  }
+});
+
 /* ================================================================
    COLLABORATION — two-sided. Invite, then the invitee accepts.
    On accept, BOTH parties earn rep. This is the cross-lab engine.
@@ -2684,12 +3178,66 @@ app.get("/u/:username", (req, res) => {
       <div style="font-family:monospace;font-size:9px;color:#8A8A8A;margin-top:8px">♥ ${p.likeCount} &nbsp; ↻ ${p.shareCount}${p.collaborators.filter((c) => c.status === "accepted").length ? ` &nbsp; <span style="color:#22C55E">✓ ${p.collaborators.filter((c) => c.status === "accepted").map((c) => esc(c.display_name || c.username)).join(", ")}</span>` : ""}</div>
     </div>`).join("");
 
+  /* ── THE LINK PREVIEW ────────────────────────────────────────────────
+     This page's real job is to look like something when it's pasted into
+     an Instagram DM. 756 people live in those DMs — a bare blue link there
+     is a wasted shot, and you only get one per person.
+
+     What a crawler needs, and what was missing entirely:
+       • og:image — absolute https, no auth. Without it there is NO card.
+       • dimensions — Meta skips images it can't size before fetching.
+       • og:url — canonical, or IG caches the wrong thing forever.
+     Crawlers fetch from Meta's servers, not your phone, so every URL must
+     be absolute. Guest access is what makes any of this possible. */
+  const abs = (path) => (path ? (/^https?:/.test(path) ? path : `${baseUrl(req)}${path}`) : null);
+
+  // The image IS the preview. Their best work beats their avatar every time:
+  // a 56px circle crops to nothing, a poster stops a thumb.
+  const hero = posts.find((p) => p.imageUrl && p.mediaW && p.mediaH) || posts.find((p) => p.imageUrl);
+  const ogImage = abs(hero && hero.imageUrl) || abs(u.avatar_url) || `${baseUrl(req)}/icon-512.png`;
+  const ogW = (hero && hero.mediaW) || 512;
+  const ogH = (hero && hero.mediaH) || 512;
+
+  const roles = (() => { try { return JSON.parse(u.roles || "[]"); } catch { return []; } })();
+  const roleLine = roles.length ? roles.slice(0, 3).join(" · ") : u.role;
+  // Earn the tap. "4 pieces · 1 collab" says who they are; a bio might say "🌸".
+  const stats = [
+    posts.length ? `${posts.length} ${posts.length === 1 ? "piece" : "pieces"}` : null,
+    collabs ? `${collabs} collab${collabs === 1 ? "" : "s"}` : null,
+    likes ? `${likes} ♥` : null,
+  ].filter(Boolean).join(" · ");
+  const ogDesc = [u.bio || K.blurb, roleLine, stats].filter(Boolean).join(" — ").slice(0, 200);
+  const canonical = `${baseUrl(req)}/u/${encodeURIComponent(u.username)}`;
+
+  /* Cache the profile page briefly at the edge. Long enough that a link
+     dropped in a 226-person chat doesn't hammer Railway when everyone taps
+     it at once; short enough that new work shows up. Crawlers get a fresh
+     one because they hit it first. */
+  res.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=600");
   res.send(`<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(u.display_name)} — TNL LABS</title>
-<meta property="og:title" content="${esc(u.display_name)} — TNL LABS">
-<meta property="og:description" content="${esc(u.bio || K.blurb)}">
-<meta name="description" content="${esc(u.bio || K.blurb)}">
+<link rel="canonical" href="${esc(canonical)}">
+
+<meta property="og:type" content="profile">
+<meta property="og:site_name" content="TNL LABS">
+<meta property="og:url" content="${esc(canonical)}">
+<meta property="og:title" content="${esc(u.display_name)} — ${esc(roleLine)}">
+<meta property="og:description" content="${esc(ogDesc)}">
+<meta property="og:image" content="${esc(ogImage)}">
+<meta property="og:image:secure_url" content="${esc(ogImage)}">
+<meta property="og:image:width" content="${ogW}">
+<meta property="og:image:height" content="${ogH}">
+<meta property="og:image:alt" content="${esc(u.display_name)} on TNL LABS">
+<meta property="profile:username" content="${esc(u.username)}">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(u.display_name)} — ${esc(roleLine)}">
+<meta name="twitter:description" content="${esc(ogDesc)}">
+<meta name="twitter:image" content="${esc(ogImage)}">
+
+<meta name="description" content="${esc(ogDesc)}">
+<meta name="theme-color" content="#000000">
 </head>
 <body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif">
 <div style="max-width:640px;margin:0 auto;padding:28px 18px 60px">
@@ -2896,6 +3444,7 @@ app.get("/api/levels", (_req, res) => res.json({
     tagline: setting("tagline"),
     announcement: setting("announcement"),
     signupsOpen: settingBool("signupsOpen"),
+    pinterestBoard: setting("pinterestBoard") || null,
     distro: settingBool("distroOn") ? {
       level: Number(setting("distroLevel")) || 4,
       levelName: (LEVELS.find((l) => l.id === (Number(setting("distroLevel")) || 4)) || {}).name || "Core",

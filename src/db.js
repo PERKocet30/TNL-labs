@@ -383,6 +383,44 @@ CREATE TABLE IF NOT EXISTS sample_shape (
 );
 CREATE INDEX IF NOT EXISTS idx_shape_slot ON sample_shape(slot);
 
+/* ================================================================
+   BOARDS
+   //.JPEG PHARMACY has 226 people posting reference and every image
+   scrolls into the void within a day. The archive that already exists is
+   unusable — you can't search it, you can't collect it, and nobody knows
+   who found what.
+
+   A board is a named collection. Two kinds of pin:
+     • TNL work — the real value. Saving someone's image TELLS them and
+       credits them. That's the loop a Pinterest board can't have.
+     • an external link — stored as a URL with attribution, NEVER rehosted.
+       You get curation without becoming a piracy host.
+================================================================ */
+CREATE TABLE IF NOT EXISTS boards (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  note       TEXT NOT NULL DEFAULT '',
+  is_public  INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_boards_user ON boards(user_id, updated_at);
+
+CREATE TABLE IF NOT EXISTS pins (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  board_id   INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  post_id    INTEGER REFERENCES posts(id) ON DELETE CASCADE,  -- a TNL piece
+  src_url    TEXT NOT NULL DEFAULT '',   -- or an external link. never rehosted.
+  src_site   TEXT NOT NULL DEFAULT '',   -- where it came from, always shown
+  img_url    TEXT NOT NULL DEFAULT '',   -- the external image, hotlinked
+  note       TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_pins_board ON pins(board_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_pins_post ON pins(post_id);
+
 CREATE INDEX IF NOT EXISTS idx_posts_channel ON posts(channel, created_at);
 /* These back the hot paths: every feed counts likes per post, every
    profile pulls a person's work, every load resolves a session token. */
@@ -532,6 +570,12 @@ export const SETTING_DEFAULTS = {
   autoVerify:     "0",     // "1" skips email verification — use if mail breaks
   announcement:   "",      // a banner across the top of the app
 
+  /* A Pinterest board embedded in the PHARMACY. Their widget, their
+     content, their liability — we render an iframe and nothing else.
+     There is no way to SEARCH Pinterest (they killed that API years ago),
+     but you can bring a board in whole. */
+  pinterestBoard: "",      // e.g. https://www.pinterest.com/tnl/refs/
+
   /* Distribution. A real promise with a real cost, so it's a setting: you
      can move the bar or turn it off without asking anyone.
      Tied to a LEVEL, not a vibe — "top contributors" is meaningless until
@@ -638,6 +682,7 @@ export const REP = {
   delivery_confirmed: 10, // and the buyer confirmed you delivered
   feature: 40,          // founder/mod feature (manual)
   sound_used: 4,        // someone built with a sound you gave the library
+  pinned: 3,            // someone saved your work to their board
 };
 
 const insertRepEvent = db.prepare(
