@@ -180,7 +180,7 @@ h1,h2,h3{text-transform:uppercase;letter-spacing:-.01em}
 .grow{display:flex;align-items:center;gap:9px}
 .tname{width:40px;flex-shrink:0;color:var(--dim)}
 .cells{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;flex:1}
-.cell{aspect-ratio:1/1;border-radius:4px;border:1px solid var(--line);background:var(--el);padding:0}
+
 .cell.bar{border-color:var(--line2)}
 .cell.on{background:var(--tx);border-color:var(--tx)}
 .cell.now{outline:2px solid var(--green);outline-offset:-1px}
@@ -776,15 +776,18 @@ video[data-auto]{cursor:pointer}
 .archsrc{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.6);color:var(--green);font-size:7px;
   padding:2px 5px;border-radius:4px;text-decoration:none;backdrop-filter:blur(3px)}
 /* moodboards */
-.brow{display:flex;gap:7px;margin-bottom:14px}
-.brow .in{flex:1}
-.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.bcard{background:var(--card);border:1px solid var(--line);border-radius:11px;overflow:hidden;padding:0;text-align:left;color:var(--tx)}
-.bcard:hover{border-color:var(--green)}
-.bcard img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--el)}
-.bempty{width:100%;aspect-ratio:4/3;background:var(--el);display:flex;align-items:center;justify-content:center;color:var(--line2);font-size:26px}
-.bname{font-size:12.5px;font-weight:700;padding:8px 9px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bcard .mono{padding:2px 9px 9px}
+/* Moodboards. Namespaced — .bcard/.brow/.bname already belong to the
+   Showroom's builder cards, and reusing them stretched every avatar into
+   an ellipse. Two features, one namespace, and the later one wins. */
+.mbrow{display:flex;gap:7px;margin-bottom:14px}
+.mbrow .in{flex:1}
+.mbgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.mbcard{background:var(--card);border:1px solid var(--line);border-radius:11px;overflow:hidden;padding:0;text-align:left;color:var(--tx)}
+.mbcard:hover{border-color:var(--green)}
+.mbcard img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--el)}
+.mbempty{width:100%;aspect-ratio:4/3;background:var(--el);display:flex;align-items:center;justify-content:center;color:var(--line2);font-size:26px}
+.mbname{font-size:12.5px;font-weight:700;padding:8px 9px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mbcard .mono{padding:2px 9px 9px}
 .pastebar{display:flex;gap:7px;padding:0 14px 8px}
 .pastebar .in{flex:1;font-size:16px}
 .pasted{display:flex;align-items:center;gap:10px;margin:0 14px 10px;background:var(--card);
@@ -794,6 +797,34 @@ video[data-auto]{cursor:pointer}
 .pasted-t{font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pasteerr{margin:0 14px 10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);
   color:#F87171;border-radius:9px;padding:9px 11px;font-size:9px;line-height:1.7}
+/* discord-style attach grid */
+.qgrid{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1;min-width:0}
+.qcard{position:relative;width:52px;height:52px;border-radius:8px;overflow:hidden;
+  background:var(--el);border:1px solid var(--line2);flex-shrink:0}
+.qcard img{width:100%;height:100%;object-fit:cover;display:block}
+.qcard.prep{opacity:.5}
+.qcard.err{border-color:var(--red)}
+.qcard .vthumb{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--dim)}
+.qx{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;
+  background:rgba(0,0,0,.75);border:none;color:#fff;font-size:8px;padding:0;line-height:1;
+  display:flex;align-items:center;justify-content:center}
+.qbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(0,0,0,.6)}
+.qfill{height:100%;background:var(--green);transition:width .2s}
+.qerr{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(239,68,68,.35);color:#fff;font-size:14px;font-weight:900}
+.qadd{width:52px;height:52px;border-radius:8px;border:1px dashed var(--line2);background:none;
+  color:var(--dim);font-size:17px;flex-shrink:0}
+.qadd:hover{border-color:var(--green);color:var(--green)}
+.attach-bar{align-items:flex-start;flex-wrap:wrap}
+/* several images, one post — most lab chat is exactly this */
+.gal{display:grid;gap:3px;margin-top:8px;border-radius:9px;overflow:hidden;border:1px solid var(--line);position:relative}
+.gal.g2{grid-template-columns:1fr 1fr}
+.gal.g3{grid-template-columns:1fr 1fr}
+.gal.g3 .gimg:first-child{grid-column:span 2;aspect-ratio:16/9}
+.gal.g4{grid-template-columns:1fr 1fr}
+.gimg{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:var(--el);cursor:zoom-in}
+.galn{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.72);color:#fff;font-size:11px;
+  padding:3px 8px;border-radius:6px;backdrop-filter:blur(3px);pointer-events:none}
 .toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:var(--tx);color:#000;font-weight:700;font-size:13px;border-radius:999px;padding:9px 18px;z-index:80}
 .empty{padding:30px 20px;text-align:center;color:var(--dim);font-size:13px;line-height:1.7}
 @media (max-width:680px){
@@ -1122,6 +1153,8 @@ const api={
 // LAB=null means you're standing outside looking at the labs, not in one
 let TAB="showroom", LAB=null, CH=LABS[0].channels[0], ROOMOPEN=false, POSTS=[], PROFILE=null, TOASTT=null;
 let PTAB="work", EDITING=false, EDITROLE="", PENDIMG=null, LIGHTBOX=null, VERIFYURL=null;
+/* Discord-style: several files at once. Each posts separately. */
+let QUEUE=[];
 let EBAR=0, OPENTRACK="", PITCHSEL=0, DRAFTS=null;
 /* Overwritten by /api/levels on boot. Declared here with a sane default so
    that a failed call — or an offline start — can't take the app down. */
@@ -1311,17 +1344,6 @@ function paintUnreads(){
 }
 /* What's alive in each lab. Cheap, and it's the whole reason the grid is
    better than a list — a room with the last thing made in it is a place. */
-async function loadArchive(){
-  const q=new URLSearchParams();
-  for(const [k,v] of Object.entries(ARCHFILT)) if(v)q.set(k,v);
-  ARCHIVE=null;render();
-  try{ARCHIVE=await api.archive(q.toString());render()}catch(e){ARCHIVE={images:[],channels:[]};render()}
-}
-async function loadBoards(){
-  if(!ME)return;
-  try{BOARDS=(await api.boards()).boards;render()}catch(e){BOARDS=[];render()}
-}
-
 async function loadLabs(){
   if(!ME)return;
   try{LABACT=await api.labs();render()}catch(e){/* the grid still works, just quieter */}
@@ -1788,6 +1810,128 @@ function labsGridHTML(){
   </div>`;
 }
 
+/* ── THE ARCHIVE ─────────────────────────────────────────────────────
+   //.JPEG PHARMACY has 226 people posting reference and every image
+   scrolls into the void within a day. Nobody can find it again. This is
+   the one thing a group chat physically cannot do.
+─────────────────────────────────────────────────────────────────────── */
+function archiveHTML(){
+  const A=ARCHIVE;
+  const pinBoard=SITE.pinterestBoard;
+  return `<div class="scroll" id="archscroll">
+    <div class="archbar">
+      <input class="in archq" id="archq" placeholder="Search the archive…" value="${esc(ARCHFILT.q||"")}">
+      <button class="btn ghost sm" id="myboards">◫ Moodboards${BOARDS?" "+BOARDS.length:""}</button>
+    </div>
+
+    <div class="pastebar">
+      <input class="in" id="pastein" placeholder="Paste a Pinterest / are.na / any link…">
+      <button class="btn sm ${PASTING?"":"green"}" id="pastego" ${PASTING?"disabled":""}>${PASTING?"…":"Pull"}</button>
+    </div>
+    ${PASTED?`<div class="pasted">
+      <img src="${esc(PASTED.image)}" alt="">
+      <div class="pasted-i">
+        <div class="pasted-t">${esc(PASTED.title||"Untitled")}</div>
+        <div class="mono dim">↗ ${esc(PASTED.site||"")}${PASTED.licence?" · "+esc(PASTED.licence):""}</div>
+      </div>
+      <button class="btn green sm" id="pastesave">Pull in</button>
+      <button class="x" id="pastex">✕</button>
+    </div>`:""}
+    ${PASTEERR?`<div class="pasteerr mono"><b>${esc(PASTEERR.error)}</b>${PASTEERR.detail?`<br>${esc(PASTEERR.detail)}`:""}</div>`:""}
+
+    ${pinBoard?`<div class="fchips archchips">
+      <button class="chip sm ${ARCHSRC==="tnl"?"on":""}" data-asrc="tnl">◫ The archive</button>
+      <button class="chip sm ${ARCHSRC==="pin"?"on":""}" data-asrc="pin">📌 Pinterest</button>
+    </div>`:""}
+
+    ${(ARCHSRC==="pin"&&pinBoard)?`
+      <div class="pinembed">
+        <a data-pin-do="embedBoard" data-pin-board-width="400" data-pin-scale-height="1200" data-pin-scale-width="80"
+           href="${esc(pinBoard)}"></a>
+        <div class="mono dim pinnote">Pinterest's own embed. Open a pin there, copy the link, paste it above to pull it in.</div>
+      </div>`
+    :`
+      <div class="fchips archchips">
+        ${[["","Everything"],["saved","Most saved"],["liked","Most liked"]].map(([v,l])=>
+          `<button class="chip sm ${(ARCHFILT.sort||"")===v?"on":""}" data-asort="${v}">${l}</button>`).join("")}
+        ${((A&&A.channels)||[]).map(c=>`<button class="chip sm ${ARCHFILT.channel===c?"on":""}" data-ach="${esc(c)}">#${esc(c)}</button>`).join("")}
+        ${(ARCHFILT.q||ARCHFILT.channel||ARCHFILT.sort)?`<button class="clearf mono" id="archclear">✕ CLEAR</button>`:""}
+      </div>
+      ${!A?`<div class="empty">Loading…</div>`
+        :!A.images.length?`<div class="empty">
+          ${ARCHFILT.q?`Nothing matches "${esc(ARCHFILT.q)}".`
+            :`The archive is empty.<br><br>Every image published to a lab lands here — searchable, forever.`}
+        </div>`
+        :`<div class="archgrid">${A.images.map(x=>`
+          <button class="archcard" data-aopen="${x.id}" style="${(x.w&&x.h)?`grid-row-end:span ${Math.max(12,Math.min(34,Math.round((x.h/x.w)*20)))}`:""}">
+            <img src="${esc(x.url)}" alt="" loading="lazy">
+            <div class="archover">
+              <span class="archby mono">${esc(x.by.displayName)}</span>
+              <span class="archsave ${x.savedByMe?"on":""}" data-asave="${x.id}">${x.savedByMe?"◫":"＋"}</span>
+            </div>
+            ${x.saves?`<span class="archn mono">${x.saves}</span>`:""}
+          </button>`).join("")}</div>`}
+    `}
+  </div>`;
+}
+
+/* Moodboards. The Pinterest mechanic — except saving someone's image TELLS
+   them and credits them. Pinterest can't do that; it doesn't know who
+   anyone is. */
+function boardsHTML(){
+  if(BOARDONE)return boardOneHTML();
+  return `<div class="sheet" id="bbg"><div class="sheetc">
+    <div class="sheeth"><div><div class="mono dim">MOODBOARDS</div><h2>What you're pulling</h2></div>
+      <button class="x" id="bx">✕</button></div>
+    <p class="mono dim" style="line-height:1.7;margin-bottom:14px">Reference, pulled from the archive. Whoever made it gets told you took it — that's how a collab starts.</p>
+    <div class="mbrow">
+      <input class="in" id="bnew" placeholder="New moodboard — 'Y2K refs', 'FW25'…" maxlength="60">
+      <button class="btn green sm" id="bmake">＋</button>
+    </div>
+    ${!BOARDS?`<div class="empty">Loading…</div>`
+      :!BOARDS.length?`<div class="empty">No moodboards yet.<br><br>Make one, then pull anything out of the archive into it.</div>`
+      :`<div class="mbgrid">${BOARDS.map(b=>`<button class="mbcard" data-bopen="${b.id}">
+        ${b.cover?`<img src="${esc(b.cover)}" alt="" loading="lazy">`:`<div class="mbempty">◫</div>`}
+        <div class="mbname">${esc(b.name)}</div>
+        <div class="mono dim">${b.count} ${b.count===1?"image":"images"}${b.isPublic?"":" · private"}</div>
+      </button>`).join("")}</div>`}
+  </div></div>`;
+}
+
+function boardOneHTML(){
+  const b=BOARDONE;
+  return `<div class="sheet" id="bbg"><div class="sheetc">
+    <div class="sheeth"><div>
+      <button class="backb2" id="bback">← Moodboards</button>
+      <h2 style="margin-top:6px">${esc(b.board.name)}</h2>
+      <div class="mono dim">${b.pins.length} ${b.pins.length===1?"image":"images"} · by ${esc(b.board.by.displayName)}</div>
+    </div><button class="x" id="bx">✕</button></div>
+    ${!b.pins.length?`<div class="empty">Nothing pulled yet.<br><br>Go to the archive and tap ＋ on anything.</div>`
+      :`<div class="archgrid">${b.pins.map(p=>`<div class="archcard">
+        <img src="${esc(p.url||"")}" alt="" loading="lazy">
+        <div class="archover">
+          <span class="archby mono">${p.by?esc(p.by.displayName):esc(p.srcSite||"link")}</span>
+          ${b.board.mine?`<span class="archsave" data-unpin="${p.id}">✕</span>`:""}
+        </div>
+        ${p.srcUrl?`<a class="archsrc mono" href="${esc(p.srcUrl)}" target="_blank" rel="noopener">↗ ${esc(p.srcSite||"source")}</a>`:""}
+      </div>`).join("")}</div>`}
+    ${b.board.mine?`<button class="btn ghost wide" id="bdel" style="margin-top:14px">Delete this moodboard</button>`:""}
+  </div></div>`;
+}
+
+async function loadArchive(){
+  const p=new URLSearchParams();
+  for(const [k,v] of Object.entries(ARCHFILT)) if(v)p.set(k,v);
+  ARCHIVE=null;render();
+  try{ARCHIVE=await api.archive(p.toString())}catch(e){ARCHIVE={images:[],channels:[]}}
+  render();
+}
+async function loadBoards(){
+  if(!ME)return;
+  try{BOARDS=(await api.boards()).boards}catch(e){BOARDS=[]}
+  render();
+}
+
 function labsHTML(){
   if(guest())return `<div class="scroll"><div class="wall">
     <div class="wall-ic">🧪</div>
@@ -1822,18 +1966,32 @@ function labsHTML(){
     ${CH.beatlab?`<div id="studiomount"></div>`:""}
     ${(CH.gate&&levelFor(myRep()).id<CH.gate)?`<div class="empty">🔒 #${esc(CH.label)} opens at ${LEVELS.find(l=>l.id===CH.gate).name}.<br>Earn rep through work others validate.</div>`
       :`<div class="feed" id="feed"><div class="empty">Loading…</div></div>
-    ${(PENDIMG||PENDVID)?`<div class="attach-bar">
-      ${PENDIMG?`<img src="${PENDIMG}" alt="preview">`:`<div class="vthumb">▶</div>`}
+    ${QUEUE.length?`<div class="attach-bar">
+      <div class="qgrid">${QUEUE.map((q,i)=>`
+        <div class="qcard ${q.state}">
+          ${q.kind==="video"?`<div class="vthumb">▶</div>`:`<img src="${esc(q.preview)}" alt="">`}
+          ${q.state==="up"?`<div class="qbar"><div class="qfill" style="width:${q.pct||0}%"></div></div>`:""}
+          ${q.state==="err"?`<div class="qerr mono">!</div>`:""}
+          <button class="qx" data-qdrop="${i}">✕</button>
+        </div>`).join("")}
+        ${QUEUE.length<10?`<button class="qadd" id="qmore">＋</button>`:""}
+      </div>
       <div class="attach-info">
-        <span class="mono dim">${PENDKIND==="video"?"VIDEO":"IMAGE"} ATTACHED</span>
+        <span class="mono dim">${(()=>{
+          const im=QUEUE.filter(q=>q.kind==="image").length, vd=QUEUE.filter(q=>q.kind==="video").length;
+          if(im>1&&!vd)return im+" IMAGES · ONE POST";
+          if(im&&vd)return im+" IMAGE"+(im>1?"S":"")+" + "+vd+" VIDEO"+(vd>1?"S":"");
+          if(vd>1)return vd+" VIDEOS · ONE POST EACH";
+          return QUEUE.length+" FILE"+(QUEUE.length===1?"":"S");
+        })()}</span>
         <label class="workcheck"><input type="checkbox" id="aswork" ${ASWORK?"checked":""}> <span>Publish to my portfolio</span></label>
       </div>
-      <button class="attach-x" id="dropimg">✕</button></div>`:""}
+      <button class="attach-x" id="dropimg" title="Clear all">✕</button></div>`:""}
     ${MENTIONS?`<div class="mlist">${MENTIONS.map((u,i)=>`<button class="mrow" data-mpick="${i}">
       ${avHTML(u,"sm")}<div><b>${esc(u.displayName)}</b> <span class="mono dim">@${esc(u.username)}</span></div>
     </button>`).join("")}</div>`:""}
     <div class="composer">
-      <input type="file" id="filein" accept="image/*,video/*" hidden>
+      <input type="file" id="filein" accept="image/*,video/*" multiple hidden>
       <button class="attach" id="attachb" title="Attach image or video">+</button>
       <input class="in" id="draft" placeholder="${EDITID?"Edit your message…":"Message #"+esc(CH.label)}">
       ${EDITID?`<button class="send ghostsend" id="canceledit">✕</button>`:""}
@@ -1856,7 +2014,11 @@ function postHTML(p){const mine=p.author.username===myName();
   </div>
   ${p.body?`<div class="post-body">${rich(p.body)}</div>`:""}
   ${(!p.imageUrl&&!p.videoUrl&&!p.beat&&firstUrl(p.body))?linkCard(firstUrl(p.body)):""}
-  ${p.imageUrl?`<img class="post-img" src="${esc(p.thumbUrl||p.imageUrl)}" alt="attached work" loading="lazy" decoding="async"
+  ${(p.images&&p.images.length>1)?`<div class="gal g${Math.min(4,p.images.length)}">
+    ${p.images.slice(0,4).map((im,i)=>`<img class="gimg" src="${esc(im.thumb||im.url)}" alt="" loading="lazy" decoding="async"
+      data-zoom="${esc(im.url)}">${(i===3&&p.images.length>4)?`<span class="galn mono">+${p.images.length-4}</span>`:""}`).join("")}
+  </div>`
+  :p.imageUrl?`<img class="post-img" src="${esc(p.thumbUrl||p.imageUrl)}" alt="attached work" loading="lazy" decoding="async"
     ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
     data-zoom="${esc(p.imageUrl)}">`:""}
   ${p.videoUrl?`<div class="vwrap">
@@ -2604,51 +2766,101 @@ function wire(){
       try{await api.editPost(id,t);EDITID=null;$("#draft").value="";loadFeed();render()}catch(e){toast(e.message)}
       return;
     }
-    if(!t&&!PENDIMG&&!PENDVID)return;
-    const prep=PENDPREP, vid=PENDVID, kind=PENDKIND, work=ASWORK;
-    const draftText=t;
-    // clear the composer immediately — waiting on the network to empty a
-    // text box is what makes an app feel slow
+    if(!t&&!QUEUE.length)return;
+
+    /* Discord sends one message with N attachments. We send N posts — in a
+       portfolio each piece needs its own likes and its own collab credits,
+       and you can't credit a collaborator on "attachment 3 of 5".
+       The text rides on the first one. */
+    const queue=QUEUE.slice(), work=ASWORK, draftText=t;
     $("#draft").value="";
-    PENDIMG=null;PENDVID=null;PENDKIND=null;PENDFILE=null;PENDPREP=null;ASWORK=false;
+    QUEUE=[];ASWORK=false;
 
-    // show it in the feed right away, flagged as pending
-    const temp={id:"tmp"+Date.now(),channel:CH.id,body:draftText,beat:null,
-      imageUrl:prep?prep.full:null,thumbUrl:prep?prep.thumb:null,mediaW:prep?prep.w:null,mediaH:prep?prep.h:null,
-      videoUrl:null,isWork:work,editedAt:null,sharedFrom:null,createdAt:Date.now(),
-      author:{username:ME.username,displayName:ME.displayName,role:ME.role,avatarUrl:ME.avatarUrl,rep:ME.rep,level:levelFor(ME.rep).id},
-      likeCount:0,shareCount:0,commentCount:0,likedByMe:false,collaborators:[],pending:true};
-    POSTS=[...POSTS,temp];
-    renderRoomFeed();
-    const feed=$("#feed");if(feed)feed.scrollTop=feed.scrollHeight;
-
-    try{
-      const body={channel:CH.id,body:draftText,isWork:work};
-      const bump=(f)=>{UPPROG=f;const el=$("#upbar");if(el)el.style.width=Math.round(f*100)+"%"};
-      if(prep){
-        UPPROG=0;renderRoomFeed();
-        const up=await uploadStream(dataUrlToBlob(prep.full),bump);
-        body.imageUrl=up.url;
-        const th=await uploadStream(dataUrlToBlob(prep.thumb));
-        body.thumbUrl=th.url;
-        body.mediaW=prep.w;body.mediaH=prep.h;
-        UPPROG=null;
-      } else if(vid){
-        UPPROG=0;renderRoomFeed();
-        const up=await uploadStream(vid,bump);   // vid is the raw File — streamed
-        if(up.kind==="video")body.videoUrl=up.url;else body.imageUrl=up.url;
-        UPPROG=null;
+    if(!queue.length){
+      // plain text — the fast path, unchanged
+      const temp={id:"tmp"+Date.now(),channel:CH.id,body:draftText,beat:null,
+        imageUrl:null,thumbUrl:null,mediaW:null,mediaH:null,videoUrl:null,isWork:false,
+        editedAt:null,sharedFrom:null,createdAt:Date.now(),
+        author:{username:ME.username,displayName:ME.displayName,role:ME.role,avatarUrl:ME.avatarUrl,rep:ME.rep,level:levelFor(ME.rep).id},
+        likeCount:0,shareCount:0,commentCount:0,likedByMe:false,collaborators:[],pending:true};
+      POSTS=[...POSTS,temp];renderRoomFeed();
+      const feed=$("#feed");if(feed)feed.scrollTop=feed.scrollHeight;
+      try{await api.post({channel:CH.id,body:draftText,isWork:false});
+        POSTS=POSTS.filter(p=>p.id!==temp.id);loadFeed();
+      }catch(e){
+        const p=POSTS.find(x=>x.id===temp.id);
+        if(p){p.pending=false;p.failed=true;p.retry={body:draftText};renderRoomFeed()}
+        toast(e.message);
       }
-      await api.post(body);
-      POSTS=POSTS.filter(p=>p.id!==temp.id);
-      loadFeed();
-    }catch(e){
-      // mark the pending post as failed rather than silently dropping it
-      const p=POSTS.find(x=>x.id===temp.id);
-      if(p){p.pending=false;p.failed=true;p.retry={body:draftText,prep,vid,kind,work};renderRoomFeed()}
-      toast(e.message);
-    }};
-    sendb.onclick=go;
+      return;
+    }
+
+    /* ONE post, however many images. People chat — someone drops four refs
+       mid-sentence and it's one thought. I had this backwards: I was making
+       5 images into 5 posts, which forces a formality nobody talks in.
+       Videos are the exception; they stay one per post. */
+    const vids=queue.filter(q=>q.kind==="video");
+    const imgs=queue.filter(q=>q.kind==="image"&&q.prep);
+
+    if(imgs.length){
+      const temp={id:"tmp"+Date.now(),channel:CH.id,body:draftText,beat:null,
+        imageUrl:imgs[0].prep.full,thumbUrl:imgs[0].prep.thumb,
+        mediaW:imgs[0].prep.w,mediaH:imgs[0].prep.h,
+        images:imgs.length>1?imgs.map(q=>({url:q.prep.full,thumb:q.prep.thumb,w:q.prep.w,h:q.prep.h})):null,
+        videoUrl:null,isWork:work,editedAt:null,sharedFrom:null,createdAt:Date.now(),
+        author:{username:ME.username,displayName:ME.displayName,role:ME.role,avatarUrl:ME.avatarUrl,rep:ME.rep,level:levelFor(ME.rep).id},
+        likeCount:0,shareCount:0,commentCount:0,likedByMe:false,collaborators:[],pending:true};
+      POSTS=[...POSTS,temp];renderRoomFeed();
+      const feed=$("#feed");if(feed)feed.scrollTop=feed.scrollHeight;
+      try{
+        const uploaded=[];
+        for(let i=0;i<imgs.length;i++){
+          const q=imgs[i];
+          const bump=(f)=>{UPPROG=(i+f)/imgs.length;const el=$("#upbar");if(el)el.style.width=Math.round(UPPROG*100)+"%"};
+          UPPROG=i/imgs.length;renderRoomFeed();
+          const up=await uploadStream(dataUrlToBlob(q.prep.full),bump);
+          const th=await uploadStream(dataUrlToBlob(q.prep.thumb));
+          uploaded.push({url:up.url,thumb:th.url,w:q.prep.w,h:q.prep.h});
+        }
+        UPPROG=null;
+        await api.post({channel:CH.id,body:draftText,isWork:work,
+          imageUrl:uploaded[0].url,thumbUrl:uploaded[0].thumb,
+          mediaW:uploaded[0].w,mediaH:uploaded[0].h,
+          images:uploaded.length>1?uploaded:undefined});
+        POSTS=POSTS.filter(p=>p.id!==temp.id);
+      }catch(e){
+        const p=POSTS.find(x=>x.id===temp.id);
+        if(p){p.pending=false;p.failed=true;p.retry={body:draftText,imgs,work};renderRoomFeed()}
+        UPPROG=null;toast(e.message);
+      }
+    }
+
+    // videos get their own post each — a 600MB file isn't a thumbnail in a grid
+    for(const q of vids){
+      const temp={id:"tmp"+Date.now()+"_v",channel:CH.id,body:imgs.length?"":draftText,beat:null,
+        imageUrl:null,thumbUrl:null,mediaW:null,mediaH:null,images:null,
+        videoUrl:null,isWork:work,editedAt:null,sharedFrom:null,createdAt:Date.now(),
+        author:{username:ME.username,displayName:ME.displayName,role:ME.role,avatarUrl:ME.avatarUrl,rep:ME.rep,level:levelFor(ME.rep).id},
+        likeCount:0,shareCount:0,commentCount:0,likedByMe:false,collaborators:[],pending:true};
+      POSTS=[...POSTS,temp];renderRoomFeed();
+      try{
+        const bump=(f)=>{UPPROG=f;const el=$("#upbar");if(el)el.style.width=Math.round(f*100)+"%"};
+        UPPROG=0;renderRoomFeed();
+        const up=await uploadStream(q.file,bump);
+        UPPROG=null;
+        const b={channel:CH.id,body:imgs.length?"":draftText,isWork:work};
+        if(up.kind==="video")b.videoUrl=up.url;else b.imageUrl=up.url;
+        await api.post(b);
+        POSTS=POSTS.filter(p=>p.id!==temp.id);
+      }catch(e){
+        const p=POSTS.find(x=>x.id===temp.id);
+        if(p){p.pending=false;p.failed=true;renderRoomFeed()}
+        UPPROG=null;toast(q.name+": "+e.message);
+      }
+    }
+    loadFeed();
+  };
+  sendb.onclick=go;
     const dr=$("#draft");
     dr.onkeydown=e=>{if(e.key==="Enter"&&!MENTIONS)go()};
     let mt=null;
@@ -2675,27 +2887,44 @@ function wire(){
   });
 
   const ab=$("#attachb");if(ab)ab.onclick=()=>$("#filein").click();
+  /* Discord's flow: pick several, see them all, drop any, send once.
+     Each still becomes its own post — in a portfolio a piece needs its own
+     likes and its own collab credits, which a grouped attachment can't have. */
   const fi=$("#filein");if(fi)fi.onchange=async()=>{
-    const f=fi.files&&fi.files[0];if(!f)return;
-    fi.value="";
-    if(f.type.startsWith("video/")){
-      if(f.size>650*1024*1024)return toast("Video too big — 650MB max");
-      // keep the File itself — we stream it, never base64 it
-      PENDVID=f;PENDIMG=null;PENDKIND="video";PENDFILE=f;render();
-      return;
+    const files=[...(fi.files||[])];fi.value="";
+    for(const f of files){
+      if(QUEUE.length>=10){toast("10 at a time");break}
+      if(f.type.startsWith("video/")){
+        if(f.size>650*1024*1024){toast(f.name+" is over 650MB");continue}
+        QUEUE.push({file:f,kind:"video",name:f.name,state:"ok",preview:null});
+        continue;
+      }
+      if(f.size>30*1024*1024){toast(f.name+" is over 30MB");continue}
+      QUEUE.push({file:f,kind:"image",name:f.name,state:"prep",preview:null});
     }
-    if(f.size>30*1024*1024)return toast("That image is too big — 30MB max");
-    PENDFILE=f;
-    try{PENDPREP=await prepImage(f,ASWORK);PENDIMG=PENDPREP.thumb;PENDVID=null;PENDKIND="image";render()}
-    catch(e){toast(e.message)}
+    render();
+    // prep previews after painting, so the grid appears instantly
+    for(const q of QUEUE){
+      if(q.kind!=="image"||q.prep)continue;
+      try{q.prep=await prepImage(q.file,ASWORK);q.preview=q.prep.thumb;q.state="ok"}
+      catch(e){q.state="err";q.error=e.message}
+      render();
+    }
   };
-  const di=$("#dropimg");if(di)di.onclick=()=>{PENDIMG=null;PENDVID=null;PENDKIND=null;PENDFILE=null;PENDPREP=null;ASWORK=false;render()};
+  const qm=$("#qmore");if(qm)qm.onclick=()=>$("#filein").click();
+  document.querySelectorAll("[data-qdrop]").forEach(b=>b.onclick=()=>{
+    QUEUE.splice(+b.dataset.qdrop,1);render();
+  });
+  const di=$("#dropimg");if(di)di.onclick=()=>{QUEUE=[];ASWORK=false;render()};
   const aw=$("#aswork");if(aw)aw.onchange=async()=>{
     ASWORK=aw.checked;
-    if(PENDFILE&&PENDKIND==="image"){
-      try{PENDPREP=await prepImage(PENDFILE,ASWORK);PENDIMG=PENDPREP.thumb;
-        toast(ASWORK?"Full quality for your portfolio":"Standard quality")}catch(e){}
-    }};
+    // re-prep at the new quality — portfolio work keeps its resolution
+    for(const q of QUEUE){
+      if(q.kind!=="image")continue;
+      try{q.prep=await prepImage(q.file,ASWORK);q.preview=q.prep.thumb}catch(e){}
+    }
+    toast(ASWORK?"Full quality for your portfolio":"Standard quality");render();
+  };
   wireFeed();wireSheet();wireMarket();wirePicker();
   const lb=$("#lb");if(lb)lb.onclick=()=>{LIGHTBOX=null;render()};
 }
