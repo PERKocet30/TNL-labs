@@ -1737,7 +1737,7 @@ function showroomHTML(){return `<div class="scroll" id="showroom">
   <div class="sr-builders" id="sr-builders"></div>
 
   <div class="sr-feedhead mono"><span>LATEST WORK</span><span class="dim">COLLABS RANK HIGHEST</span></div>
-  <div class="sr-grid" id="sr-grid"><div class="empty">Loading the work…</div></div>
+  <div class="sr-grid" id="sr-grid">${SRPOSTS.length?SRPOSTS.map(srCardHTML).join(""):`<div class="empty">Loading the work…</div>`}</div>
 </div>`}
 
 function srCardHTML(p){
@@ -1745,7 +1745,7 @@ function srCardHTML(p){
   return `<div class="sr-card">
     ${p.imageUrl?`<img class="sr-img" src="${esc(p.thumbUrl||p.imageUrl)}" alt="work by ${esc(p.author.displayName)}" loading="lazy" decoding="async"
       ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
-      data-zoom="${esc(p.imageUrl)}">`
+      data-u="${esc(p.author.username)}">`
       :p.videoUrl?`<div class="vwrap">
         <video class="sr-img" src="${esc(p.videoUrl)}" muted loop playsinline preload="metadata" data-auto></video>
         <button class="vmute" data-vmute aria-label="Sound">🔇</button>
@@ -1762,10 +1762,13 @@ function srCardHTML(p){
       ${p.body?`<div class="sr-body">${rich(p.body)}</div>`:""}
       <div class="sr-acts">
         <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
+        <button class="igact" data-comments="${p.id}" aria-label="Comment">${IG_COMMENT}</button>
         <button class="igact" data-share="${p.id}" aria-label="Send">${IG_SEND}<span class="igact-n">${p.shareCount||""}</span></button>
         ${p.author.username===myName()?`<button class="act" data-collab="${p.id}">+ collab</button>`:""}
         ${p.collaborators.find(c=>c.username===myName()&&c.status==="pending")?`<button class="act on" data-accept="${p.id}">accept ✓</button>`:""}
       </div>
+      ${p.commentCount&&OPENCOMMENTS!==p.id?`<button class="ig-viewc" data-comments="${p.id}">View all ${p.commentCount} comment${p.commentCount==1?"":"s"}</button>`:""}
+      ${OPENCOMMENTS===p.id?commentsHTML(p):""}
     </div>
   </div>`}
 
@@ -2059,17 +2062,17 @@ function postHTML(p){const mine=p.author.username===myName();
        whole, the way it was made. Chat is a grid: four refs dropped
        mid-sentence are one glance, not a slideshow. */
     ?`<div class="caro" data-caro="${p.id}">
-      <div class="caro-t">${p.images.map(im=>`<img class="caro-i" src="${esc(im.thumb||im.url)}" data-zoom="${esc(im.url)}" alt="" loading="lazy" decoding="async">`).join("")}</div>
+      <div class="caro-t">${p.images.map(im=>`<img class="caro-i" src="${esc(im.thumb||im.url)}" data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async">`).join("")}</div>
       <div class="caro-d">${p.images.map((_,i)=>`<span class="${i===0?"on":""}"></span>`).join("")}</div>
       <span class="caro-n mono">1/${p.images.length}</span>
     </div>`
     :`<div class="gal g${Math.min(4,p.images.length)}">
     ${p.images.slice(0,4).map((im,i)=>`<img class="gimg" src="${esc(im.thumb||im.url)}" alt="" loading="lazy" decoding="async"
-      data-zoom="${esc(im.url)}">${(i===3&&p.images.length>4)?`<span class="galn mono">+${p.images.length-4}</span>`:""}`).join("")}
+      data-u="${esc(p.author.username)}">${(i===3&&p.images.length>4)?`<span class="galn mono">+${p.images.length-4}</span>`:""}`).join("")}
   </div>`)
   :p.imageUrl?`<img class="post-img" src="${esc(p.thumbUrl||p.imageUrl)}" alt="attached work" loading="lazy" decoding="async"
     ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
-    data-zoom="${esc(p.imageUrl)}">`:""}
+    data-u="${esc(p.author.username)}">`:""}
   ${p.videoUrl?`<div class="vwrap">
     <video class="post-vid" src="${esc(p.videoUrl)}" muted loop playsinline preload="metadata" data-auto
       ${p.mediaW?`style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}></video>
