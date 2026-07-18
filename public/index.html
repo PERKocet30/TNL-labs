@@ -3,7 +3,26 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>TNLLABS 🧪</title>
+<title>TNL LABS 🧪 — Cultivators</title>
+<!-- The link itself is the pitch. This gets pasted into DMs with 756 people
+     in them; a bare blue link there is a wasted shot. Static, because a
+     crawler doesn't run JavaScript — whatever the app renders later, THIS
+     is what Meta reads. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TNL LABS">
+<meta property="og:url" content="https://labs.tnllabs.com/">
+<meta property="og:title" content="TNL LABS — Cultivators">
+<meta property="og:description" content="Artists, designers, musicians, entrepreneurs. Creatives don't just meet here — they multiply.">
+<meta property="og:image" content="https://labs.tnllabs.com/og-cover.png">
+<meta property="og:image:secure_url" content="https://labs.tnllabs.com/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TNL LABS — a workshop for artists, designers and musicians">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TNL LABS — Cultivators">
+<meta name="twitter:description" content="Artists, designers, musicians, entrepreneurs. Creatives don't just meet here — they multiply.">
+<meta name="twitter:image" content="https://labs.tnllabs.com/og-cover.png">
+<meta name="description" content="A workshop for artists, designers, musicians and entrepreneurs. Post work, collaborate, and sell — collaboration is the product.">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -76,6 +95,48 @@ h1,h2,h3{text-transform:uppercase;letter-spacing:-.01em}
 .foot{padding:32px 22px 40px}
 .foot .big{font-weight:900;font-size:clamp(15px,4vw,20px);text-transform:uppercase;margin-bottom:6px}
 /* labs view */
+/* ── THE LABS AS A BUILDING ──────────────────────────────────────────
+   Tiles, not a list. Each one shows the last thing made in it, so you're
+   looking INTO a room rather than reading a menu of hashtags. */
+.labgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 20px 20px}
+@media(min-width:620px){.labgrid{grid-template-columns:repeat(3,1fr)}}
+.labtile{position:relative;aspect-ratio:1/1.15;border-radius:14px;overflow:hidden;
+  background:var(--card);border:1px solid var(--line);padding:0;text-align:left;
+  display:flex;flex-direction:column;justify-content:space-between;color:var(--tx);
+  transition:border-color .15s,transform .1s}
+.labtile:active{transform:scale(.985)}
+.labtile.hasnew{border-color:var(--green)}
+.labtile.live{border-color:var(--line2)}
+/* the last piece made in there — sits behind, dimmed, so the room has a face */
+.labart{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.3;filter:grayscale(.4)}
+.labshade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.82) 55%,#000 100%)}
+.labtop,.labbody,.labfoot{position:relative;z-index:1}
+.labtop{display:flex;justify-content:space-between;align-items:flex-start;padding:11px 11px 0}
+.labglyph{font-size:19px;color:var(--green);line-height:1}
+.labnew{background:var(--green);color:#000;font-size:7px;font-weight:600;letter-spacing:.08em;padding:3px 5px;border-radius:4px}
+.labdot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.labbody{padding:0 11px}
+.labname{font-size:15px;font-weight:900;letter-spacing:-.3px;line-height:1.1}
+.labfor{font-size:10.5px;line-height:1.4;color:var(--dim);margin-top:3px}
+.labrooms{font-size:7.5px;letter-spacing:.04em;color:var(--dim);opacity:.65;margin-top:6px;line-height:1.5;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.labfoot{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:9px 11px 11px}
+/* who's been in there — a room with nobody in it is a corridor */
+.labppl{display:flex;align-items:center}
+.labppl img,.labppl span{width:17px;height:17px;border-radius:50%;object-fit:cover;border:1.5px solid #000;
+  margin-left:-5px;background:var(--el);font-size:7px;display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;color:var(--dim)}
+.labppl img:first-child,.labppl span:first-child{margin-left:0}
+.labppl em{font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--dim);margin-left:4px;font-style:normal}
+.labmeta{font-size:7.5px;letter-spacing:.04em;color:var(--dim);text-align:right;line-height:1.3}
+.labhint{text-align:center;padding:0 20px 26px;letter-spacing:.12em;font-size:8px}
+/* inside a lab */
+.railback{width:100%;background:none;border:none;color:var(--dim);text-align:left;padding:12px 14px 8px;font-size:12px;font-family:'Archivo'}
+.railback:hover{color:var(--green)}
+.railtitle{display:flex;gap:9px;align-items:flex-start;padding:0 14px 12px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.railtitle b{font-size:13px;letter-spacing:-.2px}
+.railglyph{font-size:16px;color:var(--green);line-height:1.2}
+.roomlab{color:var(--dim);font-size:8px;letter-spacing:.1em;margin-right:6px}
 .labs-wrap{flex:1;display:flex;overflow:hidden}
 .rail{width:190px;flex-shrink:0;border-right:1px solid var(--line);overflow-y:auto;padding:12px 8px;background:var(--card)}
 .railh{color:var(--dim);padding:4px 8px;margin-top:8px}
@@ -697,6 +758,42 @@ video[data-auto]{cursor:pointer}
 .st-slide b{font-size:13px}
 .st-sglyph{font-size:22px;color:var(--green);width:26px;text-align:center;flex-shrink:0}
 .st-chip.sm{font-size:10px;padding:4px 8px}
+/* the archive — a masonry wall of everything ever posted */
+.archbar{display:flex;gap:8px;padding:12px 14px 8px;align-items:center}
+.archq{flex:1}
+.archchips{padding:0 14px 10px;flex-wrap:wrap}
+.archgrid{display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:8px;gap:8px;padding:0 14px 24px}
+@media(min-width:620px){.archgrid{grid-template-columns:repeat(4,1fr)}}
+.archcard{position:relative;border-radius:9px;overflow:hidden;background:var(--el);border:1px solid var(--line);padding:0;grid-row-end:span 20}
+.archcard img{width:100%;height:100%;object-fit:cover;display:block}
+.archover{position:absolute;inset:auto 0 0 0;display:flex;justify-content:space-between;align-items:center;gap:6px;
+  padding:16px 7px 6px;background:linear-gradient(transparent,rgba(0,0,0,.85))}
+.archby{font-size:7.5px;color:#fff;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.archsave{width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.6);border:1px solid var(--line2);
+  color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;backdrop-filter:blur(3px)}
+.archsave.on{background:var(--green);color:#000;border-color:var(--green)}
+.archn{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:7px;padding:2px 5px;border-radius:4px;backdrop-filter:blur(3px)}
+.archsrc{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.6);color:var(--green);font-size:7px;
+  padding:2px 5px;border-radius:4px;text-decoration:none;backdrop-filter:blur(3px)}
+/* moodboards */
+.brow{display:flex;gap:7px;margin-bottom:14px}
+.brow .in{flex:1}
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.bcard{background:var(--card);border:1px solid var(--line);border-radius:11px;overflow:hidden;padding:0;text-align:left;color:var(--tx)}
+.bcard:hover{border-color:var(--green)}
+.bcard img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--el)}
+.bempty{width:100%;aspect-ratio:4/3;background:var(--el);display:flex;align-items:center;justify-content:center;color:var(--line2);font-size:26px}
+.bname{font-size:12.5px;font-weight:700;padding:8px 9px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bcard .mono{padding:2px 9px 9px}
+.pastebar{display:flex;gap:7px;padding:0 14px 8px}
+.pastebar .in{flex:1;font-size:16px}
+.pasted{display:flex;align-items:center;gap:10px;margin:0 14px 10px;background:var(--card);
+  border:1px solid var(--green);border-radius:10px;padding:8px}
+.pasted img{width:52px;height:52px;object-fit:cover;border-radius:7px;flex-shrink:0;background:var(--el)}
+.pasted-i{flex:1;min-width:0}
+.pasted-t{font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pasteerr{margin:0 14px 10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);
+  color:#F87171;border-radius:9px;padding:9px 11px;font-size:9px;line-height:1.7}
 .toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:var(--tx);color:#000;font-weight:700;font-size:13px;border-radius:999px;padding:9px 18px;z-index:80}
 .empty{padding:30px 20px;text-align:center;color:var(--dim);font-size:13px;line-height:1.7}
 @media (max-width:680px){
@@ -844,30 +941,56 @@ function kindOf(u){
   const rs=(u&&u.roles&&u.roles.length)?u.roles:(u&&u.role?[u.role]:[]);
   return KINDS[ROLE_KIND[rs[0]]||"visual"]||KINDS.visual;
 }
+/* Each lab is a room, not a category. The glyph and the line under the name
+   are what stop this being a list of hashtags — you should know what a place
+   is FOR before you walk in. */
+/* The labs are the ones that ALREADY EXIST — the Instagram group chats,
+   with the names your people already know. //.JPEG PHARMACY has 226 members;
+   "ART" has none, because I made it up.
+
+   The community is the source of truth. If someone from the PHARMACY opens
+   this and sees a lab called "ART", they're in a stranger's app. If they see
+   //.JPEG PHARMACY, they're home.
+
+   Channel IDs are unchanged on purpose — 18 posts live in them. */
+const LAB_ID = {
+  hq:       {glyph:"◉", for:"The main floor. Everything starts here."},
+  pharmacy: {glyph:"⌗", for:"Image culture. The archive everything else pulls from."},
+  akatsuki: {glyph:"卍", for:"Anime discourse that feeds the design language."},
+  fashion:  {glyph:"▣", for:"Garments, styling, the material end."},
+  casino:   {glyph:"♠", for:"The music lab. Real people, real rooms."},
+  culture:  {glyph:"¶", for:"Music, culture, and the story of the scene."},
+  tna:      {glyph:"Λ", for:"Business, money, and the people building."},
+};
 const LABS = [
-  {id:"community",name:"COMMUNITY",channels:[
+  {id:"hq",name:"LABS HQ",channels:[
     {id:"general",label:"general",desc:"The main floor."},
     {id:"collab-posts",label:"collab-posts",desc:"Looking for a collaborator? Post here."}]},
-  {id:"music",name:"MUSIC",channels:[
-    {id:"beats",label:"beats",desc:"The Beat Lab. Loops become collabs.",beatlab:true},
-    {id:"finished-songs",label:"finished-songs",desc:"Done tracks only.",gate:2}]},
-  {id:"art",name:"ART",channels:[
+  {id:"pharmacy",name:"//.JPEG PHARMACY",channels:[
+    {id:"creators",label:"creators",desc:"Who's here and what they make. Start here."},
     {id:"graphic-design",label:"graphic-design",desc:"Graphic work, feedback, process."},
-    {id:"photography",label:"photography",desc:"Shots and edits."}]},
-  {id:"fashion",name:"FASHION",channels:[
-    {id:"clothing-design",label:"clothing-design",desc:"Design work and concepts."},
-    {id:"clothing-drops",label:"clothing-drops",desc:"What's releasing."}]},
+    {id:"photography",label:"photography",desc:"Shots and edits."},
+    {id:"cinematography",label:"cinematography",desc:"Moving image. Frames, grades, gear."},
+    {id:"video-editing",label:"video-editing",desc:"Cuts, transitions, the work after the shoot."},
+    {id:"archive",label:"archive",desc:"Every image ever posted. Searchable. Collectable.",archive:true}]},
   {id:"akatsuki",name:"AKATSUKI",channels:[
     {id:"anime-chat",label:"anime-chat",desc:"Anime discourse that feeds the design language."},
     {id:"manga",label:"manga",desc:"Panels, arcs, and the art of the page."},
     {id:"anime-news",label:"anime-news",desc:"Seasons, releases, and what's worth your time."},
     {id:"anime-ideas",label:"ideas",desc:"Half-formed concepts. This is where AKATSUKI started."}]},
-  {id:"words",name:"WORDS",channels:[
+  {id:"fashion",name:"FASHION LAB",channels:[
+    {id:"clothing-design",label:"clothing-design",desc:"Design work and concepts."},
+    {id:"clothing-drops",label:"clothing-drops",desc:"What's releasing."}]},
+  {id:"casino",name:"CASINO",channels:[
+    {id:"beats",label:"beats",desc:"The Beat Lab. Loops become collabs.",beatlab:true},
+    {id:"finished-songs",label:"finished-songs",desc:"Done tracks only.",gate:2}]},
+  {id:"culture",name:"MUSIC & CULTURE",channels:[
     {id:"magazine",label:"magazine",desc:"Longer reads, features, and coverage of the scene."},
     {id:"news",label:"news",desc:"What's happening in and around the network."}]},
-  {id:"build",name:"BUILD",channels:[
+  {id:"tna",name:"TNΛ",channels:[
+    {id:"opportunities",label:"opportunities",desc:"Gigs, briefs, and open calls inside the network."},
     {id:"coding",label:"coding",desc:"Sites, apps, and the interfaces the culture runs on."},
-    {id:"opportunities",label:"opportunities",desc:"Gigs, briefs, and open calls inside the network."}]},
+    {id:"finance",label:"finance",desc:"Money, rates, and not getting taken advantage of."}]},
 ];
 const PRODUCTS=[
   {n:'"Free Me" Tee',p:"$54.99",w:"$65.00",u:"https://tnllabs.com/products/free-me-tee"},
@@ -938,6 +1061,16 @@ const api={
   forgot:email=>req("/api/auth/forgot",{method:"POST",body:{email}}),
   search:(q,role)=>req("/api/search?q="+encodeURIComponent(q||"")+"&role="+encodeURIComponent(role||"")),
   unreads:()=>req("/api/unreads"),
+  labs:()=>req("/api/labs"),
+  archive:q=>req("/api/archive"+(q?"?"+q:"")),
+  boards:()=>req("/api/boards"),
+  board:id=>req("/api/boards/"+id),
+  newBoard:b=>req("/api/boards",{method:"POST",body:b}),
+  delBoard:id=>req("/api/boards/"+id,{method:"DELETE"}),
+  pin:(bid,body)=>req("/api/boards/"+bid+"/pin",{method:"POST",body}),
+  unpin:id=>req("/api/pins/"+id,{method:"DELETE"}),
+  saves:id=>req("/api/posts/"+id+"/saves"),
+  unfurl:url=>req("/api/unfurl",{method:"POST",body:{url}}),
   readChannel:ch=>req("/api/channels/"+encodeURIComponent(ch)+"/read",{method:"POST"}),
   mentionable:q=>req("/api/mentionable?q="+encodeURIComponent(q||"")),
   block:u=>req("/api/users/"+encodeURIComponent(u)+"/block",{method:"POST"}),
@@ -986,7 +1119,8 @@ const api={
 };
 
 /* ---- state ---- */
-let TAB="showroom", LAB=LABS[0], CH=LABS[0].channels[0], ROOMOPEN=false, POSTS=[], PROFILE=null, TOASTT=null;
+// LAB=null means you're standing outside looking at the labs, not in one
+let TAB="showroom", LAB=null, CH=LABS[0].channels[0], ROOMOPEN=false, POSTS=[], PROFILE=null, TOASTT=null;
 let PTAB="work", EDITING=false, EDITROLE="", PENDIMG=null, LIGHTBOX=null, VERIFYURL=null;
 let EBAR=0, OPENTRACK="", PITCHSEL=0, DRAFTS=null;
 /* Overwritten by /api/levels on boot. Declared here with a sane default so
@@ -1008,6 +1142,11 @@ let NOTIFS=null, UNREAD=0, DMS=null, DMUNREAD=0, DMOPEN=null, DMDATA=null, SEARC
 let OPENCOMMENTS=null, COMMENTS=[], CEDIT=null;
 let NOTIFOPEN=false, DMOPENPANEL=false, SEARCHOPEN=false;
 let SEARCHING=false, UNREADS={}, PICKER=null, MENTIONS=null, MENTIONQ="";
+let LABACT=null;   // per-lab life: what got made, who was in, what's unread
+/* The archive. 226 people have been posting reference into the PHARMACY
+   for months and none of it can be found again — this is the fix. */
+let ARCHIVE=null, ARCHFILT={}, BOARDS=null, BOARDONE=null, BOARDSOPEN=false, ARCHT=null;
+let PASTING=false, PASTED=null, PASTEERR=null, ARCHSRC="tnl";
 /* Guest mode: you can see the Showroom, the Market and anyone's portfolio
    without an account. The labs are members-only — that's where people
    actually talk, and it isn't a marketing surface. */
@@ -1170,6 +1309,24 @@ function paintUnreads(){
     else if(!n&&b)b.remove();
   });
 }
+/* What's alive in each lab. Cheap, and it's the whole reason the grid is
+   better than a list — a room with the last thing made in it is a place. */
+async function loadArchive(){
+  const q=new URLSearchParams();
+  for(const [k,v] of Object.entries(ARCHFILT)) if(v)q.set(k,v);
+  ARCHIVE=null;render();
+  try{ARCHIVE=await api.archive(q.toString());render()}catch(e){ARCHIVE={images:[],channels:[]};render()}
+}
+async function loadBoards(){
+  if(!ME)return;
+  try{BOARDS=(await api.boards()).boards;render()}catch(e){BOARDS=[];render()}
+}
+
+async function loadLabs(){
+  if(!ME)return;
+  try{LABACT=await api.labs();render()}catch(e){/* the grid still works, just quieter */}
+}
+
 async function loadUnreads(){
   if(!ME)return;
   try{const d=await api.unreads();UNREADS=d.unreads;paintUnreads()}catch(e){}
@@ -1211,6 +1368,7 @@ function initHistory(){
     else if(OPENCOMMENTS){OPENCOMMENTS=null}
     else if(TAB==="market"&&MKTVIEW!=="browse"){MKTVIEW="browse";MKTONE=null}
     else if(TAB==="labs"&&ROOMOPEN){ROOMOPEN=false}
+    else if(TAB==="labs"&&LAB){LAB=null;loadLabs()}
     else if(TAB!=="showroom"){TAB="showroom"}
     else{POPPING=false;return}   // at the root — let the browser leave
     render();
@@ -1237,6 +1395,7 @@ function render(){
     ${DMOPENPANEL?dmPanelHTML():""}
     ${SEARCHOPEN?searchPanelHTML():""}
     ${PICKER?pickerHTML():""}
+    ${BOARDSOPEN?boardsHTML():""}
     ${REVIEWING?reviewHTML():""}
     ${LIGHTBOX?`<div class="lightbox" id="lb"><img src="${esc(LIGHTBOX)}" alt="full size"></div>`:""}
     ${TOASTT?`<div class="toast">${esc(TOASTT)}</div>`:""}`;
@@ -1574,25 +1733,92 @@ async function loadShowroom(){
   }catch(e){/* offline */}
 }
 
+/* The building. Each tile is a room you can see into: the last piece made
+   there, who's been in this week, what's unread. That's what makes it a
+   place rather than a nav menu. */
+function labsGridHTML(){
+  const A=LABACT||{byChannel:{},art:{},people:{},unread:{}};
+  const labStats=(l)=>{
+    let today=0,week=0,unread=0,last=0,art=null,people=[];
+    for(const c of l.channels){
+      const b=A.byChannel[c.id];
+      if(b){today+=b.today||0;week+=b.week||0;if(b.last_at>last)last=b.last_at}
+      unread+=A.unread[c.id]||0;
+      const a=A.art[c.id];
+      if(a&&(!art||a.at>art.at))art=a;
+      for(const p of (A.people[c.id]||[])) if(!people.find(x=>x.username===p.username))people.push(p);
+    }
+    return {today,week,unread,last,art,people};
+  };
+  return `<div class="scroll">
+    <div class="page-head">
+      <div class="mono dim">THE LABS</div>
+      <h2 class="page-h">Seven rooms.</h2>
+      <p class="page-sub">Every one is a door into the same network. Enter through what you make — meet everyone else.</p>
+    </div>
+    <div class="labgrid">${LABS.map(l=>{
+      const id=LAB_ID[l.id]||{glyph:"◆",for:""};
+      const st=labStats(l);
+      const live=st.today>0;
+      return `<button class="labtile ${st.unread?"hasnew":""} ${live?"live":""}" data-lab="${l.id}">
+        ${st.art?`<img class="labart" src="${esc(st.art.url)}" alt="" loading="lazy">`:""}
+        <div class="labshade"></div>
+        <div class="labtop">
+          <span class="labglyph">${id.glyph}</span>
+          ${st.unread?`<span class="labnew mono">${st.unread>9?"9+":st.unread} NEW</span>`
+            :live?`<span class="labdot" title="active today"></span>`:""}
+        </div>
+        <div class="labbody">
+          <div class="labname">${esc(l.name)}</div>
+          <div class="labfor">${esc(id.for)}</div>
+          <div class="labrooms mono">${l.channels.map(c=>"#"+c.label).join("  ")}</div>
+        </div>
+        <div class="labfoot">
+          ${st.people.length?`<div class="labppl">${st.people.slice(0,4).map(p=>
+            p.avatarUrl?`<img src="${esc(p.avatarUrl)}" alt="">`
+              :`<span>${esc(p.displayName.slice(0,1).toUpperCase())}</span>`).join("")}
+            ${st.people.length>4?`<em>+${st.people.length-4}</em>`:""}</div>`:""}
+          <span class="mono labmeta">${st.week
+            ? st.week+" this week"
+            : st.last ? "quiet · last "+timeAgo(st.last)
+            : "empty — be first"}</span>
+        </div>
+      </button>`}).join("")}</div>
+    <div class="mono dim labhint">TAP A LAB TO GO IN</div>
+  </div>`;
+}
+
 function labsHTML(){
   if(guest())return `<div class="scroll"><div class="wall">
     <div class="wall-ic">🧪</div>
     <div class="mono dim">MEMBERS ONLY</div>
     <h2 class="wall-h">This is the workshop.</h2>
-    <p class="wall-p">Seven rooms where people post half-finished work, give each other real feedback, and walk out with a collaborator they didn't have that morning.<br><br>The Showroom shows you what came out. The labs are where it happened.</p>
+    <p class="wall-p">The same seven rooms you already know — PHARMACY, AKATSUKI, CASINO, FASHION LAB — except here the work is searchable, the collabs are recorded, and you can sell from them.<br><br>The Showroom shows you what came out. The labs are where it happened.</p>
     <div class="wall-labs">${LABS.map(l=>`<span class="wall-lab">${esc(l.name)}</span>`).join("")}</div>
     <div class="wall-cta"><button class="btn green" id="joinBtn3">Join the workshop</button>
       <button class="btn ghost" id="loginBtn3">Sign in</button></div>
   </div></div>`;
+
+  /* The grid. You're standing outside the labs looking at which one to walk
+     into — each showing the last thing made in it and who's been in there.
+     A hashtag list is a menu; this is a building. */
+  if(!LAB)return labsGridHTML();
+
   return `<div class="labs-wrap ${ROOMOPEN?"roomopen":""}">
-  <aside class="rail">${LABS.map(l=>`
-    <div class="railh mono">${l.name}</div>
-    ${l.channels.map(c=>{const locked=c.gate&&levelFor(myRep()).id<c.gate;
+  <aside class="rail">
+    <button class="railback" id="labback">← All labs</button>
+    <div class="railtitle">
+      <span class="railglyph">${(LAB_ID[LAB.id]||{}).glyph||"◆"}</span>
+      <div><b>${esc(LAB.name)}</b>
+      <div class="mono dim">${esc((LAB_ID[LAB.id]||{}).for||"")}</div></div>
+    </div>
+    ${LAB.channels.map(c=>{const locked=c.gate&&levelFor(myRep()).id<c.gate;
       const n=UNREADS[c.id]||0;
-      return `<button class="railc ${CH.id===c.id?"on":""} ${n?"unread":""}" data-ch="${c.id}">${locked?"🔒":"#"} ${c.label}${n?`<span class="cbadge">${n>9?"9+":n}</span>`:""}</button>`}).join("")}`).join("")}
+      return `<button class="railc ${CH.id===c.id?"on":""} ${n?"unread":""}" data-ch="${c.id}">${locked?"🔒":"#"} ${c.label}${n?`<span class="cbadge">${n>9?"9+":n}</span>`:""}</button>`}).join("")}
   </aside>
   <section class="room">
-    <div class="roomh"><button class="backb" id="backb">←</button>#${esc(CH.label)} <span class="desc">${esc(CH.desc)}</span></div>
+    <div class="roomh"><button class="backb" id="backb">←</button><span class="roomlab mono">${esc(LAB.name)}</span> #${esc(CH.label)} <span class="desc">${esc(CH.desc)}</span></div>
+    ${CH.archive?archiveHTML():`
     ${CH.beatlab?`<div id="studiomount"></div>`:""}
     ${(CH.gate&&levelFor(myRep()).id<CH.gate)?`<div class="empty">🔒 #${esc(CH.label)} opens at ${LEVELS.find(l=>l.id===CH.gate).name}.<br>Earn rep through work others validate.</div>`
       :`<div class="feed" id="feed"><div class="empty">Loading…</div></div>
@@ -1613,6 +1839,7 @@ function labsHTML(){
       ${EDITID?`<button class="send ghostsend" id="canceledit">✕</button>`:""}
       <button class="send" id="sendb">${EDITID?"✓":"→"}</button>
     </div>`}
+`}
   </section>
 </div>`}
 
@@ -1685,6 +1912,8 @@ const EMPTY={
   "manga":["Post a panel.","Art, paneling, a page that made you stop. Bring the reference."],
   "anime-news":["What's dropping?","Seasons, announcements, releases worth the network's time."],
   "anime-ideas":["Half-formed is fine.","AKATSUKI started as idea-sharing. Post the thought before it's finished."],
+  "archive":["Post a reference.","Scans, screenshots, the images everything else gets built from. No caption needed."],
+  "finance":["Talk money.","Rates, invoices, what you should be charging. Nobody here got taught this."],
   "magazine":["Write something.","A feature, a review, a rant about the scene. Long is fine."],
   "news":["What's happening?","Drops, shows, moves. Keep the network current."],
   "coding":["Show what you're building.","A site, an app, a tool. Screenshot or link it."],
@@ -2231,6 +2460,107 @@ function wire(){
     TAB="labs";ROOMOPEN=true;render();
     if(!CH.beatlab)setTimeout(()=>{const fi=$("#filein");if(fi)fi.click()},250);
   };
+  /* ---- the archive + moodboards ---- */
+  const pgo=$("#pastego"), pin_=$("#pastein");
+  const doPaste=async()=>{
+    const url=(pin_?.value||"").trim();
+    if(!url)return;
+    PASTING=true;PASTEERR=null;PASTED=null;render();
+    try{
+      PASTED=await api.unfurl(url);
+      /* Keep the link. The image is theirs and lives at their URL — we're
+         a moodboard, not a mirror. */
+      PASTED.url=url;
+    }catch(e){
+      let detail="";
+      try{const j=JSON.parse(e.detail||"{}");detail=j.detail||""}catch(x){}
+      PASTEERR={error:e.message, detail:/instagram/i.test(e.message)
+        ? "Their image URLs are signed and expire, and they serve crawlers a login wall. Screenshot it and upload instead — or use the are.na/Pinterest source if there is one."
+        : detail};
+    }
+    PASTING=false;render();
+  };
+  if(pgo)pgo.onclick=doPaste;
+  if(pin_)pin_.onkeydown=e=>{if(e.key==="Enter")doPaste()};
+  const px=$("#pastex");if(px)px.onclick=()=>{PASTED=null;PASTEERR=null;render()};
+  const psave=$("#pastesave");if(psave)psave.onclick=async()=>{
+    if(!BOARDS)await loadBoards();
+    if(!BOARDS.length){BOARDSOPEN=true;render();return toast("Make a moodboard first")}
+    openPicker({eyebrow:"PULL INTO",title:"Which moodboard?",
+      note:"The link and the source are kept. We never rehost the file.",
+      items:BOARDS.map(b=>({label:b.name,sub:b.count+(b.count===1?" image":" images"),icon:"◫",bid:b.id})),
+      onPick:async(it)=>{
+        try{
+          await api.pin(it.bid,{srcUrl:PASTED.url,imgUrl:PASTED.image,note:PASTED.title||""});
+          PASTED=null;if(pin_)pin_.value="";BOARDS=null;
+          toast("Pulled into "+it.label);render();
+        }catch(e){toast(e.message)}}});
+  };
+
+  const arq=$("#archq");
+  if(arq)arq.oninput=()=>{
+    /* Debounced by hand — the app has no debounce helper, and inventing one
+       that doesn't exist is exactly what blanked the screen last week. */
+    clearTimeout(ARCHT);
+    ARCHT=setTimeout(()=>{ARCHFILT.q=arq.value.trim()||undefined;loadArchive()},260);
+  };
+  document.querySelectorAll("[data-asrc]").forEach(b=>b.onclick=()=>{
+    ARCHSRC=b.dataset.asrc;render();
+    /* Pinterest's widget script only runs once per load. Re-inject it when
+       the tab opens or the board renders as a dead link. */
+    if(ARCHSRC==="pin"){
+      const old=document.getElementById("pinjs"); if(old)old.remove();
+      const sc=document.createElement("script");
+      sc.id="pinjs"; sc.async=true; sc.defer=true; sc.src="https://assets.pinterest.com/js/pinit.js";
+      document.body.appendChild(sc);
+    }
+  });
+  document.querySelectorAll("[data-asort]").forEach(b=>b.onclick=()=>{ARCHFILT.sort=b.dataset.asort||undefined;loadArchive()});
+  document.querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{
+    ARCHFILT.channel=ARCHFILT.channel===b.dataset.ach?undefined:b.dataset.ach;loadArchive()});
+  const ac=$("#archclear");if(ac)ac.onclick=()=>{ARCHFILT={};loadArchive()};
+  document.querySelectorAll("[data-aopen]").forEach(b=>b.onclick=(e)=>{
+    if(e.target.closest("[data-asave]"))return;   // the ＋ is its own button
+    const x=(ARCHIVE?.images||[]).find(i=>String(i.id)===b.dataset.aopen);
+    if(x)LIGHTBOX=x.full||x.url; render();
+  });
+  document.querySelectorAll("[data-asave]").forEach(b=>b.onclick=async(e)=>{
+    e.stopPropagation();
+    if(guest())return needAccount("Join to pull reference into a moodboard.");
+    const id=+b.dataset.asave;
+    if(!BOARDS)await loadBoards();
+    if(!BOARDS.length){BOARDSOPEN=true;render();return toast("Make a moodboard first")}
+    openPicker({eyebrow:"PULL INTO",title:"Which moodboard?",
+      note:"Whoever made this gets told you took it.",
+      items:BOARDS.map(b2=>({label:b2.name,sub:b2.count+(b2.count===1?" image":" images"),icon:"◫",bid:b2.id})),
+      onPick:async(it)=>{
+        try{await api.pin(it.bid,{postId:id});
+          const x=(ARCHIVE?.images||[]).find(i=>i.id===id);
+          if(x){x.savedByMe=true;x.saves=(x.saves||0)+1}
+          BOARDS=null;toast("Pulled into "+it.label);render();
+        }catch(e2){toast(e2.message)}}});
+  });
+  const mb=$("#myboards");if(mb)mb.onclick=async()=>{
+    if(guest())return needAccount("Join to keep moodboards.");
+    BOARDSOPEN=true;BOARDONE=null;render();if(!BOARDS)await loadBoards();
+  };
+  const bx=$("#bx");if(bx)bx.onclick=()=>{BOARDSOPEN=false;BOARDONE=null;render()};
+  const bbg=$("#bbg");if(bbg)bbg.onclick=e=>{if(e.target===bbg){BOARDSOPEN=false;BOARDONE=null;render()}};
+  const bback=$("#bback");if(bback)bback.onclick=()=>{BOARDONE=null;render()};
+  const bmake=$("#bmake");if(bmake)bmake.onclick=async()=>{
+    const name=$("#bnew")?.value.trim();
+    if(!name)return toast("Name it");
+    try{await api.newBoard({name});BOARDS=null;await loadBoards();toast("Made")}catch(e){toast(e.message)}};
+  document.querySelectorAll("[data-bopen]").forEach(b=>b.onclick=async()=>{
+    try{BOARDONE=await api.board(b.dataset.bopen);render()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-unpin]").forEach(b=>b.onclick=async()=>{
+    try{await api.unpin(b.dataset.unpin);BOARDONE=await api.board(BOARDONE.board.id);BOARDS=null;render()}
+    catch(e){toast(e.message)}});
+  const bdel=$("#bdel");if(bdel)bdel.onclick=async()=>{
+    if(!confirm("Delete \""+BOARDONE.board.name+"\"?\n\nThe images stay in the archive — only your moodboard goes."))return;
+    try{await api.delBoard(BOARDONE.board.id);BOARDONE=null;BOARDS=null;await loadBoards();toast("Deleted")}
+    catch(e){toast(e.message)}};
+
   document.querySelectorAll("[data-lab]").forEach(b=>b.onclick=()=>{const l=LABS.find(x=>x.id===b.dataset.lab);LAB=l;CH=l.channels[0];TAB="labs";ROOMOPEN=true;render()});
   const meBtn=$("#meBtn");if(meBtn)meBtn.onclick=()=>{PROFCACHE.delete(ME.username);openProfile(ME.username)};
   const nb=$("#notifBtn");if(nb)nb.onclick=async()=>{
@@ -2250,7 +2580,20 @@ function wire(){
       if(d.verifyUrl){VERIFYURL=d.verifyUrl;toast("Email isn't set up — tap Open link");render()}
       else toast("Sent to "+(d.email||"your inbox")+" — check spam too");
     }catch(e){toast(e.message)}};
+  document.querySelectorAll("[data-lab]").forEach(b=>b.onclick=()=>{
+    const l=LABS.find(x=>x.id===b.dataset.lab);
+    if(!l)return;
+    pushView("lab",l.id);
+    LAB=l; CH=l.channels[0]; ROOMOPEN=false;
+    render(); loadFeed();
+  });
+  const lbk=$("#labback");if(lbk)lbk.onclick=()=>{
+    LAB=null; ROOMOPEN=false;
+    render(); loadLabs();
+  };
   document.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>{
+    const c2=LAB.channels.find(x=>x.id===b.dataset.ch);
+    if(c2&&c2.archive){CH=c2;ROOMOPEN=true;render();loadArchive();if(!BOARDS)loadBoards();return}
     for(const l of LABS){const c=l.channels.find(x=>x.id===b.dataset.ch);if(c){LAB=l;CH=c}}
     ROOMOPEN=true;if(window.TNLStudio)TNLStudio.unmount();render()});
   const bb=$("#backb");if(bb)bb.onclick=()=>{ROOMOPEN=false;render()};

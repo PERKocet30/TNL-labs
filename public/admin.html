@@ -108,7 +108,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <script>
 const API=location.origin;
 let TOKEN=localStorage.getItem("tnl-token")||null;
-let ME=null,TAB="overview",DATA={},Q="",TOASTT=null,MAILRESULT=null;
+let ME=null,TAB="overview",DATA={},Q="",TOASTT=null,MAILRESULT=null,ERR=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=c=>"$"+((c||0)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -154,7 +154,7 @@ function paint(){
          ["studio","STUDIO"],["health","HEALTH"],["settings","SETTINGS"]]
         .map(([id,l])=>`<button class="${TAB===id?"on":""}" data-tab="${id}">${l}</button>`).join("")}
     </div>
-    <div class="wrap">${
+    <div class="wrap">${ERR?errHTML():
       TAB==="overview"?overviewHTML():
       TAB==="funnel"?funnelHTML():
       TAB==="retention"?retentionHTML():
@@ -371,6 +371,21 @@ function marketHTML(){
 }
 const feeFor=(rep)=>rep>=560?2:rep>=280?4:rep>=120?6:rep>=40?8:10;
 
+function errHTML(){
+  const e=ERR;
+  return `<div class="hero"><h1>${e.stale?"Server's behind":"Something broke"}</h1>
+    <p>${e.stale
+      ? "This dashboard is asking for something the deployed server doesn't have yet."
+      : "The " + esc(e.tab.toUpperCase()) + " tab couldn't load."}</p></div>
+  <div class="panel">
+    <div class="rep"><div class="rt">${esc(e.tab.toUpperCase())} → ${esc(e.msg)}</div>
+    <div class="rb">${e.stale
+      ? "<b>admin.html is newer than server.js.</b> They ship together — the tab exists in the dashboard but the endpoint it calls doesn't exist on the server yet.<br><br>Upload <b>src/server.js</b> and redeploy. Every other tab will keep working meanwhile."
+      : "The request failed. If this persists, check HEALTH → errors — the app logs its own breakage now."}</div></div>
+    <button class="btn" data-retry style="margin-top:12px">Try again</button>
+  </div>`;
+}
+
 /* ---------- studio ---------- */
 function studioHTML(){
   const d=DATA.studio;
@@ -570,6 +585,20 @@ function settingsHTML(){
         Breaking it costs more trust than never offering it.
       </div>
     `:""}
+  </div>
+
+  <div class="panel">
+    <h3>PINTEREST IN THE PHARMACY</h3>
+    <p style="font-size:13px;line-height:1.7;color:var(--dim);margin-bottom:12px">
+      Paste a Pinterest board URL and it renders inside <b style="color:var(--tx)">//.JPEG PHARMACY → #archive</b>
+      using Pinterest's own embed. Their content, their widget, no liability here.<br><br>
+      <b style="color:var(--tx)">You can't search Pinterest</b> — they killed that API years ago and no
+      public endpoint exists. But anyone can paste a pin link into the archive and pull it
+      into a moodboard, credited and linking back. That works today.
+    </p>
+    <label class="mono lbl2">BOARD URL — BLANK TO HIDE THE TAB</label>
+    <input class="search" id="set-pinboard" value="${esc(g.pinterestBoard||"")}" placeholder="https://www.pinterest.com/you/refs/">
+    <button class="btn sm" data-savepin>Save</button>
   </div>
 
   <div class="panel">
@@ -815,7 +844,7 @@ function reportsHTML(){
 
 /* ---------- wiring ---------- */
 function wire(){
-  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;paint();load()});
+  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;ERR=null;paint();load()});
   const q=$("#q");
   if(q){let t=null;q.oninput=()=>{Q=q.value;clearTimeout(t);t=setTimeout(async()=>{
     try{DATA.members=(await req("/api/admin/members?q="+encodeURIComponent(Q))).members;
@@ -841,6 +870,7 @@ function wire(){
     if(!confirm("Send this as a DM to "+who+"?\n\n\""+body.slice(0,120)+(body.length>120?"…":"")+"\"\n\nThis can't be undone."))return;
     try{const d=await req("/api/admin/broadcast",{method:"POST",body:{body,target}});
       toast("Sent to "+d.sent);$("#bcast").value=""}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-retry]").forEach(b=>b.onclick=()=>{ERR=null;paint();load()});
   document.querySelectorAll("[data-backup]").forEach(b=>b.onclick=async()=>{
     b.textContent="Backing up…";b.disabled=true;
     try{const d=await req("/api/admin/backups",{method:"POST"});
@@ -867,6 +897,9 @@ function wire(){
   const mr=$("#set-minrep");if(mr)mr.onchange=async()=>{
     try{const d=await req("/api/admin/settings",{method:"PATCH",body:{minRepToSell:mr.value}});
       DATA.settings.settings=d.settings;toast("Saved")}catch(e){toast(e.message)}};
+  document.querySelectorAll("[data-savepin]").forEach(b=>b.onclick=async()=>{
+    try{const d=await req("/api/admin/settings",{method:"PATCH",body:{pinterestBoard:$("#set-pinboard").value.trim()}});
+      DATA.settings.settings=d.settings;toast("Saved — live now");paint()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-savedistro]").forEach(b=>b.onclick=async()=>{
     try{const d=await req("/api/admin/settings",{method:"PATCH",body:{
       distroLevel:$("#set-distrolvl").value, distroBlurb:$("#set-distroblurb").value}});
