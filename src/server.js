@@ -580,7 +580,9 @@ app.post("/api/posts/:id/share", auth, verified, (req, res) => {
   const info = q.createPost.run(
     req.user.id, target, req.body?.comment?.trim() || "",
     original.beat_json, original.image_url, original.video_url,
-    original.thumb_url, original.media_w, original.media_h, 0, original.id, Date.now()
+    original.thumb_url, original.media_w, original.media_h, 0, original.id,
+    original.images,   // a shared series is still a series
+    Date.now()
   );
   if (original.author_id !== req.user.id) { awardRep(original.author_id, "share_received", original.id); notify(original.author_id, req.user.id, "share", original.id); }
   const row = feedRows({ authorId: req.user.id, viewerId: req.user.id, limit: 1 })
