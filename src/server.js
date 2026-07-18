@@ -1853,7 +1853,7 @@ app.post("/api/market/connect", auth, verified, async (req, res) => {
     db.prepare(`UPDATE users SET stripe_account = ? WHERE id = ?`).run(acct, req.user.id);
   }
   const base = baseUrl(req);
-  const link = await onboardingLink(acct, `${base}/?connect=refresh`, `${base}/api/market/connect/done`);
+  const link = await onboardingLink(acct, `${base}/?connect=refresh`, `${base}/?connect=done`);
   if (link.error) return res.status(502).json({ error: link.error });
   res.json({ url: link.url });
 });
