@@ -825,6 +825,18 @@ video[data-auto]{cursor:pointer}
 .gimg{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:var(--el);cursor:zoom-in}
 .galn{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.72);color:#fff;font-size:11px;
   padding:3px 8px;border-radius:6px;backdrop-filter:blur(3px);pointer-events:none}
+/* carousel — a published series, swiped */
+.caro{position:relative;margin-top:8px;border-radius:9px;overflow:hidden;border:1px solid var(--line);background:var(--el)}
+.caro-t{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.caro-t::-webkit-scrollbar{display:none}
+.caro-i{flex:0 0 100%;width:100%;max-height:520px;object-fit:contain;scroll-snap-align:center;display:block;background:var(--el);cursor:zoom-in}
+.caro-d{position:absolute;left:0;right:0;bottom:9px;display:flex;justify-content:center;gap:5px;pointer-events:none}
+.caro-d span{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.35);transition:background .15s,width .15s}
+.caro-d span.on{background:#fff;width:14px;border-radius:3px}
+.caro-n{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.68);color:#fff;font-size:9px;
+  padding:3px 7px;border-radius:10px;backdrop-filter:blur(3px);pointer-events:none}
+.work-share{background:none;border:none;color:var(--dim);font-size:12px;padding:0 0 0 8px;line-height:1}
+.work-share:hover{color:var(--green)}
 .toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:var(--tx);color:#000;font-weight:700;font-size:13px;border-radius:999px;padding:9px 18px;z-index:80}
 .empty{padding:30px 20px;text-align:center;color:var(--dim);font-size:13px;line-height:1.7}
 @media (max-width:680px){
@@ -2014,10 +2026,19 @@ function postHTML(p){const mine=p.author.username===myName();
   </div>
   ${p.body?`<div class="post-body">${rich(p.body)}</div>`:""}
   ${(!p.imageUrl&&!p.videoUrl&&!p.beat&&firstUrl(p.body))?linkCard(firstUrl(p.body)):""}
-  ${(p.images&&p.images.length>1)?`<div class="gal g${Math.min(4,p.images.length)}">
+  ${(p.images&&p.images.length>1)?(p.isWork
+    /* A published series is a carousel — you swipe it and see each frame
+       whole, the way it was made. Chat is a grid: four refs dropped
+       mid-sentence are one glance, not a slideshow. */
+    ?`<div class="caro" data-caro="${p.id}">
+      <div class="caro-t">${p.images.map(im=>`<img class="caro-i" src="${esc(im.thumb||im.url)}" data-zoom="${esc(im.url)}" alt="" loading="lazy" decoding="async">`).join("")}</div>
+      <div class="caro-d">${p.images.map((_,i)=>`<span class="${i===0?"on":""}"></span>`).join("")}</div>
+      <span class="caro-n mono">1/${p.images.length}</span>
+    </div>`
+    :`<div class="gal g${Math.min(4,p.images.length)}">
     ${p.images.slice(0,4).map((im,i)=>`<img class="gimg" src="${esc(im.thumb||im.url)}" alt="" loading="lazy" decoding="async"
       data-zoom="${esc(im.url)}">${(i===3&&p.images.length>4)?`<span class="galn mono">+${p.images.length-4}</span>`:""}`).join("")}
-  </div>`
+  </div>`)
   :p.imageUrl?`<img class="post-img" src="${esc(p.thumbUrl||p.imageUrl)}" alt="attached work" loading="lazy" decoding="async"
     ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
     data-zoom="${esc(p.imageUrl)}">`:""}
@@ -2520,12 +2541,18 @@ function workCardHTML(p, collab, K) {
     <div class="work-top"><span class="mono work-kind">${kind} · #${esc(p.channel)}</span>
       ${collab ? `<span class="mono work-collab">↔ ${esc(K.collabLine.toUpperCase())} ${esc(p.author.displayName.toUpperCase())}</span>` : ""}</div>
     ${p.beat ? `<div class="work-beat"><button class="circle" style="width:28px;height:28px;font-size:10px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button><span class="nm">${esc(p.beat.name || "untitled loop")}</span><span class="mono dim">${p.beat.bpm}BPM</span></div>`
+      : (p.images && p.images.length > 1) ? `<div class="caro" data-caro="w${p.id}">
+          <div class="caro-t">${p.images.map(im => `<img class="caro-i" src="${esc(im.thumb || im.url)}" alt="" loading="lazy">`).join("")}</div>
+          <div class="caro-d">${p.images.map((_, i) => `<span class="${i === 0 ? "on" : ""}"></span>`).join("")}</div>
+          <span class="caro-n mono">1/${p.images.length}</span>
+        </div>${p.body ? `<div class="work-body" style="margin-top:6px">${esc(p.body)}</div>` : ""}`
       : p.imageUrl ? `<img class="work-img" src="${esc(p.thumbUrl || p.imageUrl)}" alt="work" loading="lazy" decoding="async">${p.body ? `<div class="work-body" style="margin-top:6px">${esc(p.body)}</div>` : ""}`
       : p.videoUrl ? `<video class="work-img" src="${esc(p.videoUrl)}" controls playsinline preload="metadata"></video>`
       : `<div class="work-body">${esc(p.body || "—")}</div>`}
     <div class="work-foot mono"><span>♥ ${p.likeCount}</span><span>↻ ${p.shareCount}</span>
       ${accepted.length ? `<span class="work-cnames">✓ ${accepted.map(c => esc(c.display_name || c.username)).join(", ")}</span>` : ""}
-      <span class="dim" style="margin-left:auto">${new Date(p.createdAt).toLocaleDateString()}</span></div>
+      <span class="dim" style="margin-left:auto">${new Date(p.createdAt).toLocaleDateString()}</span>
+      <button class="work-share" data-share="${p.id}" title="Share">↗</button></div>
   </div>`;
 }
 
@@ -3288,6 +3315,28 @@ function mountStudio(){
    One observer, rebuilt each render (the DOM is replaced wholesale), and
    disconnected first so observers don't pile up on every repaint. */
 let VOBS=null;
+/* Carousels. CSS scroll-snap does the swiping — no library, no drag maths,
+   and it inherits momentum scrolling for free. This just keeps the dots and
+   the counter honest about where you are. */
+function wireCaros(){
+  document.querySelectorAll("[data-caro]").forEach(c=>{
+    const track=c.querySelector(".caro-t");
+    const dots=[...c.querySelectorAll(".caro-d span")];
+    const num=c.querySelector(".caro-n");
+    if(!track||c.dataset.caroBound)return;
+    c.dataset.caroBound="1";
+    let t=null;
+    track.onscroll=()=>{
+      clearTimeout(t);
+      t=setTimeout(()=>{
+        const i=Math.round(track.scrollLeft/track.clientWidth);
+        dots.forEach((d,j)=>d.classList.toggle("on",j===i));
+        if(num)num.textContent=(i+1)+"/"+dots.length;
+      },60);
+    };
+  });
+}
+
 function wireVideos(){
   if(VOBS){VOBS.disconnect();VOBS=null}
   const vids=[...document.querySelectorAll("video[data-auto]")];
@@ -3345,6 +3394,7 @@ function wireVideos(){
 
 function wireFeed(){
   wireVideos();   // autoplay in view — must run after every feed repaint
+  wireCaros();
   document.querySelectorAll("[data-like]").forEach(b=>b.onclick=async()=>{
     if(guest())return needAccount("Back someone's work. Likes are how people earn standing here — it's the whole point.");
     const id=b.dataset.like;
@@ -3378,17 +3428,34 @@ function wireFeed(){
     const link=location.origin+"/p/"+id;
     const shareable=post&&post.isWork;   // only work has a public page
 
-    const items=[
-      {label:"Send to someone",sub:"Lands in their DMs",icon:"✉",act:"dm"},
-      {label:"Share into a lab",sub:"The author earns rep when it travels",icon:"↻",act:"lab"},
+    /* Published work leads with "into a lab" — that's the Instagram move
+       and the one that actually feeds the network. Chat leads with DM,
+       because a message isn't something you broadcast. */
+    const canNative = shareable && typeof navigator!=="undefined" && !!navigator.share;
+    const items=shareable?[
+      {label:"Into a lab",sub:"Drop it in a room. The author earns rep when it travels.",icon:"#",act:"lab"},
+      ...(canNative?[{label:"Text it to a friend",sub:"Messages, WhatsApp, anywhere on your phone",icon:"↗",act:"native"}]:[]),
+      {label:"Send inside TNL",sub:"Lands in their DMs here",icon:"✉",act:"dm"},
+      {label:"Copy link",sub:link.replace(/^https?:\/\//,""),icon:"⧉",act:"copy"},
+    ]:[
+      {label:"Send inside TNL",sub:"Lands in their DMs here",icon:"✉",act:"dm"},
+      {label:"Into a lab",sub:"Carry it across",icon:"#",act:"lab"},
     ];
     if(shareable){
-      if(navigator.share)items.push({label:"Share…",sub:"Anywhere off the app",icon:"↗",act:"native"});
-      items.push({label:"Copy link",sub:link.replace(/^https?:\/\//,""),icon:"⧉",act:"copy"});
+      /* The whole reason to share is to send it OFF the app — into an IG
+         story, a DM, a text. On a phone that's the native sheet; on desktop
+         there's no sheet, so copy IS the off-app share. Either way it's a
+         first-class option, not an afterthought at the bottom. */
+      if(navigator.share)
+        items.push({label:"Share off TNL",sub:"Instagram, iMessage, anywhere",icon:"↗",act:"native"});
+      items.push({label:navigator.share?"Copy link":"Copy link to share",
+        sub:link.replace(/^https?:\/\//,""),icon:"⧉",act:"copy"});
     }
 
-    openPicker({eyebrow:"SHARE",title:"Where to?",
-      note:shareable?"":"Only published work gets a public link — this one lives in the labs.",
+    openPicker({eyebrow:shareable?"PUBLISHED WORK":"CHAT",title:"Where to?",
+      note:shareable
+        ?"This one has a public page — anyone can open it, no account."
+        :"This is a lab message, not published work. No public link, by design.",
       items,
       onPick:async(it)=>{
         if(it.act==="dm"){
@@ -3414,13 +3481,21 @@ function wireFeed(){
           return;
         }
         if(it.act==="native"){
-          try{await navigator.share({title:(post.author.displayName)+" on TNL LABS",text:post.body||"",url:link})}
-          catch(e){/* they cancelled */}
+          const data={title:post.author.displayName+" on TNL LABS",
+            text:post.body?post.body.slice(0,140):"Made in the labs.",url:link};
+          try{await navigator.share(data)}
+          catch(e){/* they cancelled — not an error */}
           return;
         }
         if(it.act==="copy"){
-          try{await navigator.clipboard.writeText(link);toast("Link copied")}
-          catch(e){prompt("Copy this link:",link)}
+          try{
+            await navigator.clipboard.writeText(link);
+            toast("Link copied — paste it anywhere");
+          }catch(e){
+            /* clipboard API needs a secure context and a real gesture; when
+               it's blocked, the select-all prompt still lets them copy. */
+            prompt("Copy this link:",link);
+          }
         }
       }});
   });
