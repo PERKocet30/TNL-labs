@@ -145,8 +145,8 @@ const q = {
   deleteSession: db.prepare(`DELETE FROM sessions WHERE token = ?`),
 
   createPost: db.prepare(
-    `INSERT INTO posts (author_id, channel, body, beat_json, image_url, video_url, thumb_url, media_w, media_h, is_work, shared_from, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO posts (author_id, channel, body, beat_json, image_url, video_url, thumb_url, media_w, media_h, is_work, shared_from, images, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ),
   postById: db.prepare(`SELECT * FROM posts WHERE id = ?`),
 
@@ -249,6 +249,9 @@ function shapePost(row, side) {
     thumbUrl: row.thumb_url || row.image_url || null,
     mediaW: row.media_w || null,
     mediaH: row.media_h || null,
+    /* The rest of the gallery, if there is one. Null for every post ever
+       made before this existed — the client falls back to imageUrl. */
+    images: (() => { try { return row.images ? JSON.parse(row.images) : null; } catch { return null; } })(),
     videoUrl: row.video_url || null,
     isWork: !!row.is_work,
     editedAt: row.edited_at || null,
@@ -513,15 +516,34 @@ app.get("/api/feed", auth, (req, res) => {
 });
 
 app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
-  const { channel, body, beat, imageUrl, videoUrl, thumbUrl, mediaW, mediaH, isWork } = req.body || {};
-  if (!body?.trim() && !beat && !imageUrl && !videoUrl) return res.status(400).json({ error: "empty post" });
+  const { channel, body, beat, imageUrl, videoUrl, thumbUrl, mediaW, mediaH, isWork, images } = req.body || {};
+
+  /* Several images, one post. Most lab chat is exactly this: someone drops
+     four refs mid-sentence and it's ONE thought, not four posts.
+     image_url stays the first one, so old posts, link previews and OG tags
+     keep working with no special-casing anywhere. */
+  const gallery = Array.isArray(images)
+    ? images.filter((i) => i && typeof i.url === "string" && i.url.startsWith("/uploads/")).slice(0, 10)
+      .map((i) => ({
+        url: i.url,
+        thumb: typeof i.thumb === "string" && i.thumb.startsWith("/uploads/") ? i.thumb : i.url,
+        w: Number(i.w) || null, h: Number(i.h) || null,
+      }))
+    : [];
+  const first = gallery[0];
+
+  if (!body?.trim() && !beat && !imageUrl && !videoUrl && !first) return res.status(400).json({ error: "empty post" });
   // Beats are always work. Chat media is only work if the author says so.
   const work = beat ? 1 : (isWork ? 1 : 0);
   const info = q.createPost.run(
     req.user.id, channel || "general", (body || "").trim(),
-    beat ? JSON.stringify(beat) : null, imageUrl || null, videoUrl || null,
-    thumbUrl || null, Number(mediaW) || null, Number(mediaH) || null,
-    work, null, Date.now()
+    beat ? JSON.stringify(beat) : null,
+    (first ? first.url : imageUrl) || null, videoUrl || null,
+    (first ? first.thumb : thumbUrl) || null,
+    Number(first ? first.w : mediaW) || null, Number(first ? first.h : mediaH) || null,
+    work, null,
+    gallery.length > 1 ? JSON.stringify(gallery) : null,   // 1 image isn't a gallery
+    Date.now()
   );
   const row = feedRows({ authorId: req.user.id, viewerId: req.user.id, limit: 1 })
     .find((r) => r.id === Number(info.lastInsertRowid));

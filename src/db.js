@@ -469,6 +469,11 @@ if (!cols.includes("roles")) {
 const pcols = db.prepare(`PRAGMA table_info(posts)`).all().map((c) => c.name);
 if (!pcols.includes("video_url")) db.exec(`ALTER TABLE posts ADD COLUMN video_url TEXT`);
 if (!pcols.includes("edited_at")) db.exec(`ALTER TABLE posts ADD COLUMN edited_at INTEGER`);
+/* A post can carry several images. Most lab chat is exactly that: someone
+   drops four refs mid-sentence and it's ONE thought, not four posts.
+   image_url stays as the first, so every old post, every link preview and
+   every OG tag keeps working untouched. */
+if (!pcols.includes("images")) db.exec(`ALTER TABLE posts ADD COLUMN images TEXT`);
 /* Thumbnails + intrinsic size. Without width/height the browser can't
    reserve space, so the feed jumps while you scroll. */
 if (!pcols.includes("thumb_url")) db.exec(`ALTER TABLE posts ADD COLUMN thumb_url TEXT`);
