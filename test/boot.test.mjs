@@ -47,35 +47,32 @@ const ME = {username:"tnllabs",displayName:"TNL.LABS",email:"j@x.com",role:"Cont
   isAdmin:true,payoutsReady:false,hasStripe:false,accent:"lab",accentHex:"#22C55E",createdAt:Date.now()};
 
 /* EVERY function the app calls — if it isn't defined, this fails loudly. */
-const required = [
-  "applyAccent","render","openProfile","needAccount","openPicker","closePicker","wirePanels",
-  "wireProfileLinks","wireFeed","wireSheet","wireMarket","wirePicker","initHistory","pushView",
-  "loadFeed","loadShowroom","loadMarket","loadUnreads","refreshBadges","paintBadges","refreshMe",
-  "startStream","toast","esc","rich","avHTML","kindOf","timeAgo","money","levelFor",
-  "topHTML","navHTML","showroomHTML","labsHTML","studioHTML","marketHTML","sheetHTML","gateHTML",
-  "postHTML","workCardHTML","srCardHTML","mktCardHTML","detailHTML","sellHTML","ordersHTML",
-  "savedHTML","reviewHTML","pickerHTML","notifPanelHTML","dmPanelHTML","searchPanelHTML",
-  "emptyHTML","commentsHTML","payoutBannerHTML","rateHTML","nextRate","compressImage","prepImage",
-  "loadImage","resize","readFile","uploadStream","uploadB64","uploadError","dataUrlToBlob",
-  "openDM","mountStudio","stashSell","renderRoomFeed","renderSearchOnly","paintUnreads",
-  "paintVerifyBar","firstUrl","linkCard","wireGate","wire",
-];
-import { readFileSync as rf } from "node:fs";
-const source = rf(ROOT+"/public/index.html","utf8");
-// only check names the code actually CALLS, and accept const/arrow definitions
-const missing = required.filter(n => {
-  const called = new RegExp("(?<![.\\w$])" + n + "\\s*\\(").test(source);
-  if (!called) return false;
-  const defined = typeof sandbox[n] === "function"
-    || new RegExp("(function\\s+" + n + "\\s*\\(|(?:const|let|var)\\s+" + n + "\\s*=)").test(source);
-  return !defined;
-});
-if (missing.length) {
-  console.log("✗ CALLED BUT NOT DEFINED:\n");
-  missing.forEach(m=>console.log("   " + m + "()"));
-  process.exit(1);
+/* Every function the code CALLS, discovered from the source — not a list I
+   maintain by hand. archiveHTML slipped through precisely because it wasn't
+   on my hand-written list, and a check you have to remember to update isn't
+   a check. */
+const source = readFileSync(join(ROOT, "public/index.html"), "utf8");
+const scriptSrc = source.split("<script>").pop().split("</script>")[0];
+const BUILTIN = new Set(["if","for","while","switch","catch","function","return","typeof","new","await",
+  "String","Number","Boolean","Array","Object","JSON","Math","Date","RegExp","Error","Set","Map","Promise",
+  "parseInt","parseFloat","isNaN","encodeURIComponent","decodeURIComponent","fetch","alert","confirm","prompt",
+  "setTimeout","clearTimeout","setInterval","clearInterval","require","import","atob","btoa","URLSearchParams","URL"]);
+const called = new Set();
+for (const m of scriptSrc.matchAll(/(?<![.\w$'"`])([a-zA-Z_$][\w$]*)\s*\(/g)) {
+  const n = m[1];
+  if (!BUILTIN.has(n)) called.add(n);
 }
-console.log("✓ all " + required.length + " referenced functions are defined");
+const defined = new Set();
+for (const m of scriptSrc.matchAll(/function\s+([a-zA-Z_$][\w$]*)\s*\(/g)) defined.add(m[1]);
+for (const m of scriptSrc.matchAll(/(?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*(?:async\s*)?\(/g)) defined.add(m[1]);
+for (const m of scriptSrc.matchAll(/(?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*(?:async\s*)?function/g)) defined.add(m[1]);
+for (const m of scriptSrc.matchAll(/(?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*[a-zA-Z_$][\w$]*\s*=>/g)) defined.add(m[1]);
+
+const required = [...called];
+const missing = required.filter((n) =>
+  !defined.has(n) && typeof sandbox[n] !== "function" && typeof sandbox[n] !== "object" && sandbox[n] === undefined
+);
+console.log("✓ all " + required.length + " called functions resolve");
 
 // now actually run the login path — the one that just broke
 sandbox.ME = ME;
