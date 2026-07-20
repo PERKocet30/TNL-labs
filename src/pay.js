@@ -93,12 +93,12 @@ export async function accountStatus(accountId) {
   };
 }
 
-/** Link to their own Stripe dashboard (Standard accounts have a full one). */
+/** Standard connected accounts have their OWN full Stripe dashboard and sign in
+ *  there directly with their own credentials. Stripe's login_links API is
+ *  Express-only and errors on Standard accounts ("does not have access to the
+ *  Express Dashboard"), so we just point sellers at the dashboard to log in. */
 export async function loginLink(accountId) {
-  if (!KEY) return { error: "payments not configured" };
-  const out = await stripe(`accounts/${encodeURIComponent(accountId)}/login_links`, { body: {} });
-  if (out.error) return out;
-  return { url: out.url };
+  return { url: "https://dashboard.stripe.com" };
 }
 
 /* ---------------- checkout ---------------- */

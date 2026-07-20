@@ -362,7 +362,12 @@ function maybeAuth(req, _res, next) {
 }
 
 function baseUrl(req) {
-  return process.env.PUBLIC_URL || `${req.protocol}://${req.get("host")}`;
+  let u = (process.env.PUBLIC_URL || "").trim();
+  if (u) {
+    if (!/^https?:\/\//i.test(u)) u = "https://" + u; // tolerate a pasted host with no scheme
+    return u.replace(/\/+$/, "");                       // and a stray trailing slash
+  }
+  return `${req.protocol}://${req.get("host")}`;
 }
 
 async function issueVerification(user, req) {
@@ -1913,7 +1918,7 @@ app.post("/api/market/connect", auth, verified, async (req, res) => {
     db.prepare(`UPDATE users SET stripe_account = ? WHERE id = ?`).run(acct, req.user.id);
   }
   const base = baseUrl(req);
-  const link = await onboardingLink(acct, `${base}/?connect=refresh`, `${base}/api/market/connect/done`);
+  const link = await onboardingLink(acct, `${base}/?connect=refresh`, `${base}/?connect=done`);
   if (link.error) return res.status(502).json({ error: link.error });
   res.json({ url: link.url });
 });
