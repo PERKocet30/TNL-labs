@@ -661,7 +661,19 @@ function healthHTML(){
   </div>`:""}
 
   <div class="panel">
-    <h3>BACKUPS</h3>
+      <h3>DOWNLOAD THE APP</h3>
+      <p style="font-size:13px;line-height:1.65;color:var(--dim);margin-bottom:12px">
+        The <b style="color:var(--tx)">code</b> of the app running right now — every source file, zipped
+        with today's date. Your safety net for "which version was latest": whatever is
+        <b style="color:var(--tx)">live</b> is what downloads, so the deployed app is always the source of
+        truth. Push it to GitHub and you never lose track again.
+      </p>
+      <button class="btn green" data-dlsource>↓ Download current app</button>
+      <p class="mono dim" style="margin-top:9px;font-size:11px">Stamped: TNL-LABS-YYYY-MM-DDTHH-MM-SS.zip</p>
+    </div>
+
+    <div class="panel">
+      <h3>BACKUPS</h3>
     <p style="font-size:13px;line-height:1.65;color:var(--dim);margin-bottom:12px">
       The database <b style="color:var(--tx)">is</b> the business — six years of relationships live in it.
       Automatic daily, keeps 7. <b style="color:var(--tx)">Download one now and again:</b> a backup on the same
@@ -876,6 +888,21 @@ function wire(){
     try{const d=await req("/api/admin/backups",{method:"POST"});
       toast("Backed up — "+(d.bytes/1024).toFixed(0)+"KB");load()}
     catch(e){toast(e.message);b.textContent="Back up now";b.disabled=false}});
+  const dls=document.querySelector("[data-dlsource]");
+  if(dls)dls.onclick=()=>{
+    toast("Zipping the app…");
+    fetch(API+"/api/admin/source",{headers:{Authorization:"Bearer "+TOKEN}})
+      .then(r=>{if(!r.ok)throw 0;
+        const cd=r.headers.get("content-disposition")||"";
+        const m=cd.match(/filename="([^"]+)"/);
+        return r.blob().then(bl=>({bl,name:m?m[1]:"TNL-LABS.zip"}))})
+      .then(({bl,name})=>{
+        const u=URL.createObjectURL(bl);const a=document.createElement("a");
+        a.href=u;a.download=name;document.body.appendChild(a);a.click();
+        document.body.removeChild(a);URL.revokeObjectURL(u);
+        toast("Downloaded "+name+" — push it to GitHub");
+      }).catch(()=>toast("Download failed"));
+  };
   document.querySelectorAll("[data-dlbackup]").forEach(b=>b.onclick=()=>{
     // the token has to ride along — this is an authenticated download
     fetch(API+"/api/admin/backups/"+b.dataset.dlbackup,{headers:{Authorization:"Bearer "+TOKEN}})
