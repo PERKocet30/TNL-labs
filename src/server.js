@@ -1,4 +1,5 @@
 import express from "express";
+import zlib from "node:zlib";
 import cors from "cors";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
@@ -93,6 +94,60 @@ app.use(express.json({ limit: "12mb" })); // only the small base64 route uses th
    matter what you push, and redeploying doesn't fix it. The service worker
    already taught us this the hard way.
    Images and fonts are safe to cache — HTML is not. */
+/* ── COMPRESSION ─────────────────────────────────────────────────────
+   Nothing here shipped compressed before: a 280KB app shell and JSON feeds
+   full of beat patterns went over the wire raw. Gzip cuts these 70-80%.
+   Built on node:zlib — no new dependency. /api/stream (SSE) must never be
+   buffered or encoded, so it's excluded; images stream elsewhere untouched. */
+app.use((req, res, next) => {
+  if (req.path === "/api/stream") return next();
+  if (!/\bgzip\b/.test(req.headers["accept-encoding"] || "")) return next();
+  const send = res.send.bind(res);
+  res.send = (body) => {
+    try {
+      if (res.headersSent || res.get("Content-Encoding")) return send(body);
+      const buf = Buffer.isBuffer(body) ? body
+        : Buffer.from(typeof body === "string" ? body : JSON.stringify(body));
+      const ct = res.get("Content-Type") || "";
+      if (buf.length < 1024) return send(body);
+      if (ct && !/json|text|javascript|svg|html|css/i.test(ct)) return send(body);
+      const gz = zlib.gzipSync(buf, { level: 6 });
+      res.set("Content-Encoding", "gzip");
+      res.set("Vary", "Accept-Encoding");
+      res.removeHeader("Content-Length");
+      return send(gz);
+    } catch (e) { return send(body); }
+  };
+  next();
+});
+
+/* Static shell, pre-gzipped once at boot. index.html alone is ~280KB raw. */
+const GZ_TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml" };
+const PUB = join(__dirname, "..", "public");
+for (const name of readdirSync(PUB)) {
+  const ext = name.slice(name.lastIndexOf("."));
+  if (!GZ_TYPES[ext]) continue;
+  try {
+    const src = join(PUB, name), gz = src + ".gz";
+    if (!existsSync(gz) || statSync(gz).mtimeMs < statSync(src).mtimeMs)
+      writeFileSync(gz, zlib.gzipSync(readFileSync(src), { level: 9 }));
+  } catch (e) {}
+}
+app.use((req, res, next) => {
+  if (req.method !== "GET") return next();
+  if (!/\bgzip\b/.test(req.headers["accept-encoding"] || "")) return next();
+  let p = req.path === "/" ? "/index.html" : req.path;
+  const ext = p.slice(p.lastIndexOf("."));
+  if (!GZ_TYPES[ext]) return next();
+  const gz = join(PUB, p.slice(1) + ".gz");
+  if (!existsSync(gz)) return next();
+  res.set("Content-Type", GZ_TYPES[ext]);
+  res.set("Content-Encoding", "gzip");
+  res.set("Vary", "Accept-Encoding");
+  res.set("Cache-Control", ext === ".html" ? "public, max-age=0, must-revalidate" : "public, max-age=86400");
+  res.sendFile(gz);
+});
+
 app.use(express.static(join(__dirname, "..", "public"), {
   setHeaders: (res, path) => {
     if (/\.(html|webmanifest)$/.test(path) || path.endsWith("sw.js")) {
@@ -118,6 +173,41 @@ app.use("/uploads", express.static(UPLOAD_DIR, {
     res.set("Access-Control-Allow-Origin", "*");   // so previews can fetch them
   },
 }));
+
+/* ── SENTRY ──────────────────────────────────────────────────────────
+   Errors report themselves instead of arriving as screenshots. Zero new
+   dependencies — a DSN is just an HTTP address, so this posts Sentry's
+   envelope format with plain fetch. No DSN configured = silent no-op. */
+const SENTRY_DSN = process.env.SENTRY_DSN || "https://dd32635170e2123131bb2583d08e2aed@o4511775840468992.ingest.us.sentry.io/4511775846957056";
+const SENTRY = (() => {
+  const m = /^https:\/\/([a-f0-9]+)@([^/]+)\/(\d+)$/.exec(SENTRY_DSN || "");
+  return m ? { key: m[1], host: m[2], project: m[3] } : null;
+})();
+let _sentryCount = 0, _sentryWindow = 0;
+function sentryReport(err, where) {
+  try {
+    if (!SENTRY) return;
+    const now = Date.now();                       // crash loops must not burn the quota
+    if (now - _sentryWindow > 60000) { _sentryWindow = now; _sentryCount = 0; }
+    if (++_sentryCount > 20) return;
+    const event = {
+      timestamp: now / 1000, platform: "node", level: "error",
+      server_name: "tnl-labs-railway", tags: { where: where || "server" },
+      exception: { values: [{ type: err?.name || "Error", value: String(err?.message || err).slice(0, 500) }] },
+      extra: { stack: String(err?.stack || "").slice(0, 4000) },
+    };
+    const envelope =
+      JSON.stringify({ dsn: SENTRY_DSN, sent_at: new Date().toISOString() }) + "\n" +
+      JSON.stringify({ type: "event" }) + "\n" + JSON.stringify(event) + "\n";
+    fetch(`https://${SENTRY.host}/api/${SENTRY.project}/envelope/`, {
+      method: "POST", headers: { "Content-Type": "application/x-sentry-envelope" }, body: envelope,
+    }).catch(() => {});
+    /* Same event, straight into the admin's Health tab — one place to look. */
+    try { logError("server", event.exception.values[0].value, event.extra.stack.slice(0, 1500), where || "", ""); } catch (e) {}
+  } catch (e) {}
+}
+process.on("uncaughtException", (e) => { sentryReport(e, "uncaught"); console.error(e); });
+process.on("unhandledRejection", (e) => { sentryReport(e, "rejection"); });
 
 /* Express's own body-parser errors are ugly and unhandled by default.
    Turn "PayloadTooLargeError" into something a person can act on. */
@@ -3584,6 +3674,13 @@ setTimeout(() => {
     catch (e) { logError("server", "auto backup failed", e.message); }
   }, 24 * 3600 * 1000);
 }, 3600 * 1000);
+
+/* Anything a route throws lands here: reported to Sentry, answered cleanly. */
+app.use((err, req, res, next) => {
+  sentryReport(err, req.method + " " + req.path);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: "something broke on our side — it's been reported" });
+});
 
 app.listen(PORT, () => {
   /* A deploy log that only says "started" tells you nothing. This says what
