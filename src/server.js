@@ -555,6 +555,16 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
     .find((r) => r.id === Number(info.lastInsertRowid));
   const post = shapePost(row);
   notifyMentions(post.body, req.user.id, post.id, "mention");
+  /* BandLab move, TNL economy: publishing a remix credits the original.
+     Rep uses the existing share_received kind — a remix IS your work
+     re-circulating. Self-remixes earn nothing. */
+  if (beat?.remixOf?.postId) {
+    const op = db.prepare(`SELECT author_id FROM posts WHERE id = ?`).get(Number(beat.remixOf.postId));
+    if (op && op.author_id !== req.user.id) {
+      awardRep(op.author_id, "share_received", post.id);
+      notify(op.author_id, req.user.id, "share", post.id, `remixed "${(beat.remixOf.name || "your loop").slice(0, 60)}" — the loop travels`);
+    }
+  }
   broadcast("post", post);
   res.json({ post });
 });
