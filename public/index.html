@@ -3955,6 +3955,7 @@ function paintVerifyBar(){
       history.replaceState({},"","/")}
     if(p.get("checkout")==="paid"){toast("Paid — the seller's been told to ship");history.replaceState({},"","/")}
     if(p.get("checkout")==="failed"){toast("Payment didn't go through");history.replaceState({},"","/")}
+    if(p.get("dm")){const who=p.get("dm");history.replaceState({},"","/");openDM(who)}   // admin Nudge lands here
   }
   try{MKTMETA=await api.mktMeta()}catch(e){}   // public — guests see the Market too
   // deep links — a shared /u/ or /m/ URL should land where it says

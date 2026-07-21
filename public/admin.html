@@ -113,6 +113,14 @@ tr:hover td{background:rgba(255,255,255,.02)}
   .wrap{padding:14px}
   td,th{padding-left:5px;padding-right:5px}
 }
+
+.ui-ov{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.72);backdrop-filter:blur(5px)}
+.ui-card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:22px}
+.ui-title{font-size:16px;font-weight:800;line-height:1.3}
+.ui-body{margin-top:8px;font-size:13px;line-height:1.55;color:var(--dim);white-space:pre-line}
+.ui-btns{display:flex;gap:10px;margin-top:18px}
+.ui-btn{flex:1;border-radius:10px;padding:11px;font-weight:700;font-size:13px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--tx)}
+.ui-ok{background:var(--green);color:#000;border-color:var(--green)}
 </style>
 </head>
 <body><div id="app"></div>
@@ -137,6 +145,23 @@ async function req(path,opts={}){
   return d;
 }
 function toast(m){TOASTT=m;paint();setTimeout(()=>{TOASTT=null;paint()},2200)}
+/* Same rule as the app: no native dialogs. One message string in, Promise<boolean> out —
+   first line becomes the title, the rest the body. */
+function uiConfirm(msg,opts={}){
+  return new Promise(res=>{
+    const parts=String(msg).split("\n\n");
+    const ov=document.createElement("div");ov.className="ui-ov";
+    ov.innerHTML=`<div class="ui-card"><div class="ui-title">${esc(parts[0]||"")}</div>
+      ${parts.length>1?`<div class="ui-body">${esc(parts.slice(1).join("\n\n"))}</div>`:""}
+      <div class="ui-btns"><button class="ui-btn ui-c">Cancel</button>
+      <button class="ui-btn ui-ok">${esc(opts.okLabel||"Confirm")}</button></div></div>`;
+    document.body.appendChild(ov);
+    const done=v=>{ov.remove();res(v)};
+    ov.querySelector(".ui-c").onclick=()=>done(false);
+    ov.querySelector(".ui-ok").onclick=()=>done(true);
+    ov.onclick=e=>{if(e.target===ov)done(false)};
+  });
+}
 
 /* ---------- gate ---------- */
 function gateHTML(msg){return `<div class="gate"><div>
@@ -877,12 +902,12 @@ function wire(){
       const v=Q;paint();const f=$("#q");if(f){f.value=v;f.focus();f.setSelectionRange(v.length,v.length)}
     }catch(e){toast(e.message)}},260)}}
   document.querySelectorAll("[data-feature]").forEach(b=>b.onclick=async()=>{
-    if(!confirm("Award +40 rep to @"+b.dataset.feature+"? This is the 'feature' award — it's permanent and audited."))return;
+    if(!(await uiConfirm("Award +40 rep to @"+b.dataset.feature+"? This is the 'feature' award — it's permanent and audited.")))return;
     try{await req("/api/admin/members/"+b.dataset.feature+"/feature",{method:"POST"});toast("Featured — +40 rep");load()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-verify]").forEach(b=>b.onclick=async()=>{
     try{await req("/api/admin/members/"+b.dataset.verify+"/verify",{method:"POST"});toast("Verified");load()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{
-    if(!confirm("Delete this post? Can't be undone."))return;
+    if(!(await uiConfirm("Delete this post? Can't be undone.")))return;
     try{await req("/api/admin/posts/"+b.dataset.del,{method:"DELETE"});toast("Deleted");load()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-dm]").forEach(b=>b.onclick=()=>{
     // open a DM with them in the app — a nudge from you, not a system mail
@@ -893,7 +918,7 @@ function wire(){
     if(!body)return toast("Write something first");
     const target=b.dataset.bcast;
     const who=target==="all"?"everyone":target==="silent"?"everyone who's never posted":"everyone who's gone quiet";
-    if(!confirm("Send this as a DM to "+who+"?\n\n\""+body.slice(0,120)+(body.length>120?"…":"")+"\"\n\nThis can't be undone."))return;
+    if(!(await uiConfirm("Send this as a DM to "+who+"?\n\n\""+body.slice(0,120)+(body.length>120?"…":"")+"\"\n\nThis can't be undone.")))return;
     try{const d=await req("/api/admin/broadcast",{method:"POST",body:{body,target}});
       toast("Sent to "+d.sent);$("#bcast").value=""}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-retry]").forEach(b=>b.onclick=()=>{ERR=null;paint();load()});
@@ -928,11 +953,11 @@ function wire(){
       }).catch(e=>toast("Download failed"));
   });
   document.querySelectorAll("[data-clearerrors]").forEach(b=>b.onclick=async()=>{
-    if(!confirm("Clear the error log?"))return;
+    if(!(await uiConfirm("Clear the error log?")))return;
     try{await req("/api/admin/errors",{method:"DELETE"});toast("Cleared");load()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=async()=>{
     const k=b.dataset.toggle, now=DATA.settings.settings[k]==="1";
-    if(k==="autoVerify"&&!now&&!confirm("Turn OFF email verification?\n\nAnyone will be able to register with an address they don't own. Only do this while email is broken."))return;
+    if(k==="autoVerify"&&!now&&!(await uiConfirm("Turn OFF email verification?\n\nAnyone will be able to register with an address they don't own. Only do this while email is broken.")))return;
     try{const d=await req("/api/admin/settings",{method:"PATCH",body:{[k]:now?"0":"1"}});
       DATA.settings.settings=d.settings;paint();toast(k+" "+(now?"off":"on"))}catch(e){toast(e.message)}});
   const mr=$("#set-minrep");if(mr)mr.onchange=async()=>{
@@ -957,22 +982,22 @@ function wire(){
     paint();
   });
   document.querySelectorAll("[data-cleanup]").forEach(b=>b.onclick=async()=>{
-    if(!confirm("Delete files nothing points at?\n\nThis only removes uploads with no post, listing, avatar or message referencing them. It can't be undone."))return;
+    if(!(await uiConfirm("Delete files nothing points at?\n\nThis only removes uploads with no post, listing, avatar or message referencing them. It can't be undone.")))return;
     try{const d=await req("/api/admin/cleanup",{method:"POST"});
       toast("Removed "+d.removed+" files, freed "+(d.freed/1048576).toFixed(1)+"MB");load()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-rep]").forEach(b=>b.onclick=async()=>{
     const [u,delta]=b.dataset.rep.split(":");
-    if(!confirm((delta>0?"Grant +":"Deduct ")+Math.abs(delta)+" rep to @"+u+"?\n\nThis is logged and permanent."))return;
+    if(!(await uiConfirm((delta>0?"Grant +":"Deduct ")+Math.abs(delta)+" rep to @"+u+"?\n\nThis is logged and permanent.")))return;
     try{const d=await req("/api/admin/members/"+u+"/rep",{method:"POST",body:{delta:+delta}});
       toast("@"+u+" now "+d.rep+" rep");load()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-suspend]").forEach(b=>b.onclick=async()=>{
     const [u,on]=b.dataset.suspend.split(":");
     const susp=on==="1";
-    if(!confirm(susp?("Suspend @"+u+"?\n\nThey're signed out immediately and can't log back in. Their work stays up."):("Restore @"+u+"?"))) return;
+    if(!(await uiConfirm(susp?("Suspend @"+u+"?\n\nThey're signed out immediately and can't log back in. Their work stays up."):("Restore @"+u+"?")))) return;
     try{await req("/api/admin/members/"+u+"/suspend",{method:"POST",body:{suspended:susp}});
       toast(susp?"@"+u+" suspended":"@"+u+" restored");load()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-dellist]").forEach(b=>b.onclick=async()=>{
-    if(!confirm("Remove this listing? The seller gets told."))return;
+    if(!(await uiConfirm("Remove this listing? The seller gets told.")))return;
     try{await req("/api/admin/listings/"+b.dataset.dellist,{method:"DELETE"});toast("Removed");load()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-handle]").forEach(b=>b.onclick=async()=>{
     try{await req("/api/admin/reports/"+b.dataset.handle+"/handle",{method:"POST"});toast("Dismissed");load()}catch(e){toast(e.message)}});
