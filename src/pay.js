@@ -110,7 +110,7 @@ export async function loginLink(accountId) {
  */
 export async function createCheckout({
   orderId, title, amountCents, shippingCents, currency = "usd",
-  successUrl, cancelUrl, buyerEmail, sellerAccount, feePct,
+  successUrl, cancelUrl, buyerEmail, sellerAccount, feePct, collectShipping = false,
 }) {
   if (!KEY) return { error: "payments not configured" };
   if (!sellerAccount) return { error: "seller hasn't connected payouts yet" };
@@ -136,6 +136,9 @@ export async function createCheckout({
       customer_email: buyerEmail || undefined,
       metadata: { order_id: String(orderId) },
       line_items,
+      // Depop-style: let Stripe collect + validate the shipping address on its
+      // hosted page. No more prompt() dialogs. Digital loops skip this.
+      ...(collectShipping ? { shipping_address_collection: { allowed_countries: ["US","CA","GB","NL","DE","FR","IE","ES","IT","PT","BE","AU","NZ"] } } : {}),
       // commission on the item only — we don't skim postage
       payment_intent_data: { application_fee_amount: platformFee(amountCents, feePct) },
     },
@@ -151,5 +154,16 @@ export async function verifySession(sessionId, sellerAccount) {
     method: "GET", account: sellerAccount,
   });
   if (out.error) return { paid: false };
-  return { paid: out.payment_status === "paid", orderId: out.metadata?.order_id, amount: out.amount_total };
+  // Pull the address the buyer entered on Stripe's checkout page, so the seller
+  // knows where to ship without us ever prompting for it.
+  const sd = out.shipping_details || out.collected_information?.shipping_details || null;
+  let ship = null;
+  if (sd?.address) {
+    const a = sd.address;
+    ship = {
+      name: sd.name || "",
+      address: [a.line1, a.line2, a.city, [a.state, a.postal_code].filter(Boolean).join(" "), a.country].filter(Boolean).join(", "),
+    };
+  }
+  return { paid: out.payment_status === "paid", orderId: out.metadata?.order_id, amount: out.amount_total, ship };
 }

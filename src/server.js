@@ -2149,10 +2149,9 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
   if (l.seller_id === req.user.id) return res.status(400).json({ error: "can't buy your own listing" });
   const isLoop = l.kind === "loop";
   const { name, address } = req.body || {};
-  // Nothing to ship a loop to. Asking for an address would be theatre.
-  if (!isLoop && (!name?.trim() || !address?.trim())) {
-    return res.status(400).json({ error: "shipping name and address required" });
-  }
+  // Shipping addresses for physical items are collected by Stripe Checkout now
+  // (Depop-style) and saved back on payment — so we don't demand them up front.
+  // Loops ship nowhere.
 
   // an accepted offer beats the sticker price
   const accepted = db.prepare(`SELECT * FROM offers WHERE listing_id=? AND buyer_id=? AND status='accepted' ORDER BY created_at DESC LIMIT 1`)
@@ -2179,8 +2178,8 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
   const info = db.prepare(`
     INSERT INTO orders (listing_id, buyer_id, seller_id, amount_cents, shipping_cents, ship_name, ship_address, created_at, updated_at)
     VALUES (?,?,?,?,?,?,?,?,?)`).run(l.id, req.user.id, l.seller_id, amount, l.shipping_cents,
-    isLoop ? "" : name.trim().slice(0, 80),
-    isLoop ? "" : address.trim().slice(0, 300), now, now);
+    isLoop ? "" : (name || "").trim().slice(0, 80),
+    isLoop ? "" : (address || "").trim().slice(0, 300), now, now);
   const orderId = Number(info.lastInsertRowid);
 
   if (PAYMENTS_ENABLED) {
@@ -2193,6 +2192,7 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
       buyerEmail: req.user.email,
       sellerAccount: seller.stripe_account,
       feePct: feeForRep(seller.rep),   // their level sets their rate
+      collectShipping: !isLoop,        // Stripe collects the address for physical goods
     });
     if (out.error) {
       db.prepare(`DELETE FROM orders WHERE id = ?`).run(orderId); // don't leave a ghost
@@ -2221,6 +2221,8 @@ app.get("/api/market/checkout/done", async (req, res) => {
   if (!out.paid) return res.redirect("/?checkout=failed");
   if (order.status === "pending") {
     db.prepare(`UPDATE orders SET status='paid', updated_at=? WHERE id=?`).run(Date.now(), order.id);
+    if (out.ship) db.prepare(`UPDATE orders SET ship_name=?, ship_address=? WHERE id=?`)
+      .run((out.ship.name || "").slice(0, 80), (out.ship.address || "").slice(0, 300), order.id);
     db.prepare(`UPDATE listings SET status='sold', sold_at=?, updated_at=? WHERE id=?`).run(Date.now(), Date.now(), order.listing_id);
     const l = db.prepare(`SELECT title FROM listings WHERE id=?`).get(order.listing_id);
     // A sale is validation with money behind it — the hardest signal to fake.
