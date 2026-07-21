@@ -131,6 +131,8 @@ h1,h2,h3{text-transform:uppercase;letter-spacing:-.01em}
 .labmeta{font-size:7.5px;letter-spacing:.04em;color:var(--dim);text-align:right;line-height:1.3}
 .labhint{text-align:center;padding:0 20px 26px;letter-spacing:.12em;font-size:8px}
 /* inside a lab */
+.railtool{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:color-mix(in srgb,var(--green) 9%,transparent);border:1px solid var(--green);border-radius:12px;padding:11px 12px;margin:0 0 10px;color:var(--tx);cursor:pointer}
+.railtool-ic{color:var(--green);display:flex}
 .railback{width:100%;background:none;border:none;color:var(--dim);text-align:left;padding:12px 14px 8px;font-size:12px;font-family:'Archivo'}
 .railback:hover{color:var(--green)}
 .railtitle{display:flex;gap:9px;align-items:flex-start;padding:0 14px 12px;border-bottom:1px solid var(--line);margin-bottom:8px}
@@ -1083,7 +1085,8 @@ const UI_IC={
   music:`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18.5V6l11-2.5V16"/><circle cx="6.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg>`,
   bag:`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12.5H6L5 8z"/><path d="M8.5 8V6.5a3.5 3.5 0 017 0V8"/></svg>`,
   lock:`<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/></svg>`,
-  cloud:`<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.8 17.5h9.9a3.8 3.8 0 10-.6-7.55 5.2 5.2 0 00-10.1 1.3A3.4 3.4 0 006.8 17.5z"/></svg>`};
+  cloud:`<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.8 17.5h9.9a3.8 3.8 0 10-.6-7.55 5.2 5.2 0 00-10.1 1.3A3.4 3.4 0 006.8 17.5z"/></svg>`,
+  user:`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0115 0"/></svg>`};
 const LAB_ID = {
   hq:       {glyph:"◉", for:"The main floor. Everything starts here."},
   pharmacy: {glyph:"⌗", for:"Image culture. The archive everything else pulls from."},
@@ -1113,9 +1116,11 @@ const LABS = [
     {id:"clothing-design",label:"clothing-design",desc:"Design work and concepts."},
     {id:"clothing-drops",label:"clothing-drops",desc:"What's releasing."}]},
   {id:"casino",name:"CASINO",channels:[
-    {id:"beats",label:"beats",desc:"The Beat Lab. Loops become collabs.",beatlab:true},
-    {id:"finished-songs",label:"finished-songs",desc:"Done tracks only.",gate:2}]},
+    {id:"casino-floor",label:"the-floor",desc:"Something new is being dealt. First look lands here."}]},
   {id:"culture",name:"MUSIC & CULTURE",channels:[
+    {id:"beats",label:"beats",desc:"The Beat Lab. Loops become collabs.",beatlab:true},
+    {id:"feedback",label:"feedback",desc:"Post your beat, get ears. Help someone finish."},
+    {id:"finished-songs",label:"finished-songs",desc:"Done tracks only.",gate:2},
     {id:"magazine",label:"magazine",desc:"Longer reads, features, and coverage of the scene."},
     {id:"news",label:"news",desc:"What's happening in and around the network."}]},
   {id:"tna",name:"TNΛ",channels:[
@@ -1257,7 +1262,8 @@ let TAB="showroom", LAB=null, CH=LABS[0].channels[0], ROOMOPEN=false, POSTS=[], 
    through to the "not published work" branch and hides every share option. */
 let SRPOSTS=[];
 let PTAB="work", EDITING=false, EDITROLE="", PENDIMG=null, LIGHTBOX=null, VERIFYURL=null;
-let PROFLISTINGS=null;   // a profile's active market listings (lazy-loaded when the SHOP tab opens)
+let PROFLISTINGS=null;
+let PCOMPOSE=null;      // profile-first composer: {body,imgs:[{url,thumb,w,h}],busy}   // a profile's active market listings (lazy-loaded when the SHOP tab opens)
 let CLIMB=false, CLIMBOPENRUNG=0; // THE CLIMB — the one screen where the whole progression system is legible
 /* Discord-style: several files at once. Each posts separately. */
 let QUEUE=[];
@@ -1637,6 +1643,7 @@ function render(){
     ${BOARDSOPEN?boardsHTML():""}
     ${REVIEWING?reviewHTML():""}
     ${CLIMB?climbHTML():""}
+    ${PCOMPOSE?pcomposeHTML():""}
     ${LIGHTBOX?`<div class="lightbox" id="lb"><img src="${esc(LIGHTBOX)}" alt="full size"></div>`:""}
     ${installCardHTML()}
     ${TOASTT?`<div class="toast">${esc(TOASTT)}</div>`:""}`;
@@ -1805,11 +1812,14 @@ function searchPanelHTML(){return `<div class="sheet" id="sbg"><div class="sheet
   `:`<div class="empty">Search for people to build with.</div>`}
 </div></div>`}
 function navHTML(){
+  /* Instagram's frame: identity gets the nav slot. The studio lives inside
+     the music lab now (and every ↻ Remix still jumps straight into it). */
   const t=[["showroom",UI_IC.home,"SHOWROOM"],["labs",UI_IC.hash,"LABS"]];
-  if(SITE.studioOpen!==false)t.push(["studio",UI_IC.music,"STUDIO"]);
   if(SITE.marketOpen!==false)t.push(["market",UI_IC.bag,"MARKET"]);
+  t.push(["profile",UI_IC.user,"PROFILE"]);
+  const myOpen=PROFILE&&ME&&PROFILE.user&&PROFILE.user.username===ME.username;
   return `<nav class="nav">${t.map(([id,ic,lb])=>
-    `<button class="navb ${TAB===id?"on":""}" data-tab="${id}"><i class="ic">${ic}</i>
+    `<button class="navb ${id==="profile"?(myOpen?"on":""):(TAB===id&&!PROFILE?"on":"")}" data-tab="${id}"><i class="ic">${ic}</i>
       <span>${lb}</span></button>`).join("")}</nav>`}
 
 function gateHTML(){return `
@@ -2179,6 +2189,10 @@ function labsHTML(){
       <div><b>${esc(LAB.name)}</b>
       <div class="mono dim">${esc((LAB_ID[LAB.id]||{}).for||"")}</div></div>
     </div>
+    ${LAB.id==="culture"?`<button class="railtool" id="openstudio">
+      <span class="railtool-ic">${UI_IC.music}</span>
+      <span><b>THE STUDIO</b><br><span class="mono dim">Make a beat right here</span></span>
+    </button>`:""}
     ${LAB.channels.map(c=>{const locked=c.gate&&levelFor(myRep()).id<c.gate;
       const n=UNREADS[c.id]||0;
       return `<button class="railc ${CH.id===c.id?"on":""} ${n?"unread":""}" data-ch="${c.id}">${locked?UI_IC.lock:"#"} ${c.label}${n?`<span class="cbadge">${n>9?"9+":n}</span>`:""}</button>`}).join("")}
@@ -2868,7 +2882,8 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.
   </div>
 
   <div class="pactions">
-    ${PROFILE.loading?`<div class="skelbtn"></div>`:mine?`<button class="btn ghost" id="editb">Edit profile</button>
+    ${PROFILE.loading?`<div class="skelbtn"></div>`:mine?`<button class="btn green" id="profpost">＋ Post</button>
+      <button class="btn ghost" id="editb">Edit profile</button>
       <button class="btn ${u.published?"":"green"}" id="pubtoggle">${u.published?"Unpublish":"Publish portfolio"}</button>`
       :`<button class="btn ${PROFILE.youFollow?"ghost":""}" id="followb">${PROFILE.youFollow?"Following ✓":"Follow"}</button>
         <button class="btn ghost" id="msgb">Message</button>`}
@@ -2904,7 +2919,12 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.
 
 /* ---- wiring ---- */
 function wire(){
-  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;if(window.TNLStudio)TNLStudio.unmount();if(TAB==="market"){MKTVIEW="browse";loadMarket()}if(TAB==="labs")loadLabs();render()});
+  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{
+    if(b.dataset.tab==="profile"){
+      if(guest())return needAccount("Join to build your profile — your work, your standing, your shop.");
+      openProfile(myName());return;
+    }
+    TAB=b.dataset.tab;if(window.TNLStudio)TNLStudio.unmount();if(TAB==="market"){MKTVIEW="browse";loadMarket()}if(TAB==="labs")loadLabs();render()});
   document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{TAB=b.dataset.goto;render()});
   const srp=$("#sr-post");if(srp)srp.onclick=()=>{
     // land them in the room their trade lives in
@@ -3234,6 +3254,7 @@ function wireMarket(){
       SAVED=null;render();try{SAVED=(await api.saved()).listings}catch(e){toast(e.message)}}
     render()});
   document.querySelectorAll("[data-ot]").forEach(b=>b.onclick=()=>{ORDTAB=b.dataset.ot;render()});
+  const os=$("#openstudio");if(os)os.onclick=()=>{if(guest())return needAccount("Join to use the studio.");TAB="studio";render()};
   const rl=$("#rateladder");if(rl)rl.onclick=()=>{CLIMB=true;CLIMBOPENRUNG=levelFor(ME.rep).id;render()};
   const cx=$("#climbx");if(cx)cx.onclick=()=>{CLIMB=false;render()};
   const cfp=$("#climbfromprof");if(cfp)cfp.onclick=()=>{PROFILE=null;CLIMB=true;CLIMBOPENRUNG=levelFor(ME.rep).id;render()};
@@ -3660,6 +3681,50 @@ function wireVideos(){
   });
 }
 
+/* Post to YOUR profile — no lab required, exactly like Instagram. It lands on
+   your grid (and the Showroom when it's portfolio work); the labs stay rooms
+   for talk and collabs. channel:"profile" keeps it out of every lab feed. */
+function pcomposeHTML(){
+  const c=PCOMPOSE;
+  return `<div class="ui-ov" id="pcov"><div class="ui-card" style="max-width:430px">
+    <div class="ui-title">New post</div>
+    <div class="ui-body" style="margin-top:2px">Straight to your profile — portfolio work shows in the Showroom.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      ${c.imgs.map((im,i)=>`<div style="position:relative"><img src="${esc(im.thumb)}" style="width:74px;height:74px;object-fit:cover;border-radius:10px"><button data-pcrm="${i}" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:#000;color:#fff;font-size:11px">✕</button></div>`).join("")}
+      ${c.imgs.length<10?`<label style="width:74px;height:74px;border:2px dashed var(--line);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:22px;cursor:pointer">＋<input id="pcfile" type="file" accept="image/*" multiple style="display:none"></label>`:""}
+    </div>
+    <textarea class="ui-in" id="pcbody" rows="3" placeholder="Say something about it…">${esc(c.body||"")}</textarea>
+    <div class="ui-btns">
+      <button class="ui-btn ui-cancel" id="pccancel">Cancel</button>
+      <button class="ui-btn ui-ok" id="pcgo" ${c.busy||(!c.body.trim()&&!c.imgs.length)?"disabled style=\"opacity:.5\"":""}>${c.busy?"Posting…":"Post"}</button>
+    </div>
+  </div></div>`;
+}
+function wirePCompose(){
+  const ov=$("#pcov");if(!ov)return;
+  const fi=$("#pcfile");if(fi)fi.onchange=async()=>{
+    for(const file of fi.files){
+      if(PCOMPOSE.imgs.length>=10)break;
+      try{const p=await prepImage(file,true);
+        const up=await api.upload(p.full);const th=await api.upload(p.thumb);
+        PCOMPOSE.imgs.push({url:up.url,thumb:th.url,w:p.w,h:p.h});}catch(e){toast(e.message)}
+    }
+    render();
+  };
+  document.querySelectorAll("[data-pcrm]").forEach(b=>b.onclick=()=>{PCOMPOSE.imgs.splice(+b.dataset.pcrm,1);render()});
+  const ta=$("#pcbody");if(ta)ta.oninput=()=>{PCOMPOSE.body=ta.value};
+  const cc=$("#pccancel");if(cc)cc.onclick=()=>{PCOMPOSE=null;render()};
+  const go=$("#pcgo");if(go)go.onclick=async()=>{
+    if(PCOMPOSE.busy)return;
+    if(!PCOMPOSE.body.trim()&&!PCOMPOSE.imgs.length)return toast("Add a photo or say something");
+    PCOMPOSE.busy=true;render();
+    try{
+      await api.post({channel:"profile",body:PCOMPOSE.body.trim(),images:PCOMPOSE.imgs,isWork:PCOMPOSE.imgs.length>0});
+      PCOMPOSE=null;toast("Posted to your profile");
+      openProfile(myName());
+    }catch(e){PCOMPOSE.busy=false;toast(e.message);render()}
+  };
+}
 function wireFeed(){
   wireVideos();   // autoplay in view — must run after every feed repaint
   wireCaros();
@@ -3890,6 +3955,8 @@ function wireSheet(){
   document.querySelectorAll("[data-ptab]").forEach(b=>b.onclick=async()=>{PTAB=b.dataset.ptab;render();
     if(PTAB==="shop"&&PROFLISTINGS===null&&PROFILE){try{const d=await api.mkt("seller="+encodeURIComponent(PROFILE.user.username));PROFLISTINGS=d.listings||[];render()}catch(e){PROFLISTINGS=[];render()}}});
 
+  const pp=$("#profpost");if(pp)pp.onclick=()=>{PCOMPOSE={body:"",imgs:[],busy:false};render()};
+  wirePCompose();
   const eb=$("#editb");if(eb)eb.onclick=()=>{EDITING=true;EDITACCENT=PROFILE.user.accent||"lab";
     EDITROLES=(PROFILE.user.roles&&PROFILE.user.roles.length?[...PROFILE.user.roles]:[PROFILE.user.role]).filter(Boolean);render()};
   document.querySelectorAll("[data-accent]").forEach(b=>b.onclick=()=>{
