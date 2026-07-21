@@ -1400,11 +1400,11 @@
       paint();
     });
     on("[data-lslot]", "click", (e) => { S.librarySlot = e.currentTarget.dataset.lslot; loadLibrary(); });
-    on("[data-sshare]", "click", (e) => {
+    on("[data-sshare]", "click", async (e) => {
       const id = +e.currentTarget.dataset.sshare;
       const s2 = (S.sounds || []).find((x) => x.id === id);
       if (!s2) return;
-      if (!s2.shared && !confirm('Give "' + s2.name + '" to the library?\n\nAnyone in TNL can build with it. You keep it, you\'re credited every time, and you earn standing when someone uses it.\n\nYou can take it back out whenever.')) return;
+      if (!s2.shared && !(await uiConfirm('Give "' + s2.name + '" to the library?', "Anyone in TNL can build with it — you're credited every time and earn standing when someone uses it. Take it back whenever.", { okLabel: "Share it" }))) return;
       shareSound(id, !s2.shared);
     });
     on("[data-luse]", "click", (e) => {
@@ -1686,7 +1686,7 @@
 
   async function exportMenu() {
     if (!hasNotes()) return toast("Nothing to export yet");
-    const stems = confirm("OK = separate stems (one WAV per track)\nCancel = single mixdown");
+    const stems = await uiConfirm("Export your beat", "Stems give you one WAV per track.", { okLabel: "Separate stems", cancelLabel: "Single mixdown" });
     stop();
     track_("export", { bpm: S.proj.bpm, detail: stems ? "stems" : "mixdown" });
     toast("Rendering…");
