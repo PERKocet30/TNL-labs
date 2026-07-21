@@ -1263,7 +1263,8 @@ let TAB="showroom", LAB=null, CH=LABS[0].channels[0], ROOMOPEN=false, POSTS=[], 
 let SRPOSTS=[];
 let PTAB="work", EDITING=false, EDITROLE="", PENDIMG=null, LIGHTBOX=null, VERIFYURL=null;
 let PROFLISTINGS=null;
-let PCOMPOSE=null;      // profile-first composer: {body,imgs:[{url,thumb,w,h}],busy}   // a profile's active market listings (lazy-loaded when the SHOP tab opens)
+let PCOMPOSE=null;
+let FEEDAT={}, SRAT=0;  // freshness stamps — render() must not hammer the network on every tap      // profile-first composer: {body,imgs:[{url,thumb,w,h}],busy}   // a profile's active market listings (lazy-loaded when the SHOP tab opens)
 let CLIMB=false, CLIMBOPENRUNG=0; // THE CLIMB — the one screen where the whole progression system is legible
 /* Discord-style: several files at once. Each posts separately. */
 let QUEUE=[];
@@ -1532,7 +1533,7 @@ let es=null;
 function startStream(){
   if(es)es.close();
   es=new EventSource(API+"/api/stream");
-  const refresh=()=>{if(!ME)return;if(TAB==="labs")loadFeed();if(TAB==="showroom")loadShowroom();refreshBadges()};
+  const refresh=()=>{if(!ME)return;if(TAB==="labs")loadFeed(true);if(TAB==="showroom")loadShowroom(true);refreshBadges()};
   es.addEventListener("dm",e=>{try{if(!ME)return;const d=JSON.parse(e.data);
     if(d.to===ME.username){refreshBadges();if(DMOPEN===d.from)openDM(d.from)}}catch(x){}});
   es.addEventListener("comment",e=>{try{const d=JSON.parse(e.data);
@@ -1541,8 +1542,13 @@ function startStream(){
 }
 
 /* ---- data ---- */
-async function loadFeed(){
+async function loadFeed(force){
   if(guest())return;
+  /* Every render() used to refire this — a like cost 2+ round trips and the
+     app crawled on phone networks. Fresh-enough data now short-circuits;
+     posting, deleting, and live SSE events pass force=true. */
+  if(!force && FEEDAT[CH.id] && Date.now()-FEEDAT[CH.id]<8000) return;
+  FEEDAT[CH.id]=Date.now();
   try{const d=await api.feed(CH.id);POSTS=d.posts;renderRoomFeed()}catch(e){/* not fatal */}
   // opening a channel clears its dot
   if(UNREADS[CH.id]){delete UNREADS[CH.id];paintUnreads()}
@@ -1969,7 +1975,9 @@ function srCardHTML(p){
     </div>
   </div>`}
 
-async function loadShowroom(){
+async function loadShowroom(force){
+  if(!force && SRAT && Date.now()-SRAT<8000 && SRPOSTS.length) return; // grid paints from cache
+  SRAT=Date.now();
   try{
     const [d,b]=await Promise.all([api.showroom(),api.builders()]);
     SRPOSTS=d.posts||[];
@@ -3060,7 +3068,7 @@ function wire(){
     if(!l)return;
     pushView("lab",l.id);
     LAB=l; CH=l.channels[0]; ROOMOPEN=false;
-    render(); loadFeed();
+    render(); loadFeed(true);
   });
   const lbk=$("#labback");if(lbk)lbk.onclick=()=>{
     LAB=null; ROOMOPEN=false;
@@ -3076,7 +3084,7 @@ function wire(){
     const t=$("#draft").value.trim();
     if(EDITID){
       const id=EDITID;
-      try{await api.editPost(id,t);EDITID=null;$("#draft").value="";loadFeed();render()}catch(e){toast(e.message)}
+      try{await api.editPost(id,t);EDITID=null;$("#draft").value="";loadFeed(true);render()}catch(e){toast(e.message)}
       return;
     }
     if(!t&&!QUEUE.length)return;
@@ -3099,7 +3107,7 @@ function wire(){
       POSTS=[...POSTS,temp];renderRoomFeed();
       const feed=$("#feed");if(feed)feed.scrollTop=feed.scrollHeight;
       try{await api.post({channel:CH.id,body:draftText,isWork:false});
-        POSTS=POSTS.filter(p=>p.id!==temp.id);loadFeed();
+        POSTS=POSTS.filter(p=>p.id!==temp.id);loadFeed(true);
         setTimeout(maybeOfferInstall,1400);   // they just posted — good moment to ask
       }catch(e){
         const p=POSTS.find(x=>x.id===temp.id);
@@ -3172,7 +3180,7 @@ function wire(){
         UPPROG=null;toast(q.name+": "+e.message);
       }
     }
-    loadFeed();
+    loadFeed(true);
   };
   sendb.onclick=go;
     const dr=$("#draft");
@@ -3869,7 +3877,7 @@ function wireFeed(){
       else if(r.vid){const up=await uploadStream(r.vid);
         if(up.kind==="video")body.videoUrl=up.url;else body.imageUrl=up.url}
       await api.post(body);
-      POSTS=POSTS.filter(x=>x.id!==p.id);loadFeed();
+      POSTS=POSTS.filter(x=>x.id!==p.id);loadFeed(true);
     }catch(e){p.pending=false;p.failed=true;renderRoomFeed();toast(e.message)}});
   wireProfileLinks();   // covers .mention[data-u] too
   document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{
@@ -3877,7 +3885,7 @@ function wireFeed(){
     EDITID=p.id;render();const d=$("#draft");if(d){d.value=p.body||"";d.focus()}});
   document.querySelectorAll("[data-delpost]").forEach(b=>b.onclick=async()=>{
     if(!(await uiConfirm("Delete this post?","",{okLabel:"Delete",danger:true})))return;
-    try{await api.delPost(b.dataset.delpost);toast("Deleted");loadFeed()}catch(e){toast(e.message)}});
+    try{await api.delPost(b.dataset.delpost);toast("Deleted");loadFeed(true)}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-comments]").forEach(b=>b.onclick=async()=>{
     const id=+b.dataset.comments;
     if(OPENCOMMENTS===id){OPENCOMMENTS=null;CEDIT=null;return render()}
@@ -3910,7 +3918,7 @@ function wireFeed(){
   document.querySelectorAll("[data-cedit]").forEach(b=>b.onclick=()=>{CEDIT=+b.dataset.cedit;render();setTimeout(()=>$("#cdraft")?.focus(),80)});
   document.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=async()=>{
     if(!(await uiConfirm("Delete this comment?","",{okLabel:"Delete",danger:true})))return;
-    try{await api.delComment(b.dataset.cdel);COMMENTS=(await api.comments(OPENCOMMENTS)).comments;loadFeed();render()}catch(e){toast(e.message)}});
+    try{await api.delComment(b.dataset.cdel);COMMENTS=(await api.comments(OPENCOMMENTS)).comments;loadFeed(true);render()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>{
     const id=+b.dataset.report;
     openPicker({eyebrow:"REPORT",title:"What's wrong?",
