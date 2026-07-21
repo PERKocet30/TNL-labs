@@ -590,6 +590,7 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:#000}
 .st-rl{width:46px;flex-shrink:0;background:none;border:none;color:var(--dim);font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.05em;text-align:left;padding:0}
 .st-cells{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;flex:1}
 .st-c{aspect-ratio:1/1;border-radius:3px;border:1px solid var(--line);background:var(--el);padding:0;touch-action:none;min-height:16px}
+.st-c.g1{background:#0c0c0c;border-color:rgba(255,255,255,.07)} /* FL's alternating beat blocks — you read the bar in 4s at a glance */
 .st-c.bt{border-color:var(--line2)}
 .st-c.on.v1{background:rgba(255,255,255,.3);border-color:rgba(255,255,255,.4)}
 .st-c.on.v2{background:rgba(255,255,255,.68);border-color:rgba(255,255,255,.75)}
@@ -1925,7 +1926,7 @@ function srCardHTML(p){
         <button class="vmute" data-vmute aria-label="Sound">🔇</button>
       </div>`
       :`<div class="sr-beat"><button class="circle" style="width:34px;height:34px;font-size:12px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button>
-         <div><div class="sr-beatname">${esc(p.beat?.name||"untitled loop")}</div><div class="mono dim">${p.beat?.bpm||120} BPM · LOOP</div></div></div>`}
+         <div><div class="sr-beatname">${esc(p.beat?.name||"untitled loop")}</div><div class="mono dim">${p.beat?.bpm||120} BPM${p.beat?.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:" · LOOP"}</div></div><button class="act" data-remix="${p.id}" style="margin-left:auto">↻ Remix</button></div>`}
     <div class="sr-meta">
       <div class="sr-who" data-u="${esc(p.author.username)}">
         ${avHTML(p.author,"sm")}
@@ -2253,7 +2254,7 @@ function postHTML(p){const mine=p.author.username===myName();
       ${p.mediaW?`style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}></video>
     <button class="vmute" data-vmute aria-label="Sound">🔇</button>
   </div>`:""}
-  ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM · TAP TO HEAR</div></div></div>`:""}
+  ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM${p.beat.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:""}</div></div><button class="act" data-remix="${p.id}" style="margin-left:auto">↻ Remix</button></div>`:""}
   ${p.collaborators.length?`<div class="collab-row">${p.collaborators.map(c=>`<span class="ctag ${c.status==="accepted"?"acc":""}">${c.status==="accepted"?"✓":"…"} ${esc(c.display_name||c.username)}</span>`).join("")}</div>`:""}
   <div class="post-acts">
     <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
@@ -3766,6 +3767,16 @@ function wireFeed(){
       if(PICKER){PICKER.items=toItems(d.people);PICKER.loading=false;render()}}catch(e){}
   });
   document.querySelectorAll("[data-accept]").forEach(b=>b.onclick=async()=>{try{await api.accept(b.dataset.accept);await refreshMe();toast("Collab confirmed — you both earned +20");render()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-remix]").forEach(b=>b.onclick=()=>{
+    if(guest())return needAccount("Join to remix — open their loop in your studio and make it yours.");
+    const id=b.dataset.remix;
+    const p=POSTS.find(x=>String(x.id)===id)||SRPOSTS.find(x=>String(x.id)===id)
+      ||(SEARCHRES&&SEARCHRES.posts.find(x=>String(x.id)===id))
+      ||(PROFILE&&[...PROFILE.posts,...PROFILE.collabs].find(x=>String(x.id)===id));
+    if(!p||!p.beat)return toast("Couldn't load that loop");
+    PROFILE=null;TAB="studio";render();
+    setTimeout(()=>{if(window.TNLStudio&&TNLStudio.loadRemix)TNLStudio.loadRemix(p.beat,{postId:p.id,username:p.author.username,name:p.beat.name})},120);
+  });
   document.querySelectorAll("[data-beatplay]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();if(window.TNLStudio)TNLStudio.preview(JSON.parse(b.dataset.beatplay))});
   document.querySelectorAll("[data-zoom]").forEach(el=>el.onclick=()=>{LIGHTBOX=el.dataset.zoom;render()});
   document.querySelectorAll("[data-discard]").forEach(b=>b.onclick=()=>{

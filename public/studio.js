@@ -683,17 +683,23 @@
 
   /* ---------------- preview (published beats) ---------------- */
   let previewing = false, previewTimer = null;
-  function preview(beat) {
+  async function preview(beat) {
     if (previewing) { stopPreview(); return; }
     const p = migrate(beat && (beat.proj || beat.data) ? (beat.proj || beat.data) : beat);
-    const saved = S.proj, savedPlaying = S.playing;
+    const saved = S.proj, savedBuffers = S.buffers, savedPlaying = S.playing;
     if (savedPlaying) stop();
-    S.proj = p;
+    /* The previewed beat gets its OWN buffer table. Track ids collide across
+       projects (everyone's kick is t1), so sharing S.buffers would splice the
+       listener's takes into someone else's beat — and before this, sampler
+       tracks in a previewed beat simply never sounded at all. */
+    S.proj = p; S.buffers = {};
     previewing = true;
+    try { await loadBuffers(p); } catch (e) {}
+    if (!previewing) { S.proj = saved; S.buffers = savedBuffers; return; } // stopped mid-load
     play(false);
     const ms = stepDur(p) * STEPS * Math.max(1, p.bars) * 1000 * 2 + 400;
-    previewTimer = setTimeout(() => { stopPreview(); S.proj = saved; }, ms);
-    window.__tnlRestore = () => { S.proj = saved; };
+    previewTimer = setTimeout(() => { stopPreview(); }, ms);
+    window.__tnlRestore = () => { S.proj = saved; S.buffers = savedBuffers; };
   }
   function stopPreview() {
     previewing = false; stop();
@@ -1051,7 +1057,7 @@
           ${[1, 2, 3, 4].map((n) => `<button class="st-b ${p.bars === n ? "on" : ""}" data-bars="${n}">${n}</button>`).join("")}
         </div>
         <div class="st-bars">
-          <span class="mono dim">EDIT</span>
+          <span class="mono dim">PAT</span>
           ${Array.from({ length: p.bars }, (_, i) => `<button class="st-b ${S.editBar === i ? "on" : ""}" data-editbar="${i}">${i + 1}</button>`).join("")}
           <button class="st-ic" data-copybar title="Copy bar to next">⧉</button>
         </div>
@@ -1252,7 +1258,7 @@
               ${Array.from({ length: STEPS }, (_, i) => {
                 const idx = S.editBar * STEPS + i;
                 const c = tr.steps[idx];
-                return `<button class="st-c ${c ? "on v" + (c.v || 2) : ""} ${i % 4 === 0 ? "bt" : ""}"
+                return `<button class="st-c g${Math.floor(i/4)%2} ${c ? "on v" + (c.v || 2) : ""} ${i % 4 === 0 ? "bt" : ""}"
                   data-cell="${tr.id}:${idx}" data-step="${i}"></button>`;
               }).join("")}
             </div>
@@ -1299,7 +1305,7 @@
                   if (p && p.n && p.n.includes(m)) break;
                 }
               }
-              return `<button class="st-c ${on ? "on v" + (c.v || 2) : ""} ${tail ? "tail" : ""} ${i % 4 === 0 ? "bt" : ""} ${on && c.slide ? "slide" : ""}"
+              return `<button class="st-c g${Math.floor(i/4)%2} ${on ? "on v" + (c.v || 2) : ""} ${tail ? "tail" : ""} ${i % 4 === 0 ? "bt" : ""} ${on && c.slide ? "slide" : ""}"
                 data-note="${t.id}:${idx}:${m}" data-step="${i}">${on && c.slide ? "↝" : ""}</button>`;
             }).join("")}
           </div>
@@ -1652,6 +1658,20 @@
     if (S.drafts) { S.drafts = null; return paint(); }
     try { S.drafts = (await S.opts.api.beats()).projects; paint(); } catch (e) { toast(e.message); }
   }
+  /* Open someone's published beat as YOUR project — the remix. Mirrors
+     loadDraft's revival exactly; lineage rides on the project. */
+  async function loadRemix(beatObj, meta) {
+    try {
+      S.proj = migrate(beatObj.data || {});
+      delete S.proj.id;
+      S.proj.name = (beatObj.name || "untitled") + " (remix)";
+      S.proj.remixOf = meta || null;
+      S.buffers = {}; await loadBuffers(S.proj);
+      S.drafts = null; S.editBar = 0; S.sel = S.proj.tracks[0].id; stop();
+      toast("Remixing @" + ((meta && meta.username) || "them") + " — make it yours");
+      paint();
+    } catch (e) { toast(e.message); }
+  }
   async function loadDraft(id) {
     try {
       const d = await S.opts.api.beat(id);
@@ -1675,7 +1695,7 @@
     try {
       await S.opts.api.post({
         channel: "beats", body: "",
-        beat: { name: S.proj.name || "untitled loop", bpm: S.proj.bpm, data: strip(S.proj) },
+        beat: { name: S.proj.name || "untitled loop", bpm: S.proj.bpm, data: strip(S.proj), remixOf: S.proj.remixOf || undefined },
       });
       track_("publish", { bpm: S.proj.bpm, key: NOTES[S.proj.key] + " " + S.proj.scale,
         detail: S.proj.tracks.filter(t => t.sampleUrl).length + " custom sounds" });
@@ -1709,6 +1729,7 @@
 
   /* ---------------- public ---------------- */
   window.TNLStudio = {
+    loadRemix,
     mount(el, opts) {
       S.el = el; S.opts = opts || {};
       if (!S.proj.tracks) S.proj = newProject();
@@ -1716,6 +1737,15 @@
       paint();
     },
     unmount() { stop(); S.el = null; },
+    /* FL muscle memory lives on the keyboard. */
+    _keys: document.addEventListener("keydown", (e) => {
+      if (!S.el) return;                                          // studio not mounted
+      const t = e.target, tag = t && t.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+      if (e.code === "Space") { e.preventDefault(); const b = S.el.querySelector("[data-play]"); if (b) b.click(); }
+      else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z") { e.preventDefault(); doUndo(); }
+      else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) { e.preventDefault(); doRedo(); }
+    }),
     preview, stopPreview,
     isPlaying: () => S.playing || previewing,
     newProject, migrate,
