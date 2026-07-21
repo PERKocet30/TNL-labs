@@ -1264,7 +1264,34 @@ let SRPOSTS=[];
 let PTAB="work", EDITING=false, EDITROLE="", PENDIMG=null, LIGHTBOX=null, VERIFYURL=null;
 let PROFLISTINGS=null;
 let PCOMPOSE=null;
-let FEEDAT={}, SRAT=0;  // freshness stamps — render() must not hammer the network on every tap      // profile-first composer: {body,imgs:[{url,thumb,w,h}],busy}   // a profile's active market listings (lazy-loaded when the SHOP tab opens)
+let FEEDAT={}, SRAT=0;  // freshness stamps — render() must not hammer the network on every tap
+/* ── SENTRY (client) ─────────────────────────────────────────────────
+   When a member's phone breaks, the error reports itself with a stack —
+   no more debugging from dark screen recordings. DSNs are public by design. */
+const SENTRY_DSN="https://dd32635170e2123131bb2583d08e2aed@o4511775840468992.ingest.us.sentry.io/4511775846957056";
+const _sentSeen=new Set();
+function sentryClient(msg,stack,where){
+  try{
+    if(_sentSeen.size>=8||_sentSeen.has(msg))return;_sentSeen.add(msg);
+    const m=/^https:\/\/([a-f0-9]+)@([^/]+)\/(\d+)$/.exec(SENTRY_DSN);if(!m)return;
+    const ev={timestamp:Date.now()/1000,platform:"javascript",level:"error",
+      tags:{where:where||"web",user:(typeof ME!=="undefined"&&ME)?ME.username:"guest"},
+      request:{url:location.href},
+      exception:{values:[{type:"Error",value:String(msg).slice(0,500)}]},
+      extra:{stack:String(stack||"").slice(0,4000),ua:navigator.userAgent}};
+    const env=JSON.stringify({dsn:SENTRY_DSN,sent_at:new Date().toISOString()})+"\n"+
+      JSON.stringify({type:"event"})+"\n"+JSON.stringify(ev)+"\n";
+    const url=`https://${m[2]}/api/${m[3]}/envelope/`;
+    if(navigator.sendBeacon)navigator.sendBeacon(url,new Blob([env],{type:"application/x-sentry-envelope"}));
+    else fetch(url,{method:"POST",body:env,keepalive:true}).catch(()=>{});
+    /* Mirror into the app's own intake so the admin Health tab sees member-
+       phone errors too — one dashboard, both worlds. */
+    try{fetch(API+"/api/client-error",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"include",
+      body:JSON.stringify({message:String(msg).slice(0,300),detail:String(stack||"").slice(0,1200),path:location.pathname}),keepalive:true}).catch(()=>{})}catch(e){}
+  }catch(e){}
+}
+window.addEventListener("error",e=>sentryClient(e.message,e.error&&e.error.stack,"error"));
+window.addEventListener("unhandledrejection",e=>{const r=e.reason||{};sentryClient(r.message||String(r),r.stack,"promise")});      // profile-first composer: {body,imgs:[{url,thumb,w,h}],busy}   // a profile's active market listings (lazy-loaded when the SHOP tab opens)
 let CLIMB=false, CLIMBOPENRUNG=0; // THE CLIMB — the one screen where the whole progression system is legible
 /* Discord-style: several files at once. Each posts separately. */
 let QUEUE=[];

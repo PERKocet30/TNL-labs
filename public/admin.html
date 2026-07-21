@@ -767,7 +767,7 @@ function healthHTML(){
   </div>
 
   <div class="panel">
-    <h3>WHAT'S ACTUALLY BREAKING</h3>
+    <h3>WHAT'S ACTUALLY BREAKING</h3><a href="https://tnl-labs.sentry.io/issues/" target="_blank" class="btn ghost sm" style="float:right;margin-top:-34px">Open Sentry →</a>
     ${!DATA.errors?`<div class="empty">Loading…</div>`
       :!DATA.errors.errors.length?`<div class="empty">Nothing logged. Either it's healthy or nobody's using it — check the numbers, not this box.</div>`
       :`<div class="scrollx"><table>
