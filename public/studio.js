@@ -1067,7 +1067,7 @@
           <select data-scale>${Object.keys(SCALES).map((k) => `<option ${p.scale === k ? "selected" : ""}>${k}</option>`).join("")}</select>
         </div>
         <div class="st-views">
-          ${["seq", "mix", "fx"].map((v) => `<button class="st-v ${S.view === v ? "on" : ""}" data-view="${v}">${v.toUpperCase()}</button>`).join("")}
+          ${[["seq","BEAT"],["mix","MIX"],["fx","FX"]].map(([v,l]) => `<button class="st-v ${S.view === v ? "on" : ""}" data-view="${v}">${l}</button>`).join("")}
         </div>
       </div>
 
@@ -1319,20 +1319,25 @@
   }
 
   function mixView() {
+    /* BandLab's legibility rule: one track = one card a non-musician can read.
+       Big horizontal fader, M | S pills, pan as a simple L—R line. Same data-
+       attributes as before, so every existing handler still binds. */
+    const vol = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5.5L6.5 9H3v6h3.5L11 18.5v-13z"/><path d="M15.5 9.5a4 4 0 010 5"/></svg>`;
     return `<div class="st-mix">
-      ${S.proj.tracks.map((t) => `<div class="st-strip">
-        <div class="st-sn">${esc(t.name)}</div>
-        <input class="st-fader" type="range" min="0" max="100" value="${Math.round(t.vol * 100)}" data-vol="${t.id}" orient="vertical">
-        <div class="st-pan"><input type="range" min="-100" max="100" value="${Math.round(t.pan * 100)}" data-pan="${t.id}"><span class="mono dim">${t.pan === 0 ? "C" : (t.pan < 0 ? "L" : "R") + Math.abs(Math.round(t.pan * 100))}</span></div>
-        <div class="st-ms">
-          <button class="st-mb ${t.mute ? "on" : ""}" data-mute="${t.id}">M</button>
-          <button class="st-mb ${t.solo ? "on" : ""}" data-solo="${t.id}">S</button>
+      ${S.proj.tracks.map((t) => `<div class="st-card ${t.mute ? "mutedcard" : ""}">
+        <div class="st-cr1">
+          <span class="st-cname">${esc(t.name)}</span>
+          <span class="st-cms">
+            <button class="st-mb2 ${t.mute ? "on" : ""}" data-mute="${t.id}">M</button>
+            <button class="st-mb2 ${t.solo ? "on" : ""}" data-solo="${t.id}">S</button>
+          </span>
         </div>
+        <div class="st-cr2">${vol}<input class="st-hfader" type="range" min="0" max="100" value="${Math.round(t.vol * 100)}" data-vol="${t.id}"></div>
+        <div class="st-cr3"><span>L</span><input class="st-hpan" type="range" min="-100" max="100" value="${Math.round(t.pan * 100)}" data-pan="${t.id}"><span>R</span></div>
       </div>`).join("")}
-      <div class="st-strip st-master">
-        <div class="st-sn">MASTER</div>
-        <input class="st-fader" type="range" min="0" max="100" value="${Math.round(S.proj.master.vol * 100)}" data-mvol orient="vertical">
-        <div class="mono dim">OUT</div>
+      <div class="st-card st-mcard">
+        <div class="st-cr1"><span class="st-cname">Master volume</span></div>
+        <div class="st-cr2">${vol}<input class="st-hfader" type="range" min="0" max="100" value="${Math.round(S.proj.master.vol * 100)}" data-mvol></div>
       </div>
     </div>`;
   }
