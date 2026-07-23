@@ -15,6 +15,7 @@
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { execFileSync } from "node:child_process";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -46,3 +47,13 @@ for (const [rel, txt] of Object.entries(texts)) {
   console.log(`[build] wrote ${out} (${txt.length} bytes)`);
 }
 if (!texts["src/server.js"]) { writeFileSync(serverOut, readFileSync(serverIn, "utf8")); console.log(`[build] wrote ${serverOut} (passthrough)`); }
+
+/* ffmpeg probe. Logged, never fatal: a missing binary breaks audio
+   extraction only, and crashing the boot over one feature would take the
+   whole app down. The extract route checks again and fails loud there. */
+try {
+  const v = execFileSync("ffmpeg", ["-version"], { encoding: "utf8" }).split("\n")[0];
+  console.log(`[build] ffmpeg  ${v}`);
+} catch {
+  console.log("[build] ffmpeg  MISSING — audio extraction unavailable");
+}
