@@ -1,0 +1,24 @@
+/* Patch 027 — Jorge's rule, verbatim: music starts the moment a post is
+   centred, stops the instant it leaves, only one ever plays, and nothing
+   carries over between posts. Client-only. MUSAUTOID now holds the OWNING
+   POST for both autoplay and deliberate taps, so a tapped track obeys the
+   same stop-on-leave rule, and a second post carrying the same song restarts
+   it from the top instead of inheriting the other post's position. The
+   now-playing bar paints only in MUSIC LAB (the file-banner look belongs
+   where the file is the subject) and paintPlayer() joins the wire chain so
+   leaving the lab hides it immediately. Runs after 026. */
+const d = (s) => Buffer.from(s, "base64").toString("utf8");
+export default [
+  { file: "public/index.html", count: 1,
+    find: d("ICBpZighTk9XUExBWUlORyl7UExBWUVSQkFSLnN0eWxlLmRpc3BsYXk9Im5vbmUiO3JldHVybn0KICBQTEFZRVJCQVIuc3R5bGUuZGlzcGxheT0iZmxleCI7"),
+    replace: d("ICAvKiBUaGUgZmlsZS1iYW5uZXIgbG9vayBiZWxvbmdzIHRvIE1VU0lDIExBQiwgd2hlcmUgdGhlIGZpbGUgaXMgdGhlIHN1YmplY3QuCiAgICAgRXZlcnl3aGVyZSBlbHNlIHRoZSBoZWFkZXIgY3JlZGl0IGlzIHRoZSBjb250cm9sIOKAlCBJbnN0YWdyYW0gaGFzIG5vCiAgICAgZ2xvYmFsIHBsYXllciBhdCBhbGwuICovCiAgY29uc3QgaW5MYWI9VEFCPT09ImxhYnMiJiZDSCYmQ0gubGlicmFyeTsKICBpZighTk9XUExBWUlOR3x8IWluTGFiKXtQTEFZRVJCQVIuc3R5bGUuZGlzcGxheT0ibm9uZSI7cmV0dXJufQogIFBMQVlFUkJBUi5zdHlsZS5kaXNwbGF5PSJmbGV4Ijs=") },
+  { file: "public/index.html", count: 1,
+    find: d("ICAgICAgaWYoZS5pc0ludGVyc2VjdGluZyl7CiAgICAgICAgaWYoTk9XUExBWUlORyYmTk9XUExBWUlORy5pZD09PXAuYXVkaW9UcmFjay5pZCYmIWEucGF1c2VkKWNvbnRpbnVlOwogICAgICAgIE1VU0FVVE9JRD1wLmF1ZGlvVHJhY2suaWQ7CiAgICAgICAgcGxheVRyYWNrKHAuYXVkaW9UcmFjayx0cnVlKTsKICAgICAgfWVsc2UgaWYoTVVTQVVUT0lEPT09cC5hdWRpb1RyYWNrLmlkJiZOT1dQTEFZSU5HJiZOT1dQTEFZSU5HLmlkPT09cC5hdWRpb1RyYWNrLmlkKXs="),
+    replace: d("ICAgICAgLyogVGhlIHJ1bGU6IG11c2ljIHN0YXJ0cyB0aGUgbW9tZW50IGEgcG9zdCBpcyBjZW50cmVkLCBzdG9wcyB0aGUgaW5zdGFudAogICAgICAgICBpdCBsZWF2ZXMsIG9ubHkgb25lIGV2ZXIgcGxheXMsIGFuZCBub3RoaW5nIGNhcnJpZXMgb3ZlciBiZXR3ZWVuIHBvc3RzLgogICAgICAgICBNVVNBVVRPSUQgaXMgdGhlIFBPU1QgdGhhdCBvd25zIHRoZSBzb3VuZCDigJQga2V5ZWQgb24gdGhlIHRyYWNrLCB0d28KICAgICAgICAgcG9zdHMgc2hhcmluZyBhIHNvbmcgZm91Z2h0IGVhY2ggb3RoZXI7IGtleWVkIG9uIHRoZSBwb3N0LCBhIHJlcGVhdCBvZgogICAgICAgICB0aGUgc2FtZSBzb25nIHJlc3RhcnRzIGZyb20gdGhlIHRvcCBsaWtlIGEgZnJlc2ggcG9zdCBzaG91bGQuICovCiAgICAgIGlmKGUuaXNJbnRlcnNlY3RpbmcpewogICAgICAgIGlmKE1VU0FVVE9JRD09PXAuaWQmJk5PV1BMQVlJTkcmJk5PV1BMQVlJTkcuaWQ9PT1wLmF1ZGlvVHJhY2suaWQmJiFhLnBhdXNlZCljb250aW51ZTsKICAgICAgICBNVVNBVVRPSUQ9cC5pZDsKICAgICAgICBpZihOT1dQTEFZSU5HJiZOT1dQTEFZSU5HLmlkPT09cC5hdWRpb1RyYWNrLmlkKXsKICAgICAgICAgIGEuY3VycmVudFRpbWU9MDsKICAgICAgICAgIGNvbnN0IHByPWEucGxheSgpO2lmKHByJiZwci5jYXRjaClwci5jYXRjaCgoKT0+e30pOwogICAgICAgICAgcGFpbnRQbGF5ZXIoKTsKICAgICAgICB9ZWxzZSBwbGF5VHJhY2socC5hdWRpb1RyYWNrLHRydWUpOwogICAgICB9ZWxzZSBpZihNVVNBVVRPSUQ9PT1wLmlkJiZOT1dQTEFZSU5HJiZOT1dQTEFZSU5HLmlkPT09cC5hdWRpb1RyYWNrLmlkKXs=") },
+  { file: "public/index.html", count: 1,
+    find: d("ICAgICAgTVVTQVVUT0lEPW51bGw7ICAgICAgICAgICAgICAgIC8vIGZyb20gaGVyZSBpdCdzIGRlbGliZXJhdGUsIG5vdCBhdXRvcGxheQ=="),
+    replace: d("ICAgICAgTVVTQVVUT0lEPXAuaWQ7ICAgICAgICAgICAgICAgIC8vIHRoaXMgcG9zdCBvd25zIHRoZSBzb3VuZCBub3cg4oCUIGFuZCBpdAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLy8gc3RpbGwgc3RvcHMgdGhlIGluc3RhbnQgdGhlIHBvc3QgbGVhdmVz") },
+  { file: "public/index.html", count: 1,
+    find: d("ICB3aXJlRmVlZCgpO3dpcmVTaGVldCgpO3dpcmVNYXJrZXQoKTt3aXJlUGlja2VyKCk7d2lyZVBDb21wb3NlKCk7d2lyZVRya0VkaXQoKTt3aXJlUG9zdE9wZW4oKTt3aXJlTXVzQXV0bygpOw=="),
+    replace: d("ICB3aXJlRmVlZCgpO3dpcmVTaGVldCgpO3dpcmVNYXJrZXQoKTt3aXJlUGlja2VyKCk7d2lyZVBDb21wb3NlKCk7d2lyZVRya0VkaXQoKTt3aXJlUG9zdE9wZW4oKTt3aXJlTXVzQXV0bygpO3BhaW50UGxheWVyKCk7") },
+];
