@@ -48,12 +48,24 @@ for (const [rel, txt] of Object.entries(texts)) {
 }
 if (!texts["src/server.js"]) { writeFileSync(serverOut, readFileSync(serverIn, "utf8")); console.log(`[build] wrote ${serverOut} (passthrough)`); }
 
-/* ffmpeg probe. Logged, never fatal: a missing binary breaks audio
-   extraction only, and crashing the boot over one feature would take the
-   whole app down. The extract route checks again and fails loud there. */
+/* ffmpeg probe — audio extraction (video → track) needs the binary.
+   It comes from the ffmpeg-static npm package rather than the image,
+   because build config (nixpacks.toml) was silently ignored by the
+   builder and produced a green build with no binary. A dependency
+   can't be skipped the way a config file can.
+   Dynamic import inside try/catch on purpose: a static import that
+   fails to resolve would crash the boot and take the whole app down
+   over one feature. Logged, never fatal — the extract route checks
+   again and fails loud there. */
+let ffmpegPath = "ffmpeg";
+let ffmpegFrom = "PATH";
 try {
-  const v = execFileSync("ffmpeg", ["-version"], { encoding: "utf8" }).split("\n")[0];
-  console.log(`[build] ffmpeg  ${v}`);
+  const m = await import("ffmpeg-static");
+  if (m.default) { ffmpegPath = m.default; ffmpegFrom = "ffmpeg-static"; }
+} catch { /* fall back to whatever is on PATH */ }
+try {
+  const v = execFileSync(ffmpegPath, ["-version"], { encoding: "utf8" }).split("\n")[0];
+  console.log(`[build] ffmpeg  ${v}  (via ${ffmpegFrom})`);
 } catch {
   console.log("[build] ffmpeg  MISSING — audio extraction unavailable");
 }

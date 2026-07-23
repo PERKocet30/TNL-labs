@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Social backend for TNL Labs \u2014 auth, posts, likes, shares, collabs, follows, live feed.",
+  "description": "Social backend for TNL Labs — auth, posts, likes, shares, collabs, follows, live feed.",
   "engines": {
     "node": ">=22.5.0"
   },
@@ -16,6 +16,7 @@
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "ffmpeg-static": "^5.2.0"
   }
 }
