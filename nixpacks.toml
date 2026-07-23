@@ -1,5 +1,0 @@
-# ffmpeg is required for audio extraction (video → track).
-# Setup phase only — Node detection and the start command are left to
-# nixpacks so this can't fight the existing build.
-[phases.setup]
-aptPkgs = ["ffmpeg"]
