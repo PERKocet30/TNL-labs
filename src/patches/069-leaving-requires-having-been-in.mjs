@@ -1,0 +1,28 @@
+/* Patch 069 — leaving requires having been in. The guest-Showroom
+   AbortError from 068's instrumented toast, root-caused: play() flips
+   a.paused to false immediately, so tap -> play pending -> render() ->
+   wireMusAuto rebuilds the observer -> its initial pass reports the
+   tapped card NOT in the centre band (the logged-out landing's intro
+   block pushes the first post below it) -> the exit branch saw "owns
+   the sound, not paused" and called pause(), rejecting the tap's own
+   play() with AbortError. Logged in there is no intro block, the card
+   sits in the band, no pause — which is why it only broke logged out.
+
+   Fix keeps the 027 rule as written: "stops the instant it LEAVES."
+   A new MUSBAND Set records which post ids have actually ENTERED the
+   band (a Set, not element state — render() rebuilds the DOM); the
+   exit branch now requires a recorded enter before it may pause. A
+   deliberately tapped out-of-band post plays until it truly enters
+   and then leaves. Autoplay, mute-stays-muted, one-at-a-time, and
+   cross-surface stop (the chips.some check above) are all untouched.
+
+   2 hunks, client. Runs after 068. */
+const d = (s) => Buffer.from(s, "base64").toString("utf8");
+export default [
+  { file: "public/index.html", count: 1,
+    find: d("bGV0IE1VU09LPWZhbHNlLCBNVVNNVVRFPW51bGwsIE1VU0FVVE9JRD1udWxsLCBNT0JTPW51bGw7"),
+    replace: d("bGV0IE1VU09LPWZhbHNlLCBNVVNNVVRFPW51bGwsIE1VU0FVVE9JRD1udWxsLCBNT0JTPW51bGw7Ci8qIFBvc3QgaWRzIHdob3NlIGNhcmQgaGFzIGFjdHVhbGx5IEVOVEVSRUQgdGhlIGNlbnRyZSBiYW5kLiAiU3RvcHMgdGhlCiAgIGluc3RhbnQgaXQgbGVhdmVzIiByZXF1aXJlcyBoYXZpbmcgYmVlbiBpbiDigJQgYSBTZXQsIG5vdCBlbGVtZW50IHN0YXRlLAogICBiZWNhdXNlIHJlbmRlcigpIHJlYnVpbGRzIHRoZSBET00gYW5kIHRoZSBvYnNlcnZlciB3aXRoIGl0LiAqLwpsZXQgTVVTQkFORD1uZXcgU2V0KCk7") },
+  { file: "public/index.html", count: 1,
+    find: d("ICAgICAgaWYoZS5pc0ludGVyc2VjdGluZyl7CiAgICAgICAgLyogWW91IHNpbGVuY2VkIFRISVMgcG9zdCDigJQgbGVhdmUgaXQgc2lsZW50LCBidXQgYW55IG90aGVyIHBvc3QgY2xlYXJzIGl0LiAqLwogICAgICAgIGlmKE1VU01VVEUhPW51bGwmJlN0cmluZyhNVVNNVVRFKT09PVN0cmluZyhwLmlkKSljb250aW51ZTsKICAgICAgICBNVVNNVVRFPW51bGw7CiAgICAgICAgaWYoTVVTQVVUT0lEPT09cC5pZCYmTk9XUExBWUlORyYmTk9XUExBWUlORy5pZD09PXAuYXVkaW9UcmFjay5pZCYmIWEucGF1c2VkKWNvbnRpbnVlOwogICAgICAgIE1VU0FVVE9JRD1wLmlkOwogICAgICAgIGlmKE5PV1BMQVlJTkcmJk5PV1BMQVlJTkcuaWQ9PT1wLmF1ZGlvVHJhY2suaWQpewogICAgICAgICAgYS5jdXJyZW50VGltZT0wOwogICAgICAgICAgY29uc3QgcHI9YS5wbGF5KCk7aWYocHImJnByLmNhdGNoKXByLmNhdGNoKCgpPT57fSk7CiAgICAgICAgICBwYWludFBsYXllcigpOwogICAgICAgIH1lbHNlIHBsYXlUcmFjayhwLmF1ZGlvVHJhY2ssdHJ1ZSk7CiAgICAgIH1lbHNlIGlmKE1VU0FVVE9JRD09PXAuaWQmJk5PV1BMQVlJTkcmJk5PV1BMQVlJTkcuaWQ9PT1wLmF1ZGlvVHJhY2suaWQpewogICAgICAgIGlmKCFhLnBhdXNlZClhLnBhdXNlKCk7CiAgICAgICAgcGFpbnRQbGF5ZXIoKTsKICAgICAgfQogICAgfQ=="),
+    replace: d("ICAgICAgaWYoZS5pc0ludGVyc2VjdGluZyl7CiAgICAgICAgTVVTQkFORC5hZGQoU3RyaW5nKHAuaWQpKTsKICAgICAgICAvKiBZb3Ugc2lsZW5jZWQgVEhJUyBwb3N0IOKAlCBsZWF2ZSBpdCBzaWxlbnQsIGJ1dCBhbnkgb3RoZXIgcG9zdCBjbGVhcnMgaXQuICovCiAgICAgICAgaWYoTVVTTVVURSE9bnVsbCYmU3RyaW5nKE1VU01VVEUpPT09U3RyaW5nKHAuaWQpKWNvbnRpbnVlOwogICAgICAgIE1VU01VVEU9bnVsbDsKICAgICAgICBpZihNVVNBVVRPSUQ9PT1wLmlkJiZOT1dQTEFZSU5HJiZOT1dQTEFZSU5HLmlkPT09cC5hdWRpb1RyYWNrLmlkJiYhYS5wYXVzZWQpY29udGludWU7CiAgICAgICAgTVVTQVVUT0lEPXAuaWQ7CiAgICAgICAgaWYoTk9XUExBWUlORyYmTk9XUExBWUlORy5pZD09PXAuYXVkaW9UcmFjay5pZCl7CiAgICAgICAgICBhLmN1cnJlbnRUaW1lPTA7CiAgICAgICAgICBjb25zdCBwcj1hLnBsYXkoKTtpZihwciYmcHIuY2F0Y2gpcHIuY2F0Y2goKCk9Pnt9KTsKICAgICAgICAgIHBhaW50UGxheWVyKCk7CiAgICAgICAgfWVsc2UgcGxheVRyYWNrKHAuYXVkaW9UcmFjayx0cnVlKTsKICAgICAgfWVsc2UgaWYoTVVTQVVUT0lEPT09cC5pZCYmTk9XUExBWUlORyYmTk9XUExBWUlORy5pZD09PXAuYXVkaW9UcmFjay5pZCl7CiAgICAgICAgLyogIlN0b3BzIHRoZSBpbnN0YW50IGl0IExFQVZFUyIg4oCUIGxlYXZpbmcgcmVxdWlyZXMgaGF2aW5nIGJlZW4gaW4uCiAgICAgICAgICAgRXZlcnkgcmVuZGVyKCkgcmVidWlsZHMgdGhpcyBvYnNlcnZlciwgYW5kIGl0cyBmaXJzdCBwYXNzIHJlcG9ydHMKICAgICAgICAgICBjdXJyZW50IHN0YXRlIGZvciBldmVyeSBjYXJkLiBBIHBvc3QgdGFwcGVkIHdoaWxlIHNpdHRpbmcgT1VUU0lERQogICAgICAgICAgIHRoZSBiYW5kICh0aGUgZ3Vlc3QgbGFuZGluZyBwdXNoZXMgdGhlIGZpcnN0IGNhcmQgYmVsb3cgaXQpIHVzZWQKICAgICAgICAgICB0byBiZSAibm90IGludGVyc2VjdGluZyIgb24gdGhhdCBmaXJzdCBwYXNzIGFuZCBnb3QgcGF1c2VkIG1pZC0KICAgICAgICAgICBsb2FkIOKAlCBraWxsaW5nIHRoZSB0YXAncyBvd24gcGxheSgpIHdpdGggYW4gQWJvcnRFcnJvci4gTm93IGFuCiAgICAgICAgICAgZXhpdCBvbmx5IGNvdW50cyBpZiB0aGlzIHBvc3QgYWN0dWFsbHkgZW50ZXJlZCB0aGUgYmFuZCBmaXJzdC4gKi8KICAgICAgICBpZighTVVTQkFORC5oYXMoU3RyaW5nKHAuaWQpKSljb250aW51ZTsKICAgICAgICBNVVNCQU5ELmRlbGV0ZShTdHJpbmcocC5pZCkpOwogICAgICAgIGlmKCFhLnBhdXNlZClhLnBhdXNlKCk7CiAgICAgICAgcGFpbnRQbGF5ZXIoKTsKICAgICAgfQogICAgfQ==") },
+];
