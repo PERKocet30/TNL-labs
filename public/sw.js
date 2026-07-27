@@ -3,7 +3,8 @@
    stale social data is worse than no social data. */
 /* Bump this on every deploy that changes the shell. A stale cached
    index.html will happily serve a broken build forever otherwise. */
-const CACHE = "tnl-shell-v5";
+const CACHE = "tnl-shell-v6";
+const MEDIA = "tnl-media-v2";
 /* Only things that definitely exist. If addAll() 404s on ANY entry the whole
    install rejects and the worker never activates — a silent failure. */
 const SHELL = ["/", "/manifest.webmanifest"];
@@ -13,7 +14,7 @@ self.addEventListener("install", (e) => {
 });
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((keys) =>
-    Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+    Promise.all(keys.filter((k) => k !== CACHE && k !== MEDIA).map((k) => caches.delete(k)))
   ).then(() => self.clients.claim()));
 });
 self.addEventListener("fetch", (e) => {
@@ -28,12 +29,22 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   if (url.pathname.startsWith("/uploads/")) {            // media: cache after first view
+    /* Audio and video fetch with Range headers, and both halves of the old
+       code broke them: answering a ranged request from a cached full 200 is
+       rejected by iOS media loading, and Cache.put() THROWS on the 206
+       partial the network returns — either way the track died inside the
+       service worker, which is exactly the "works in the bookmark, dead in
+       Safari" split (iOS gives the two separate storage containers, and
+       only Safari's held the poisoned state). Ranged requests now bypass
+       the worker entirely — the browser talks to the server natively — and
+       only clean, full 200s are ever cached. */
+    if (e.request.headers.get("range")) return;
     e.respondWith(
-      caches.open("tnl-media-v1").then(async (c) => {
+      caches.open(MEDIA).then(async (c) => {
         const hit = await c.match(e.request);
         if (hit) return hit;
         const res = await fetch(e.request);
-        if (res.ok) c.put(e.request, res.clone());
+        if (res.status === 200) { try { await c.put(e.request, res.clone()); } catch (err) {} }
         return res;
       })
     );
