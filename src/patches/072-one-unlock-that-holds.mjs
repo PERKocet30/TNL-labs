@@ -1,0 +1,43 @@
+/* Patch 072 — one unlock that holds. Root cause of music being unreliable
+   across Safari, the home-screen app, and days: the audio primer aborted
+   its own unlock.
+
+     a.src=SILENT; a.play();
+     setTimeout(()=>{ a.pause(); a.removeAttribute("src") }, 0);
+
+   setTimeout(...,0) runs on the next macrotask, which normally arrives
+   BEFORE a play() promise resolves — so pause() aborted the silent play.
+   An aborted play does not unlock the element on iOS, but MUSOK was set to
+   true regardless, so the app believed sound was armed while the element
+   was still locked and every later programmatic play() was refused. Whether
+   the race was won depended on how fast the data URI decoded, which varies
+   by client and by how warm things are: precisely the "worked yesterday in
+   the bookmark, broken today" pattern. removeAttribute("src") compounded it
+   — dropping the source can reset activation on WebKit.
+
+   Fix: cleanup waits on the play() promise, the src is never removed, and
+   the unlock lives in ONE top-level primeAudio() that both the intro door
+   and the document listeners call — the door previously carried its own
+   divergent copy with a different silent WAV and no cleanup at all. The
+   listeners now also fire on pointerdown, which precedes click, so the
+   unlock is in place before any handler asks for sound.
+
+   What this does NOT do, honestly: play audio before the visitor touches
+   the screen. No browser permits that. It guarantees the first touch on any
+   entry path — the door's ENTER, its SKIP, or any tap at all when there is
+   no door — arms audio reliably, after which posts autoplay on scroll
+   without a second thought.
+
+   3 hunks, client. Runs after 071 (a zero-hunk tombstone). */
+const d = (s) => Buffer.from(s, "base64").toString("utf8");
+export default [
+  { file: "public/index.html", count: 1,
+    find: d("Y29uc3QgU0lMRU5UPSJkYXRhOmF1ZGlvL3dhdjtiYXNlNjQsVWtsR1JpUUFBQUJYUVZaRlptMTBJQkFBQUFBQkFBRUFSS3dBQUloWUFRQUNBQkFBWkdGMFlRQUFBQUE9Ijs="),
+    replace: d("Y29uc3QgU0lMRU5UPSJkYXRhOmF1ZGlvL3dhdjtiYXNlNjQsVWtsR1JpUUFBQUJYUVZaRlptMTBJQkFBQUFBQkFBRUFSS3dBQUloWUFRQUNBQkFBWkdGMFlRQUFBQUE9IjsKLyogT25lIGF1ZGlvIHVubG9jayBmb3IgdGhlIHdob2xlIGFwcC4gaU9TIHdpbGwgbm90IGxldCBzY3JpcHQgc3RhcnQgc291bmQKICAgdW50aWwgdGhlIGVsZW1lbnQgaGFzIHBsYXllZCBpbnNpZGUgYSByZWFsIGdlc3R1cmU7IHRoZSBmaXJzdCB0b3VjaAogICBhbnl3aGVyZSBwbGF5cyBhIHplcm8tbGVuZ3RoIFdBViwgYW5kIHRoYXQgdW5sb2NrIGhvbGRzIGZvciB0aGUgc2Vzc2lvbi4KCiAgIFRoZSBvbGQgY2xlYW51cCB1c2VkIHNldFRpbWVvdXQoLi4uLDApLCB3aGljaCBmaXJlZCBCRUZPUkUgdGhlIHNpbGVudAogICBwbGF5KCkgcmVzb2x2ZWQgYW5kIGFib3J0ZWQgaXQg4oCUIGFuZCBhbiBhYm9ydGVkIHBsYXkgZG9lcyBub3QgdW5sb2NrIHRoZQogICBlbGVtZW50LiBNVVNPSyB0aGVuIHJlcG9ydGVkICJyZWFkeSIgd2hpbGUgdGhlIGVsZW1lbnQgd2FzIHN0aWxsIGxvY2tlZCwKICAgc28gdGhlIG5leHQgcHJvZ3JhbW1hdGljIHBsYXkoKSB3YXMgcmVmdXNlZC4gV2hldGhlciB0aGF0IHJhY2Ugd2FzIHdvbgogICBkZXBlbmRlZCBvbiBob3cgZmFzdCB0aGUgZGF0YSBVUkkgZGVjb2RlZCwgd2hpY2ggaXMgZXhhY3RseSB3aHkgaXQKICAgYmVoYXZlZCBkaWZmZXJlbnRseSBpbiBTYWZhcmksIGluIHRoZSBob21lLXNjcmVlbiBhcHAsIGFuZCBvbiBkaWZmZXJlbnQKICAgZGF5cy4gQ2xlYW51cCBub3cgd2FpdHMgb24gdGhlIHByb21pc2UsIGFuZCB0aGUgc3JjIGlzIG5ldmVyIHJlbW92ZWQ6CiAgIGRyb3BwaW5nIHRoZSBzb3VyY2UgY2FuIHJlc2V0IGFjdGl2YXRpb24gb24gV2ViS2l0LgoKICAgc2tpcFdpcmUgaXMgZm9yIHRoZSBpbnRybyBkb29yLCB3aGljaCB1bmxvY2tzIGR1cmluZyBpdHMgb3duIHRhcCBidXQKICAgbXVzdCBub3QgYXR0YWNoIHRoZSBmZWVkIG9ic2VydmVyIHdoaWxlIHRoZSBvdmVybGF5IGlzIHN0aWxsIHVwLiAqLwpmdW5jdGlvbiBwcmltZUF1ZGlvKHNraXBXaXJlKXsKICBpZihNVVNQUklNRUQpcmV0dXJuO01VU1BSSU1FRD10cnVlOwogIHRyeXsKICAgIGNvbnN0IGE9YXVkaW9FbCgpOwogICAgaWYoIWEuZ2V0QXR0cmlidXRlKCJzcmMiKSl7CiAgICAgIGEuc3JjPVNJTEVOVDsKICAgICAgY29uc3QgcHI9YS5wbGF5KCk7CiAgICAgIGNvbnN0IHRpZHk9KCk9Pnt0cnl7aWYoKGEuZ2V0QXR0cmlidXRlKCJzcmMiKXx8IiIpLnN0YXJ0c1dpdGgoImRhdGE6IikpYS5wYXVzZSgpfWNhdGNoKGUpe319OwogICAgICBpZihwciYmcHIudGhlbilwci50aGVuKHRpZHksKCk9Pnt9KTsgZWxzZSB0aWR5KCk7CiAgICB9CiAgICBNVVNPSz10cnVlOwogIH1jYXRjaChlKXt9CiAgaWYoIXNraXBXaXJlKXdpcmVNdXNBdXRvKCk7Cn0=") },
+  { file: "public/index.html", count: 1,
+    find: d("ICAvKiBpT1MgbmVlZHMgb25lIGdlc3R1cmUgYmVmb3JlIGl0IHdpbGwgbGV0IHNjcmlwdCBzdGFydCBhdWRpbyDigJQgYnV0IGl0IGRvZXMKICAgICBub3QgbmVlZCB0aGF0IGdlc3R1cmUgdG8gYmUgb24gYSBjaGlwLiBQcmltZSB0aGUgZWxlbWVudCBvbiB0aGUgZmlyc3QgdGFwCiAgICAgYW55d2hlcmUsIHNvIHNjcm9sbGluZyBpbnRvIGEgcG9zdCBqdXN0IHdvcmtzIGluc3RlYWQgb2YgZGVwZW5kaW5nIG9uCiAgICAgc29tZW9uZSBkaXNjb3ZlcmluZyB0aGUgY2hpcCBmaXJzdC4gKi8KICBkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCJjbGljayIsKCk9PnsKICAgIGlmKE1VU1BSSU1FRClyZXR1cm47TVVTUFJJTUVEPXRydWU7CiAgICBjb25zdCBhPWF1ZGlvRWwoKTsKICAgIGlmKCFhLmdldEF0dHJpYnV0ZSgic3JjIikpewogICAgICBhLnNyYz1TSUxFTlQ7CiAgICAgIGNvbnN0IHByPWEucGxheSgpO2lmKHByJiZwci5jYXRjaClwci5jYXRjaCgoKT0+e30pOwogICAgICBzZXRUaW1lb3V0KCgpPT57aWYoKGEuZ2V0QXR0cmlidXRlKCJzcmMiKXx8IiIpLnN0YXJ0c1dpdGgoImRhdGE6Iikpe2EucGF1c2UoKTthLnJlbW92ZUF0dHJpYnV0ZSgic3JjIil9fSwwKTsKICAgIH0KICAgIE1VU09LPXRydWU7d2lyZU11c0F1dG8oKTsKICB9LHRydWUpOw=="),
+    replace: d("ICAvKiBpT1MgbmVlZHMgb25lIGdlc3R1cmUgYmVmb3JlIGl0IHdpbGwgbGV0IHNjcmlwdCBzdGFydCBhdWRpbyDigJQgYnV0IGl0IGRvZXMKICAgICBub3QgbmVlZCB0aGF0IGdlc3R1cmUgdG8gYmUgb24gYSBjaGlwLiBQcmltZSBvbiB0aGUgZmlyc3QgdG91Y2ggYW55d2hlcmUsCiAgICAgc28gc2Nyb2xsaW5nIGludG8gYSBwb3N0IGp1c3Qgd29ya3MgaW5zdGVhZCBvZiBkZXBlbmRpbmcgb24gc29tZW9uZQogICAgIGRpc2NvdmVyaW5nIHRoZSBjaGlwIGZpcnN0LiBwb2ludGVyZG93biBmaXJlcyBiZWZvcmUgY2xpY2ssIHNvIHRoZSB1bmxvY2sKICAgICBpcyBpbiBwbGFjZSBiZWZvcmUgYW55IGhhbmRsZXIgYXNrcyBmb3Igc291bmQ7IGNsaWNrIHN0YXlzIGFzIHRoZQogICAgIGZhbGxiYWNrIHdoZXJlIHBvaW50ZXIgZXZlbnRzIGFyZSBhYnNlbnQuICovCiAgZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcigicG9pbnRlcmRvd24iLCgpPT5wcmltZUF1ZGlvKCksdHJ1ZSk7CiAgZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcigiY2xpY2siLCgpPT5wcmltZUF1ZGlvKCksdHJ1ZSk7") },
+  { file: "public/index.html", count: 1,
+    find: d("ICAgIHRyeXsKICAgICAgY29uc3QgYT1hdWRpb0VsKCk7CiAgICAgIGEuc3JjPSJkYXRhOmF1ZGlvL3dhdjtiYXNlNjQsVWtsR1JpUUFBQUJYUVZaRlptMTBJQkFBQUFBQkFBRUFnRDRBQUFCOUFBQUNBQkFBWkdGMFlRQUFBQUE9IjsKICAgICAgYS5wbGF5KCkuY2F0Y2goKCk9Pnt9KTsKICAgICAgTVVTT0s9dHJ1ZTsgTVVTUFJJTUVEPXRydWU7CiAgICB9Y2F0Y2h7fQ=="),
+    replace: d("ICAgIC8qIFN5bmNocm9ub3VzIGluc2lkZSB0aGUgZ2VzdHVyZSDigJQgb25lIHNoYXJlZCB1bmxvY2ssIG5vIHNlY29uZCBjb3B5IHRvCiAgICAgICBkcmlmdC4gc2tpcFdpcmU6IGRvbmUoKSAtPiByZW5kZXIoKSB3aXJlcyB0aGUgb2JzZXJ2ZXIgb25jZSB0aGUKICAgICAgIG92ZXJsYXkgaXMgZ29uZSwgc28gbm90aGluZyBhdXRvcGxheXMgYmVoaW5kIHRoZSBpbnRyby4gKi8KICAgIHByaW1lQXVkaW8odHJ1ZSk7") },
+];
