@@ -7,8 +7,19 @@ import { crc32 as zlibCrc32 } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { writeFileSync, readFileSync, mkdirSync, existsSync, createWriteStream, rename, rm, statSync, readdirSync, rmSync } from "node:fs";
+import { execFile } from "node:child_process";
+
+/* ffmpeg, for pulling the audio out of a video. Resolved from the
+   ffmpeg-static package rather than the image: build config (nixpacks.toml)
+   was silently ignored by the builder and produced a green deploy with no
+   binary. A dependency can't be skipped that way.
+   Dynamic import inside try/catch on purpose — a resolution failure must
+   not take the whole server down over one feature. FFMPEG stays null and
+   the extract route answers 503. */
+let FFMPEG = null;
+try { FFMPEG = (await import("ffmpeg-static")).default || null; } catch { FFMPEG = null; }
 import { db, awardRep, revokeRep, levelFor, LEVELS, DATA_DIR, notify, ensureAdmin, feeForRep, FEE_BY_LEVEL, ACCENTS, accentHex,
-         setting, settingBool, setSetting, allSettings, SETTING_DEFAULTS, logError, backupTo } from "./db.js";
+         setting, settingBool, setSetting, allSettings, SETTING_DEFAULTS, logError, backupTo, studioEvent } from "./db.js";
 import { sendVerifyEmail, sendResetEmail, MAIL_ENABLED, MAIL_TEST_SENDER } from "./mail.js";
 import { createCheckout, verifySession, PAYMENTS_ENABLED, platformFee,
          createSellerAccount, onboardingLink, accountStatus, loginLink } from "./pay.js";
@@ -108,7 +119,13 @@ app.use((req, res, next) => {
       if (res.headersSent || res.get("Content-Encoding")) return send(body);
       const buf = Buffer.isBuffer(body) ? body
         : Buffer.from(typeof body === "string" ? body : JSON.stringify(body));
-      const ct = res.get("Content-Type") || "";
+      /* Express types a string as text/html inside the REAL send — which now
+         runs after us. We gzip first and pass a Buffer, and Express types a
+         bare Buffer as application/octet-stream: the verify page (and every
+         other HTML string ≥1KB) downloaded as a file named after the route.
+         Set the type a string would have gotten before deciding anything. */
+      let ct = res.get("Content-Type") || "";
+      if (!ct && typeof body === "string") { res.set("Content-Type", "text/html; charset=utf-8"); ct = "text/html"; }
       if (buf.length < 1024) return send(body);
       if (ct && !/json|text|javascript|svg|html|css/i.test(ct)) return send(body);
       const gz = zlib.gzipSync(buf, { level: 6 });
@@ -228,16 +245,20 @@ const q = {
   userByName: db.prepare(`SELECT * FROM users WHERE username = ?`),
   userById: db.prepare(`SELECT * FROM users WHERE id = ?`),
   createUser: db.prepare(
-    `INSERT INTO users (username, display_name, email, role, password_hash, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`
+    /* published = 1 explicitly, not left to the column default: databases
+       created before 059 have DEFAULT 0 baked in and SQLite has no ALTER
+       COLUMN. Without this a new member's /u/ page 404s on the share link
+       they were just handed — the one moment it matters most. */
+    `INSERT INTO users (username, display_name, email, role, password_hash, published, created_at)
+     VALUES (?, ?, ?, ?, ?, 1, ?)`
   ),
   createSession: db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)`),
   sessionByToken: db.prepare(`SELECT * FROM sessions WHERE token = ?`),
   deleteSession: db.prepare(`DELETE FROM sessions WHERE token = ?`),
 
   createPost: db.prepare(
-    `INSERT INTO posts (author_id, channel, body, beat_json, image_url, video_url, thumb_url, media_w, media_h, is_work, shared_from, images, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO posts (author_id, channel, body, beat_json, image_url, video_url, thumb_url, media_w, media_h, is_work, shared_from, images, audio_track_id, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ),
   postById: db.prepare(`SELECT * FROM posts WHERE id = ?`),
 
@@ -280,7 +301,8 @@ function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false, p
   const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
   const sql = `
     SELECT
-      p.id, p.channel, p.body, p.beat_json, p.image_url, p.video_url, p.thumb_url, p.media_w, p.media_h, p.is_work, p.edited_at, p.shared_from, p.created_at,
+      p.id, p.channel, p.body, p.beat_json, p.image_url, p.video_url, p.thumb_url, p.media_w, p.media_h, p.is_work, p.edited_at, p.shared_from, p.created_at, p.audio_track_id,
+      tr.title AS track_title, tr.url AS track_url, tr.artwork_url AS track_art, tr.duration_ms AS track_dur, tu.username AS track_by,
       u.username AS author_username, u.display_name AS author_name, u.role AS author_role,
       u.avatar_url AS author_avatar, u.accent AS author_accent, u.rep AS author_rep,
       (SELECT COUNT(*) FROM likes  l WHERE l.post_id = p.id) AS like_count,
@@ -288,6 +310,8 @@ function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false, p
       (SELECT COUNT(*) FROM likes  l WHERE l.post_id = p.id AND l.user_id = $viewer) AS liked_by_me
     FROM posts p
     JOIN users u ON u.id = p.author_id
+    LEFT JOIN tracks tr ON tr.id = p.audio_track_id
+    LEFT JOIN users tu ON tu.id = tr.user_id
     ${whereSql}
     ORDER BY p.created_at DESC
     LIMIT $limit`;
@@ -325,6 +349,19 @@ function sidecar(rows) {
 }
 
 /** Shape a whole page in 2 queries. Prefer this over rows. */
+/* One place decides what a track looks like to the client. */
+function shapeTrack(r) {
+  return {
+    id: r.id, title: r.title, url: r.url,
+    artworkUrl: r.artwork_url || "", description: r.description || "",
+    durationMs: r.duration_ms || 0, plays: r.plays || 0, createdAt: r.created_at,
+    by: {
+      username: r.username, displayName: r.display_name,
+      avatarUrl: r.avatar_url || "", rep: r.rep,
+    },
+  };
+}
+
 function shapePosts(rows) {
   const side = sidecar(rows);
   return rows.map((r) => shapePost(r, side));
@@ -344,6 +381,10 @@ function shapePost(row, side) {
        made before this existed — the client falls back to imageUrl. */
     images: (() => { try { return row.images ? JSON.parse(row.images) : null; } catch { return null; } })(),
     videoUrl: row.video_url || null,
+    /* The sound credit — Instagram model. Null when no music, or when the
+       track was later deleted (LEFT JOIN finds nothing). */
+    audioTrack: row.track_url ? { id: row.audio_track_id, title: row.track_title, url: row.track_url,
+      artworkUrl: row.track_art || "", durationMs: row.track_dur || 0, by: { username: row.track_by } } : null,
     isWork: !!row.is_work,
     editedAt: row.edited_at || null,
     sharedFrom: row.shared_from || null,
@@ -581,10 +622,11 @@ app.post("/api/auth/logout", auth, (req, res) => {
 app.get("/api/me", auth, (req, res) => res.json({ user: publicUser(req.user) }));
 
 // Look around unverified; contribute only once the email is confirmed.
+/* An account is full access. Confirmation mail still goes out and still
+   works, it just doesn't hold anyone at the door — links get disabled when
+   a message lands in spam, which stranded the first outside signup.
+   Money is unaffected: listing and buying need Stripe onboarding. */
 function verified(req, res, next) {
-  if (!req.user.email_verified) {
-    return res.status(403).json({ error: "verify your email first", needsVerify: true });
-  }
   next();
 }
 
@@ -612,7 +654,13 @@ app.get("/api/feed", auth, (req, res) => {
 });
 
 app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
-  const { channel, body, beat, imageUrl, videoUrl, thumbUrl, mediaW, mediaH, isWork, images } = req.body || {};
+  const { channel, body, beat, imageUrl, videoUrl, thumbUrl, mediaW, mediaH, isWork, images, audioTrackId } = req.body || {};
+
+  /* Music rides on the post — the id must point at a real library track
+     (Instagram model: pick a sound from the catalog, never a raw file). */
+  const atid = (() => { const n = Number(audioTrackId);
+    if (!Number.isInteger(n) || n <= 0) return null;
+    return db.prepare(`SELECT id FROM tracks WHERE id = ?`).get(n) ? n : null; })();
 
   /* Several images, one post. Most lab chat is exactly this: someone drops
      four refs mid-sentence and it's ONE thought, not four posts.
@@ -639,6 +687,7 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
     Number(first ? first.w : mediaW) || null, Number(first ? first.h : mediaH) || null,
     work, null,
     gallery.length > 1 ? JSON.stringify(gallery) : null,   // 1 image isn't a gallery
+    atid,
     Date.now()
   );
   const row = feedRows({ authorId: req.user.id, viewerId: req.user.id, limit: 1 })
@@ -688,6 +737,7 @@ app.post("/api/posts/:id/share", auth, verified, (req, res) => {
     original.beat_json, original.image_url, original.video_url,
     original.thumb_url, original.media_w, original.media_h, 0, original.id,
     original.images,   // a shared series is still a series
+    original.audio_track_id,   // and it keeps its sound
     Date.now()
   );
   if (original.author_id !== req.user.id) { awardRep(original.author_id, "share_received", original.id); notify(original.author_id, req.user.id, "share", original.id); }
@@ -843,7 +893,7 @@ app.post("/api/upload", auth, verified, rateLimit({ max: 30, windowMs: 300000, k
 });
 
 /* Profile picture — same validation, images only, kept square-ish by the client. */
-app.post("/api/me/avatar", auth, verified, (req, res) => {
+app.post("/api/me/avatar", auth, (req, res) => {
   const { data } = req.body || {};
   if (typeof data !== "string") return res.status(400).json({ error: "no image" });
   const m = /^data:image\/[a-z0-9+.-]+;base64,(.+)$/i.exec(data);
@@ -885,19 +935,9 @@ app.delete("/api/posts/:id", auth, (req, res) => {
   res.json({ ok: true });
 });
 
-/* Promote a chat message to portfolio work (or take it back down). */
-app.post("/api/posts/:id/work", auth, verified, (req, res) => {
-  const post = q.postById.get(Number(req.params.id));
-  if (!post) return res.status(404).json({ error: "no post" });
-  if (post.author_id !== req.user.id) return res.status(403).json({ error: "not your post" });
-  if (!post.image_url && !post.video_url && !post.beat_json) {
-    return res.status(400).json({ error: "only work with media can go on your portfolio" });
-  }
-  const on = !!req.body?.isWork;
-  db.prepare(`UPDATE posts SET is_work = ? WHERE id = ?`).run(on ? 1 : 0, post.id);
-  res.json({ isWork: on });
-});
-
+/* /api/posts/:id/work removed in 063. A post is a post by origin (060);
+   there is nothing to promote or demote, and leaving the endpoint up
+   meant lab chat could still reach the Showroom via curl. */
 /* ================================================================
    COMMENTS — where feedback lives. This is the workshop conversation.
 ================================================================ */
@@ -1319,7 +1359,7 @@ app.get("/api/admin/orders", auth, admin, (req, res) => {
       amount: r.amount_cents, shipping: r.shipping_cents,
       fee: Math.round(r.amount_cents * (feeForRep(r.seller_rep) / 100)),
       feePct: feeForRep(r.seller_rep),
-      status: r.status, tracking: r.tracking, paid: !!r.payment_ref, createdAt: r.created_at,
+      status: r.status, tracking: r.tracking, paid: ["paid","shipped","complete"].includes(r.status), createdAt: r.created_at,
     })),
   });
 });
@@ -1538,6 +1578,20 @@ app.get("/api/admin/health", auth, admin, (req, res) => {
   }
   for (const r of db.prepare(`SELECT image_url FROM dm_messages WHERE image_url IS NOT NULL`).all())
     referenced.add(r.image_url.replace("/uploads/", ""));
+  /* posts.images — the carousel frames. This query was missing, so every frame
+     past the first counted as an orphan and got deleted by cleanup. Handles both
+     shapes: {url,thumb} objects (see the images filter on POST /api/posts) and
+     the bare strings older rows may still hold. */
+  for (const r of db.prepare(`SELECT images FROM posts WHERE images IS NOT NULL`).all()) {
+    try {
+      for (const i of JSON.parse(r.images || "[]")) {
+        const u = typeof i === "string" ? i : i && i.url;
+        const t = i && typeof i === "object" ? i.thumb : null;
+        if (typeof u === "string") referenced.add(u.replace("/uploads/", ""));
+        if (typeof t === "string") referenced.add(t.replace("/uploads/", ""));
+      }
+    } catch {}
+  }
   let orphans = 0, orphanBytes = 0;
   try {
     for (const f of readdirSync(UPLOAD_DIR)) {
@@ -1572,6 +1626,20 @@ app.post("/api/admin/cleanup", auth, admin, (req, res) => {
   }
   for (const r of db.prepare(`SELECT image_url FROM dm_messages WHERE image_url IS NOT NULL`).all())
     referenced.add(r.image_url.replace("/uploads/", ""));
+  /* posts.images — the carousel frames. This query was missing, so every frame
+     past the first counted as an orphan and got deleted by cleanup. Handles both
+     shapes: {url,thumb} objects (see the images filter on POST /api/posts) and
+     the bare strings older rows may still hold. */
+  for (const r of db.prepare(`SELECT images FROM posts WHERE images IS NOT NULL`).all()) {
+    try {
+      for (const i of JSON.parse(r.images || "[]")) {
+        const u = typeof i === "string" ? i : i && i.url;
+        const t = i && typeof i === "object" ? i.thumb : null;
+        if (typeof u === "string") referenced.add(u.replace("/uploads/", ""));
+        if (typeof t === "string") referenced.add(t.replace("/uploads/", ""));
+      }
+    } catch {}
+  }
   let removed = 0, freed = 0;
   try {
     for (const f of readdirSync(UPLOAD_DIR)) {
@@ -1735,8 +1803,21 @@ app.get("/api/admin/source", auth, admin, (req, res) => {
   const name = `TNL-LABS-${stamp}.zip`;
 
   // the files that ARE the app — skip node_modules, db, uploads, git
+  /* The patch system moved the truth and this list never followed. src/server.js
+     is the PRISTINE monolith; what actually serves requests is server.runtime.js,
+     built at boot by build.mjs from server.js + src/patches/*.mjs. Exporting
+     server.js alone handed back a file ~10KB short of the running server, with
+     none of the applied hunks in it, under a comment promising the live app.
+     Ship the builder, the built runtime, and every patch, so a download can be
+     REBUILT and byte-checked instead of trusted. */
+  const patches = existsSync(join(root, "src/patches"))
+    ? readdirSync(join(root, "src/patches")).filter((f) => f.endsWith(".mjs")).sort()
+        .map((f) => "src/patches/" + f)
+    : [];
   const include = [
-    "src/server.js", "src/db.js", "src/pay.js", "src/mail.js", "src/seed.js",
+    "src/server.js", "src/server.runtime.js", "src/build.mjs",
+    "src/db.js", "src/pay.js", "src/mail.js", "src/seed.js",
+    ...patches,
     "public/index.html", "public/studio.js", "public/admin.html", "public/sw.js",
     "public/manifest.webmanifest",
     "package.json", "HANDOVER.md", "RAILWAY.md",
@@ -1972,6 +2053,7 @@ function shapeListing(r, viewerId, side) {
     downloads: r.downloads || 0,
     isFree: (r.price_cents || 0) === 0,
     acceptsOffers: !!r.accepts_offers,
+    quantity: r.quantity ?? 1,
     status: r.status,
     views: r.views,
     createdAt: r.created_at,
@@ -2124,7 +2206,7 @@ app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, 
   }
 
   const { title, description, price, shipping, category, brand, size, condition, colour, images, shipsFrom, acceptsOffers,
-          audioUrl, bpm, musicalKey, stems } = body;
+          audioUrl, bpm, musicalKey, stems, quantity } = body;
   if (!title?.trim()) return res.status(400).json({ error: "title required" });
 
   if (isLoop) {
@@ -2147,8 +2229,8 @@ app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, 
   const shipCents = isLoop ? 0 : Math.max(0, Math.round(Number(shipping || 0) * 100));
   const now = Date.now();
   const info = db.prepare(`
-    INSERT INTO listings (seller_id, title, description, price_cents, shipping_cents, category, brand, size, condition, colour, images, ships_from, accepts_offers, kind, audio_url, bpm, musical_key, stems, created_at, updated_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    INSERT INTO listings (seller_id, title, description, price_cents, shipping_cents, category, brand, size, condition, colour, images, ships_from, accepts_offers, kind, audio_url, bpm, musical_key, stems, quantity, created_at, updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     req.user.id, title.trim().slice(0, 120), (description || "").slice(0, 2000), cents, shipCents,
     cat, (brand || "").slice(0, 60), (size || "").slice(0, 20),
     isLoop ? "" : (CONDITIONS.includes(condition) ? condition : "Good"), (colour || "").slice(0, 30),
@@ -2159,6 +2241,7 @@ app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, 
     isLoop ? (Number(bpm) || null) : null,
     isLoop && KEYS.includes(musicalKey) ? musicalKey : "",
     isLoop && stems ? 1 : 0,
+    isLoop ? 1 : Math.min(500, Math.max(1, Math.round(Number(quantity)) || 1)),
     now, now);
   res.json({ id: Number(info.lastInsertRowid) });
 });
@@ -2167,17 +2250,46 @@ app.patch("/api/market/:id", auth, (req, res) => {
   const l = db.prepare(`SELECT * FROM listings WHERE id = ?`).get(Number(req.params.id));
   if (!l) return res.status(404).json({ error: "no listing" });
   if (l.seller_id !== req.user.id) return res.status(403).json({ error: "not yours" });
-  const { title, description, price, status, shipping } = req.body || {};
+  const { title, description, price, status, shipping, quantity, images,
+          brand, size, condition, colour, category, shipsFrom, acceptsOffers,
+          bpm, musicalKey, stems } = req.body || {};
+  const isLoop = l.kind === "loop";
+  let imgs = null;
+  if (images !== undefined) {
+    imgs = Array.isArray(images) ? images.filter((i) => typeof i === "string").slice(0, 8) : [];
+    if (!isLoop && !imgs.length) return res.status(400).json({ error: "keep at least one photo" });
+  }
   const next = {
     title: (title ?? l.title).toString().slice(0, 120),
     description: (description ?? l.description).toString().slice(0, 2000),
     price_cents: price !== undefined ? Math.round(Number(price) * 100) : l.price_cents,
     shipping_cents: shipping !== undefined ? Math.max(0, Math.round(Number(shipping) * 100)) : l.shipping_cents,
     status: ["active", "sold", "removed"].includes(status) ? status : l.status,
+    /* Restock: quantity edits are how a brand adds a second run. Loops
+       stay single — changing their semantics is a decision, not a
+       side-effect of an edit route. */
+    quantity: (!isLoop && quantity !== undefined) ? Math.min(500, Math.max(0, Math.round(Number(quantity)) || 0)) : (l.quantity ?? 1),
+    images: imgs !== null ? JSON.stringify(imgs) : l.images,
+    brand: (brand ?? l.brand ?? "").toString().slice(0, 60),
+    size: (size ?? l.size ?? "").toString().slice(0, 20),
+    condition: condition !== undefined ? (CONDITIONS.includes(condition) ? condition : l.condition) : l.condition,
+    colour: (colour ?? l.colour ?? "").toString().slice(0, 30),
+    category: category !== undefined ? (CATEGORIES.includes(category) || LOOP_CATEGORIES.includes(category) ? category : l.category) : l.category,
+    ships_from: (shipsFrom ?? l.ships_from ?? "").toString().slice(0, 60),
+    accepts_offers: acceptsOffers !== undefined ? (acceptsOffers ? 1 : 0) : l.accepts_offers,
+    /* A producer mistypes the BPM once and it is wrong forever otherwise.
+       Physical listings have no loop metadata to change. */
+    bpm: (isLoop && bpm !== undefined) ? (Number(bpm) || null) : l.bpm,
+    musical_key: (isLoop && musicalKey !== undefined) ? (KEYS.includes(musicalKey) ? musicalKey : l.musical_key) : l.musical_key,
+    stems: (isLoop && stems !== undefined) ? (stems ? 1 : 0) : l.stems,
   };
-  if (next.price_cents < 100) return res.status(400).json({ error: "price too low" });
-  db.prepare(`UPDATE listings SET title=?, description=?, price_cents=?, shipping_cents=?, status=?, updated_at=? WHERE id=?`)
-    .run(next.title, next.description, next.price_cents, next.shipping_cents, next.status, Date.now(), l.id);
+  /* Free loops are legal (price 0) — the old unconditional check made
+     them permanently uneditable. */
+  if (next.price_cents < 100 && !(isLoop && next.price_cents === 0)) return res.status(400).json({ error: "price too low" });
+  db.prepare(`UPDATE listings SET title=?, description=?, price_cents=?, shipping_cents=?, status=?, quantity=?, images=?, brand=?, size=?, condition=?, colour=?, category=?, ships_from=?, accepts_offers=?, bpm=?, musical_key=?, stems=?, updated_at=? WHERE id=?`)
+    .run(next.title, next.description, next.price_cents, next.shipping_cents, next.status, next.quantity, next.images,
+         next.brand, next.size, next.condition, next.colour, next.category, next.ships_from, next.accepts_offers,
+         next.bpm, next.musical_key, next.stems, Date.now(), l.id);
   res.json({ ok: true });
 });
 
@@ -2307,7 +2419,9 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
   // two friends could "buy" from each other all day for free. Rep needs
   // evidence, and in arrange mode there is none. Once Stripe is on, a sale
   // costs real money to fake, so it earns rep.
-  db.prepare(`UPDATE listings SET status='sold', sold_at=?, updated_at=? WHERE id=?`).run(now, now, l.id);
+  const arrLeft = Math.max(0, (l.quantity ?? 1) - 1);
+  if (arrLeft === 0) db.prepare(`UPDATE listings SET quantity=0, status='sold', sold_at=?, updated_at=? WHERE id=?`).run(now, now, l.id);
+  else db.prepare(`UPDATE listings SET quantity=?, updated_at=? WHERE id=?`).run(arrLeft, now, l.id);
   notify(l.seller_id, req.user.id, "sale", null, `bought "${l.title}" — arrange payment & shipping`);
   res.json({ orderId, arrange: true });
 });
@@ -2319,24 +2433,88 @@ app.get("/api/market/checkout/done", async (req, res) => {
   const seller = q.userById.get(order.seller_id);
   const out = await verifySession(sid, seller?.stripe_account);
   if (!out.paid) return res.redirect("/?checkout=failed");
-  if (order.status === "pending") {
-    db.prepare(`UPDATE orders SET status='paid', updated_at=? WHERE id=?`).run(Date.now(), order.id);
-    if (out.ship) db.prepare(`UPDATE orders SET ship_name=?, ship_address=? WHERE id=?`)
-      .run((out.ship.name || "").slice(0, 80), (out.ship.address || "").slice(0, 300), order.id);
-    db.prepare(`UPDATE listings SET status='sold', sold_at=?, updated_at=? WHERE id=?`).run(Date.now(), Date.now(), order.listing_id);
-    const l = db.prepare(`SELECT title FROM listings WHERE id=?`).get(order.listing_id);
-    // A sale is validation with money behind it — the hardest signal to fake.
-    awardRep(order.seller_id, "sale_made", order.id);
-    notify(order.seller_id, order.buyer_id, "sale", null, `paid for "${l?.title || "your listing"}" — ship it`);
-  }
+  /* Bind the session to THIS order. "Paid" only proves money moved on the
+     seller's account — not that it moved for the order named in the query
+     string. This route is unauthenticated and order ids are sequential,
+     so without these checks one cheap paid session could confirm any
+     pending order on the same seller: it flips to paid, rep is awarded,
+     the listing marks sold, and no matching money exists. The session
+     carries the order id it was created for and the total actually
+     charged — assert both before touching anything. */
+  if (String(out.orderId || "") !== String(order.id)) return res.redirect("/?checkout=failed");
+  const expectedCents = order.amount_cents + (order.shipping_cents || 0);
+  if (Number(out.amount) !== expectedCents) return res.redirect("/?checkout=failed");
+  settlePaidOrder(order, out);
   res.redirect("/?checkout=paid");
 });
 
-app.get("/api/orders", auth, (req, res) => {
+/* Settle one verified-paid order. Shared by the checkout redirect above
+   and the reconciler below — one definition, so the two paths can't
+   drift. Re-reads status at the moment of settling: the caller's row
+   may be stale, and this is what makes a double-settle impossible. */
+function settlePaidOrder(order, out) {
+  const cur = db.prepare(`SELECT status FROM orders WHERE id=?`).get(order.id);
+  if (!cur || cur.status !== "pending") return;
+  db.prepare(`UPDATE orders SET status='paid', updated_at=? WHERE id=?`).run(Date.now(), order.id);
+  if (out.ship) db.prepare(`UPDATE orders SET ship_name=?, ship_address=? WHERE id=?`)
+    .run((out.ship.name || "").slice(0, 80), (out.ship.address || "").slice(0, 300), order.id);
+  const l = db.prepare(`SELECT * FROM listings WHERE id=?`).get(order.listing_id);
+  if (l && l.status === "active") {
+    /* One unit sold. The listing only closes when stock runs out. */
+    const left = Math.max(0, (l.quantity ?? 1) - 1);
+    if (left === 0) db.prepare(`UPDATE listings SET quantity=0, status='sold', sold_at=?, updated_at=? WHERE id=?`).run(Date.now(), Date.now(), l.id);
+    else db.prepare(`UPDATE listings SET quantity=?, updated_at=? WHERE id=?`).run(left, Date.now(), l.id);
+  } else if (l) {
+    /* Stock isn't reserved at checkout, so two buyers can pay for the
+       last unit. The money is real either way — the order still settles
+       below — but the seller is told plainly so they refund one from
+       their Stripe dashboard instead of shipping air. */
+    notify(order.seller_id, order.buyer_id, "sale", null,
+      `OVERSOLD: "${l.title}" was already sold out when this payment landed — refund it from your Stripe dashboard`);
+  }
+  // A sale is validation with money behind it — the hardest signal to fake.
+  awardRep(order.seller_id, "sale_made", order.id);
+  notify(order.seller_id, order.buyer_id, "sale", null, `paid for "${l?.title || "your listing"}" — ship it`);
+}
+
+/* The redirect was the ONLY confirmation path. A buyer who pays and
+   never lands back — closed tab, dead connection, a transient Stripe
+   error on verify — leaves the seller with real money, the order stuck
+   'pending', and the listing still active and sellable twice. So:
+   whenever someone opens their orders, their stale pending checkouts
+   are re-verified against Stripe and settled through the same guarded
+   path as the redirect, with the same order-id and amount binding.
+   Bounded on purpose: ≥5 min old, ≤5 per load, re-checked at most once
+   per 5 min (updated_at doubles as the last-checked stamp), and after
+   25h — past any Checkout session's lifetime — an unpaid one is marked
+   cancelled so it is never asked about again. The listing was never
+   marked sold on this path, so cancelling reverts nothing. */
+async function reconcileOrders(userId) {
+  const now = Date.now();
+  const stale = db.prepare(`
+    SELECT * FROM orders
+    WHERE status='pending' AND payment_ref IS NOT NULL AND payment_ref != ''
+      AND (buyer_id = ? OR seller_id = ?) AND updated_at < ?
+    ORDER BY created_at DESC LIMIT 5`).all(userId, userId, now - 300000);
+  for (const order of stale) {
+    db.prepare(`UPDATE orders SET updated_at=? WHERE id=?`).run(now, order.id);
+    const seller = q.userById.get(order.seller_id);
+    const out = await verifySession(order.payment_ref, seller?.stripe_account);
+    const expectedCents = order.amount_cents + (order.shipping_cents || 0);
+    if (out.paid && String(out.orderId || "") === String(order.id) && Number(out.amount) === expectedCents) {
+      settlePaidOrder(order, out);
+    } else if (now - order.created_at > 90000000) {
+      db.prepare(`UPDATE orders SET status='cancelled', updated_at=? WHERE id=?`).run(now, order.id);
+    }
+  }
+}
+
+app.get("/api/orders", auth, async (req, res) => {
+  await reconcileOrders(req.user.id).catch(() => {});
   const reviewed = new Set(db.prepare(`SELECT order_id FROM reviews WHERE buyer_id = ?`).all(req.user.id).map((x) => x.order_id));
   const shape = (r) => ({
     id: r.id, amount: r.amount_cents, shipping: r.shipping_cents, status: r.status,
-    paid: !!r.payment_ref, reviewed: reviewed.has(r.id),
+    paid: ["paid","shipped","complete"].includes(r.status), reviewed: reviewed.has(r.id),
     tracking: r.tracking, shipName: r.ship_name, shipAddress: r.ship_address, createdAt: r.created_at,
     listing: { id: r.listing_id, title: r.title, images: (() => { try { return JSON.parse(r.images || "[]"); } catch { return []; } })() },
     other: { username: r.other_username, displayName: r.other_name, avatarUrl: r.other_avatar || "" },
@@ -2470,6 +2648,11 @@ app.post("/api/posts/:id/send", auth, verified, rateLimit({ max: 20, windowMs: 6
    out of the app worth anything — otherwise you're sending people to a
    sign-up wall and they just leave. Server-rendered so it previews in
    iMessage, Discord, and IG DMs. */
+/* A shared listing link. The SPA reads /m/:id on boot and opens the
+   listing (guests included — the Market is public); the server's only
+   job is to hand over the app instead of a 404. */
+app.get("/m/:id", (_req, res) => res.sendFile(join(__dirname, "..", "public", "index.html")));
+
 app.get("/p/:id", (req, res) => {
   const rows = feedRows({ viewerId: 0, limit: 1, postId: Number(req.params.id) });
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -2809,6 +2992,157 @@ app.get("/api/samples/:id/uses", auth, (req, res) => {
     username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "",
     role: r.role, at: r.created_at,
   })) });
+});
+
+/* ── Tracks ── the music library. Open to any verified account. */
+
+/* Pull the audio out of a video that is already on TNL and hand back a
+   file the client can turn into a track.
+
+   Server-side because the browser can't do it: captureStream records in
+   real time (a four-minute video costs four minutes) and is unsupported on
+   iOS Safari, and decodeAudioData would need the entire file — up to
+   650MB — in memory. The video is already on our disk, so there is nothing
+   to upload either way.
+
+   One job at a time on purpose. ffmpeg is CPU-bound and a handful of
+   concurrent extracts would starve the container that is also serving the
+   app. A queue would be better; a lock is honest and fits in a patch. */
+let EXTRACTING = false;
+
+app.post("/api/tracks/extract", auth, rateLimit({ max: 20, windowMs: 3600000, key: "user" }), (req, res) => {
+  if (!FFMPEG) return res.status(503).json({ error: "audio extraction is not available right now" });
+  if (EXTRACTING) return res.status(429).json({ error: "one extraction at a time — try again in a moment" });
+
+  const { videoUrl } = req.body || {};
+  if (typeof videoUrl !== "string" || !videoUrl.startsWith("/uploads/")) {
+    return res.status(400).json({ error: "pick a video on TNL" });
+  }
+
+  /* Filename only. A path from a client is not a path you follow. */
+  const name = videoUrl.slice("/uploads/".length);
+  if (!name || name.includes("/") || name.includes("\\") || name.includes("..")) {
+    return res.status(400).json({ error: "bad file" });
+  }
+
+  /* Your own video for now. Taking someone else's audio is a different
+     feature with a different consent question, and this one ships first. */
+  const own = db.prepare(`SELECT id FROM posts WHERE author_id = ? AND video_url = ?`).get(req.user.id, videoUrl);
+  if (!own) return res.status(404).json({ error: "that isn't your video" });
+
+  const src = join(UPLOAD_DIR, name);
+  if (!existsSync(src)) return res.status(404).json({ error: "the video file is gone" });
+
+  const out = name.replace(/\.[^.]+$/, "") + "-audio-" + Date.now() + ".m4a";
+  const dst = join(UPLOAD_DIR, out);
+
+  EXTRACTING = true;
+  execFile(FFMPEG, [
+    "-nostdin", "-y", "-i", src,
+    "-vn", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart",
+    dst,
+  ], { timeout: 120000, maxBuffer: 1024 * 1024 }, (err, _out, stderr) => {
+    EXTRACTING = false;
+    if (err || !existsSync(dst)) {
+      rm(dst, { force: true }, () => {});
+      const silent = /does not contain any stream|Output file is empty|Invalid data found/i.test(String(stderr || ""));
+      return res.status(silent ? 422 : 500).json({
+        error: silent ? "that video has no audio in it" : "couldn't pull the audio out of that one",
+      });
+    }
+    /* Duration comes from the client, which already has the video element
+       and knows it. ffprobe is a separate package and this needs no second
+       source of truth. */
+    res.json({ url: "/uploads/" + out, bytes: statSync(dst).size });
+  });
+});
+
+/* The videos you could pull audio from: your own, newest first. Exists so
+   the picker never guesses at another endpoint's shape. */
+app.get("/api/tracks/videos", auth, (req, res) => {
+  const rows = db.prepare(`
+    SELECT id, video_url, thumb_url, body, created_at
+    FROM posts WHERE author_id = ? AND video_url IS NOT NULL
+    ORDER BY created_at DESC LIMIT 50`).all(req.user.id);
+  res.json({ videos: rows.map(r => ({
+    id: r.id, videoUrl: r.video_url, thumbUrl: r.thumb_url || "",
+    body: r.body || "", createdAt: r.created_at,
+  })) });
+});
+
+app.get("/api/tracks", auth, (req, res) => {
+  const term = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const mine = req.query.mine === "1";
+  const where = [];
+  const params = [];
+  if (mine) { where.push("t.user_id = ?"); params.push(req.user.id); }
+  if (term) { where.push("(t.title LIKE ? OR u.username LIKE ? OR u.display_name LIKE ?)");
+    params.push(`%${term}%`, `%${term}%`, `%${term}%`); }
+
+  const rows = db.prepare(`
+    SELECT t.id, t.title, t.url, t.artwork_url, t.description, t.duration_ms,
+           t.plays, t.created_at,
+           u.username, u.display_name, u.avatar_url, u.rep
+    FROM tracks t JOIN users u ON u.id = t.user_id
+    ${where.length ? "WHERE " + where.join(" AND ") : ""}
+    ORDER BY t.created_at DESC LIMIT 100`).all(...params);
+
+  res.json({ tracks: rows.map(shapeTrack) });
+});
+
+app.post("/api/tracks", auth, verified, rateLimit({ max: 12, windowMs: 3600000, key: "user" }), (req, res) => {
+  const { title, url, artworkUrl, description, durationMs, bytes } = req.body || {};
+  const t = String(title || "").trim();
+  if (!t) return res.status(400).json({ error: "give it a name" });
+  if (typeof url !== "string" || !url.startsWith("/uploads/")) return res.status(400).json({ error: "upload the audio first" });
+  const art = typeof artworkUrl === "string" && artworkUrl.startsWith("/uploads/") ? artworkUrl : "";
+
+  const info = db.prepare(`
+    INSERT INTO tracks (user_id, title, url, artwork_url, description, duration_ms, bytes, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(
+    req.user.id, t.slice(0, 120), url, art,
+    String(description || "").slice(0, 2000),
+    Math.max(0, Number(durationMs) || 0), Math.max(0, Number(bytes) || 0), Date.now());
+
+  /* A track is activity in #tracks the way a post is anywhere else. This
+     row is what puts your face on the MUSIC LAB card — the lab grid is
+     built entirely from posts, and until now uploading music left no
+     trace there. The room itself renders the library, not this feed, so
+     the row's job is presence, not display. No rep: rep never comes from
+     your own actions. */
+  db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, created_at)
+    VALUES (?, 'tracks', ?, 0, ?)`).run(req.user.id, "♫ " + t.slice(0, 120), Date.now());
+
+  const row = db.prepare(`
+    SELECT t.*, u.username, u.display_name, u.avatar_url, u.rep
+    FROM tracks t JOIN users u ON u.id = t.user_id WHERE t.id = ?`).get(info.lastInsertRowid);
+  res.json({ track: shapeTrack(row) });
+});
+
+app.post("/api/tracks/:id/play", auth, rateLimit({ max: 300, windowMs: 3600000, key: "user" }), (req, res) => {
+  const t = db.prepare(`SELECT id FROM tracks WHERE id = ?`).get(Number(req.params.id));
+  if (!t) return res.status(404).json({ error: "no such track" });
+  db.prepare(`UPDATE tracks SET plays = plays + 1 WHERE id = ?`).run(t.id);
+  res.json({ ok: true });
+});
+
+app.patch("/api/tracks/:id", auth, (req, res) => {
+  const t = db.prepare(`SELECT * FROM tracks WHERE id = ? AND user_id = ?`).get(Number(req.params.id), req.user.id);
+  if (!t) return res.status(404).json({ error: "not yours" });
+  const { title, description, artworkUrl } = req.body || {};
+  db.prepare(`UPDATE tracks SET title = ?, description = ?, artwork_url = ? WHERE id = ?`).run(
+    (typeof title === "string" && title.trim() ? title.trim() : t.title).slice(0, 120),
+    typeof description === "string" ? description.slice(0, 2000) : t.description,
+    typeof artworkUrl === "string" && artworkUrl.startsWith("/uploads/") ? artworkUrl : t.artwork_url,
+    t.id);
+  res.json({ ok: true });
+});
+
+app.delete("/api/tracks/:id", auth, (req, res) => {
+  const t = db.prepare(`SELECT id FROM tracks WHERE id = ? AND user_id = ?`).get(Number(req.params.id), req.user.id);
+  if (!t) return res.status(404).json({ error: "not yours" });
+  db.prepare(`DELETE FROM tracks WHERE id = ?`).run(t.id);
+  res.json({ ok: true });
 });
 
 app.patch("/api/samples/:id", auth, (req, res) => {
@@ -3329,27 +3663,15 @@ function kindFor(rolesJson, role) {
   return KINDS[ROLE_KIND[rs[0]] || "visual"] || KINDS.visual;
 }
 
-/* ================================================================
-   PUBLISH — a portfolio is private to the network until you publish
-   it. Published profiles get a public URL anyone can open without an
-   account: the anti-gatekeeper surface. Requires a verified email so
-   published pages are always traceable to a real person.
-================================================================ */
-app.post("/api/me/publish", auth, (req, res) => {
-  const on = !!req.body?.published;
-  if (on && !req.user.email_verified) {
-    return res.status(403).json({ error: "verify your email before publishing", needsVerify: true });
-  }
-  q.setPublished.run(on ? 1 : 0, req.user.id);
-  const u = q.userById.get(req.user.id);
-  res.json({ user: publicUser(u), publicUrl: on ? `${baseUrl(req)}/u/${u.username}` : null });
-});
-
+/* /api/me/publish removed in 064 — every profile is public. Signup writes
+   published=1 (059) and /u/:name no longer reads the flag; the column
+   remains only as history. */
 /* Public, credential-free portfolio page. Server-rendered so it works
    in link previews and for people with no account. */
 app.get("/u/:username", (req, res) => {
   const u = q.userByName.get(req.params.username);
-  if (!u || !u.published) {
+  /* 064: every page is public — the only 404 is a name that doesn't exist. */
+  if (!u) {
     return res.status(404).send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
 <body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center">
 <div><div style="color:#22C55E;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS &#129514;</div>
@@ -3512,9 +3834,12 @@ app.get("/api/feed/showroom", maybeAuth, (req, res) => {
       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
       (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) AS share_count,
       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = ?) AS liked_by_me,
-      (SELECT COUNT(*) FROM collaborators c WHERE c.post_id = p.id AND c.status='accepted') AS collab_count
+      (SELECT COUNT(*) FROM collaborators c WHERE c.post_id = p.id AND c.status='accepted') AS collab_count,
+      tr.title AS track_title, tr.url AS track_url, tr.artwork_url AS track_art, tr.duration_ms AS track_dur, tu.username AS track_by
     FROM posts p
     JOIN users u ON u.id = p.author_id
+    LEFT JOIN tracks tr ON tr.id = p.audio_track_id
+    LEFT JOIN users tu ON tu.id = tr.user_id
     WHERE p.is_work = 1 AND p.shared_from IS NULL
     ORDER BY (
       (SELECT COUNT(*) FROM collaborators c WHERE c.post_id = p.id AND c.status='accepted') * 30 +
@@ -3660,6 +3985,7 @@ const PORT = process.env.PORT || 8787;
    and you'd never know it happened. */
 app.use((err, req, res, _next) => {
   logError("server", err.message || "unknown", (err.stack || "").slice(0, 1500), req.path, req.user?.username || "");
+  sentryReport(err, req.method + " " + req.path);
   console.error("[500]", req.method, req.path, "—", err.message);
   if (!res.headersSent) res.status(500).json({ error: "Something broke on our end. It's been logged." });
 });
@@ -3674,13 +4000,6 @@ setTimeout(() => {
     catch (e) { logError("server", "auto backup failed", e.message); }
   }, 24 * 3600 * 1000);
 }, 3600 * 1000);
-
-/* Anything a route throws lands here: reported to Sentry, answered cleanly. */
-app.use((err, req, res, next) => {
-  sentryReport(err, req.method + " " + req.path);
-  if (res.headersSent) return next(err);
-  res.status(500).json({ error: "something broke on our side — it's been reported" });
-});
 
 app.listen(PORT, () => {
   /* A deploy log that only says "started" tells you nothing. This says what
