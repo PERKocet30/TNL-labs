@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS users (
   bio          TEXT NOT NULL DEFAULT '',
   link         TEXT NOT NULL DEFAULT '',
   email_verified INTEGER NOT NULL DEFAULT 0,
-  published    INTEGER NOT NULL DEFAULT 0,
+  published    INTEGER NOT NULL DEFAULT 1,
   created_at   INTEGER NOT NULL
 );
 
@@ -296,6 +296,25 @@ CREATE TABLE IF NOT EXISTS sample_uses (
 );
 CREATE INDEX IF NOT EXISTS idx_uses_sample ON sample_uses(sample_id);
 
+/* Finished songs. Separate from samples on purpose: samples are slot-based
+   material for the sequencer, a track is a finished thing you press play on,
+   and browsing for a kick shouldn't surface a three-minute song.
+   plays is a vanity count — never rep, it's farmable. */
+CREATE TABLE IF NOT EXISTS tracks (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
+  url         TEXT NOT NULL,
+  artwork_url TEXT NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
+  duration_ms INTEGER NOT NULL DEFAULT 0,
+  bytes       INTEGER NOT NULL DEFAULT 0,
+  plays       INTEGER NOT NULL DEFAULT 0,
+  created_at  INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_tracks_new  ON tracks(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_tracks_user ON tracks(user_id, created_at DESC);
+
 /* Downloads of free loops. Not for rep — it's farmable — but a producer
    deserves to know their loop got used, and it's the seed of a collab. */
 CREATE TABLE IF NOT EXISTS loop_downloads (
@@ -455,7 +474,7 @@ if (!cols.includes("email_verified")) {
     console.log(`[db] grandfathered ${n} existing account(s) as verified`);
   }
 }
-if (!cols.includes("published")) db.exec(`ALTER TABLE users ADD COLUMN published INTEGER NOT NULL DEFAULT 0`);
+if (!cols.includes("published")) db.exec(`ALTER TABLE users ADD COLUMN published INTEGER NOT NULL DEFAULT 1`);
 if (!cols.includes("avatar_url")) db.exec(`ALTER TABLE users ADD COLUMN avatar_url TEXT NOT NULL DEFAULT ''`);
 if (!cols.includes("roles")) {
   db.exec(`ALTER TABLE users ADD COLUMN roles TEXT NOT NULL DEFAULT '[]'`);
@@ -479,6 +498,11 @@ if (!pcols.includes("images")) db.exec(`ALTER TABLE posts ADD COLUMN images TEXT
 if (!pcols.includes("thumb_url")) db.exec(`ALTER TABLE posts ADD COLUMN thumb_url TEXT`);
 if (!pcols.includes("media_w")) db.exec(`ALTER TABLE posts ADD COLUMN media_w INTEGER`);
 if (!pcols.includes("media_h")) db.exec(`ALTER TABLE posts ADD COLUMN media_h INTEGER`);
+/* Music on posts — Instagram model. A post references a library track by id,
+   never a raw audio file: the picker, provenance, and play-count machinery
+   all come from the tracks table for free. No FK on purpose — a deleted
+   track must not delete the post; the join simply returns no chip. */
+if (!pcols.includes("audio_track_id")) db.exec(`ALTER TABLE posts ADD COLUMN audio_track_id INTEGER`);
 if (!pcols.includes("is_work")) {
   db.exec(`ALTER TABLE posts ADD COLUMN is_work INTEGER NOT NULL DEFAULT 0`);
   // everything with media that already existed was, in effect, published work
@@ -513,6 +537,10 @@ if (!lcols.includes("bpm")) db.exec(`ALTER TABLE listings ADD COLUMN bpm INTEGER
 if (!lcols.includes("musical_key")) db.exec(`ALTER TABLE listings ADD COLUMN musical_key TEXT NOT NULL DEFAULT ''`);
 if (!lcols.includes("stems")) db.exec(`ALTER TABLE listings ADD COLUMN stems INTEGER NOT NULL DEFAULT 0`);
 if (!lcols.includes("downloads")) db.exec(`ALTER TABLE listings ADD COLUMN downloads INTEGER NOT NULL DEFAULT 0`);
+/* Brands sell 30 of one tee. quantity is REMAINING stock: decremented at
+   settle (payment confirmed), listing closes when it hits 0. Existing
+   rows default to 1 — every current listing stays one-of-one. */
+if (!lcols.includes("quantity")) db.exec(`ALTER TABLE listings ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1`);
 
 /* Studio telemetry. Never throws — a metrics call must never be able to
    take down the thing it's measuring. */
@@ -671,6 +699,7 @@ export const ACCENTS = {
   lab:    { name: "Lab",    hex: "#22C55E" },   // the flask. the default.
   heat:   { name: "Heat",   hex: "#FF5A1F" },
   blood:  { name: "Blood",  hex: "#EF4444" },
+  crimson:{ name: "Crimson",hex: "#DC143C" },
   bloom:  { name: "Bloom",  hex: "#EC4899" },
   violet: { name: "Violet", hex: "#A855F7" },
   ice:    { name: "Ice",    hex: "#38BDF8" },
