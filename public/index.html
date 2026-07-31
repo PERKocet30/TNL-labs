@@ -226,6 +226,9 @@ h1,h2,h3{text-transform:uppercase;letter-spacing:-.01em}
 .pcmp-cell{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--el)}
 .pcmp-cell img{width:100%;height:100%;object-fit:cover;display:block}
 .pcmp-rm{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.66);color:#fff;font-size:12px;line-height:1;cursor:pointer}
+.pcmp-vid{position:relative;border-radius:12px;overflow:hidden;background:#000}
+.pcmp-vid video{width:100%;max-height:320px;display:block;object-fit:contain;background:#000}
+.pcmp-vidbusy{border-radius:12px;background:var(--el);display:flex;align-items:center;justify-content:center;gap:10px;padding:26px 12px}
 .pcmp-add{aspect-ratio:1;border:2px dashed var(--line2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--dim);cursor:pointer}
 .pcmp-cap{display:flex;gap:10px;align-items:flex-start}
 .pcmp-ta{flex:1;background:none;border:0;color:var(--tx);font:inherit;font-size:15px;line-height:1.5;resize:none;min-height:74px;outline:none}
@@ -1551,7 +1554,7 @@ const MYPAGE=()=>!!(PROFILE&&ME&&PROFILE.user&&PROFILE.user.username===ME.userna
    what is safe to throw away. Dirty is derived, never a flag: a flag has to
    be set on every input path and the one you forget is the one that eats
    somebody's post. */
-const pcDirty=()=>!!(PCOMPOSE&&((PCOMPOSE.body||"").trim()||PCOMPOSE.imgs.length||PCOMPOSE.track));
+const pcDirty=()=>!!(PCOMPOSE&&((PCOMPOSE.body||"").trim()||PCOMPOSE.imgs.length||PCOMPOSE.vid||PCOMPOSE.vidbusy||PCOMPOSE.track));
 async function pcLeave(){
   if(!PCOMPOSE)return true;
   if(PCOMPOSE.busy)return false;   // mid-upload — don't yank it out from under the request
@@ -3574,7 +3577,7 @@ function wire(){
          about what the button is. Selling keeps its own ＋ Sell button in
          the Market header; the nav ＋ does one thing everywhere. */
       if(guest())return needAccount("Join to post — it lands on your profile and the Showroom.");
-      PCOMPOSE={body:"",imgs:[],busy:false};pushView("compose");render();return;
+      PCOMPOSE={body:"",imgs:[],vid:null,busy:false};pushView("compose");render();return;
     }
     if(b.dataset.tab==="profile"){
       if(guest())return needAccount("Join to build your profile — your work, your standing, your shop.");
@@ -3588,7 +3591,7 @@ function wire(){
        is chat now, so that button led away from the one place a post can
        be made. Same destination as the nav ＋: the post composer. */
     if(guest())return needAccount("Join to post — it lands on your profile and the Showroom.");
-    PCOMPOSE={body:"",imgs:[],busy:false};pushView("compose");render();
+    PCOMPOSE={body:"",imgs:[],vid:null,busy:false};pushView("compose");render();
   };
   /* ---- the archive + moodboards ---- */
   const pgo=$("#pastego"), pin_=$("#pastein");
@@ -4383,22 +4386,26 @@ function wireVideos(){
    your grid (and the Showroom when it's portfolio work); the labs stay rooms
    for talk and collabs. channel:"profile" keeps it out of every lab feed. */
 function pcomposeHTML(){
-  const c=PCOMPOSE, has=!!(c.body.trim()||c.imgs.length);
+  const c=PCOMPOSE, has=!!(c.body.trim()||c.imgs.length||c.vid);
   const cells=c.imgs.map((im,i)=>`<div class="pcmp-cell"><img src="${esc(im.thumb)}" alt=""><button class="pcmp-rm" data-pcrm="${i}" aria-label="Remove photo">✕</button></div>`).join("");
-  const addTile=c.imgs.length<10?`<label class="pcmp-add">＋<input id="pcfile" type="file" accept="image/*" multiple hidden></label>`:"";
+  const addTile=c.imgs.length<10?`<label class="pcmp-add">＋<input id="pcfile" type="file" accept="image/*,video/*" multiple hidden></label>`:"";
   return `<div class="pcmp-ov" id="pcov"><div class="pcmp-sheet" role="dialog" aria-label="New post">
     <header class="pcmp-top">
       <button class="pcmp-x" id="pccancel">Cancel</button>
       <div class="pcmp-ttl">New post</div>
-      <button class="pcmp-share" id="pcgo" ${has&&!c.busy?"":"disabled"}>${c.busy?"Posting…":"Share"}</button>
+      <button class="pcmp-share" id="pcgo" ${has&&!c.busy&&!c.vidbusy?"":"disabled"}>${c.busy?"Posting…":"Share"}</button>
     </header>
     <div class="pcmp-body">
-      ${c.imgs.length
+      ${c.vidbusy
+        ?`<div class="pcmp-vidbusy"><span class="spin"></span><span class="mono dim" id="pcvidprog">UPLOADING VIDEO — ${Math.round((c.vidprog||0)*100)}%</span></div>`
+        :c.vid
+        ?`<div class="pcmp-vid"><video src="${esc(c.vid.url)}" playsinline muted controls preload="metadata"></video><button class="pcmp-rm" data-pcvidrm aria-label="Remove video">✕</button></div>`
+        :c.imgs.length
         ?`<div class="pcmp-grid">${cells}${addTile}</div>`
-        :`<label class="pcmp-drop">${c.imgs.length<10?`<input id="pcfile" type="file" accept="image/*" multiple hidden>`:""}
+        :`<label class="pcmp-drop">${c.imgs.length<10?`<input id="pcfile" type="file" accept="image/*,video/*" multiple hidden>`:""}
             <div class="pcmp-dropi">＋</div>
-            <div style="font-size:14px;color:var(--tx);font-weight:700">Add photos</div>
-            <div style="font-size:12px;margin-top:4px">Up to 10 — the work can be half-finished</div>
+            <div style="font-size:14px;color:var(--tx);font-weight:700">Add photos or a video</div>
+            <div style="font-size:12px;margin-top:4px">Up to 10 photos, or one video — the work can be half-finished</div>
           </label>`}
       <div class="pcmp-cap">
         ${avHTML(ME,"")}
@@ -4410,7 +4417,7 @@ function pcomposeHTML(){
         ${c.pick?`<input class="ui-in pcmus-q" id="pcmusq" placeholder="Search tracks or artists…" value="${esc(c.q||"")}">
         <div class="pcmus-list">${pcmusRowsHTML(c.list,!!(c.q&&c.q.trim()))}</div>`:""}
       </div>
-      <div class="pcmp-note">Posts land on your profile. Anything with a photo also shows in the Showroom, where collabs rank highest.</div>
+      <div class="pcmp-note">Posts land on your profile. Anything with a photo or video also shows in the Showroom, where collabs rank highest.</div>
     </div>
   </div></div>`;
 }
@@ -4663,7 +4670,30 @@ function wireTrkEdit(){
 function wirePCompose(){
   const ov=$("#pcov");if(!ov)return;
   const fi=$("#pcfile");if(fi)fi.onchange=async()=>{
-    for(const file of fi.files){
+    const files=[...fi.files];fi.value="";
+    /* iPadOS Files picks can arrive with an empty type — fall back to the
+       extension; the server sniffs magic bytes either way. */
+    const isVid=f=>f.type.startsWith("video/")||(!f.type&&/\.(mp4|m4v|mov|webm)$/i.test(f.name));
+    const vids=files.filter(isVid), rest=files.filter(f=>!isVid(f));
+    if(vids.length){
+      const f=vids[0];
+      if(vids.length>1)toast("One video per post");
+      if(f.size>650*1024*1024){toast(f.name+" is over 650MB");return}
+      /* Video posts stand alone — same rule as the lab composer. */
+      if(PCOMPOSE.imgs.length){PCOMPOSE.imgs=[];toast("Video posts stand alone — photos cleared")}
+      PCOMPOSE.vid=null;PCOMPOSE.vidbusy=true;PCOMPOSE.vidprog=0;render();
+      try{
+        const up=await uploadStream(f,pr=>{if(!PCOMPOSE)return;PCOMPOSE.vidprog=pr;
+          const el=$("#pcvidprog");if(el)el.textContent="UPLOADING VIDEO — "+Math.round(pr*100)+"%"});
+        if(!PCOMPOSE)return;   // composer discarded mid-upload
+        if(up.kind!=="video")throw new Error("That file isn't a video");
+        PCOMPOSE.vid={url:up.url};
+      }catch(e){if(!PCOMPOSE)return;toast(e.message)}
+      PCOMPOSE.vidbusy=false;render();
+      return;   // a video pick never also queues photos
+    }
+    if(PCOMPOSE.vid||PCOMPOSE.vidbusy){toast("Video posts stand alone");return}
+    for(const file of rest){
       if(PCOMPOSE.imgs.length>=10)break;
       try{const p=await prepImage(file,true);
         const up=await api.upload(p.full);const th=await api.upload(p.thumb);
@@ -4672,10 +4702,11 @@ function wirePCompose(){
     render();
   };
   document.querySelectorAll("[data-pcrm]").forEach(b=>b.onclick=()=>{PCOMPOSE.imgs.splice(+b.dataset.pcrm,1);render()});
+  const vr=document.querySelector("[data-pcvidrm]");if(vr)vr.onclick=()=>{PCOMPOSE.vid=null;render()};
   const ta=$("#pcbody");if(ta)ta.oninput=()=>{
     PCOMPOSE.body=ta.value;
     /* toggle Share live — re-rendering here would steal focus mid-sentence */
-    const g=$("#pcgo");if(g)g.disabled=!(PCOMPOSE.body.trim()||PCOMPOSE.imgs.length)||PCOMPOSE.busy;
+    const g=$("#pcgo");if(g)g.disabled=!(PCOMPOSE.body.trim()||PCOMPOSE.imgs.length||PCOMPOSE.vid)||PCOMPOSE.busy||PCOMPOSE.vidbusy;
   };
   /* No scrim dismiss. As an overlay this was a tap outside the card; as a
      full-height page the same handler is a tap on the background, and it would
@@ -4705,11 +4736,11 @@ function wirePCompose(){
   const mr=document.querySelector("[data-pcmusrm]");if(mr)mr.onclick=()=>{PCOMPOSE.track=null;render()};
   const mp=document.querySelector("[data-pcmusplay]");if(mp)mp.onclick=()=>{if(PCOMPOSE.track)playTrack(PCOMPOSE.track)};
   const go=$("#pcgo");if(go)go.onclick=async()=>{
-    if(PCOMPOSE.busy)return;
-    if(!PCOMPOSE.body.trim()&&!PCOMPOSE.imgs.length)return toast("Add a photo or say something");
+    if(PCOMPOSE.busy||PCOMPOSE.vidbusy)return;
+    if(!PCOMPOSE.body.trim()&&!PCOMPOSE.imgs.length&&!PCOMPOSE.vid)return toast("Add a photo, a video, or say something");
     PCOMPOSE.busy=true;render();
     try{
-      await api.post({channel:"profile",body:PCOMPOSE.body.trim(),images:PCOMPOSE.imgs,isWork:true,audioTrackId:PCOMPOSE.track?PCOMPOSE.track.id:undefined});
+      await api.post({channel:"profile",body:PCOMPOSE.body.trim(),images:PCOMPOSE.imgs,videoUrl:PCOMPOSE.vid?PCOMPOSE.vid.url:undefined,isWork:true,audioTrackId:PCOMPOSE.track?PCOMPOSE.track.id:undefined});
       PCOMPOSE=null;toast("Posted to your profile");
       openProfile(myName());
     }catch(e){PCOMPOSE.busy=false;toast(e.message);render()}
@@ -4953,7 +4984,7 @@ function wireSheet(){
   document.querySelectorAll("[data-ptab]").forEach(b=>b.onclick=async()=>{PTAB=b.dataset.ptab;render();
     if(PTAB==="shop"&&PROFLISTINGS===null&&PROFILE){try{const d=await api.mkt("seller="+encodeURIComponent(PROFILE.user.username));PROFLISTINGS=d.listings||[];render()}catch(e){PROFLISTINGS=[];render()}}});
 
-  const pp=$("#profpost");if(pp)pp.onclick=()=>{PCOMPOSE={body:"",imgs:[],busy:false};pushView("compose");render()};
+  const pp=$("#profpost");if(pp)pp.onclick=()=>{PCOMPOSE={body:"",imgs:[],vid:null,busy:false};pushView("compose");render()};
   const eb=$("#editb");if(eb)eb.onclick=()=>{EDITING=true;EDITACCENT=PROFILE.user.accent||"lab";
     EDITROLES=(PROFILE.user.roles&&PROFILE.user.roles.length?[...PROFILE.user.roles]:[PROFILE.user.role]).filter(Boolean);render()};
   document.querySelectorAll("[data-accent]").forEach(b=>b.onclick=()=>{
