@@ -394,7 +394,7 @@ function shapePost(row, side) {
       displayName: row.author_name,
       role: row.author_role,
       avatarUrl: row.author_avatar || "",
-      accent: row.author_accent || "#22C55E",
+      accent: row.author_accent || "#98FC68",
       rep: row.author_rep,
       level: levelFor(row.author_rep).id,
       accentHex: accentHex(row.author_accent),
@@ -415,7 +415,7 @@ function publicUser(u) {
     role: u.role,
     roles: (() => { try { const r = JSON.parse(u.roles || "[]"); return r.length ? r : (u.role ? [u.role] : []); } catch { return u.role ? [u.role] : []; } })(),
     avatarUrl: u.avatar_url || "",
-    accent: u.accent || "#22C55E",
+    accent: u.accent || "#98FC68",
     rep: u.rep,
     bio: u.bio || "",
     link: u.link || "",
@@ -556,11 +556,11 @@ app.get("/api/auth/verify", (req, res) => {
 <title>${title} — TNL LABS</title></head>
 <body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px">
 <div style="max-width:360px">
-  <div style="color:#22C55E;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS &#129514;</div>
+  <div style="color:#98FC68;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS &#129514;</div>
   <div style="font-size:44px;margin:18px 0 6px">${state === "ok" ? "&#10003;" : "&#9888;"}</div>
   <h1 style="font-size:24px;margin:8px 0;text-transform:uppercase;letter-spacing:-.5px">${title}</h1>
   <p style="color:#8A8A8A;font-size:14px;line-height:1.65;margin:0 0 22px">${msg}</p>
-  <a href="/" style="display:inline-block;background:${state === "ok" ? "#22C55E" : "#fff"};color:#000;text-decoration:none;font-weight:700;font-size:14px;padding:13px 24px;border-radius:9px">
+  <a href="/" style="display:inline-block;background:${state === "ok" ? "#98FC68" : "#fff"};color:#000;text-decoration:none;font-weight:700;font-size:14px;padding:13px 24px;border-radius:9px">
     ${state === "ok" ? "Enter the lab" : "Back to TNL LABS"}</a>
   ${state === "expired" ? `<p style="color:#5A5A5A;font-size:12px;margin-top:18px;line-height:1.6">Sign in and hit <b style="color:#8A8A8A">Resend</b> on the banner at the top — a new link takes a second.</p>` : ""}
 </div>
@@ -1119,7 +1119,7 @@ app.get("/reset", (req, res) => {
   res.send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
 <body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">
 <div style="max-width:340px;padding:24px;width:100%">
-  <div style="color:#22C55E;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS &#129514;</div>
+  <div style="color:#98FC68;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS &#129514;</div>
   <h1 style="font-size:24px;margin:14px 0 8px;text-transform:uppercase">New password</h1>
   <input id="p" type="password" placeholder="at least 6 characters" style="width:100%;box-sizing:border-box;background:#141414;border:1px solid rgba(255,255,255,.12);border-radius:9px;color:#fff;padding:12px;font-size:14px;margin:12px 0">
   <div id="m" style="color:#F87171;font-size:12px;min-height:18px"></div>
@@ -1133,7 +1133,7 @@ document.getElementById("go").onclick=async()=>{
     body:JSON.stringify({token:${JSON.stringify(token)},password:p})});
   const d=await r.json();
   if(!r.ok){m.textContent=d.error||"That didn't work.";return}
-  m.style.color="#22C55E";m.textContent="Password updated. Redirecting…";
+  m.style.color="#98FC68";m.textContent="Password updated. Redirecting…";
   setTimeout(()=>location.href="/",1200);
 };
 </script></body>`);
@@ -2667,7 +2667,7 @@ app.get("/p/:id", (req, res) => {
   if (!p.isWork) return res.status(404).send(notFound);
 
   const u = q.userByName.get(p.author.username);
-  const accent = /^#[0-9a-f]{6}$/i.test(u?.accent || "") ? u.accent : "#22C55E";
+  const accent = /^#[0-9a-f]{6}$/i.test(u?.accent || "") ? u.accent : "#98FC68";
   const abs = (path) => (path ? (/^https?:/.test(path) ? path : `${baseUrl(req)}${path}`) : null);
   const img = abs(p.imageUrl) || abs(p.author.avatarUrl) || `${baseUrl(req)}/icon-512.png`;
   const accepted = p.collaborators.filter((c) => c.status === "accepted");
@@ -3674,7 +3674,7 @@ app.get("/u/:username", (req, res) => {
   if (!u) {
     return res.status(404).send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
 <body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center">
-<div><div style="color:#22C55E;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS &#129514;</div>
+<div><div style="color:#98FC68;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS &#129514;</div>
 <h1 style="text-transform:uppercase;font-size:22px;margin:14px 0 8px">Not found</h1>
 <p style="color:#8A8A8A;font-size:14px">This portfolio is private or doesn't exist.</p>
 <a href="/" style="display:inline-block;margin-top:16px;background:#fff;color:#000;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:9px">Enter the lab</a></div></body>`);
@@ -3688,12 +3688,12 @@ app.get("/u/:username", (req, res) => {
 
   const work = posts.map((p) => `
     <div style="background:#141414;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px;margin-bottom:9px">
-      <div style="color:#22C55E;font-family:monospace;font-size:9px;letter-spacing:.08em">${p.beat ? "BEAT" : p.videoUrl ? "VIDEO" : p.imageUrl ? "IMAGE" : "POST"} · #${esc(p.channel)}</div>
+      <div style="color:#98FC68;font-family:monospace;font-size:9px;letter-spacing:.08em">${p.beat ? "BEAT" : p.videoUrl ? "VIDEO" : p.imageUrl ? "IMAGE" : "POST"} · #${esc(p.channel)}</div>
       ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" style="width:100%;max-height:300px;object-fit:cover;border-radius:7px;margin-top:7px" loading="lazy">` : ""}
       ${p.videoUrl ? `<video src="${esc(p.videoUrl)}" controls playsinline preload="metadata" style="width:100%;max-height:300px;border-radius:7px;margin-top:7px"></video>` : ""}
       ${p.body ? `<div style="font-size:13px;line-height:1.5;color:#D6D2C8;margin-top:7px">${esc(p.body)}</div>` : ""}
       ${p.beat ? `<div style="font-size:12px;font-weight:700;margin-top:7px">♫ ${esc(p.beat.name || "untitled loop")} <span style="color:#8A8A8A;font-family:monospace;font-weight:400">${p.beat.bpm}BPM</span></div>` : ""}
-      <div style="font-family:monospace;font-size:9px;color:#8A8A8A;margin-top:8px">♥ ${p.likeCount} &nbsp; ↻ ${p.shareCount}${p.collaborators.filter((c) => c.status === "accepted").length ? ` &nbsp; <span style="color:#22C55E">✓ ${p.collaborators.filter((c) => c.status === "accepted").map((c) => esc(c.display_name || c.username)).join(", ")}</span>` : ""}</div>
+      <div style="font-family:monospace;font-size:9px;color:#8A8A8A;margin-top:8px">♥ ${p.likeCount} &nbsp; ↻ ${p.shareCount}${p.collaborators.filter((c) => c.status === "accepted").length ? ` &nbsp; <span style="color:#98FC68">✓ ${p.collaborators.filter((c) => c.status === "accepted").map((c) => esc(c.display_name || c.username)).join(", ")}</span>` : ""}</div>
     </div>`).join("");
 
   /* ── THE LINK PREVIEW ────────────────────────────────────────────────
@@ -3759,16 +3759,16 @@ app.get("/u/:username", (req, res) => {
 </head>
 <body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif">
 <div style="max-width:640px;margin:0 auto;padding:28px 18px 60px">
-  <a href="/" style="color:#22C55E;font-family:monospace;font-size:11px;letter-spacing:.16em;text-decoration:none">TNLLABS &#129514;</a>
+  <a href="/" style="color:#98FC68;font-family:monospace;font-size:11px;letter-spacing:.16em;text-decoration:none">TNLLABS &#129514;</a>
   <div style="font-family:monospace;font-size:9px;letter-spacing:.14em;color:#8A8A8A;margin-top:14px">${esc(K.tag)}</div>
   <div style="display:flex;align-items:center;gap:13px;margin-top:22px">
-    ${u.avatar_url ? `<img src="${esc(u.avatar_url)}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #22C55E">` : `<div style="width:56px;height:56px;border-radius:50%;background:#141414;border:2px solid #22C55E;display:flex;align-items:center;justify-content:center;font-family:monospace">${esc(u.display_name.slice(0, 2).toUpperCase())}</div>`}
+    ${u.avatar_url ? `<img src="${esc(u.avatar_url)}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #98FC68">` : `<div style="width:56px;height:56px;border-radius:50%;background:#141414;border:2px solid #98FC68;display:flex;align-items:center;justify-content:center;font-family:monospace">${esc(u.display_name.slice(0, 2).toUpperCase())}</div>`}
     <div><div style="font-size:20px;font-weight:900;text-transform:uppercase">${esc(u.display_name)}</div>
     <div style="font-family:monospace;font-size:10px;color:#8A8A8A;letter-spacing:.08em">@${esc(u.username)} · L${lvl.id} ${esc(lvl.name.toUpperCase())}</div></div>
   </div>
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px">${(() => { let rs = []; try { rs = JSON.parse(u.roles || "[]"); } catch {} if (!rs.length && u.role) rs = [u.role]; return rs.map((r) => `<span style="font-family:monospace;font-size:9px;letter-spacing:.06em;border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:4px 9px;color:#D6D2C8">${esc(r.toUpperCase())}</span>`).join(""); })()}</div>
   ${u.bio ? `<p style="font-size:14px;line-height:1.6;color:#D6D2C8;margin:16px 0 8px;white-space:pre-wrap">${esc(u.bio)}</p>` : ""}
-  ${u.link ? `<a href="${/^https?:\/\//.test(u.link) ? esc(u.link) : "https://" + esc(u.link)}" target="_blank" rel="noreferrer nofollow" style="color:#22C55E;font-family:monospace;font-size:11px;text-decoration:none">↗ ${esc(u.link.replace(/^https?:\/\//, ""))}</a>` : ""}
+  ${u.link ? `<a href="${/^https?:\/\//.test(u.link) ? esc(u.link) : "https://" + esc(u.link)}" target="_blank" rel="noreferrer nofollow" style="color:#98FC68;font-family:monospace;font-size:11px;text-decoration:none">↗ ${esc(u.link.replace(/^https?:\/\//, ""))}</a>` : ""}
   <div style="display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12);padding:14px 0;margin:16px 0 20px">
     <div style="flex:1"><b style="font-size:17px">${posts.length}</b><div style="font-family:monospace;font-size:9px;color:#8A8A8A">${esc(K.work)}</div></div>
     <div style="flex:1"><b style="font-size:17px">${likes}</b><div style="font-family:monospace;font-size:9px;color:#8A8A8A">LIKES</div></div>

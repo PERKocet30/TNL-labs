@@ -696,7 +696,7 @@ export function notify(userId, actorId, kind, postId = null, body = "") {
    their profile is unreadable, or slips something into a style attribute.
    Each of these is legible on the black background. */
 export const ACCENTS = {
-  lab:    { name: "Lab",    hex: "#22C55E" },   // the flask. the default.
+  lab:    { name: "Lab",    hex: "#98FC68" },   // the flask. the default.
   heat:   { name: "Heat",   hex: "#FF5A1F" },
   blood:  { name: "Blood",  hex: "#EF4444" },
   crimson:{ name: "Crimson",hex: "#DC143C" },

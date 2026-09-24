@@ -41,7 +41,7 @@ function verifyTemplate(name, url) {
     <tr><td align="center">
       <table width="100%" style="max-width:460px;background:#0A0A0A;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:30px">
         <tr><td>
-          <div style="color:#22C55E;font-size:11px;letter-spacing:.16em;font-family:monospace">TNLLABS &#129514;</div>
+          <div style="color:#98FC68;font-size:11px;letter-spacing:.16em;font-family:monospace">TNLLABS &#129514;</div>
           <h1 style="color:#fff;font-size:24px;margin:16px 0 10px;text-transform:uppercase;letter-spacing:-.5px">Confirm your email</h1>
           <p style="color:#8A8A8A;font-size:14px;line-height:1.6;margin:0 0 22px">
             ${escapeHtml(name)} — one tap and you're in. This link works for 24 hours.
@@ -82,7 +82,7 @@ function resetTemplate(name, url) {
     <tr><td align="center">
       <table width="100%" style="max-width:460px;background:#0A0A0A;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:30px">
         <tr><td>
-          <div style="color:#22C55E;font-size:11px;letter-spacing:.16em;font-family:monospace">TNLLABS &#129514;</div>
+          <div style="color:#98FC68;font-size:11px;letter-spacing:.16em;font-family:monospace">TNLLABS &#129514;</div>
           <h1 style="color:#fff;font-size:24px;margin:16px 0 10px;text-transform:uppercase;letter-spacing:-.5px">Reset your password</h1>
           <p style="color:#8A8A8A;font-size:14px;line-height:1.6;margin:0 0 22px">
             ${escapeHtml(name)} — tap below to set a new one. This link works for 1 hour and can only be used once.
