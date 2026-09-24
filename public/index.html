@@ -188,15 +188,20 @@ h1,h2,h3{text-transform:uppercase;letter-spacing:-.01em}
 .lvl{background:var(--accent-fill);color:var(--on-accent);font-family:inherit;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:5px}
 .post-meta{font-family:inherit;font-size:9px;color:var(--dim);letter-spacing:.06em}
 .post-body{font-size:14px;line-height:1.55;color:var(--tx2);margin:8px 0 2px;word-break:break-word}
-.shared-tag{font-family:inherit;font-size:9px;color:var(--green);letter-spacing:.08em;margin-bottom:5px}
-.post-acts{display:flex;align-items:center;gap:20px;margin-top:11px}
+.shared-tag{display:inline-flex;align-items:center;gap:4px;font-family:inherit;font-size:12px;font-weight:600;color:var(--green);letter-spacing:0;margin-bottom:6px}
+.post-acts{display:flex;align-items:center;gap:18px;margin-top:11px}
+.igflag{margin-left:auto;color:var(--dim)}
+.igpill{background:var(--accent-fill);color:var(--on-accent);border:0;border-radius:999px;padding:6px 14px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer}
 .igact{background:none;border:0;padding:0;color:var(--tx);display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .igact .igi{font-size:23px;line-height:1;font-style:normal;display:flex;align-items:center;justify-content:center;transition:transform .12s ease}
 .igact:active .igi{transform:scale(.85)}
 .igact.on{color:var(--green)}
-.igi-h::before{content:"♡"}
-.igact.on .igi-h::before{content:"♥︎"}
-.igact-n{color:var(--dim);font-size:12px;min-width:6px}
+.igi-h .hf{display:none}
+.igact.on .igi-h .ho{display:none}.igact.on .igi-h .hf{display:block}
+.igact.on .igi-h{animation:igpop .28s ease}
+@keyframes igpop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.igact.on .igi-h{animation:none}}
+.igact-n{color:var(--tx);font-size:13px;font-weight:600;min-width:6px}
 .post-acts2{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
 .ig-viewc{background:none;border:0;color:var(--dim);font-size:13px;padding:8px 0 0;cursor:pointer;font-family:inherit;text-align:left}
 .ig-viewc:hover{color:var(--tx)}
@@ -271,9 +276,9 @@ h1,h2,h3{text-transform:uppercase;letter-spacing:-.01em}
 .onb-dots{display:flex;gap:6px;justify-content:center;margin-top:16px}
 .onb-dots span{width:6px;height:6px;border-radius:50%;background:var(--el);border:1px solid var(--line2)}
 .onb-dots span.on{background:var(--accent-fill);border-color:var(--accent-fill)}
-.act{display:inline-flex;align-items:center;gap:5px;background:var(--el);border:1px solid var(--line);color:var(--dim);border-radius:999px;padding:3px 11px;font-size:11px;font-family:inherit}
-.act:hover{border-color:var(--green);color:var(--green)}
-.act.on{border-color:var(--green);color:var(--green);background:color-mix(in srgb, var(--green) 12%, transparent)}
+.act{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid var(--line2);color:var(--tx);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600;font-family:inherit}
+.act:hover{border-color:var(--tx)}
+.act.on{border-color:var(--accent-fill);color:var(--on-accent);background:var(--accent-fill)}
 .collab-row{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
 .ctag{font-family:inherit;font-size:9px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--dim)}
 .ctag.acc{border-color:var(--green);color:var(--green)}
@@ -444,7 +449,8 @@ textarea.in{resize:vertical;line-height:1.5}
 .bcard:hover{border-color:var(--green)}
 .bcard .av{margin:0 auto 8px}
 .bname{font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bstat{color:var(--green);margin-top:5px;font-size:9px}
+.bstat{display:flex;align-items:center;gap:10px;color:var(--green);margin-top:5px;font-size:12px;font-weight:600}
+.bstat span{display:inline-flex;align-items:center;gap:3px}
 .sr-grid{columns:2;column-gap:11px;padding:0 20px 30px}
 @media(max-width:600px){.sr-grid{columns:1}}
 @media(min-width:1000px){.sr-grid{columns:3}}
@@ -458,9 +464,17 @@ textarea.in{resize:vertical;line-height:1.5}
 .sr-meta{padding:9px 11px 11px}
 .sr-who{display:flex;align-items:center;gap:8px;cursor:pointer}
 .sr-name{font-size:12.5px;font-weight:900}
-.sr-collab{color:var(--green);font-size:9px;letter-spacing:.06em;margin-top:8px}
-.sr-body{font-size:12.5px;line-height:1.5;color:var(--tx2);margin-top:7px}
-.sr-acts{display:flex;gap:7px;margin-top:9px}
+.sr-collab{display:flex;align-items:center;gap:6px;color:var(--green);font-size:13px;font-weight:600;letter-spacing:0;margin-top:8px}
+.sr-body{font-size:14px;line-height:1.45;color:var(--tx);margin-top:6px}
+.sr-body b{font-weight:700}
+/* Phones: the Showroom is a feed, so it reads like one -- edge to edge,
+   no card frame, a hairline between posts. Wider screens keep the cards. */
+@media(max-width:600px){
+.sr-grid{padding:0 0 30px}
+.sr-card{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;margin-bottom:0}
+.sr-meta{padding:10px 14px 16px}
+}
+.sr-acts{display:flex;align-items:center;gap:18px;margin-top:10px}
 /* beat maker */
 .beat-name{background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--tx);font-family:'Archivo';font-weight:900;font-size:17px;text-transform:uppercase;padding:3px 0;margin-top:3px;width:180px}
 .beat-name:focus{outline:none;border-color:var(--green)}
@@ -607,7 +621,7 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:var(--el
 .shop-adv{display:flex;flex-direction:column;gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .shop-flabel{align-self:center}
 .shop-links{display:flex;gap:18px;margin-top:14px}
-.shop-link{background:none;border:none;color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;padding:0}
+.shop-link{display:inline-flex;align-items:center;gap:5px;background:none;border:none;color:var(--dim);font-size:12px;font-weight:600;cursor:pointer;padding:0}
 .shop-link:active{color:var(--tx)}
 .mkt-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
 .mkt-filters{padding:0 20px 14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:9px}
@@ -624,9 +638,10 @@ video.work-img{width:100%;max-height:180px;border-radius:7px;background:var(--el
 .mimgwrap{position:relative;aspect-ratio:1/1;background:var(--el);overflow:hidden}
 .mimg{width:100%;height:100%;object-fit:cover;display:block}
 .soldtag{position:absolute;inset:0;background:rgba(0,0,0,.72);color:#fff;display:flex;align-items:center;justify-content:center;font-family:inherit;font-size:12px;letter-spacing:.2em}
-.mlike{position:absolute;bottom:7px;right:7px;background:rgba(0,0,0,.6);border:1px solid var(--line2);color:var(--tx);border-radius:999px;padding:3px 9px;font-size:11px;backdrop-filter:blur(4px)}
-.mlike.on{color:var(--green);border-color:var(--green)}
+.mlike{display:inline-flex;align-items:center;gap:4px;position:absolute;bottom:7px;right:7px;background:rgba(0,0,0,.6);border:1px solid var(--line2);color:var(--tx);border-radius:999px;padding:3px 9px;font-size:11px;backdrop-filter:blur(4px)}
+.mlike.on{color:var(--accent-fill);border-color:var(--accent-fill)}
 .mlike.big{position:static;padding:8px 14px;font-size:14px;background:var(--el)}
+.mlike.big.on{color:var(--green);border-color:var(--green)}
 .mbody{padding:10px 11px 12px}
 .mtitle{font-size:12.5px;font-weight:600;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;letter-spacing:-.01em}
 .mprice{font-weight:800;font-size:16px;letter-spacing:-.02em}
@@ -2384,17 +2399,17 @@ function srCardHTML(p){
         <button class="vmute" data-vmute aria-label="Sound">🔇</button>
       </div>`
       :`<div class="sr-beat"><button class="circle" style="width:34px;height:34px;font-size:12px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button>
-         <div><div class="sr-beatname">${esc(p.beat?.name||"untitled loop")}</div><div class="mono dim">${p.beat?.bpm||120} BPM${p.beat?.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:" · LOOP"}</div></div><button class="act" data-remix="${p.id}" style="margin-left:auto">↻ Remix</button></div>`}
+         <div><div class="sr-beatname">${esc(p.beat?.name||"untitled loop")}</div><div class="mono dim">${p.beat?.bpm||120} BPM${p.beat?.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:" · LOOP"}</div></div><button class="act" data-remix="${p.id}" style="margin-left:auto">${IC_REMIX_SM} Remix</button></div>`}
     <div class="sr-meta">
-      ${accepted.length?`<div class="sr-collab mono">↔ BUILT WITH ${accepted.map(c=>esc((c.display_name||c.username).toUpperCase())).join(" + ")}</div>`:""}
-      ${p.body?`<div class="sr-body">${rich(p.body)}</div>`:""}
       <div class="sr-acts">
         <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
         <button class="igact" data-comments="${p.id}" aria-label="Comment">${IG_COMMENT}</button>
         <button class="igact" data-share="${p.id}" aria-label="Send">${IG_SEND}<span class="igact-n">${p.shareCount||""}</span></button>
-        ${p.author.username===myName()?`<button class="act" data-collab="${p.id}">+ collab</button>`:""}
-        ${p.collaborators.find(c=>c.username===myName()&&c.status==="pending")?`<button class="act on" data-accept="${p.id}">accept ✓</button>`:""}
+        ${p.author.username===myName()?`<button class="igact" data-collab="${p.id}" aria-label="Invite a collaborator" title="Invite a collaborator">${IG_COLLAB}</button>`:""}
+        ${p.collaborators.find(c=>c.username===myName()&&c.status==="pending")?`<button class="igpill" data-accept="${p.id}">Accept collab</button>`:""}
       </div>
+      ${accepted.length?`<div class="sr-collab">${IG_COLLAB_SM} Built with ${accepted.map(c=>esc(c.display_name||c.username)).join(" + ")}</div>`:""}
+      ${p.body?`<div class="sr-body"><b>${esc(p.author.username)}</b> ${rich(p.body)}</div>`:""}
       ${p.commentCount&&OPENCOMMENTS!==p.id?`<button class="ig-viewc" data-comments="${p.id}">View all ${p.commentCount} comment${p.commentCount==1?"":"s"}</button>`:""}
       ${OPENCOMMENTS===p.id?commentsHTML(p):""}
     </div>
@@ -2415,7 +2430,7 @@ async function loadShowroom(force){
         ${x.avatar_url?`<img class="av" src="${esc(x.avatar_url)}" alt="">`:`<div class="av">${esc(x.display_name.slice(0,2).toUpperCase())}</div>`}
         <div class="bname">${esc(x.display_name)}</div>
         <div class="mono dim">${esc(x.role.toUpperCase())}</div>
-        <div class="mono bstat">L${x.level} · ${x.validations}♥ · ${x.collabs}↔</div>
+        <div class="bstat">L${x.level} <span aria-label="backed">${MK_HEART(false)} ${x.validations}</span> <span aria-label="collabs">${IG_COLLAB_SM} ${x.collabs}</span></div>
       </button>`).join("")}</div>`;
     wireFeed();
   }catch(e){/* offline */}
@@ -2670,19 +2685,21 @@ function labsHTML(){
   </section>
 </div>`}
 
-/* The post row speaks the same language as the nav and the lab list: geometric
-   marks, not drawn icons. ♥ is literally the family ♠ already belongs to in
-   CASINO, so like/comment/send now read as house type rather than borrowed UI.
+/* The post row is drawn, not typed: 2px strokes, square ends, the same
+   geometry as the nav. Drawn icons also sidestep the old iOS problem where
+   the heart character was painted as a fixed-red emoji and ignored `color`.
 
-   ♥ carries an emoji presentation on iOS, which would paint it a fixed red and
-   ignore `color` — breaking the accent themes. U+FE0E pins it to text, the same
-   fix the topbar already uses on ✉︎ and ⚑︎.
-
-   The heart's two states live in CSS (.igi-h::before), so .igact.on still does
-   all the work and neither render site had to change. */
-const IG_HEART=`<i class="igi igi-h" aria-hidden="true"></i>`;
-const IG_COMMENT=`<i class="igi" aria-hidden="true">❏</i>`;
-const IG_SEND=`<i class="igi" aria-hidden="true">⇱</i>`;
+   The heart ships both states (.ho outline, .hf filled); .igact.on swaps
+   them in CSS, so the like handler still only touches the class and the
+   count -- neither render site had to change. */
+const IG_HEART=`<i class="igi igi-h" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" class="ho"><path d="M12 20.5l-7.2-7.4a4.6 4.6 0 0 1 6.5-6.5l.7.7.7-.7a4.6 4.6 0 0 1 6.5 6.5z"/></svg><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" class="hf"><path d="M12 20.5l-7.2-7.4a4.6 4.6 0 0 1 6.5-6.5l.7.7.7-.7a4.6 4.6 0 0 1 6.5 6.5z"/></svg></i>`;
+const IG_COMMENT=`<i class="igi" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></i>`;
+const IG_SEND=`<i class="igi" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 4v11M7.5 8.5L12 4l4.5 4.5M5 14v6h14v-6"/></svg></i>`;
+const IG_COLLAB=`<i class="igi" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/></svg></i>`;
+const IG_FLAG=`<i class="igi" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 21V4h11l-2 4 2 4H6"/></svg></i>`;
+const MK_HEART=on=>`<svg viewBox="0 0 24 24" width="14" height="14" fill="${on?"currentColor":"none"}" stroke="currentColor" stroke-width="2.2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 20.5l-7.2-7.4a4.6 4.6 0 0 1 6.5-6.5l.7.7.7-.7a4.6 4.6 0 0 1 6.5 6.5z"/></svg>`;
+const IG_COLLAB_SM=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/></svg>`;
+const IC_REMIX_SM=`<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M19 12a7 7 0 1 1-2-4.9M19 4v4h-4"/></svg>`;
 
 
 /* A lab message. Talk is a row: who, what, and the reference — no action
@@ -2713,7 +2730,7 @@ function postHTML(p){const mine=p.author.username===myName();
   return `<div class="post ${p.pending?"pending":""} ${p.failed?"failed":""}">
   ${p.pending?`<div class="mono sending">${UPPROG!==null&&UPPROG<1?`UPLOADING ${Math.round(UPPROG*100)}%`:"SENDING…"}</div>${UPPROG!==null&&UPPROG<1?`<div class="uptrack"><div class="upbar" id="upbar" style="width:${Math.round(UPPROG*100)}%"></div></div>`:""}`:""}
   ${p.failed?`<div class="failbar"><span>Didn't send.</span><button class="retryb" data-retry="${p.id}">Retry</button><button class="retryb ghost" data-discard="${p.id}">Discard</button></div>`:""}
-  ${p.sharedFrom?`<div class="shared-tag">↻ SHARED</div>`:""}
+  ${p.sharedFrom?`<div class="shared-tag">${IC_REMIX_SM} Shared</div>`:""}
   <div class="post-h">${avHTML(p.author)}
     <div><span class="post-by" data-u="${esc(p.author.username)}">${esc(p.author.displayName)}</span><span class="lvl">L${p.author.level}</span>
     <div class="post-meta">${esc(p.author.role.toUpperCase())} · ${new Date(p.createdAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}${p.editedAt?" · EDITED":""}</div>${musChipHTML(p)}</div>
@@ -2742,17 +2759,15 @@ function postHTML(p){const mine=p.author.username===myName();
       ${p.mediaW?`style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}></video>
     <button class="vmute" data-vmute aria-label="Sound">🔇</button>
   </div>`:""}
-  ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM${p.beat.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:""}</div></div><button class="act" data-remix="${p.id}" style="margin-left:auto">↻ Remix</button></div>`:""}
+  ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM${p.beat.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:""}</div></div><button class="act" data-remix="${p.id}" style="margin-left:auto">${IC_REMIX_SM} Remix</button></div>`:""}
   ${p.collaborators.length?`<div class="collab-row">${p.collaborators.map(c=>`<span class="ctag ${c.status==="accepted"?"acc":""}">${c.status==="accepted"?"✓":"…"} ${esc(c.display_name||c.username)}</span>`).join("")}</div>`:""}
   <div class="post-acts">
     <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
     <button class="igact" data-comments="${p.id}" aria-label="Comment">${IG_COMMENT}</button>
     <button class="igact" data-share="${p.id}" aria-label="Send">${IG_SEND}<span class="igact-n">${p.shareCount||""}</span></button>
-  </div>
-  <div class="post-acts2">
-    ${mine?`<button class="act" data-collab="${p.id}">+ collab</button>`:""}
-    ${myPending?`<button class="act on" data-accept="${p.id}">accept collab ✓</button>`:""}
-    ${!mine?`<button class="act" data-report="${p.id}">⚐ report</button>`:""}
+    ${mine?`<button class="igact" data-collab="${p.id}" aria-label="Invite a collaborator" title="Invite a collaborator">${IG_COLLAB}</button>`:""}
+    ${myPending?`<button class="igpill" data-accept="${p.id}">Accept collab</button>`:""}
+    ${!mine?`<button class="igact igflag" data-report="${p.id}" aria-label="Report" title="Report">${IG_FLAG}</button>`:""}
   </div>
   ${p.commentCount&&OPENCOMMENTS!==p.id?`<button class="ig-viewc" data-comments="${p.id}">View all ${p.commentCount} comment${p.commentCount==1?"":"s"}</button>`:""}
   ${OPENCOMMENTS===p.id?commentsHTML(p):""}
@@ -3052,7 +3067,7 @@ function marketHTML(){
           `<button class="clearf mono" id="clearfilt">✕ CLEAR ALL</button>`:""}
       </div>`:""}
       <div class="shop-links">
-        <button class="shop-link" data-mv="saved">♡ Saved</button>
+        <button class="shop-link" data-mv="saved">${MK_HEART(false)} Saved</button>
         <button class="shop-link" data-mv="orders">My orders</button>
       </div>
     </div>
@@ -3077,7 +3092,7 @@ function mktCardHTML(l){
   <div class="mimgwrap"><img class="mimg" src="${esc(l.images[0]||"")}" alt="${esc(l.title)}" loading="lazy">
     ${l.status==="sold"?`<div class="soldtag">SOLD</div>`:""}
     ${l.size?`<span class="msize">${esc(l.size)}</span>`:""}
-    <button class="mlike ${l.likedByMe?"on":""}" data-mlike="${l.id}">${l.likedByMe?"♥":"♡"}${l.likeCount?" "+l.likeCount:""}</button>
+    <button class="mlike ${l.likedByMe?"on":""}" data-mlike="${l.id}">${MK_HEART(l.likedByMe)}${l.likeCount?" "+l.likeCount:""}</button>
   </div>
   <div class="mbody">
     <div class="mprice">${money(l.price)}</div>
@@ -3153,7 +3168,7 @@ function detailHTML(){
       <div class="dtop">
         <div><h2 class="dtitle">${esc(l.title)}</h2>
         <div class="dprice">${money(l.price)}${l.shipping?`<span class="mono dim"> + ${money(l.shipping)} shipping</span>`:`<span class="mono dim"> · free shipping</span>`}${l.quantity>1?`<span class="mono dim"> · ${l.quantity} left</span>`:""}</div></div>
-        <button class="mlike big ${l.likedByMe?"on":""}" data-mlike="${l.id}">${l.likedByMe?"♥":"♡"} ${l.likeCount||""}</button>
+        <button class="mlike big ${l.likedByMe?"on":""}" data-mlike="${l.id}">${MK_HEART(l.likedByMe)}${l.likeCount?" "+l.likeCount:""}</button>
       </div>
       ${l.status==="sold"?`<div class="soldbar">SOLD</div>`:""}
       <div class="dchips">${[l.condition,l.size,l.brand,l.category,l.colour,l.shipsFrom&&("Ships from "+l.shipsFrom)].filter(Boolean).map(v=>`<span class="dchip">${esc(v)}</span>`).join("")}</div>
@@ -3212,7 +3227,7 @@ function savedHTML(){
     <div class="page-head"><div class="mono dim">SAVED</div><h2 class="page-h">Your list</h2>
     <p class="page-sub">Everything you've hearted. Sold items stay so you can see what went.</p></div>
     <div class="mkt-grid">${!SAVED?`<div class="empty">Loading…</div>`
-      :!SAVED.length?`<div class="empty">Nothing saved yet.<br><br>Tap ♡ on anything in the Market.</div>`
+      :!SAVED.length?`<div class="empty">Nothing saved yet.<br><br>Tap the heart on anything in the Market.</div>`
       :SAVED.map(mktCardHTML).join("")}</div>
   </div>`}
 
