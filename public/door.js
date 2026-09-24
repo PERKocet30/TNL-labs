@@ -30,8 +30,8 @@
 
   var CSS = [
     ".enter-vial{width:min(78vw,340px);margin:2px 0 -4px;display:block}",
-    ".enter-cap{font:10.5px/1 'IBM Plex Mono',ui-monospace,monospace;",
-    "letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.5);",
+    ".enter-cap{font:12px/1 'Helvetica Neue',Helvetica,Archivo,Arial,sans-serif;",
+    "letter-spacing:0;color:#9A9392;",
     "min-height:12px;transition:opacity .3s ease}",
     /* The button starts faded, not disabled -- see the header note. */
     ".enter-c.vialed .enter-b{opacity:0;transform:translateY(6px);",
