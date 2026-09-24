@@ -438,7 +438,9 @@ textarea.in{resize:vertical;line-height:1.5}
 .sr-cta{display:flex;gap:9px;flex-wrap:wrap}
 .sr-feedhead{display:flex;justify-content:space-between;align-items:baseline;padding:16px 20px 10px;color:var(--dim);letter-spacing:.02em}
 /* what this is — four lines, guests only */
-.whatis{padding:4px 20px 20px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:11px;max-width:620px}
+.whatis{padding:18px 20px 20px;border-bottom:1px solid var(--line)}
+.wi-tag{margin:0;font-size:28px;line-height:1.1;font-weight:700;letter-spacing:-.02em;max-width:14ch}
+.sr-role{font-size:13px}
 .wi{display:flex;gap:12px;align-items:baseline}
 .wi-k{color:var(--green);letter-spacing:.02em;width:98px;flex-shrink:0;font-size:11px}
 .wi-v{font-size:13px;line-height:1.55;color:var(--dim)}
@@ -609,9 +611,12 @@ video.work-img{width:100%;max-height:180px;border-radius:0;background:var(--el)}
 .now-meta{flex:1;min-width:0}
 .now-t{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .now-x{flex:none;background:none;border:none;color:var(--dim);font-size:13px;cursor:pointer;padding:6px}
-.shop-head{padding:22px 20px 12px;border-bottom:1px solid var(--line)}
+.shop-head{padding:18px 16px 12px;border-bottom:1px solid var(--line)}
+.shop-qwrap{flex:1;display:flex;align-items:center;gap:8px;background:var(--el);border:1px solid var(--line);border-radius:999px;padding:0 14px;color:var(--dim)}
+.shop-qwrap .shop-q{flex:1;background:transparent;border:0;padding-left:0;padding-right:0;outline:none}
+.mloop-by{font-size:12px;margin-top:3px}
 .shop-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
-.shop-h{font-size:26px;font-weight:900;margin:3px 0 0;letter-spacing:-.02em}
+.shop-h{font-size:28px;font-weight:700;margin:0;letter-spacing:-.02em}
 .shop-sell{background:var(--accent-fill);color:var(--on-accent);border:none;border-radius:999px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer;flex:none}
 .shop-search{display:flex;gap:8px;margin-top:14px}
 .shop-q{flex:1;font-size:13px}
@@ -630,22 +635,22 @@ video.work-img{width:100%;max-height:180px;border-radius:0;background:var(--el)}
 .fchips::-webkit-scrollbar{display:none}
 .fchips .chip{flex-shrink:0;white-space:nowrap}
 .chip.sm{padding:5px 10px;font-size:11px}
-.mkt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:14px 16px 30px}
+.mkt-grid{display:grid;grid-template-columns:repeat(2,1fr);column-gap:8px;row-gap:18px;padding:14px 12px 30px}
 @media(min-width:760px){.mkt-grid{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:1100px){.mkt-grid{grid-template-columns:repeat(4,1fr)}}
-.mcard{background:var(--card);border:1px solid var(--line);border-radius:0;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.mcard{background:transparent;border:0;border-radius:0;overflow:hidden;cursor:pointer}
 .mcard:active{border-color:var(--line2)}
 .mimgwrap{position:relative;aspect-ratio:1/1;background:var(--el);overflow:hidden}
 .mimg{width:100%;height:100%;object-fit:cover;display:block}
 .soldtag{position:absolute;inset:0;background:rgba(0,0,0,.72);color:#fff;display:flex;align-items:center;justify-content:center;font-family:inherit;font-size:12px;letter-spacing:.02em}
-.mlike{display:inline-flex;align-items:center;gap:4px;position:absolute;bottom:7px;right:7px;background:rgba(0,0,0,.6);border:1px solid var(--line2);color:var(--tx);border-radius:999px;padding:3px 9px;font-size:11px;backdrop-filter:blur(4px)}
+.mlike{display:inline-flex;align-items:center;gap:4px;position:absolute;bottom:7px;right:7px;background:rgba(0,0,0,.6);border:1px solid var(--line2);color:#F7F1F1;border-radius:999px;padding:3px 9px;font-size:11px;backdrop-filter:blur(4px)}
 .mlike.on{color:var(--accent-fill);border-color:var(--accent-fill)}
 .mlike.big{position:static;padding:8px 14px;font-size:14px;background:var(--el)}
 .mlike.big.on{color:var(--green);border-color:var(--green)}
-.mbody{padding:10px 11px 12px}
-.mtitle{font-size:12.5px;font-weight:600;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;letter-spacing:-.01em}
-.mprice{font-weight:800;font-size:16px;letter-spacing:-.02em}
-.msize{position:absolute;bottom:7px;left:7px;background:rgba(0,0,0,.6);border:1px solid var(--line2);color:var(--tx);border-radius:999px;padding:3px 9px;font-size:11px;font-family:inherit;backdrop-filter:blur(4px)}
+.mbody{padding:8px 2px 4px}
+.mtitle{font-size:13px;font-weight:400;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;letter-spacing:-.01em}
+.mprice{font-weight:700;font-size:15px;letter-spacing:-.01em}
+.msize{position:absolute;bottom:7px;left:7px;background:rgba(0,0,0,.6);border:1px solid var(--line2);color:#F7F1F1;border-radius:999px;padding:3px 9px;font-size:11px;font-family:inherit;backdrop-filter:blur(4px)}
 .dnav{padding:14px 20px 0}
 .backb2{background:none;border:none;color:var(--dim);font-family:inherit;font-size:11px;letter-spacing:.02em;padding:0}
 .backb2:hover{color:var(--tx)}
@@ -2398,16 +2403,10 @@ function wireGate(){
 }
 
 function showroomHTML(){return `<div class="scroll" id="showroom">
-  ${guest()?`<section class="whatis">
-    <div class="wi"><span class="wi-k mono">WORKSHOP</span><span class="wi-v">A place to make things, not perform. Post the half-finished version.</span></div>
-    <div class="wi"><span class="wi-k mono">COLLABORATION</span><span class="wi-v">Work made together rises to the top. That's the algorithm, not a slogan.</span></div>
-    <div class="wi"><span class="wi-k mono">NETWORK</span><span class="wi-v">Seven rooms — LABS HQ, //.JPEG PHARMACY, AKATSUKI, FASHION LAB, CASINO, MUSIC LAB, TNΛ. Each one a chat with its tools inside: the archive, the beat studio, the boards. Enter through what you make, meet everyone else.</span></div>
-    <div class="wi"><span class="wi-k mono">ELEVATION</span><span class="wi-v">Standing is earned when others back your work. It unlocks tools, rooms, and a better rate when you sell.</span></div>
-  </section>`:""}
+  ${guest()?`<section class="whatis"><p class="wi-tag">Social media by creatives, for creatives.</p></section>`:""}
 
   <div class="sr-builders" id="sr-builders"></div>
 
-  <div class="sr-feedhead mono"><span>LATEST POSTS</span><span class="dim">COLLABS RANK HIGHEST</span></div>
   <div class="sr-grid" id="sr-grid">${SRPOSTS.length?SRPOSTS.map(srCardHTML).join(""):`<div class="empty">Loading the work…</div>`}</div>
 </div>`}
 
@@ -2418,7 +2417,7 @@ function srCardHTML(p){
       <div class="sr-who" data-u="${esc(p.author.username)}">
         ${avHTML(p.author,"sm")}
         <div><div class="sr-name">${esc(p.author.displayName)}<span class="lvl">L${p.author.level}</span></div>
-        <div class="mono dim">${esc(p.author.role.toUpperCase())} · #${esc(p.channel)}</div>${musChipHTML(p)}</div>
+        <div class="dim sr-role">${esc(p.author.role.charAt(0).toUpperCase()+p.author.role.slice(1))}</div>${musChipHTML(p)}</div>
       </div>
     </div>
     ${(p.images&&p.images.length>1)?`<div class="caro" data-caro="s${p.id}">
@@ -3061,11 +3060,11 @@ function marketHTML(){
   return `<div class="scroll" id="mktscroll">
     <div class="shop-head">
       <div class="shop-top">
-        <div><div class="mono dim">MARKET</div><h2 class="shop-h">Shop</h2></div>
-        <button class="shop-sell" data-mv="sell">＋ Sell</button>
+        <h2 class="shop-h">Market</h2>
+        <button class="shop-sell" data-mv="sell">Sell</button>
       </div>
       <div class="shop-search">
-        <input class="in shop-q" id="mktq" placeholder="Search items, brands…" value="${esc(MKTFILT.q||"")}">
+        <label class="shop-qwrap">${UI_IC.search}<input class="in shop-q" id="mktq" aria-label="Search the market" placeholder="Search items, brands…" value="${esc(MKTFILT.q||"")}"></label>
         <button class="shop-filt ${MKTFILTOPEN?"on":""}" id="mktfiltbtn">Filters${afCount?` · ${afCount}`:""}</button>
       </div>
       <div class="shop-cats fchips">
@@ -3074,32 +3073,32 @@ function marketHTML(){
       </div>
       ${MKTFILTOPEN?`<div class="shop-adv">
         ${(MKTMETA.sizes&&MKTMETA.sizes.length)?`<div class="fchips">
-          <span class="mono dim shop-flabel">SIZE</span>
+          <span class="dim shop-flabel">Size</span>
           <button class="chip sm ${!MKTFILT.size?"on":""}" data-size="">Any</button>
           ${MKTMETA.sizes.map(z=>`<button class="chip sm ${MKTFILT.size===z?"on":""}" data-size="${esc(z)}">${esc(z)}</button>`).join("")}
         </div>`:""}
         <div class="fchips">
-          <span class="mono dim shop-flabel">CONDITION</span>
+          <span class="dim shop-flabel">Condition</span>
           <button class="chip sm ${!MKTFILT.condition?"on":""}" data-cond="">Any</button>
           ${(MKTMETA.conditions||[]).map(c=>`<button class="chip sm ${MKTFILT.condition===c?"on":""}" data-cond="${esc(c)}">${esc(c)}</button>`).join("")}
         </div>
         <div class="fchips">
-          <span class="mono dim shop-flabel">PRICE</span>
+          <span class="dim shop-flabel">Price</span>
           ${[["","Any"],["0-25","Under $25"],["25-50","$25–50"],["50-100","$50–100"],["100-","$100+"]].map(([v,l])=>
             `<button class="chip sm ${(MKTFILT.range||"")===v?"on":""}" data-range="${v}">${l}</button>`).join("")}
         </div>
         <div class="fchips">
-          <span class="mono dim shop-flabel">SHOW</span>
+          <span class="dim shop-flabel">Show</span>
           <button class="chip sm ${!MKTFILT.kind?"on":""}" data-mkind="">Everything</button>
-          <button class="chip sm ${MKTFILT.kind==="physical"?"on":""}" data-mkind="physical">▣ Physical</button>
+          <button class="chip sm ${MKTFILT.kind==="physical"?"on":""}" data-mkind="physical">Physical</button>
         </div>
         <div class="fchips">
-          <span class="mono dim shop-flabel">SORT</span>
+          <span class="dim shop-flabel">Sort</span>
           ${[["new","Newest"],["low","Price ↑"],["high","Price ↓"],["liked","Most saved"]].map(([v,l])=>
             `<button class="chip sm ${(MKTFILT.sort||"new")===v?"on":""}" data-sort="${v}">${l}</button>`).join("")}
         </div>
         ${(MKTFILT.category||MKTFILT.size||MKTFILT.condition||MKTFILT.range||MKTFILT.q||MKTFILT.kind||(MKTFILT.sort&&MKTFILT.sort!=="new"))?
-          `<button class="clearf mono" id="clearfilt">✕ CLEAR ALL</button>`:""}
+          `<button class="clearf" id="clearfilt">Clear all</button>`:""}
       </div>`:""}
       <div class="shop-links">
         <button class="shop-link" data-mv="saved">${MK_HEART(false)} Saved</button>
@@ -3107,21 +3106,21 @@ function marketHTML(){
       </div>
     </div>
     <div class="mkt-grid" id="mktgrid">${!MKT?`<div class="empty">Loading…</div>`
-      :!MKT.length?`<div class="empty">Nothing listed yet.<br><br>Be the first — hit “Sell an item”.</div>`
+      :!MKT.length?`<div class="empty">Nothing listed yet.</div>`
       :MKT.map(mktCardHTML).join("")}</div>
   </div>`}
 
 function mktCardHTML(l){
   if(l.kind==="loop")return `<button class="mcard loop" data-mopen="${l.id}">
     <div class="mloop">
-      <div class="mloop-ic">♫</div>
-      ${l.isFree?`<span class="freetag mono">FREE</span>`:""}
+      <div class="mloop-ic">${UI_IC.music}</div>
+      ${l.isFree?`<span class="freetag">Free</span>`:""}
       ${l.bpm?`<span class="bpmtag mono">${l.bpm} BPM${l.musicalKey?" · "+esc(l.musicalKey):""}</span>`:""}
     </div>
     <div class="mbody">
       <div class="mtitle">${esc(l.title)}</div>
       <div class="mprice">${l.isFree?"Free":money(l.price)}</div>
-      <div class="mono dim">@${esc(l.seller.username)}${l.downloads?" · "+l.downloads+" grabbed":""}</div>
+      <div class="dim mloop-by">@${esc(l.seller.username)}</div>
     </div>
   </button>`;return `<div class="mcard" data-mopen="${l.id}">
   <div class="mimgwrap"><img class="mimg" src="${esc(l.images[0]||"")}" alt="${esc(l.title)}" loading="lazy">
@@ -3132,7 +3131,6 @@ function mktCardHTML(l){
   <div class="mbody">
     <div class="mprice">${money(l.price)}</div>
     <div class="mtitle">${esc(l.title)}</div>
-    ${l.seller?`<div class="mkt-by mono dim">@${esc(l.seller.username)}${l.seller.level?`<span class="mkt-lvl">L${l.seller.level}</span>`:""}</div>`:""}
   </div>
 </div>`}
 
