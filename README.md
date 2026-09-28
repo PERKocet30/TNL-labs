@@ -18,7 +18,7 @@ One Node server, one SQLite database, no framework and no external services requ
 | **Posts** | Instagram-style cards: carousels of up to 10 images, video, a sound from the library, likes, comments, shares, send-to-DM, saves and collab invites. |
 | **Profiles** | Instagram-style pages: posts / followers / collabs, level badge, roles, bio, link, and tabs for work, shop, collabs and standing. Every profile has a public URL. |
 | **Collabs** | Two-sided: the author invites, the other person accepts, and only then does it count — for both of them. |
-| **Market** | Depop-style listings with photos, sizes, quantity runs, offers, saves, checkout through Stripe Connect, shipping, delivery confirmation and reviews. Sound listings with downloads are still supported for existing listings. |
+| **Market** | Depop-style browsing; listing works like a Shopify product form — Media (up to 8, tap to set the cover), Title & description, Pricing (live "you earn"), Inventory, Shipping, Details, and Status when editing. Offers, saves, checkout through Stripe Connect, shipping, delivery confirmation and reviews. Sound listings with downloads are still supported for existing listings. |
 | **Music** | The Studio (beat maker, `public/studio.js`), a sound library, tracks extracted from video, and a sample library other members can build with. |
 | **Boards & Archive** | Save anyone's work to your own moodboards; browse every image ever posted. |
 | **DMs & notifications** | Direct messages, live notifications and unread badges over a Server-Sent Events stream. |
@@ -33,7 +33,7 @@ Design language: Helvetica, `//` marks the labs, paper (light) by default with a
 The app and the API used to be two single files of 359KB and 216KB. They now live in `src/` as numbered parts of 24KB or less, which are small enough to review and push one at a time. On every boot, `src/assemble.mjs` joins them byte for byte, in filename order.
 
 ```
-src/app-01…20-*.{html,css,js}   the app          → built into public/index.html
+src/app-NN-*.{html,css,js}      the app (24 parts) → built into public/index.html
 src/server-01…11-*.js           the API          → built into src/server.runtime.js
 src/server.js                   entry point: assemble, then start
 src/assemble.mjs                the joiner
@@ -48,15 +48,19 @@ scripts/scientist.mjs           daily read-only checks against the live site
 test/                           21 test suites — run with npm test
 ```
 
-**Edit the parts, never the built files.** `public/index.html` and `src/server.runtime.js` are regenerated on every boot and ignored by git.
+**Edit the parts, never the built files.** Parts join in filename order, so two parts can share a number (`app-11-gate-logic`, `app-11-gate-screens`, `app-11-showroom`). `public/index.html` and `src/server.runtime.js` are regenerated on every boot and ignored by git.
 
 | Part | Holds |
 |---|---|
 | `app-01-head` · `app-06-body` · `app-20-tail` | page markup, meta/OG tags, script tags |
-| `app-02…05-styles-*` | styles: base, profile, studio/UI, media |
+| `app-02…05-styles-*` | styles: base, profile, studio/UI, media, listing editor (`sell`) |
 | `app-07-theme-labs-api` | theme, labs and channels, API client |
 | `app-08-state-ui` · `app-09-render-nav` | app state, toasts/modals, routing, top bar |
-| `app-10…19` | onboarding/DMs/search, sign-in gate/Showroom, archive/posts, player, listing detail/selling, profile, wiring, market/panels, composer/audio, feed/boot |
+| `app-10-dm-search` | DMs, search, the door |
+| `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
+| `app-11-showroom` · `app-12…13` | Showroom, lab index, archive/posts, player |
+| `app-14-detail-sell` | listing page and the listing editor |
+| `app-15…19` | profile, wiring, market (`app-17-market`) and panels, composer/audio, feed/boot |
 | `server-01-boot` | setup, compression, caching rules, Sentry, prepared queries |
 | `server-02…11` | auth/feed, uploads/DMs/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/beats/Showroom, social/meta |
 
@@ -75,7 +79,7 @@ npm test       # assembles, then runs every suite
 **Deploying:** push to `main`. Railway rebuilds and restarts in about 80 seconds. The deploy log should show:
 
 ```
-[assemble] public/index.html: 20 parts, …
+[assemble] public/index.html: 24 parts, …
 [assemble] src/server.runtime.js: 11 parts, …
 [db] using /app/data/tnl.db
 │ in the lab  N members · N posts · N confirmed collabs

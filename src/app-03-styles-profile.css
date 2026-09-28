@@ -176,8 +176,6 @@ video.sr-img{margin-top:0;border-radius:0}
 video.work-img{width:100%;max-height:180px;border-radius:0;background:var(--el)}
 .vthumb{width:42px;height:42px;border-radius:0;background:var(--el);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;color:var(--green);font-size:14px}
 .attach-info{display:flex;flex-direction:column;gap:4px}
-.workcheck{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx2);cursor:pointer}
-.workcheck input{accent-color:var(--green);width:14px;height:14px}
 .post-menu{margin-left:auto;display:flex;gap:2px}
 .pm{background:none;border:none;color:var(--dim);font-size:11px;padding:3px 5px;border-radius:0}
 .pm:hover{color:var(--tx);background:var(--el)}

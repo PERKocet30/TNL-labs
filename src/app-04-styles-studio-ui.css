@@ -66,24 +66,8 @@
 .orow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .obtns{display:flex;gap:6px}
 .btn.sm{padding:6px 11px;font-size:11px}
-.sellform{padding:0 20px 40px;max-width:560px}
-.paywall{margin:0 20px 30px;max-width:460px;background:linear-gradient(160deg,color-mix(in srgb, var(--green) 12%, transparent),transparent);border:1px solid color-mix(in srgb, var(--green) 40%, transparent);border-radius:0;padding:24px;text-align:center}
-.paywall-ic{width:44px;height:44px;border-radius:50%;background:var(--accent-fill);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;margin:0 auto 14px}
-.paywall-h{font-size:19px;font-weight:900;margin-bottom:10px}
-.paywall-p{font-size:13px;line-height:1.65;color:var(--dim);margin-bottom:14px}
-.paywall-rate{color:var(--green);letter-spacing:.02em;margin-bottom:16px;line-height:1.5;font-size:11px}
-.simgs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-.simg{position:relative;width:72px;height:72px}
-.simg img{width:100%;height:100%;object-fit:cover;border-radius:0;border:1px solid var(--line2)}
-.simgx{position:absolute;top:-5px;right:-5px;width:19px;height:19px;border-radius:50%;background:var(--tx);border:1px solid var(--line2);color:var(--bg);font-size:11px;padding:0}
-.simgadd{width:72px;height:72px;border-radius:0;border:1px dashed var(--line2);background:var(--el);color:var(--dim);font-size:20px;display:flex;align-items:center;justify-content:center}
-.simgadd.busy{border-style:solid;border-color:var(--green)}
 .spin{width:16px;height:16px;border:2px solid var(--line2);border-top-color:var(--green);border-radius:50%;animation:sp .7s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
-.simgadd:hover{border-color:var(--green);color:var(--green)}
-.srow{display:flex;gap:10px}
-.srow>div{flex:1}
-.wide{width:100%;justify-content:center;margin-top:18px}
+@keyframes sp{to{transform:rotate(360deg)}}.wide{width:100%;justify-content:center;margin-top:18px}
 .ordrow{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start;flex-wrap:wrap}
 .ordimg{width:58px;height:58px;object-fit:cover;border-radius:0;background:var(--el);flex-shrink:0}
 .ordbody{flex:1;min-width:120px}
@@ -243,7 +227,8 @@ img.post-img,img.sr-img{height:auto}
 .ratenow{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
 .ratenow b{font-size:26px;font-weight:900;color:var(--green);line-height:1}
 .ratenow span{margin-top:3px;font-size:10px;letter-spacing:.02em}
-.rateinfo{flex:1;min-width:150px}
+.rateinfo{flex:1;min-width:150px;font-size:14px;line-height:1.4}
+.rateinfo b{color:var(--green)}
 .rateinfo .mono{font-size:11px;line-height:1.5;letter-spacing:.02em}
 .ratenext{font-size:12px;font-weight:700;margin-top:5px}
 .ratenext b{color:var(--green)}

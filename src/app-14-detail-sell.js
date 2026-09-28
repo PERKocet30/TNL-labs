@@ -83,16 +83,11 @@ function nextRate(){
 }
 function rateHTML(){
   if(!ME)return "";
-  const fee=MKTMETA.feePct??10;
-  const n=nextRate();
+  const fee=MKTMETA.feePct??10, n=nextRate();
   return `<div class="ratebar">
-    <div class="ratenow"><b>${fee}%</b><span class="mono dim">YOUR RATE</span></div>
-    <div class="rateinfo">
-      <div class="mono dim">DEPOP TAKES 10% FOREVER. HERE IT DROPS AS PEOPLE VOUCH FOR YOU.</div>
-      ${n?`<div class="ratenext">${n.need} more rep → <b>${n.fee}%</b> at ${esc(n.name)}</div>`
-        :`<div class="ratenext">You're at the best rate in the network.</div>`}
-    </div>
-    <button class="ratelad mono" id="rateladder">SEE ALL →</button>
+    <div class="ratenow"><b>${fee}%</b><span>Your rate</span></div>
+    <div class="rateinfo">${n?`${n.need} more rep → <b>${n.fee}%</b> at ${esc(n.name)}`:"Best rate in the network"}</div>
+    <button class="ratelad" id="rateladder">Rates</button>
   </div>`}
 
 function climbHTML(){
@@ -143,89 +138,121 @@ function climbHTML(){
   </div>`}
 function payoutBannerHTML(){
   if(guest())return "";
-  if(!MKTMETA.paymentsEnabled)return `<div class="paybar off">
-    <div><b>Card payments aren't switched on yet.</b>
-    <div class="mono dim">You can still list — buyers reserve the item and you settle up directly.</div></div></div>`;
-  if(ME.payoutsReady)return `${rateHTML()}<div class="paybar ok">
-    <div><b>✓ Payouts connected</b>
-    <div class="mono dim">Stripe pays you directly.</div></div>
+  if(!MKTMETA.paymentsEnabled)return `<div class="paybar off"><div><b>Card payments are off</b>
+    <div class="dim">Buyers pay you directly for now.</div></div></div>`;
+  if(ME.payoutsReady)return `${rateHTML()}<div class="paybar ok"><div><b>Payouts connected</b></div>
     <button class="btn sm ghost" id="paydash">Stripe dashboard</button></div>`;
-  return `${rateHTML()}<div class="paybar">
-    <div><b>Set up payouts to get paid by card</b>
-    <div class="mono dim">Connect your own Stripe account — it pays you directly, TNL never holds your money.</div></div>
+  return `${rateHTML()}<div class="paybar"><div><b>Set up payouts</b>
+    <div class="dim">Stripe pays you directly.</div></div>
     <button class="btn sm green" id="payconnect">${ME.hasStripe?"Finish setup":"Connect Stripe"}</button></div>`}
 
-function sellHTML(){const f=SELLFORM||{};
-  return `<div class="scroll">
-    <div class="dnav"><button class="backb2" data-mv="${MKTEDIT?"detail":"browse"}">← ${MKTEDIT?"Cancel":"Market"}</button></div>
-    <div class="page-head"><div class="mono dim">${MKTEDIT?"EDIT LISTING":"NEW LISTING"}</div>
-    <h2 class="page-h">${MKTEDIT?"Edit listing":SELLKIND==="loop"?"Sell a loop":"Sell an item"}</h2>
-    <p class="page-sub">${MKTEDIT
-      ?"Saved changes go live straight away. Offers already made stay on the table."
-      :SELLKIND==="loop"
-      ?"Upload it, name a price — or set it to 0 and give it away. Free loops need no payout setup."
-      :"Photos first — that's what sells it."}</p>
-    </div>
-    ${(ME&&!ME.emailVerified)?`<div class="paybar off" style="margin:0 20px 14px">
-      <div><b>Confirm your email to list.</b>
-      <div class="mono dim">Check your inbox — or hit Resend on the banner at the top.</div></div></div>`:""}
-    ${(!MKTEDIT&&MKTMETA.paymentsEnabled&&ME&&!ME.payoutsReady)?`
-      <div class="paywall">
-        <div class="paywall-ic">$</div>
-        <h3 class="paywall-h">Set up payouts to list</h3>
-        <p class="paywall-p">Every sale runs through the platform — that's how you get paid safely and how the buyer's protected. Connect your own Stripe account: it pays you directly, TNL never holds your money.</p>
-        <div class="mono dim paywall-rate">YOUR RATE: ${MKTMETA.feePct??10}% · DROPS TO ${(MKTMETA.feeLadder||[]).slice(-1)[0]?.fee??2}% AS PEOPLE VOUCH FOR YOU</div>
-        <button class="btn green" id="payconnect2">${ME.hasStripe?"Finish setup":"Connect Stripe"}</button>
+/* ── LISTING EDITOR · v2 · 2026-09-28 ──────────────────────────────
+   Shaped like a Shopify product form: Media, Title & description, Pricing,
+   Inventory, Shipping, Details — each a plain card — and one sticky
+   Publish. No banners, no pitch: the fee shows up as the money you keep. */
+function sellEarnHTML(){
+  const f=SELLFORM||{}, fee=MKTMETA.feePct??10, p=Number(f.price||0);
+  const rates=` · <button class="pf-link" id="rateladder" type="button">Rates</button>`;
+  if(SELLKIND==="loop"&&p===0)return `Free — anyone can download it.`;
+  if(!(p>=1))return `TNL fee ${fee}%${rates}`;
+  return `You earn <b>${money(Math.round(p*100*(1-fee/100)))}</b> after the ${fee}% TNL fee, before card processing${rates}`;
+}
+function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
+  const X=w=>`<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+  const chips=(list,attr,cur)=>`<div class="pf-chips">${list.map(c=>`<button type="button" class="chip ${cur===c?"on":""}" ${attr}="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
+  const head=`<div class="pf-top">
+    <button class="pf-x" data-mv="${MKTEDIT?"detail":"browse"}" aria-label="Close">${X(22)}</button>
+    <div class="pf-title">${MKTEDIT?"Edit listing":"New listing"}</div><span class="pf-sp"></span></div>`;
+  if(!MKTEDIT&&MKTMETA.paymentsEnabled&&ME&&!ME.payoutsReady)return `<div class="scroll pf">${head}
+    <div class="pf-gate"><div class="pf-gate-ic">$</div>
+      <h2 class="pf-h">Set up payouts to sell</h2>
+      <p class="pf-p">Connect Stripe once — it pays you directly.</p>
+      <button class="btn green" id="payconnect2">${ME.hasStripe?"Finish setup":"Connect Stripe"}</button></div></div>`;
+  const noShip=!Number(f.shipping);
+  return `<div class="scroll pf">${head}
+  <div class="pf-body">
+    <section class="pf-card">
+      <div class="pf-sec">Media</div>
+      <div class="pf-media">
+        ${SELLIMGS.map((im,i)=>`<div class="pf-img">
+          <button type="button" class="pf-imgbtn" data-scover="${i}" aria-label="${i?"Make cover":"Cover photo"}"><img src="${esc(im)}" alt=""></button>
+          ${i===0?`<span class="pf-cover">Cover</span>`:""}
+          <button type="button" class="pf-imgx" data-simgx="${i}" aria-label="Remove photo">${X(14)}</button></div>`).join("")}
+        ${SELLUP?`<div class="pf-add busy"><span class="spin"></span></div>`
+          :SELLIMGS.length<8?`<button type="button" class="pf-add" id="saddimg">${UI_IC.plus}<span>${SELLIMGS.length?"Add":"Add photos"}</span></button>`:""}
       </div>
-    `:`
-    ${payoutBannerHTML()}
-    <div class="sellform">
-      <div class="mono lbl">PHOTOS (UP TO 8)</div>
-      <div class="simgs">
-        ${SELLIMGS.map((im,i)=>`<div class="simg"><img src="${im}"><button class="simgx" data-simgx="${i}" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`).join("")}
-        ${SELLUP?`<div class="simgadd busy"><span class="spin"></span></div>`:SELLIMGS.length<8?`<button class="simgadd" id="saddimg">＋</button>`:""}
-      </div>
-      <input type="file" id="sfile" accept="image/*" hidden>
-      <label class="mono lbl">TITLE</label><input class="in" id="s-title" value="${esc(f.title||"")}" maxlength="120" placeholder="e.g. Vintage Carhartt Detroit Jacket">
-      ${SELLKIND==="loop"?`
-      <label class="mono lbl">PRICE ($) — 0 GIVES IT AWAY</label>
-      <input class="in" id="s-price" type="number" inputmode="decimal" min="0" step="0.01" value="${f.price??""}" placeholder="0">
-      ${Number(f.price||0)===0?`<div class="freenote mono">
-        ↳ FREE. NO PAYOUT SETUP NEEDED. THEY GRAB IT, YOU GET TOLD WHO — THAT'S HOW A COLLAB STARTS.
-      </div>`:`<div class="mono dim" style="margin:5px 0 12px;line-height:1.5">You keep ${100-(MKTMETA.feePct??10)}% — TNL takes ${MKTMETA.feePct??10}%, and that drops as people vouch for you.</div>`}
-      <label class="mono lbl">TYPE</label>
-      <div class="fchips">${(MKTMETA.loopCategories||["Loop"]).map(c=>`<button class="chip sm ${f.category===c?"on":""}" data-scat="${esc(c)}">${esc(c)}</button>`).join("")}</div>
-      <div class="srow">
-        <div><label class="mono lbl">BPM</label><input class="in" id="s-bpm" type="number" inputmode="numeric" min="40" max="300" value="${f.bpm||""}" placeholder="140"></div>
-        <div><label class="mono lbl">KEY</label>
-          <select class="in" id="s-key"><option value="">—</option>
+      <div class="pf-hint">${SELLIMGS.length}/8${SELLIMGS.length>1?" · Tap a photo to make it the cover":loop?" · Optional artwork":""}</div>
+      <input type="file" id="sfile" accept="image/*" multiple hidden>
+    </section>
+
+    <section class="pf-card">
+      <label class="pf-lb" for="s-title">Title</label>
+      <input class="pf-in" id="s-title" value="${esc(f.title||"")}" maxlength="120" placeholder="${loop?"Name the sound":"Short, clear title"}">
+      <label class="pf-lb" for="s-desc">Description</label>
+      <textarea class="pf-in pf-ta" id="s-desc" rows="4" maxlength="2000" placeholder="${loop?"Mood, gear, what it's for":"Fit, measurements, any flaws"}">${esc(f.description||"")}</textarea>
+    </section>
+
+    <section class="pf-card">
+      <div class="pf-sec">Pricing</div>
+      <label class="pf-lb" for="s-price">Price</label>
+      <div class="pf-money"><span>$</span><input class="pf-in" id="s-price" type="number" inputmode="decimal" min="${loop?0:1}" step="0.01" value="${f.price??""}" placeholder="0.00"></div>
+      <div class="pf-hint" id="s-earn">${sellEarnHTML()}</div>
+      <label class="pf-row"><span>Accept offers</span><input type="checkbox" class="pf-sw" id="s-offers" ${f.acceptsOffers!==false?"checked":""}></label>
+    </section>
+
+    ${loop?`
+    <section class="pf-card">
+      <div class="pf-sec">Sound</div>
+      <div class="pf-lb">Type</div>
+      ${chips(MKTMETA.loopCategories||["Loop"],"data-scat",f.category)}
+      <div class="pf-2">
+        <div><label class="pf-lb" for="s-bpm">BPM</label><input class="pf-in" id="s-bpm" type="number" inputmode="numeric" min="40" max="300" value="${f.bpm||""}" placeholder="140"></div>
+        <div><label class="pf-lb" for="s-key">Key</label><select class="pf-in" id="s-key"><option value="">—</option>
           ${(MKTMETA.keys||[]).map(k=>`<option ${f.musicalKey===k?"selected":""}>${esc(k)}</option>`).join("")}</select></div>
       </div>
-      <label class="swrap"><input type="checkbox" id="s-stems" ${f.stems?"checked":""}> <span>Stems included</span></label>
-      `:`
-      <div class="srow">
-        <div><label class="mono lbl">PRICE ($)</label><input class="in" id="s-price" type="number" inputmode="decimal" min="1" step="0.01" value="${f.price||""}" placeholder="45.00"></div>
-        <div><label class="mono lbl">SHIPPING ($)</label><input class="in" id="s-ship" type="number" inputmode="decimal" min="0" step="0.01" value="${f.shipping||""}" placeholder="0 = free"></div>
+      <label class="pf-row"><span>Stems included</span><input type="checkbox" class="pf-sw" id="s-stems" ${f.stems?"checked":""}></label>
+    </section>`:`
+    <section class="pf-card">
+      <div class="pf-sec">Inventory</div>
+      <div class="pf-row"><span>Quantity</span>
+        <div class="pf-step"><button type="button" data-qty="-1" aria-label="Fewer">−</button>
+          <input id="s-qty" type="number" inputmode="numeric" min="1" max="500" step="1" value="${f.quantity||1}" aria-label="Quantity">
+          <button type="button" data-qty="1" aria-label="More">+</button></div></div>
+    </section>
+
+    <section class="pf-card">
+      <div class="pf-sec">Shipping</div>
+      <label class="pf-row"><span>Free shipping</span><input type="checkbox" class="pf-sw" id="s-freeship" ${noShip?"checked":""}></label>
+      <div id="s-shipwrap"${noShip?" hidden":""}>
+        <label class="pf-lb" for="s-ship">Shipping price</label>
+        <div class="pf-money"><span>$</span><input class="pf-in" id="s-ship" type="number" inputmode="decimal" min="0" step="0.01" value="${noShip?"":f.shipping}" placeholder="0.00"></div>
       </div>
-      <label class="mono lbl">QUANTITY</label>
-      <input class="in" id="s-qty" type="number" inputmode="numeric" min="1" max="500" step="1" value="${f.quantity||1}">
-      <label class="mono lbl">CATEGORY</label>
-      <div class="fchips">${MKTMETA.categories.map(c=>`<button class="chip sm ${f.category===c?"on":""}" data-scat="${esc(c)}">${esc(c)}</button>`).join("")}</div>
-      <label class="mono lbl">CONDITION</label>
-      <div class="fchips">${MKTMETA.conditions.map(c=>`<button class="chip sm ${f.condition===c?"on":""}" data-scond="${esc(c)}">${esc(c)}</button>`).join("")}</div>
-      <div class="srow">
-        <div><label class="mono lbl">BRAND</label><input class="in" id="s-brand" value="${esc(f.brand||"")}" maxlength="60"></div>
-        <div><label class="mono lbl">SIZE</label><input class="in" id="s-size" value="${esc(f.size||"")}" maxlength="20" placeholder="M / 32 / 10"></div>
+      <label class="pf-lb" for="s-from">Ships from</label>
+      <input class="pf-in" id="s-from" value="${esc(f.shipsFrom||"")}" maxlength="60" placeholder="City">
+    </section>
+
+    <section class="pf-card">
+      <div class="pf-sec">Details</div>
+      <div class="pf-lb">Category</div>
+      ${chips(MKTMETA.categories||[],"data-scat",f.category)}
+      <div class="pf-lb">Condition</div>
+      ${chips(MKTMETA.conditions||[],"data-scond",f.condition)}
+      <div class="pf-2">
+        <div><label class="pf-lb" for="s-brand">Brand</label><input class="pf-in" id="s-brand" value="${esc(f.brand||"")}" maxlength="60"></div>
+        <div><label class="pf-lb" for="s-size">Size</label><input class="pf-in" id="s-size" value="${esc(f.size||"")}" maxlength="20" placeholder="M, 32, 10"></div>
       </div>
-      <div class="srow">
-        <div><label class="mono lbl">COLOUR</label><input class="in" id="s-colour" value="${esc(f.colour||"")}" maxlength="30"></div>
-        <div><label class="mono lbl">SHIPS FROM</label><input class="in" id="s-from" value="${esc(f.shipsFrom||"")}" maxlength="60" placeholder="NYC"></div>
-      </div>`}
-      <label class="mono lbl">DESCRIPTION</label>
-      <textarea class="in" id="s-desc" rows="4" maxlength="2000" placeholder="Fit, flaws, measurements, story.">${esc(f.description||"")}</textarea>
-      <label class="workcheck" style="margin-top:12px"><input type="checkbox" id="s-offers" ${f.acceptsOffers!==false?"checked":""}> <span>Accept offers</span></label>
-      <button class="btn green wide" id="s-post">${MKTEDIT?"Save changes":"List it"}</button>
-    </div>`}
+      <label class="pf-lb" for="s-colour">Colour</label>
+      <input class="pf-in" id="s-colour" value="${esc(f.colour||"")}" maxlength="30">
+    </section>`}
+
+    ${MKTEDIT?`
+    <section class="pf-card">
+      <div class="pf-sec">Status</div>
+      ${chips(["Active","Sold"],"data-sstat",(f.status||"active")==="sold"?"Sold":"Active")}
+    </section>
+    <button type="button" class="pf-del" data-mdel="${MKTEDIT}">Delete listing</button>`:""}
+  </div>
+  <div class="pf-bar"><button class="gx-btn" id="s-post">${MKTEDIT?"Save":"Publish"}</button></div>
   </div>`}
 
 function reviewHTML(){
