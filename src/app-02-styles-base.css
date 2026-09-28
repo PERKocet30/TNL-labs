@@ -33,15 +33,10 @@ h1,h2,h3{letter-spacing:-.02em}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--el);border:1px solid var(--line);color:var(--tx);border-radius:999px;padding:8px 13px;font-size:12px}
 .chip.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
 /* auth */
-.gate{height:100dvh;display:flex;justify-content:center;padding:22px;padding-bottom:calc(22px + env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch}
-.gatecard{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:0;padding:28px 24px;margin:auto}
 .brand{font-weight:900;font-size:14px;letter-spacing:.03em}
 .brand .fl{font-size:.9em}
-.gate h1{font-size:28px;font-weight:900;margin:18px 0 8px}
-.gate p{font-size:13px;line-height:1.6;color:var(--dim);margin-bottom:14px}
 .lbl{display:block;margin:13px 0 6px;color:var(--dim)}
 .roles{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
-.switch{text-decoration:underline;cursor:pointer;color:var(--tx)}
 /* top bar */
 .top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
 /* nav */

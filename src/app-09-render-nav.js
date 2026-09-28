@@ -20,7 +20,7 @@ function initHistory(){
     // close whatever's on top, innermost first — same order a person expects
     if(LIGHTBOX){LIGHTBOX=null}
     else if(PICKER){PICKER=null}
-    else if(GATE){GATE=null;GATEWHY=""}
+    else if(GATE){if(!gateBack())gateClose()}
     else if(EDITING){EDITING=false}
     else if(PCOMPOSE){
       /* Back can't be cancelled once it has fired, so a dirty draft puts its
@@ -54,6 +54,7 @@ function render(){
   const app=$("#app");
   // Guests see the app. Only the explicit door shows the sign-up form.
   if(GATE){app.innerHTML=gateHTML();wireGate();return}
+  GFLOW=null; // the gate closed from somewhere else — next open starts fresh
   app.innerHTML=`
     ${topHTML()}
     ${SITE.announcement?`<div class="announce">${rich(SITE.announcement)}</div>`:""}
@@ -72,7 +73,6 @@ function render(){
     ${BOARDSOPEN?boardsHTML():""}
     ${REVIEWING?reviewHTML():""}
     ${CLIMB?climbHTML():""}
-    ${ONBOARD?onboardHTML():""}
     ${TRKEDIT?trkEditHTML():""}
     ${POSTOPEN?postOpenHTML():""}
     ${LIGHTBOX?`<div class="lightbox" id="lb"><img src="${esc(LIGHTBOX)}" alt="full size"></div>`:""}

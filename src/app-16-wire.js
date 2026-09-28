@@ -16,7 +16,6 @@ function wire(){
     }
     TAB=b.dataset.tab;PROFILE=null;if(window.TNLStudio)TNLStudio.unmount();if(TAB==="market"){MKTVIEW="browse";loadMarket()}if(TAB==="labs")loadLabs();render()});
   document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{TAB=b.dataset.goto;PROFILE=null;render()});
-  if(ONBOARD)wireOnboard();
   const srp=$("#sr-post");if(srp)srp.onclick=()=>{
     /* Used to route into "the room your trade lives in" — but a lab send
        is chat now, so that button led away from the one place a post can

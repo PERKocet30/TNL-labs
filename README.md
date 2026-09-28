@@ -141,6 +141,7 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 
 ## Accounts
 
+- **Sign-up** is one question per screen, Instagram-style: email → password → name → username (checked live, with suggestions when taken) → what you make. That creates the account; then profile photo → people to follow → welcome. The phone's back swipe steps back through it.
 - Sign in with **username or email**. Both ignore capital letters, and a leading `@` on a username is fine.
 - A new account has full access straight away. The confirmation email still goes out, but it doesn't block anyone. Admin → Settings → auto-verify controls this.
 - Suspending a member from the dashboard ends their sessions on their next request.
@@ -182,10 +183,11 @@ This is admin-only, and the check is enforced on the server.
 
 ## API
 
-134 routes, grouped by area. `(auth)` means a login token is needed; `(admin)` means admin only. This list was generated from the code on 2026-09-28.
+135 routes, grouped by area. `(auth)` means a login token is needed; `(admin)` means admin only. This list was generated from the code on 2026-09-28.
 
 ```
 # auth
+GET    /api/auth/username
 POST   /api/auth/register
 GET    /api/auth/verify
 POST   /api/auth/resend   (auth)

@@ -179,6 +179,7 @@ async function req(path,opts={}){
 }
 const api={
   register:b=>req("/api/auth/register",{method:"POST",body:b}),
+  usernameCheck:u=>req("/api/auth/username?u="+encodeURIComponent(u)),
   login:b=>req("/api/auth/login",{method:"POST",body:b}),
   me:()=>req("/api/me"),
   updateMe:b=>req("/api/me",{method:"PATCH",body:b}),

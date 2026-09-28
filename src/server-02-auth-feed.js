@@ -51,6 +51,24 @@ async function issueVerification(user, req) {
   return { ...result, url: result.sent ? undefined : url };
 }
 
+/* Live username check for the sign-up flow. Same rule as register below;
+   when a name is taken it offers up to three that are free. Usernames are
+   public (every profile has a URL), so answering this leaks nothing. */
+app.get("/api/auth/username", rateLimit({ max: 120, windowMs: 600000 }), (req, res) => {
+  const u = String(req.query.u || "").trim().toLowerCase();
+  const valid = (x) => /^[a-z0-9._]{2,20}$/.test(x);
+  if (!valid(u)) return res.json({ available: false, valid: false, suggestions: [] });
+  if (!q.userByName.get(u)) return res.json({ available: true, valid: true, suggestions: [] });
+  const base = u.slice(0, 16).replace(/[._]+$/, "");
+  const tries = [base + "_", base + ".labs", base + "_tnl", ...[0, 1, 2, 3].map(() => base + Math.floor(10 + Math.random() * 90))];
+  const suggestions = [];
+  for (const t of tries) {
+    if (suggestions.length >= 3) break;
+    if (valid(t) && !suggestions.includes(t) && !q.userByName.get(t)) suggestions.push(t);
+  }
+  res.json({ available: false, valid: true, suggestions });
+});
+
 app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (req, res) => {
   // The door can be closed from the dashboard.
   if (!settingBool("signupsOpen")) {

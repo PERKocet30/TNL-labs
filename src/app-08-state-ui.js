@@ -152,7 +152,6 @@ function needAccount(why){
   render();
 }
 let GATEWHY="";
-let ONBOARD=0;   // 1..3 after signup — welcome, make-it-yours, how-you-rise
 let MKT=null, MKTMETA={categories:[],conditions:[],paymentsEnabled:false}, MKTFILT={}, MKTVIEW="browse";
 let MKTONE=null, MKTOFFERS=[], SELLFORM=null, SELLIMGS=[], ORDERS=null, ORDTAB="buying", SELLUP=false, MKTFILTOPEN=false;
 /* MKTEDIT holds the id of the listing being edited, or null when the seller
