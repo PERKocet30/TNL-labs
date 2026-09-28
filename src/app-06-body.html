@@ -1,0 +1,61 @@
+</style>
+</head>
+<body>
+<div id="app" class="app"></div>
+<script>
+/* Registered before everything else so it can catch a failure in the main
+   script itself. A white-on-black stack trace beats a black rectangle:
+   without this, ANY error at load looks identical to a dead server. */
+(function(){
+  var shown=false;
+  function crash(what,where){
+    if(shown)return; shown=true;
+    /* Tell the server. Otherwise a crash only exists if the person who hit
+       it bothers to screenshot it — and most people just leave. */
+    try{
+      fetch("/api/client-error",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({message:String(what).slice(0,400),detail:String(where||"").slice(0,400),path:location.pathname})}).catch(function(){});
+    }catch(e){}
+    try{
+      document.getElementById("app").innerHTML=
+        '<div style="padding:28px;font-family:-apple-system,Helvetica,sans-serif;color:#fff">'+
+        '<div style="color:#98FC68;font-family:monospace;font-size:11px;letter-spacing:.02em">LABS &#129514;</div>'+
+        '<h1 style="font-size:20px;margin:16px 0 8px;text-transform:uppercase">Something broke</h1>'+
+        '<p style="color:#8A8A8A;font-size:13px;line-height:1.6;margin-bottom:14px">'+
+        'The app hit an error while loading. This is a bug, not you.</p>'+
+        '<pre style="background:var(--el);border:1px solid rgba(var(--fg-rgb),.15);border-radius:9px;padding:12px;'+
+        'font-size:11px;color:#F87171;white-space:pre-wrap;word-break:break-word;overflow:auto;max-height:40vh">'+
+        String(what)+(where?"\n\n"+where:"")+'</pre>'+
+        '<button onclick="(async()=>{try{if(window.caches){for(const k of await caches.keys())await caches.delete(k)}'+
+        'if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();for(const r of rs)await r.unregister()}}'+
+        'catch(e){};location.reload(true)})()" '+
+        'style="margin-top:14px;background:#fff;color:#000;border:none;border-radius:9px;padding:12px 20px;font-weight:700;font-size:14px">'+
+        'Clear cache &amp; reload</button>'+
+        '<p style="color:#5A5A5A;font-size:11px;margin-top:14px;line-height:1.6">'+
+        'If this persists, screenshot this message — it says exactly what went wrong.</p></div>';
+    }catch(e){ document.body.innerHTML="<pre style=\"color:#fff;padding:20px\">"+String(what)+"</pre>" }
+  }
+  /* Only fire for things that actually break the app. Media playback throws
+     constantly and harmlessly: AbortError every time a play() is interrupted
+     by a scroll or a re-render, NotAllowedError when autoplay is blocked.
+     Showing a crash screen for those is worse than showing nothing. */
+  function benign(err){
+    var n = (err && err.name) || "";
+    var m = String((err && err.message) || err || "");
+    return n==="AbortError" || n==="NotAllowedError" || n==="NotSupportedError"
+      || /operation was aborted|play\(\) request|interrupted by|removed from the document|user denied|load failed/i.test(m);
+  }
+  window.addEventListener("error",function(e){
+    if(benign(e.error)) return;
+    // an <img>/<video> that 404s fires error on the ELEMENT, not the window
+    if(e.target && e.target !== window && e.target.tagName) return;
+    crash(e.message||e.error, e.filename?(e.filename.split("/").pop()+":"+e.lineno+":"+e.colno):"");
+  }, true);
+  window.addEventListener("unhandledrejection",function(e){
+    if(benign(e.reason)) { e.preventDefault(); return; }
+    crash((e.reason&&e.reason.message)||e.reason,"unhandled promise rejection");
+  });
+})();
+</script>
+<script src="/studio.js"></script>
+<script>

@@ -1,0 +1,7 @@
+# Built at boot from src/app-NN-* and src/server-NN-* (see src/assemble.mjs)
+public/index.html
+src/server.runtime.js
+# Pre-gzipped copies the server writes at boot
+public/*.gz
+node_modules/
+test/.tmp/

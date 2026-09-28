@@ -5,6 +5,7 @@
 # sandbox — isn't a test suite. These are yours now.
 cd "$(dirname "$0")/.."
 rm -rf test/.tmp; mkdir -p test/.tmp
+node src/assemble.mjs >/dev/null || { echo "  assemble failed"; exit 1; }
 fail=0
 for f in test/*.test.mjs; do
   out=$(node --experimental-sqlite "$f" 2>&1 | grep -v Experimental | grep -v "trace-warnings")

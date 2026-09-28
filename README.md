@@ -37,8 +37,10 @@ A profile is private to the network by default. Hitting **Publish portfolio** gi
 ## What's here
 
 ```
-public/index.html Complete frontend — landing, labs, market, studio, profiles, auth (no build step)
-src/server.js     Express API — auth, feed, posts, likes, shares, collabs, follows, SSE realtime
+src/app-NN-*      The frontend in 20 parts (≤24KB each) — joined into public/index.html at boot
+src/server-NN-*   The Express API in 11 parts (≤24KB each) — joined into src/server.runtime.js at boot
+src/server.js     Entry point: runs src/assemble.mjs, then starts the joined server
+src/assemble.mjs  Joins the parts in filename order, byte for byte. Edit parts, never the built files
 src/db.js         SQLite schema + the rep engine (award/revoke + audit log + level ladder)
 src/seed.js       Optional demo network so the feed isn't empty on first run
 client-api.js     Standalone client module if you later wire a React/Vite frontend instead

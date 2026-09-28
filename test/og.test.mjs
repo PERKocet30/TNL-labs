@@ -19,7 +19,7 @@ t("tags are STATIC in the html", head.includes("og:image"));
 t("  -> crawlers don't run JS. whatever the app renders later is invisible.", true);
 
 console.log("\nPROFILE — /u/eclasona");
-const srv=readFileSync(ROOT+"/src/server.js","utf8");
+const srv=readFileSync(ROOT+"/src/server.runtime.js","utf8");
 const uroute=srv.slice(srv.indexOf('app.get("/u/:username"'), srv.indexOf('app.get("/u/:username"')+7000);
 for(const p of ["og:type","og:url","og:title","og:description","og:image","og:image:width","og:image:height","profile:username"])
   t(p, uroute.includes(`property="${p}"`));

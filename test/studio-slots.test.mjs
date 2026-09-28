@@ -47,7 +47,7 @@ t("unknown names fall back, not crash", guessSlot("asdfgh.wav") === "other");
 t("no name at all doesn't throw", (() => { try { return guessSlot("") === "other"; } catch { return false; } })());
 
 console.log("\nSLOTS ↔ TRACKS");
-const srv = readFileSync(join(ROOT, "src/server.js"), "utf8");
+const srv = readFileSync(join(ROOT, "src/server.runtime.js"), "utf8");
 const grab = (n) => new Function(srv.slice(srv.indexOf(n), srv.indexOf("};", srv.indexOf(n)) + 2) + "; return " + n.match(/const (\w+)/)[1] + ";")();
 const SLOT_TRACK = grab("const SLOT_TRACK = {");
 const SLOT_LABELS = grab("const SLOT_LABELS = {");

@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 import { readFileSync } from "node:fs";
-const s = readFileSync(ROOT+"/src/server.js","utf8");
+const s = readFileSync(ROOT+"/src/server.runtime.js","utf8");
 let pass=0,fail=0;
 const t=(n,ok)=>{ok?pass++:fail++;console.log("  "+(ok?"✓":"✗")+"  "+n)};
 
