@@ -2350,7 +2350,7 @@ function wireGate(){
       <p style="margin-top:12px;font-size:12px" class="dim"><span class="switch" id="fp">Forgot password?</span></p>
       <p style="margin-top:8px;font-size:12px" class="dim">New here? <span class="switch" id="sw">Create an account</span></p>`;
       $("#fp").onclick=()=>{mode="forgot";err="";draw()};
-      $("#go").onclick=async()=>{try{const d=await api.login({identifier:$("#u").value.trim(),password:$("#p").value});
+      $("#go").onclick=async()=>{try{const d=await api.login({identifier:$("#u").value.trim(),username:$("#u").value.trim().toLowerCase(),password:$("#p").value});
         TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;GATE=null;GATEWHY="";
         applyAccent(ME.accentHex);startStream();refreshBadges();loadUnreads();render()}catch(e){err=e.message;draw()}};
       $("#sw").onclick=()=>{mode="register";step=1;err="";draw()};
