@@ -37,9 +37,6 @@ video[data-auto]{cursor:pointer}
 /* selling a sound */
 .kbtn.on{background:color-mix(in srgb, var(--green) 12%, transparent);border-color:var(--green);color:var(--tx)}
 .audioadd.busy{border-style:solid;border-color:var(--green)}
-.freenote{color:var(--green);font-size:11px;letter-spacing:.02em;line-height:1.6;margin:5px 0 12px}
-.swrap{display:flex;align-items:center;gap:8px;margin:6px 0 14px;font-size:13px;color:var(--dim)}
-.swrap input{width:auto}
 /* a loop in the grid */
 .mcard.loop .mloop{position:relative;aspect-ratio:1/1;overflow:hidden;background:linear-gradient(145deg,color-mix(in srgb, var(--green) 18%, transparent),var(--el));display:flex;align-items:center;justify-content:center}
 .mloop-ic{font-size:34px;color:var(--green);opacity:.8}
