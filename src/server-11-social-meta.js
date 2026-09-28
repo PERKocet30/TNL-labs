@@ -71,22 +71,6 @@ app.get("/api/users/:username", maybeAuth, (req, res) => {
 });
 
 /* Following feed — posts from people you follow (plus your own). */
-app.get("/api/feed/following", auth, (req, res) => {
-  const ids = q.followingIds.all(req.user.id).map((r) => r.followee_id);
-  ids.push(req.user.id);
-  const placeholders = ids.map(() => "?").join(",");
-  const sql = `
-    SELECT p.*, u.username AS author_username, u.display_name AS author_name, u.role AS author_role,
-      u.avatar_url AS author_avatar, u.accent AS author_accent, u.rep AS author_rep,
-      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
-      (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) AS share_count,
-      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = ?) AS liked_by_me
-    FROM posts p JOIN users u ON u.id = p.author_id
-    WHERE p.author_id IN (${placeholders})
-    ORDER BY p.created_at DESC LIMIT 60`;
-  const rows = db.prepare(sql).all(req.user.id, ...ids);
-  res.json({ posts: shapePosts(rows) });
-});
 
 /* ---- meta ---- */
 app.get("/api/levels", (_req, res) => res.json({

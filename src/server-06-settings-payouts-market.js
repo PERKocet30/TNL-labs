@@ -134,14 +134,6 @@ app.post("/api/market/connect", auth, verified, async (req, res) => {
   res.json({ url: link.url });
 });
 
-app.get("/api/market/connect/done", auth, async (req, res) => {
-  // Stripe sends them back here; confirm with the API rather than assuming.
-  if (req.user.stripe_account) {
-    const st = await accountStatus(req.user.stripe_account);
-    db.prepare(`UPDATE users SET stripe_ready = ? WHERE id = ?`).run(st.ready ? 1 : 0, req.user.id);
-  }
-  res.redirect("/?connect=done");
-});
 
 app.get("/api/market/connect/status", auth, async (req, res) => {
   if (!req.user.stripe_account) return res.json({ connected: false, ready: false });

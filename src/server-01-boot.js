@@ -271,10 +271,6 @@ const q = {
   ),
   acceptCollab: db.prepare(`UPDATE collaborators SET status = 'accepted' WHERE post_id = ? AND user_id = ?`),
   collabRow: db.prepare(`SELECT * FROM collaborators WHERE post_id = ? AND user_id = ?`),
-  collabsForPost: db.prepare(
-    `SELECT c.status, u.username, u.display_name
-     FROM collaborators c JOIN users u ON u.id = c.user_id WHERE c.post_id = ?`
-  ),
 
   follow: db.prepare(`INSERT OR IGNORE INTO follows (follower_id, followee_id, created_at) VALUES (?, ?, ?)`),
   unfollow: db.prepare(`DELETE FROM follows WHERE follower_id = ? AND followee_id = ?`),
@@ -286,7 +282,6 @@ const q = {
   verifyToken: db.prepare(`SELECT * FROM verify_tokens WHERE token = ?`),
   clearVerifyTokens: db.prepare(`DELETE FROM verify_tokens WHERE user_id = ?`),
   markVerified: db.prepare(`UPDATE users SET email_verified = 1 WHERE id = ?`),
-  setPublished: db.prepare(`UPDATE users SET published = ? WHERE id = ?`),
 };
 
 /* Feed query builder — returns posts enriched with author, counts, and

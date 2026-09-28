@@ -313,17 +313,14 @@ app.get("/api/admin/source", auth, admin, (req, res) => {
      none of the applied hunks in it, under a comment promising the live app.
      Ship the builder, the built runtime, and every patch, so a download can be
      REBUILT and byte-checked instead of trusted. */
-  const patches = existsSync(join(root, "src/patches"))
-    ? readdirSync(join(root, "src/patches")).filter((f) => f.endsWith(".mjs")).sort()
-        .map((f) => "src/patches/" + f)
-    : [];
+  const parts = readdirSync(join(root, "src")).filter((f) => /^(app|server)-\d{2}-/.test(f)).sort()
+    .map((f) => "src/" + f);
   const include = [
-    "src/server.js", "src/server.runtime.js", "src/build.mjs",
-    "src/db.js", "src/pay.js", "src/mail.js", "src/seed.js",
-    ...patches,
-    "public/index.html", "public/studio.js", "public/admin.html", "public/sw.js",
+    "src/server.js", "src/assemble.mjs", ...parts, "src/server.runtime.js",
+    "src/db.js", "src/pay.js", "src/mail.js",
+    "public/index.html", "public/studio.js", "public/admin.html", "public/door.js", "public/sw.js",
     "public/manifest.webmanifest",
-    "package.json", "HANDOVER.md", "RAILWAY.md",
+    "package.json", "README.md", "RAILWAY.md",
   ].filter((f) => existsSync(join(root, f)));
 
   try {

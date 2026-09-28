@@ -49,7 +49,7 @@ passport shows an **Admin dashboard** link. Or go straight to `/admin`.
 
 | Variable | Value |
 | --- | --- |
-| `PUBLIC_URL` | `https://tnl-labs.up.railway.app` |
+| `PUBLIC_URL` | `https://labs.tnllabs.com` |
 
 Builds verification links, password resets, Stripe redirects and public
 portfolio links. Wrong value = broken emails. Update it the day you point a
@@ -98,29 +98,37 @@ expiry, any CVC.
 
 ---
 
-## Deploying — all 6 files together
+## Deploying
 
-The frontend and backend are one change, not six. `index.html` calls
-endpoints that only exist in the newer `server.js`; deploy one without the
-other and things fail in confusing ways (this is what broke image upload).
+Railway deploys every push to `main` (about 80 seconds). The app and the API
+live in `src/` as numbered parts of 24KB or less; on boot `src/assemble.mjs`
+joins them into `public/index.html` and `src/server.runtime.js`. Edit the
+parts, never the built files — those are regenerated every boot and ignored
+by git.
 
 ```
-public/index.html      the app
-public/studio.js       the beat maker
-public/admin.html      your dashboard
-src/server.js          the API
-src/db.js              schema + rep engine (migrates itself on boot)
-src/pay.js             Stripe Connect
+src/app-NN-*          the app (→ public/index.html)
+src/server-NN-*       the API (→ src/server.runtime.js)
+src/server.js         entry point: assemble, then start
+src/db.js             schema + rep engine (migrates itself on boot)
+src/pay.js            Stripe Connect
+src/mail.js           email
+public/studio.js      the beat maker
+public/admin.html     your dashboard
+public/door.js        the door (vial loader)
 ```
 
-Also in public/: `sw.js`, `manifest.webmanifest`, `icon.svg` (PWA).
+Also in public/: `sw.js`, `manifest.webmanifest`, `icon-512.png` (PWA).
+
+A second service, **Scientist**, runs `scripts/scientist.mjs` daily at 18:45
+UTC — read-only checks against the live site.
 
 ## The whole list, to paste in
 
 ```
 TNL_DATA=/app/data
 ADMIN_EMAIL=Jorgemfuentes001@gmail.com
-PUBLIC_URL=https://tnl-labs.up.railway.app
+PUBLIC_URL=https://labs.tnllabs.com
 RESEND_API_KEY=re_xxxxxxxx
 MAIL_FROM=TNL LABS <onboarding@resend.dev>
 STRIPE_SECRET_KEY=sk_test_xxxxx

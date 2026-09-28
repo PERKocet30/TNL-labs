@@ -42,8 +42,6 @@ src/server-NN-*   The Express API in 11 parts (≤24KB each) — joined into src
 src/server.js     Entry point: runs src/assemble.mjs, then starts the joined server
 src/assemble.mjs  Joins the parts in filename order, byte for byte. Edit parts, never the built files
 src/db.js         SQLite schema + the rep engine (award/revoke + audit log + level ladder)
-src/seed.js       Optional demo network so the feed isn't empty on first run
-client-api.js     Standalone client module if you later wire a React/Vite frontend instead
 ```
 
 ## Run it
@@ -52,7 +50,6 @@ Requires **Node 22.5+** (for built-in SQLite).
 
 ```bash
 npm install          # express, cors, bcryptjs — all pure JS, no native builds
-npm run seed         # optional: 5 demo users (password: labs1234) + starter posts
 npm start            # open http://localhost:8787 — the whole app is there
 ```
 
@@ -111,19 +108,6 @@ Collab is two-sided on purpose. The author invites a user to a post; the invite 
 
 `GET /api/stream` is a Server-Sent Events channel. The client's `onFeedEvent()` subscribes and receives `post`, `like`, `collab-invite`, and `collab-accepted` events as they happen, so open feeds update live without polling.
 
-## Wiring it to the app
-
-1. Copy `client-api.js` into your React project (e.g. `client/src/lib/api.js`).
-2. Set `VITE_API_URL` if the backend isn't on `localhost:8787`.
-3. Replace the app's local-storage reads/writes with `api.*` calls:
-   - onboarding form → `api.register(...)`
-   - posting in a channel → `api.post({ channel, body })`
-   - the 🔥 button → `api.like(postId)`
-   - a new **Share** button → `api.share(postId, { channel })`
-   - a new **Collab** action → `api.invite(postId, username)` / `api.acceptCollab(postId)`
-   - profile view → `api.profile(username)` and `api.follow(username)`
-4. Call `onFeedEvent(...)` once where the feed mounts to get live updates.
-
 ## Endpoint reference
 
 ```
@@ -133,7 +117,6 @@ POST /api/auth/logout          (auth)
 GET  /api/me                   (auth) -> {user}
 
 GET  /api/feed[?channel=]      -> {posts}          (viewer-aware likedByMe if token sent)
-GET  /api/feed/following       (auth) -> {posts}
 POST /api/posts                (auth) {channel, body, beat?, imageUrl?} -> {post}
 POST /api/posts/:id/like       (auth) -> {liked}   (toggles; awards/revokes author rep)
 POST /api/posts/:id/share      (auth) {channel?, comment?} -> {post}  (awards original author)

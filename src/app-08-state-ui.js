@@ -364,14 +364,6 @@ function dataUrlToBlob(d){
   return new Blob([arr],{type:mime});
 }
 
-function readFile(file){
-  return new Promise((res,rej)=>{
-    const fr=new FileReader();
-    fr.onerror=()=>rej(new Error("Couldn't read that file"));
-    fr.onload=()=>res(fr.result);
-    fr.readAsDataURL(file);
-  });
-}
 
 /* ---- live updates ---- */
 let es=null;

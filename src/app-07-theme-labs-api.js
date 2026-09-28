@@ -52,21 +52,6 @@ function kindOf(){return KIND}
 /* The header line still speaks the member's trade — "YOUR VISUAL",
    "YOUR SOUND" — because that little descriptor is identity, not
    behaviour. It's a flat role->word lookup and nothing else reads it. */
-const ROLE_TAG={
-  "Graphic Designer":"VISUAL","Illustrator":"VISUAL","3D Artist":"VISUAL","Motion Designer":"VISUAL",
-  "Animator":"VISUAL","Art Director":"VISUAL","Painter":"VISUAL","Sculptor":"VISUAL",
-  "Tattoo Artist":"VISUAL","Curator":"VISUAL","Character Designer":"VISUAL",
-  "Manga Artist":"AKATSUKI","Cosplayer":"AKATSUKI","AMV Editor":"AKATSUKI",
-  "Photographer":"LENS","Videographer":"LENS","Video Editor":"LENS","Cinematographer":"LENS",
-  "Fashion Designer":"FASHION","Stylist":"FASHION","Model":"FASHION","Tailor":"FASHION","Sneaker Customizer":"FASHION",
-  "Producer":"SOUND","Beatmaker":"SOUND","Lyricist / Singer":"SOUND","Rapper":"SOUND","DJ":"SOUND",
-  "Audio Engineer":"SOUND","Musician":"SOUND",
-  "Writer":"WORD","Copywriter":"WORD","Journalist":"WORD","Content Creator":"WORD","Actor":"WORD",
-  "Web Designer":"BUILD","Web Developer":"BUILD","App Developer":"BUILD","UI/UX Designer":"BUILD","Product Designer":"BUILD",
-  "Entrepreneur":"BUILDER","Founder":"BUILDER","Brand Strategist":"BUILDER","Marketer":"BUILDER",
-  "Manager":"BUILDER","A&R":"BUILDER","Photographer's Agent":"BUILDER","Event Organizer":"BUILDER",
-};
-const tagOf=u=>{const r=(u&&u.roles&&u.roles.length?u.roles[0]:u&&u.role)||"";return ROLE_TAG[r]||"PAGE"};
 /* Each lab is a room, not a category. The glyph and the line under the name
    are what stop this being a list of hashtags — you should know what a place
    is FOR before you walk in. */
