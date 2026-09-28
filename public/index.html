@@ -2343,14 +2343,14 @@ function wireGate(){
       return}
     if(mode==="login"){body().innerHTML=`
       <h1>Log in.</h1><p>Back to the lab.</p>
-      <label class="mono lbl">USERNAME</label><input class="in" id="u" value="${esc(f.username)}">
-      <label class="mono lbl">PASSWORD</label><input class="in" id="p" type="password">
+      <label class="mono lbl">USERNAME OR EMAIL</label><input class="in" id="u" value="${esc(f.username)}" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="email">
+      <label class="mono lbl">PASSWORD</label><input class="in" id="p" type="password" autocomplete="current-password">
       ${err?`<div class="err">${esc(err)}</div>`:""}
       <button class="btn wide" id="go">Enter</button>
       <p style="margin-top:12px;font-size:12px" class="dim"><span class="switch" id="fp">Forgot password?</span></p>
       <p style="margin-top:8px;font-size:12px" class="dim">New here? <span class="switch" id="sw">Create an account</span></p>`;
       $("#fp").onclick=()=>{mode="forgot";err="";draw()};
-      $("#go").onclick=async()=>{try{const d=await api.login({username:$("#u").value.toLowerCase(),password:$("#p").value});
+      $("#go").onclick=async()=>{try{const d=await api.login({identifier:$("#u").value.trim(),password:$("#p").value});
         TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;GATE=null;GATEWHY="";
         applyAccent(ME.accentHex);startStream();refreshBadges();loadUnreads();render()}catch(e){err=e.message;draw()}};
       $("#sw").onclick=()=>{mode="register";step=1;err="";draw()};

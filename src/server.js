@@ -603,12 +603,36 @@ app.get("/api/auth/status", auth, (req, res) => {
   res.json({ verified: !!req.user.email_verified, email: req.user.email });
 });
 
+/* Emails are stored as typed, so look them up case-insensitively.
+   Exact match first; older rows could differ only by case. */
+function usersByEmail(email) {
+  const e = String(email || "").trim();
+  if (!e) return [];
+  const exact = db.prepare(`SELECT * FROM users WHERE email = ?`).get(e);
+  if (exact) return [exact];
+  return db.prepare(`SELECT * FROM users WHERE LOWER(TRIM(email)) = ? ORDER BY id`).all(e.toLowerCase());
+}
+
+/* Sign in with a username or an email. Usernames can't contain "@"
+   (see register), so anything shaped like an address is an email;
+   a leading "@" on a handle is just how people type it. */
 app.post("/api/auth/login", rateLimit({ max: 8, windowMs: 900000 }), async (req, res) => {
-  const { username, password } = req.body || {};
-  const user = q.userByName.get(username || "");
-  if (!user) return res.status(401).json({ error: "no such user" });
-  const ok = await bcrypt.compare(password || "", user.password_hash);
-  if (!ok) return res.status(401).json({ error: "wrong password" });
+  const body = req.body || {};
+  const id = String(body.identifier ?? body.username ?? "").trim();
+  const password = String(body.password || "");
+  let candidates = [];
+  if (/^[^@\s]+@[^@\s]+$/.test(id)) {
+    candidates = usersByEmail(id);
+  } else {
+    const name = id.replace(/^@/, "");
+    const u = q.userByName.get(name) || q.userByName.get(name.toLowerCase());
+    if (u) candidates = [u];
+  }
+  let user = null;
+  for (const c of candidates) {
+    if (await bcrypt.compare(password, c.password_hash)) { user = c; break; }
+  }
+  if (!user) return res.status(401).json({ error: "Username or email and password don't match." });
   const token = randomBytes(24).toString("hex");
   q.createSession.run(token, user.id, Date.now());
   res.json({ token, user: publicUser(user) });
@@ -1101,7 +1125,7 @@ app.post("/api/dm/:username", auth, verified, rateLimit({ max: 30, windowMs: 600
 ================================================================ */
 app.post("/api/auth/forgot", rateLimit({ max: 5, windowMs: 900000 }), async (req, res) => {
   const email = (req.body?.email || "").toString().trim();
-  const user = db.prepare(`SELECT * FROM users WHERE email = ?`).get(email);
+  const user = usersByEmail(email)[0];
   // Always answer the same way — otherwise this endpoint tells strangers
   // which emails have accounts.
   if (!user) return res.json({ ok: true });
