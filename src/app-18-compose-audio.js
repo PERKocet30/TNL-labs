@@ -307,7 +307,7 @@ function pcmusRowsHTML(list,searching){
   if(!list)return `<div class="empty">Loading…</div>`;
   if(!list.length)return searching
     ?`<div class="empty">No tracks match that.</div>`
-    :`<div class="empty">No tracks in the library yet.<br>Upload one in MUSIC LAB → #tracks.</div>`;
+    :`<div class="empty">No tracks in the library yet.<br>Upload one in // Music → Tracks.</div>`;
   return list.map(t=>`<div class="pcmus-row" data-pcmuspick="${t.id}"><div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="">`:"♫"}</div><div class="pcmus-meta"><div class="pcmus-t">${esc(t.title)}</div><div class="mono dim">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}</div></div></div>`).join("");
 }
 

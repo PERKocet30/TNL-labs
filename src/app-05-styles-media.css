@@ -171,13 +171,6 @@ video[data-auto]{cursor:pointer}
   border:1px solid var(--line2);border-radius:0;font-size:11px;vertical-align:middle;color:var(--green)}
 .toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:var(--tx);color:var(--bg);font-weight:700;font-size:13px;border-radius:999px;padding:9px 18px;z-index:80}
 .empty{padding:30px 20px;text-align:center;color:var(--dim);font-size:13px;line-height:1.7}
-@media (max-width:680px){
-  .rail{width:100%}
-  .labs-wrap.roomopen .rail{display:none}
-  .labs-wrap:not(.roomopen) .room{display:none}
-  .backb{display:inline-flex!important}
-}
-.backb{display:none;background:none;border:none;color:var(--tx);font-size:16px;padding:0 6px 0 0}
 
 /* ── iOS: any input under 16px triggers an auto-zoom that never reverses.
    That's what makes the whole app look blown up after you tap a field.

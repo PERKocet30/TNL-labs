@@ -148,9 +148,9 @@ async function loadShowroom(force){
   }catch(e){/* offline */}
 }
 
-/* The building. Each tile is a room you can see into: the last piece made
-   there, who's been in this week, what's unread. That's what makes it a
-   place rather than a nav menu. */
+/* The lab index. One row per genre, numbered like a specimen shelf: the
+   latest piece made there (or the genre's drawn mark), what's unread, who's
+   been in this week. Readable on paper and in dark mode alike. */
 function labsGridHTML(){
   const A=LABACT||{byChannel:{},art:{},people:{},unread:{}};
   const labStats=(l)=>{
@@ -165,41 +165,35 @@ function labsGridHTML(){
     }
     return {today,week,unread,last,art,people};
   };
+  const all=LABS.map(labStats);
+  const weekTotal=all.reduce((n,st)=>n+st.week,0);
   return `<div class="scroll">
-    <div class="page-head">
-      <div class="mono dim">THE LABS</div>
-      <h2 class="page-h">Seven rooms.</h2>
-      <p class="page-sub">Enter through what you make — meet everyone else.</p>
+    <div class="lx-head">
+      <h2 class="page-h">Labs</h2>
+      <p class="lx-sub">${LABS.length} genres${weekTotal?` · ${weekTotal} posts this week`:""}</p>
     </div>
-    <div class="labgrid">${LABS.map(l=>{
-      const id=LAB_ID[l.id]||{glyph:"//",for:""};
-      const st=labStats(l);
-      const live=st.today>0;
-      return `<button class="labtile ${st.unread?"hasnew":""} ${live?"live":""}" data-lab="${l.id}">
-        ${st.art?`<img class="labart" src="${esc(st.art.url)}" alt="" loading="lazy">`:""}
-        <div class="labshade"></div>
-        <div class="labtop">
-          <span class="labglyph">${id.glyph}</span>
-          ${st.unread?`<span class="labnew mono">${st.unread>9?"9+":st.unread} NEW</span>`
-            :live?`<span class="labdot" title="active today"></span>`:""}
-        </div>
-        <div class="labbody">
-          <div class="labname">${esc(l.name)}</div>
-          <div class="labfor">${esc(id.for)}</div>
-          <div class="labrooms mono">${l.channels.map(c=>"#"+c.label).join("  ")}</div>
-        </div>
-        <div class="labfoot">
-          ${st.people.length?`<div class="labppl">${st.people.slice(0,4).map(p=>
-            p.avatarUrl?`<img src="${esc(p.avatarUrl)}" alt="">`
-              :`<span>${esc(p.displayName.slice(0,1).toUpperCase())}</span>`).join("")}
-            ${st.people.length>4?`<em>+${st.people.length-4}</em>`:""}</div>`:""}
-          <span class="mono labmeta">${st.week
-            ? st.week+" this week"
-            : st.last ? "quiet · last "+timeAgo(st.last)
-            : "empty — be first"}</span>
-        </div>
+    <div class="lx-list">${LABS.map((l,i)=>{
+      const id=LAB_ID[l.id]||{for:"",ic:""};
+      const st=all[i];
+      return `<button class="lx ${st.unread?"new":""}" data-lab="${l.id}">
+        <span class="lx-media">${st.art?`<img src="${esc(st.art.url)}" alt="" loading="lazy">`:`<span class="lx-ic">${id.ic}</span>`}</span>
+        <span class="lx-body">
+          <span class="lx-top"><span class="lx-no">${String(i+1).padStart(2,"0")}</span>
+            ${st.unread?`<span class="lx-new">${st.unread>9?"9+":st.unread} new</span>`
+              :st.today?`<span class="lx-live"><i></i>Active today</span>`:""}</span>
+          <span class="lx-name"><span class="lg">//</span> ${esc(l.name)}</span>
+          <span class="lx-for">${esc(id.for)}</span>
+          <span class="lx-foot">
+            ${st.people.length?`<span class="lx-ppl">${st.people.slice(0,4).map(p=>
+              p.avatarUrl?`<img src="${esc(p.avatarUrl)}" alt="">`
+                :`<span>${esc(p.displayName.slice(0,1).toUpperCase())}</span>`).join("")}</span>`:""}
+            <span class="lx-meta">${st.week?st.week+" this week"
+              :st.last?"Last post "+timeAgo(st.last).toLowerCase()
+              :"No posts yet"}</span>
+          </span>
+        </span>
+        <span class="lx-go" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><path d="M9 5l7 7-7 7"/></svg></span>
       </button>`}).join("")}</div>
-    <div class="mono dim labhint">TAP A LAB TO GO IN</div>
   </div>`;
 }
 

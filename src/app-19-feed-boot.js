@@ -88,12 +88,12 @@ function wireFeed(){
           const chans=[];
           for(const l of LABS)for(const c of l.channels){
             if(c.beatlab||(c.gate&&levelFor(myRep()).id<c.gate))continue;
-            chans.push({label:"#"+c.label,sub:l.name,icon:"#",ch:c.id});
+            chans.push({label:chName(c),sub:labMark(l.name),icon:"//",ch:c.id});
           }
-          openPicker({eyebrow:"CROSS-LAB",title:"Share into",
+          openPicker({title:"Share to a lab",
             note:"The original author earns rep when their work travels.",
             items:chans,onPick:async(c)=>{
-              try{await api.share(id,{channel:c.ch});toast("Shared to #"+c.ch)}catch(e){toast(e.message)}}});
+              try{await api.share(id,{channel:c.ch});toast("Shared to "+c.label)}catch(e){toast(e.message)}}});
           return;
         }
         if(it.act==="native"){

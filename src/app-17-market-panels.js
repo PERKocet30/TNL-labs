@@ -390,7 +390,7 @@ function mountStudio(){
   TNLStudio.mount(el,{
     api,
     toast,
-    onPublish:()=>{TAB="labs";LAB=LABS.find(l=>l.id==="music");CH=LAB.channels.find(c=>c.id==="beats");ROOMOPEN=true;render()},
+    onPublish:()=>{TAB="labs";LAB=LABS.find(l=>l.id==="culture");CH=LAB.channels.find(c=>c.id==="beats");ROOMOPEN=true;render()},
     uploadAudio:async(blob)=>{
       const up=await uploadStream(blob);   // streamed — a kit file can be big
       return up.url;

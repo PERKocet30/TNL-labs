@@ -40,7 +40,7 @@ const KINDS = {
   word:     { tag: "WORD",    work: "WRITING",  blurb: "Words, stories, and coverage of the scene." },
   build:    { tag: "BUILD",   work: "PROJECTS", blurb: "Sites, apps, and the interfaces the culture runs on." },
   business: { tag: "BUILDER", work: "VENTURES", blurb: "Building the thing behind the thing." },
-  anime:    { tag: "AKATSUKI", work: "PANELS",   blurb: "Anime, manga, and the visual language it hands the rest of the network." },
+  anime:    { tag: "ANIME",    work: "PANELS",   blurb: "Anime, manga, and the visual language it hands the rest of the network." },
 };
 const ROLE_KIND = {
   "Graphic Designer": "visual", "Illustrator": "visual", "3D Artist": "visual", "Motion Designer": "visual",

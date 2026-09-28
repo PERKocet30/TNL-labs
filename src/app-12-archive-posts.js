@@ -122,41 +122,32 @@ async function loadBoards(){
 
 function labsHTML(){
   if(guest())return `<div class="scroll"><div class="wall">
-    <div class="wall-ic">🧪</div>
-    <div class="mono dim">MEMBERS ONLY</div>
-    <h2 class="wall-h">This is the workshop.</h2>
-    <p class="wall-p">The same seven rooms you already know — PHARMACY, AKATSUKI, CASINO, FASHION LAB — except here the work is searchable, the collabs are recorded, and you can sell from them.<br><br>The Showroom shows you what came out. The labs are where it happened.</p>
+    <div class="wall-mark">//</div>
+    <h2 class="wall-h">Labs are for members.</h2>
+    <p class="wall-p">Share process, get feedback and find collaborators by genre.</p>
     <div class="wall-labs">${LABS.map(l=>`<span class="wall-lab">${esc(labMark(l.name))}</span>`).join("")}</div>
-    <div class="wall-cta"><button class="btn green" id="joinBtn3">Join the workshop</button>
+    <div class="wall-cta"><button class="btn green" id="joinBtn3">Join</button>
       <button class="btn ghost" id="loginBtn3">Sign in</button></div>
   </div></div>`;
 
-  /* The grid. You're standing outside the labs looking at which one to walk
-     into — each showing the last thing made in it and who's been in there.
-     A hashtag list is a menu; this is a building. */
+  /* Outside a lab: the index. Inside: one header, the channels as pills,
+     then the conversation — no sidebar, no hash list. */
   if(!LAB)return labsGridHTML();
 
-  return `<div class="labs-wrap ${ROOMOPEN?"roomopen":""}">
-  <aside class="rail">
-    <button class="railback" id="labback">← All labs</button>
-    <div class="railtitle">
-      <span class="railglyph">${(LAB_ID[LAB.id]||{}).glyph||"//"}</span>
-      <div><b>${esc(LAB.name)}</b>
-      <div class="mono dim">${esc((LAB_ID[LAB.id]||{}).for||"")}</div></div>
-    </div>
-    ${LAB.id==="culture"?`<button class="railtool" id="openstudio">
-      <span class="railtool-ic">${UI_IC.music}</span>
-      <span><b>THE STUDIO</b><br><span class="mono dim">Make a beat right here</span></span>
-    </button>`:""}
-    ${LAB.channels.map(c=>{const locked=c.gate&&levelFor(myRep()).id<c.gate;
-      const n=UNREADS[c.id]||0;
-      return `<button class="railc ${CH.id===c.id?"on":""} ${n?"unread":""}" data-ch="${c.id}">${locked?UI_IC.lock:"#"} ${c.label}${n?`<span class="cbadge">${n>9?"9+":n}</span>`:""}</button>`}).join("")}
-  </aside>
+  const locked=c=>c.gate&&levelFor(myRep()).id<c.gate;
+  return `<div class="labs-wrap roomopen">
   <section class="room">
-    <div class="roomh"><button class="backb" id="backb" aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span class="roomlab mono">${esc(labMark(LAB.name))}</span> #${esc(CH.label)} <span class="desc">${esc(CH.desc)}</span></div>
+    <div class="lr-head">
+      <button class="lr-back" id="labback" aria-label="All labs"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="lr-title"><span class="lg">//</span> ${esc(LAB.name)}</div>
+      ${LAB.id==="culture"?`<button class="lr-tool" id="openstudio">${UI_IC.music}<span>Studio</span></button>`:""}
+    </div>
+    <div class="lr-tabs" role="tablist">${LAB.channels.map(c=>{const n=UNREADS[c.id]||0;
+      return `<button class="lr-tab ${CH.id===c.id?"on":""}" role="tab" aria-selected="${CH.id===c.id}" data-ch="${c.id}">${locked(c)?UI_IC.lock:""}${esc(chName(c))}${n&&CH.id!==c.id?`<i class="lr-dot" aria-label="${n} new"></i>`:""}</button>`}).join("")}</div>
+    ${CH.desc?`<div class="lr-desc">${esc(CH.desc)}</div>`:""}
     ${CH.archive?archiveHTML():CH.library?tracksHTML():`
     ${CH.beatlab?`<div id="studiomount"></div>`:""}
-    ${(CH.gate&&levelFor(myRep()).id<CH.gate)?`<div class="empty">${UI_IC.lock} #${esc(CH.label)} unlocks at ${LEVELS.find(l=>l.id===CH.gate).name}</div>`
+    ${(CH.gate&&levelFor(myRep()).id<CH.gate)?`<div class="empty">${UI_IC.lock} ${esc(chName(CH))} unlocks at ${LEVELS.find(l=>l.id===CH.gate).name}</div>`
       :`<div class="feed" id="feed"><div class="empty">Loading…</div></div>
     ${QUEUE.length?`<div class="attach-bar">
       <div class="qgrid">${QUEUE.map((q,i)=>`
@@ -183,8 +174,8 @@ function labsHTML(){
     </button>`).join("")}</div>`:""}
     <div class="composer">
       <input type="file" id="filein" accept="image/*,video/*" multiple hidden>
-      <button class="attach" id="attachb" title="Attach image or video">+</button>
-      <input class="in" id="draft" placeholder="${EDITID?"Edit your message…":"Message #"+esc(CH.label)}">
+      <button class="attach" id="attachb" title="Attach image or video" aria-label="Attach image or video">${UI_IC.plus}</button>
+      <input class="in" id="draft" placeholder="${EDITID?"Edit your message…":"Message "+esc(chName(CH))}">
       ${EDITID?`<button class="send ghostsend" id="canceledit" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:""}
       <button class="send" id="sendb" aria-label="Send">${EDITID?"✓":UI_IC.arrow}</button>
     </div>`}
@@ -222,12 +213,12 @@ function msgRowHTML(p,prev){
   return `<div class="msg ${grouped?"msg-g":""} ${p.pending?"pending":""}">
     <div class="msg-a">${grouped?"":avHTML(p.author)}</div>
     <div class="msg-c">
-      ${grouped?"":`<div class="msg-h"><span class="msg-by" data-u="${esc(p.author.username)}">${esc(p.author.displayName)}</span><span class="msg-t mono">${timeAgo(p.createdAt)}</span></div>`}
+      ${grouped?"":`<div class="msg-h"><span class="msg-by" data-u="${esc(p.author.username)}">${esc(p.author.displayName)}</span><span class="msg-t">${timeAgo(p.createdAt).toLowerCase()}</span></div>`}
       ${p.body?`<div class="msg-b">${rich(p.body)}</div>`:""}
-      ${imgs.length?`<div class="msg-m">${imgs.slice(0,4).map(im=>`<img class="msg-i" src="${esc(im.thumb||im.url)}" data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async">`).join("")}</div>`:""}
+      ${imgs.length?`<div class="msg-m n${Math.min(imgs.length,4)}">${imgs.slice(0,4).map(im=>`<img class="msg-i" src="${esc(im.thumb||im.url)}" data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async">`).join("")}</div>`:""}
       ${p.videoUrl?`<div class="msg-m"><video class="msg-v" src="${esc(p.videoUrl)}" preload="none" playsinline muted controls></video></div>`:""}
       ${musChipHTML(p)}
-      <button class="msg-open" data-openpost="${p.id}">OPEN ↗</button>
+      <button class="msg-open" data-openpost="${p.id}" aria-label="Open post"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M8 16L16 8M9.5 8H16v6.5"/></svg></button>
     </div>
   </div>`;
 }

@@ -147,7 +147,7 @@ function wire(){
     const l=LABS.find(x=>x.id===b.dataset.lab);
     if(!l)return;
     pushView("lab",l.id);
-    LAB=l; CH=l.channels[0]; ROOMOPEN=false;
+    LAB=l; CH=l.channels[0]; ROOMOPEN=true;
     render(); loadFeed(true);
   });
   const lbk=$("#labback");if(lbk)lbk.onclick=()=>{

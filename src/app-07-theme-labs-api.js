@@ -90,45 +90,50 @@ const UI_IC={
   navPost:`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" style="stroke-width:2.5"><path d="M12 5v14M5 12h14"/></svg>`,
   navMarket:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><rect x="4.5" y="9" width="15" height="11"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/></svg>`,
   navProfile:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 6 0 0 1 14 0"/></svg>`};
-/* // marks a lab. A name that already carries it (//.JPEG PHARMACY) keeps its own. */
+/* The labs are genres. Display names only — every lab and channel id below
+   is what posts are stored under, so ids never change when names do.
+   v2 · 2026-09-28: LABS HQ, //.JPEG PHARMACY, AKATSUKI, FASHION LAB, CASINO,
+   MUSIC LAB, TNΛ became General, Visual, Anime, Fashion, News, Music, Business. */
 const labMark = n => /^\/\//.test(String(n||"")) ? String(n) : "// " + n;
+/* "graphic-design" → "Graphic design" */
+const chName = c => { const t=String((c&&c.label)||"").replace(/-/g," "); return t.charAt(0).toUpperCase()+t.slice(1); };
 const LAB_ID = {
-  hq:       {glyph:"//", for:"The main floor. Everything starts here."},
-  pharmacy: {glyph:"//", for:"Image culture. The archive everything else pulls from."},
-  akatsuki: {glyph:"//", for:"Anime discourse that feeds the design language."},
-  fashion:  {glyph:"//", for:"Garments, styling, the material end."},
-  casino:   {glyph:"//", for:"Culture, news, and what's dropping next."},
-  culture:  {glyph:"//", for:"The music lab. Make it, get ears, finish it."},
-  tna:      {glyph:"//", for:"Business, money, and the people building."},
+  hq:       {for:"Everything starts here.",          ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M10 4L6 20M18 4l-4 16"/></svg>`},
+  pharmacy: {for:"Design, photo and film.",          ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14"/><path d="M3.5 15.5l5-5 4 4 2.5-2.5 5.5 5.5"/><circle cx="15.5" cy="9.5" r="1.25"/></svg>`},
+  culture:  {for:"Beats, feedback, finished tracks.", ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M9 17.5V5.5l10-2v12"/><circle cx="6.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="15.5" r="2.5"/></svg>`},
+  fashion:  {for:"Garments, styling and drops.",     ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 7.5a2 2 0 1 0-2-2"/><path d="M12 7.5V9L3 16.5h18L12 9"/></svg>`},
+  akatsuki: {for:"Anime, manga and ideas.",          ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 3l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg>`},
+  casino:   {for:"News, features and promos.",       ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><rect x="4" y="4" width="16" height="16"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/></svg>`},
+  tna:      {for:"Opportunities, code and money.",   ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><rect x="3.5" y="7.5" width="17" height="12"/><path d="M9 7.5V4.5h6v3M3.5 12.5h17"/></svg>`},
 };
 const LABS = [
-  {id:"hq",name:"LABS HQ",channels:[
+  {id:"hq",name:"General",channels:[
     {id:"general",label:"general",desc:"The main floor."},
     {id:"collab-posts",label:"collab-posts",desc:"Looking for a collaborator? Post here."}]},
-  {id:"pharmacy",name:"//.JPEG PHARMACY",channels:[
+  {id:"pharmacy",name:"Visual",channels:[
     {id:"creators",label:"creators",desc:"Who's here and what they make. Start here."},
     {id:"graphic-design",label:"graphic-design",desc:"Graphic work, feedback, process."},
     {id:"photography",label:"photography",desc:"Shots and edits."},
     {id:"cinematography",label:"cinematography",desc:"Moving image. Frames, grades, gear."},
     {id:"video-editing",label:"video-editing",desc:"Cuts, transitions, the work after the shoot."},
     {id:"archive",label:"archive",desc:"Every image ever posted. Searchable. Collectable.",archive:true}]},
-  {id:"akatsuki",name:"AKATSUKI",channels:[
-    {id:"anime-chat",label:"anime-chat",desc:"Anime discourse that feeds the design language."},
-    {id:"manga",label:"manga",desc:"Panels, arcs, and the art of the page."},
-    {id:"anime-news",label:"anime-news",desc:"Seasons, releases, and what's worth your time."},
-    {id:"anime-ideas",label:"ideas",desc:"Half-formed concepts. This is where AKATSUKI started."}]},
-  {id:"fashion",name:"FASHION LAB",channels:[
-    {id:"clothing-design",label:"clothing-design",desc:"Design work and concepts."},
-    {id:"clothing-drops",label:"clothing-drops",desc:"What's releasing."}]},
-  {id:"casino",name:"CASINO",channels:[
-    {id:"magazine",label:"magazine",desc:"Longer reads, features, and coverage of the scene."},
-    {id:"news",label:"news",desc:"What's happening in and around the network."},
-    {id:"promos",label:"promos",desc:"Drops, releases, and rollouts — promote what's coming."}]},
-  {id:"culture",name:"MUSIC LAB",channels:[
+  {id:"culture",name:"Music",channels:[
     {id:"beats",label:"beats",desc:"The Beat Lab. Loops become collabs.",beatlab:true},
     {id:"feedback",label:"feedback",desc:"Post your beat, get ears. Help someone finish."},
     {id:"tracks",label:"tracks",desc:"Finished songs from the network. Press play.",library:true}]},
-  {id:"tna",name:"TNΛ",channels:[
+  {id:"fashion",name:"Fashion",channels:[
+    {id:"clothing-design",label:"clothing-design",desc:"Design work and concepts."},
+    {id:"clothing-drops",label:"clothing-drops",desc:"What's releasing."}]},
+  {id:"akatsuki",name:"Anime",channels:[
+    {id:"anime-chat",label:"anime-chat",desc:"Anime discourse that feeds the design language."},
+    {id:"manga",label:"manga",desc:"Panels, arcs, and the art of the page."},
+    {id:"anime-news",label:"anime-news",desc:"Seasons, releases, and what's worth your time."},
+    {id:"anime-ideas",label:"ideas",desc:"Half-formed concepts welcome."}]},
+  {id:"casino",name:"News",channels:[
+    {id:"magazine",label:"magazine",desc:"Longer reads, features, and coverage of the scene."},
+    {id:"news",label:"news",desc:"What's happening in and around the network."},
+    {id:"promos",label:"promos",desc:"Drops, releases, and rollouts — promote what's coming."}]},
+  {id:"tna",name:"Business",channels:[
     {id:"opportunities",label:"opportunities",desc:"Gigs, briefs, and open calls inside the network."},
     {id:"coding",label:"coding",desc:"Sites, apps, and the interfaces the culture runs on."},
     {id:"finance",label:"finance",desc:"Money, rates, and not getting taken advantage of."}]},

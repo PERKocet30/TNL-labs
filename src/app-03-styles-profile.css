@@ -77,7 +77,7 @@ textarea.in{resize:vertical;line-height:1.5}
 .gatetop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
 .gatewhy{background:color-mix(in srgb, var(--green) 10%, transparent);border:1px solid color-mix(in srgb, var(--green) 30%, transparent);border-radius:0;padding:10px 12px;font-size:12.5px;line-height:1.55;color:var(--tx2);margin:14px 0 -4px}
 .wall{padding:44px 22px 60px;max-width:520px;margin:0 auto;text-align:center}
-.wall-ic{font-size:36px;margin-bottom:14px}
+.wall-mark{font-size:40px;font-weight:700;letter-spacing:-.06em;color:var(--green);line-height:1;margin-bottom:10px}
 .wall-h{font-size:clamp(22px,5vw,30px);font-weight:900;margin:10px 0 12px;line-height:1.05}
 .wall-p{font-size:13.5px;line-height:1.7;color:var(--dim);margin-bottom:20px}
 .wall-labs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:22px}

@@ -10,7 +10,7 @@ const EMPTY={
   "anime-chat":["Start the discourse.","Anime is half the design language here. Say what's moving you."],
   "manga":["Post a panel.","Art, paneling, a page that made you stop. Bring the reference."],
   "anime-news":["What's dropping?","Seasons, announcements, releases worth the network's time."],
-  "anime-ideas":["Half-formed is fine.","AKATSUKI started as idea-sharing. Post the thought before it's finished."],
+  "anime-ideas":["Half-formed is fine.","Post the thought before it's finished."],
   "archive":["Post a reference.","Scans, screenshots, the images everything else gets built from. No caption needed."],
   "finance":["Talk money.","Rates, invoices, what you should be charging. Nobody here got taught this."],
   "magazine":["Write something.","A feature, a review, a rant about the scene. Long is fine."],

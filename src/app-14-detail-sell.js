@@ -309,7 +309,7 @@ function studioHTML(){
     </div>`;
   };
   return `<div class="scroll">
-  <div class="page-head"><div class="mono dim">MUSIC LAB · TOOLS</div><h2>Studio</h2>
+  <div class="page-head"><h2>Studio</h2>
   <p class="page-sub">${guest()
     ?"A full beat maker in the app — drums, a tuned 808, synths with a scale-locked piano roll. Have a play. Joining lets you save it, export a WAV, or publish it to #beats for someone to write to."
     :"Make it here — publish straight to #beats."}</p>

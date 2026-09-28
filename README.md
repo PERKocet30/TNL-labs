@@ -14,7 +14,7 @@ One Node server, one SQLite database, no framework and no external services requ
 |---|---|
 | **The door** | "Enter the lab" landing with the vial loader. The first visit plays the intro film; after that it's one tap in. The tap also unlocks audio on iOS. |
 | **Showroom** | The public front page: real work from across every lab, newest first. Anyone can browse; posting needs an account. |
-| **Labs** | Members-only rooms, each with its own channels — `// LABS HQ`, `//.JPEG PHARMACY` (with the searchable image Archive), `// AKATSUKI`, `// FASHION LAB`, `// CASINO`, `// MUSIC LAB` (Beat Lab, feedback, tracks) and `// TNΛ`. |
+| **Labs** | Members-only, one per genre: `// General`, `// Visual` (design, photo, film and the searchable Archive), `// Music` (Beat Lab, feedback, tracks and the Studio), `// Fashion`, `// Anime`, `// News` and `// Business`. Inside a lab, channels are pill tabs above the conversation. Names are display-only; lab and channel IDs never change, so renaming never moves a post. |
 | **Posts** | Instagram-style cards: carousels of up to 10 images, video, a sound from the library, likes, comments, shares, send-to-DM, saves and collab invites. |
 | **Profiles** | Instagram-style pages: posts / followers / collabs, level badge, roles, bio, link, and tabs for work, shop, collabs and standing. Every profile has a public URL. |
 | **Collabs** | Two-sided: the author invites, the other person accepts, and only then does it count — for both of them. |
