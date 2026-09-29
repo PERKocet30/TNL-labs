@@ -1,0 +1,57 @@
+/* ── COMPUTER LAYOUT v1.0 · 2026-09-29 ─────────────────────────────────
+   Phones keep the app as it is. From 1024px the top bar and bottom nav
+   become one left sidebar (render() builds .side only when wide), content
+   sits at a reading width beside it, and a mouse gets hover states. Same
+   paper, same ink, same one green. Loads last, so it wins ties. */
+@media(min-width:1024px){
+  :root{--side:244px}
+  .app{padding-left:var(--side)}
+  .side{position:fixed;left:0;top:0;bottom:0;width:var(--side);z-index:50;display:flex;flex-direction:column;
+    background:var(--card);border-right:1px solid var(--line);padding-bottom:14px}
+  .side .top{flex-direction:column;align-items:stretch;gap:16px;border-bottom:0;padding:24px 18px 14px}
+  .side .brand{font-size:16px}
+  .side .topact{flex-wrap:wrap;gap:8px}
+  .side .ib{width:38px;height:38px}
+  .side .nav{flex:1;flex-direction:column;gap:2px;border-top:0;background:none;padding:6px 12px}
+  .side .navb{flex:none;flex-direction:row;justify-content:flex-start;gap:14px;padding:11px 14px;border-radius:999px;
+    color:var(--tx2);font-size:15px;letter-spacing:0}
+  .side .navb::after{content:attr(aria-label)}
+  .side .navb .ic{width:26px;min-height:0}
+  .side .navb.on{color:var(--tx);font-weight:700;background:var(--el)}
+  /* Post: the one green action, full width at the foot of the list */
+  .side .navb[data-tab="post"]{order:9;margin-top:14px;justify-content:center;background:var(--accent-fill);color:var(--on-accent);font-weight:700}
+  .side .navb[data-tab="post"] .ic{background:none;padding:0;width:auto}
+  .side .navb[data-tab="post"].on{background:var(--accent-fill)}
+
+  /* reading widths beside the sidebar */
+  #showroom .sr-builders,#showroom .sr-grid,#showroom .whatis{max-width:1120px;margin-left:auto;margin-right:auto}
+  .shop-head,.mkt-grid{padding-left:max(24px,calc((100% - 1200px) / 2));padding-right:max(24px,calc((100% - 1200px) / 2))}
+  .sheet.astab .sheetc{max-width:935px;margin:0 auto;padding-left:28px;padding-right:28px}
+  .announce,.verifybar{justify-content:center}
+
+  /* an opened post is a column beside the sidebar, not a phone screen stretched */
+  .po-ov{left:var(--side)}
+  .po-top,.po-body>*{width:100%;max-width:680px;margin-left:auto;margin-right:auto}
+  .po-top{border-bottom:0}
+  .po-body{border-top:1px solid var(--line)}
+
+  /* no bottom nav: bars and toasts come down to the edge, clear of the sidebar */
+  .nowbar{left:var(--side);bottom:0}
+  body.now-dock .nowbar{left:var(--side)}
+  .toast{bottom:28px;left:calc(50% + var(--side) / 2)}
+  body.has-now .toast{bottom:84px}
+  .installc{left:var(--side)}
+  .pick{padding-left:var(--side)}
+}
+/* A mouse can hover; a thumb can't. Only pointer devices get these. */
+@media(hover:hover) and (pointer:fine){
+  .navb:hover{color:var(--tx)}
+  .side .navb:not([data-tab="post"]):hover{background:var(--el)}
+  .side .navb[data-tab="post"]:hover{filter:brightness(.96)}
+  .lx:hover,.trk:hover{background:var(--el)}
+  .lr-tab:not(.on):hover,.chip:not(.on):hover,.btn.ghost:hover,.lr-tool:hover{border-color:var(--tx);color:var(--tx)}
+  .btn:not(.ghost):not(:disabled):hover,.trk-up:hover,.now-pp:hover,.trk-play:hover,.circle:hover{opacity:.88}
+  .now-sk:not(:disabled):hover,.now-x:hover,.trk-more:hover,.po-x:hover,.pcmp-x:hover{color:var(--tx);opacity:1}
+  .sr-card img,.lx-media img{transition:opacity .15s}
+  .sr-card:hover img{opacity:.92}
+}
