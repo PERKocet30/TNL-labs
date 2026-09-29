@@ -39,10 +39,8 @@ function wireFeed(){
   document.querySelectorAll("[data-share]").forEach(b=>b.onclick=()=>{
     if(guest())return needAccount("Join to carry work across the labs.");
     const id=b.dataset.share;
-    const post=POSTS.find(x=>String(x.id)===id)
-      ||SRPOSTS.find(x=>String(x.id)===id)
-      ||(SEARCHRES&&SEARCHRES.posts.find(x=>String(x.id)===id))
-      ||(PROFILE&&[...PROFILE.posts,...PROFILE.collabs].find(x=>String(x.id)===id));
+    // findAnyPost also covers an opened post, which this list used to miss
+    const post=findAnyPost(id);
     /* A share card in a lab carries the ORIGINAL's public page — the copy
        has isWork=0 by design, but the post it points at is public. */
     const pubId=post&&post.sharedFrom?post.sharedFrom:id;

@@ -49,11 +49,18 @@ function initHistory(){
   });
 }
 
+let RVKEY="";
 function render(){
   const app=$("#app");
   // Guests see the app. Only the explicit door shows the sign-up form.
   if(GATE){app.innerHTML=gateHTML();wireGate();return}
   GFLOW=null; // the gate closed from somewhere else — next open starts fresh
+  /* A repaint rebuilds every scroller, which used to throw you to the top of
+     the feed whenever a menu opened (share, invite, …). Same screen → same
+     place: scroll positions are put back by id unless the view changed. */
+  const vkey=[TAB,LAB&&LAB.id,CH&&CH.id,ROOMOPEN,PROFILE&&PROFILE.user&&PROFILE.user.username,MKTVIEW].join("|");
+  const kept=vkey===RVKEY?[...app.querySelectorAll("[id]")].filter(e=>e.scrollTop>0).map(e=>[e.id,e.scrollTop]):[];
+  RVKEY=vkey;
   app.innerHTML=`
     ${topHTML()}
     ${SITE.announcement?`<div class="announce">${rich(SITE.announcement)}</div>`:""}
@@ -77,6 +84,7 @@ function render(){
     ${installCardHTML()}
     ${TOASTT?`<div class="toast">${esc(TOASTT)}</div>`:""}
     ${ENTER?enterHTML():""}`;
+  for(const [id,top] of kept){const e=document.getElementById(id);if(e)e.scrollTop=top}
   wire();
   wireEnter();
   if(TAB==="labs")loadFeed();
