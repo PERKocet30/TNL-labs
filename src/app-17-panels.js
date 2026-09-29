@@ -57,6 +57,9 @@ let PENDFILE=null, PENDPREP=null, UPPROG=null, UPLOADXHR=null;
 /* The Studio is 80KB+ and most visits never open it, so it no longer blocks
    the first paint: it loads in the background after boot, or on first use. */
 let STUDIOLOAD=null;
+/* Admin → Settings → Studio. Off (the default) hides the beat maker: its room,
+   its button and Remix. Beats already posted still play. */
+const studioOn=()=>SITE.studioOpen===true;
 function ensureStudio(){
   if(window.TNLStudio)return Promise.resolve();
   if(!STUDIOLOAD)STUDIOLOAD=new Promise((ok,no)=>{

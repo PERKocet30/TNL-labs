@@ -12,6 +12,8 @@ const DI={
   trash:di('<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',16),
   play:di('<path d="M8 5v14l11-7z"/>',16,"currentColor"),
   pause:di('<path d="M8 5v14M16 5v14"/>',16),
+  prev:di('<path d="M6 5v14"/><path d="M19 5v14l-10-7z" fill="currentColor"/>',18),
+  next:di('<path d="M18 5v14"/><path d="M5 5v14l10-7z" fill="currentColor"/>',18),
   stop:di('<rect x="6" y="6" width="12" height="12"/>',16,"currentColor"),
   soundOff:di('<path d="M4 9h4l5-4v14l-5-4H4zM16 9l5 6M21 9l-5 6"/>',16),
   soundOn:di('<path d="M4 9h4l5-4v14l-5-4H4zM16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/>',16),

@@ -140,7 +140,7 @@ function labsHTML(){
     <div class="lr-head">
       <button class="lr-back" id="labback" aria-label="All labs"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="lr-title"><span class="lg">//</span> ${esc(LAB.name)}</div>
-      ${LAB.id==="culture"?`<button class="lr-tool" id="openstudio">${UI_IC.music}<span>Studio</span></button>`:""}
+      ${LAB.id==="culture"&&studioOn()?`<button class="lr-tool" id="openstudio">${UI_IC.music}<span>Studio</span></button>`:""}
       ${CH.archive||CH.library?"":`<button class="lr-bell" id="lrbell" aria-label="Mute this channel">${UI_IC.bell}</button>`}
     </div>
     <div class="lr-tabs" role="tablist">${LAB.channels.map(c=>{const n=UNREADS[c.id]||0;
@@ -246,7 +246,7 @@ function postHTML(p){const mine=p.author.username===myName();
       ${p.mediaW?`style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}></video>
     <button class="vmute" data-vmute aria-label="Sound">${DI.soundOff}</button>
   </div>`:""}
-  ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}' aria-label="Play">${DI.play}</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM${p.beat.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:""}</div></div><button class="act" data-remix="${p.id}" style="margin-left:auto">${IC_REMIX_SM} Remix</button></div>`:""}
+  ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}' aria-label="Play">${DI.play}</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM${p.beat.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:""}</div></div>${studioOn()?`<button class="act" data-remix="${p.id}" style="margin-left:auto">${IC_REMIX_SM} Remix</button>`:""}</div>`:""}
   ${p.collaborators.length?`<div class="collab-row">${p.collaborators.map(c=>`<span class="ctag ${c.status==="accepted"?"acc":""}">${c.status==="accepted"?DI.check:"…"} ${esc(c.display_name||c.username)}</span>`).join("")}</div>`:""}
   <div class="post-acts">
     <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>

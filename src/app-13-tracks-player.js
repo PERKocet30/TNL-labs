@@ -69,66 +69,7 @@ function tracksHTML(){
   </div>`;
 }
 
-/* One audio element for the whole app, parked outside #app so a repaint
-   can't interrupt playback. Built on first use — no element for people who
-   never open the library, and nothing constructed at parse time. */
-let AUDIO=null, PLAYERBAR=null;
-function audioEl(){
-  if(AUDIO)return AUDIO;
-  AUDIO=new Audio();
-  AUDIO.preload="none";
-  const sync=()=>{paintPlayer();if(TAB==="labs"&&CH.library)render()};
-  AUDIO.addEventListener("play",sync);
-  AUDIO.addEventListener("pause",sync);
-  AUDIO.addEventListener("ended",sync);
-  return AUDIO;
-}
-function paintPlayer(){
-  if(!PLAYERBAR){
-    PLAYERBAR=document.createElement("div");
-    PLAYERBAR.className="nowbar";
-    document.body.appendChild(PLAYERBAR);
-    PLAYERBAR.onclick=e=>{
-      if(e.target.closest("[data-nowtoggle]")){const a=audioEl();a.paused?a.play():a.pause();return}
-      if(e.target.closest("[data-nowclose]")){if(AUDIO){AUDIO.pause();AUDIO.removeAttribute("src")}NOWPLAYING=null;paintPlayer();
-        if(TAB==="labs"&&CH.library)render();}
-    };
-  }
-  /* The file-banner look belongs to MUSIC LAB, where the file is the subject.
-     Everywhere else the header credit is the control — Instagram has no
-     global player at all. */
-  const inLab=TAB==="labs"&&CH&&CH.library;
-  if(!NOWPLAYING||!inLab){PLAYERBAR.style.display="none";return}
-  PLAYERBAR.style.display="flex";
-  PLAYERBAR.innerHTML=`<button class="now-pp" data-nowtoggle aria-label="Play or pause">${(!AUDIO||AUDIO.paused)?DI.play:DI.pause}</button>
-    <div class="now-meta"><div class="now-t">${esc(NOWPLAYING.title)}</div>
-    <div class="mono dim">@${esc(NOWPLAYING.by.username)}</div></div>
-    <button class="now-x" data-nowclose aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
-}
-function playTrack(t,silent){
-  const a=audioEl();
-  /* Same track already loaded: this is a toggle, not a new play. The promise
-     used to be dropped on the floor here, so an iOS refusal looked identical
-     to a dead button. */
-  if(NOWPLAYING&&NOWPLAYING.id===t.id){
-    if(a.paused){const pr=a.play();if(pr&&pr.catch)pr.catch(err=>{if(!silent)toast(err&&err.name==="NotAllowedError"?"Tap once more to allow sound":"Couldn't play that one")})}
-    else a.pause();
-    return}
-  NOWPLAYING=t; a.src=t.url;
-  a.play().catch(err=>{if(silent)return;
-    /* Name the refusal. iOS rejects play() for exactly three reasons and
-       they need three different fixes: NotAllowedError = gesture credit
-       (tap again), NotSupportedError = the source itself failed (a server
-       or URL problem), AbortError = a new load interrupted this one. A
-       blank "couldn't play" hides which one we're debugging. */
-    const n=err&&err.name;
-    toast(n==="NotAllowedError"?"Tap once more to allow sound"
-      :"Couldn't play that one — "+(n||"unknown"));});
-  /* A play means someone chose to listen. Scrolling past isn't choosing, so
-     autoplay passes silent and the counter stays honest. */
-  if(!silent)api.trackPlay(t.id).catch(()=>{});
-  paintPlayer();
-}
+/* The player (audio element, now-playing bar, queue) → app-13-player.js */
 
 function vidPickHTML(){
   return `<div class="trk-vids">${
@@ -200,7 +141,7 @@ function wireTracks(){
   document.querySelectorAll("[data-trkplay]").forEach(el=>el.onclick=ev=>{
     ev.stopPropagation();
     const t=(TRACKS||[]).find(x=>String(x.id)===el.dataset.trkplay);
-    if(t){MUSAUTOID=null;playTrack(t)}   // lab playback belongs to no post
+    if(t){MUSAUTOID=null;PLAYQ=(TRACKS||[]).slice();playTrack(t)}   // lab playback belongs to no post; the list is the queue
   });
   document.querySelectorAll("[data-trkedit]").forEach(el=>el.onclick=ev=>{
     ev.stopPropagation();

@@ -286,7 +286,7 @@ function wireSheet(){
    "the first few tries": a poll landing while the picker was open. Paints
    the two badges surgically instead. */
 // Warm the Studio once the page is up, so beat play buttons respond instantly.
-window.addEventListener("load",()=>setTimeout(()=>ensureStudio().catch(()=>{}),1500));
+window.addEventListener("load",()=>setTimeout(()=>{if(studioOn())ensureStudio().catch(()=>{})},1500));
 
 async function refreshBadges(){
   if(!ME)return;
@@ -318,6 +318,7 @@ function paintVerifyBar(){
 }
 (async()=>{
   try{const d=await api.levels();LEVELS=d.levels;if(d.accents)ACCENTS=d.accents;if(d.site)SITE=d.site}catch(e){/* offline default */}
+  if(!studioOn()){const m=LABS.find(l=>l.id==="culture");if(m)m.channels=m.channels.filter(c=>!c.beatlab)}
   if(TOKEN)await refreshMe();          // invalid token just leaves ME null -> guest
   if(ME&&ME.accentHex)applyAccent(ME.accentHex);
   if(ME){
