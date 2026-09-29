@@ -133,7 +133,7 @@ function paintLayer(){
   l.innerHTML=(DMOPENPANEL?dmScreenHTML():"")+(CHATSHEET?chatSheetHTML():"")+(CMENU?cmenuHTML():"")
     +(CHATZOOM?`<div class="c-zoom" id="czoom"><img src="${esc(CHATZOOM)}" alt=""></div>`:"");
   document.body.classList.toggle("chat-on",!!DMOPENPANEL);
-  paintPlayer();   // opening a chat steps out of the labs: this pauses lab music (musicScope)
+  paintPlayer();   // a chat covers the page: lab music and post sound pause (musicScope)
   wireLayer();
   chatRestore(keep);
   syncChatHistory();

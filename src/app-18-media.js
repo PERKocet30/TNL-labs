@@ -1,4 +1,4 @@
-/* MEDIA — photos, video, post sound. v1.1 2026-09-29: post sound plays only in the labs. */
+/* MEDIA — photos, video, post sound. v1.1 2026-09-29: post sound plays only while its post is on screen. */
 function wireInstall(){
   const x=$("[data-installx]");if(x)x.onclick=dismissInstall;
   const go=$("[data-installgo]");if(go)go.onclick=doInstall;
@@ -81,9 +81,6 @@ function wireVideos(){
    counts a play for the track's owner, exactly like the library rows. */
 function musChipHTML(p){
   if(!p.audioTrack)return "";
-  /* Outside the labs the sound is a credit, not a button — nothing plays and
-     nothing autoplays (wireMusAuto only watches [data-mustrack]). */
-  if(TAB!=="labs"||PROFILE)return `<span class="muschip muschip-off">${DI.music} <span class="muschip-t">${esc(p.audioTrack.title)}</span><span class="mono dim">· @${esc(p.audioTrack.by.username)}</span></span>`;
   const on=NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id&&AUDIO&&!AUDIO.paused;
   return `<button class="muschip" data-mustrack="${p.id}">${on?DI.pause:DI.music} <span class="muschip-t">${esc(p.audioTrack.title)}</span><span class="mono dim">· @${esc(p.audioTrack.by.username)}</span></button>`;
 }
@@ -202,8 +199,8 @@ function wireMusAuto(){
   if(!MUSOK)return;
   const chips=[...document.querySelectorAll("[data-mustrack]")];
   /* Nothing carries over: if the post that owns the sound is no longer on
-     screen the sound stops with it. Leaving the labs is handled for all
-     playback by musicScope() (app-13-player.js). */
+     screen the sound stops with it. Chats and drawers laid over the page are
+     handled by musicScope() (app-13-player.js). */
   if(MUSAUTOID!=null&&NOWPLAYING){
     const still=chips.some(c=>String(c.dataset.mustrack)===String(MUSAUTOID));
     if(!still){const a=audioEl();if(!a.paused)a.pause();MUSAUTOID=null;NOWPLAYING=null;paintPlayer();}   // and it doesn't resurface in the lab bar
