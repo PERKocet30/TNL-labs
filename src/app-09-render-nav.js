@@ -50,6 +50,13 @@ function initHistory(){
 }
 
 let RVKEY="";
+/* COMPUTER LAYOUT v1.0 — 2026-09-29. From 1024px wide the top bar and the
+   bottom nav move into one left sidebar (styles: app-05-styles-wide.css).
+   Phones get exactly the markup they always had. Crossing the line (a window
+   resized, a tablet rotated) repaints into the other layout. */
+const WIDEQ=typeof window!=="undefined"&&window.matchMedia?window.matchMedia("(min-width:1024px)"):null;
+const isWide=()=>!!(WIDEQ&&WIDEQ.matches);
+if(WIDEQ&&WIDEQ.addEventListener)WIDEQ.addEventListener("change",()=>{render();paintPlayer()});
 function render(){
   const app=$("#app");
   // Guests see the app. Only the explicit door shows the sign-up form.
@@ -61,8 +68,10 @@ function render(){
   const vkey=[TAB,LAB&&LAB.id,CH&&CH.id,ROOMOPEN,PROFILE&&PROFILE.user&&PROFILE.user.username,MKTVIEW].join("|");
   const kept=vkey===RVKEY?[...app.querySelectorAll("[id]")].filter(e=>e.scrollTop>0).map(e=>[e.id,e.scrollTop]):[];
   RVKEY=vkey;
+  const W=isWide();
+  document.body.classList.toggle("wide",W);
   app.innerHTML=`
-    ${topHTML()}
+    ${W?`<aside class="side">${topHTML()}${navHTML()}</aside>`:topHTML()}
     ${SITE.announcement?`<div class="announce">${rich(SITE.announcement)}</div>`:""}
     ${(ME&&!ME.emailVerified)?`<div class="verifybar">
       <span>Check <b>${esc(ME.email)}</b> to confirm your account. You can look around meanwhile.</span>
@@ -70,7 +79,7 @@ function render(){
       ${VERIFYURL?`<a class="vb-btn" href="${esc(VERIFYURL)}" target="_blank">Open link</a>`:""}
     </div>`:""}
     <div class="content">${PCOMPOSE?pcomposeHTML():MYPAGE()?sheetHTML():TAB==="showroom"?showroomHTML():TAB==="labs"?labsHTML():TAB==="market"?marketHTML():studioHTML()}</div>
-    ${navHTML()}
+    ${W?"":navHTML()}
     ${(PROFILE&&!MYPAGE())?sheetHTML():""}
     ${NOTIFOPEN?notifPanelHTML():""}
     ${SEARCHOPEN?searchPanelHTML():""}
