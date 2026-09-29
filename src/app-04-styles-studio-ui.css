@@ -193,7 +193,7 @@
 .mrow{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;color:var(--tx);padding:8px 15px;text-align:left;font-size:13px}
 .mrow:hover{background:var(--el)}
 /* picker */
-.pick{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center;z-index:70}
+.pick{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center;z-index:135}
 @media(min-width:620px){.pick{align-items:center}}
 .pickc{width:100%;max-width:440px;max-height:78vh;background:var(--card);border:1px solid var(--line);border-radius:0 0 0;padding:20px;overflow-y:auto}
 @media(min-width:620px){.pickc{border-radius:0}}
