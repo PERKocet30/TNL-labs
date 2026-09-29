@@ -18,6 +18,12 @@ for f in test/*.test.mjs; do
   else
     printf "  FAIL  %s\n" "$(basename $f)"
     echo "$out" | tail -6 | sed 's/^/        /'
+    # On GitHub: also as an annotation, so the reason shows on the PR itself
+    # (the raw log needs a signed-in viewer; annotations don't)
+    if [ -n "$GITHUB_ACTIONS" ]; then
+      msg=$( { echo "$out" | grep -E "✗|Error" | head -8; echo "$out" | tail -3; } | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+      echo "::error title=$(basename $f) failed::$msg"
+    fi
     fail=1
   fi
 done
