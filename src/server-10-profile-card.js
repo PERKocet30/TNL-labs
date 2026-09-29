@@ -1,22 +1,29 @@
 
 /* ================================================================
-   PROFILE CARD v1.0 — 2026-09-29. The link preview for a shared
-   profile shows the portfolio, not one post: a 1200×630 grid of the
-   member's latest work, with the TNL mark in the corner.
+   PROFILE CARD v2.0 — 2026-09-29. The link preview for a shared
+   profile, laid out like Instagram's: who they are on the left —
+   profile picture, name, @username, bio, how much they've made — and
+   their latest work as a grid on the right. The TNL mark and LABS ®
+   sit bottom-left. 1200×630, Paper, Archivo (assets/fonts, OFL).
 
    Built with the ffmpeg the server already ships (ffmpeg-static), on
    the first request, and kept on the volume under og/. The page asks
-   for card.jpg?v=<hash of the pieces in it>, so when someone posts new
-   work the URL changes and Instagram / iMessage fetch a fresh one
-   instead of their cached copy. Nothing here can take the page down:
-   no ffmpeg, too little work, or a failed build all fall back to the
-   single-image preview the page used before.
-================================================================ */
-const CARD = { w: 1200, h: 630, gap: 6, bg: "0xF7F1F1", version: 1, mark: 64, pad: 18 };
-const CARD_DIR = join(DATA_DIR, "og");
+   for card.jpg?v=<hash of everything drawn on it>, so a new piece, a new
+   picture or an edited bio gives a new URL and Instagram / iMessage
+   fetch a fresh card instead of their cached copy.
 
-/* Grid shapes by how much work there is: [columns, rows]. */
-const cardShape = (n) => (n >= 8 ? [4, 2] : n >= 6 ? [3, 2] : n >= 4 ? [2, 2] : n >= 3 ? [3, 1] : n >= 2 ? [2, 1] : null);
+   Nothing here can take the page down: if text can't be drawn the card
+   is rebuilt as the grid alone, and with no ffmpeg, no fonts or a failed
+   build the page falls back to the single-image preview it used before.
+================================================================ */
+const CARD = { w: 1200, h: 630, gap: 6, bg: "0xF7F1F1", el: "0xEFE7E7", ink: "0x000000", ink2: "0x5E5856",
+  version: 2, panel: 440, pad: 48, avatar: 128, mark: 40 };
+const CARD_DIR = join(DATA_DIR, "og");
+const CARD_FONT = { bold: join(__dirname, "..", "assets", "fonts", "Archivo-Bold.ttf"), reg: join(__dirname, "..", "assets", "fonts", "Archivo-Regular.ttf") };
+const CARD_MARK = join(__dirname, "..", "public", "icon-512.png");
+
+/* The grid to the right of the panel, by how much work there is: [columns, rows]. */
+const cardShape = (n) => (n >= 6 ? [3, 2] : n >= 4 ? [2, 2] : n >= 1 ? [Math.min(n, 3), 1] : null);
 
 /* A file on our own disk for an /uploads/ URL — or null. Never follows
    anything else: a URL from the database is still not a path. */
@@ -28,12 +35,30 @@ function cardFile(url) {
   return existsSync(f) ? f : null;
 }
 
-/* The pieces in someone's card: newest published work that has a picture
-   (a photo, the first of a carousel, a video's thumbnail or, failing
-   that, a frame of the video itself). */
-function profileCardTiles(userId) {
+/* Archivo has no emoji; drawn, they'd be empty boxes. */
+const cardClean = (s) => String(s ?? "").replace(/\p{Extended_Pictographic}|[\u200d\ufe0e\ufe0f\u20e3]|[\u{1F3FB}-\u{1F3FF}]/gu, "").replace(/[ \t]+/g, " ").trim();
+
+/* Word-wrap to a character budget; the last line gets an ellipsis if cut. */
+function cardWrap(text, per, maxLines) {
+  const lines = [];
+  for (const para of cardClean(text).split(/\n+/)) {
+    let line = "";
+    for (const word of para.split(" ").filter(Boolean)) {
+      const w = word.length > per ? word.slice(0, per - 1) + "…" : word;
+      if (!line) line = w;
+      else if ((line + " " + w).length <= per) line += " " + w;
+      else { lines.push(line); line = w; }
+    }
+    if (line) lines.push(line);
+  }
+  if (lines.length > maxLines) { const cut = lines.slice(0, maxLines); cut[maxLines - 1] = cut[maxLines - 1].replace(/\s*\S*$/, "") + "…"; return cut; }
+  return lines;
+}
+
+/* Everything drawn on someone's card, and a hash of it. */
+function profileCardTiles(u) {
   const rows = db.prepare(`SELECT id, image_url, images, thumb_url, video_url FROM posts
-    WHERE author_id = ? AND is_work = 1 AND shared_from IS NULL ORDER BY created_at DESC LIMIT 40`).all(userId);
+    WHERE author_id = ? AND is_work = 1 AND shared_from IS NULL ORDER BY created_at DESC LIMIT 40`).all(u.id);
   const tiles = [];
   for (const r of rows) {
     let first = null;
@@ -42,42 +67,90 @@ function profileCardTiles(userId) {
     const video = !still && cardFile(r.video_url);
     if (still) tiles.push({ id: r.id, file: still, video: false });
     else if (video) tiles.push({ id: r.id, file: video, video: true });
-    if (tiles.length >= 8) break;
+    if (tiles.length >= 6) break;
   }
   const shape = cardShape(tiles.length);
-  if (!shape) return null;
-  const use = tiles.slice(0, shape[0] * shape[1]);
-  const hash = createHash("sha1").update(JSON.stringify([CARD.version, use.map((t) => t.file)])).digest("hex").slice(0, 12);
-  return { tiles: use, shape, hash };
+  const use = shape ? tiles.slice(0, shape[0] * shape[1]) : [];
+  const pieces = db.prepare(`SELECT COUNT(*) n FROM posts WHERE author_id = ? AND is_work = 1 AND shared_from IS NULL`).get(u.id).n;
+  const collabs = db.prepare(`SELECT COUNT(*) n FROM collaborators WHERE user_id = ? AND status = 'accepted'`).get(u.id).n;
+  const name = cardClean(u.display_name) || u.username;
+  const text = {
+    name: name.length > 22 ? name.slice(0, 21) + "…" : name,
+    handle: "@" + u.username,
+    bio: cardWrap(u.bio || "", 27, 4),
+    stats: [`${pieces} ${pieces === 1 ? "piece" : "pieces"}`, collabs ? `${collabs} ${collabs === 1 ? "collab" : "collabs"}` : null].filter(Boolean).join(" · "),
+    initials: cardClean(u.display_name || u.username).slice(0, 2).toUpperCase() || "TN",
+  };
+  const avatar = cardFile(u.avatar_url);
+  const hash = createHash("sha1").update(JSON.stringify([CARD.version, use.map((t) => t.file), avatar, text])).digest("hex").slice(0, 12);
+  return { tiles: use, shape, avatar, text, hash };
 }
 
-/* The ffmpeg filter graph: every piece cropped to fill its cell, laid on
-   Paper with thin gutters, the mark bottom-left. Pure arithmetic, so it's
-   tested without running ffmpeg. */
-function profileCardArgs(card, out) {
-  const [cols, rows] = card.shape, { w, h, gap } = CARD;
-  const cw = Math.floor((w - gap * (cols - 1)) / cols), ch = Math.floor((h - gap * (rows - 1)) / rows);
+/* ffmpeg's filter language: text goes in files (no escaping games), and
+   paths only need : and ' escaped. */
+const fpath = (p) => p.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/'/g, "\\'");
+
+/* The ffmpeg command. Pure arithmetic plus the text files it names, so the
+   layout is tested without running ffmpeg. textDir null = no text at all. */
+function profileCardArgs(card, out, textDir) {
+  const { w, h, gap, panel, pad, avatar: A, mark: M } = CARD;
   const args = ["-nostdin", "-y", "-loglevel", "error"];
-  card.tiles.forEach((t) => args.push(...(t.video ? ["-ss", "1"] : []), "-i", t.file));
-  const markFile = join(__dirname, "..", "public", "icon-512.png");
-  const hasMark = existsSync(markFile);
-  if (hasMark) args.push("-i", markFile);
   const f = [`color=c=${CARD.bg}:s=${w}x${h}:d=1[c0]`];
-  card.tiles.forEach((_, i) => f.push(`[${i}:v]scale=${cw}:${ch}:force_original_aspect_ratio=increase,crop=${cw}:${ch},setsar=1,format=rgb24[t${i}]`));
-  let last = "c0";
-  card.tiles.forEach((_, i) => {
-    const x = (i % cols) * (cw + gap), y = Math.floor(i / cols) * (ch + gap);
-    f.push(`[${last}][t${i}]overlay=${x}:${y}[c${i + 1}]`);
-    last = `c${i + 1}`;
-  });
+  let last = "c0", k = 0, n = 0;
+  const lay = (label, x, y) => { f.push(`[${last}][${label}]overlay=${x}:${y}[s${++n}]`); last = `s${n}`; };
+
+  // the grid, right of the panel
+  const gx = textDir ? panel : 0, gw = w - gx;
+  if (card.shape) {
+    const [cols, rows] = card.shape;
+    const cw = Math.floor((gw - gap * (cols - 1)) / cols), ch = Math.floor((h - gap * (rows - 1)) / rows);
+    card.tiles.forEach((t, i) => {
+      args.push(...(t.video ? ["-ss", "1"] : []), "-i", t.file);
+      f.push(`[${k}:v]scale=${cw}:${ch}:force_original_aspect_ratio=increase,crop=${cw}:${ch},setsar=1,format=rgb24[t${i}]`);
+      lay(`t${i}`, gx + (i % cols) * (cw + gap), Math.floor(i / cols) * (ch + gap)); k++;
+    });
+  } else {
+    f.push(`color=c=${CARD.el}:s=${gw}x${h}:d=1[g]`); lay("g", gx, 0);
+  }
+  // the mark, bottom-left (and big in the middle of an empty grid)
+  const hasMark = existsSync(CARD_MARK);
   if (hasMark) {
-    f.push(`[${card.tiles.length}:v]scale=${CARD.mark}:${CARD.mark}[m]`);
-    f.push(`[${last}][m]overlay=${CARD.pad}:${h - CARD.mark - CARD.pad}[out]`);
-    last = "out";
+    args.push("-i", CARD_MARK); const mi = k++;
+    f.push(`[${mi}:v]split=2[m0][m1]`, `[m0]scale=${M}:${M}[m]`, `[m1]scale=160:160[mb]`);
+    lay("m", pad, h - pad - M);
+    if (!card.shape) lay("mb", gx + Math.round((gw - 160) / 2), Math.round((h - 160) / 2));
+    else f.push(`[mb]nullsink`);
+  }
+  if (textDir) {
+    // the profile picture: a circle, drawn at 2× and scaled down so the edge is smooth
+    const circle = `format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lte(hypot(X-${A - 0.5},Y-${A - 0.5}),${A}),255,0)',scale=${A}:${A}`;
+    if (card.avatar) { args.push("-i", card.avatar); f.push(`[${k++}:v]scale=${A * 2}:${A * 2}:force_original_aspect_ratio=increase,crop=${A * 2}:${A * 2},${circle}[av]`); }
+    else f.push(`color=c=${CARD.el}:s=${A * 2}x${A * 2}:d=1,${circle}[av]`);
+    lay("av", pad, 56);
+
+    const T = card.text, files = {};
+    const put = (key, s) => { const p = join(textDir, `${key}.txt`); writeFileSync(p, s); files[key] = fpath(p); };
+    const text = (key, s, font, size, color, x, y) => {
+      put(key, s);
+      f.push(`[${last}]drawtext=fontfile='${fpath(font)}':textfile='${files[key]}':expansion=none:fontsize=${size}:fontcolor=${color}:x=${x}:y=${y}[s${++n}]`);
+      last = `s${n}`;
+    };
+    if (!card.avatar) text("ini", T.initials, CARD_FONT.bold, 44, CARD.ink2, `${pad + A / 2}-text_w/2`, `${56 + A / 2}-text_h/2`);
+    const nameSize = T.name.length <= 14 ? 40 : T.name.length <= 18 ? 32 : 27;
+    let y = 56 + A + 28;
+    text("name", T.name, CARD_FONT.bold, nameSize, CARD.ink, pad, y); y += nameSize + 10;
+    text("handle", T.handle, CARD_FONT.reg, 22, CARD.ink2, pad, y); y += 22 + 22;
+    T.bio.forEach((line, i) => { text(`bio${i}`, line, CARD_FONT.reg, 23, CARD.ink, pad, y); y += 31; });
+    if (T.bio.length) y += 12;
+    text("stats", T.stats, CARD_FONT.bold, 20, CARD.ink2, pad, y);
+    if (hasMark) text("brand", "LABS ®", CARD_FONT.bold, 22, CARD.ink, pad + M + 12, `${h - pad - M / 2}-text_h/2`);
   }
   args.push("-filter_complex", f.join(";"), "-map", `[${last}]`, "-frames:v", "1", "-q:v", "3", out);
   return args;
 }
+
+const runFfmpeg = (args) => new Promise((resolve, reject) =>
+  execFile(FFMPEG, args, { timeout: 30000, maxBuffer: 1024 * 1024 }, (err, _o, stderr) => (err ? reject(new Error(String(stderr || err).slice(0, 300))) : resolve())));
 
 /* One build at a time, and never the same card twice at once — a link
    dropped in a 200-person chat is 200 crawlers asking together. */
@@ -87,41 +160,45 @@ function buildProfileCard(userId, card) {
   const out = join(CARD_DIR, `u${userId}-${card.hash}.jpg`);
   if (existsSync(out)) return Promise.resolve(out);
   if (CARD_BUILDS.has(out)) return CARD_BUILDS.get(out);
-  const job = (CARD_CHAIN = CARD_CHAIN.catch(() => {}).then(() => new Promise((resolve, reject) => {
-    if (!FFMPEG) return reject(new Error("no ffmpeg"));
-    mkdirSync(CARD_DIR, { recursive: true });
-    const tmp = out + ".tmp.jpg";
-    execFile(FFMPEG, profileCardArgs(card, tmp), { timeout: 30000, maxBuffer: 1024 * 1024 }, (err, _o, stderr) => {
-      if (err || !existsSync(tmp)) { rm(tmp, { force: true }, () => {}); return reject(new Error(String(stderr || err).slice(0, 300))); }
-      rename(tmp, out, (e) => {
-        if (e) return reject(e);
-        // older cards for this person are dead weight on the volume
-        for (const f of readdirSync(CARD_DIR)) if (f.startsWith(`u${userId}-`) && !f.startsWith(`u${userId}-${card.hash}`)) rm(join(CARD_DIR, f), { force: true }, () => {});
-        resolve(out);
-      });
-    });
-  })));
+  const job = (CARD_CHAIN = CARD_CHAIN.catch(() => {}).then(async () => {
+    if (!FFMPEG) throw new Error("no ffmpeg");
+    const dir = join(CARD_DIR, `tmp-${userId}-${card.hash}`);
+    mkdirSync(dir, { recursive: true });
+    const tmp = join(dir, "card.jpg");
+    try {
+      try { await runFfmpeg(profileCardArgs(card, tmp, dir)); }
+      catch (e) {
+        // text is the fragile part (fonts, filters): the grid alone still beats one image
+        logError("card", "text failed, grid only: " + e.message, "", "", "");
+        if (!card.shape) throw e;
+        await runFfmpeg(profileCardArgs(card, tmp, null));
+      }
+      if (!existsSync(tmp)) throw new Error("no output");
+      await new Promise((ok, no) => rename(tmp, out, (e) => (e ? no(e) : ok())));
+      // older cards for this person are dead weight on the volume
+      for (const f of readdirSync(CARD_DIR)) if (f.startsWith(`u${userId}-`) && f !== `u${userId}-${card.hash}.jpg`) rm(join(CARD_DIR, f), { force: true }, () => {});
+      return out;
+    } finally { rm(dir, { recursive: true, force: true }, () => {}); }
+  }));
   CARD_BUILDS.set(out, job);
   job.finally(() => CARD_BUILDS.delete(out)).catch(() => {});
   return job;
 }
 
 /* For the profile page's <head>: the card's URL and size, or null. */
-function profileCardMeta(userId, base, username) {
-  if (!FFMPEG) return null;
-  const card = profileCardTiles(userId);
-  if (!card) return null;
-  return { url: `${base}/u/${encodeURIComponent(username)}/card.jpg?v=${card.hash}`, w: CARD.w, h: CARD.h };
+function profileCardMeta(u, base) {
+  if (!FFMPEG || !existsSync(CARD_FONT.bold) || !existsSync(CARD_FONT.reg)) return null;
+  const card = profileCardTiles(u);
+  return { url: `${base}/u/${encodeURIComponent(u.username)}/card.jpg?v=${card.hash}`, w: CARD.w, h: CARD.h };
 }
 
 app.get("/u/:username/card.jpg", rateLimit({ max: 120, windowMs: 60000 }), async (req, res) => {
   const u = q.userByName.get(req.params.username);
   if (!u) return res.status(404).end();
-  const card = profileCardTiles(u.id);
   const fallback = () => res.redirect(302, u.avatar_url || "/icon-512.png");
-  if (!card || !FFMPEG) return fallback();
+  if (!FFMPEG) return fallback();
   try {
-    const file = await buildProfileCard(u.id, card);
+    const file = await buildProfileCard(u.id, profileCardTiles(u));
     res.set("Cache-Control", "public, max-age=86400, immutable");
     res.type("jpg").sendFile(file);
   } catch (e) {

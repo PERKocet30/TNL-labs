@@ -1,4 +1,5 @@
-// Profile card v1.0 (2026-09-29): a shared profile previews the portfolio.
+// Profile card v2.0 (2026-09-29): a shared profile previews like Instagram's —
+// picture, name, bio and the work.
 // Runs the real code from src/server-10-profile-card.js against a throwaway
 // database and upload folder. Builds a real card when an ffmpeg is around.
 import { fileURLToPath } from "node:url";
@@ -20,72 +21,90 @@ if (!FFMPEG) try { execFileSync("ffmpeg", ["-version"], { stdio: "ignore" }); FF
 
 const src = readFileSync(join(ROOT, "src/server-10-profile-card.js"), "utf8").replace(/app\.get\([\s\S]*$/, "");
 const UPLOAD_DIR = join(DATA, "uploads");
-const C = new Function("db", "join", "existsSync", "mkdirSync", "readdirSync", "rename", "rm", "createHash", "execFile", "DATA_DIR", "UPLOAD_DIR", "__dirname", "FFMPEG",
-  src + "\nreturn { cardShape, cardFile, profileCardTiles, profileCardArgs, buildProfileCard, profileCardMeta, CARD };")(
-  db, join, existsSync, mkdirSync, readdirSync, rename, rm, createHash, execFile, DATA_DIR, UPLOAD_DIR, join(ROOT, "src"), FFMPEG);
+const errors = [];
+const C = new Function("db", "join", "existsSync", "mkdirSync", "readdirSync", "writeFileSync", "rename", "rm", "createHash", "execFile", "logError", "DATA_DIR", "UPLOAD_DIR", "__dirname", "FFMPEG",
+  src + "\nreturn { cardShape, cardFile, cardWrap, cardClean, profileCardTiles, profileCardArgs, buildProfileCard, profileCardMeta, CARD };")(
+  db, join, existsSync, mkdirSync, readdirSync, writeFileSync, rename, rm, createHash, execFile, (...a) => errors.push(a), DATA_DIR, UPLOAD_DIR, join(ROOT, "src"), FFMPEG);
 
 const now = Date.now();
-const uid = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at) VALUES ('maker','Maker','m@x.test','x',?)`).run(now).lastInsertRowid);
+const uid = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, bio, created_at) VALUES ('maker','Maker Name 🎧','m@x.test','x',?,?)`)
+  .run("Producer out of Queens 🎧 Making loops for anyone who needs one. Collabs open, DM me with your idea and a reference track.", now).lastInsertRowid);
+const U = () => db.prepare(`SELECT * FROM users WHERE id = ?`).get(uid);
 let n = 0;
+const img = (name, spec) => { if (FFMPEG) execFileSync(FFMPEG, ["-v", "error", "-y", "-f", "lavfi", "-i", spec, "-frames:v", "1", join(UPLOAD_DIR, name)]); else writeFileSync(join(UPLOAD_DIR, name), "x"); };
 const piece = (opts = {}) => {
   const name = `p${++n}.jpg`;
-  if (FFMPEG) execFileSync(FFMPEG, ["-v", "error", "-y", "-f", "lavfi", "-i", `color=c=0x${(n * 1234567 % 0xFFFFFF).toString(16).padStart(6, "0")}:s=600x800`, "-frames:v", "1", join(UPLOAD_DIR, name)]);
-  else writeFileSync(join(UPLOAD_DIR, name), "x");
+  img(name, `color=c=0x${(n * 1234567 % 0xFFFFFF).toString(16).padStart(6, "0")}:s=600x800`);
   return Number(db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, image_url, shared_from, created_at) VALUES (?,?,?,?,?,?,?)`)
     .run(uid, "general", "w", opts.work ?? 1, opts.url ?? "/uploads/" + name, opts.shared ?? null, now + n).lastInsertRowid);
 };
 
-console.log("\nTHE GRID FITS THE WORK");
-t("1 piece: no grid (the page uses that piece)", C.cardShape(1) === null);
-t("2 → 2 across, 3 → 3 across", String(C.cardShape(2)) === "2,1" && String(C.cardShape(3)) === "3,1");
-t("4–5 → 2×2, 6–7 → 3×2, 8+ → 4×2", String(C.cardShape(5)) === "2,2" && String(C.cardShape(7)) === "3,2" && String(C.cardShape(20)) === "4,2");
+console.log("\nWHO THEY ARE, LIKE INSTAGRAM");
+let card = C.profileCardTiles(U());
+t("name, @username and bio are on the card", card.text.name === "Maker Name" && card.text.handle === "@maker" && card.text.bio.length > 0);
+t("emoji are taken out (the font has none — they'd be boxes)", !/🎧/.test(card.text.name + card.text.bio.join(" ")));
+t("the bio wraps and stops at 4 lines with an ellipsis", card.text.bio.length === 4 && card.text.bio.every((l) => l.length <= 28) && card.text.bio[3].endsWith("…"));
+t("a short bio stays whole", String(C.cardWrap("Tailor. NYC.", 27, 4)) === "Tailor. NYC.");
+t("no picture: their initials instead", card.avatar === null && card.text.initials === "MA");
+t("how much they've made", card.text.stats === "0 pieces");
+t("no work yet still gets a card (the mark fills the grid)", card.shape === null && card.tiles.length === 0);
 
-console.log("\nONLY REAL, PUBLISHED WORK");
-piece();
-t("one piece: no card", C.profileCardTiles(uid) === null);
+console.log("\nTHE WORK");
+t("grid by how much there is: 1, 2, 3 across, then 2×2, then 3×2", String(C.cardShape(1)) === "1,1" && String(C.cardShape(3)) === "3,1" && String(C.cardShape(5)) === "2,2" && String(C.cardShape(9)) === "3,2");
 piece({ work: 0 }); piece({ shared: 1 }); piece({ url: "/uploads/../../etc/passwd" }); piece({ url: "https://elsewhere.test/a.jpg" }); piece({ url: "/uploads/gone.jpg" });
-t("chat posts, reshares, outside links, missing files and ../ paths are skipped", C.profileCardTiles(uid) === null);
+t("chat posts, reshares, outside links, missing files and ../ paths never reach the grid", C.profileCardTiles(U()).tiles.length === 0);
 t("cardFile never leaves the uploads folder", C.cardFile("/uploads/../x") === null && C.cardFile("/etc/passwd") === null && C.cardFile("/uploads/a/b.jpg") === null);
-piece(); piece();
-let card = C.profileCardTiles(uid);
-t("three pieces: a 3-across card", card && String(card.shape) === "3,1" && card.tiles.length === 3);
+piece(); piece(); piece();
+card = C.profileCardTiles(U());
+t("three pieces: three across", String(card.shape) === "3,1" && card.tiles.length === 3);
 const h1 = card.hash;
 piece();
-card = C.profileCardTiles(uid);
-t("new work changes the card's address, so previews refresh", card.hash !== h1 && String(card.shape) === "2,2");
+t("new work → new card address, so previews refresh", C.profileCardTiles(U()).hash !== h1);
+const h2 = C.profileCardTiles(U()).hash;
+db.prepare(`UPDATE users SET bio = 'Tailor.' WHERE id = ?`).run(uid);
+t("an edited bio → new card address too", C.profileCardTiles(U()).hash !== h2);
+img("face.jpg", "color=c=0x98FC68:s=400x400");
+db.prepare(`UPDATE users SET avatar_url = '/uploads/face.jpg' WHERE id = ?`).run(uid);
+card = C.profileCardTiles(U());
+t("…and a new profile picture", card.avatar && card.avatar.endsWith("face.jpg"));
 for (let i = 0; i < 6; i++) piece();
-card = C.profileCardTiles(uid);
-t("never more than 8 pieces", card.tiles.length === 8 && String(card.shape) === "4,2");
+card = C.profileCardTiles(U());
+t("never more than 6 pieces, 3×2", card.tiles.length === 6 && String(card.shape) === "3,2");
 
 console.log("\nTHE LAYOUT");
-const args = C.profileCardArgs(card, "/tmp/out.jpg"), graph = args[args.indexOf("-filter_complex") + 1];
-const spots = [...graph.matchAll(/overlay=(\d+):(\d+)\[c\d+\]/g)].map((m) => [+m[1], +m[2]]);
-t("8 tiles laid in a 4×2 grid inside 1200×630", spots.length === 8 && spots.every(([x, y]) => x < 1200 && y < 630) && new Set(spots.map((s) => s[0])).size === 4 && new Set(spots.map((s) => s[1])).size === 2);
-t("each tile fills its cell (crop, not letterbox)", (graph.match(/force_original_aspect_ratio=increase,crop=/g) || []).length === 8);
-t("the TNL mark sits bottom-left", /overlay=18:548\[out\]/.test(graph) && args.includes("[out]"));
-t("Paper behind the gutters", graph.startsWith("color=c=0xF7F1F1:s=1200x630"));
+const dir = join(DATA, "t"); mkdirSync(dir, { recursive: true });
+const args = C.profileCardArgs(card, "/tmp/out.jpg", dir), graph = args[args.indexOf("-filter_complex") + 1];
+const tiles = [...graph.matchAll(/\[t\d+\]overlay=(\d+):(\d+)/g)].map((m) => [+m[1], +m[2]]);
+t("the grid sits right of the panel, inside 1200×630", tiles.length === 6 && tiles.every(([x, y]) => x >= 440 && x < 1200 && y < 630));
+t("each piece fills its cell (crop, not letterbox)", (graph.match(/force_original_aspect_ratio=increase,crop=/g) || []).length >= 6);
+t("the picture is a circle", /\[av\]overlay=48:56/.test(graph) && /hypot\(/.test(graph));
+t("name, handle, bio lines, stats and LABS ® are drawn in Archivo", ["name", "handle", "bio0", "stats", "brand"].every((k) => graph.includes(`${k}.txt`)) && /Archivo-Bold\.ttf/.test(graph) && /Archivo-Regular\.ttf/.test(graph));
+t("text goes in files, never into the filter string", !graph.includes("Tailor") && readFileSync(join(dir, "name.txt"), "utf8") === "Maker Name");
+t("text isn't expanded (a % in a bio stays a %)", (graph.match(/expansion=none/g) || []).length === (graph.match(/drawtext=/g) || []).length);
+const bare = C.profileCardArgs(card, "/tmp/out.jpg", null), bareGraph = bare[bare.indexOf("-filter_complex") + 1];
+t("the fallback build is the grid alone, full width", !/drawtext/.test(bareGraph) && /\[t0\]overlay=0:0/.test(bareGraph));
+t("the fonts ship with the app, with their licence", existsSync(join(ROOT, "assets/fonts/Archivo-Bold.ttf")) && existsSync(join(ROOT, "assets/fonts/Archivo-Regular.ttf")) && existsSync(join(ROOT, "assets/fonts/OFL-Archivo.txt")));
 
 console.log("\nTHE PAGE");
 const page = readFileSync(join(ROOT, "src/server-10-collabs-beats-showroom.js"), "utf8");
-t("the profile page's preview uses the card when there is one", /const card = profileCardMeta\(u\.id/.test(page) && /ogImage = card \? card\.url/.test(page));
+t("the profile page's preview is the card", /const card = profileCardMeta\(u, baseUrl\(req\)\)/.test(page) && /ogImage = card \? card\.url/.test(page));
 t("…and says it's 1200×630", /ogW = card \? card\.w/.test(page) && C.CARD.w === 1200 && C.CARD.h === 630);
 
 if (FFMPEG) {
   console.log("\nA REAL CARD");
+  const size = (file) => { const jpg = readFileSync(file); let i = 2; while (i < jpg.length) { const m = jpg[i + 1], len = jpg.readUInt16BE(i + 2); if (m >= 0xC0 && m <= 0xC2) return [jpg.readUInt16BE(i + 7), jpg.readUInt16BE(i + 5)]; i += 2 + len; } return [0, 0]; };
   const file = await C.buildProfileCard(uid, card);
-  const jpg = readFileSync(file);
-  let i = 2, w = 0, h = 0;
-  while (i < jpg.length) { const m = jpg[i + 1], len = jpg.readUInt16BE(i + 2); if (m >= 0xC0 && m <= 0xC2) { h = jpg.readUInt16BE(i + 5); w = jpg.readUInt16BE(i + 7); break; } i += 2 + len; }
-  t("ffmpeg builds a 1200×630 JPEG", w === 1200 && h === 630);
+  t("ffmpeg builds a 1200×630 JPEG with text", String(size(file)) === "1200,630" && !errors.length);
   t("asking again reuses the saved card", (await C.buildProfileCard(uid, card)) === file);
-  piece(); const next = C.profileCardTiles(uid); await C.buildProfileCard(uid, next); await new Promise((r) => setTimeout(r, 150));
-  t("a newer card replaces the old one on the volume", readdirSync(join(DATA_DIR, "og")).filter((f) => f.startsWith(`u${uid}-`) && !f.includes(".tmp")).length === 1);
+  piece(); await C.buildProfileCard(uid, C.profileCardTiles(U())); await new Promise((r) => setTimeout(r, 200));
+  t("a newer card replaces the old one, and no temp files are left", readdirSync(join(DATA_DIR, "og")).filter((f) => f.startsWith(`u${uid}-`)).length === 1 && !readdirSync(join(DATA_DIR, "og")).some((f) => f.startsWith("tmp-")));
   execFileSync(FFMPEG, ["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=640x360:d=3", "-pix_fmt", "yuv420p", join(UPLOAD_DIR, "v.mp4")]);
   db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, video_url, created_at) VALUES (?,?,?,?,?,?)`).run(uid, "general", "v", 1, "/uploads/v.mp4", now + 999);
-  const withVideo = C.profileCardTiles(uid);
-  t("a video with no thumbnail gives a frame of itself", withVideo.tiles[0].video === true);
-  const vf = await C.buildProfileCard(uid, withVideo);
-  t("…and the card still builds", existsSync(vf));
-} else console.log("\n  (no ffmpeg here — skipped building a real card)");
+  const withVideo = C.profileCardTiles(U());
+  t("a video with no thumbnail gives a frame of itself", withVideo.tiles[0].video === true && existsSync(await C.buildProfileCard(uid, withVideo)));
+  const other = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at) VALUES ('fresh','Fresh','f@x.test','x',?)`).run(now).lastInsertRowid);
+  const empty = C.profileCardTiles(db.prepare(`SELECT * FROM users WHERE id = ?`).get(other));
+  t("someone brand new (no picture, no work) still gets a card", String(size(await C.buildProfileCard(other, empty))) === "1200,630");
+} else console.log("\n  (no ffmpeg here — skipped building real cards)");
 
 console.log(`\n  ${pass} passed, ${fail} failed`);
