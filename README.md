@@ -185,9 +185,26 @@ Admin-only; every route checks on the server. `public/admin.html` is the shell a
 
 ## Health checks
 
-- **Scientist**, a second Railway service, runs `scripts/scientist.mjs` every day at 18:45 UTC. It makes 8 read-only checks against the live site: the app shell, health, Showroom, levels, Market, builders, the 404 path and the verify page. A failure fails the run.
-- **Sentry** receives server and browser errors.
-- **Admin → Errors** shows the last 100 errors, with 24-hour counts.
+Three layers: stop glitches before they ship, notice the ones that get through, and say so before a member has to.
+
+**Before it ships** (`.github/workflows/tests.yml`, every PR and every push to `main`)
+- `npm test`: every `test/*.test.mjs`.
+- `npm run e2e`: `test/e2e/run.mjs` starts a throwaway app with test members, work and tracks. A real browser then walks it at phone size (390px, touch) and computer size (1440px):
+  - the door, sign-up and the first landing
+  - like (counts once, no repaint, no jump) and fast taps
+  - share, from the feed and from an opened post
+  - the post creator, Music playback and a DM
+  - the sidebar and the admin Glitches panel
+  - **the whole walk must record zero glitches**
+  A red check means don't merge; failure screenshots are attached to the run.
+
+**Once it's live**
+- **After every merge** (`.github/workflows/after-deploy.yml`): it waits until `/api/health` reports the new commit, then runs the scientist against the live site. A failure (or a deploy that never lands) turns the run red, and GitHub emails whoever merged.
+- **Scientist**, a second Railway service, also runs `scripts/scientist.mjs` every day at 18:45 UTC: 8 read-only checks covering the app shell, health, Showroom, levels, Market, builders, the 404 path and the verify page.
+- **Sentry** receives server and browser errors. The alert *New or returning error in TNL LABS* emails on any first-seen, regressed or reappearing issue, at most every 30 minutes.
+- **Glitch signals** (`src/app-19-glitch.js` → `src/server-10-glitch.js`): members' own screens report rage taps, screen jumps, slow screens (over 3s) and failed saves. Admin → System shows the 24-hour count and the week's hotspots.
+- **Watch emails** (`src/server-10-watch.js`, to `ADMIN_EMAIL` via Resend): an email when something spikes within an hour (3 server errors, 10 app crashes, 3 failed saves, or 8 rage taps / screen jumps / slow screens), at most once per rule per 6 hours. There's also a morning digest at 13:00 UTC with yesterday's members, posts, errors, glitches and worst spots.
+- **Admin → System** shows errors and glitches side by side.
 
 ---
 

@@ -1,0 +1,37 @@
+# After every merge to main: wait until Railway is serving the new commit
+# (/api/health reports it), then run the scientist's read-only checks against
+# the live site. A red run means the deploy didn't land or something public
+# broke — GitHub emails whoever merged. Also runnable by hand (Actions → Run).
+name: After deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: after-deploy
+  cancel-in-progress: true   # a newer merge supersedes: Railway skips the older deploy too
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BASE: https://labs.tnllabs.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for this version to be live
+        run: |
+          want="${GITHUB_SHA::7}"
+          for i in $(seq 1 60); do
+            got=$(curl -s --max-time 10 "$BASE/api/health" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).commit||"")}catch(e){console.log("?")}})')
+            if [ "$got" = "$want" ]; then echo "live: $got"; exit 0; fi
+            # The site doesn't report a version (first deploy of this check, or no
+            # Railway commit variable): give it 4 minutes, then check what's there.
+            if [ -z "$got" ] && [ "$i" -ge 16 ]; then echo "no version reported; checking the live site as it is"; exit 0; fi
+            echo "waiting… live is '${got}', want '${want}'"; sleep 15
+          done
+          echo "::error::$want wasn't live after 15 minutes. Check the deploy in Railway."; exit 1
+      - name: Check the live site
+        run: node scripts/scientist.mjs

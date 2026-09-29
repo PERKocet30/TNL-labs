@@ -34,7 +34,8 @@ npm run e2e    # tap-through: a real browser walks the app at phone + computer s
 ```
 
 GitHub runs both on every PR (`.github/workflows/tests.yml`); don't merge a red
-check. Any fix to how the app *feels* (a jump, a double count, a menu behind
+check. After a merge, `.github/workflows/after-deploy.yml` checks the live site
+once the new commit is serving. Any fix to how the app *feels* (a jump, a double count, a menu behind
 something) gets a step in `test/e2e/run.mjs` that fails on the old behaviour.
 
 Run `npm test` before every push. It must end with `all green — safe to deploy`.
