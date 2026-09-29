@@ -1,7 +1,9 @@
 // Profile card v2.0 (2026-09-29): a shared profile previews like Instagram's —
 // picture, name, bio and the work.
 // Runs the real code from src/server-10-profile-card.js against a throwaway
-// database and upload folder. Builds a real card when an ffmpeg is around.
+// database and upload folder. Builds a real card when an ffmpeg is around —
+// set FFMPEG_TEST_BIN to try a specific build (production's is npm's
+// ffmpeg-static 5.3 = ffmpeg 7.0.2, which has libass but no drawtext).
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { mkdirSync, rmSync, readFileSync, writeFileSync, existsSync, readdirSync, rename, rm } from "node:fs";
@@ -15,16 +17,16 @@ let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
 const { db, DATA_DIR } = await import("../src/db.js");
-let FFMPEG = null;
-try { FFMPEG = (await import("ffmpeg-static")).default || null; } catch {}
+let FFMPEG = process.env.FFMPEG_TEST_BIN || null;
+if (!FFMPEG) try { FFMPEG = (await import("ffmpeg-static")).default || null; } catch {}
 if (!FFMPEG) try { execFileSync("ffmpeg", ["-version"], { stdio: "ignore" }); FFMPEG = "ffmpeg"; } catch {}
 
 const src = readFileSync(join(ROOT, "src/server-10-profile-card.js"), "utf8").replace(/app\.get\([\s\S]*$/, "");
 const UPLOAD_DIR = join(DATA, "uploads");
 const errors = [];
-const C = new Function("db", "join", "existsSync", "mkdirSync", "readdirSync", "writeFileSync", "rename", "rm", "createHash", "execFile", "logError", "DATA_DIR", "UPLOAD_DIR", "__dirname", "FFMPEG",
+const C = new Function("db", "join", "dirname", "existsSync", "mkdirSync", "readdirSync", "writeFileSync", "rename", "rm", "createHash", "execFile", "logError", "DATA_DIR", "UPLOAD_DIR", "__dirname", "FFMPEG",
   src + "\nreturn { cardShape, cardFile, cardWrap, cardClean, profileCardTiles, profileCardArgs, buildProfileCard, profileCardMeta, CARD };")(
-  db, join, existsSync, mkdirSync, readdirSync, writeFileSync, rename, rm, createHash, execFile, (...a) => errors.push(a), DATA_DIR, UPLOAD_DIR, join(ROOT, "src"), FFMPEG);
+  db, join, dirname, existsSync, mkdirSync, readdirSync, writeFileSync, rename, rm, createHash, execFile, (...a) => errors.push(a), DATA_DIR, UPLOAD_DIR, join(ROOT, "src"), FFMPEG);
 
 const now = Date.now();
 const uid = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, bio, created_at) VALUES ('maker','Maker Name 🎧','m@x.test','x',?,?)`)
@@ -78,9 +80,14 @@ const tiles = [...graph.matchAll(/\[t\d+\]overlay=(\d+):(\d+)/g)].map((m) => [+m
 t("the grid sits right of the panel, inside 1200×630", tiles.length === 6 && tiles.every(([x, y]) => x >= 440 && x < 1200 && y < 630));
 t("each piece fills its cell (crop, not letterbox)", (graph.match(/force_original_aspect_ratio=increase,crop=/g) || []).length >= 6);
 t("the picture is a circle", /\[av\]overlay=48:56/.test(graph) && /hypot\(/.test(graph));
-t("name, handle, bio lines, stats and LABS ® are drawn in Archivo", ["name", "handle", "bio0", "stats", "brand"].every((k) => graph.includes(`${k}.txt`)) && /Archivo-Bold\.ttf/.test(graph) && /Archivo-Regular\.ttf/.test(graph));
-t("text goes in files, never into the filter string", !graph.includes("Tailor") && readFileSync(join(dir, "name.txt"), "utf8") === "Maker Name");
-t("text isn't expanded (a % in a bio stays a %)", (graph.match(/expansion=none/g) || []).length === (graph.match(/drawtext=/g) || []).length);
+const ass = readFileSync(join(dir, "card.ass"), "utf8");
+t("name, handle, bio, stats and LABS ® are drawn in Archivo by libass", /\bass=filename='[^']*card\.ass':fontsdir='[^']*assets\/fonts'/.test(graph) && /Style: Card,Archivo,/.test(ass) && ["Maker Name", "@maker", "Tailor.", "pieces", "LABS ®"].every((x) => ass.includes(x)));
+t("no drawtext — production's ffmpeg doesn't have it", !/drawtext/.test(graph));
+t("text goes in a file, never into the filter string", !graph.includes("Tailor"));
+const tricky = C.profileCardArgs({ ...card, text: { ...card.text, bio: ["{\\\\b1\\\\fs90}big \\\\N break"] } }, "/tmp/out.jpg", dir);
+const trickyAss = readFileSync(join(dir, "card.ass"), "utf8").split("\n").find((l) => l.includes("big"));
+t("a bio can't restyle the card (no { } or \\ reach libass)", trickyAss && !/\}big|\{\\\\b1\\\\fs90|\\\\N break/.test(trickyAss.slice(trickyAss.indexOf("}") + 1)));
+t("ASS colours are BGR (#5E5856 → &H56585E&)", ass.includes("\\c&H56585E&"));
 const bare = C.profileCardArgs(card, "/tmp/out.jpg", null), bareGraph = bare[bare.indexOf("-filter_complex") + 1];
 t("the fallback build is the grid alone, full width", !/drawtext/.test(bareGraph) && /\[t0\]overlay=0:0/.test(bareGraph));
 t("the fonts ship with the app, with their licence", existsSync(join(ROOT, "assets/fonts/Archivo-Bold.ttf")) && existsSync(join(ROOT, "assets/fonts/Archivo-Regular.ttf")) && existsSync(join(ROOT, "assets/fonts/OFL-Archivo.txt")));

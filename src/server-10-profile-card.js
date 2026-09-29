@@ -1,10 +1,11 @@
 
 /* ================================================================
-   PROFILE CARD v2.0 — 2026-09-29. The link preview for a shared
+   PROFILE CARD v2.1 — 2026-09-29. The link preview for a shared
    profile, laid out like Instagram's: who they are on the left —
    profile picture, name, @username, bio, how much they've made — and
    their latest work as a grid on the right. The TNL mark and LABS ®
-   sit bottom-left. 1200×630, Paper, Archivo (assets/fonts, OFL).
+   sit bottom-left. 1200×630, Paper, Archivo (assets/fonts, OFL), text
+   drawn by libass because the ffmpeg npm installs has no drawtext.
 
    Built with the ffmpeg the server already ships (ffmpeg-static), on
    the first request, and kept on the volume under og/. The page asks
@@ -86,6 +87,11 @@ function profileCardTiles(u) {
   return { tiles: use, shape, avatar, text, hash };
 }
 
+/* ASS colours are &HBBGGRR&; text can't open an override block or
+   escape a line break — braces and backslashes are swapped out. */
+const assColor = (hex) => { const c = hex.replace(/^0x|^#/, "").padStart(6, "0"); return `&H${c.slice(4, 6)}${c.slice(2, 4)}${c.slice(0, 2)}&`; };
+const assText = (s) => String(s).replace(/\\/g, "/").replace(/\{/g, "(").replace(/\}/g, ")").replace(/[\r\n]+/g, " ");
+
 /* ffmpeg's filter language: text goes in files (no escaping games), and
    paths only need : and ' escaped. */
 const fpath = (p) => p.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/'/g, "\\'");
@@ -128,22 +134,31 @@ function profileCardArgs(card, out, textDir) {
     else f.push(`color=c=${CARD.el}:s=${A * 2}x${A * 2}:d=1,${circle}[av]`);
     lay("av", pad, 56);
 
-    const T = card.text, files = {};
-    const put = (key, s) => { const p = join(textDir, `${key}.txt`); writeFileSync(p, s); files[key] = fpath(p); };
-    const text = (key, s, font, size, color, x, y) => {
-      put(key, s);
-      f.push(`[${last}]drawtext=fontfile='${fpath(font)}':textfile='${files[key]}':expansion=none:fontsize=${size}:fontcolor=${color}:x=${x}:y=${y}[s${++n}]`);
-      last = `s${n}`;
-    };
-    if (!card.avatar) text("ini", T.initials, CARD_FONT.bold, 44, CARD.ink2, `${pad + A / 2}-text_w/2`, `${56 + A / 2}-text_h/2`);
-    const nameSize = T.name.length <= 14 ? 40 : T.name.length <= 18 ? 32 : 27;
-    let y = 56 + A + 28;
-    text("name", T.name, CARD_FONT.bold, nameSize, CARD.ink, pad, y); y += nameSize + 10;
-    text("handle", T.handle, CARD_FONT.reg, 22, CARD.ink2, pad, y); y += 22 + 22;
-    T.bio.forEach((line, i) => { text(`bio${i}`, line, CARD_FONT.reg, 23, CARD.ink, pad, y); y += 31; });
+    /* Text is one subtitle script rendered by libass, from the Archivo files
+       in assets/fonts. (The ffmpeg that npm installs has no drawtext; libass
+       it has.) Every line is positioned by its top-left corner, px for px. */
+    const T = card.text, lines = [];
+    const at = (s, x, y, size, bold, color, an = 7) =>
+      lines.push(`Dialogue: 0,0:00:00.00,0:00:10.00,Card,,0,0,0,,{\\an${an}\\pos(${x},${y})\\fs${size}\\b${bold ? 1 : 0}\\c${assColor(color)}}${assText(s)}`);
+    if (!card.avatar) at(T.initials, pad + A / 2, 56 + A / 2, 56, true, CARD.ink2, 5);
+    const nameSize = T.name.length <= 14 ? 54 : T.name.length <= 18 ? 43 : 36;
+    let y = 56 + A + 24;
+    at(T.name, pad, y, nameSize, true, CARD.ink); y += Math.round(nameSize * 1.05) + 6;
+    at(T.handle, pad, y, 29, false, CARD.ink2); y += 29 + 20;
+    T.bio.forEach((line) => { at(line, pad, y, 30, false, CARD.ink); y += 35; });
     if (T.bio.length) y += 12;
-    text("stats", T.stats, CARD_FONT.bold, 20, CARD.ink2, pad, y);
-    if (hasMark) text("brand", "LABS ®", CARD_FONT.bold, 22, CARD.ink, pad + M + 12, `${h - pad - M / 2}-text_h/2`);
+    at(T.stats, pad, y, 27, true, CARD.ink2);
+    if (hasMark) at("LABS ®", pad + M + 12, h - pad - M / 2, 30, true, CARD.ink, 4);
+    const script = join(textDir, "card.ass");
+    writeFileSync(script, [
+      "[Script Info]", "ScriptType: v4.00+", `PlayResX: ${w}`, `PlayResY: ${h}`, "WrapStyle: 2", "ScaledBorderAndShadow: yes", "",
+      "[V4+ Styles]",
+      "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+      "Style: Card,Archivo,24,&H00000000,&H00000000,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1", "",
+      "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text", ...lines, "",
+    ].join("\n"));
+    f.push(`[${last}]ass=filename='${fpath(script)}':fontsdir='${fpath(dirname(CARD_FONT.bold))}'[s${++n}]`);
+    last = `s${n}`;
   }
   args.push("-filter_complex", f.join(";"), "-map", `[${last}]`, "-frames:v", "1", "-q:v", "3", out);
   return args;
