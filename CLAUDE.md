@@ -30,7 +30,12 @@ https://labs.tnllabs.com. README.md is the full reference; this file is the rule
 npm install
 npm start      # http://localhost:8787 (Node 22.5+, uses --experimental-sqlite)
 npm test       # assembles, then runs every test/*.test.mjs
+npm run e2e    # tap-through: a real browser walks the app at phone + computer size
 ```
+
+GitHub runs both on every PR (`.github/workflows/tests.yml`); don't merge a red
+check. Any fix to how the app *feels* (a jump, a double count, a menu behind
+something) gets a step in `test/e2e/run.mjs` that fails on the old behaviour.
 
 Run `npm test` before every push. It must end with `all green — safe to deploy`.
 New behaviour gets a test in `test/` — suites are plain Node scripts that set
