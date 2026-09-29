@@ -1,3 +1,4 @@
+/* MEDIA — photos, video, post sound. v1.1 2026-09-29: post sound plays only while its post is on screen. */
 function wireInstall(){
   const x=$("[data-installx]");if(x)x.onclick=dismissInstall;
   const go=$("[data-installgo]");if(go)go.onclick=doInstall;
@@ -197,13 +198,12 @@ function wireMusAuto(){
   if(MOBS){MOBS.disconnect();MOBS=null}
   if(!MUSOK)return;
   const chips=[...document.querySelectorAll("[data-mustrack]")];
-  /* Nothing carries over between surfaces: if the post that owns the sound is
-     no longer on screen — left the profile, left the Showroom, closed the
-     overlay — the sound stops with it. Lab playback (MUSAUTOID null) is
-     exempt; the lab has its own player. */
+  /* Nothing carries over: if the post that owns the sound is no longer on
+     screen the sound stops with it. Chats and drawers laid over the page are
+     handled by musicScope() (app-13-player.js). */
   if(MUSAUTOID!=null&&NOWPLAYING){
     const still=chips.some(c=>String(c.dataset.mustrack)===String(MUSAUTOID));
-    if(!still){const a=audioEl();if(!a.paused)a.pause();MUSAUTOID=null;paintPlayer();}
+    if(!still){const a=audioEl();if(!a.paused)a.pause();MUSAUTOID=null;NOWPLAYING=null;paintPlayer();}   // and it doesn't resurface in the lab bar
   }
   if(!chips.length)return;
   /* Watch the CARD, not the chip. The chip is one line of text and 025 moved it

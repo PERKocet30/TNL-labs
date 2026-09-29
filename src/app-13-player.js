@@ -1,13 +1,18 @@
-/* THE PLAYER v2.0 — 2026-09-29
+/* THE PLAYER v2.1 — 2026-09-29
    One audio element for the whole app, parked outside #app so a repaint
    can't interrupt playback. Built on first use — no element for people who
    never press play, and nothing constructed at parse time.
 
-   Music lab playback is a real player now: the bar follows you through the
-   whole app (Showroom, labs, profiles), with previous / next, a seek bar and
-   the time, and it moves on to the next track when one ends. The queue is
-   the list you pressed play from. A post's sound belongs to its post
-   (MUSAUTOID, app-18-media.js) and never gets the bar. */
+   Two kinds of sound, two rules (v2.1):
+   - Lab playback (Music → Tracks) is a real player — previous / next, a
+     seek bar, the time, next track when one ends; the queue is the list you
+     pressed play from — and it stays in the labs. Step out (Showroom,
+     Market, a profile, a chat, a drawer) and it pauses and the bar goes;
+     come back and the bar is there, paused, where you left it.
+   - A post's sound (MUSAUTOID, app-18-media.js) plays anywhere, but only
+     while you're looking at the post: it autoplays when the post is centred
+     and stops when you scroll off it, leave the page, or open a chat or
+     drawer over it. It never gets the bar. */
 let AUDIO=null, PLAYERBAR=null, PLAYQ=[];
 function audioEl(){
   if(AUDIO)return AUDIO;
@@ -35,10 +40,30 @@ function prevTrack(){
   playTrack(PLAYQ[i-1]);
 }
 
-/* The bar steps aside only for the door and the full-screen editors (post
-   composer, track edit), which have their own bottom edge. Everywhere else —
-   chats and drawers included — the music keeps its controls. */
-function barVisible(){return !!NOWPLAYING&&MUSAUTOID==null&&!GATE&&!PCOMPOSE&&!TRKEDIT}
+/* Where the lab player may play: the labs, with nothing laid over them. */
+function musicHere(){return TAB==="labs"&&!PROFILE&&!GATE&&!PCOMPOSE&&!DMOPENPANEL&&!NOTIFOPEN&&!SEARCHOPEN&&!BOARDSOPEN&&!REVIEWING}
+/* Where a post's sound may play: any screen where you can see the post —
+   not under a chat, a drawer, the door or an editor. */
+function postSoundHere(){return !GATE&&!PCOMPOSE&&!TRKEDIT&&!DMOPENPANEL&&!NOTIFOPEN&&!BOARDSOPEN&&!REVIEWING}
+/* Runs on every paint (wire(), the chat layer, play/pause events), so no
+   route can skip it — the lock screen and headphone buttons included: a play
+   from there lands here and is paused again. The silent unlock (a data: URI,
+   app-18) is left alone — pausing it mid-play would undo the iOS unlock. */
+function musicScope(){
+  if(!AUDIO)return;
+  const live=!AUDIO.paused&&!(AUDIO.getAttribute("src")||"").startsWith("data:");
+  if(MUSAUTOID!=null){
+    if(postSoundHere())return;
+    if(live)AUDIO.pause();
+    MUSAUTOID=null;NOWPLAYING=null;   // dropped: it autoplays again when you're back on the post
+    return}
+  if(musicHere())return;
+  if(live)AUDIO.pause();
+  const ms=navigator.mediaSession;if(ms)try{ms.metadata=null}catch(e){}
+}
+/* The bar steps aside for the door and the full-screen editors (post
+   composer, track edit), which have their own bottom edge. */
+function barVisible(){return !!NOWPLAYING&&MUSAUTOID==null&&musicHere()&&!TRKEDIT}
 /* Over a chat or a drawer there's no nav underneath, so the bar docks to the
    bottom edge and the screen above makes room for it. */
 function barDocked(){return !!(DMOPENPANEL||NOTIFOPEN||SEARCHOPEN||BOARDSOPEN||REVIEWING||(PROFILE&&!MYPAGE()))}
@@ -64,6 +89,7 @@ function paintPlayer(){
         if(TAB==="labs"&&CH.library)render();}
     };
   }
+  musicScope();
   const show=barVisible();
   document.body.classList.toggle("has-now",show);
   document.body.classList.toggle("now-dock",show&&barDocked());
@@ -99,7 +125,7 @@ function lockScreen(){
     const t=NOWPLAYING;
     ms.metadata=new MediaMetadata({title:t.title,artist:"@"+t.by.username,album:"TNL LABS",
       artwork:t.artworkUrl?[{src:new URL(t.artworkUrl,location.origin).href}]:[]});
-    ms.setActionHandler("play",()=>audioEl().play().catch(()=>{}));
+    ms.setActionHandler("play",()=>{if(musicHere())audioEl().play().catch(()=>{})});
     ms.setActionHandler("pause",()=>audioEl().pause());
     ms.setActionHandler("nexttrack",()=>{nextTrack()});
     ms.setActionHandler("previoustrack",()=>prevTrack());
