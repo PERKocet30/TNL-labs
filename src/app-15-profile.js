@@ -8,7 +8,7 @@ function workCardHTML(p, collab, K) {
      grid instead of a second feed. */
   const many = p.images && p.images.length > 1;
   return `<div class="work" data-openpost="${p.id}">
-    ${p.beat ? `<div class="work-beat"><button class="circle" style="width:28px;height:28px;font-size:12px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶︎</button><span class="nm">${esc(p.beat.name || "untitled loop")}</span><span class="mono dim">${p.beat.bpm}BPM</span></div>`
+    ${p.beat ? `<div class="work-beat"><button class="circle" style="width:28px;height:28px;font-size:12px" data-beatplay='${esc(JSON.stringify(p.beat))}' aria-label="Play">${DI.play}</button><span class="nm">${esc(p.beat.name || "untitled loop")}</span><span class="mono dim">${p.beat.bpm}BPM</span></div>`
       : (many || p.imageUrl) ? `<img class="work-img" src="${esc(many ? (p.images[0].thumb || p.images[0].url) : (p.thumbUrl || p.imageUrl))}" alt="work" loading="lazy" decoding="async">`
       /* NOT a <video>. With preload="none" and no poster the element renders
          empty AND, on iOS, swallows the tap instead of letting it bubble to
@@ -18,8 +18,8 @@ function workCardHTML(p, collab, K) {
          plain div until videos get real poster frames generated at upload. */
       : p.videoUrl ? `<div class="work-vid" aria-label="Video"></div>`
       : `<div class="work-body">${esc(p.body || "—")}</div>`}
-    ${many ? `<span class="work-ind" aria-label="${p.images.length} photos">⧉</span>`
-      : p.videoUrl ? `<span class="work-ind" aria-label="Video">▶︎</span>` : ""}
+    ${many ? `<span class="work-ind" aria-label="${p.images.length} photos">${DI.stack}</span>`
+      : p.videoUrl ? `<span class="work-ind" aria-label="Video">${DI.video}</span>` : ""}
   </div>`;
 }
 
@@ -108,14 +108,14 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.
   :PTAB==="ladder"?`
     <div class="mono dim" style="margin:12px 0">REP IS EARNED, NOT SPENT — LIKES +6 · SHARES +3 · COLLABS +20 EACH · SALES +15 · DELIVERED +10</div>
     <div class="mono dim" style="margin:-4px 0 12px;line-height:1.6">Every point comes from someone else acting. Nothing you can do alone moves it.</div>
-    <div class="ladder">${LEVELS.map(x=>`<div class="lstep ${u.rep>=x.at?"done":""}"><span class="ldot"></span><span class="mono">${x.at}</span><span>${x.name}</span>${u.rep>=x.at?"✓":""}</div>`).join("")}</div>
+    <div class="ladder">${LEVELS.map(x=>`<div class="lstep ${u.rep>=x.at?"done":""}"><span class="ldot"></span><span class="mono">${x.at}</span><span>${x.name}</span>${u.rep>=x.at?DI.check:""}</div>`).join("")}</div>
     <div class="mono dim" style="margin-top:14px">MEMBER SINCE ${new Date(u.createdAt).toLocaleDateString()}</div>
     ${mine?`<button class="btn ghost" id="climbfromprof" style="width:100%;margin-top:14px">See the full climb — what each level pays →</button>`:""}`
   :PROFILE.loading?`<div class="worklist">${[0,1,2].map(()=>`<div class="work skel"><div class="skelbar"></div><div class="skelbar sh"></div></div>`).join("")}</div>`
   :list.length?`<div class="worklist ${K.grid?"asgrid":""}">${list.map(p=>workCardHTML(p,PTAB==="collabs",K)).join("")}</div>`
-  :`<div class="empty">${PTAB==="collabs"?"No confirmed collabs yet. Invite someone onto a "+K.one+" — you both rise.":mine?K.empty+" Hit ＋ Post and it lands here.":esc(K.empty)}</div>`}
+  :`<div class="empty">${PTAB==="collabs"?"No confirmed collabs yet. Invite someone onto a "+K.one+" — you both rise.":mine?K.empty+" Hit + Post and it lands here.":esc(K.empty)}</div>`}
 
-  ${mine&&ME.isAdmin?`<a class="btn ghost" href="/admin" style="display:flex;justify-content:center;margin-top:16px;text-decoration:none">Admin dashboard ↗</a>`:""}
+  ${mine&&ME.isAdmin?`<a class="btn ghost" href="/admin" style="display:flex;justify-content:center;margin-top:16px;text-decoration:none">Admin dashboard ${DI.out}</a>`:""}
   ${mine?`<button class="link" id="logoutb">Log out</button>`:""}
 </div></div>`}
 

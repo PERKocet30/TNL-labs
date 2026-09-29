@@ -159,11 +159,11 @@ function linkCard(url){
     const yt=/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{11})/.exec(url);
     if(yt)return `<a class="lcard yt" href="${esc(url)}" target="_blank" rel="noreferrer nofollow">
       <img src="https://img.youtube.com/vi/${esc(yt[1])}/hqdefault.jpg" alt="" loading="lazy">
-      <div class="lcard-play">▶︎</div><div class="lcard-host mono">YOUTUBE</div></a>`;
+      <div class="lcard-play">${DI.play}</div><div class="lcard-host mono">YOUTUBE</div></a>`;
     return `<a class="lcard" href="${esc(url)}" target="_blank" rel="noreferrer nofollow">
       <img class="lfav" src="https://www.google.com/s2/favicons?domain=${esc(host)}&sz=64" alt="" loading="lazy">
       <div><div class="lcard-t">${esc(host)}</div><div class="mono dim">${esc(u.pathname.slice(0,38))}</div></div>
-      <span class="lcard-go">↗</span></a>`;
+      <span class="lcard-go">${DI.out}</span></a>`;
   }catch(e){return ""}
 }
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));

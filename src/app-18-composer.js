@@ -75,7 +75,7 @@ function pcmusRowsHTML(list,searching){
   if(!list.length)return searching
     ?`<div class="empty">No tracks match that.</div>`
     :`<div class="empty">No tracks in the library yet.<br>Upload one in // Music → Tracks.</div>`;
-  return list.map(t=>`<div class="pcmus-row" data-pcmuspick="${t.id}"><div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="">`:"♫"}</div><div class="pcmus-meta"><div class="pcmus-t">${esc(t.title)}</div><div class="dim">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}</div></div></div>`).join("");
+  return list.map(t=>`<div class="pcmus-row" data-pcmuspick="${t.id}"><div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="">`:DI.music}</div><div class="pcmus-meta"><div class="pcmus-t">${esc(t.title)}</div><div class="dim">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}</div></div></div>`).join("");
 }
 
 function wirePCompose(){
@@ -164,7 +164,7 @@ function wirePCompose(){
   };
   document.querySelectorAll("[data-pccrm]").forEach(b=>b.onclick=()=>{c.collabs.splice(+b.dataset.pccrm,1);render()});
   const lb=$("#pclab");if(lb)lb.onclick=()=>{
-    const items=[{label:"Profile only",sub:"Not in a lab",icon:"✓",ch:null}];
+    const items=[{label:"Profile only",sub:"Not in a lab",icon:DI.check,ch:null}];
     for(const l of LABS)for(const ch of l.channels){
       if(ch.beatlab||ch.archive||ch.library||(ch.gate&&levelFor(myRep()).id<ch.gate))continue;
       items.push({label:chName(ch),sub:labMark(l.name),icon:"//",ch:{id:ch.id,label:chName(ch),lab:l.name}})}

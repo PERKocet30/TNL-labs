@@ -1,8 +1,8 @@
 const EMPTY={
   "general":["Say what you make.","Post one line about what you're working on. Someone here does the thing you need."],
   "collab-posts":["Looking for someone?","Say what you're building and what you're missing. That's how collabs start."],
-  "graphic-design":["Post a piece.","Finished, half-done, or a bad first draft. This room is for the work.","＋ Post your work"],
-  "photography":["Drop a shot.","Raw or edited. Tap ＋ to add one."],
+  "graphic-design":["Post a piece.","Finished, half-done, or a bad first draft. This room is for the work.","Post your work"],
+  "photography":["Drop a shot.","Raw or edited. Tap + to add one."],
   "clothing-design":["Show a design.","Sketch, mockup, or the real thing."],
   "clothing-drops":["What's releasing?","Post the drop before it goes live."],
   "beats":["Make something.","Open the Studio, build a loop, hit publish. Someone here writes to it."],
@@ -26,7 +26,7 @@ function emptyHTML(ch){
   return `<div class="empty estate">
     <div class="eh">${esc(e[0])}</div>
     <div class="ep">${esc(e[1])}</div>
-    ${e[2]?`<button class="btn green" id="epost">${esc(e[2])}</button>`:""}
+    ${e[2]?`<button class="btn green" id="epost">${DI.plus} ${esc(e[2])}</button>`:""}
   </div>`;
 }
 /* renderRoomFeed → app-10-chat-6-labs.js (messaging v2) */
@@ -43,7 +43,7 @@ const mmss=ms=>{const s=Math.round((ms||0)/1000);return s?Math.floor(s/60)+":"+S
 function trackRowHTML(t){
   const on=NOWPLAYING&&NOWPLAYING.id===t.id;
   return `<div class="trk ${on?"on":""}" data-trk="${t.id}">
-    <button class="trk-play" data-trkplay="${t.id}">${on&&AUDIO&&!AUDIO.paused?"❚❚":"▶︎"}</button>
+    <button class="trk-play" data-trkplay="${t.id}" aria-label="Play">${on&&AUDIO&&!AUDIO.paused?DI.pause:DI.play}</button>
     <div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="" loading="lazy">`:""}</div>
     <div class="trk-meta">
       <div class="trk-t">${esc(t.title)}</div>
@@ -57,8 +57,8 @@ function tracksHTML(){
   return `<div class="scroll" id="trkscroll">
     <div class="trk-head">
       <input class="in trk-q" id="trkq" placeholder="Search tracks or artists…" value="${esc(TRKQ)}">
-      <button class="trk-up" id="trkupbtn">${TRKUP?"Uploading…":"＋ Upload"}</button>
-      <button class="trk-up trk-fromvid" id="trkvidbtn">${TRKEXT?"Extracting…":"♫ From video"}</button>
+      <button class="trk-up" id="trkupbtn">${TRKUP?"Uploading…":DI.plus+" Upload"}</button>
+      <button class="trk-up trk-fromvid" id="trkvidbtn">${TRKEXT?"Extracting…":DI.music+" From video"}</button>
     </div>
     ${TRKVIDS?vidPickHTML():""}
     <input type="file" id="trkfile" accept="audio/*,.mp3,.m4a,.wav,.aac,.aiff,.aif,.flac,.ogg" hidden>
@@ -100,7 +100,7 @@ function paintPlayer(){
   const inLab=TAB==="labs"&&CH&&CH.library;
   if(!NOWPLAYING||!inLab){PLAYERBAR.style.display="none";return}
   PLAYERBAR.style.display="flex";
-  PLAYERBAR.innerHTML=`<button class="now-pp" data-nowtoggle>${(!AUDIO||AUDIO.paused)?"▶︎":"❚❚"}</button>
+  PLAYERBAR.innerHTML=`<button class="now-pp" data-nowtoggle aria-label="Play or pause">${(!AUDIO||AUDIO.paused)?DI.play:DI.pause}</button>
     <div class="now-meta"><div class="now-t">${esc(NOWPLAYING.title)}</div>
     <div class="mono dim">@${esc(NOWPLAYING.by.username)}</div></div>
     <button class="now-x" data-nowclose aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
@@ -303,13 +303,13 @@ function mktCardHTML(l){
 function loopDetailHTML(l){
   const mine=l.seller.username===myName();
   return `<div class="scroll" id="mktscroll">
-    <div class="dnav"><button class="backb2" data-mv="browse">← Market</button>
+    <div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button>
       <button class="backb2" data-mshare="${l.id}">Share</button>
       ${mine?`<button class="backb2" data-medit="${l.id}">Edit</button>`:""}</div>
     <div class="dwrap">
       <div class="loopart ${l.images[0]?"":"noart"}">
-        ${l.images[0]?`<img src="${esc(l.images[0])}" alt="">`:`<div class="loopglyph">♫</div>`}
-        <button class="loopplay" id="loopplay" aria-label="Play">▶︎</button>
+        ${l.images[0]?`<img src="${esc(l.images[0])}" alt="">`:`<div class="loopglyph">${DI.music}</div>`}
+        <button class="loopplay" id="loopplay" aria-label="Play">${DI.play}</button>
       </div>
       <audio id="loopaudio" src="${esc(l.audioUrl||"")}" preload="none"></audio>
 
@@ -328,7 +328,7 @@ function loopDetailHTML(l){
         <div style="flex:1;min-width:0">
           <div style="font-weight:900;font-size:13px">${esc(l.seller.displayName)}</div>
           <div class="mono dim">@${esc(l.seller.username)} · L${l.seller.level}</div>
-          ${MKTSELLER&&MKTSELLER.rating!==null?`<div class="trust mono"><span class="star">★ ${MKTSELLER.rating.toFixed(1)}</span> <span class="dim">(${MKTSELLER.reviews})</span></div>`:""}
+          ${MKTSELLER&&MKTSELLER.rating!==null?`<div class="trust mono"><span class="star">${DI.star} ${MKTSELLER.rating.toFixed(1)}</span> <span class="dim">(${MKTSELLER.reviews})</span></div>`:""}
         </div>
         <span class="mono dim">${l.downloads||0} grabbed</span>
       </div>
@@ -347,7 +347,7 @@ function loopDetailHTML(l){
       ${MKTSIMILAR.length?`<div class="simwrap">
         <div class="mono dim sim-h">MORE LIKE THIS</div>
         <div class="simrow">${MKTSIMILAR.map(x=>`<button class="simcard" data-mopen="${x.id}">
-          ${x.images[0]?`<img src="${esc(x.images[0])}" alt="">`:`<div class="simglyph">♫</div>`}
+          ${x.images[0]?`<img src="${esc(x.images[0])}" alt="">`:`<div class="simglyph">${DI.music}</div>`}
           <div class="simt">${esc(x.title)}</div>
           <div class="simp">${x.isFree?"Free":money(x.price)}</div>
         </button>`).join("")}</div>

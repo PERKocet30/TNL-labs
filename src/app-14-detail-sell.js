@@ -3,7 +3,7 @@ function detailHTML(){
   if(MKTONE.kind==="loop")return loopDetailHTML(MKTONE);   // a loop isn't a jacket
   const l=MKTONE, mine=l.seller.username===myName();
   return `<div class="scroll">
-    <div class="dnav"><button class="backb2" data-mv="browse">← Market</button>
+    <div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button>
       <button class="backb2" data-mshare="${l.id}">Share</button></div>
     <div class="dimgs">${l.images.map(i=>`<img src="${esc(i)}" data-zoom="${esc(i)}" loading="lazy">`).join("")}</div>
     <div class="dbody">
@@ -21,14 +21,14 @@ function detailHTML(){
           <div style="font-weight:900;font-size:13px">${esc(l.seller.displayName)}</div>
           <div class="mono dim">@${esc(l.seller.username)} · L${l.seller.level}</div>
           ${MKTSELLER?`<div class="trust mono">
-            ${MKTSELLER.rating!==null?`<span class="star">★ ${MKTSELLER.rating.toFixed(1)}</span> <span class="dim">(${MKTSELLER.reviews})</span>`:`<span class="dim">No reviews yet</span>`}
+            ${MKTSELLER.rating!==null?`<span class="star">${DI.star} ${MKTSELLER.rating.toFixed(1)}</span> <span class="dim">(${MKTSELLER.reviews})</span>`:`<span class="dim">No reviews yet</span>`}
             ${MKTSELLER.sold?` · ${MKTSELLER.sold} sold`:""}
             ${MKTSELLER.shipRate!==null&&MKTSELLER.sold>2?` · ${MKTSELLER.shipRate}% shipped`:""}
           </div>`:""}
         </div>
         <span class="mono dim">${l.views} views</span>
       </div>
-      ${MKTMETA.paymentsEnabled?`<div class="dtrust">🔒 <span>Paid through TNL — your card never touches the seller, and you\u2019re covered until it ships.</span></div>`:""}
+      ${MKTMETA.paymentsEnabled?`<div class="dtrust">${DI.lock} <span>Paid through TNL — your card never touches the seller, and you\u2019re covered until it ships.</span></div>`:""}
       ${mine?`
         <div class="mono dim" style="margin:16px 0 8px">OFFERS</div>
         ${MKTOFFERS.length?MKTOFFERS.map(o=>`<div class="orow">
@@ -48,7 +48,7 @@ function detailHTML(){
           <button class="btn ghost" data-dmseller="${esc(l.seller.username)}">Ask</button>
         </div>
         ${MKTOFFERS.filter(o=>o.status==="pending").length?`<div class="mono dim" style="margin-top:10px">YOUR OFFER: ${money(MKTOFFERS[0].amount_cents)} — pending</div>`:""}
-        ${MKTOFFERS.filter(o=>o.status==="accepted").length?`<div class="acceptbar">✓ Your offer of ${money(MKTOFFERS.find(o=>o.status==="accepted").amount_cents)} was accepted — buy now to lock it in</div>`:""}
+        ${MKTOFFERS.filter(o=>o.status==="accepted").length?`<div class="acceptbar">${DI.check} Your offer of ${money(MKTOFFERS.find(o=>o.status==="accepted").amount_cents)} was accepted — buy now to lock it in</div>`:""}
         ${!MKTMETA.paymentsEnabled?`<div class="mono dim" style="margin-top:12px;line-height:1.6">Card payments aren't switched on yet — buying reserves the item and connects you with the seller to settle up directly.</div>`:""}
       `:`<div class="mono dim" style="margin-top:14px">This item is sold.</div>`}
 
@@ -65,7 +65,7 @@ function detailHTML(){
 
 function savedHTML(){
   return `<div class="scroll">
-    <div class="dnav"><button class="backb2" data-mv="browse">← Market</button></div>
+    <div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button></div>
     <div class="page-head"><div class="mono dim">SAVED</div><h2 class="page-h">Your list</h2>
     <p class="page-sub">Everything you've hearted. Sold items stay so you can see what went.</p></div>
     <div class="mkt-grid">${!SAVED?`<div class="empty">Loading…</div>`
@@ -123,7 +123,7 @@ function climbHTML(){
       </div>
       ${LEVELS.map(l=>`<div class="crung ${me.id>=l.id?"done":""} ${me.id===l.id?"here":""}">
         <button class="crung-t" data-crung="${l.id}">
-          <span class="crung-n">${me.id>=l.id?"✓":l.id}</span>
+          <span class="crung-n">${me.id>=l.id?DI.check:l.id}</span>
           <span style="flex:1"><b>${esc(l.name)}</b>${me.id===l.id?` <span class="mono" style="color:var(--green);font-size:11px;letter-spacing:.02em">YOU'RE HERE</span>`:""}<br><span class="mono dim" style="font-size:12px">${l.at} REP · KEEP ${100-fee(l.id)}%</span></span>
           <span class="dim">${CLIMBOPENRUNG===l.id?"–":"+"}</span>
         </button>
@@ -267,7 +267,7 @@ function reviewHTML(){
       <div class="mono dim">from ${esc(o.other.displayName)}</div></div>
     </div>
     <div class="mono dim" style="margin:16px 0 8px">YOUR RATING</div>
-    <div class="stars">${[1,2,3,4,5].map(n=>`<button class="star-btn ${n<=REVSTARS?"on":""}" data-star="${n}">★</button>`).join("")}</div>
+    <div class="stars">${[1,2,3,4,5].map(n=>`<button class="star-btn ${n<=REVSTARS?"on":""}" data-star="${n}">${DI.star}</button>`).join("")}</div>
     <div class="mono dim" style="margin-top:6px">${["","Bad","Poor","Fine","Good","Perfect"][REVSTARS]}</div>
     <div class="mono lbl" style="margin-top:16px">A WORD (OPTIONAL)</div>
     <textarea class="in" id="revbody" rows="3" maxlength="500" placeholder="Did it arrive as described? Packed well? Quick?"></textarea>
@@ -278,7 +278,7 @@ function reviewHTML(){
 function ordersHTML(){
   const list=ORDERS?(ORDTAB==="buying"?ORDERS.buying:ORDERS.selling):[];
   return `<div class="scroll">
-    <div class="dnav"><button class="backb2" data-mv="browse">← Market</button></div>
+    <div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button></div>
     <div class="page-head"><div class="mono dim">ORDERS</div><h2 class="page-h">${ORDTAB==="buying"?"Bought":"Sold"}</h2></div>
     ${ORDTAB==="selling"?`<div style="padding:0 20px">${payoutBannerHTML()}</div>`:""}
     <div class="ptabs" style="margin:0 20px 12px">
@@ -300,7 +300,7 @@ function ordersHTML(){
           ${ORDTAB==="selling"&&(o.status==="pending"||o.status==="paid")?`<button class="btn sm green" data-ship="${o.id}">Mark shipped</button>`:""}
           ${ORDTAB==="buying"&&o.status==="shipped"?`<button class="btn sm green" data-recv="${o.id}">Received</button>`:""}
           ${ORDTAB==="buying"&&o.status==="complete"&&!o.reviewed?`<button class="btn sm green" data-review="${o.id}">Leave a review</button>`:""}
-          ${ORDTAB==="buying"&&o.reviewed?`<span class="mono dim">✓ reviewed</span>`:""}
+          ${ORDTAB==="buying"&&o.reviewed?`<span class="mono dim">${DI.check} reviewed</span>`:""}
           <button class="btn sm ghost" data-dmseller="${esc(o.other.username)}">Message</button>
         </div>
       </div>`).join("")}
@@ -309,14 +309,12 @@ function ordersHTML(){
 
 function studioHTML(){
   const d=SITE.distro;
-  /* The distribution offer. It sits here, above the tools, because that's
-     where a producer is when they're deciding whether this place is worth
-     their time. It shows YOUR standing — a generic banner is an advert; a
-     number you're 186 rep away from is a reason. */
+  /* The distribution offer, above the tools: it shows YOUR standing — a
+     number you're 186 rep away from is a reason, a banner is an advert. */
   const distro=()=>{
     if(!d)return "";
     if(guest())return `<div class="distro">
-      <div class="distro-h"><span class="distro-ic">↗</span>
+      <div class="distro-h"><span class="distro-ic">${DI.out}</span>
         <b>Reach ${esc(d.levelName)} and we put your music on Spotify.</b></div>
       <p>${esc(d.blurb)} You get there by making things people back — not by paying, not by knowing anyone.</p>
     </div>`;
@@ -324,13 +322,13 @@ function studioHTML(){
     const done=me.id>=d.level;
     const away=Math.max(0,d.at-myRep());
     return `<div class="distro ${done?"earned":""}">
-      <div class="distro-h"><span class="distro-ic">${done?"✓":"↗"}</span>
+      <div class="distro-h"><span class="distro-ic">${done?DI.check:DI.out}</span>
         <b>${done
           ? "You're "+esc(d.levelName)+". Your music gets distributed."
           : "At "+esc(d.levelName)+", TNL puts your music on Spotify, Apple Music and the rest."}</b></div>
       <p>${esc(d.blurb)}</p>
       ${done
-        ? `<div class="mono distro-go">↗ MESSAGE @TNLLABS WITH A FINISHED TRACK AND IT GOES OUT</div>`
+        ? `<div class="mono distro-go">${DI.out} MESSAGE @TNLLABS WITH A FINISHED TRACK AND IT GOES OUT</div>`
         : `<div class="distro-bar"><div class="distro-fill" style="width:${Math.min(100,(myRep()/d.at)*100)}%"></div></div>
            <div class="mono dim distro-meta">${myRep()} / ${d.at} REP · ${away} TO GO — EARNED WHEN OTHERS BACK YOUR WORK, NEVER BY POSTING MORE</div>`}
     </div>`;
