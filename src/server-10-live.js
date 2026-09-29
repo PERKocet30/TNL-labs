@@ -179,5 +179,6 @@ app.post("/api/posts/:id/pin", auth, admin, (req, res) => {
       (SELECT post_id FROM channel_pins WHERE channel = ? ORDER BY created_at DESC LIMIT 3)`).run(post.channel, post.channel);
   }
   broadcast("pins", { channel: post.channel });
+  auditAdmin(req, req.body?.pinned === false ? "unpin post" : "pin post");
   res.json({ pins: pinsFor(post.channel) });
 });

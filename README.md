@@ -41,7 +41,7 @@ src/db.js                       schema, migrations, rep engine, levels, fees
 src/pay.js                      Stripe Connect
 src/mail.js                     email via Resend
 public/studio.js                the Studio (beat maker)
-public/admin.html               the admin dashboard
+public/admin.html               the admin dashboard (shell; app in public/admin-app/)
 public/door.js                  the door's vial loader and mark
 public/sw.js                    service worker (installable app, offline shell)
 scripts/scientist.mjs           daily read-only checks against the live site
@@ -170,16 +170,15 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 
 ---
 
-## Admin dashboard (`/admin`)
+## Admin dashboard (`/admin`) — v2.0, 2026-09-29
 
-This is admin-only, and the check is enforced on the server.
+Admin-only; every route checks on the server. `public/admin.html` is the shell and styles, the app is `public/admin-app/1-core.js` … `7-studio.js`, and the data comes from `src/server-10-admin.js` plus the older admin routes.
 
-- **Overview:** confirmed collabs (the number that proves the model), members, posting activity, work published, cross-lab shares, GMV and commission.
-- **Funnel and retention:** where people drop off, and whether they come back.
-- **Members:** search, verify, adjust rep, feature, suspend.
-- **Reports:** reported content.
-- **Content, listings and orders:** manage all three.
-- **Other tools:** settings, backups, email log and test email, broadcast, error log, Studio telemetry, cleanup, and download the source of the live app.
+- **Today:** what needs you (reports, orders not shipped after 3 days, backups, errors, stale collab invites, new members to welcome), eight numbers against the previous period (7, 30 or 90 days), a daily chart, the collab loop with who stopped at each step, lab activity and the most active members.
+- **People:** search, filter (new, never posted, gone quiet, sellers, unverified, suspended, admins) and sort. Each person opens with their stats, recent posts, rep history, a private admin note, and actions: message, confirm email, adjust rep (with a reason), feature, sign out everywhere, suspend. Message a group from the bottom.
+- **Content:** open reports first, then every post, filterable by lab, kind and text; pin, delete. Studio stats live here.
+- **Market:** sales, commission, orders by status, top sellers, stale listings.
+- **System:** switches and landing text, backups, email test, unused files, errors, and the **admin log** — every change made from the dashboard, with who and when (`admin_log`, written by a hook on `/api/admin` writes).
 
 ---
 
@@ -361,6 +360,10 @@ GET    /api/builders
 GET    /api/health
 
 # admin
+GET    /api/admin/pulse?days=&tz=   (admin)  Today: numbers, series, loop, labs, needs-you
+GET    /api/admin/people · /api/admin/people/:username   (admin)
+POST   /api/admin/people/:username/note · /signout   (admin)
+GET    /api/admin/posts · /api/admin/log   (admin)
 GET    /api/admin/overview   (admin)
 GET    /api/admin/members   (admin)
 POST   /api/admin/members/:username/feature   (admin)
