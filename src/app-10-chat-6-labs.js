@@ -34,7 +34,6 @@ function msgRowHTML(p,prev){
       ${reactsHTML(p.reactions,"post:"+p.id)}
       ${p.editedAt?`<span class="c-meta">Edited</span>`:""}
       ${p.failed?`<div class="failbar"><span>Didn't send.</span><button class="retryb" data-retry="${p.id}">Retry</button><button class="retryb ghost" data-discard="${p.id}">Discard</button></div>`:""}
-      <button class="msg-open" data-openpost="${p.id}" aria-label="Open post"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M8 16L16 8M9.5 8H16v6.5"/></svg></button>
     </div>
   </div>`;
 }
@@ -115,6 +114,7 @@ function labMenu(id){
   acts.push({icon:CI.reply,label:"Reply",run:()=>{LABREPLY=p;paintLabBar();$("#draft")?.focus()}});
   if(p.body)acts.push({icon:CI.copy,label:"Copy",run:()=>copyText(p.body)});
   acts.push({icon:CI.fwd,label:"Send to…",run:()=>sendPostSheet(p.id)});
+  acts.push({icon:CI.open,label:"Open with comments",run:()=>openPost(p)});
   if(mine)acts.push({icon:CI.edit,label:"Edit",run:()=>{EDITID=p.id;LABREPLY=null;render();const d=$("#draft");if(d){d.value=p.body||"";d.focus()}}});
   if(admin)acts.push({icon:CI.pin,label:pinned?"Unpin":"Pin",run:async()=>{
     try{const r=await capi.pin(p.id,!pinned);LABPINS=r.pins;PINIDX=0;paintPins();toast(pinned?"Unpinned":"Pinned for everyone in "+chName(CH))}catch(e){toast(e.message)}}});
@@ -125,3 +125,27 @@ function labMenu(id){
   openMenu({react:true,mine:me&&me.emoji,preview:(p.author.displayName+": "+(p.body||"")).slice(0,120)+" · "+clock(p.createdAt),actions:acts,onReact:e=>reactTo("post:"+p.id,e)});
 }
 const replyOf=p=>p?{id:p.id,from:p.author.username,displayName:p.author.displayName,text:(p.body||"").slice(0,140)}:null;
+
+/* The "…" on a post, anywhere — Showroom, a profile, the post view, search.
+   In a lab room it's the same menu as holding the message. */
+function findAnyPost(id){id=Number(id);
+  const all=[...(POSTS||[]),...(SRPOSTS||[]),...(POSTOPEN?[POSTOPEN]:[]),...(PROFILE?[...(PROFILE.posts||[]),...(PROFILE.collabs||[])]:[]),...(SEARCHRES?SEARCHRES.posts||[]:[])];
+  return all.find(x=>x.id===id)}
+async function openPost(p){POSTOPEN=p;OPENCOMMENTS=p.id;COMMENTS=[];render();try{COMMENTS=(await api.comments(p.id)).comments;render()}catch(e){}}
+function postMenu(id){
+  if(TAB==="labs"&&!POSTOPEN&&!PROFILE&&roomPost(id))return labMenu(id);
+  const p=findAnyPost(id);if(!p||!ME)return;
+  const mine=p.author.username===myName(),admin=!!ME.isAdmin,acts=[];
+  if(p.body)acts.push({icon:CI.copy,label:"Copy text",run:()=>copyText(p.body)});
+  acts.push({icon:CI.fwd,label:"Send to…",run:()=>sendPostSheet(p.id)});
+  if(mine)acts.push({icon:CI.edit,label:"Edit caption",run:async()=>{
+    const v=await uiPrompt("Edit caption",{value:p.body||"",okLabel:"Save"});if(v==null)return;
+    try{const r=await api.editPost(p.id,v.trim());Object.assign(p,{body:r.post?r.post.body:v.trim(),editedAt:Date.now()});render();toast("Saved")}catch(e){toast(e.message)}}});
+  if(mine||admin)acts.push({icon:CI.trash,label:"Delete",danger:true,run:async()=>{
+    if(!(await uiConfirm("Delete this post?",mine?"":"You're removing someone else's post as an admin.",{okLabel:"Delete",danger:true})))return;
+    try{mine?await api.delPost(p.id):await req("/api/admin/posts/"+p.id,{method:"DELETE"});
+      const drop=a=>a&&a.filter(x=>x.id!==p.id);POSTS=drop(POSTS);SRPOSTS=drop(SRPOSTS)||[];
+      if(PROFILE){PROFILE.posts=drop(PROFILE.posts);PROFILE.collabs=drop(PROFILE.collabs)}
+      if(POSTOPEN&&POSTOPEN.id===p.id)POSTOPEN=null;render();toast("Deleted")}catch(e){toast(e.message)}}});
+  openMenu({react:false,preview:(p.author.displayName+(p.body?": "+p.body:"")).slice(0,120),actions:acts});
+}

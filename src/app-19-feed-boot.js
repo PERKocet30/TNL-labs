@@ -59,13 +59,13 @@ function wireFeed(){
        sheet, so copy-link IS the off-app share. Exactly one of each. */
     const canNative = shareable && typeof navigator!=="undefined" && !!navigator.share;
     const items=shareable?[
-      {label:"Into a lab",sub:"Drop it in a room. The author earns rep when it travels.",icon:"#",act:"lab"},
-      ...(canNative?[{label:"Send off the app",sub:"Messages, WhatsApp, AirDrop — anywhere on your phone",icon:"↗",act:"native"}]:[]),
-      {label:"Send inside TNL",sub:"Lands in their DMs here",icon:"✉",act:"dm"},
-      {label:canNative?"Copy link":"Copy link to share",sub:link.replace(/^https?:\/\//,""),icon:"⧉",act:"copy"},
+      {label:"Into a lab",sub:"Drop it in a room. The author earns rep when it travels.",icon:"//",act:"lab"},
+      ...(canNative?[{label:"Send off the app",sub:"Messages, WhatsApp, AirDrop — anywhere on your phone",icon:DI.out,act:"native"}]:[]),
+      {label:"Send inside TNL",sub:"Lands in their DMs here",icon:DI.mail,act:"dm"},
+      {label:canNative?"Copy link":"Copy link to share",sub:link.replace(/^https?:\/\//,""),icon:DI.copy,act:"copy"},
     ]:[
-      {label:"Send inside TNL",sub:"Lands in their DMs here",icon:"✉",act:"dm"},
-      {label:"Into a lab",sub:"Carry it across",icon:"#",act:"lab"},
+      {label:"Send inside TNL",sub:"Lands in their DMs here",icon:DI.mail,act:"dm"},
+      {label:"Into a lab",sub:"Carry it across",icon:"//",act:"lab"},
     ];
 
     openPicker({eyebrow:shareable?"PUBLISHED WORK":"CHAT",title:"Where to?",
@@ -147,6 +147,7 @@ function wireFeed(){
       POSTS=POSTS.filter(x=>x.id!==p.id);loadFeed(true);
     }catch(e){p.pending=false;p.failed=true;renderRoomFeed();toast(e.message)}});
   wireProfileLinks();   // covers .mention[data-u] too
+  document.querySelectorAll("[data-pmore]").forEach(b=>b.onclick=e=>{e.stopPropagation();postMenu(b.dataset.pmore)});
   document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{
     const p=POSTS.find(x=>String(x.id)===b.dataset.edit);if(!p)return;
     EDITID=p.id;render();const d=$("#draft");if(d){d.value=p.body||"";d.focus()}});
@@ -189,7 +190,7 @@ function wireFeed(){
   document.querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>{
     const id=+b.dataset.report;
     openPicker({eyebrow:"REPORT",title:"What's wrong?",
-      items:["Spam","Harassment","Stolen work","Nudity or gore","Something else"].map(r=>({label:r,icon:"⚐",reason:r})),
+      items:["Spam","Harassment","Stolen work","Nudity or gore","Something else"].map(r=>({label:r,icon:DI.flag,reason:r})),
       onPick:async(it)=>{try{await api.report({postId:id,reason:it.reason});toast("Reported — thank you")}catch(e){toast(e.message)}}});
   });
   wireProfileLinks();
@@ -226,7 +227,7 @@ function wireSheet(){
   const ru=$("#reportu");if(ru)ru.onclick=()=>{
     const un=PROFILE.user.username;
     openPicker({eyebrow:"REPORT",title:"Why?",
-      items:["Spam","Harassment","Stolen work","Impersonation","Something else"].map(r=>({label:r,icon:"⚐",reason:r})),
+      items:["Spam","Harassment","Stolen work","Impersonation","Something else"].map(r=>({label:r,icon:DI.flag,reason:r})),
       onPick:async(it)=>{try{await api.report({username:un,reason:it.reason});toast("Reported — thank you")}catch(e){toast(e.message)}}});
   };
 

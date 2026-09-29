@@ -49,6 +49,7 @@ const CI={
   mute:ci('<path d="M6 16v-5a6 6 0 0 1 9.5-4.9M18 11v5l1.5 2H9M10 21h4M4 4l16 16"/>',14),
   play:ci('<path d="M8 5v14l11-7z"/>',16,"currentColor"), pause:ci('<path d="M8 5v14M16 5v14"/>',16),
   img:ci('<rect x="4" y="5" width="16" height="14"/><path d="M4 16l5-5 4 4 2-2 5 5"/>',20), people:ci('<circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0M16 4.5a3.5 3.5 0 0 1 0 7M17 14a6 6 0 0 1 4 6"/>',20),
+  open:ci('<path d="M8 16L16 8M9.5 8H16v6.5"/>'),
   send:UI_IC.arrow, check:ci('<path d="M5 12l5 5 9-10"/>',16),
 };
 

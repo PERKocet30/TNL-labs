@@ -9,7 +9,7 @@ function archiveHTML(){
   return `<div class="scroll" id="archscroll">
     <div class="archbar">
       <input class="in archq" id="archq" placeholder="Search the archive…" value="${esc(ARCHFILT.q||"")}">
-      <button class="btn ghost sm" id="myboards">◫ Moodboards${BOARDS?" "+BOARDS.length:""}</button>
+      <button class="btn ghost sm" id="myboards">${DI.board.replace(/width="18" height="18"/,'width="14" height="14"')} Moodboards${BOARDS?" "+BOARDS.length:""}</button>
     </div>
 
     <div class="pastebar">
@@ -20,7 +20,7 @@ function archiveHTML(){
       <img src="${esc(PASTED.image)}" alt="">
       <div class="pasted-i">
         <div class="pasted-t">${esc(PASTED.title||"Untitled")}</div>
-        <div class="mono dim">↗ ${esc(PASTED.site||"")}${PASTED.licence?" · "+esc(PASTED.licence):""}</div>
+        <div class="mono dim">${DI.out} ${esc(PASTED.site||"")}${PASTED.licence?" · "+esc(PASTED.licence):""}</div>
       </div>
       <button class="btn green sm" id="pastesave">Pull in</button>
       <button class="x" id="pastex" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -28,7 +28,7 @@ function archiveHTML(){
     ${PASTEERR?`<div class="pasteerr mono"><b>${esc(PASTEERR.error)}</b>${PASTEERR.detail?`<br>${esc(PASTEERR.detail)}`:""}</div>`:""}
 
     ${pinBoard?`<div class="fchips archchips">
-      <button class="chip sm ${ARCHSRC==="tnl"?"on":""}" data-asrc="tnl">◫ The archive</button>
+      <button class="chip sm ${ARCHSRC==="tnl"?"on":""}" data-asrc="tnl">The archive</button>
       <button class="chip sm ${ARCHSRC==="pin"?"on":""}" data-asrc="pin">📌 Pinterest</button>
     </div>`:""}
 
@@ -43,7 +43,7 @@ function archiveHTML(){
         ${[["","Everything"],["saved","Most saved"],["liked","Most liked"]].map(([v,l])=>
           `<button class="chip sm ${(ARCHFILT.sort||"")===v?"on":""}" data-asort="${v}">${l}</button>`).join("")}
         ${((A&&A.channels)||[]).map(c=>`<button class="chip sm ${ARCHFILT.channel===c?"on":""}" data-ach="${esc(c)}">#${esc(c)}</button>`).join("")}
-        ${(ARCHFILT.q||ARCHFILT.channel||ARCHFILT.sort)?`<button class="clearf mono" id="archclear">✕ CLEAR</button>`:""}
+        ${(ARCHFILT.q||ARCHFILT.channel||ARCHFILT.sort)?`<button class="clearf mono" id="archclear">${DI.x} Clear</button>`:""}
       </div>
       ${!A?`<div class="empty">Loading…</div>`
         :!A.images.length?`<div class="empty">
@@ -55,7 +55,7 @@ function archiveHTML(){
             <img src="${esc(x.url)}" alt="" loading="lazy">
             <div class="archover">
               <span class="archby mono">${esc(x.by.displayName)}</span>
-              <span class="archsave ${x.savedByMe?"on":""}" data-asave="${x.id}">${x.savedByMe?"◫":"＋"}</span>
+              <span class="archsave ${x.savedByMe?"on":""}" data-asave="${x.id}">${x.savedByMe?DI.check:DI.plus}</span>
             </div>
             ${x.saves?`<span class="archn mono">${x.saves}</span>`:""}
           </button>`).join("")}</div>`}
@@ -74,12 +74,12 @@ function boardsHTML(){
     <p class="mono dim" style="line-height:1.7;margin-bottom:14px">Reference, pulled from the archive. Whoever made it gets told you took it — that's how a collab starts.</p>
     <div class="mbrow">
       <input class="in" id="bnew" placeholder="New moodboard — 'Y2K refs', 'FW25'…" maxlength="60">
-      <button class="btn green sm" id="bmake">＋</button>
+      <button class="btn green sm" id="bmake" aria-label="New moodboard">${DI.plus}</button>
     </div>
     ${!BOARDS?`<div class="empty">Loading…</div>`
       :!BOARDS.length?`<div class="empty">No moodboards yet.<br><br>Make one, then pull anything out of the archive into it.</div>`
       :`<div class="mbgrid">${BOARDS.map(b=>`<button class="mbcard" data-bopen="${b.id}">
-        ${b.cover?`<img src="${esc(b.cover)}" alt="" loading="lazy">`:`<div class="mbempty">◫</div>`}
+        ${b.cover?`<img src="${esc(b.cover)}" alt="" loading="lazy">`:`<div class="mbempty">${DI.board}</div>`}
         <div class="mbname">${esc(b.name)}</div>
         <div class="mono dim">${b.count} ${b.count===1?"image":"images"}${b.isPublic?"":" · private"}</div>
       </button>`).join("")}</div>`}
@@ -90,18 +90,18 @@ function boardOneHTML(){
   const b=BOARDONE;
   return `<div class="sheet" id="bbg"><div class="sheetc">
     <div class="sheeth"><div>
-      <button class="backb2" id="bback">← Moodboards</button>
+      <button class="backb2" id="bback">${DI.back} Moodboards</button>
       <h2 style="margin-top:6px">${esc(b.board.name)}</h2>
       <div class="mono dim">${b.pins.length} ${b.pins.length===1?"image":"images"} · by ${esc(b.board.by.displayName)}</div>
     </div><button class="x" id="bx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    ${!b.pins.length?`<div class="empty">Nothing pulled yet.<br><br>Go to the archive and tap ＋ on anything.</div>`
+    ${!b.pins.length?`<div class="empty">Nothing pulled yet.<br><br>Go to the archive and tap + on anything.</div>`
       :`<div class="archgrid">${b.pins.map(p=>`<div class="archcard">
         <img src="${esc(p.url||"")}" alt="" loading="lazy">
         <div class="archover">
           <span class="archby mono">${p.by?esc(p.by.displayName):esc(p.srcSite||"link")}</span>
-          ${b.board.mine?`<span class="archsave" data-unpin="${p.id}">✕</span>`:""}
+          ${b.board.mine?`<span class="archsave" data-unpin="${p.id}">${DI.x}</span>`:""}
         </div>
-        ${p.srcUrl?`<a class="archsrc mono" href="${esc(p.srcUrl)}" target="_blank" rel="noopener">↗ ${esc(p.srcSite||"source")}</a>`:""}
+        ${p.srcUrl?`<a class="archsrc mono" href="${esc(p.srcUrl)}" target="_blank" rel="noopener">${DI.out} ${esc(p.srcSite||"source")}</a>`:""}
       </div>`).join("")}</div>`}
     ${b.board.mine?`<button class="btn ghost wide" id="bdel" style="margin-top:14px">Delete this moodboard</button>`:""}
   </div></div>`;
@@ -156,12 +156,12 @@ function labsHTML(){
     ${QUEUE.length?`<div class="attach-bar">
       <div class="qgrid">${QUEUE.map((q,i)=>`
         <div class="qcard ${q.state}">
-          ${q.kind==="video"?`<div class="vthumb">▶︎</div>`:`<img src="${esc(q.preview)}" alt="">`}
+          ${q.kind==="video"?`<div class="vthumb">${DI.play}</div>`:`<img src="${esc(q.preview)}" alt="">`}
           ${q.state==="up"?`<div class="qbar"><div class="qfill" style="width:${q.pct||0}%"></div></div>`:""}
           ${q.state==="err"?`<div class="qerr mono">!</div>`:""}
           <button class="qx" data-qdrop="${i}" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         </div>`).join("")}
-        ${QUEUE.length<10?`<button class="qadd" id="qmore">＋</button>`:""}
+        ${QUEUE.length<10?`<button class="qadd" id="qmore" aria-label="Add more">${DI.plus}</button>`:""}
       </div>
       <div class="attach-info">
         <span class="mono dim">${(()=>{
@@ -181,7 +181,7 @@ function labsHTML(){
       <button class="attach" id="attachb" title="Attach image or video" aria-label="Attach image or video">${UI_IC.plus}</button>
       <input class="in" id="draft" placeholder="${EDITID?"Edit your message…":"Message "+esc(chName(CH))}" value="${EDITID?"":esc(LABDRAFT)}" autocomplete="off">
       ${EDITID?`<button class="send ghostsend" id="canceledit" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:""}
-      <button class="send" id="sendb" aria-label="Send">${EDITID?"✓":UI_IC.arrow}</button>
+      <button class="send" id="sendb" aria-label="Send">${EDITID?DI.check:UI_IC.arrow}</button>
     </div>`}
 `}
   </section>
@@ -221,7 +221,7 @@ function postHTML(p){const mine=p.author.username===myName();
   <div class="post-h">${avHTML(p.author)}
     <div><span class="post-by" data-u="${esc(p.author.username)}">${esc(p.author.displayName)}</span><span class="lvl">L${p.author.level}</span>
     <div class="post-meta">${esc(p.author.role.toUpperCase())} · ${new Date(p.createdAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}${p.editedAt?" · EDITED":""}</div>${musChipHTML(p)}</div>
-    ${mine?`<div class="post-menu"><button class="pm" data-edit="${p.id}">✎</button><button class="pm" data-delpost="${p.id}">🗑</button></div>`:""}
+    ${ME&&!p.pending&&!p.failed?`<div class="post-menu"><button class="pm pmore" data-pmore="${p.id}" aria-label="More">${DI.more}</button></div>`:""}
   </div>
   ${p.body?`<div class="post-body">${rich(p.body)}</div>`:""}
   ${(!p.imageUrl&&!p.videoUrl&&!p.beat&&firstUrl(p.body))?linkCard(firstUrl(p.body)):""}
@@ -244,10 +244,10 @@ function postHTML(p){const mine=p.author.username===myName();
   ${p.videoUrl?`<div class="vwrap">
     <video class="post-vid" src="${esc(p.videoUrl)}" muted loop playsinline preload="none" data-auto
       ${p.mediaW?`style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}></video>
-    <button class="vmute" data-vmute aria-label="Sound">🔇</button>
+    <button class="vmute" data-vmute aria-label="Sound">${DI.soundOff}</button>
   </div>`:""}
-  ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}'>▶︎</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM${p.beat.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:""}</div></div><button class="act" data-remix="${p.id}" style="margin-left:auto">${IC_REMIX_SM} Remix</button></div>`:""}
-  ${p.collaborators.length?`<div class="collab-row">${p.collaborators.map(c=>`<span class="ctag ${c.status==="accepted"?"acc":""}">${c.status==="accepted"?"✓":"…"} ${esc(c.display_name||c.username)}</span>`).join("")}</div>`:""}
+  ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}' aria-label="Play">${DI.play}</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM${p.beat.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:""}</div></div><button class="act" data-remix="${p.id}" style="margin-left:auto">${IC_REMIX_SM} Remix</button></div>`:""}
+  ${p.collaborators.length?`<div class="collab-row">${p.collaborators.map(c=>`<span class="ctag ${c.status==="accepted"?"acc":""}">${c.status==="accepted"?DI.check:"…"} ${esc(c.display_name||c.username)}</span>`).join("")}</div>`:""}
   <div class="post-acts">
     <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
     <button class="igact" data-comments="${p.id}" aria-label="Comment">${IG_COMMENT}</button>
@@ -269,14 +269,14 @@ function commentsHTML(p){return `<div class="cwrap">
       <div class="ctext">${rich(c.body)}</div>
     </div>
     ${!guest()&&(c.author.username===myName()||p.author.username===myName())?`<div class="post-menu">
-      ${c.author.username===myName()?`<button class="pm" data-cedit="${c.id}">✎</button>`:""}
-      <button class="pm" data-cdel="${c.id}">🗑</button></div>`:""}
+      ${c.author.username===myName()?`<button class="pm" data-cedit="${c.id}" aria-label="Edit">${DI.edit}</button>`:""}
+      <button class="pm" data-cdel="${c.id}" aria-label="Delete">${DI.trash}</button></div>`:""}
   </div>`).join("")}
   ${guest()
     ?`<button class="cjoin" id="cjoinb">Join to give feedback — it's where collabs start</button>`
     :`<div class="cform">
       <input class="in" id="cdraft" placeholder="${CEDIT?"Edit comment…":"Add feedback…"}" value="${CEDIT?esc(COMMENTS.find(x=>x.id===CEDIT)?.body||""):""}">
-      <button class="send" id="csend" aria-label="Send">${CEDIT?"✓":UI_IC.arrow}</button>
+      <button class="send" id="csend" aria-label="Send">${CEDIT?DI.check:UI_IC.arrow}</button>
       ${CEDIT?`<button class="send ghostsend" id="ccancel" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:""}
     </div>`}
 </div>`}

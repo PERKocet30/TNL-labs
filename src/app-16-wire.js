@@ -51,7 +51,7 @@ function wire(){
     if(!BOARDS.length){BOARDSOPEN=true;render();return toast("Make a moodboard first")}
     openPicker({eyebrow:"PULL INTO",title:"Which moodboard?",
       note:"The link and the source are kept. We never rehost the file.",
-      items:BOARDS.map(b=>({label:b.name,sub:b.count+(b.count===1?" image":" images"),icon:"◫",bid:b.id})),
+      items:BOARDS.map(b=>({label:b.name,sub:b.count+(b.count===1?" image":" images"),icon:DI.board,bid:b.id})),
       onPick:async(it)=>{
         try{
           await api.pin(it.bid,{srcUrl:PASTED.url,imgUrl:PASTED.image,note:PASTED.title||""});
@@ -95,7 +95,7 @@ function wire(){
     if(!BOARDS.length){BOARDSOPEN=true;render();return toast("Make a moodboard first")}
     openPicker({eyebrow:"PULL INTO",title:"Which moodboard?",
       note:"Whoever made this gets told you took it.",
-      items:BOARDS.map(b2=>({label:b2.name,sub:b2.count+(b2.count===1?" image":" images"),icon:"◫",bid:b2.id})),
+      items:BOARDS.map(b2=>({label:b2.name,sub:b2.count+(b2.count===1?" image":" images"),icon:DI.board,bid:b2.id})),
       onPick:async(it)=>{
         try{await api.pin(it.bid,{postId:id});
           const x=(ARCHIVE?.images||[]).find(i=>i.id===id);

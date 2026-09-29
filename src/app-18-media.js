@@ -39,7 +39,7 @@ function wireVideos(){
             const w=v.parentElement;
             if(w&&!w.querySelector(".vplay")){
               const b=document.createElement("button");
-              b.className="vplay"; b.textContent="▶︎"; b.setAttribute("aria-label","Play");
+              b.className="vplay"; b.innerHTML=DI.play.replace(/width="16" height="16"/,'width="22" height="22"'); b.setAttribute("aria-label","Play");
               b.onclick=(ev)=>{ev.stopPropagation();v.play().then(()=>b.remove()).catch(()=>{})};
               w.appendChild(b);
             }
@@ -60,12 +60,12 @@ function wireVideos(){
     v.onclick=()=>{
       v.muted=!v.muted;
       const btn=v.parentElement&&v.parentElement.querySelector("[data-vmute]");
-      if(btn)btn.textContent=v.muted?"🔇":"🔊";
+      if(btn)btn.innerHTML=v.muted?DI.soundOff:DI.soundOn;
       if(v.paused)v.play().catch(()=>{});
       if(!v.muted){ // only one thing makes noise at a time
         for(const o of vids) if(o!==v){o.muted=true;
           const b=o.parentElement&&o.parentElement.querySelector("[data-vmute]");
-          if(b)b.textContent="🔇"}
+          if(b)b.innerHTML=DI.soundOff}
       }
     };
   }
@@ -81,7 +81,7 @@ function wireVideos(){
 function musChipHTML(p){
   if(!p.audioTrack)return "";
   const on=NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id&&AUDIO&&!AUDIO.paused;
-  return `<button class="muschip" data-mustrack="${p.id}">${on?"❚❚":"♫"} <span class="muschip-t">${esc(p.audioTrack.title)}</span><span class="mono dim">· @${esc(p.audioTrack.by.username)}</span></button>`;
+  return `<button class="muschip" data-mustrack="${p.id}">${on?DI.pause:DI.music} <span class="muschip-t">${esc(p.audioTrack.title)}</span><span class="mono dim">· @${esc(p.audioTrack.by.username)}</span></button>`;
 }
 /* iOS will not start audio without a gesture, so autoplay stays off until the
    first deliberate chip tap unlocks it for the session. MUSMUTE is set when
@@ -274,7 +274,7 @@ function trkEditHTML(){
     </header>
     <div class="pcmp-body">
       <div class="trke-row">
-        <label class="trke-art">${e.artworkUrl?`<img src="${esc(e.artworkUrl)}" alt="">`:`<span>♫<br><small>Add cover</small></span>`}
+        <label class="trke-art">${e.artworkUrl?`<img src="${esc(e.artworkUrl)}" alt="">`:`<span>${DI.music}<br><small>Add cover</small></span>`}
           <input type="file" id="trkeart" accept="image/*" hidden></label>
         <div class="trke-fields">
           <input class="ui-in" id="trketitle" placeholder="Track name" value="${esc(e.title)}" maxlength="120">

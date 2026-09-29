@@ -192,9 +192,9 @@ function wireMarket(){
   const lp=$("#loopplay");
   if(lp)lp.onclick=()=>{
     const a=$("#loopaudio");if(!a)return;
-    if(a.paused){a.play().then(()=>{lp.textContent="■"}).catch(()=>toast("Couldn't play that"));
-      a.onended=()=>{lp.textContent="▶︎"};}
-    else{a.pause();lp.textContent="▶︎"}
+    if(a.paused){a.play().then(()=>{lp.innerHTML=DI.stop}).catch(()=>toast("Couldn't play that"));
+      a.onended=()=>{lp.innerHTML=DI.play};}
+    else{a.pause();lp.innerHTML=DI.play}
   };
   const wg=$("#whograbbed");if(wg)wg.onclick=async()=>{
     try{const d=await api.loopGrabs(MKTONE.id);
