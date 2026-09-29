@@ -72,12 +72,7 @@ app.get("/u/:username", (req, res) => {
   const u = q.userByName.get(req.params.username);
   /* 064: every page is public — the only 404 is a name that doesn't exist. */
   if (!u) {
-    return res.status(404).send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
-<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center">
-<div><div style="color:#98FC68;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS &#129514;</div>
-<h1 style="text-transform:uppercase;font-size:22px;margin:14px 0 8px">Not found</h1>
-<p style="color:#8A8A8A;font-size:14px">This portfolio is private or doesn't exist.</p>
-<a href="/" style="display:inline-block;margin-top:16px;background:#fff;color:#000;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:9px">Enter the lab</a></div></body>`);
+    return res.status(404).send(lookNotFound("This portfolio doesn't exist."));
   }
   const posts = shapePosts(feedRows({ authorId: u.id, viewerId: 0, limit: 60, workOnly: true }));
   const likes = db.prepare(`SELECT COUNT(*) n FROM likes l JOIN posts p ON p.id=l.post_id WHERE p.author_id=?`).get(u.id).n;
@@ -86,15 +81,17 @@ app.get("/u/:username", (req, res) => {
   const K = kindFor(u.roles, u.role);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  const work = posts.map((p) => `
-    <div style="background:#141414;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px;margin-bottom:9px">
-      <div style="color:#98FC68;font-family:monospace;font-size:9px;letter-spacing:.08em">${p.beat ? "BEAT" : p.videoUrl ? "VIDEO" : p.imageUrl ? "IMAGE" : "POST"} · #${esc(p.channel)}</div>
-      ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" style="width:100%;max-height:300px;object-fit:cover;border-radius:7px;margin-top:7px" loading="lazy">` : ""}
-      ${p.videoUrl ? `<video src="${esc(p.videoUrl)}" controls playsinline preload="metadata" style="width:100%;max-height:300px;border-radius:7px;margin-top:7px"></video>` : ""}
-      ${p.body ? `<div style="font-size:13px;line-height:1.5;color:#D6D2C8;margin-top:7px">${esc(p.body)}</div>` : ""}
-      ${p.beat ? `<div style="font-size:12px;font-weight:700;margin-top:7px">♫ ${esc(p.beat.name || "untitled loop")} <span style="color:#8A8A8A;font-family:monospace;font-weight:400">${p.beat.bpm}BPM</span></div>` : ""}
-      <div style="font-family:monospace;font-size:9px;color:#8A8A8A;margin-top:8px">♥ ${p.likeCount} &nbsp; ↻ ${p.shareCount}${p.collaborators.filter((c) => c.status === "accepted").length ? ` &nbsp; <span style="color:#98FC68">✓ ${p.collaborators.filter((c) => c.status === "accepted").map((c) => esc(c.display_name || c.username)).join(", ")}</span>` : ""}</div>
-    </div>`).join("");
+  const work = posts.map((p) => {
+    const w = p.collaborators.filter((c) => c.status === "accepted").map((c) => esc(c.display_name || c.username));
+    return `<div class="card">
+      <div class="cap">${p.beat ? "Beat" : p.videoUrl ? "Video" : p.imageUrl ? "Image" : "Post"} · #${esc(p.channel)}</div>
+      ${p.imageUrl ? `<img class="media" src="${esc(p.imageUrl)}" alt="" loading="lazy">` : ""}
+      ${p.videoUrl ? `<video class="media" src="${esc(p.videoUrl)}" controls playsinline preload="metadata"></video>` : ""}
+      ${p.body ? `<div class="body">${esc(p.body)}</div>` : ""}
+      ${p.beat ? `<div class="body"><b>${esc(p.beat.name || "untitled loop")}</b> <span class="cap">${p.beat.bpm} BPM</span></div>` : ""}
+      <div class="cap meta">${lookCount(p.likeCount, "like")} · ${lookCount(p.shareCount, "share")}${w.length ? ` · <span class="mk">//</span> with ${w.join(", ")}` : ""}</div>
+    </div>`;
+  }).join("");
 
   /* ── THE LINK PREVIEW ────────────────────────────────────────────────
      This page's real job is to look like something when it's pasted into
@@ -132,10 +129,10 @@ app.get("/u/:username", (req, res) => {
      it at once; short enough that new work shows up. Crawlers get a fresh
      one because they hit it first. */
   res.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=600");
-  res.send(`<!doctype html><html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(u.display_name)} — TNL LABS</title>
-<link rel="canonical" href="${esc(canonical)}">
+  const roleChips = (() => { let rs = []; try { rs = JSON.parse(u.roles || "[]"); } catch {} if (!rs.length && u.role) rs = [u.role]; return rs; })();
+  res.send(lookPage({
+    title: `${esc(u.display_name)} — TNL LABS`,
+    head: `<link rel="canonical" href="${esc(canonical)}">
 
 <meta property="og:type" content="profile">
 <meta property="og:site_name" content="TNL LABS">
@@ -154,29 +151,24 @@ app.get("/u/:username", (req, res) => {
 <meta name="twitter:description" content="${esc(ogDesc)}">
 <meta name="twitter:image" content="${esc(ogImage)}">
 
-<meta name="description" content="${esc(ogDesc)}">
-<meta name="theme-color" content="#000000">
-</head>
-<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif">
-<div style="max-width:640px;margin:0 auto;padding:28px 18px 60px">
-  <a href="/" style="color:#98FC68;font-family:monospace;font-size:11px;letter-spacing:.16em;text-decoration:none">TNLLABS &#129514;</a>
-  <div style="font-family:monospace;font-size:9px;letter-spacing:.14em;color:#8A8A8A;margin-top:14px">${esc(K.tag)}</div>
-  <div style="display:flex;align-items:center;gap:13px;margin-top:22px">
-    ${u.avatar_url ? `<img src="${esc(u.avatar_url)}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #98FC68">` : `<div style="width:56px;height:56px;border-radius:50%;background:#141414;border:2px solid #98FC68;display:flex;align-items:center;justify-content:center;font-family:monospace">${esc(u.display_name.slice(0, 2).toUpperCase())}</div>`}
-    <div><div style="font-size:20px;font-weight:900;text-transform:uppercase">${esc(u.display_name)}</div>
-    <div style="font-family:monospace;font-size:10px;color:#8A8A8A;letter-spacing:.08em">@${esc(u.username)} · L${lvl.id} ${esc(lvl.name.toUpperCase())}</div></div>
-  </div>
-  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px">${(() => { let rs = []; try { rs = JSON.parse(u.roles || "[]"); } catch {} if (!rs.length && u.role) rs = [u.role]; return rs.map((r) => `<span style="font-family:monospace;font-size:9px;letter-spacing:.06em;border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:4px 9px;color:#D6D2C8">${esc(r.toUpperCase())}</span>`).join(""); })()}</div>
-  ${u.bio ? `<p style="font-size:14px;line-height:1.6;color:#D6D2C8;margin:16px 0 8px;white-space:pre-wrap">${esc(u.bio)}</p>` : ""}
-  ${u.link ? `<a href="${/^https?:\/\//.test(u.link) ? esc(u.link) : "https://" + esc(u.link)}" target="_blank" rel="noreferrer nofollow" style="color:#98FC68;font-family:monospace;font-size:11px;text-decoration:none">↗ ${esc(u.link.replace(/^https?:\/\//, ""))}</a>` : ""}
-  <div style="display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12);padding:14px 0;margin:16px 0 20px">
-    <div style="flex:1"><b style="font-size:17px">${posts.length}</b><div style="font-family:monospace;font-size:9px;color:#8A8A8A">${esc(K.work)}</div></div>
-    <div style="flex:1"><b style="font-size:17px">${likes}</b><div style="font-family:monospace;font-size:9px;color:#8A8A8A">LIKES</div></div>
-    <div style="flex:1"><b style="font-size:17px">${collabs}</b><div style="font-family:monospace;font-size:9px;color:#8A8A8A">COLLABS</div></div>
-  </div>
-  ${work || `<div style="color:#8A8A8A;font-size:13px;text-align:center;padding:28px">Nothing published yet.</div>`}
-  <a href="/" style="display:block;text-align:center;margin-top:26px;background:#fff;color:#000;text-decoration:none;font-weight:700;padding:13px;border-radius:9px">Build with ${esc(u.display_name)} — enter the lab</a>
-</div></body></html>`);
+<meta name="description" content="${esc(ogDesc)}">`,
+    body: `
+${lookEyebrow(K.tag)}
+<div class="who" style="margin-top:0">
+  ${u.avatar_url ? `<img class="av" src="${esc(u.avatar_url)}" alt="">` : `<div class="av">${esc(u.display_name.slice(0, 2).toUpperCase())}</div>`}
+  <div><div class="name">${esc(u.display_name)}</div><div class="cap">@${esc(u.username)} · L${lvl.id} ${esc(lvl.name)}</div></div>
+</div>
+${roleChips.length ? `<div class="chips">${roleChips.map((r) => `<span class="chip">${esc(r)}</span>`).join("")}</div>` : ""}
+${u.bio ? `<p class="bio">${esc(u.bio)}</p>` : ""}
+${u.link ? `<a class="cap" href="${/^https?:\/\//.test(u.link) ? esc(u.link) : "https://" + esc(u.link)}" target="_blank" rel="noreferrer nofollow">${esc(u.link.replace(/^https?:\/\//, ""))}</a>` : ""}
+<div class="stats">
+  <div><b>${posts.length}</b><span class="cap">${esc(K.work.charAt(0) + K.work.slice(1).toLowerCase())}</span></div>
+  <div><b>${likes}</b><span class="cap">Likes</span></div>
+  <div><b>${collabs}</b><span class="cap">Collabs</span></div>
+</div>
+${work || `<div class="cap empty">Nothing published yet.</div>`}
+<a class="btn block" href="/">Build with ${esc(u.display_name)} — enter the lab</a>`,
+  }));
 });
 
 /* ================================================================

@@ -296,18 +296,12 @@ app.get("/m/:id", (_req, res) => res.sendFile(join(__dirname, "..", "public", "i
 app.get("/p/:id", (req, res) => {
   const rows = feedRows({ viewerId: 0, limit: 1, postId: Number(req.params.id) });
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const notFound = `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
-<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center">
-<div><h1 style="text-transform:uppercase;font-size:22px">Not found</h1>
-<p style="color:#8A8A8A;font-size:14px">This work isn't public, or it's been removed.</p>
-<a href="/" style="display:inline-block;margin-top:16px;background:#fff;color:#000;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:9px">Enter the lab</a></div></body>`;
+  const notFound = lookNotFound("This work isn't public, or it's been removed.");
   if (!rows.length) return res.status(404).send(notFound);
   const p = shapePost(rows[0]);
   // Only published work is shareable. Chat stays private, by design.
   if (!p.isWork) return res.status(404).send(notFound);
 
-  const u = q.userByName.get(p.author.username);
-  const accent = /^#[0-9a-f]{6}$/i.test(u?.accent || "") ? u.accent : "#98FC68";
   const abs = (path) => (path ? (/^https?:/.test(path) ? path : `${baseUrl(req)}${path}`) : null);
   const img = abs(p.imageUrl) || abs(p.author.avatarUrl) || `${baseUrl(req)}/icon-512.png`;
   const accepted = p.collaborators.filter((c) => c.status === "accepted");
@@ -324,10 +318,9 @@ app.get("/p/:id", (req, res) => {
   ].filter(Boolean).join(" · ").slice(0, 200);
   const canonical = `${baseUrl(req)}/p/${p.id}`;
 
-  res.send(`<!doctype html><html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)}</title>
-<link rel="canonical" href="${esc(canonical)}">
+  res.send(lookPage({
+    title: esc(title),
+    head: `<link rel="canonical" href="${esc(canonical)}">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="TNL LABS">
 <meta property="og:url" content="${esc(canonical)}">
@@ -342,28 +335,19 @@ app.get("/p/:id", (req, res) => {
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(desc)}">
 <meta name="twitter:image" content="${esc(img)}">
-<meta name="description" content="${esc(desc)}">
-<meta name="theme-color" content="#000000">
-</head>
-<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif">
-<div style="max-width:560px;margin:0 auto;padding:24px 18px 60px">
-  <a href="/" style="color:${accent};font-family:monospace;font-size:11px;letter-spacing:.16em;text-decoration:none">TNLLABS &#129514;</a>
-  <a href="/u/${esc(p.author.username)}" style="display:flex;align-items:center;gap:11px;margin:24px 0 16px;text-decoration:none;color:#fff">
-    ${p.author.avatarUrl ? `<img src="${esc(abs(p.author.avatarUrl))}" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid ${accent}">`
-      : `<div style="width:42px;height:42px;border-radius:50%;background:#141414;border:2px solid ${accent};display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:12px">${esc(p.author.displayName.slice(0, 2).toUpperCase())}</div>`}
-    <div><div style="font-weight:900;font-size:16px">${esc(p.author.displayName)}</div>
-    <div style="font-family:monospace;font-size:10px;color:#8A8A8A">@${esc(p.author.username)} · ${esc(p.author.role.toUpperCase())}</div></div>
-  </a>
-  ${p.body ? `<p style="font-size:15px;line-height:1.6;color:#D6D2C8;margin:0 0 14px;white-space:pre-wrap">${esc(p.body)}</p>` : ""}
-  ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" style="width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.12);display:block">` : ""}
-  ${p.videoUrl ? `<video src="${esc(p.videoUrl)}" controls playsinline style="width:100%;border-radius:12px;background:#000"></video>` : ""}
-  ${p.beat ? `<div style="background:#141414;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:20px;text-align:center">
-    <div style="font-size:30px;color:${accent}">♫</div>
-    <div style="font-weight:900;margin-top:6px">${esc(p.beat.name || "untitled loop")}</div>
-    <div style="font-family:monospace;font-size:10px;color:#8A8A8A;margin-top:3px">${p.beat.bpm} BPM · MADE IN THE TNL STUDIO</div></div>` : ""}
-  ${accepted.length ? `<div style="font-family:monospace;font-size:10px;color:${accent};letter-spacing:.08em;margin-top:12px">↔ BUILT WITH ${accepted.map((c) => esc((c.display_name || c.username).toUpperCase())).join(" + ")}</div>` : ""}
-  <div style="font-family:monospace;font-size:10px;color:#8A8A8A;margin-top:12px">♥ ${p.likeCount} &nbsp; ↻ ${p.shareCount} &nbsp; #${esc(p.channel)}</div>
-  <a href="/" style="display:block;text-align:center;margin-top:26px;background:${accent};color:#000;text-decoration:none;font-weight:700;padding:14px;border-radius:9px">See what else is being made</a>
-</div></body></html>`);
+<meta name="description" content="${esc(desc)}">`,
+    body: `
+<a class="who" href="/u/${esc(p.author.username)}">
+  ${p.author.avatarUrl ? `<img class="av" src="${esc(abs(p.author.avatarUrl))}" alt="">` : `<div class="av">${esc(p.author.displayName.slice(0, 2).toUpperCase())}</div>`}
+  <div><div class="name">${esc(p.author.displayName)}</div><div class="cap">@${esc(p.author.username)} · ${esc(p.author.role)}</div></div>
+</a>
+${p.body ? `<p class="body" style="margin:0 0 14px">${esc(p.body)}</p>` : ""}
+${p.imageUrl ? `<img class="media" src="${esc(p.imageUrl)}" alt="" style="max-height:none">` : ""}
+${p.videoUrl ? `<video class="media" src="${esc(p.videoUrl)}" controls playsinline></video>` : ""}
+${p.beat ? `<div class="card"><b>${esc(p.beat.name || "untitled loop")}</b><div class="cap">${p.beat.bpm} BPM · made in the TNL studio</div></div>` : ""}
+${accepted.length ? `<div class="cap meta"><span class="mk">//</span> Built with ${accepted.map((c) => esc(c.display_name || c.username)).join(" + ")}</div>` : ""}
+<div class="cap meta">${lookCount(p.likeCount, "like")} · ${lookCount(p.shareCount, "share")} · #${esc(p.channel)}</div>
+<a class="btn block" href="/">See what else is being made</a>`,
+  }));
 });
 
