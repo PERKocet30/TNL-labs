@@ -41,7 +41,8 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
 - `src/db.js` — schema, migrations, rep engine. `REP`, `LEVELS` and
   `FEE_BY_LEVEL` are the single source for rep points, levels and commission.
 - `src/pay.js` — Stripe Connect. `src/mail.js` — email via Resend.
-- `public/studio.js` — the Studio (beat maker). `public/admin.html` + `public/admin-app/*.js` — `/admin` (keep each ≤ 24KB too).
+- `public/studio.js` — the Studio (beat maker), hidden unless Admin → Settings
+  → Studio is on (`studioOn()`). `public/admin.html` + `public/admin-app/*.js` — `/admin` (keep each ≤ 24KB too).
 - The README has a table of what each numbered part holds, and the API route list.
 
 ## Product rules to preserve
@@ -56,7 +57,9 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
 
 Helvetica. `//` marks the labs (`// Music`). Paper (light) by default with a
 dark mode. Reagent green `#98FC68` is the **one** accent. Icons are drawn,
-2px stroke, square caps. Mobile-first — check it at phone width.
+2px stroke, square caps. Mobile-first — check it at phone width, and at
+1440px: from 1024px the app switches to the computer frame (left sidebar,
+`src/app-05-styles-wide.css`, `isWide()` in `app-09-render-nav.js`).
 
 ## Careful areas
 
