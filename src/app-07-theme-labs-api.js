@@ -100,7 +100,7 @@ const chName = c => { const t=String((c&&c.label)||"").replace(/-/g," "); return
 const LAB_ID = {
   hq:       {for:"Everything starts here.",          ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M10 4L6 20M18 4l-4 16"/></svg>`},
   pharmacy: {for:"Design, photo and film.",          ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14"/><path d="M3.5 15.5l5-5 4 4 2.5-2.5 5.5 5.5"/><circle cx="15.5" cy="9.5" r="1.25"/></svg>`},
-  culture:  {for:"Upload music. Press play. Get ears.", ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M9 17.5V5.5l10-2v12"/><circle cx="6.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="15.5" r="2.5"/></svg>`},
+  culture:  {for:"Upload music, press play, talk about it.", ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M9 17.5V5.5l10-2v12"/><circle cx="6.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="15.5" r="2.5"/></svg>`},
   fashion:  {for:"Garments, styling and drops.",     ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 7.5a2 2 0 1 0-2-2"/><path d="M12 7.5V9L3 16.5h18L12 9"/></svg>`},
   akatsuki: {for:"Anime, manga and ideas.",          ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 3l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg>`},
   casino:   {for:"News, features and promos.",       ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><rect x="4" y="4" width="16" height="16"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/></svg>`},
@@ -120,6 +120,7 @@ const LABS = [
   {id:"culture",name:"Music",channels:[
     {id:"tracks",label:"tracks",desc:"Upload your music. Press play on everyone's.",library:true},
     {id:"feedback",label:"feedback",desc:"Post your work in progress, get ears. Help someone finish."},
+    {id:"music-chat",label:"chat",desc:"Talk music. Releases, gear, who's working on what."},
     {id:"beats",label:"beats",desc:"The Beat Lab. Loops become collabs.",beatlab:true}]},
   {id:"fashion",name:"Fashion",channels:[
     {id:"clothing-design",label:"clothing-design",desc:"Design work and concepts."},

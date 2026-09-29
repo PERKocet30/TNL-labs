@@ -6,6 +6,7 @@ const EMPTY={
   "clothing-design":["Show a design.","Sketch, mockup, or the real thing."],
   "clothing-drops":["What's releasing?","Post the drop before it goes live."],
   "beats":["Make something.","Open the Studio, build a loop, hit publish. Someone here writes to it."],
+  "music-chat":["Talk music.","What you're listening to, what you're making, what you need."],
   "tracks":["Finished songs from the network. Press play.","Upload it here and it's in the library."],
   "anime-chat":["Start the discourse.","Anime is half the design language here. Say what's moving you."],
   "manga":["Post a panel.","Art, paneling, a page that made you stop. Bring the reference."],
@@ -44,12 +45,12 @@ function trackRowHTML(t){
   const on=NOWPLAYING&&NOWPLAYING.id===t.id;
   return `<div class="trk ${on?"on":""}" data-trk="${t.id}">
     <button class="trk-play" data-trkplay="${t.id}" aria-label="Play">${on&&AUDIO&&!AUDIO.paused?DI.pause:DI.play}</button>
-    <div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="" loading="lazy">`:""}</div>
+    <div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="" loading="lazy">`:DI.music}</div>
     <div class="trk-meta">
       <div class="trk-t">${esc(t.title)}</div>
-      <div class="mono dim trk-by" data-u="${esc(t.by.username)}">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}${t.plays?" · "+t.plays+" plays":""}</div>
+      <div class="mono dim trk-by" data-u="${esc(t.by.username)}">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}${t.plays?" · "+t.plays+(t.plays===1?" play":" plays"):""}</div>
     </div>
-    ${t.by.username===myName()?`<button class="trk-e" data-trkedit="${t.id}">Edit</button><button class="trk-x" data-trkdel="${t.id}" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:""}
+    ${t.by.username===myName()?`<button class="trk-more" data-trkmore="${t.id}" aria-label="More">${DI.more}</button>`:""}
   </div>`;
 }
 
@@ -70,6 +71,20 @@ function tracksHTML(){
 }
 
 /* The player (audio element, now-playing bar, queue) → app-13-player.js */
+
+/* One … menu per track, the same hold menu posts use: no loose Edit / ✕. */
+function trackMenu(t){
+  const acts=[];
+  acts.push({icon:DI.edit,label:"Edit title and cover",run:()=>{
+    TRKEDIT={id:t.id,title:t.title,artworkUrl:t.artworkUrl||"",busy:false,fresh:false};render()}});
+  acts.push({icon:DI.trash,label:"Delete",danger:true,run:async()=>{
+    if(!(await uiConfirm("Delete this track?","",{okLabel:"Delete",danger:true})))return;
+    try{await api.delTrack(t.id);
+      if(NOWPLAYING&&NOWPLAYING.id===t.id){if(AUDIO)AUDIO.pause();NOWPLAYING=null;paintPlayer()}
+      PLAYQ=PLAYQ.filter(x=>x.id!==t.id);
+      await loadTracks();toast("Deleted")}catch(e){toast(e.message)}}});
+  openMenu({react:false,preview:(t.title+" · @"+t.by.username).slice(0,120),actions:acts});
+}
 
 function vidPickHTML(){
   return `<div class="trk-vids">${
@@ -143,18 +158,10 @@ function wireTracks(){
     const t=(TRACKS||[]).find(x=>String(x.id)===el.dataset.trkplay);
     if(t){MUSAUTOID=null;PLAYQ=(TRACKS||[]).slice();playTrack(t)}   // lab playback belongs to no post; the list is the queue
   });
-  document.querySelectorAll("[data-trkedit]").forEach(el=>el.onclick=ev=>{
+  document.querySelectorAll("[data-trkmore]").forEach(el=>el.onclick=ev=>{
     ev.stopPropagation();
-    const t=(TRACKS||[]).find(x=>String(x.id)===el.dataset.trkedit);
-    if(t)TRKEDIT={id:t.id,title:t.title,artworkUrl:t.artworkUrl||"",busy:false,fresh:false};
-    render();
-  });
-  document.querySelectorAll("[data-trkdel]").forEach(el=>el.onclick=async ev=>{
-    ev.stopPropagation();
-    if(!confirm("Delete this track?"))return;
-    try{await api.delTrack(el.dataset.trkdel);
-      if(NOWPLAYING&&String(NOWPLAYING.id)===el.dataset.trkdel){if(AUDIO)AUDIO.pause();NOWPLAYING=null;paintPlayer()}
-      await loadTracks()}catch(e){toast(e.message)}
+    const t=(TRACKS||[]).find(x=>String(x.id)===el.dataset.trkmore);
+    if(t)trackMenu(t);
   });
 }
 

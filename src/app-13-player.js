@@ -35,9 +35,13 @@ function prevTrack(){
   playTrack(PLAYQ[i-1]);
 }
 
-/* The bar steps aside for the door, the post composer and chats — each has
-   its own bottom edge that the bar would sit on. */
-function barVisible(){return !!NOWPLAYING&&MUSAUTOID==null&&!GATE&&!PCOMPOSE&&!CHAT&&!DMOPENPANEL}
+/* The bar steps aside only for the door and the full-screen editors (post
+   composer, track edit), which have their own bottom edge. Everywhere else —
+   chats and drawers included — the music keeps its controls. */
+function barVisible(){return !!NOWPLAYING&&MUSAUTOID==null&&!GATE&&!PCOMPOSE&&!TRKEDIT}
+/* Over a chat or a drawer there's no nav underneath, so the bar docks to the
+   bottom edge and the screen above makes room for it. */
+function barDocked(){return !!(DMOPENPANEL||NOTIFOPEN||SEARCHOPEN||BOARDSOPEN||REVIEWING||(PROFILE&&!MYPAGE()))}
 
 const nowClock=s=>{s=Math.max(0,Math.floor(s||0));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
 
@@ -62,6 +66,7 @@ function paintPlayer(){
   }
   const show=barVisible();
   document.body.classList.toggle("has-now",show);
+  document.body.classList.toggle("now-dock",show&&barDocked());
   if(!show){PLAYERBAR.style.display="none";return}
   PLAYERBAR.style.display="block";
   const t=NOWPLAYING, i=qIndex();
