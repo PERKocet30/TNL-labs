@@ -261,7 +261,7 @@ const api={
   beat:id=>req("/api/beats/"+id),
   saveBeat:b=>req("/api/beats",{method:"POST",body:b}),
   delBeat:id=>req("/api/beats/"+id,{method:"DELETE"}),
-  like:id=>req("/api/posts/"+id+"/like",{method:"POST"}),
+  like:(id,liked)=>req("/api/posts/"+id+"/like",{method:"POST",body:typeof liked==="boolean"?{liked}:undefined}),
   share:(id,b)=>req("/api/posts/"+id+"/share",{method:"POST",body:b||{}}),
   invite:(id,username)=>req("/api/posts/"+id+"/collab",{method:"POST",body:{username}}),
   accept:id=>req("/api/posts/"+id+"/collab/accept",{method:"POST"}),

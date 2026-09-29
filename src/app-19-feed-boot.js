@@ -1,3 +1,30 @@
+/* LIKES v2 — 2026-09-29. One state per post however many buttons show it (a
+   card and the opened post). A tap flips it at once; the server is told the
+   state you want, one request per post at a time, and its answer wins. */
+const LIKING={};
+function likeCopies(id){id=String(id);
+  const all=[...(POSTS||[]),...(SRPOSTS||[]),...(POSTOPEN?[POSTOPEN]:[]),...(PROFILE?[...(PROFILE.posts||[]),...(PROFILE.collabs||[])]:[]),...(SEARCHRES?SEARCHRES.posts||[]:[])];
+  return all.filter(x=>String(x.id)===id)}
+function setLike(id,liked,count){
+  for(const p of likeCopies(id)){if(liked!=null)p.likedByMe=liked;p.likeCount=count}
+  document.querySelectorAll('[data-like="'+id+'"]').forEach(b=>{
+    if(liked!=null)b.classList.toggle("on",liked);
+    const n=b.querySelector(".igact-n");if(n)n.textContent=count||"";});
+}
+async function sendLike(id){
+  const s=LIKING[id];if(!s||s.busy)return;
+  s.busy=true;
+  try{
+    let r,sent;
+    do{sent=s.want;r=await api.like(id,sent)}while(s.want!==sent);   // tapped again meanwhile: send the latest
+    delete LIKING[id];
+    setLike(id,!!r.liked,Number(r.likeCount)||0);
+  }catch(e){
+    delete LIKING[id];
+    setLike(id,s.base.liked,s.base.count);
+    toast(e.message);
+  }
+}
 function wireFeed(){
   wireVideos();   // autoplay in view — must run after every feed repaint
   /* The sound observer travels with the video one. Showroom and the room feed
@@ -7,35 +34,16 @@ function wireFeed(){
   wireMusAuto();
   wireCaros();
   wireInstall();
-  document.querySelectorAll("[data-like]").forEach(b=>b.onclick=async()=>{
+  document.querySelectorAll("[data-like]").forEach(b=>b.onclick=()=>{
     if(guest())return needAccount("Join to like work.");
-    const id=b.dataset.like;
-    const p=POSTS.find(x=>String(x.id)===id)||SRPOSTS.find(x=>String(x.id)===id)||(SEARCHRES&&SEARCHRES.posts.find(x=>String(x.id)===id))
-      ||(PROFILE&&[...PROFILE.posts,...PROFILE.collabs].find(x=>String(x.id)===id));
-    // flip it now, reconcile after. Repaint ONLY this button — a full
-    // re-render here throws away your scroll position.
-    const was=p?p.likedByMe:b.classList.contains("on");
-    const now=!was;
-    if(p){p.likedByMe=now;p.likeCount=Math.max(0,p.likeCount+(now?1:-1))}
-    b.classList.toggle("on",now);
-    const n=b.querySelector(".igact-n");
-    if(n){n.textContent=p?(p.likeCount||""):"";}          // new IG icon button
-    else{b.textContent=(now?"♥":"♡")+" "+(p?(p.likeCount||""):"");}  // legacy glyph cards
-    try{
-      const liked=await api.like(id);
-      if(p&&liked!==now){ // server disagreed — trust it
-        p.likedByMe=liked;p.likeCount=Math.max(0,p.likeCount+(liked?1:-1));
-        b.classList.toggle("on",liked);
-        /* textContent= used to wipe the icon AND the count span, leaving a bare
-           text stub until the next full render. Repaint the count only. */
-        const n2=b.querySelector(".igact-n");if(n2)n2.textContent=p.likeCount||"";
-      }
-    }catch(e){
-      if(p){p.likedByMe=was;p.likeCount=Math.max(0,p.likeCount+(was?1:-1));
-        b.classList.toggle("on",was);
-        const n3=b.querySelector(".igact-n");if(n3)n3.textContent=p.likeCount||"";}
-      toast(e.message);
-    }});
+    const id=b.dataset.like, p=findAnyPost(id);
+    const was=p?!!p.likedByMe:b.classList.contains("on"), now=!was;
+    const had=p?(p.likeCount||0):(Number((b.querySelector(".igact-n")||{}).textContent)||0);
+    // flip it now, on every copy of this post on screen; the server is told after
+    if(!LIKING[id])LIKING[id]={base:{liked:was,count:had}};
+    setLike(id,now,Math.max(0,had+(now?1:-1)));
+    LIKING[id].want=now;sendLike(id);
+  });
   document.querySelectorAll("[data-share]").forEach(b=>b.onclick=()=>{
     if(guest())return needAccount("Join to carry work across the labs.");
     const id=b.dataset.share;
