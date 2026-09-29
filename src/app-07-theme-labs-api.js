@@ -10,7 +10,7 @@ function applyTheme(t){
   const light = t === "light";
   document.documentElement.setAttribute("data-theme", light ? "light" : "dark");
   const m = document.querySelector('meta[name="theme-color"]');
-  if(m) m.setAttribute("content", light ? "#F7F1F1" : "#000000");
+  if(m) m.setAttribute("content", light ? "#FFFFFF" : "#000000");
 }
 let THEME = localStorage.getItem("tnl-theme") || "light";
 applyTheme(THEME);

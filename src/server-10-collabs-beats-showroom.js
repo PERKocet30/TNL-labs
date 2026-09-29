@@ -135,6 +135,7 @@ app.get("/u/:username", (req, res) => {
   const roleChips = (() => { let rs = []; try { rs = JSON.parse(u.roles || "[]"); } catch {} if (!rs.length && u.role) rs = [u.role]; return rs; })();
   res.send(lookPage({
     title: `${esc(u.display_name)} — TNL LABS`,
+    accent: accentHex(u.accent),   // their colour, as in the app
     head: `<link rel="canonical" href="${esc(canonical)}">
 
 <meta property="og:type" content="profile">
@@ -158,7 +159,7 @@ app.get("/u/:username", (req, res) => {
     body: `
 ${lookEyebrow(K.tag)}
 <div class="who" style="margin-top:0">
-  ${u.avatar_url ? `<img class="av" src="${esc(u.avatar_url)}" alt="">` : `<div class="av">${esc(u.display_name.slice(0, 2).toUpperCase())}</div>`}
+  ${u.avatar_url ? `<img class="av ring" src="${esc(u.avatar_url)}" alt="">` : `<div class="av ring">${esc(u.display_name.slice(0, 2).toUpperCase())}</div>`}
   <div><div class="name">${esc(u.display_name)}</div><div class="cap">@${esc(u.username)} · L${lvl.id} ${esc(lvl.name)}</div></div>
 </div>
 ${roleChips.length ? `<div class="chips">${roleChips.map((r) => `<span class="chip">${esc(r)}</span>`).join("")}</div>` : ""}
@@ -170,7 +171,7 @@ ${u.link ? `<a class="cap" href="${/^https?:\/\//.test(u.link) ? esc(u.link) : "
   <div><b>${collabs}</b><span class="cap">Collabs</span></div>
 </div>
 ${work || `<div class="cap empty">Nothing published yet.</div>`}
-<a class="btn block" href="/">Build with ${esc(u.display_name)} — enter the lab</a>`,
+<a class="btn block acc" href="/">Build with ${esc(u.display_name)} — enter the lab</a>`,
   }));
 });
 

@@ -36,8 +36,8 @@ if (KEY && MAIL_TEST_SENDER) {
 }
 
 /* ----------------------------------------------------------------
-   THE LOOK — v2.0 2026-09-29. Every email is the app's design language:
-   Paper by default (#F7F1F1, ink #000), Black where the mail app is in
+   THE LOOK — v2.1 2026-09-29. Every email is the app's design language:
+   white by default (#FFFFFF, ink #000), Black where the mail app is in
    dark mode, Helvetica Neue / Archivo, a square card ("paper is square"),
    an inverted pill for the one action ("glass is round"), and the //
    mark as the only touch of Reagent. No monospace, no emoji, no images
@@ -46,7 +46,7 @@ if (KEY && MAIL_TEST_SENDER) {
    <style> block only adds dark mode for clients that honour it.
 ---------------------------------------------------------------- */
 const C = {
-  paper: "#F7F1F1", card: "#FBF8F8", ink: "#000000", ink2: "#5E5856", line: "#E3DADA", mark: "#3A5A26",
+  paper: "#FFFFFF", card: "#FFFFFF", ink: "#000000", ink2: "#5C5C5C", line: "#E6E6E6", mark: "#467430",
 };
 const FONT = `'Helvetica Neue',Helvetica,Archivo,Arial,sans-serif`; // single quotes: it sits inside style="…"
 
@@ -63,12 +63,12 @@ export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader }
 <style>
   @media (prefers-color-scheme: dark) {
     .bg { background:#000000 !important; }
-    .card { background:#000000 !important; border-color:#262424 !important; }
-    .t1 { color:#F7F1F1 !important; }
-    .t2 { color:#9A9392 !important; }
+    .card { background:#000000 !important; border-color:#262626 !important; }
+    .t1 { color:#FFFFFF !important; }
+    .t2 { color:#9A9A9A !important; }
     .mk { color:#98FC68 !important; }
-    .btn { background:#F7F1F1 !important; color:#000000 !important; }
-    .rule { border-color:#262424 !important; }
+    .btn { background:#FFFFFF !important; color:#000000 !important; }
+    .rule { border-color:#262626 !important; }
   }
   a { color:inherit; }
 </style>
