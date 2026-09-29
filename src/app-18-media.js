@@ -76,45 +76,6 @@ function wireVideos(){
   });
 }
 
-/* Post to YOUR profile — no lab required, exactly like Instagram. It lands on
-   your grid (and the Showroom when it's portfolio work); the labs stay rooms
-   for talk and collabs. channel:"profile" keeps it out of every lab feed. */
-function pcomposeHTML(){
-  const c=PCOMPOSE, has=!!(c.body.trim()||c.imgs.length||c.vid);
-  const cells=c.imgs.map((im,i)=>`<div class="pcmp-cell"><img src="${esc(im.thumb)}" alt=""><button class="pcmp-rm" data-pcrm="${i}" aria-label="Remove photo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`).join("");
-  const addTile=c.imgs.length<10?`<label class="pcmp-add">＋<input id="pcfile" type="file" accept="image/*,video/*" multiple hidden></label>`:"";
-  return `<div class="pcmp-ov" id="pcov"><div class="pcmp-sheet" role="dialog" aria-label="New post">
-    <header class="pcmp-top">
-      <button class="pcmp-x" id="pccancel">Cancel</button>
-      <div class="pcmp-ttl">New post</div>
-      <button class="pcmp-share" id="pcgo" ${has&&!c.busy&&!c.vidbusy?"":"disabled"}>${c.busy?"Posting…":"Share"}</button>
-    </header>
-    <div class="pcmp-body">
-      ${c.vidbusy
-        ?`<div class="pcmp-vidbusy"><span class="spin"></span><span class="mono dim" id="pcvidprog">UPLOADING VIDEO — ${Math.round((c.vidprog||0)*100)}%</span></div>`
-        :c.vid
-        ?`<div class="pcmp-vid"><video src="${esc(c.vid.url)}" playsinline muted controls preload="metadata"></video><button class="pcmp-rm" data-pcvidrm aria-label="Remove video"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`
-        :c.imgs.length
-        ?`<div class="pcmp-grid">${cells}${addTile}</div>`
-        :`<label class="pcmp-drop">${c.imgs.length<10?`<input id="pcfile" type="file" accept="image/*,video/*" multiple hidden>`:""}
-            <div class="pcmp-dropi">＋</div>
-            <div style="font-size:14px;color:var(--tx);font-weight:700">Add photos or a video</div>
-            <div style="font-size:12px;margin-top:4px">Up to 10 photos, or one video — the work can be half-finished</div>
-          </label>`}
-      <div class="pcmp-cap">
-        ${avHTML(ME,"")}
-        <textarea class="pcmp-ta" id="pcbody" placeholder="Say something about it…">${esc(c.body||"")}</textarea>
-      </div>
-      <div class="pcmp-mus">
-        ${c.track?`<div class="pcmus-chip"><button class="pcmus-pp" data-pcmusplay>▶︎</button><div class="pcmus-meta"><div class="pcmus-t">${esc(c.track.title)}</div><div class="mono dim">@${esc(c.track.by.username)}</div></div><button class="pcmus-x" data-pcmusrm aria-label="Remove music"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`
-        :`<button class="pcmus-add" data-pcmusadd>♫ Add music</button>`}
-        ${c.pick?`<input class="ui-in pcmus-q" id="pcmusq" placeholder="Search tracks or artists…" value="${esc(c.q||"")}">
-        <div class="pcmus-list">${pcmusRowsHTML(c.list,!!(c.q&&c.q.trim()))}</div>`:""}
-      </div>
-      <div class="pcmp-note">Posts land on your profile. Anything with a photo or video also shows in the Showroom, where collabs rank highest.</div>
-    </div>
-  </div></div>`;
-}
 /* The sound credit on a card — tap plays it through the global player and
    counts a play for the track's owner, exactly like the library rows. */
 function musChipHTML(p){
@@ -301,16 +262,6 @@ function wirePostOpen(){
   const x=$("#poclose");if(x)x.onclick=()=>{POSTOPEN=null;OPENCOMMENTS=null;render()};
 }
 
-/* Picker rows, extracted so the search box can repaint just the list without
-   a full render() stealing the keyboard mid-word. */
-function pcmusRowsHTML(list,searching){
-  if(!list)return `<div class="empty">Loading…</div>`;
-  if(!list.length)return searching
-    ?`<div class="empty">No tracks match that.</div>`
-    :`<div class="empty">No tracks in the library yet.<br>Upload one in // Music → Tracks.</div>`;
-  return list.map(t=>`<div class="pcmus-row" data-pcmuspick="${t.id}"><div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="">`:"♫"}</div><div class="pcmus-meta"><div class="pcmus-t">${esc(t.title)}</div><div class="mono dim">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}</div></div></div>`).join("");
-}
-
 /* Name + cover, owner only. The server already scopes PATCH /api/tracks/:id to
    the owner, so this adds presentation, not a new trust surface. */
 function trkEditHTML(){
@@ -358,85 +309,5 @@ function wireTrkEdit(){
       await api.updateTrack(TRKEDIT.id,{title:TRKEDIT.title.trim(),artworkUrl:TRKEDIT.artworkUrl});
       TRKEDIT=null;await loadTracks();toast("Saved.");render();
     }catch(err){TRKEDIT.busy=false;render();toast(err.message||"Save failed")}
-  };
-}
-
-function wirePCompose(){
-  const ov=$("#pcov");if(!ov)return;
-  const fi=$("#pcfile");if(fi)fi.onchange=async()=>{
-    const files=[...fi.files];fi.value="";
-    /* iPadOS Files picks can arrive with an empty type — fall back to the
-       extension; the server sniffs magic bytes either way. */
-    const isVid=f=>f.type.startsWith("video/")||(!f.type&&/\.(mp4|m4v|mov|webm)$/i.test(f.name));
-    const vids=files.filter(isVid), rest=files.filter(f=>!isVid(f));
-    if(vids.length){
-      const f=vids[0];
-      if(vids.length>1)toast("One video per post");
-      if(f.size>650*1024*1024){toast(f.name+" is over 650MB");return}
-      /* Video posts stand alone — same rule as the lab composer. */
-      if(PCOMPOSE.imgs.length){PCOMPOSE.imgs=[];toast("Video posts stand alone — photos cleared")}
-      PCOMPOSE.vid=null;PCOMPOSE.vidbusy=true;PCOMPOSE.vidprog=0;render();
-      try{
-        const up=await uploadStream(f,pr=>{if(!PCOMPOSE)return;PCOMPOSE.vidprog=pr;
-          const el=$("#pcvidprog");if(el)el.textContent="UPLOADING VIDEO — "+Math.round(pr*100)+"%"});
-        if(!PCOMPOSE)return;   // composer discarded mid-upload
-        if(up.kind!=="video")throw new Error("That file isn't a video");
-        PCOMPOSE.vid={url:up.url};
-      }catch(e){if(!PCOMPOSE)return;toast(e.message)}
-      PCOMPOSE.vidbusy=false;render();
-      return;   // a video pick never also queues photos
-    }
-    if(PCOMPOSE.vid||PCOMPOSE.vidbusy){toast("Video posts stand alone");return}
-    for(const file of rest){
-      if(PCOMPOSE.imgs.length>=10)break;
-      try{const p=await prepImage(file,true);
-        const up=await api.upload(p.full);const th=await api.upload(p.thumb);
-        PCOMPOSE.imgs.push({url:up.url,thumb:th.url,w:p.w,h:p.h});}catch(e){toast(e.message)}
-    }
-    render();
-  };
-  document.querySelectorAll("[data-pcrm]").forEach(b=>b.onclick=()=>{PCOMPOSE.imgs.splice(+b.dataset.pcrm,1);render()});
-  const vr=document.querySelector("[data-pcvidrm]");if(vr)vr.onclick=()=>{PCOMPOSE.vid=null;render()};
-  const ta=$("#pcbody");if(ta)ta.oninput=()=>{
-    PCOMPOSE.body=ta.value;
-    /* toggle Share live — re-rendering here would steal focus mid-sentence */
-    const g=$("#pcgo");if(g)g.disabled=!(PCOMPOSE.body.trim()||PCOMPOSE.imgs.length||PCOMPOSE.vid)||PCOMPOSE.busy||PCOMPOSE.vidbusy;
-  };
-  /* No scrim dismiss. As an overlay this was a tap outside the card; as a
-     full-height page the same handler is a tap on the background, and it would
-     silently bin a written draft. Cancel is the way out. */
-  const cc=$("#pccancel");if(cc)cc.onclick=async()=>{if(await pcLeave())render()};
-  const ma=document.querySelector("[data-pcmusadd]");if(ma)ma.onclick=async()=>{
-    PCOMPOSE.pick=!PCOMPOSE.pick;render();
-    if(PCOMPOSE.pick&&!PCOMPOSE.list){try{PCOMPOSE.list=(await api.tracks("")).tracks}catch(e){PCOMPOSE.list=[]}render()}
-  };
-  document.querySelectorAll("[data-pcmuspick]").forEach(el=>el.onclick=()=>{
-    PCOMPOSE.track=(PCOMPOSE.list||[]).find(t=>String(t.id)===el.dataset.pcmuspick)||null;
-    PCOMPOSE.pick=false;render();
-  });
-  const mq=$("#pcmusq");if(mq){let dq=null;mq.oninput=()=>{
-    PCOMPOSE.q=mq.value;clearTimeout(dq);
-    dq=setTimeout(async()=>{
-      try{PCOMPOSE.list=(await api.tracks(PCOMPOSE.q)).tracks}catch(e){PCOMPOSE.list=[]}
-      /* repaint the rows only — a full render() would close the keyboard */
-      const box=document.querySelector(".pcmus-list");
-      if(box){box.innerHTML=pcmusRowsHTML(PCOMPOSE.list,!!PCOMPOSE.q.trim());
-        box.querySelectorAll("[data-pcmuspick]").forEach(el=>el.onclick=()=>{
-          PCOMPOSE.track=(PCOMPOSE.list||[]).find(t=>String(t.id)===el.dataset.pcmuspick)||null;
-          PCOMPOSE.pick=false;render();
-        });}
-    },300);
-  }}
-  const mr=document.querySelector("[data-pcmusrm]");if(mr)mr.onclick=()=>{PCOMPOSE.track=null;render()};
-  const mp=document.querySelector("[data-pcmusplay]");if(mp)mp.onclick=()=>{if(PCOMPOSE.track)playTrack(PCOMPOSE.track)};
-  const go=$("#pcgo");if(go)go.onclick=async()=>{
-    if(PCOMPOSE.busy||PCOMPOSE.vidbusy)return;
-    if(!PCOMPOSE.body.trim()&&!PCOMPOSE.imgs.length&&!PCOMPOSE.vid)return toast("Add a photo, a video, or say something");
-    PCOMPOSE.busy=true;render();
-    try{
-      await api.post({channel:"profile",body:PCOMPOSE.body.trim(),images:PCOMPOSE.imgs,videoUrl:PCOMPOSE.vid?PCOMPOSE.vid.url:undefined,isWork:true,audioTrackId:PCOMPOSE.track?PCOMPOSE.track.id:undefined});
-      PCOMPOSE=null;toast("Posted to your profile");
-      openProfile(myName());
-    }catch(e){PCOMPOSE.busy=false;toast(e.message);render()}
   };
 }

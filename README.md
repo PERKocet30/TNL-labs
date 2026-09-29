@@ -15,7 +15,7 @@ One Node server, one SQLite database, no framework and no external services requ
 | **The door** | "Enter the lab" landing with the vial loader. The first visit plays the intro film; after that it's one tap in. The tap also unlocks audio on iOS. |
 | **Showroom** | The public front page: real work from across every lab, newest first. Anyone can browse; posting needs an account. |
 | **Labs** | Members-only, one per genre: `// General`, `// Visual` (design, photo, film and the searchable Archive), `// Music` (Beat Lab, feedback, tracks and the Studio), `// Fashion`, `// Anime`, `// News` and `// Business`. Inside a lab, channels are pill tabs above the conversation. Names are display-only; lab and channel IDs never change, so renaming never moves a post. |
-| **Posts** | Instagram-style cards: carousels of up to 10 images, video, a sound from the library, likes, comments, shares, send-to-DM, saves and collab invites. |
+| **Posts** | Instagram-style cards: carousels of up to 10 images, video, a sound from the library, likes, comments, shares, send-to-DM, saves and collab invites. The **post creator** shows the work large (swipe, reorder, per-photo upload progress), a caption with @mention suggestions, and three rows: invite collaborators (up to 5, invited as soon as the post exists), add music, and share to a lab (otherwise it goes to your profile only). |
 | **Profiles** | Instagram-style pages: posts / followers / collabs, level badge, roles, bio, link, and tabs for work, shop, collabs and standing. Every profile has a public URL. |
 | **Collabs** | Two-sided: the author invites, the other person accepts, and only then does it count — for both of them. |
 | **Market** | Depop-style browsing; listing works like a Shopify product form — Media (up to 8, tap to set the cover), Title & description, Pricing (live "you earn"), Inventory, Shipping, Details, and Status when editing. Offers, saves, checkout through Stripe Connect, shipping, delivery confirmation and reviews. Sound listings with downloads are still supported for existing listings. |
@@ -33,7 +33,7 @@ Design language: Helvetica, `//` marks the labs, paper (light) by default with a
 The app and the API used to be two single files of 359KB and 216KB. They now live in `src/` as numbered parts of 24KB or less, which are small enough to review and push one at a time. On every boot, `src/assemble.mjs` joins them byte for byte, in filename order.
 
 ```
-src/app-NN-*.{html,css,js}      the app (24 parts) → built into public/index.html
+src/app-NN-*.{html,css,js}      the app (26 parts) → built into public/index.html
 src/server-01…11-*.js           the API          → built into src/server.runtime.js
 src/server.js                   entry point: assemble, then start
 src/assemble.mjs                the joiner
@@ -45,7 +45,7 @@ public/admin.html               the admin dashboard
 public/door.js                  the door's vial loader and mark
 public/sw.js                    service worker (installable app, offline shell)
 scripts/scientist.mjs           daily read-only checks against the live site
-test/                           21 test suites — run with npm test
+test/                           24 test suites — run with npm test
 ```
 
 **Edit the parts, never the built files.** Parts join in filename order, so two parts can share a number (`app-11-gate-logic`, `app-11-gate-screens`, `app-11-showroom`). `public/index.html` and `src/server.runtime.js` are regenerated on every boot and ignored by git.
@@ -53,14 +53,17 @@ test/                           21 test suites — run with npm test
 | Part | Holds |
 |---|---|
 | `app-01-head` · `app-06-body` · `app-20-tail` | page markup, meta/OG tags, script tags |
-| `app-02…05-styles-*` | styles: base, profile, studio/UI, media, listing editor (`sell`) |
+| `app-02…05-styles-*` | styles: base, profile, studio/UI, post creator (`compose`), media, listing editor (`sell`) |
 | `app-07-theme-labs-api` | theme, labs and channels, API client |
 | `app-08-state-ui` · `app-09-render-nav` | app state, toasts/modals, routing, top bar |
 | `app-10-dm-search` | DMs, search, the door |
 | `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
 | `app-11-showroom` · `app-12…13` | Showroom, lab index, archive/posts, player |
 | `app-14-detail-sell` | listing page and the listing editor |
-| `app-15…19` | profile, wiring, market (`app-17-market`) and panels, composer/audio, feed/boot |
+| `app-15…16` | profile, wiring |
+| `app-17-market` · `app-17-panels` | market wiring and the listing editor's logic; panels, DMs, Studio mount |
+| `app-18-composer` · `app-18-media` | the post creator; carousels, video autoplay, music and the audio unlock |
+| `app-19-feed-boot` | feed, badges, boot |
 | `server-01-boot` | setup, compression, caching rules, Sentry, prepared queries |
 | `server-02…11` | auth/feed, uploads/DMs/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/beats/Showroom, social/meta |
 
