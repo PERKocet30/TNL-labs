@@ -300,27 +300,29 @@ app.post("/api/auth/forgot", rateLimit({ max: 5, windowMs: 900000 }), async (req
 
 app.get("/reset", (req, res) => {
   const token = String(req.query.token || "");
-  res.send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
-<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">
-<div style="max-width:340px;padding:24px;width:100%">
-  <div style="color:#98FC68;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS &#129514;</div>
-  <h1 style="font-size:24px;margin:14px 0 8px;text-transform:uppercase">New password</h1>
-  <input id="p" type="password" placeholder="at least 6 characters" style="width:100%;box-sizing:border-box;background:#141414;border:1px solid rgba(255,255,255,.12);border-radius:9px;color:#fff;padding:12px;font-size:14px;margin:12px 0">
-  <div id="m" style="color:#F87171;font-size:12px;min-height:18px"></div>
-  <button id="go" style="width:100%;background:#fff;color:#000;border:none;border-radius:9px;padding:13px;font-weight:700;font-size:14px">Set password</button>
-</div>
+  res.send(lookPage({
+    title: "New password — TNL LABS", center: true,
+    body: `${lookEyebrow("Account")}
+${lookIcon("lock")}
+<h1>New password</h1>
+<p class="p">At least 6 characters.</p>
+<input class="in" id="p" type="password" placeholder="New password" autocomplete="new-password">
+<div class="msg" id="m"></div>
+<button class="btn block" id="go" style="margin-top:0">Set password</button>
 <script>
 document.getElementById("go").onclick=async()=>{
   const p=document.getElementById("p").value,m=document.getElementById("m");
+  m.className="msg";
   if(p.length<6){m.textContent="At least 6 characters.";return}
   const r=await fetch("/api/auth/reset",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({token:${JSON.stringify(token)},password:p})});
+    body:JSON.stringify({token:${JSON.stringify(token).replace(/</g, "\\u003c")},password:p})});
   const d=await r.json();
   if(!r.ok){m.textContent=d.error||"That didn't work.";return}
-  m.style.color="#98FC68";m.textContent="Password updated. Redirecting…";
+  m.className="msg ok";m.textContent="Password updated. Taking you in…";
   setTimeout(()=>location.href="/",1200);
 };
-</script></body>`);
+</script>`,
+  }));
 });
 
 app.post("/api/auth/reset", rateLimit({ max: 10, windowMs: 900000 }), async (req, res) => {

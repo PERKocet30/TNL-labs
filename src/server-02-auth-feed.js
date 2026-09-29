@@ -108,21 +108,16 @@ app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (
    first thing a new member sees, so it shouldn't look like an API error. */
 app.get("/api/auth/verify", (req, res) => {
   const row = q.verifyToken.get(String(req.query.token || ""));
-  const page = (title, msg, state) => `<!doctype html><html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${title} — TNL LABS</title></head>
-<body style="margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px">
-<div style="max-width:360px">
-  <div style="color:#98FC68;font-family:monospace;font-size:11px;letter-spacing:.16em">TNLLABS &#129514;</div>
-  <div style="font-size:44px;margin:18px 0 6px">${state === "ok" ? "&#10003;" : "&#9888;"}</div>
-  <h1 style="font-size:24px;margin:8px 0;text-transform:uppercase;letter-spacing:-.5px">${title}</h1>
-  <p style="color:#8A8A8A;font-size:14px;line-height:1.65;margin:0 0 22px">${msg}</p>
-  <a href="/" style="display:inline-block;background:${state === "ok" ? "#98FC68" : "#fff"};color:#000;text-decoration:none;font-weight:700;font-size:14px;padding:13px 24px;border-radius:9px">
-    ${state === "ok" ? "Enter the lab" : "Back to TNL LABS"}</a>
-  ${state === "expired" ? `<p style="color:#5A5A5A;font-size:12px;margin-top:18px;line-height:1.6">Sign in and hit <b style="color:#8A8A8A">Resend</b> on the banner at the top — a new link takes a second.</p>` : ""}
-</div>
-${state === "ok" ? `<script>setTimeout(()=>location.href="/",2500)</script>` : ""}
-</body></html>`;
+  const page = (title, msg, state) => lookPage({
+    title: `${title} — TNL LABS`, center: true,
+    body: `${lookEyebrow(state === "ok" ? "Welcome" : "Account")}
+${lookIcon(state === "ok" ? "check" : "alert")}
+<h1>${title}</h1>
+<p class="p">${msg}</p>
+<a class="btn" href="/">${state === "ok" ? "Enter the lab" : "Back to TNL LABS"}</a>
+${state === "expired" ? `<p class="cap" style="margin-top:18px">Sign in and tap <b>Resend</b> on the banner at the top. A new link takes a second.</p>` : ""}
+${state === "ok" ? `<script>setTimeout(()=>location.href="/",2500)</script>` : ""}`,
+  });
 
   if (!row) {
     // Either a bad link, or one that already worked — those look identical

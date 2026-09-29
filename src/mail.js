@@ -1,5 +1,6 @@
 /* ================================================================
-   MAIL — verification emails.
+   MAIL v2.0 — 2026-09-29. Verification and password-reset emails,
+   in the app's design language (see THE LOOK below).
 
    Uses Resend's HTTP API (https://resend.com) via plain fetch, so
    there is no SMTP library and nothing to install. Free tier covers
@@ -34,28 +35,93 @@ if (KEY && MAIL_TEST_SENDER) {
 `);
 }
 
-function verifyTemplate(name, url) {
-  return `<!doctype html>
-<html><body style="margin:0;background:#000;font-family:Helvetica,Arial,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#000;padding:36px 16px">
-    <tr><td align="center">
-      <table width="100%" style="max-width:460px;background:#0A0A0A;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:30px">
-        <tr><td>
-          <div style="color:#98FC68;font-size:11px;letter-spacing:.16em;font-family:monospace">TNLLABS &#129514;</div>
-          <h1 style="color:#fff;font-size:24px;margin:16px 0 10px;text-transform:uppercase;letter-spacing:-.5px">Confirm your email</h1>
-          <p style="color:#8A8A8A;font-size:14px;line-height:1.6;margin:0 0 22px">
-            ${escapeHtml(name)} — one tap and you're in. This link works for 24 hours.
-          </p>
-          <a href="${url}" style="display:inline-block;background:#fff;color:#000;text-decoration:none;font-weight:700;font-size:14px;padding:13px 22px;border-radius:9px">Verify email</a>
-          <p style="color:#5A5A5A;font-size:11px;line-height:1.6;margin:22px 0 0;font-family:monospace;word-break:break-all">
-            Or paste this link:<br>${url}
-          </p>
-          <p style="color:#5A5A5A;font-size:11px;margin:20px 0 0">Didn't sign up? Ignore this email.</p>
-        </td></tr>
-      </table>
+/* ----------------------------------------------------------------
+   THE LOOK — v2.0 2026-09-29. Every email is the app's design language:
+   Paper by default (#F7F1F1, ink #000), Black where the mail app is in
+   dark mode, Helvetica Neue / Archivo, a square card ("paper is square"),
+   an inverted pill for the one action ("glass is round"), and the //
+   mark as the only touch of Reagent. No monospace, no emoji, no images
+   that the email depends on — the logo is a bonus if images load.
+   Inline styles carry the Paper look (Gmail and Outlook keep those); the
+   <style> block only adds dark mode for clients that honour it.
+---------------------------------------------------------------- */
+const C = {
+  paper: "#F7F1F1", card: "#FBF8F8", ink: "#000000", ink2: "#5E5856", line: "#E3DADA", mark: "#3A5A26",
+};
+const FONT = `'Helvetica Neue',Helvetica,Archivo,Arial,sans-serif`; // single quotes: it sits inside style="…"
+
+/** One layout for every email. Returns { html, text }. */
+export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader }) {
+  const origin = (() => { try { return new URL(url).origin; } catch { return "https://labs.tnllabs.com"; } })();
+  const href = escapeHtml(url);
+  const body = lines.map((l) => `<p class="t2" style="margin:0 0 12px;color:${C.ink2};font-size:15px;line-height:21px">${escapeHtml(l)}</p>`).join("");
+  const html = `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
+<title>${escapeHtml(title)}</title>
+<style>
+  @media (prefers-color-scheme: dark) {
+    .bg { background:#000000 !important; }
+    .card { background:#000000 !important; border-color:#262424 !important; }
+    .t1 { color:#F7F1F1 !important; }
+    .t2 { color:#9A9392 !important; }
+    .mk { color:#98FC68 !important; }
+    .btn { background:#F7F1F1 !important; color:#000000 !important; }
+    .rule { border-color:#262424 !important; }
+  }
+  a { color:inherit; }
+</style>
+</head>
+<body class="bg" style="margin:0;padding:0;background:${C.paper};-webkit-text-size-adjust:100%">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(preheader || lines[0] || "")}</div>
+<table role="presentation" class="bg" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.paper}">
+<tr><td align="center" style="padding:32px 16px">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px">
+    <tr><td style="padding:0 4px 18px;font-family:${FONT}">
+      <img src="${origin}/icon-512.png" width="28" height="28" alt="TNL" style="vertical-align:middle;border-radius:50%;border:0">
+      <span class="t1" style="vertical-align:middle;margin-left:8px;color:${C.ink};font-size:15px;font-weight:700;letter-spacing:.04em">LABS &reg;</span>
+    </td></tr>
+    <tr><td class="card" style="background:${C.card};border:1px solid ${C.line};padding:32px 28px;font-family:${FONT}">
+      <div class="t2" style="margin:0 0 14px;color:${C.ink2};font-size:12px;line-height:16px;font-weight:700;letter-spacing:.08em;text-transform:uppercase"><span class="mk" style="color:${C.mark}">//</span> ${escapeHtml(eyebrow)}</div>
+      <h1 class="t1" style="margin:0 0 16px;color:${C.ink};font-size:30px;line-height:34px;font-weight:700;letter-spacing:-.02em">${escapeHtml(title)}</h1>
+      ${body}
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 26px"><tr>
+        <td class="btn" style="background:${C.ink};border-radius:999px">
+          <a class="btn" href="${href}" style="display:inline-block;padding:14px 26px;border-radius:999px;background:${C.ink};color:${C.paper};font-family:${FONT};font-size:15px;line-height:18px;font-weight:700;text-decoration:none">${escapeHtml(cta)}</a>
+        </td></tr></table>
+      <div class="rule" style="border-top:1px solid ${C.line};padding-top:16px">
+        <p class="t2" style="margin:0 0 6px;color:${C.ink2};font-size:12px;line-height:16px">Button not working? Paste this into your browser:</p>
+        <p style="margin:0 0 14px;font-size:12px;line-height:16px;word-break:break-all"><a class="t1" href="${href}" style="color:${C.ink};text-decoration:underline">${href}</a></p>
+        <p class="t2" style="margin:0;color:${C.ink2};font-size:12px;line-height:16px">${escapeHtml(note)}</p>
+      </div>
+    </td></tr>
+    <tr><td style="padding:18px 4px 0;font-family:${FONT}">
+      <p class="t2" style="margin:0;color:${C.ink2};font-size:12px;line-height:16px">Social media by creatives, for creatives.<br><a class="t2" href="${origin}" style="color:${C.ink2};text-decoration:none">${escapeHtml(origin.replace(/^https?:\/\//, ""))}</a></p>
     </td></tr>
   </table>
+</td></tr></table>
 </body></html>`;
+  const text = [`LABS ®`, ``, `// ${eyebrow.toUpperCase()}`, title, ``, ...lines, ``, `${cta}: ${url}`, ``, note, ``, `Social media by creatives, for creatives.`, origin].join("\n");
+  return { html, text };
+}
+
+export function verifyEmail(name, url) {
+  return renderEmail({
+    eyebrow: "Welcome", title: "Confirm your email",
+    lines: [`${name ? name + ", one" : "One"} tap and you're in.`, "This link works for 24 hours."],
+    cta: "Verify email", url, note: "Didn't sign up? Ignore this email.",
+    preheader: "One tap and you're in.",
+  });
+}
+
+export function resetEmail(name, url) {
+  return renderEmail({
+    eyebrow: "Account", title: "Reset your password",
+    lines: [`${name ? name + ", tap" : "Tap"} below to set a new one.`, "This link works for 1 hour and only once."],
+    cta: "Set new password", url, note: "Didn't ask for this? Ignore this email. Nothing changes.",
+    preheader: "Set a new password. The link works for 1 hour.",
+  });
 }
 
 function escapeHtml(s) {
@@ -65,59 +131,27 @@ function escapeHtml(s) {
 
 /** Returns { sent: boolean, error?: string }. Never throws. */
 export async function sendVerifyEmail(to, name, url) {
-  return send(to, "Confirm your email — TNL LABS",
-    verifyTemplate(name, url), `verify link: ${url}`);
+  return send(to, "Confirm your email — TNL LABS", verifyEmail(name, url), `verify link: ${url}`);
 }
 
-/** Alerts and the morning digest, to the admin. Plain and short: a heading,
-    a few lines, one button to the admin page. Same honest fallback. */
+/** Alerts and the morning digest, to the admin. Same layout as every other
+    email: a heading, a few lines, one button to Admin → System. */
+export function alertEmail(heading, lines, url) {
+  return renderEmail({
+    eyebrow: "Watch", title: heading, lines, cta: "Open Admin", url,
+    note: "Sent to the admin address by the app's watch.", preheader: lines[0] || heading,
+  });
+}
 export async function sendAlertEmail(to, subject, heading, lines, url) {
-  const rows = lines.map((l) => `<p style="color:#D9D2D0;font-size:14px;line-height:1.55;margin:0 0 8px">${escapeHtml(l)}</p>`).join("");
-  const html = `<!doctype html>
-<html><body style="margin:0;background:#000;font-family:Helvetica,Arial,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#000;padding:36px 16px"><tr><td align="center">
-    <table width="100%" style="max-width:520px;background:#0A0A0A;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:28px"><tr><td>
-      <div style="color:#98FC68;font-size:11px;letter-spacing:.16em;font-family:monospace">TNLLABS &#129514; WATCH</div>
-      <h1 style="color:#fff;font-size:21px;margin:14px 0 16px;letter-spacing:-.3px">${escapeHtml(heading)}</h1>
-      ${rows}
-      <a href="${url}" style="display:inline-block;margin-top:14px;background:#fff;color:#000;text-decoration:none;font-weight:700;font-size:14px;padding:12px 20px;border-radius:9px">Open Admin → System</a>
-    </td></tr></table>
-  </td></tr></table>
-</body></html>`;
-  return send(to, subject, html, `${subject} — ${lines.join(" / ")}`);
+  return send(to, subject, alertEmail(heading, lines, url), `${subject} — ${lines.join(" / ")}`);
 }
 
 /** Password reset. Same honest fallback as verification. */
 export async function sendResetEmail(to, name, url) {
-  return send(to, "Reset your password — TNL LABS",
-    resetTemplate(name, url), `reset link: ${url}`);
+  return send(to, "Reset your password — TNL LABS", resetEmail(name, url), `reset link: ${url}`);
 }
 
-function resetTemplate(name, url) {
-  return `<!doctype html>
-<html><body style="margin:0;background:#000;font-family:Helvetica,Arial,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#000;padding:36px 16px">
-    <tr><td align="center">
-      <table width="100%" style="max-width:460px;background:#0A0A0A;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:30px">
-        <tr><td>
-          <div style="color:#98FC68;font-size:11px;letter-spacing:.16em;font-family:monospace">TNLLABS &#129514;</div>
-          <h1 style="color:#fff;font-size:24px;margin:16px 0 10px;text-transform:uppercase;letter-spacing:-.5px">Reset your password</h1>
-          <p style="color:#8A8A8A;font-size:14px;line-height:1.6;margin:0 0 22px">
-            ${escapeHtml(name)} — tap below to set a new one. This link works for 1 hour and can only be used once.
-          </p>
-          <a href="${url}" style="display:inline-block;background:#fff;color:#000;text-decoration:none;font-weight:700;font-size:14px;padding:13px 22px;border-radius:9px">Set new password</a>
-          <p style="color:#5A5A5A;font-size:11px;line-height:1.6;margin:22px 0 0;font-family:monospace;word-break:break-all">
-            Or paste this link:<br>${url}
-          </p>
-          <p style="color:#5A5A5A;font-size:11px;margin:20px 0 0">Didn't ask for this? Ignore this email — nothing changes.</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`;
-}
-
-async function send(to, subject, html, logLine) {
+async function send(to, subject, { html, text }, logLine) {
   if (!KEY) {
     console.log(`\n[mail] NOT CONFIGURED — no email sent to ${to}`);
     console.log(`[mail] ${logLine}\n`);
@@ -127,7 +161,7 @@ async function send(to, subject, html, logLine) {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: [to], subject, html }),
+      body: JSON.stringify({ from: FROM, to: [to], subject, html, text }),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
