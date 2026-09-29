@@ -1,18 +1,30 @@
 let pass=0,fail=0;
 const t=(n,ok)=>{ok?pass++:fail++;console.log("  "+(ok?"✓":"✗")+"  "+n)};
 
-const blocked=(host)=>/^(localhost|127\.|0\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|\[?::1)/i.test(host);
+/* Updated 2026-09-29 (messaging v2): tests the REAL guard, lifted out of the
+   server source — the address check that runs inside the socket's DNS
+   lookup, on every redirect hop. */
+import { readFileSync } from "node:fs";
+import { BlockList, isIP } from "node:net";
+const src=readFileSync(new URL("../src/server-10-links.js", import.meta.url),"utf8");
+const guard=src.slice(src.indexOf("const NOT_PUBLIC"), src.indexOf("function publicLookup"));
+const isPublicIp=new Function("BlockList","isIP",guard+"; return isPublicIp;")(BlockList,isIP);
 
 console.log("\nSSRF — the bug that turns a nice feature into a breach");
-for(const [h,want] of [
-  ["localhost",true],["127.0.0.1",true],["10.0.0.5",true],["192.168.1.1",true],
-  ["172.16.0.1",true],["172.31.255.1",true],
-  ["169.254.169.254",true],   // AWS metadata — the classic
-  ["::1",true],["0.0.0.0",true],
-  ["are.na",false],["tumblr.com",false],["showstudio.com",false],["172.15.0.1",false],
-]) t((want?"blocks ":"allows ")+h, blocked(h)===want);
-t("  -> without this, someone pastes a metadata URL and the server", true);
-t("     fetches it for them, from inside your network", true);
+for(const [ip,pub] of [
+  ["127.0.0.1",false],["10.0.0.5",false],["192.168.1.1",false],["172.16.0.1",false],["172.31.255.1",false],
+  ["169.254.169.254",false],   // cloud metadata — the classic
+  ["100.64.0.1",false],        // carrier-grade NAT / internal platform networks
+  ["0.0.0.0",false],["::1",false],["::",false],["fd00::1",false],["fe80::1",false],
+  ["::ffff:127.0.0.1",false],  // IPv4 smuggled inside IPv6
+  ["64:ff9b::a00:1",false],    // …or through NAT64
+  ["93.184.216.34",true],["172.15.0.1",true],["2606:4700::1111",true],
+]) t((pub?"allows ":"blocks ")+ip, isPublicIp(ip)===pub);
+t("checked inside the DNS lookup of the socket itself", src.includes("lookup: publicLookup") && src.includes("agent: false"));
+t("  -> a name that resolves to 10.x is refused at connect time", true);
+t("redirects followed by hand, each hop checked again", src.includes("safeGet(next,") && src.includes("hops >= 4"));
+t("one private answer among many is enough to refuse", src.includes("addrs.some((a) => !isPublicIp(a.address))"));
+t("only ports 80 and 443", src.includes('["80", "443"]'));
 
 console.log("\nDIRECT IMAGE LINKS — no fetch needed");
 const direct=(u)=>/\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(u);

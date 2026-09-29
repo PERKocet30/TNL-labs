@@ -297,6 +297,7 @@ function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false, p
   const sql = `
     SELECT
       p.id, p.channel, p.body, p.beat_json, p.image_url, p.video_url, p.thumb_url, p.media_w, p.media_h, p.is_work, p.edited_at, p.shared_from, p.created_at, p.audio_track_id,
+      p.images, p.reply_to, p.link_json,
       tr.title AS track_title, tr.url AS track_url, tr.artwork_url AS track_art, tr.duration_ms AS track_dur, tu.username AS track_by,
       u.username AS author_username, u.display_name AS author_name, u.role AS author_role,
       u.avatar_url AS author_avatar, u.accent AS author_accent, u.rep AS author_rep,
@@ -340,7 +341,8 @@ function sidecar(rows) {
     if (!collabs.has(r.post_id)) collabs.set(r.post_id, []);
     collabs.get(r.post_id).push({ status: r.status, username: r.username, display_name: r.display_name });
   }
-  return { comments, collabs };
+  // Reactions and reply quotes for lab chat — server-10-live.js.
+  return { comments, collabs, chat: chatSidecar(rows) };
 }
 
 /** Shape a whole page in 2 queries. Prefer this over rows. */
@@ -363,6 +365,7 @@ function shapePosts(rows) {
 }
 
 function shapePost(row, side) {
+  const chat = side?.chat || chatSidecar([row]);
   return {
     id: row.id,
     channel: row.channel,
@@ -381,6 +384,11 @@ function shapePost(row, side) {
     audioTrack: row.track_url ? { id: row.audio_track_id, title: row.track_title, url: row.track_url,
       artworkUrl: row.track_art || "", durationMs: row.track_dur || 0, by: { username: row.track_by } } : null,
     isWork: !!row.is_work,
+    /* Lab chat: the message this one answers, emoji reactions, and the
+       preview card for a pasted link. */
+    replyTo: row.reply_to ? (chat.replies.get(row.reply_to) || { id: row.reply_to, deleted: true, text: "Original message deleted" }) : null,
+    reactions: chat.reactions.get(row.id) || [],
+    link: (() => { try { return row.link_json ? JSON.parse(row.link_json) : null; } catch { return null; } })(),
     editedAt: row.edited_at || null,
     sharedFrom: row.shared_from || null,
     createdAt: row.created_at,
@@ -427,30 +435,7 @@ function publicUser(u) {
   };
 }
 
-/* ================================================================
-   REALTIME — Server-Sent Events. Feeds subscribe and update live.
-================================================================ */
-const clients = new Set();
-function broadcast(event, data) {
-  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-  for (const res of clients) res.write(payload);
-}
-
-app.get("/api/stream", (req, res) => {
-  res.set({
-    "Content-Type": "text/event-stream",
-    /* no-transform stops Cloudflare "optimising" the stream.
-       X-Accel-Buffering is the standard way to tell a proxy not to buffer —
-       without it, realtime events arrive in a clump minutes later, or never
-       arrive at all. That's what a proxy does to a long-lived response by
-       default. */
-    "Cache-Control": "no-cache, no-transform",
-    Connection: "keep-alive",
-    "X-Accel-Buffering": "no",
-  });
-  res.flushHeaders?.();
-  res.write(`event: hello\ndata: {"ok":true}\n\n`);
-  clients.add(res);
-  req.on("close", () => clients.delete(res));
-});
+/* REALTIME (Server-Sent Events) moved to server-10-live.js in messaging v2:
+   the stream is now signed in, and private events go only to the people
+   they're for. */
 

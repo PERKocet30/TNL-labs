@@ -162,10 +162,11 @@ app.patch("/api/posts/:id", auth, (req, res) => {
   if (!body && !post.image_url && !post.video_url && !post.beat_json) {
     return res.status(400).json({ error: "post can't be empty" });
   }
-  db.prepare(`UPDATE posts SET body = ?, edited_at = ? WHERE id = ?`).run(body, Date.now(), post.id);
-  const row = feedRows({ authorId: req.user.id, viewerId: req.user.id, limit: 200 }).find((r) => r.id === post.id);
+  db.prepare(`UPDATE posts SET body = ?, edited_at = ?, link_json = NULL WHERE id = ?`).run(body, Date.now(), post.id);
+  const row = feedRows({ postId: post.id, viewerId: req.user.id, limit: 1 })[0];
   const shaped = shapePost(row);
   broadcast("post-edit", shaped);
+  if (!post.image_url && !post.video_url && !post.beat_json) previewLater("post", post.id, body);
   res.json({ post: shaped });
 });
 
@@ -174,6 +175,7 @@ app.delete("/api/posts/:id", auth, (req, res) => {
   if (!post) return res.status(404).json({ error: "no post" });
   if (post.author_id !== req.user.id) return res.status(403).json({ error: "not your post" });
   db.prepare(`DELETE FROM posts WHERE id = ?`).run(post.id);
+  db.prepare(`DELETE FROM reactions WHERE kind = 'post' AND target_id = ?`).run(post.id);
   broadcast("post-delete", { id: post.id });
   res.json({ ok: true });
 });
@@ -260,18 +262,10 @@ app.post("/api/notifications/read", auth, (req, res) => {
 });
 
 /* ================================================================
-   DIRECT MESSAGES — one on one.
+   DIRECT MESSAGES — moved to server-10-dm-*.js in messaging v2
+   (groups, requests, replies, reactions…). The block checks stay here:
+   the whole app uses them.
 ================================================================ */
-function threadFor(aId, bId) {
-  const [lo, hi] = aId < bId ? [aId, bId] : [bId, aId];
-  let t = db.prepare(`SELECT * FROM dm_threads WHERE a_id = ? AND b_id = ?`).get(lo, hi);
-  if (!t) {
-    const now = Date.now();
-    const info = db.prepare(`INSERT INTO dm_threads (a_id, b_id, updated_at, created_at) VALUES (?,?,?,?)`).run(lo, hi, now, now);
-    t = db.prepare(`SELECT * FROM dm_threads WHERE id = ?`).get(info.lastInsertRowid);
-  }
-  return t;
-}
 function blockedIds(userId) {
   // usernames this person shouldn't see (they blocked, or were blocked by)
   const rows = db.prepare(`
@@ -285,59 +279,6 @@ function isBlocked(aId, bId) {
     `SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)`
   ).get(aId, bId, bId, aId);
 }
-
-app.get("/api/dm", auth, (req, res) => {
-  const rows = db.prepare(`
-    SELECT t.id, t.updated_at,
-      CASE WHEN t.a_id = ? THEN t.b_id ELSE t.a_id END AS other_id
-    FROM dm_threads t WHERE t.a_id = ? OR t.b_id = ?
-    ORDER BY t.updated_at DESC LIMIT 50`).all(req.user.id, req.user.id, req.user.id);
-  const threads = rows.map((r) => {
-    const o = q.userById.get(r.other_id);
-    const last = db.prepare(`SELECT body, image_url, created_at, sender_id FROM dm_messages WHERE thread_id = ? ORDER BY created_at DESC LIMIT 1`).get(r.id);
-    const unread = db.prepare(`SELECT COUNT(*) n FROM dm_messages WHERE thread_id = ? AND sender_id != ? AND read_at IS NULL`).get(r.id, req.user.id).n;
-    return {
-      id: r.id, unread,
-      other: o ? { username: o.username, displayName: o.display_name, avatarUrl: o.avatar_url || "", role: o.role } : null,
-      last: last ? { body: last.image_url && !last.body ? "📷 Photo" : last.body, createdAt: last.created_at, mine: last.sender_id === req.user.id } : null,
-    };
-  }).filter((t) => t.other);
-  const unreadTotal = threads.reduce((n, t) => n + t.unread, 0);
-  res.json({ threads, unreadTotal });
-});
-
-app.get("/api/dm/:username", auth, (req, res) => {
-  const other = q.userByName.get(req.params.username);
-  if (!other) return res.status(404).json({ error: "no such user" });
-  if (isBlocked(req.user.id, other.id)) return res.status(403).json({ error: "unavailable" });
-  const t = threadFor(req.user.id, other.id);
-  const msgs = db.prepare(`SELECT * FROM dm_messages WHERE thread_id = ? ORDER BY created_at ASC LIMIT 200`).all(t.id);
-  db.prepare(`UPDATE dm_messages SET read_at = ? WHERE thread_id = ? AND sender_id != ? AND read_at IS NULL`)
-    .run(Date.now(), t.id, req.user.id);
-  res.json({
-    thread: t.id,
-    other: { username: other.username, displayName: other.display_name, avatarUrl: other.avatar_url || "", role: other.role, rep: other.rep, level: levelFor(other.rep).id },
-    messages: msgs.map((m) => ({ id: m.id, body: m.body, imageUrl: m.image_url, mine: m.sender_id === req.user.id, createdAt: m.created_at })),
-  });
-});
-
-app.post("/api/dm/:username", auth, verified, rateLimit({ max: 30, windowMs: 60000, key: "user" }), (req, res) => {
-  const other = q.userByName.get(req.params.username);
-  if (!other) return res.status(404).json({ error: "no such user" });
-  if (other.id === req.user.id) return res.status(400).json({ error: "can't message yourself" });
-  if (isBlocked(req.user.id, other.id)) return res.status(403).json({ error: "unavailable" });
-  const body = (req.body?.body || "").toString().trim();
-  const imageUrl = req.body?.imageUrl || null;
-  if (!body && !imageUrl) return res.status(400).json({ error: "empty message" });
-  const t = threadFor(req.user.id, other.id);
-  const now = Date.now();
-  db.prepare(`INSERT INTO dm_messages (thread_id, sender_id, body, image_url, created_at) VALUES (?,?,?,?,?)`)
-    .run(t.id, req.user.id, body.slice(0, 2000), imageUrl, now);
-  db.prepare(`UPDATE dm_threads SET updated_at = ? WHERE id = ?`).run(now, t.id);
-  notify(other.id, req.user.id, "dm", null, body.slice(0, 80) || "sent a photo");
-  broadcast("dm", { to: other.username, from: req.user.username });
-  res.json({ ok: true });
-});
 
 /* ================================================================
    PASSWORD RESET
