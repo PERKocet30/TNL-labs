@@ -137,7 +137,7 @@ const MYPAGE=()=>!!(PROFILE&&ME&&PROFILE.user&&PROFILE.user.username===ME.userna
    what is safe to throw away. Dirty is derived, never a flag: a flag has to
    be set on every input path and the one you forget is the one that eats
    somebody's post. */
-const pcDirty=()=>!!(PCOMPOSE&&((PCOMPOSE.body||"").trim()||PCOMPOSE.imgs.length||PCOMPOSE.vid||PCOMPOSE.vidbusy||PCOMPOSE.track));
+const pcDirty=()=>!!(PCOMPOSE&&((PCOMPOSE.body||"").trim()||PCOMPOSE.imgs.length||PCOMPOSE.vid||PCOMPOSE.vidbusy||PCOMPOSE.upN||PCOMPOSE.track||(PCOMPOSE.collabs&&PCOMPOSE.collabs.length)||PCOMPOSE.ch));
 async function pcLeave(){
   if(!PCOMPOSE)return true;
   if(PCOMPOSE.busy)return false;   // mid-upload — don't yank it out from under the request
