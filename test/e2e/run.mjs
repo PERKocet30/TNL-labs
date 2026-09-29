@@ -67,7 +67,7 @@ execSync(`node --experimental-sqlite ${JSON.stringify(join(TMP, "seed.mjs"))}`, 
 
 /* ---- the app ---- */
 const server = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], {
-  cwd: ROOT, env: { ...process.env, TNL_DATA: DATA, PORT: String(PORT), PUBLIC_URL: B, SENTRY_DSN: "" }, stdio: ["ignore", "pipe", "pipe"] });
+  cwd: ROOT, env: { ...process.env, TNL_DATA: DATA, PORT: String(PORT), PUBLIC_URL: B, SENTRY_DSN: "", ADMIN_EMAIL: "tester@example.com" }, stdio: ["ignore", "pipe", "pipe"] });
 let serverLog = ""; server.stdout.on("data", (d) => (serverLog += d)); server.stderr.on("data", (d) => (serverLog += d));
 const stop = () => { try { server.kill(); } catch {} };
 process.on("exit", stop);
@@ -233,6 +233,23 @@ console.log("\nMEMBER · PHONE");
     const { token: ft } = await login("friend");
     ok(JSON.stringify(await api("/api/chats", ft)).includes("hey from e2e") || JSON.stringify(await api("/api/dm", ft)).includes("hey from e2e"), "friend's inbox doesn't have it");
   });
+  /* Glitch signals (app-19-glitch.js). Everything above is normal use, so it
+     must have recorded nothing: no jumps, no slow screens, no failed saves. */
+  const glitches = async () => { await p.evaluate(() => glFlush()); await p.waitForTimeout(600); return api("/api/admin/glitches", token); };
+  await step(d, "normal use records no glitches", async () => {
+    const g = await glitches();
+    ok(!g.recent.length, "recorded: " + g.recent.map((x) => x.kind + " @ " + x.place + " " + x.detail).join(" | "));
+  });
+  await step(d, "rage taps are reported, with where they happened", async () => {
+    await p.evaluate(() => { document.querySelector("#cxclose,#cxback")?.click(); DMOPENPANEL = false; CHAT = null; paintLayer(); TAB = "showroom"; PROFILE = null; render(); });
+    await p.waitForSelector("#sr-grid [data-like]");
+    const like = p.locator("#sr-grid [data-like]").last();
+    await like.scrollIntoViewIfNeeded();
+    for (let i = 0; i < 4; i++) await like.tap();          // the same button, still on screen, hammered
+    const g = await glitches();
+    ok(g.recent.some((x) => x.kind === "rage_tap" && x.detail === "[like]" && x.username === "tester" && x.device === "phone"), "no rage tap: " + JSON.stringify(g.recent));
+    ok(g.byKind.some((k) => k.kind === "rage_tap" && k.day >= 1) && g.last24h >= 1, "the admin summary doesn't count it");
+  });
   await d.ctx.close();
 }
 
@@ -256,6 +273,14 @@ console.log("\nMEMBER · COMPUTER");
     const left = await p.evaluate(() => document.querySelector(".po-ov").getBoundingClientRect().left);
     ok(left >= 200, "the post covers the sidebar");
     await p.evaluate(() => { POSTOPEN = null; render(); });
+  });
+  await step(d, "admin → System shows the Glitches panel with the phone's rage tap", async () => {
+    await p.goto(B + "/admin#system");
+    await fast(p, 5000, () => p.locator("h2.sec", { hasText: "Glitches" }).first().waitFor(), "the admin System page");
+    ok(await p.getByText(/× rage taps · /).count() > 0, "the rage tap isn't listed");
+    ok(await p.getByText(/Glitches, 24h/).count() > 0, "no Glitches KPI");
+    await p.screenshot({ path: join(SHOTS, "admin-glitches.png"), fullPage: false });
+    await p.goto(B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
   await step(d, "resizing to phone width switches to the phone frame", async () => {
     await p.setViewportSize({ width: 700, height: 900 }); await p.waitForTimeout(300);
