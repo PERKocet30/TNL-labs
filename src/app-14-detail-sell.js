@@ -96,18 +96,12 @@ function climbHTML(){
     :LEVELS.map(l=>({level:l.id,name:l.name,at:l.at,fee:{1:10,2:8,3:6,4:4,5:2}[l.id]}));
   const fee=x=>lad.find(r=>r.level===x)?.fee??10;
   const pct=nx?Math.min(100,Math.round((rep-me.at)/(nx.at-me.at)*100)):100;
-  const perks={
-    1:["Post work and get seen","Back others — every like you give is someone's rep","Sell at "+fee(1)+"% — keep $"+(100-fee(1))+" of every $100"],
-    2:["You read as real, not a throwaway account","Fee drops to "+fee(2)+"% — keep $"+(100-fee(2))],
-    3:["The network reads you as proven — collabs come to you","Fee drops to "+fee(3)+"% — keep $"+(100-fee(3))],
-    4:["Core of the network — your word carries","Fee drops to "+fee(4)+"% — keep $"+(100-fee(4))],
-    5:["Best rate in the network — "+fee(5)+"%, keep $"+(100-fee(5)),"You shape where this goes"]};
+  const perks=Object.fromEntries(LEVELS.map(l=>[l.id,["Sell at "+fee(l.id)+"% — keep $"+(100-fee(l.id))+" of every $100"]]));
   return `<div class="climb" id="climbbg">
     <div class="climbw">
       <button class="climb-x" id="climbx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-      <div class="mono dim" style="letter-spacing:.02em">THE CLIMB</div>
-      <h1 class="climb-h">STANDING<br>PAYS.</h1>
-      <p class="climb-sub">Rep is earned when <b style="color:var(--tx)">other people back your work</b> — and every rung you climb, you keep more of every sale and more rooms open. It never resets, and no one can buy it.</p>
+      <h1 class="climb-h">Levels</h1>
+      <p class="climb-sub">Your level rises as people respond to your work. Each one lowers your rate.</p>
       <div class="cmoney">
         <div class="mono dim">ON EVERY $100 YOU SELL, YOU KEEP</div>
         <div class="cbars">${LEVELS.map(l=>`<div class="cbar ${me.id>=l.id?"on":""}">
@@ -129,12 +123,8 @@ function climbHTML(){
         </button>
         ${CLIMBOPENRUNG===l.id?`<div class="crung-b">${perks[l.id].map(p=>`→ ${esc(p)}`).join("<br>")}</div>`:""}
       </div>`).join("")}
-      <div class="crule">
-        <div class="mono" style="color:var(--green);letter-spacing:.02em;font-size:12px">THE ONE RULE</div>
-        <p style="margin-top:8px;font-size:14px;line-height:1.6">Rep only moves when <b>someone else acts</b> — likes ·6·, shares ·3·, accepted collabs ·20·, completed sales ·15·, delivered orders ·10·. Nothing you can do alone moves it. That's why it means something.</p>
-      </div>
     </div>
-    <div class="climb-cta"><button class="btn green" id="climbgo">Post your work — start climbing</button></div>
+    <div class="climb-cta"><button class="btn green" id="climbgo">Post your work</button></div>
   </div>`}
 function payoutBannerHTML(){
   if(guest())return "";

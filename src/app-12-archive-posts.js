@@ -71,7 +71,7 @@ function boardsHTML(){
   return `<div class="sheet" id="bbg"><div class="sheetc">
     <div class="sheeth"><div><h2>What you're pulling</h2></div>
       <button class="x" id="bx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <p class="mono dim" style="line-height:1.7;margin-bottom:14px">Reference, pulled from the archive. Whoever made it gets told you took it — that's how a collab starts.</p>
+    <p class="mono dim" style="line-height:1.7;margin-bottom:14px">Pulled from the archive. The maker gets the credit.</p>
     <div class="mbrow">
       <input class="in" id="bnew" placeholder="New moodboard — 'Y2K refs', 'FW25'…" maxlength="60">
       <button class="btn green sm" id="bmake" aria-label="New moodboard">${DI.plus}</button>

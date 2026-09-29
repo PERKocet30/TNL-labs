@@ -92,7 +92,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.
 
   <button class="plvl" data-ptab="ladder" aria-label="Standing">
     <div class="plr"><span class="pbadge">L${l.id}</span><span class="plname">${esc(l.name)}</span>
-      <span class="plmeta">${u.rep} rep${nx?` · ${nx.at-u.rep} to ${esc(nx.name)}`:" · top level"}</span></div>
+      <span class="plmeta">${mine?`${u.rep} rep${nx?` · ${nx.at-u.rep} to ${esc(nx.name)}`:""}`:""}</span></div>
     <div class="ptrack"><div class="pfill" style="width:${pct}%"></div></div>
   </button>
   ${!mine?`<div class="modrow"><button class="modlink" id="blockb">Block</button><button class="modlink" id="reportu">Report</button></div>`:""}
@@ -106,14 +106,13 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.
 
   ${PTAB==="shop"?`<div class="mkt-grid" style="padding:14px 0 30px">${PROFLISTINGS===null?`<div class="empty">Loading…</div>`:PROFLISTINGS.length?PROFLISTINGS.map(mktCardHTML).join(""):`<div class="empty">${mine?"Nothing listed yet. Head to Market \u2192 Sell to put something up.":"Not selling anything right now."}</div>`}</div>`
   :PTAB==="ladder"?`
-    <div class="mono dim" style="margin:12px 0">REP IS EARNED, NOT SPENT — LIKES +6 · SHARES +3 · COLLABS +20 EACH · SALES +15 · DELIVERED +10</div>
-    <div class="mono dim" style="margin:-4px 0 12px;line-height:1.6">Every point comes from someone else acting. Nothing you can do alone moves it.</div>
+    <div style="height:12px"></div>
     <div class="ladder">${LEVELS.map(x=>`<div class="lstep ${u.rep>=x.at?"done":""}"><span class="ldot"></span><span class="mono">${x.at}</span><span>${x.name}</span>${u.rep>=x.at?DI.check:""}</div>`).join("")}</div>
     <div class="mono dim" style="margin-top:14px">MEMBER SINCE ${new Date(u.createdAt).toLocaleDateString()}</div>
-    ${mine?`<button class="btn ghost" id="climbfromprof" style="width:100%;margin-top:14px">See the full climb — what each level pays →</button>`:""}`
+    ${mine?`<button class="btn ghost" id="climbfromprof" style="width:100%;margin-top:14px">Levels and rates</button>`:""}`
   :PROFILE.loading?`<div class="worklist">${[0,1,2].map(()=>`<div class="work skel"><div class="skelbar"></div><div class="skelbar sh"></div></div>`).join("")}</div>`
   :list.length?`<div class="worklist ${K.grid?"asgrid":""}">${list.map(p=>workCardHTML(p,PTAB==="collabs",K)).join("")}</div>`
-  :`<div class="empty">${PTAB==="collabs"?"No confirmed collabs yet. Invite someone onto a "+K.one+" — you both rise.":mine?K.empty+" Hit + Post and it lands here.":esc(K.empty)}</div>`}
+  :`<div class="empty">${PTAB==="collabs"?"No collabs yet.":mine?K.empty+" Hit + Post and it lands here.":esc(K.empty)}</div>`}
 
   ${mine&&ME.isAdmin?`<a class="btn ghost" href="/admin" style="display:flex;justify-content:center;margin-top:16px;text-decoration:none">Admin dashboard ${DI.out}</a>`:""}
   ${mine?`<button class="link" id="logoutb">Log out</button>`:""}

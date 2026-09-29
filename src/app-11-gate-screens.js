@@ -109,7 +109,7 @@ function gateHTML(){
       body=`<h1 class="gx-h">People to follow</h1><p class="gx-p">Some of the people building here right now.</p>
         <div class="gx-people">${G.people===null?`<div class="gx-hint">Loading…</div>`:ppl.map(p=>`<div class="gx-person">
           ${avHTML({displayName:p.display_name,avatarUrl:p.avatar_url},"")}
-          <div class="gx-person-b"><b>${esc(p.display_name)}</b><span>@${esc(p.username)} · L${p.level}</span></div>
+          <div class="gx-person-b"><b>${esc(p.display_name)}</b><span>@${esc(p.username)}${p.role?" · "+esc(p.role):""}</span></div>
           <button class="gx-fbtn ${G.following[p.username]?"on":""}" data-fol="${esc(p.username)}">${G.following[p.username]?"Following":"Follow"}</button>
         </div>`).join("")}</div>
         <div class="gx-stick"><button class="gx-btn" id="gxnext">Next</button></div>`;
