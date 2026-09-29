@@ -10,7 +10,8 @@ function applyTheme(t){
   const light = t === "light";
   document.documentElement.setAttribute("data-theme", light ? "light" : "dark");
   const m = document.querySelector('meta[name="theme-color"]');
-  if(m) m.setAttribute("content", light ? "#FFFFFF" : "#000000");
+  if(m){ let bg=""; try{ bg=getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() }catch(e){}   // palette.js decides
+    m.setAttribute("content", bg || (light ? "#FFFFFF" : "#000000")); }
 }
 let THEME = localStorage.getItem("tnl-theme") || "light";
 applyTheme(THEME);

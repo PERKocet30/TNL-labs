@@ -15,6 +15,8 @@
    in dev mode, so you can still test the whole flow.
 ================================================================ */
 
+import { PALETTE, inkFor } from "./palette.js";
+
 const KEY = process.env.RESEND_API_KEY || "";
 const FROM = process.env.MAIL_FROM || "TNL LABS <onboarding@resend.dev>";
 export const MAIL_ENABLED = !!KEY;
@@ -45,9 +47,10 @@ if (KEY && MAIL_TEST_SENDER) {
    Inline styles carry the Paper look (Gmail and Outlook keep those); the
    <style> block only adds dark mode for clients that honour it.
 ---------------------------------------------------------------- */
-const C = {
-  paper: "#FFFFFF", card: "#FFFFFF", ink: "#000000", ink2: "#5C5C5C", line: "#E6E6E6", mark: "#467430",
-};
+/* Email can't use CSS variables, so the colours are read straight from
+   src/palette.js — inline for the day look, <style> for dark-mode clients. */
+const L = PALETTE.light, D = PALETTE.dark;
+const C = { paper: L.bg, card: L.card, ink: L.tx, ink2: L.dim, line: L.line, mark: inkFor(PALETTE.accent, "light") };
 const FONT = `'Helvetica Neue',Helvetica,Archivo,Arial,sans-serif`; // single quotes: it sits inside style="…"
 
 /** One layout for every email. Returns { html, text }. */
@@ -62,13 +65,13 @@ export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader }
 <title>${escapeHtml(title)}</title>
 <style>
   @media (prefers-color-scheme: dark) {
-    .bg { background:#000000 !important; }
-    .card { background:#000000 !important; border-color:#262626 !important; }
-    .t1 { color:#FFFFFF !important; }
-    .t2 { color:#9A9A9A !important; }
-    .mk { color:#98FC68 !important; }
-    .btn { background:#FFFFFF !important; color:#000000 !important; }
-    .rule { border-color:#262626 !important; }
+    .bg { background:${D.bg} !important; }
+    .card { background:${D.bg} !important; border-color:${D.line} !important; }
+    .t1 { color:${D.tx} !important; }
+    .t2 { color:${D.dim} !important; }
+    .mk { color:${inkFor(PALETTE.accent, "dark")} !important; }
+    .btn { background:${D.tx} !important; color:${D.bg} !important; }
+    .rule { border-color:${D.line} !important; }
   }
   a { color:inherit; }
 </style>

@@ -4,7 +4,8 @@
    profile, laid out like Instagram's: who they are on the left —
    profile picture, name, @username, bio, how much they've made — and
    their latest work as a grid on the right. The TNL mark and LABS ®
-   sit bottom-left, their accent rings the picture. 1200×630, white, Archivo (assets/fonts, OFL), text
+   sit bottom-left, their accent rings the picture. 1200×630, colours from
+   src/palette.js, Archivo (assets/fonts, OFL), text
    drawn by libass because the ffmpeg npm installs has no drawtext.
 
    Built with the ffmpeg the server already ships (ffmpeg-static), on
@@ -17,7 +18,8 @@
    is rebuilt as the grid alone, and with no ffmpeg, no fonts or a failed
    build the page falls back to the single-image preview it used before.
 ================================================================ */
-const CARD = { w: 1200, h: 630, gap: 6, bg: "0xFFFFFF", el: "0xF2F2F2", ink: "0x000000", ink2: "0x5C5C5C",
+const ffc = (hex) => "0x" + hex.replace("#", "").toUpperCase();   // #RRGGBB → ffmpeg colour
+const CARD = { w: 1200, h: 630, gap: 6, bg: ffc(PALETTE.light.bg), el: ffc(PALETTE.light.el), ink: ffc(PALETTE.light.tx), ink2: ffc(PALETTE.light.dim),
   version: 3, panel: 440, pad: 48, avatar: 128, mark: 40 };
 const CARD_DIR = join(DATA_DIR, "og");
 const CARD_FONT = { bold: join(__dirname, "..", "assets", "fonts", "Archivo-Bold.ttf"), reg: join(__dirname, "..", "assets", "fonts", "Archivo-Regular.ttf") };
@@ -83,7 +85,7 @@ function profileCardTiles(u) {
     initials: cardClean(u.display_name || u.username).slice(0, 2).toUpperCase() || "TN",
   };
   const avatar = cardFile(u.avatar_url);
-  const accent = accentHex(u.accent).replace("#", "0x");   // their colour, as in the app
+  const accent = ffc(accentHex(u.accent));   // their colour, as in the app
   const hash = createHash("sha1").update(JSON.stringify([CARD.version, use.map((t) => t.file), avatar, text, accent])).digest("hex").slice(0, 12);
   return { tiles: use, shape, avatar, text, accent, hash };
 }
@@ -133,7 +135,7 @@ function profileCardArgs(card, out, textDir) {
     const circle = `format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lte(hypot(X-${A - 0.5},Y-${A - 0.5}),${A}),255,0)',scale=${A}:${A}`;
     // their accent as a ring, a white gap, then the picture — as on their profile
     const disc = (color, size, label) => { const r = size; f.push(`color=c=${color}:s=${r * 2}x${r * 2}:d=1,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lte(hypot(X-${r - 0.5},Y-${r - 0.5}),${r}),255,0)',scale=${r}:${r}[${label}]`); };
-    disc(card.accent || "0x98FC68", A + 12, "ring"); lay("ring", pad - 6, 50);
+    disc(card.accent || ffc(PALETTE.accent), A + 12, "ring"); lay("ring", pad - 6, 50);
     disc(CARD.bg, A + 4, "gap"); lay("gap", pad - 2, 54);
     if (card.avatar) { args.push("-i", card.avatar); f.push(`[${k++}:v]scale=${A * 2}:${A * 2}:force_original_aspect_ratio=increase,crop=${A * 2}:${A * 2},${circle}[av]`); }
     else f.push(`color=c=${CARD.el}:s=${A * 2}x${A * 2}:d=1,${circle}[av]`);

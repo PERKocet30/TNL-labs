@@ -24,9 +24,9 @@ if (!FFMPEG) try { execFileSync("ffmpeg", ["-version"], { stdio: "ignore" }); FF
 const src = readFileSync(join(ROOT, "src/server-10-profile-card.js"), "utf8").replace(/app\.get\([\s\S]*$/, "");
 const UPLOAD_DIR = join(DATA, "uploads");
 const errors = [];
-const C = new Function("db", "accentHex", "join", "dirname", "existsSync", "mkdirSync", "readdirSync", "writeFileSync", "rename", "rm", "createHash", "execFile", "logError", "DATA_DIR", "UPLOAD_DIR", "__dirname", "FFMPEG",
+const C = new Function("db", "PALETTE", "accentHex", "join", "dirname", "existsSync", "mkdirSync", "readdirSync", "writeFileSync", "rename", "rm", "createHash", "execFile", "logError", "DATA_DIR", "UPLOAD_DIR", "__dirname", "FFMPEG",
   src + "\nreturn { assColor, cardShape, cardFile, cardWrap, cardClean, profileCardTiles, profileCardArgs, buildProfileCard, profileCardMeta, CARD };")(
-  db, (k) => ({ heat: "#FF5A1F" }[k] || "#98FC68"), join, dirname, existsSync, mkdirSync, readdirSync, writeFileSync, rename, rm, createHash, execFile, (...a) => errors.push(a), DATA_DIR, UPLOAD_DIR, join(ROOT, "src"), FFMPEG);
+  db, (await import("../src/palette.js")).PALETTE, (k) => ({ heat: "#FF5A1F" }[k] || "#98FC68"), join, dirname, existsSync, mkdirSync, readdirSync, writeFileSync, rename, rm, createHash, execFile, (...a) => errors.push(a), DATA_DIR, UPLOAD_DIR, join(ROOT, "src"), FFMPEG);
 
 const now = Date.now();
 const uid = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, bio, created_at) VALUES ('maker','Maker Name 🎧','m@x.test','x',?,?)`)

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- TNL LABS admin v2.0 — 2026-09-29. Shell and styles; the app is public/admin-app/*.js -->
+<!-- TNL LABS admin v2.1 — 2026-09-29. Shell and styles; the app is public/admin-app/*.js; colours from /palette.css -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -7,11 +7,9 @@
 <meta name="robots" content="noindex, nofollow">
 <title>TNL LABS — Admin</title>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem("tnl-theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
+<!-- every colour: src/palette.js, served as /palette.css -->
+<link rel="stylesheet" href="/palette.css">
 <style>
-:root{--bg:#FFFFFF;--card:#FFFFFF;--el:#F2F2F2;--line:rgba(0,0,0,.1);--line2:rgba(0,0,0,.26);
---tx:#000;--tx2:#333333;--dim:#5C5C5C;--green:#467430;--fill:#98FC68;--on-fill:#152C09;--red:#C9302C;--scrim:rgba(0,0,0,.45)}
-[data-theme="dark"]{--bg:#000;--card:#0A0A0A;--el:#161616;--line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.28);
---tx:#FFFFFF;--tx2:#D9D9D9;--dim:#9A9A9A;--green:#98FC68;--red:#FF6B66;--scrim:rgba(0,0,0,.72)}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:var(--bg);color:var(--tx)}
 body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:14px;line-height:1.4;min-height:100vh;-webkit-font-smoothing:antialiased}
