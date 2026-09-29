@@ -292,10 +292,11 @@ const q = {
 
 /* Feed query builder — returns posts enriched with author, counts, and
    whether the current viewer liked them. */
-function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false, postId = null }) {
+function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false, postId = null, ids = null }) {
   const where = [];
   const params = {};
   if (postId) { where.push(`p.id = $postId`); params.postId = postId; }
+  if (ids) { where.push(ids.length ? `p.id IN (${ids.map((id) => Number(id)).join(",")})` : `0`); }
   if (channel) { where.push(`p.channel = $channel`); params.channel = channel; }
   if (authorId) { where.push(`p.author_id = $authorId`); params.authorId = authorId; }
   if (workOnly) where.push(`p.is_work = 1`);

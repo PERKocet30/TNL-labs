@@ -1,7 +1,7 @@
 function showroomHTML(){return `<div class="scroll" id="showroom">
   ${guest()?`<section class="whatis"><p class="wi-tag">Social media by creatives, for creatives.</p></section>`:""}
 
-  <div class="sr-builders" id="sr-builders"></div>
+  <div class="sr-builders" id="sr-builders">${srBuildersHTML()}</div>
 
   <div class="sr-grid" id="sr-grid">${SRPOSTS.length?SRPOSTS.map(srCardHTML).join(""):`<div class="empty">Loading the work…</div>`}</div>
 </div>`}
@@ -45,6 +45,17 @@ function srCardHTML(p){
     </div>
   </div>`}
 
+/* Kept between paints: render() rebuilds the page, and the row used to
+   vanish until the next fetch. */
+let SRB=[];
+function srBuildersHTML(){
+  if(!SRB.length)return "";
+  return `<div class="mono sr-feedhead" style="padding-left:0"><span>Who's building</span></div>
+    <div class="brow">${SRB.map(x=>`<button class="bcard" data-u="${esc(x.username)}">
+      ${x.avatar_url?`<img class="av" src="${esc(x.avatar_url)}" alt="">`:`<div class="av">${esc(x.display_name.slice(0,2).toUpperCase())}</div>`}
+      <div class="bname">${esc(x.display_name)}</div>
+      <div class="mono dim">${esc((x.role||"").charAt(0).toUpperCase()+(x.role||"").slice(1))}</div>
+    </button>`).join("")}</div>`}
 async function loadShowroom(force){
   if(!force && SRAT && Date.now()-SRAT<8000 && SRPOSTS.length) return; // grid paints from cache
   SRAT=Date.now();
@@ -54,14 +65,8 @@ async function loadShowroom(force){
     const g=$("#sr-grid");
     if(g)g.innerHTML=d.posts.length?d.posts.map(srCardHTML).join("")
       :`<div class="empty">No work posted yet.<br><br>Be the first — post a piece and it lands here.</div>`;
-    const bb=$("#sr-builders");
-    if(bb&&b.builders.length)bb.innerHTML=`<div class="mono sr-feedhead" style="padding-left:0"><span>WHO'S BUILDING</span></div>
-      <div class="brow">${b.builders.map(x=>`<button class="bcard" data-u="${esc(x.username)}">
-        ${x.avatar_url?`<img class="av" src="${esc(x.avatar_url)}" alt="">`:`<div class="av">${esc(x.display_name.slice(0,2).toUpperCase())}</div>`}
-        <div class="bname">${esc(x.display_name)}</div>
-        <div class="mono dim">${esc(x.role.toUpperCase())}</div>
-        <div class="bstat">L${x.level} <span aria-label="backed">${MK_HEART(false)} ${x.validations}</span> <span aria-label="collabs">${IG_COLLAB_SM} ${x.collabs}</span></div>
-      </button>`).join("")}</div>`;
+    SRB=b.builders||[];
+    const bb=$("#sr-builders");if(bb)bb.innerHTML=srBuildersHTML();
     wireFeed();
   }catch(e){/* offline */}
 }

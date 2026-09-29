@@ -8,7 +8,7 @@ function wireFeed(){
   wireCaros();
   wireInstall();
   document.querySelectorAll("[data-like]").forEach(b=>b.onclick=async()=>{
-    if(guest())return needAccount("Back someone's work. Likes are how people earn standing here — it's the whole point.");
+    if(guest())return needAccount("Join to like work.");
     const id=b.dataset.like;
     const p=POSTS.find(x=>String(x.id)===id)||SRPOSTS.find(x=>String(x.id)===id)||(SEARCHRES&&SEARCHRES.posts.find(x=>String(x.id)===id))
       ||(PROFILE&&[...PROFILE.posts,...PROFILE.collabs].find(x=>String(x.id)===id));
@@ -59,7 +59,7 @@ function wireFeed(){
        sheet, so copy-link IS the off-app share. Exactly one of each. */
     const canNative = shareable && typeof navigator!=="undefined" && !!navigator.share;
     const items=shareable?[
-      {label:"Into a lab",sub:"Drop it in a room. The author earns rep when it travels.",icon:"//",act:"lab"},
+      {label:"Into a lab",sub:"Share it in a room.",icon:"//",act:"lab"},
       ...(canNative?[{label:"Send off the app",sub:"Messages, WhatsApp, AirDrop — anywhere on your phone",icon:DI.out,act:"native"}]:[]),
       {label:"Send inside TNL",sub:"Lands in their DMs here",icon:DI.mail,act:"dm"},
       {label:canNative?"Copy link":"Copy link to share",sub:link.replace(/^https?:\/\//,""),icon:DI.copy,act:"copy"},
@@ -82,7 +82,7 @@ function wireFeed(){
             chans.push({label:chName(c),sub:labMark(l.name),icon:"//",ch:c.id});
           }
           openPicker({title:"Share to a lab",
-            note:"The original author earns rep when their work travels.",
+            note:"",
             items:chans,onPick:async(c)=>{
               try{await api.share(id,{channel:c.ch});toast("Shared to "+c.label)}catch(e){toast(e.message)}}});
           return;
@@ -110,7 +110,7 @@ function wireFeed(){
     const id=b.dataset.collab;
     const toItems=(people)=>people.map(u=>({label:u.displayName,sub:"@"+u.username+" · "+u.role,avatar:u.avatarUrl,username:u.username}));
     openPicker({eyebrow:"TWO-SIDED",title:"Invite a collaborator",
-      note:"They have to accept. When they do, you both earn +20.",
+      note:"They'll get an invite to accept.",
       search:"Search people…",loading:true,
       onSearch:async(q)=>toItems((await api.mentionable(q)).people),
       onPick:async(it)=>{
@@ -118,7 +118,7 @@ function wireFeed(){
     try{const d=await api.mentionable("");
       if(PICKER){PICKER.items=toItems(d.people);PICKER.loading=false;render()}}catch(e){}
   });
-  document.querySelectorAll("[data-accept]").forEach(b=>b.onclick=async()=>{try{await api.accept(b.dataset.accept);await refreshMe();toast("Collab confirmed — you both earned +20");render()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-accept]").forEach(b=>b.onclick=async()=>{try{await api.accept(b.dataset.accept);await refreshMe();toast("Collab confirmed");render()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-remix]").forEach(b=>b.onclick=()=>{
     if(guest())return needAccount("Join to remix — open their loop in your studio and make it yours.");
     const id=b.dataset.remix;

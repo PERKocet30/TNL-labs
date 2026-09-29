@@ -220,50 +220,25 @@ app.delete("/api/beats/:id", auth, (req, res) => {
 });
 
 /* ================================================================
-   SHOWROOM — the front page. Real work from people actually building.
-   Only posts with something to SEE (an image or a beat), ranked by a
-   collaboration-weighted score rather than raw recency or popularity:
-     collab work > validated work > new work
-   This is the algorithm the whole model rests on — it surfaces what
-   got MADE TOGETHER, not what got the most attention.
+   SHOWROOM — the front page: published work, ranked by rankShowroom()
+   (server-10-rank.js). Builders — rankBuilders(), same file.
 ================================================================ */
 app.get("/api/feed/showroom", maybeAuth, (req, res) => {
-  const rows = db.prepare(`
-    SELECT p.*, u.username AS author_username, u.display_name AS author_name,
-           u.role AS author_role, u.avatar_url AS author_avatar, u.accent AS author_accent, u.rep AS author_rep,
-      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
-      (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) AS share_count,
-      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = ?) AS liked_by_me,
-      (SELECT COUNT(*) FROM collaborators c WHERE c.post_id = p.id AND c.status='accepted') AS collab_count,
-      tr.title AS track_title, tr.url AS track_url, tr.artwork_url AS track_art, tr.duration_ms AS track_dur, tu.username AS track_by
-    FROM posts p
-    JOIN users u ON u.id = p.author_id
-    LEFT JOIN tracks tr ON tr.id = p.audio_track_id
-    LEFT JOIN users tu ON tu.id = tr.user_id
-    WHERE p.is_work = 1 AND p.shared_from IS NULL
-    ORDER BY (
-      (SELECT COUNT(*) FROM collaborators c WHERE c.post_id = p.id AND c.status='accepted') * 30 +
-      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) * 6 +
-      (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) * 3 -
-      ((? - p.created_at) / 3600000.0) * 0.6
-    ) DESC
-    LIMIT 60`).all(req.user?.id || 0, Date.now());
+  const order = rankShowroom(req.user?.id || 0, 60);
+  const pos = new Map(order.map((id, i) => [id, i]));
+  const rows = feedRows({ ids: order, viewerId: req.user?.id, limit: 60 }).sort((a, b) => pos.get(a.id) - pos.get(b.id));
   const hidden = req.user ? blockedIds(req.user.id) : new Set();
   res.json({ posts: shapePosts(rows.filter((r) => !hidden.has(r.author_username))) });
 });
 
-/* Builders — people whose work is being validated right now. */
+/* Who's building. Names and faces only — it isn't a scoreboard. */
 app.get("/api/builders", maybeAuth, (req, res) => {
-  const rows = db.prepare(`
-    SELECT u.username, u.display_name, u.role, u.avatar_url, u.rep, u.published,
-      (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) AS posts,
-      (SELECT COUNT(*) FROM collaborators c WHERE c.user_id = u.id AND c.status='accepted') AS collabs,
-      (SELECT COUNT(*) FROM likes l JOIN posts p2 ON p2.id = l.post_id WHERE p2.author_id = u.id) AS validations
-    FROM users u
-    WHERE (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) > 0
-    ORDER BY (u.rep + (SELECT COUNT(*) FROM collaborators c WHERE c.user_id = u.id AND c.status='accepted') * 10) DESC
-    LIMIT 12`).all();
+  const ids = rankBuilders(req.user?.id || 0, 12);
+  if (!ids.length) return res.json({ builders: [] });
+  const users = new Map(db.prepare(`SELECT id, username, display_name, role, avatar_url FROM users WHERE id IN (${ids.map(Number).join(",")})`)
+    .all().map((u) => [u.id, u]));
   const hidden = req.user ? blockedIds(req.user.id) : new Set();
-  res.json({ builders: rows.filter((r) => !hidden.has(r.username)).map((r) => ({ ...r, level: levelFor(r.rep).id, levelName: levelFor(r.rep).name })) });
+  res.json({ builders: ids.map((id) => users.get(id)).filter((u) => u && !hidden.has(u.username))
+    .map((u) => ({ username: u.username, display_name: u.display_name, role: u.role, avatar_url: u.avatar_url || "" })) });
 });
 
