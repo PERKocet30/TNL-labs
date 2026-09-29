@@ -41,7 +41,7 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
 - `src/db.js` — schema, migrations, rep engine. `REP`, `LEVELS` and
   `FEE_BY_LEVEL` are the single source for rep points, levels and commission.
 - `src/pay.js` — Stripe Connect. `src/mail.js` — email via Resend.
-- `public/studio.js` — the Studio (beat maker). `public/admin.html` — `/admin`.
+- `public/studio.js` — the Studio (beat maker). `public/admin.html` + `public/admin-app/*.js` — `/admin` (keep each ≤ 24KB too).
 - The README has a table of what each numbered part holds, and the API route list.
 
 ## Product rules to preserve

@@ -82,6 +82,12 @@ const app = express();
    would let anyone spoof their IP by sending the header themselves. */
 app.set("trust proxy", 2);
 
+/* Every admin change is written down (admin_log, server-10-admin.js). */
+app.use("/api/admin", (req, res, next) => {
+  if (req.method !== "GET") res.on("finish", () => { if (res.statusCode < 400 && req.user?.is_admin) auditAdmin(req); });
+  next();
+});
+
 /* Belt and braces: mark every API response private and uncacheable.
 
    Cloudflare won't cache JSON by default — but "Cache Everything" is one
@@ -286,10 +292,11 @@ const q = {
 
 /* Feed query builder — returns posts enriched with author, counts, and
    whether the current viewer liked them. */
-function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false, postId = null }) {
+function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false, postId = null, ids = null }) {
   const where = [];
   const params = {};
   if (postId) { where.push(`p.id = $postId`); params.postId = postId; }
+  if (ids) { where.push(ids.length ? `p.id IN (${ids.map((id) => Number(id)).join(",")})` : `0`); }
   if (channel) { where.push(`p.channel = $channel`); params.channel = channel; }
   if (authorId) { where.push(`p.author_id = $authorId`); params.authorId = authorId; }
   if (workOnly) where.push(`p.is_work = 1`);
