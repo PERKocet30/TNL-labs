@@ -318,8 +318,10 @@ app.get("/p/:id", (req, res) => {
   ].filter(Boolean).join(" · ").slice(0, 200);
   const canonical = `${baseUrl(req)}/p/${p.id}`;
 
+  const au = q.userByName.get(p.author.username);
   res.send(lookPage({
     title: esc(title),
+    accent: accentHex(au && au.accent),   // the author's colour, as in the app
     head: `<link rel="canonical" href="${esc(canonical)}">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="TNL LABS">
@@ -338,7 +340,7 @@ app.get("/p/:id", (req, res) => {
 <meta name="description" content="${esc(desc)}">`,
     body: `
 <a class="who" href="/u/${esc(p.author.username)}">
-  ${p.author.avatarUrl ? `<img class="av" src="${esc(abs(p.author.avatarUrl))}" alt="">` : `<div class="av">${esc(p.author.displayName.slice(0, 2).toUpperCase())}</div>`}
+  ${p.author.avatarUrl ? `<img class="av ring" src="${esc(abs(p.author.avatarUrl))}" alt="">` : `<div class="av ring">${esc(p.author.displayName.slice(0, 2).toUpperCase())}</div>`}
   <div><div class="name">${esc(p.author.displayName)}</div><div class="cap">@${esc(p.author.username)} · ${esc(p.author.role)}</div></div>
 </a>
 ${p.body ? `<p class="body" style="margin:0 0 14px">${esc(p.body)}</p>` : ""}
@@ -347,7 +349,7 @@ ${p.videoUrl ? `<video class="media" src="${esc(p.videoUrl)}" controls playsinli
 ${p.beat ? `<div class="card"><b>${esc(p.beat.name || "untitled loop")}</b><div class="cap">${p.beat.bpm} BPM · made in the TNL studio</div></div>` : ""}
 ${accepted.length ? `<div class="cap meta"><span class="mk">//</span> Built with ${accepted.map((c) => esc(c.display_name || c.username)).join(" + ")}</div>` : ""}
 <div class="cap meta">${lookCount(p.likeCount, "like")} · ${lookCount(p.shareCount, "share")} · #${esc(p.channel)}</div>
-<a class="btn block" href="/">See what else is being made</a>`,
+<a class="btn block acc" href="/">See what else is being made</a>`,
   }));
 });
 

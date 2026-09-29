@@ -1,12 +1,8 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;900&display=swap');
-:root{--fg-rgb:247,241,241;--bg:#000;--card:#0A0A0A;--el:#141414;
---line:rgba(var(--fg-rgb),.12);--line2:rgba(var(--fg-rgb),.28);
---tx:#F7F1F1;--tx2:#D9D2D0;--dim:#9A9392;--green:#98FC68;
---accent-fill:#98FC68;--on-accent:#152C09;--scrim:rgba(0,0,0,.72);}
-/* Day. Same tokens, inverted ground — every var() consumer follows for free. */
-[data-theme="light"]{--fg-rgb:0,0,0;--bg:#F7F1F1;--card:#FBF8F8;--el:#EFE7E7;
---tx:#000000;--tx2:#3F3B3B;--dim:#5E5856;--green:#467430;--scrim:rgba(0,0,0,.45);}
+/* Colours: every theme variable (--bg, --tx, --dim, --green, --accent-fill…)
+   comes from src/palette.js — assemble.mjs writes it in right here. */
+/*@palette*/
 [data-theme="light"] img.pav,[data-theme="light"] .miniav{filter:none}
 /* The mark is pure white artwork (every opaque pixel 255,255,255), so on the
    day ground it vanished. invert(1) takes it to exactly black, alpha untouched. */

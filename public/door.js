@@ -31,7 +31,7 @@
   var CSS = [
     ".enter-vial{width:min(78vw,340px);margin:2px 0 -4px;display:block}",
     ".enter-cap{font:12px/1 'Helvetica Neue',Helvetica,Archivo,Arial,sans-serif;",
-    "letter-spacing:0;color:#9A9392;",
+    "letter-spacing:0;color:#9A9A9A;",
     "min-height:12px;transition:opacity .3s ease}",
     /* The button starts faded, not disabled -- see the header note. */
     ".enter-c.vialed .enter-b{opacity:0;transform:translateY(6px);",

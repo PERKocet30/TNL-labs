@@ -12,10 +12,10 @@ const w = alertEmail("Yesterday in the lab", ["0 new members · 7 posts.", "Erro
 console.log("\nTHE DESIGN LANGUAGE");
 for (const [n, e] of [["verify", v], ["reset", r], ["watch alert", w]]) {
   const h = e.html;
-  t(`${n}: Paper by default (#F7F1F1, ink #000)`, /<body[^>]*background:#F7F1F1/.test(h) && /color:#000000/.test(h));
+  t(`${n}: white by default (#FFFFFF, ink #000)`, /<body[^>]*background:#FFFFFF/.test(h) && /color:#000000/.test(h));
   t(`${n}: dark mode for mail apps that support it`, /prefers-color-scheme: dark/.test(h) && /\.bg \{ background:#000000/.test(h));
   t(`${n}: Helvetica Neue, never monospace`, /'Helvetica Neue',Helvetica,Archivo/.test(h) && !/monospace/.test(h));
-  t(`${n}: the action is an inverted pill`, /class="btn"[^>]*border-radius:999px[^>]*background:#000000;color:#F7F1F1/.test(h));
+  t(`${n}: the action is an inverted pill`, /class="btn"[^>]*border-radius:999px[^>]*background:#000000;color:#FFFFFF/.test(h));
   t(`${n}: the card is square`, /class="card" style="[^"]*"/.test(h) && !/class="card" style="[^"]*border-radius/.test(h));
   t(`${n}: // eyebrow, Reagent only on the mark`, /<span class="mk"[^>]*>\/\/<\/span>/.test(h) && (h.match(/#98FC68/g) || []).length === 1);
   t(`${n}: no emoji`, !/[\u{1F300}-\u{1FAFF}]|&#129514;/u.test(h));

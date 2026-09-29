@@ -10,7 +10,7 @@ const css = src.split("<style>")[1].split("</style>")[0];
 
 console.log("\nCSS STRUCTURE");
 t("braces balance", (css.match(/\{/g) || []).length === (css.match(/\}/g) || []).length);
-t("--green defined at :root", /--green:\s*#[0-9A-Fa-f]{6}/.test(css));
+t("--green defined at :root (from src/palette.js)", /--green:\s*var\(--acc-l,#[0-9A-Fa-f]{6}\)/.test(css));
 t("  not circular (--green:var(--green) kills every green thing)", !/--green:\s*var\(--green\)/.test(css));
 
 console.log("\nCLASS COLLISIONS — two features, one name, later one wins silently");

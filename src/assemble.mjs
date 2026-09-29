@@ -1,5 +1,5 @@
 /* ASSEMBLE — rebuilds the two big files from their parts at boot.
-   v1.0 · 2026-09-28
+   v1.1 · 2026-09-29 — the app's colours come from src/palette.js
 
    public/index.html and the server were single files of 350KB and 215KB —
    too big to edit or push in one piece. They now live in src/ as numbered
@@ -9,7 +9,9 @@
      src/server-NN-*.js           → src/server.runtime.js  (what actually runs)
 
    Parts are joined in filename order with nothing added between them, so the
-   built file is byte-for-byte what the parts say. To change the app, edit the
+   built file is byte-for-byte what the parts say — with one exception: the
+   @palette marker in the app's CSS (a CSS comment) is replaced by the theme variables
+   from src/palette.js, the single place every colour is defined. To change the app, edit the
    part — never the built file; it's regenerated on every boot and ignored
    by git.
 
@@ -17,12 +19,17 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { paletteCss } from "./palette.js";
 
 const SRC = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(SRC, "..");
 
 export const TARGETS = [
-  { name: "public/index.html", out: join(ROOT, "public", "index.html"), re: /^app-\d{2}-[\w.-]+\.(html|css|js)$/ },
+  { name: "public/index.html", out: join(ROOT, "public", "index.html"), re: /^app-\d{2}-[\w.-]+\.(html|css|js)$/,
+    fill: (body) => {
+      if (!body.includes("/*@palette*/")) throw new Error("[assemble] the app's CSS lost its /*@palette*/ marker — no colours");
+      return body.replace("/*@palette*/", paletteCss());
+    } },
   { name: "src/server.runtime.js", out: join(SRC, "server.runtime.js"), re: /^server-\d{2}-[\w.-]+\.js$/ },
 ];
 
@@ -40,7 +47,8 @@ export function assemble({ quiet = false } = {}) {
       if (!quiet) console.log(`[assemble] ${t.name}: no parts, kept existing file`);
       continue;
     }
-    const body = parts.map((f) => readFileSync(join(SRC, f), "utf8")).join("");
+    const joined = parts.map((f) => readFileSync(join(SRC, f), "utf8")).join("");
+    const body = t.fill ? t.fill(joined) : joined;
     const same = existsSync(t.out) && readFileSync(t.out, "utf8") === body;
     if (!same) writeFileSync(t.out, body);
     built[t.name] = { parts: parts.length, bytes: Buffer.byteLength(body) };

@@ -24,9 +24,9 @@ if (!FFMPEG) try { execFileSync("ffmpeg", ["-version"], { stdio: "ignore" }); FF
 const src = readFileSync(join(ROOT, "src/server-10-profile-card.js"), "utf8").replace(/app\.get\([\s\S]*$/, "");
 const UPLOAD_DIR = join(DATA, "uploads");
 const errors = [];
-const C = new Function("db", "join", "dirname", "existsSync", "mkdirSync", "readdirSync", "writeFileSync", "rename", "rm", "createHash", "execFile", "logError", "DATA_DIR", "UPLOAD_DIR", "__dirname", "FFMPEG",
-  src + "\nreturn { cardShape, cardFile, cardWrap, cardClean, profileCardTiles, profileCardArgs, buildProfileCard, profileCardMeta, CARD };")(
-  db, join, dirname, existsSync, mkdirSync, readdirSync, writeFileSync, rename, rm, createHash, execFile, (...a) => errors.push(a), DATA_DIR, UPLOAD_DIR, join(ROOT, "src"), FFMPEG);
+const C = new Function("db", "PALETTE", "accentHex", "join", "dirname", "existsSync", "mkdirSync", "readdirSync", "writeFileSync", "rename", "rm", "createHash", "execFile", "logError", "DATA_DIR", "UPLOAD_DIR", "__dirname", "FFMPEG",
+  src + "\nreturn { assColor, cardShape, cardFile, cardWrap, cardClean, profileCardTiles, profileCardArgs, buildProfileCard, profileCardMeta, CARD };")(
+  db, (await import("../src/palette.js")).PALETTE, (k) => ({ heat: "#FF5A1F" }[k] || "#98FC68"), join, dirname, existsSync, mkdirSync, readdirSync, writeFileSync, rename, rm, createHash, execFile, (...a) => errors.push(a), DATA_DIR, UPLOAD_DIR, join(ROOT, "src"), FFMPEG);
 
 const now = Date.now();
 const uid = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, bio, created_at) VALUES ('maker','Maker Name 🎧','m@x.test','x',?,?)`)
@@ -87,7 +87,12 @@ t("text goes in a file, never into the filter string", !graph.includes("Tailor")
 const tricky = C.profileCardArgs({ ...card, text: { ...card.text, bio: ["{\\\\b1\\\\fs90}big \\\\N break"] } }, "/tmp/out.jpg", dir);
 const trickyAss = readFileSync(join(dir, "card.ass"), "utf8").split("\n").find((l) => l.includes("big"));
 t("a bio can't restyle the card (no { } or \\ reach libass)", trickyAss && !/\}big|\{\\\\b1\\\\fs90|\\\\N break/.test(trickyAss.slice(trickyAss.indexOf("}") + 1)));
-t("ASS colours are BGR (#5E5856 → &H56585E&)", ass.includes("\\c&H56585E&"));
+t("ASS colours are BGR (#5E5856 → &H56585E&)", C.assColor("0x5E5856") === "&H56585E&" && ass.includes("\\c&H5C5C5C&"));
+t("white ground, neutral greys", graph.startsWith("color=c=0xFFFFFF:s=1200x630") && C.CARD.ink2 === "0x5C5C5C");
+t("their accent rings the picture (Lab green by default)", /color=c=0x98FC68:s=280x280/.test(graph) && /\[ring\]overlay=42:50/.test(graph));
+db.prepare(`UPDATE users SET accent = 'heat' WHERE id = ?`).run(uid);
+const heat = C.profileCardTiles(U());
+t("…in their own colour, and a new colour means a new card address", heat.accent === "0xFF5A1F" && heat.hash !== card.hash && /color=c=0xFF5A1F/.test(C.profileCardArgs(heat, "/tmp/o.jpg", dir).join(" ")));
 const bare = C.profileCardArgs(card, "/tmp/out.jpg", null), bareGraph = bare[bare.indexOf("-filter_complex") + 1];
 t("the fallback build is the grid alone, full width", !/drawtext/.test(bareGraph) && /\[t0\]overlay=0:0/.test(bareGraph));
 t("the fonts ship with the app, with their licence", existsSync(join(ROOT, "assets/fonts/Archivo-Bold.ttf")) && existsSync(join(ROOT, "assets/fonts/Archivo-Regular.ttf")) && existsSync(join(ROOT, "assets/fonts/OFL-Archivo.txt")));

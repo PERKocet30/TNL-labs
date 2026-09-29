@@ -61,8 +61,18 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
 
 ## Design language
 
-Helvetica. `//` marks the labs (`// Music`). Paper (light) by default with a
-dark mode. Reagent green `#98FC68` is the **one** accent. Icons are drawn,
+Helvetica. `//` marks the labs (`// Music`). White, black and green: true
+white `#FFFFFF` with neutral greys by default, black in dark mode (no
+off-white Paper — changed 2026-09-29). Reagent green `#98FC68` is the app's
+accent; each member can pick their own, and their profile — in the app, on
+`/u/:name`, `/p/:id` and the share card — wears it.
+
+**Every colour lives in `src/palette.js`** — both themes, the accent, the
+member accents (`ACCENTS`) and the accent maths. Never type a theme colour
+anywhere else: the app gets it through the `/*@palette*/` marker in
+`app-02-styles-base.css` (filled in by `assemble.mjs`), `/admin` links
+`/palette.css`, server pages inline `paletteCss()`, emails and the share
+card read `PALETTE`. `test/palette.test.mjs` fails if anything drifts. Icons are drawn,
 2px stroke, square caps. Mobile-first — check it at phone width, and at
 1440px: from 1024px the app switches to the computer frame (left sidebar,
 `src/app-05-styles-wide.css`, `isWide()` in `app-09-render-nav.js`).
