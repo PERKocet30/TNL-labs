@@ -94,9 +94,9 @@ if (FFMPEG) {
   console.log("\nA REAL CARD");
   const size = (file) => { const jpg = readFileSync(file); let i = 2; while (i < jpg.length) { const m = jpg[i + 1], len = jpg.readUInt16BE(i + 2); if (m >= 0xC0 && m <= 0xC2) return [jpg.readUInt16BE(i + 7), jpg.readUInt16BE(i + 5)]; i += 2 + len; } return [0, 0]; };
   const file = await C.buildProfileCard(uid, card);
-  t("ffmpeg builds a 1200×630 JPEG with text", String(size(file)) === "1200,630" && !errors.length);
+  t("ffmpeg builds a 1200×630 JPEG with text" + (errors.length ? " — " + JSON.stringify(errors).slice(0, 300) : ""), String(size(file)) === "1200,630" && !errors.length);
   t("asking again reuses the saved card", (await C.buildProfileCard(uid, card)) === file);
-  piece(); await C.buildProfileCard(uid, C.profileCardTiles(U())); await new Promise((r) => setTimeout(r, 200));
+  piece(); await C.buildProfileCard(uid, C.profileCardTiles(U()));
   t("a newer card replaces the old one, and no temp files are left", readdirSync(join(DATA_DIR, "og")).filter((f) => f.startsWith(`u${uid}-`)).length === 1 && !readdirSync(join(DATA_DIR, "og")).some((f) => f.startsWith("tmp-")));
   execFileSync(FFMPEG, ["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=s=640x360:d=3", "-pix_fmt", "yuv420p", join(UPLOAD_DIR, "v.mp4")]);
   db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, video_url, created_at) VALUES (?,?,?,?,?,?)`).run(uid, "general", "v", 1, "/uploads/v.mp4", now + 999);

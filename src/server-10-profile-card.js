@@ -149,6 +149,7 @@ function profileCardArgs(card, out, textDir) {
   return args;
 }
 
+const cardRm = (name) => new Promise((ok) => rm(join(CARD_DIR, name), { recursive: true, force: true }, () => ok()));
 const runFfmpeg = (args) => new Promise((resolve, reject) =>
   execFile(FFMPEG, args, { timeout: 30000, maxBuffer: 1024 * 1024 }, (err, _o, stderr) => (err ? reject(new Error(String(stderr || err).slice(0, 300))) : resolve())));
 
@@ -175,10 +176,11 @@ function buildProfileCard(userId, card) {
       }
       if (!existsSync(tmp)) throw new Error("no output");
       await new Promise((ok, no) => rename(tmp, out, (e) => (e ? no(e) : ok())));
-      // older cards for this person are dead weight on the volume
-      for (const f of readdirSync(CARD_DIR)) if (f.startsWith(`u${userId}-`) && f !== `u${userId}-${card.hash}.jpg`) rm(join(CARD_DIR, f), { force: true }, () => {});
+      // older cards for this person are dead weight on the volume — gone
+      // before this build reports done, so nothing races the next request
+      await Promise.all(readdirSync(CARD_DIR).filter((f) => f.startsWith(`u${userId}-`) && f !== `u${userId}-${card.hash}.jpg`).map(cardRm));
       return out;
-    } finally { rm(dir, { recursive: true, force: true }, () => {}); }
+    } finally { await cardRm(dir.slice(CARD_DIR.length + 1)); }
   }));
   CARD_BUILDS.set(out, job);
   job.finally(() => CARD_BUILDS.delete(out)).catch(() => {});
