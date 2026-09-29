@@ -74,16 +74,7 @@ function wireFeed(){
         :"This is a lab message, not published work. No public link, by design.",
       items,
       onPick:async(it)=>{
-        if(it.act==="dm"){
-          const toItems=(people)=>people.map(u=>({label:u.displayName,sub:"@"+u.username+" · "+u.role,avatar:u.avatarUrl,username:u.username}));
-          openPicker({eyebrow:"SEND",title:"Send to",search:"Search people…",loading:true,
-            onSearch:async(q)=>toItems((await api.mentionable(q)).people),
-            onPick:async(p2)=>{
-              try{await api.sendPost(id,p2.username);toast("Sent to "+p2.label)}catch(e){toast(e.message)}}});
-          try{const d=await api.mentionable("");
-            if(PICKER){PICKER.items=toItems(d.people);PICKER.loading=false;render()}}catch(e){}
-          return;
-        }
+        if(it.act==="dm")return sendPostSheet(id);   // pick one or several people and chats
         if(it.act==="lab"){
           const chans=[];
           for(const l of LABS)for(const c of l.channels){

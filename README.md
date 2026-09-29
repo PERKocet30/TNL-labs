@@ -45,7 +45,7 @@ public/admin.html               the admin dashboard
 public/door.js                  the door's vial loader and mark
 public/sw.js                    service worker (installable app, offline shell)
 scripts/scientist.mjs           daily read-only checks against the live site
-test/                           24 test suites — run with npm test
+test/                           26 test suites — run with npm test
 ```
 
 **Edit the parts, never the built files.** Parts join in filename order, so two parts can share a number (`app-11-gate-logic`, `app-11-gate-screens`, `app-11-showroom`). `public/index.html` and `src/server.runtime.js` are regenerated on every boot and ignored by git.
@@ -56,7 +56,8 @@ test/                           24 test suites — run with npm test
 | `app-02…05-styles-*` | styles: base, profile, studio/UI, post creator (`compose`), media, listing editor (`sell`) |
 | `app-07-theme-labs-api` | theme, labs and channels, API client |
 | `app-08-state-ui` · `app-09-render-nav` | app state, toasts/modals, routing, top bar |
-| `app-10-dm-search` | DMs, search, the door |
+| `app-10-chat-1…6` | Messages v2 (2026-09-29): chat kit, inbox + chat screen, composer/voice notes, sheets (new chat, group, forward, mute), the signed-in live stream, lab rooms as chat |
+| `app-10-dm-search` | search, the door |
 | `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
 | `app-11-showroom` · `app-12…13` | Showroom, lab index, archive/posts, player |
 | `app-14-detail-sell` | listing page and the listing editor |
@@ -65,7 +66,9 @@ test/                           24 test suites — run with npm test
 | `app-18-composer` · `app-18-media` | the post creator; carousels, video autoplay, music and the audio unlock |
 | `app-19-feed-boot` | feed, badges, boot |
 | `server-01-boot` | setup, compression, caching rules, Sentry, prepared queries |
-| `server-02…11` | auth/feed, uploads/DMs/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/beats/Showroom, social/meta |
+| `server-02…11` | auth/feed, uploads/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/beats/Showroom, social/meta |
+| `server-10-dm-core` · `-dm-groups` · `-dm-routes` | Messages v2: schema migration (groups; backup first), requests, replies, reactions, edit/unsend, forward, mute |
+| `server-10-links` · `server-10-live` | link previews behind a DNS-level SSRF guard; the signed-in live stream, typing, presence, lab reactions and pins |
 
 ---
 
@@ -235,10 +238,19 @@ POST   /api/users/:username/block   (auth)
 POST   /api/users/:username/follow   (auth)
 GET    /api/users/:username
 
-# dm
-GET    /api/dm   (auth)
-GET    /api/dm/:username   (auth)
-POST   /api/dm/:username   (auth)
+# messages (v2, 2026-09-29) — every route checks chat membership
+GET    /api/chats            (auth)  inbox: chats, requests, unread (also /api/dm)
+GET    /api/chats/with/:username  (auth)  existing 1:1 chat id, never creates one
+POST   /api/chats/with/:username  (auth)  send 1:1 (also /api/dm/:username)
+POST   /api/chats            (auth)  new group {usernames, title}
+GET    /api/chats/:id        (auth)  ?before=<messageId> for older pages; marks read
+POST   /api/chats/:id/messages   (auth)  {body, imageUrl|videoUrl|audioUrl (/uploads/ only), audioMs, replyTo}
+POST   /api/chats/:id/read | /accept | /clear   (auth)
+PATCH  /api/chats/:id        (auth)  rename group
+POST   /api/chats/:id/members  ·  DELETE /api/chats/:id/members/:username   (auth)
+PATCH  /api/chats/m/:mid  (edit, 15 min)  ·  DELETE /api/chats/m/:mid  (unsend)  ·  POST /api/chats/m/:mid/react
+POST   /api/chats/forward  ·  /api/chats/mute  ·  /api/chats/activity   (auth)
+POST   /api/typing  ·  /api/posts/:id/react  (auth)  ·  POST /api/posts/:id/pin  (admin)
 
 # notifications
 GET    /api/notifications   (auth)
@@ -332,8 +344,9 @@ POST   /api/unfurl   (auth)
 # report
 POST   /api/report   (auth)
 
-# stream
-GET    /api/stream
+# stream — signed in: trade the token for a one-use ticket first
+POST   /api/stream/ticket   (auth)
+GET    /api/stream?ticket=
 
 # levels
 GET    /api/levels

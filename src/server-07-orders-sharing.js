@@ -269,7 +269,8 @@ app.get("/api/mentionable", auth, (req, res) => {
 app.post("/api/posts/:id/send", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
   const post = q.postById.get(Number(req.params.id));
   if (!post) return res.status(404).json({ error: "no post" });
-  const to = q.userByName.get(req.body?.username || "");
+  // `to` is what the app used to send; the route only read `username`, so in-app sends 404'd.
+  const to = q.userByName.get(req.body?.username || req.body?.to || "");
   if (!to) return res.status(404).json({ error: "no such user" });
   if (to.id === req.user.id) return res.status(400).json({ error: "that's you" });
   if (isBlocked(req.user.id, to.id)) return res.status(403).json({ error: "unavailable" });

@@ -141,14 +141,18 @@ function labsHTML(){
       <button class="lr-back" id="labback" aria-label="All labs"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="lr-title"><span class="lg">//</span> ${esc(LAB.name)}</div>
       ${LAB.id==="culture"?`<button class="lr-tool" id="openstudio">${UI_IC.music}<span>Studio</span></button>`:""}
+      ${CH.archive||CH.library?"":`<button class="lr-bell" id="lrbell" aria-label="Mute this channel">${UI_IC.bell}</button>`}
     </div>
     <div class="lr-tabs" role="tablist">${LAB.channels.map(c=>{const n=UNREADS[c.id]||0;
       return `<button class="lr-tab ${CH.id===c.id?"on":""}" role="tab" aria-selected="${CH.id===c.id}" data-ch="${c.id}">${locked(c)?UI_IC.lock:""}${esc(chName(c))}${n&&CH.id!==c.id?`<i class="lr-dot" aria-label="${n} new"></i>`:""}</button>`}).join("")}</div>
     ${CH.desc?`<div class="lr-desc">${esc(CH.desc)}</div>`:""}
+    <div id="lrpins"></div>
     ${CH.archive?archiveHTML():CH.library?tracksHTML():`
     ${CH.beatlab?`<div id="studiomount"></div>`:""}
     ${(CH.gate&&levelFor(myRep()).id<CH.gate)?`<div class="empty">${UI_IC.lock} ${esc(chName(CH))} unlocks at ${LEVELS.find(l=>l.id===CH.gate).name}</div>`
       :`<div class="feed" id="feed"><div class="empty">Loading…</div></div>
+    <button class="c-jump lr-jump" id="lrjump" aria-label="Jump to latest" hidden></button>
+    <div id="lrtyping"></div><div id="lrbar"></div>
     ${QUEUE.length?`<div class="attach-bar">
       <div class="qgrid">${QUEUE.map((q,i)=>`
         <div class="qcard ${q.state}">
@@ -175,7 +179,7 @@ function labsHTML(){
     <div class="composer">
       <input type="file" id="filein" accept="image/*,video/*" multiple hidden>
       <button class="attach" id="attachb" title="Attach image or video" aria-label="Attach image or video">${UI_IC.plus}</button>
-      <input class="in" id="draft" placeholder="${EDITID?"Edit your message…":"Message "+esc(chName(CH))}">
+      <input class="in" id="draft" placeholder="${EDITID?"Edit your message…":"Message "+esc(chName(CH))}" value="${EDITID?"":esc(LABDRAFT)}" autocomplete="off">
       ${EDITID?`<button class="send ghostsend" id="canceledit" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:""}
       <button class="send" id="sendb" aria-label="Send">${EDITID?"✓":UI_IC.arrow}</button>
     </div>`}
@@ -206,22 +210,7 @@ const IC_REMIX_SM=`<svg viewBox="0 0 24 24" width="12" height="12" fill="none" s
    field that decides what reaches the Showroom, so one flag now means one
    thing in both places. Consecutive posts from the same person inside five
    minutes drop the header and group, the way every chat client does. */
-function msgRowHTML(p,prev){
-  const grouped=!!(prev&&!isCard(prev)&&prev.author.username===p.author.username
-    &&Math.abs(p.createdAt-prev.createdAt)<300000);
-  const imgs=(p.images&&p.images.length)?p.images:(p.imageUrl?[{url:p.imageUrl,thumb:p.thumbUrl}]:[]);
-  return `<div class="msg ${grouped?"msg-g":""} ${p.pending?"pending":""}">
-    <div class="msg-a">${grouped?"":avHTML(p.author)}</div>
-    <div class="msg-c">
-      ${grouped?"":`<div class="msg-h"><span class="msg-by" data-u="${esc(p.author.username)}">${esc(p.author.displayName)}</span><span class="msg-t">${timeAgo(p.createdAt).toLowerCase()}</span></div>`}
-      ${p.body?`<div class="msg-b">${rich(p.body)}</div>`:""}
-      ${imgs.length?`<div class="msg-m n${Math.min(imgs.length,4)}">${imgs.slice(0,4).map(im=>`<img class="msg-i" src="${esc(im.thumb||im.url)}" data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async">`).join("")}</div>`:""}
-      ${p.videoUrl?`<div class="msg-m"><video class="msg-v" src="${esc(p.videoUrl)}" preload="none" playsinline muted controls></video></div>`:""}
-      ${musChipHTML(p)}
-      <button class="msg-open" data-openpost="${p.id}" aria-label="Open post"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M8 16L16 8M9.5 8H16v6.5"/></svg></button>
-    </div>
-  </div>`;
-}
+/* msgRowHTML → app-10-chat-6-labs.js (messaging v2) */
 
 function postHTML(p){const mine=p.author.username===myName();
   const myPending=p.collaborators.find(c=>c.username===myName()&&c.status==="pending");
