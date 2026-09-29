@@ -305,22 +305,28 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
 });
 
 /* Like / unlike — toggling. Liking someone else's post awards THEM rep. */
+/* Like. The client sends the state it wants ({ liked: true|false }) so two
+   quick taps can't cross in flight and flip it the wrong way; with no body
+   it still toggles, for older clients. Returns the state and the count. */
+const likeCountQ = db.prepare(`SELECT COUNT(*) AS n FROM likes WHERE post_id = ?`);
 app.post("/api/posts/:id/like", auth, verified, (req, res) => {
   const post = q.postById.get(Number(req.params.id));
   if (!post) return res.status(404).json({ error: "no post" });
-  const already = q.likeExists.get(post.id, req.user.id);
-  let liked;
-  if (already) {
-    q.unlike.run(post.id, req.user.id);
-    if (post.author_id !== req.user.id) revokeRep(post.author_id, "like_received", post.id);
-    liked = false;
-  } else {
-    q.like.run(post.id, req.user.id, Date.now());
-    if (post.author_id !== req.user.id) { awardRep(post.author_id, "like_received", post.id); notify(post.author_id, req.user.id, "like", post.id); }
-    liked = true;
+  const already = !!q.likeExists.get(post.id, req.user.id);
+  const liked = typeof req.body?.liked === "boolean" ? req.body.liked : !already;
+  if (liked !== already) {
+    if (liked) {
+      q.like.run(post.id, req.user.id, Date.now());
+      if (post.author_id !== req.user.id) { awardRep(post.author_id, "like_received", post.id); notify(post.author_id, req.user.id, "like", post.id); }
+    } else {
+      q.unlike.run(post.id, req.user.id);
+      if (post.author_id !== req.user.id) revokeRep(post.author_id, "like_received", post.id);
+    }
   }
-  broadcast("like", { postId: post.id, liked });
-  res.json({ liked });
+  const likeCount = likeCountQ.get(post.id).n;
+  // Everyone else only needs the new number; whether YOU like it is yours.
+  if (liked !== already) broadcast("like", { postId: post.id, likeCount });
+  res.json({ liked, likeCount });
 });
 
 /* Share — reposts an existing post into a channel. Awards the ORIGINAL author rep. */
