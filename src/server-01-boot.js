@@ -82,6 +82,12 @@ const app = express();
    would let anyone spoof their IP by sending the header themselves. */
 app.set("trust proxy", 2);
 
+/* Every admin change is written down (admin_log, server-10-admin.js). */
+app.use("/api/admin", (req, res, next) => {
+  if (req.method !== "GET") res.on("finish", () => { if (res.statusCode < 400 && req.user?.is_admin) auditAdmin(req); });
+  next();
+});
+
 /* Belt and braces: mark every API response private and uncacheable.
 
    Cloudflare won't cache JSON by default — but "Cache Everything" is one

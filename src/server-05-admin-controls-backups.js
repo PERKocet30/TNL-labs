@@ -5,9 +5,17 @@ app.post("/api/admin/members/:username/rep", auth, admin, (req, res) => {
   const delta = Math.round(Number(req.body?.delta));
   if (!Number.isFinite(delta) || Math.abs(delta) > 500) return res.status(400).json({ error: "±500 max" });
   const next = Math.max(0, u.rep + delta);
-  db.prepare(`UPDATE users SET rep = ? WHERE id = ?`).run(next, u.id);
-  db.prepare(`INSERT INTO rep_events (user_id, kind, points, post_id, created_at) VALUES (?,?,?,?,?)`)
-    .run(u.id, delta > 0 ? "admin_grant" : "admin_deduct", delta, null, Date.now());
+  /* The event is written FIRST, with the real change (a deduction stops at
+     0). This used to name columns rep_events doesn't have, so the insert
+     threw after rep had already moved — a change with no audit trail. */
+  const applied = next - u.rep;
+  db.exec("BEGIN");
+  try {
+    db.prepare(`INSERT INTO rep_events (user_id, kind, amount, source_id, created_at) VALUES (?,?,?,?,?)`)
+      .run(u.id, delta > 0 ? "admin_grant" : "admin_deduct", applied, req.user.id, Date.now());
+    db.prepare(`UPDATE users SET rep = ? WHERE id = ?`).run(next, u.id);
+    db.exec("COMMIT");
+  } catch (e) { db.exec("ROLLBACK"); throw e; }
   console.log(`[admin] @${req.user.username} adjusted @${u.username} rep by ${delta} -> ${next}`);
   res.json({ ok: true, rep: next });
 });
@@ -292,6 +300,7 @@ app.get("/api/admin/source", auth, admin, (req, res) => {
     "src/server.js", "src/assemble.mjs", ...parts, "src/server.runtime.js",
     "src/db.js", "src/pay.js", "src/mail.js",
     "public/index.html", "public/studio.js", "public/admin.html", "public/door.js", "public/sw.js",
+    ...(existsSync(join(root, "public/admin-app")) ? readdirSync(join(root, "public/admin-app")).sort().map((f) => "public/admin-app/" + f) : []),
     "public/manifest.webmanifest",
     "package.json", "README.md", "RAILWAY.md",
   ].filter((f) => existsSync(join(root, f)));
