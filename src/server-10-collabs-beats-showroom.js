@@ -109,9 +109,12 @@ app.get("/u/:username", (req, res) => {
   // The image IS the preview. Their best work beats their avatar every time:
   // a 56px circle crops to nothing, a poster stops a thumb.
   const hero = posts.find((p) => p.imageUrl && p.mediaW && p.mediaH) || posts.find((p) => p.imageUrl);
-  const ogImage = abs(hero && hero.imageUrl) || abs(u.avatar_url) || `${baseUrl(req)}/icon-512.png`;
-  const ogW = (hero && hero.mediaW) || 512;
-  const ogH = (hero && hero.mediaH) || 512;
+  /* v2 (2026-09-29): two or more pieces → the portfolio grid
+     (server-10-profile-card.js). One piece, or no ffmpeg → that piece. */
+  const card = profileCardMeta(u.id, baseUrl(req), u.username);
+  const ogImage = card ? card.url : abs(hero && hero.imageUrl) || abs(u.avatar_url) || `${baseUrl(req)}/icon-512.png`;
+  const ogW = card ? card.w : (hero && hero.mediaW) || 512;
+  const ogH = card ? card.h : (hero && hero.mediaH) || 512;
 
   const roles = (() => { try { return JSON.parse(u.roles || "[]"); } catch { return []; } })();
   const roleLine = roles.length ? roles.slice(0, 3).join(" · ") : u.role;

@@ -2,7 +2,7 @@ import express from "express";
 import zlib from "node:zlib";
 import cors from "cors";
 import bcrypt from "bcryptjs";
-import { randomBytes } from "node:crypto";
+import { randomBytes, createHash } from "node:crypto";
 import { crc32 as zlibCrc32 } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
