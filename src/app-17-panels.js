@@ -54,9 +54,23 @@ function renderSearchOnly(){
 /* openDM → app-10-chat-3-wire.js (messaging v2) */
 let PENDFILE=null, PENDPREP=null, UPPROG=null, UPLOADXHR=null;
 
+/* The Studio is 80KB+ and most visits never open it, so it no longer blocks
+   the first paint: it loads in the background after boot, or on first use. */
+let STUDIOLOAD=null;
+function ensureStudio(){
+  if(window.TNLStudio)return Promise.resolve();
+  if(!STUDIOLOAD)STUDIOLOAD=new Promise((ok,no)=>{
+    const s=document.createElement("script");s.src="/studio.js";
+    s.onload=ok;s.onerror=()=>{STUDIOLOAD=null;no(new Error("studio didn't load"))};
+    document.head.appendChild(s)});
+  return STUDIOLOAD;
+}
+function withStudio(fn){ensureStudio().then(fn,()=>toast("Couldn't load the Studio — check your connection"))}
+
 function mountStudio(){
   const el=$("#studiomount");
-  if(!el||!window.TNLStudio)return;
+  if(!el)return;
+  if(!window.TNLStudio)return withStudio(()=>{if($("#studiomount"))mountStudio()});
   TNLStudio.mount(el,{
     api,
     toast,
