@@ -3,7 +3,7 @@
    stale social data is worse than no social data. */
 /* Bump this on every deploy that changes the shell. A stale cached
    index.html will happily serve a broken build forever otherwise. */
-const CACHE = "tnl-shell-v6";
+const CACHE = "tnl-shell-v7";   // v7: messaging v2 (2026-09-29)
 const MEDIA = "tnl-media-v2";
 /* Only things that definitely exist. If addAll() 404s on ANY entry the whole
    install rejects and the worker never activates — a silent failure. */

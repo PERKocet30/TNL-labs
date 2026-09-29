@@ -16,6 +16,7 @@ function initHistory(){
   if(HISTINIT)return; HISTINIT=true;
   try{history.replaceState({kind:"root",tab:TAB},"",location.pathname)}catch(e){}
   window.addEventListener("popstate",async()=>{
+    if(chatPopstate())return;   // messages, menus and chat sheets handle their own back
     POPPING=true;
     // close whatever's on top, innermost first — same order a person expects
     if(LIGHTBOX){LIGHTBOX=null}
@@ -35,8 +36,6 @@ function initHistory(){
       PCOMPOSE=null;
     }
     else if(PROFILE){PROFILE=null}
-    else if(DMOPEN){DMOPEN=null;DMDATA=null}
-    else if(DMOPENPANEL){DMOPENPANEL=false}
     else if(NOTIFOPEN){NOTIFOPEN=false}
     else if(SEARCHOPEN){SEARCHOPEN=false}
     else if(OPENCOMMENTS){OPENCOMMENTS=null}
@@ -67,7 +66,6 @@ function render(){
     ${navHTML()}
     ${(PROFILE&&!MYPAGE())?sheetHTML():""}
     ${NOTIFOPEN?notifPanelHTML():""}
-    ${DMOPENPANEL?dmPanelHTML():""}
     ${SEARCHOPEN?searchPanelHTML():""}
     ${PICKER?pickerHTML():""}
     ${BOARDSOPEN?boardsHTML():""}
@@ -118,11 +116,11 @@ function topHTML(){
   </div>`}
 
 function notifPanelHTML(){
-  const label=n=>({like:"liked your work",comment:"commented",collab_invite:"wants to collab",collab_accept:"accepted your collab",follow:"followed you",share:"shared your work",dm:"messaged you"})[n.kind]||n.kind;
+  const label=n=>({like:"liked your work",comment:"commented",collab_invite:"wants to collab",collab_accept:"accepted your collab",follow:"followed you",share:"shared your work",dm:"messaged you",reply:"replied to you",mention:"mentioned you"})[n.kind]||n.kind;
   return `<div class="sheet" id="npbg"><div class="sheetc">
     <div class="sheeth"><div><h2>Notifications</h2></div><button class="x" id="npx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     ${!NOTIFS?`<div class="empty">Loading…</div>`:!NOTIFS.length?`<div class="empty">Nothing yet.<br>Post work and it starts here.</div>`:
-      NOTIFS.map(n=>`<div class="nrow ${n.read?"":"unread"}" ${n.postId?`data-nopen="${n.postId}"`:n.actor?`data-u="${esc(n.actor.username)}"`:""}>
+      NOTIFS.map(n=>`<div class="nrow ${n.read?"":"unread"}" ${n.kind==="dm"&&n.actor?`data-ndm="${esc(n.actor.username)}"`:n.postId?`data-nopen="${n.postId}"`:n.actor?`data-u="${esc(n.actor.username)}"`:""}>
         ${n.actor?avHTML({displayName:n.actor.displayName,avatarUrl:n.actor.avatarUrl},"sm"):`<div class="av sm">·</div>`}
         <div class="nbody"><b>${esc(n.actor?n.actor.displayName:"Someone")}</b> ${label(n)}
         ${n.body?`<div class="nsnip">${esc(n.body)}</div>`:""}
@@ -135,7 +133,7 @@ async function openProfile(username){
   // Open the sheet on the same tick as the tap. Waiting for the network
   // before showing anything is what made this feel broken.
   pushView("profile",username);
-  SEARCHOPEN=false; DMOPENPANEL=false; NOTIFOPEN=false;
+  SEARCHOPEN=false; NOTIFOPEN=false; if(DMOPENPANEL)closeMessages();
   PTAB="work"; EDITING=false; PROFLISTINGS=null;
   const cached=PROFCACHE.get(username);
   PROFILE=cached||{loading:true,user:{username,displayName:username,avatarUrl:"",role:"",roles:[],rep:0,bio:"",link:"",createdAt:Date.now()},

@@ -231,11 +231,17 @@ app.get("/api/feed", auth, (req, res) => {
     limit: workOnly ? 120 : 50,
   });
   const hidden = req.user ? blockedIds(req.user.id) : new Set();
-  res.json({ posts: shapePosts(rows.filter((r) => !hidden.has(r.author_username))) });
+  res.json({
+    posts: shapePosts(rows.filter((r) => !hidden.has(r.author_username))),
+    pins: req.query.channel ? pinsFor(String(req.query.channel)).filter((p) => !hidden.has(p.author.username)) : undefined,
+  });
 });
 
 app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
-  const { channel, body, beat, imageUrl, videoUrl, thumbUrl, mediaW, mediaH, isWork, images, audioTrackId } = req.body || {};
+  const { channel, body, beat, mediaW, mediaH, isWork, images, audioTrackId } = req.body || {};
+  // Media must be a file uploaded here — never someone else's URL.
+  const up = (v) => (typeof v === "string" && /^\/uploads\/[A-Za-z0-9._-]+$/.test(v) ? v : null);
+  const imageUrl = up(req.body?.imageUrl), videoUrl = up(req.body?.videoUrl), thumbUrl = up(req.body?.thumbUrl);
 
   /* Music rides on the post — the id must point at a real library track
      (Instagram model: pick a sound from the catalog, never a raw file). */
@@ -273,8 +279,17 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
   );
   const row = feedRows({ authorId: req.user.id, viewerId: req.user.id, limit: 1 })
     .find((r) => r.id === Number(info.lastInsertRowid));
+  /* A reply in a lab quotes a message from the same room. */
+  const quoted = Number(req.body?.replyTo) ? q.postById.get(Number(req.body.replyTo)) : null;
+  if (quoted && quoted.channel === (channel || "general") && quoted.channel !== "profile") {
+    db.prepare(`UPDATE posts SET reply_to = ? WHERE id = ?`).run(quoted.id, row.id);
+    row.reply_to = quoted.id;
+    if (quoted.author_id !== req.user.id && !isBlocked(quoted.author_id, req.user.id))
+      notify(quoted.author_id, req.user.id, "reply", row.id, (body || "").trim().slice(0, 80));
+  }
   const post = shapePost(row);
   notifyMentions(post.body, req.user.id, post.id, "mention");
+  if (!first && !imageUrl && !videoUrl && !beat) previewLater("post", post.id, post.body);
   /* BandLab move, TNL economy: publishing a remix credits the original.
      Rep uses the existing share_received kind — a remix IS your work
      re-circulating. Self-remixes earn nothing. */

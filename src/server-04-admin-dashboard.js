@@ -196,6 +196,7 @@ app.post("/api/admin/reports/:id/handle", auth, admin, (req, res) => {
 
 app.delete("/api/admin/posts/:id", auth, admin, (req, res) => {
   db.prepare(`DELETE FROM posts WHERE id = ?`).run(Number(req.params.id));
+  db.prepare(`DELETE FROM reactions WHERE kind = 'post' AND target_id = ?`).run(Number(req.params.id));
   broadcast("post-delete", { id: Number(req.params.id) });
   res.json({ ok: true });
 });

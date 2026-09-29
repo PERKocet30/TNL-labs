@@ -99,7 +99,7 @@ let TRKEDIT=null;   // {id,title,artworkUrl,busy,fresh}
    overlay paints instantly from what the profile already loaded. */
 let POSTOPEN=null;
 let TRKVIDS=null, TRKEXT=false;
-let NOTIFS=null, UNREAD=0, DMS=null, DMUNREAD=0, DMOPEN=null, DMDATA=null, SEARCHQ="", SEARCHROLE="", SEARCHRES=null;
+let NOTIFS=null, UNREAD=0, DMUNREAD=0, SEARCHQ="", SEARCHROLE="", SEARCHRES=null;
 let OPENCOMMENTS=null, COMMENTS=[], CEDIT=null;
 let NOTIFOPEN=false, DMOPENPANEL=false, SEARCHOPEN=false;
 let SEARCHING=false, UNREADS={}, PICKER=null, MENTIONS=null, MENTIONQ="";
@@ -364,18 +364,7 @@ function dataUrlToBlob(d){
 }
 
 
-/* ---- live updates ---- */
-let es=null;
-function startStream(){
-  if(es)es.close();
-  es=new EventSource(API+"/api/stream");
-  const refresh=()=>{if(!ME)return;if(TAB==="labs")loadFeed(true);if(TAB==="showroom")loadShowroom(true);refreshBadges()};
-  es.addEventListener("dm",e=>{try{if(!ME)return;const d=JSON.parse(e.data);
-    if(d.to===ME.username){refreshBadges();if(DMOPEN===d.from)openDM(d.from)}}catch(x){}});
-  es.addEventListener("comment",e=>{try{const d=JSON.parse(e.data);
-    if(OPENCOMMENTS===d.postId)api.comments(d.postId).then(r=>{COMMENTS=r.comments;render()})}catch(x){}});
-  ["post","like","collab-invite","collab-accepted","post-edit","post-delete"].forEach(t=>es.addEventListener(t,refresh));
-}
+/* ---- live updates: app-10-chat-5-live.js (messaging v2) ---- */
 
 /* ---- data ---- */
 async function loadFeed(force){
@@ -383,9 +372,11 @@ async function loadFeed(force){
   /* Every render() used to refire this — a like cost 2+ round trips and the
      app crawled on phone networks. Fresh-enough data now short-circuits;
      posting, deleting, and live SSE events pass force=true. */
-  if(!force && FEEDAT[CH.id] && Date.now()-FEEDAT[CH.id]<8000) return;
+  /* …but a render() still has to repaint the room it just emptied. */
+  if(!force && FEEDAT[CH.id] && Date.now()-FEEDAT[CH.id]<8000){if(POSTSCH===CH.id)renderRoomFeed();return}
   FEEDAT[CH.id]=Date.now();
-  try{const d=await api.feed(CH.id);POSTS=d.posts;renderRoomFeed()}catch(e){/* not fatal */}
+  const ch=CH.id;
+  try{const d=await api.feed(ch);if(!CH||CH.id!==ch)return;POSTS=d.posts;LABPINS=d.pins||[];renderRoomFeed()}catch(e){/* not fatal */}
   // opening a channel clears its dot
   if(UNREADS[CH.id]){delete UNREADS[CH.id];paintUnreads()}
   try{await api.readChannel(CH.id)}catch(e){}
@@ -416,7 +407,10 @@ async function loadLabs(){
 
 async function loadUnreads(){
   if(!ME)return;
-  try{const d=await api.unreads();UNREADS=d.unreads;paintUnreads()}catch(e){}
+  try{const d=await api.unreads();LABMUTED=new Set((d.muted||[]).filter(k=>k.startsWith("lab:")));
+    // a muted channel keeps its messages but loses its dot
+    for(const k of LABMUTED)delete d.unreads[k.slice(4)];
+    UNREADS=d.unreads;paintUnreads()}catch(e){}
 }
 async function refreshMe(){try{const d=await api.me();ME=d.user}catch(e){TOKEN=null;localStorage.removeItem("tnl-token")}}
 

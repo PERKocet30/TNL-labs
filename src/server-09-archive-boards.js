@@ -247,7 +247,6 @@ app.get("/api/posts/:id/saves", auth, (req, res) => {
    wall. The official route (oEmbed) needs a Facebook App and app review.
    Everything else on the web — are.na, Tumblr, blogs, direct image links —
    works fine. */
-const UNFURL_TIMEOUT = 6000;
 app.post("/api/unfurl", auth, verified, rateLimit({ max: 40, windowMs: 600000, key: "user" }), async (req, res) => {
   const url = (req.body?.url || "").toString().trim();
   if (!/^https?:\/\//i.test(url)) return res.status(400).json({ error: "need a real link" });
@@ -255,19 +254,6 @@ app.post("/api/unfurl", auth, verified, rateLimit({ max: 40, windowMs: 600000, k
   let host = "";
   try { host = new URL(url).hostname.replace(/^www\./, ""); }
   catch { return res.status(400).json({ error: "bad link" }); }
-
-  /* SSRF guard. Without this, someone pastes http://localhost:8787/api/admin/…
-     or an AWS metadata URL and the server fetches it for them, from inside
-     the network, with whatever access it has. This is the bug that turns a
-     nice feature into a breach. */
-  if (/^(localhost|127\.|0\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|\[?::1)/i.test(host)) {
-    return res.status(400).json({ error: "no" });
-  }
-
-  // A direct image link needs no fetching — it's already the answer.
-  if (/\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(url)) {
-    return res.json({ image: url, title: "", site: host, url });
-  }
 
   /* Pinterest works, and it's worth saying why it differs from Instagram:
      i.pinimg.com URLs are unsigned, don't expire, and their pin pages
@@ -280,48 +266,17 @@ app.post("/api/unfurl", auth, verified, rateLimit({ max: 40, windowMs: 600000, k
     });
   }
 
+  /* The fetch — and the SSRF guard that has to come with it (someone pastes
+     http://localhost:8787/api/admin/… or a cloud metadata URL) — lives in
+     safeGet(), server-10-links.js: every resolved address must be public,
+     on every redirect hop. A direct image link isn't fetched at all. */
   try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), UNFURL_TIMEOUT);
-    const r = await fetch(url, {
-      signal: ctrl.signal,
-      redirect: "follow",
-      headers: {
-        // identify honestly. a fake browser UA is how you get blocked properly.
-        "User-Agent": "TNLLabsBot/1.0 (+https://labs.tnllabs.com)",
-        Accept: "text/html,application/xhtml+xml",
-      },
-    });
-    clearTimeout(timer);
-    if (!r.ok) return res.status(422).json({ error: `${host} returned ${r.status}`, site: host });
-
-    // Read the head only — no reason to pull a 5MB page for 4 tags.
-    const reader = r.body.getReader();
-    let html = "", got = 0;
-    while (got < 120000) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      html += Buffer.from(value).toString("utf8");
-      got += value.length;
-      if (/<\/head>/i.test(html)) break;
-    }
-    try { reader.cancel(); } catch {}
-
-    const meta = (prop) => {
-      const m = new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']+)["']`, "i").exec(html)
-        || new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${prop}["']`, "i").exec(html);
-      return m ? m[1] : null;
-    };
-    let image = meta("og:image") || meta("twitter:image") || meta("og:image:url");
-    if (image && !/^https?:\/\//i.test(image)) {
-      try { image = new URL(image, url).href; } catch { image = null; }
-    }
-    const title = meta("og:title") || (/<title>([^<]+)<\/title>/i.exec(html) || [, ""])[1];
-
-    if (!image) return res.status(422).json({ error: `${host} doesn't share an image`, site: host, title: title || "" });
-    res.json({ image, title: (title || "").slice(0, 140), site: host, url });
+    const p = await previewFor(url);
+    if (!p.image) return res.status(422).json({ error: `${host} doesn't share an image`, site: host, title: p.title || "" });
+    res.json({ image: p.image, title: p.title || "", site: host, url });
   } catch (e) {
-    const why = e.name === "AbortError" ? `${host} took too long` : `couldn't reach ${host}`;
+    if (e.blocked) return res.status(400).json({ error: "no" });
+    const why = e.message === "timeout" ? `${host} took too long` : e.status ? `${host} returned ${e.status}` : `couldn't reach ${host}`;
     res.status(422).json({ error: why, site: host });
   }
 });

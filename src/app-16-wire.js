@@ -129,9 +129,7 @@ function wire(){
     NOTIFOPEN=true;NOTIFS=null;render();
     try{const d=await api.notifs();NOTIFS=d.notifications;render();
       if(d.unread){await api.readNotifs();UNREAD=0;render()}}catch(e){toast(e.message)}};
-  const db_=$("#dmBtn");if(db_)db_.onclick=async()=>{
-    DMOPENPANEL=true;DMOPEN=null;DMS=null;render();
-    try{const d=await api.dmList();DMS=d.threads;DMUNREAD=d.unreadTotal;render()}catch(e){toast(e.message)}};
+  const db_=$("#dmBtn");if(db_)db_.onclick=()=>openMessages();
   const sb_=$("#searchBtn");if(sb_)sb_.onclick=()=>{SEARCHOPEN=true;render();setTimeout(()=>$("#sq")?.focus(),100)};
   ["#joinBtn","#joinBtn2","#joinBtn3"].forEach(id=>{const b=$(id);if(b)b.onclick=()=>{GATE="join";GATEWHY="";render()}});
   ["#loginBtn","#loginBtn2","#loginBtn3"].forEach(id=>{const b=$(id);if(b)b.onclick=()=>{GATE="login";GATEWHY="";render()}});
@@ -163,7 +161,7 @@ function wire(){
     const t=$("#draft").value.trim();
     if(EDITID){
       const id=EDITID;
-      try{await api.editPost(id,t);EDITID=null;$("#draft").value="";loadFeed(true);render()}catch(e){toast(e.message)}
+      try{await api.editPost(id,t);EDITID=null;$("#draft").value="";LABDRAFT="";loadFeed(true);render()}catch(e){toast(e.message)}
       return;
     }
     if(!t&&!QUEUE.length)return;
@@ -173,7 +171,8 @@ function wire(){
        and you can't credit a collaborator on "attachment 3 of 5".
        The text rides on the first one. */
     const queue=QUEUE.slice(), work=false, draftText=t;
-    $("#draft").value="";
+    $("#draft").value="";LABDRAFT="";
+    const RT=LABREPLY&&LABREPLY.channel===CH.id?LABREPLY:null;LABREPLY=null;paintLabBar();
     QUEUE=[];
 
     if(!queue.length){
@@ -182,10 +181,10 @@ function wire(){
         imageUrl:null,thumbUrl:null,mediaW:null,mediaH:null,videoUrl:null,isWork:false,
         editedAt:null,sharedFrom:null,createdAt:Date.now(),
         author:{username:ME.username,displayName:ME.displayName,role:ME.role,avatarUrl:ME.avatarUrl,rep:ME.rep,level:levelFor(ME.rep).id},
-        likeCount:0,shareCount:0,commentCount:0,likedByMe:false,collaborators:[],pending:true};
-      POSTS=[...POSTS,temp];renderRoomFeed();
+        likeCount:0,shareCount:0,commentCount:0,likedByMe:false,collaborators:[],pending:true,replyTo:replyOf(RT),reactions:[]};
+      POSTS=[...POSTS,temp];ROOMSTICK=true;renderRoomFeed();
       const feed=$("#feed");if(feed)feed.scrollTop=feed.scrollHeight;
-      try{await api.post({channel:CH.id,body:draftText,isWork:false});
+      try{await api.post({channel:CH.id,body:draftText,isWork:false,replyTo:RT?RT.id:undefined});
         POSTS=POSTS.filter(p=>p.id!==temp.id);loadFeed(true);
         setTimeout(maybeOfferInstall,1400);   // they just posted — good moment to ask
       }catch(e){
@@ -227,7 +226,7 @@ function wire(){
         await api.post({channel:CH.id,body:draftText,isWork:work,
           imageUrl:uploaded[0].url,thumbUrl:uploaded[0].thumb,
           mediaW:uploaded[0].w,mediaH:uploaded[0].h,
-          images:uploaded.length>1?uploaded:undefined});
+          images:uploaded.length>1?uploaded:undefined,replyTo:RT?RT.id:undefined});
         POSTS=POSTS.filter(p=>p.id!==temp.id);
       }catch(e){
         const p=POSTS.find(x=>x.id===temp.id);
@@ -249,7 +248,7 @@ function wire(){
         UPPROG=0;renderRoomFeed();
         const up=await uploadStream(q.file,bump);
         UPPROG=null;
-        const b={channel:CH.id,body:imgs.length?"":draftText,isWork:work};
+        const b={channel:CH.id,body:imgs.length?"":draftText,isWork:work,replyTo:!imgs.length&&RT?RT.id:undefined};
         if(up.kind==="video")b.videoUrl=up.url;else b.imageUrl=up.url;
         await api.post(b);
         POSTS=POSTS.filter(p=>p.id!==temp.id);
@@ -278,7 +277,7 @@ function wire(){
         }catch(e){}
       },160);
     };}
-  const ce=$("#canceledit");if(ce)ce.onclick=()=>{EDITID=null;render()};
+  const ce=$("#canceledit");if(ce)ce.onclick=()=>{EDITID=null;LABDRAFT="";render()};
   document.querySelectorAll("[data-mpick]").forEach(b=>b.onclick=()=>{
     const u=MENTIONS[+b.dataset.mpick];
     const dr=$("#draft");

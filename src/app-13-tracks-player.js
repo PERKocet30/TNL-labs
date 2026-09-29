@@ -29,11 +29,7 @@ function emptyHTML(ch){
     ${e[2]?`<button class="btn green" id="epost">${esc(e[2])}</button>`:""}
   </div>`;
 }
-function renderRoomFeed(){const f=$("#feed");if(!f)return;
-  /* Work gets the card, talk gets the row. */
-  f.innerHTML=POSTS.length?POSTS.map((p,i)=>isCard(p)?postHTML(p):msgRowHTML(p,POSTS[i-1])).join(""):emptyHTML(CH);
-  wireFeed();
-  const ep=$("#epost");if(ep)ep.onclick=()=>$("#filein")?.click();}
+/* renderRoomFeed → app-10-chat-6-labs.js (messaging v2) */
 
 const money=c=>"$"+(c/100).toFixed(2);
 

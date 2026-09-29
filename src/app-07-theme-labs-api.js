@@ -202,7 +202,6 @@ const api={
   editPost:(id,body)=>req("/api/posts/"+id,{method:"PATCH",body:{body}}),
   delPost:id=>req("/api/posts/"+id,{method:"DELETE"}),
 
-  sendPost:(id,to,note)=>req("/api/posts/"+id+"/send",{method:"POST",body:{to,note}}),
   comments:id=>req("/api/posts/"+id+"/comments"),
   addComment:(id,body)=>req("/api/posts/"+id+"/comments",{method:"POST",body:{body}}),
   editComment:(id,body)=>req("/api/comments/"+id,{method:"PATCH",body:{body}}),
@@ -210,8 +209,6 @@ const api={
   notifs:()=>req("/api/notifications"),
   readNotifs:()=>req("/api/notifications/read",{method:"POST"}),
   dmList:()=>req("/api/dm"),
-  dmThread:u=>req("/api/dm/"+encodeURIComponent(u)),
-  dmSend:(u,body,imageUrl)=>req("/api/dm/"+encodeURIComponent(u),{method:"POST",body:{body,imageUrl}}),
   forgot:email=>req("/api/auth/forgot",{method:"POST",body:{email}}),
   search:(q,role)=>req("/api/search?q="+encodeURIComponent(q||"")+"&role="+encodeURIComponent(role||"")),
   unreads:()=>req("/api/unreads"),

@@ -21,28 +21,8 @@ function wirePanels(){
     OPENCOMMENTS=id;try{COMMENTS=(await api.comments(id)).comments}catch(e){}
     TAB="showroom";render()});
 
-  // dms
-  const dmb=$("#dmbg");if(dmb)dmb.onclick=e=>{if(e.target===dmb){DMOPENPANEL=false;DMOPEN=null;render()}};
-  const dmx=$("#dmx");if(dmx)dmx.onclick=()=>{DMOPENPANEL=false;DMOPEN=null;render()};
-  const dmback=$("#dmback");if(dmback)dmback.onclick=async()=>{
-    DMOPEN=null;DMDATA=null;try{const d=await api.dmList();DMS=d.threads;DMUNREAD=d.unreadTotal}catch(e){}render()};
-  document.querySelectorAll("[data-dm]").forEach(el=>el.onclick=()=>openDM(el.dataset.dm));
-  const dmsend=$("#dmsend");
-  if(dmsend){const go=async()=>{
-    const t=$("#dmdraft").value.trim();if(!t&&!DMPEND)return;
-    $("#dmdraft").value="";
-    try{
-      let img=null;
-      if(DMPEND){const up=await uploadStream(dataUrlToBlob(DMPEND));img=up.url;DMPEND=null}
-      await api.dmSend(DMOPEN,t,img);
-      DMDATA=await api.dmThread(DMOPEN);render();
-      const f=$("#dmfeed");if(f)f.scrollTop=f.scrollHeight;
-    }catch(e){toast(e.message)}};
-    dmsend.onclick=go;$("#dmdraft").onkeydown=e=>{if(e.key==="Enter")go()}}
-  const dma=$("#dmattach");if(dma)dma.onclick=()=>$("#dmfile").click();
-  const dmf=$("#dmfile");if(dmf)dmf.onchange=async()=>{
-    const f=dmf.files&&dmf.files[0];if(!f)return;dmf.value="";
-    try{DMPEND=await compressImage(f);toast("Photo ready — hit send")}catch(e){toast(e.message)}};
+  // dms → the messages layer (app-10-chat-*.js); a DM notification opens the chat
+  document.querySelectorAll("[data-ndm]").forEach(el=>el.onclick=()=>{NOTIFOPEN=false;render();openDM(el.dataset.ndm)});
 
   // search
   const sbg=$("#sbg");if(sbg)sbg.onclick=e=>{if(e.target===sbg){SEARCHOPEN=false;render()}};
@@ -71,14 +51,8 @@ function renderSearchOnly(){
   const sq=$("#sq");if(sq){sq.value=val;sq.focus();sq.setSelectionRange(val.length,val.length)}
   wirePanels();
 }
-async function openDM(username){
-  DMOPENPANEL=true;DMOPEN=username;DMDATA=null;PROFILE=null;render();
-  try{DMDATA=await api.dmThread(username);render();
-    const f=$("#dmfeed");if(f)f.scrollTop=f.scrollHeight;
-    const d=await api.dmList();DMUNREAD=d.unreadTotal;
-  }catch(e){toast(e.message)}
-}
-let DMPEND=null, PENDFILE=null, PENDPREP=null, UPPROG=null, UPLOADXHR=null;
+/* openDM → app-10-chat-3-wire.js (messaging v2) */
+let PENDFILE=null, PENDPREP=null, UPPROG=null, UPLOADXHR=null;
 
 function mountStudio(){
   const el=$("#studiomount");

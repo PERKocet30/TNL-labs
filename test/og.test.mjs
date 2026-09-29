@@ -40,7 +40,8 @@ t("canonical url", proute.includes('property="og:url"'));
 console.log("\nWHY THIS WORKS AT ALL");
 t("the pages are public — no auth wall for the crawler", srv.includes('app.get("/u/:username", (req, res)'));
 t("  -> guest access is what makes previews possible", true);
-t("only PUBLISHED profiles preview", uroute.includes("!u.published"));
+// 064 made every portfolio public, so the old "only published" check was stale (2026-09-29).
+t("every profile previews; only an unknown name 404s", uroute.includes("064: every page is public") && uroute.includes("status(404)"));
 t("  -> a private portfolio stays private, even to Meta", true);
 
 console.log("\n"+"=".repeat(46));

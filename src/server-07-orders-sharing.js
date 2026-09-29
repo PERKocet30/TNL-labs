@@ -212,7 +212,7 @@ app.get("/api/unreads", auth, (req, res) => {
     GROUP BY p.channel`).all(req.user.id, req.user.id);
   const out = {};
   for (const r of rows) out[r.channel] = r.n;
-  res.json({ unreads: out });
+  res.json({ unreads: out, muted: [...mutesFor(req.user.id)] });
 });
 
 app.post("/api/channels/:channel/read", auth, (req, res) => {
@@ -269,24 +269,19 @@ app.get("/api/mentionable", auth, (req, res) => {
 app.post("/api/posts/:id/send", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
   const post = q.postById.get(Number(req.params.id));
   if (!post) return res.status(404).json({ error: "no post" });
-  const to = q.userByName.get(req.body?.username || "");
+  // `to` is what the app used to send; the route only read `username`, so in-app sends 404'd.
+  const to = q.userByName.get(req.body?.username || req.body?.to || "");
   if (!to) return res.status(404).json({ error: "no such user" });
   if (to.id === req.user.id) return res.status(400).json({ error: "that's you" });
   if (isBlocked(req.user.id, to.id)) return res.status(403).json({ error: "unavailable" });
 
-  const author = q.userById.get(post.author_id);
   const note = (req.body?.note || "").toString().trim().slice(0, 500);
-  const link = `${baseUrl(req)}/p/${post.id}`;
-  const body = (note ? note + "\n" : "") + link;
 
+  /* The post travels as a card (messaging v2), the note as its own line. */
   const t = threadFor(req.user.id, to.id);
-  const now = Date.now();
-  db.prepare(`INSERT INTO dm_messages (thread_id, sender_id, body, created_at) VALUES (?,?,?,?)`)
-    .run(t.id, req.user.id, body, now);
-  db.prepare(`UPDATE dm_threads SET updated_at = ? WHERE id = ?`).run(now, t.id);
-  notify(to.id, req.user.id, "dm", post.id, `sent you ${author ? "@" + author.username + "'s" : "a"} post`);
-  broadcast("dm", { to: to.username, from: req.user.username });
-  res.json({ ok: true });
+  dmSend(t, req.user, { body: "", postId: post.id });
+  if (note) dmSend(t, req.user, { body: note });
+  res.json({ ok: true, chatId: t.id });
 });
 
 /* A single post, open to anyone with the link. This is what makes sharing

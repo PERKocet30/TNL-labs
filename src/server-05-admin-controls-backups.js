@@ -44,15 +44,10 @@ app.post("/api/admin/broadcast", auth, admin, rateLimit({ max: 3, windowMs: 3600
   else if (target === "quiet") users = db.prepare(
     `SELECT id FROM users WHERE id != ? AND (SELECT MAX(created_at) FROM posts p WHERE p.author_id = users.id) < ?`)
     .all(req.user.id, Date.now() - 14 * 86400000);
-  const now = Date.now();
   let sent = 0;
   for (const u of users) {
     try {
-      const t = threadFor(req.user.id, u.id);
-      db.prepare(`INSERT INTO dm_messages (thread_id, sender_id, body, created_at) VALUES (?,?,?,?)`)
-        .run(t.id, req.user.id, body.slice(0, 2000), now);
-      db.prepare(`UPDATE dm_threads SET updated_at = ? WHERE id = ?`).run(now, t.id);
-      notify(u.id, req.user.id, "dm", null, body.slice(0, 80));
+      dmSend(threadFor(req.user.id, u.id), req.user, { body: body.slice(0, 2000) });
       sent++;
     } catch (e) { /* one bad row shouldn't stop the rest */ }
   }
@@ -71,30 +66,7 @@ app.get("/api/admin/health", auth, admin, (req, res) => {
     for (const f of files) { try { uploadBytes += statSync(join(UPLOAD_DIR, f)).size; } catch {} }
   } catch {}
   // uploads nobody references any more — dead weight on the volume
-  const referenced = new Set();
-  for (const r of db.prepare(`SELECT image_url, thumb_url, video_url FROM posts`).all())
-    [r.image_url, r.thumb_url, r.video_url].forEach((u) => u && referenced.add(u.replace("/uploads/", "")));
-  for (const r of db.prepare(`SELECT avatar_url FROM users WHERE avatar_url != ''`).all())
-    referenced.add(r.avatar_url.replace("/uploads/", ""));
-  for (const r of db.prepare(`SELECT images FROM listings`).all()) {
-    try { JSON.parse(r.images || "[]").forEach((u) => referenced.add(u.replace("/uploads/", ""))); } catch {}
-  }
-  for (const r of db.prepare(`SELECT image_url FROM dm_messages WHERE image_url IS NOT NULL`).all())
-    referenced.add(r.image_url.replace("/uploads/", ""));
-  /* posts.images — the carousel frames. This query was missing, so every frame
-     past the first counted as an orphan and got deleted by cleanup. Handles both
-     shapes: {url,thumb} objects (see the images filter on POST /api/posts) and
-     the bare strings older rows may still hold. */
-  for (const r of db.prepare(`SELECT images FROM posts WHERE images IS NOT NULL`).all()) {
-    try {
-      for (const i of JSON.parse(r.images || "[]")) {
-        const u = typeof i === "string" ? i : i && i.url;
-        const t = i && typeof i === "object" ? i.thumb : null;
-        if (typeof u === "string") referenced.add(u.replace("/uploads/", ""));
-        if (typeof t === "string") referenced.add(t.replace("/uploads/", ""));
-      }
-    } catch {}
-  }
+  const referenced = referencedUploads();
   let orphans = 0, orphanBytes = 0;
   try {
     for (const f of readdirSync(UPLOAD_DIR)) {
@@ -116,33 +88,34 @@ app.get("/api/admin/health", auth, admin, (req, res) => {
   });
 });
 
+/* Every file any row points at. It used to be a hand-kept list of columns,
+   and the list fell behind: track audio and artwork, samples, sound-listing
+   audio and DM media were never on it, so Cleanup counted them as orphans
+   and deleted them. Now it reads every text column of every table and keeps
+   anything that mentions /uploads/<file> — new features are covered without
+   anyone remembering to add them here. */
+function referencedUploads() {
+  const keep = new Set();
+  const RE = /\/uploads\/([A-Za-z0-9._-]+)/g;
+  const tables = db.prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`).all();
+  for (const { name } of tables) {
+    const cols = db.prepare(`PRAGMA table_info("${name.replace(/"/g, '""')}")`).all()
+      .filter((c) => !c.type || /TEXT|CHAR|CLOB/i.test(c.type)).map((c) => c.name);
+    for (const col of cols) {
+      const q = `SELECT "${col.replace(/"/g, '""')}" AS v FROM "${name.replace(/"/g, '""')}" WHERE "${col.replace(/"/g, '""')}" LIKE '%/uploads/%'`;
+      for (const r of db.prepare(q).all()) {
+        const v = String(r.v); let m; RE.lastIndex = 0;
+        while ((m = RE.exec(v))) keep.add(m[1]);
+      }
+    }
+  }
+  return keep;
+}
+
 /* Delete uploads nothing points at. Explicit, never automatic — I'm not
    letting a cron job decide which of your artists' files are garbage. */
 app.post("/api/admin/cleanup", auth, admin, (req, res) => {
-  const referenced = new Set();
-  for (const r of db.prepare(`SELECT image_url, thumb_url, video_url FROM posts`).all())
-    [r.image_url, r.thumb_url, r.video_url].forEach((u) => u && referenced.add(u.replace("/uploads/", "")));
-  for (const r of db.prepare(`SELECT avatar_url FROM users WHERE avatar_url != ''`).all())
-    referenced.add(r.avatar_url.replace("/uploads/", ""));
-  for (const r of db.prepare(`SELECT images FROM listings`).all()) {
-    try { JSON.parse(r.images || "[]").forEach((u) => referenced.add(u.replace("/uploads/", ""))); } catch {}
-  }
-  for (const r of db.prepare(`SELECT image_url FROM dm_messages WHERE image_url IS NOT NULL`).all())
-    referenced.add(r.image_url.replace("/uploads/", ""));
-  /* posts.images — the carousel frames. This query was missing, so every frame
-     past the first counted as an orphan and got deleted by cleanup. Handles both
-     shapes: {url,thumb} objects (see the images filter on POST /api/posts) and
-     the bare strings older rows may still hold. */
-  for (const r of db.prepare(`SELECT images FROM posts WHERE images IS NOT NULL`).all()) {
-    try {
-      for (const i of JSON.parse(r.images || "[]")) {
-        const u = typeof i === "string" ? i : i && i.url;
-        const t = i && typeof i === "object" ? i.thumb : null;
-        if (typeof u === "string") referenced.add(u.replace("/uploads/", ""));
-        if (typeof t === "string") referenced.add(t.replace("/uploads/", ""));
-      }
-    } catch {}
-  }
+  const referenced = referencedUploads();
   let removed = 0, freed = 0;
   try {
     for (const f of readdirSync(UPLOAD_DIR)) {

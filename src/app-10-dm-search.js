@@ -32,39 +32,7 @@ function timeAgo(t){const s=(Date.now()-t)/1000;
   if(s<86400)return Math.floor(s/3600)+"H AGO";if(s<604800)return Math.floor(s/86400)+"D AGO";
   return new Date(t).toLocaleDateString().toUpperCase()}
 
-function dmPanelHTML(){
-  if(DMOPEN&&DMDATA){const o=DMDATA.other;
-    return `<div class="sheet" id="dmbg"><div class="sheetc dmc">
-      <div class="sheeth"><button class="x" id="dmback" aria-label="Back"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-        <div style="flex:1;display:flex;align-items:center;gap:9px;cursor:pointer" data-u="${esc(o.username)}">
-          ${avHTML(o,"sm")}<div><div style="font-weight:900;font-size:14px">${esc(o.displayName)}</div>
-          <div class="mono dim">@${esc(o.username)} · L${o.level}</div></div></div>
-        <button class="x" id="dmx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-      <div class="dmfeed" id="dmfeed">
-        ${DMDATA.messages.length?DMDATA.messages.map(m=>`<div class="dmm ${m.mine?"mine":""}">
-          ${m.imageUrl?`<img class="dmimg" src="${esc(m.imageUrl)}" data-zoom="${esc(m.imageUrl)}">`:""}
-          ${m.body?`<div class="dmb">${rich(m.body)}</div>`:""}
-          <div class="mono dim dmt">${new Date(m.createdAt).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}</div>
-        </div>`).join(""):`<div class="empty">No messages yet. Say something.</div>`}
-      </div>
-      <div class="composer">
-        <input type="file" id="dmfile" accept="image/*" hidden>
-        <button class="attach" id="dmattach">+</button>
-        <input class="in" id="dmdraft" placeholder="Message ${esc(o.displayName)}">
-        <button class="send" id="dmsend" aria-label="Send">${UI_IC.arrow}</button>
-      </div>
-    </div></div>`}
-  return `<div class="sheet" id="dmbg"><div class="sheetc">
-    <div class="sheeth"><div><h2>Messages</h2></div><button class="x" id="dmx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    ${!DMS?`<div class="empty">Loading…</div>`:!DMS.length?`<div class="empty">No conversations yet.<br>Open someone's profile and hit Message.</div>`:
-      DMS.map(t=>`<div class="nrow" data-dm="${esc(t.other.username)}">
-        ${avHTML(t.other,"sm")}
-        <div class="nbody"><b>${esc(t.other.displayName)}</b>
-        <div class="nsnip">${t.last?`${t.last.mine?"You: ":""}${esc(t.last.body||"")}`:"No messages"}</div></div>
-        ${t.unread?`<span class="cbadge">${t.unread}</span>`:""}
-      </div>`).join("")}
-  </div></div>`}
-
+/* dmPanelHTML → app-10-chat-2-dm.js (messaging v2) */
 function searchPanelHTML(){return `<div class="sheet" id="sbg"><div class="sheetc">
   <div class="sheeth"><div><h2>Search</h2></div><button class="x" id="sx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <input class="in" id="sq" placeholder="Name, username, or bio" value="${esc(SEARCHQ)}">
