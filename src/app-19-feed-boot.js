@@ -127,9 +127,9 @@ function wireFeed(){
       ||(PROFILE&&[...PROFILE.posts,...PROFILE.collabs].find(x=>String(x.id)===id));
     if(!p||!p.beat)return toast("Couldn't load that loop");
     PROFILE=null;TAB="studio";render();
-    setTimeout(()=>{if(window.TNLStudio&&TNLStudio.loadRemix)TNLStudio.loadRemix(p.beat,{postId:p.id,username:p.author.username,name:p.beat.name})},120);
+    withStudio(()=>setTimeout(()=>{if(TNLStudio.loadRemix)TNLStudio.loadRemix(p.beat,{postId:p.id,username:p.author.username,name:p.beat.name})},120));
   });
-  document.querySelectorAll("[data-beatplay]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();if(window.TNLStudio)TNLStudio.preview(JSON.parse(b.dataset.beatplay))});
+  document.querySelectorAll("[data-beatplay]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const beat=JSON.parse(b.dataset.beatplay);withStudio(()=>TNLStudio.preview(beat))});
   document.querySelectorAll("[data-zoom]").forEach(el=>el.onclick=()=>{LIGHTBOX=el.dataset.zoom;render()});
   document.querySelectorAll("[data-discard]").forEach(b=>b.onclick=()=>{
     POSTS=POSTS.filter(x=>String(x.id)!==b.dataset.discard);renderRoomFeed()});
@@ -262,7 +262,7 @@ function wireSheet(){
     }catch(e){toast(e.message)}};
 
   // beat playback + opening a piece from the portfolio
-  document.querySelectorAll("[data-beatplay]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();if(window.TNLStudio)TNLStudio.preview(JSON.parse(b.dataset.beatplay))});
+  document.querySelectorAll("[data-beatplay]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const beat=JSON.parse(b.dataset.beatplay);withStudio(()=>TNLStudio.preview(beat))});
   document.querySelectorAll("[data-openpost]").forEach(el=>el.onclick=async(e)=>{
     if(e.target.closest("button,a,video,input,textarea"))return;   // let the card's own controls work
     const id=Number(el.dataset.openpost);
@@ -285,6 +285,9 @@ function wireSheet(){
    you're typing, and jumps your scroll. That's what made image upload fail
    "the first few tries": a poll landing while the picker was open. Paints
    the two badges surgically instead. */
+// Warm the Studio once the page is up, so beat play buttons respond instantly.
+window.addEventListener("load",()=>setTimeout(()=>ensureStudio().catch(()=>{}),1500));
+
 async function refreshBadges(){
   if(!ME)return;
   if(!ME.emailVerified){
@@ -319,7 +322,9 @@ function paintVerifyBar(){
   if(ME&&ME.accentHex)applyAccent(ME.accentHex);
   if(ME){
     startStream();refreshBadges();loadUnreads();
-    setInterval(refreshBadges,20000);
+    // A tab in the background doesn't need badges; catch up the moment it's back.
+    setInterval(()=>{if(!document.hidden)refreshBadges()},20000);
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshBadges()});
     const p=new URLSearchParams(location.search);
     if(p.get("connect")==="done"){try{await api.connectStatus();await refreshMe();
       toast(ME.payoutsReady?"Payouts connected":"Stripe needs a bit more info")}catch(e){}

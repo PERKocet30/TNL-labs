@@ -23,6 +23,9 @@ console.log("[db] using", DB_PATH);
 ---------------------------------------------------------------- */
 db.exec(`
 PRAGMA journal_mode = WAL;
+/* In WAL mode NORMAL can't corrupt the database; it only skips a disk sync
+   on every commit. The default (FULL) waited on the disk for every like. */
+PRAGMA synchronous = NORMAL;
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS users (
@@ -457,6 +460,10 @@ CREATE INDEX IF NOT EXISTS idx_llikes_listing ON listing_likes(listing_id);
 CREATE INDEX IF NOT EXISTS idx_users_rep ON users(rep);
 CREATE INDEX IF NOT EXISTS idx_posts_author  ON posts(author_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_rep_user      ON rep_events(user_id, created_at);
+-- The all-labs feed sorts every post by time; without this it sorted the whole table.
+CREATE INDEX IF NOT EXISTS idx_posts_new     ON posts(created_at);
+-- "Who blocked me" — the primary key only covers "who did I block".
+CREATE INDEX IF NOT EXISTS idx_blocks_blocked ON blocks(blocked_id);
 `);
 
 /* Migrations — safe to run on an existing database. SQLite has no
