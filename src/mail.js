@@ -134,6 +134,24 @@ export async function sendVerifyEmail(to, name, url) {
   return send(to, "Confirm your email — TNL LABS", verifyEmail(name, url), `verify link: ${url}`);
 }
 
+/** Alerts and the morning digest, to the admin. Plain and short: a heading,
+    a few lines, one button to the admin page. Same honest fallback. */
+export async function sendAlertEmail(to, subject, heading, lines, url) {
+  const rows = lines.map((l) => `<p style="color:#D9D2D0;font-size:14px;line-height:1.55;margin:0 0 8px">${escapeHtml(l)}</p>`).join("");
+  const html = `<!doctype html>
+<html><body style="margin:0;background:#000;font-family:Helvetica,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#000;padding:36px 16px"><tr><td align="center">
+    <table width="100%" style="max-width:520px;background:#0A0A0A;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:28px"><tr><td>
+      <div style="color:#98FC68;font-size:11px;letter-spacing:.16em;font-family:monospace">TNLLABS &#129514; WATCH</div>
+      <h1 style="color:#fff;font-size:21px;margin:14px 0 16px;letter-spacing:-.3px">${escapeHtml(heading)}</h1>
+      ${rows}
+      <a href="${url}" style="display:inline-block;margin-top:14px;background:#fff;color:#000;text-decoration:none;font-weight:700;font-size:14px;padding:12px 20px;border-radius:9px">Open Admin → System</a>
+    </td></tr></table>
+  </td></tr></table>
+</body></html>`;
+  return send(to, subject, html, `${subject} — ${lines.join(" / ")}`);
+}
+
 /** Password reset. Same honest fallback as verification. */
 export async function sendResetEmail(to, name, url) {
   return send(to, "Reset your password — TNL LABS", resetEmail(name, url), `reset link: ${url}`);

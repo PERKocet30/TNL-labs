@@ -1,0 +1,43 @@
+# Every pull request, and every push to main, runs both test layers:
+#   unit     — npm test (every test/*.test.mjs)
+#   tap-through — npm run e2e: a real browser walks the app at phone and
+#                 computer size (test/e2e/run.mjs). Playwright is installed
+#                 here only; it is not an app dependency.
+# A red check means don't merge. Failure screenshots are attached to the run.
+name: Tests
+on:
+  pull_request:
+  push:
+    branches: [main]
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+  tap-through:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --no-audit --no-fund playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tap-through-screenshots
+          path: test/.tmp/e2e/shots/
+          if-no-files-found: ignore

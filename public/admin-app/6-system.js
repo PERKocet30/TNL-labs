@@ -1,9 +1,9 @@
 /* TNL LABS admin v2.0 — 2026-09-29. System: switches, safety nets, and the log of who changed what. */
 let MAILRESULT = null;
 LOADERS.system = async () => {
-  const [health, settings, backups, errors, maillog, log] = await Promise.all(["/api/admin/health", "/api/admin/settings", "/api/admin/backups",
-    "/api/admin/errors", "/api/admin/mail-log", "/api/admin/log"].map((u) => req(u).catch(() => null)));
-  Object.assign(D, { health, settings, backups, errors, maillog, log });
+  const [health, settings, backups, errors, maillog, log, glitches] = await Promise.all(["/api/admin/health", "/api/admin/settings", "/api/admin/backups",
+    "/api/admin/errors", "/api/admin/mail-log", "/api/admin/log", "/api/admin/glitches"].map((u) => req(u).catch(() => null)));
+  Object.assign(D, { health, settings, backups, errors, maillog, log, glitches });
 };
 const mb = (b) => ((b || 0) / 1048576).toFixed(1) + " MB";
 const ACTIONS = [[/\/rep$/, "Adjusted rep"], [/\/feature$/, "Featured"], [/\/verify$/, "Confirmed email"], [/\/suspend$/, "Suspended / restored"],
@@ -20,7 +20,10 @@ VIEWS.system = () => {
     <button class="sw ${g[k] === "1" ? "on" : ""}" data-tog="${k}" role="switch" aria-checked="${g[k] === "1"}" aria-label="${esc(label)}"></button></div>`;
   const ok = (on, yes, no) => `<span class="tag ${on ? "on" : "warn"}">${on ? yes : no}</span>`;
   const unver = D.maillog ? D.maillog.members.filter((m) => !m.verified) : [];
-  const E = D.errors;
+  const E = D.errors, G = D.glitches;
+  const GNAME = { rage_tap: "rage taps", layout_jump: "screen jumps", slow_screen: "slow screens", action_failed: "failed saves" };
+  const GWHY = { rage_tap: "tapped 3+ times fast — it didn't seem to respond", layout_jump: "the screen moved while they read",
+    slow_screen: "took over 3 seconds to load", action_failed: "the server couldn't save it" };
   return `
   <h1 style="font-size:22px">System</h1>
   <div class="row wrapx" style="gap:6px;margin:12px 0">${ok(h.onVolume, "Data on the volume", "Data NOT on a volume")}${ok(h.mail, "Email on", "Email off")}
@@ -29,6 +32,7 @@ VIEWS.system = () => {
     <div class="kpi"><div class="k">Database</div><div class="v">${mb(h.dbBytes)}</div><div class="d">${h.sessions} signed-in sessions</div></div>
     <div class="kpi"><div class="k">Uploads</div><div class="v">${mb(h.uploadBytes)}</div><div class="d">${num(h.uploadCount)} files · ${h.orphans} unused</div></div>
     <div class="kpi"><div class="k">Errors, 24h</div><div class="v">${E ? E.last24h : "—"}</div><div class="d">${E && E.byKind.length ? E.byKind.map((k) => k.n + " " + k.kind).join(" · ") : "all quiet"}</div></div>
+    <div class="kpi"><div class="k">Glitches, 24h</div><div class="v">${G ? G.last24h : "—"}</div><div class="d">${G && G.byKind.some((k) => k.day) ? G.byKind.filter((k) => k.day).map((k) => k.day + " " + (GNAME[k.kind] || k.kind)).join(" · ") : "feels smooth"}</div></div>
     <div class="kpi"><div class="k">Server</div><div class="v">${h.memMB} MB</div><div class="d">up ${Math.floor(h.uptimeS / 3600)}h ${Math.floor((h.uptimeS % 3600) / 60)}m · Node ${esc(h.node)}</div></div>
   </div>
 
@@ -66,6 +70,10 @@ VIEWS.system = () => {
   <h2 class="sec">Unused files</h2>
   <div class="panel"><div class="row sp"><span class="dim" style="font-size:13px">${h.orphans ? `${h.orphans} files (${mb(h.orphanBytes)}) nothing points at — unsent photos, replaced avatars, abandoned uploads.` : "Nothing to clean."}</span>
     ${h.orphans ? `<button class="btn ghost sm" id="cleanup">Clean up</button>` : ""}</div></div>
+  <h2 class="sec">Glitches <span class="mono">what felt broken this week, from members' own screens</span></h2>
+  <div class="panel">${G && G.hotspots.length ? `<div class="list">${G.hotspots.map((g) => `<div class="li"><span class="b"><b style="font-weight:500;font-size:13px">${g.n}× ${esc(GNAME[g.kind] || g.kind)} · ${esc(g.place)}</b>
+      <span>${esc(g.detail || "")}${g.detail ? " — " : ""}${esc(GWHY[g.kind] || "")} · ${g.people} ${g.people === 1 ? "person" : "people"} · last ${ago(g.last)} ago</span></span></div>`).join("")}</div>`
+    : `<div class="empty">Nothing felt broken this week.</div>`}</div>
   <h2 class="sec">Errors <a class="mono" href="https://tnl-labs.sentry.io/issues/" target="_blank" style="margin-left:auto">Sentry ${I.out}</a></h2>
   <div class="panel">${E && E.errors.length ? `<div class="list">${E.errors.slice(0, 12).map((e) => `<div class="li"><span class="b"><b style="font-weight:500;font-size:13px">${esc(e.message)}</b>
       <span>${esc(e.kind)} · ${esc(e.path || "—")}${e.username ? " · @" + esc(e.username) : ""} · ${ago(e.created_at)} ago</span></span></div>`).join("")}</div>

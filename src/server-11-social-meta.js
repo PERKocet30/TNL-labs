@@ -93,7 +93,9 @@ app.get("/api/levels", (_req, res) => res.json({
     loopsOpen: settingBool("loopsOpen"),
   },
 }));
-app.get("/api/health", (_req, res) => res.json({ ok: true, time: Date.now() }));
+/* commit: which version is live (Railway sets this for GitHub deploys), so the
+   after-deploy check knows when the new code is actually serving. */
+app.get("/api/health", (_req, res) => res.json({ ok: true, time: Date.now(), commit: (process.env.RAILWAY_GIT_COMMIT_SHA || "").slice(0, 7) }));
 
 const PORT = process.env.PORT || 8787;
 /* Anything that escapes a route lands here. Previously it 500'd silently

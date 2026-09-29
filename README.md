@@ -1,6 +1,6 @@
 # TNL LABS
 
-**v2.0 · 2026-09-28** · live at [labs.tnllabs.com](https://labs.tnllabs.com)
+**v2.1 · 2026-09-29** · live at [labs.tnllabs.com](https://labs.tnllabs.com)
 
 Social media by creatives, for creatives. TNL LABS is the venue: members post work, collaborate across labs, build standing through what other people confirm, and sell in one shared market. TNL NYC is one seller in that market, on the same terms as everyone else.
 
@@ -14,14 +14,15 @@ One Node server, one SQLite database, no framework and no external services requ
 |---|---|
 | **The door** | "Enter the lab" landing with the vial loader. The first visit plays the intro film; after that it's one tap in. The tap also unlocks audio on iOS. |
 | **Showroom** | The public front page: real work from across every lab, newest first. Anyone can browse; posting needs an account. |
-| **Labs** | Members-only, one per genre: `// General`, `// Visual` (design, photo, film and the searchable Archive), `// Music` (Beat Lab, feedback, tracks and the Studio), `// Fashion`, `// Anime`, `// News` and `// Business`. Inside a lab, channels are pill tabs above the conversation. Names are display-only; lab and channel IDs never change, so renaming never moves a post. |
+| **Labs** | Members-only, one per genre: `// General`, `// Visual` (design, photo, film and the searchable Archive), `// Music` (tracks, feedback and chat), `// Fashion`, `// Anime`, `// News` and `// Business`. Inside a lab, channels are pill tabs above the conversation. Names are display-only; lab and channel IDs never change, so renaming never moves a post. |
 | **Posts** | Instagram-style cards: carousels of up to 10 images, video, a sound from the library, likes, comments, shares, send-to-DM, saves and collab invites. The **post creator** shows the work large (swipe, reorder, per-photo upload progress), a caption with @mention suggestions, and three rows: invite collaborators (up to 5, invited as soon as the post exists), add music, and share to a lab (otherwise it goes to your profile only). |
 | **Profiles** | Instagram-style pages: posts / followers / collabs, level badge, roles, bio, link, and tabs for work, shop, collabs and standing. Every profile has a public URL. |
 | **Collabs** | Two-sided: the author invites, the other person accepts, and only then does it count — for both of them. |
 | **Market** | Depop-style browsing; listing works like a Shopify product form — Media (up to 8, tap to set the cover), Title & description, Pricing (live "you earn"), Inventory, Shipping, Details, and Status when editing. Offers, saves, checkout through Stripe Connect, shipping, delivery confirmation and reviews. Sound listings with downloads are still supported for existing listings. |
-| **Music** | The Studio (beat maker, `public/studio.js`), a sound library, tracks extracted from video, and a sample library other members can build with. |
+| **Music** | The Music lab is a music player: members upload tracks (or pull the audio from a video they posted), anyone presses play. The player bar has cover, previous / next, tap-to-seek and time, moves on to the next track by itself, and works with lock-screen and headphone controls. It stays in the labs; a post's own sound plays only while you're on that post. The Studio beat maker (`public/studio.js`) is hidden unless Admin → Settings → Studio is on; beats already posted still play. |
 | **Boards & Archive** | Save anyone's work to your own moodboards; browse every image ever posted. |
 | **DMs & notifications** | Direct messages, live notifications and unread badges over a Server-Sent Events stream. |
+| **Phone and computer** | Phones get the app as designed: top bar, bottom nav. From 1024px wide (laptops, monitors) the top bar and nav become one left sidebar with labels and a full-width Post button, pages sit at a reading width beside it, and a mouse gets hover states. Resizing a window switches layouts on the spot. |
 | **Admin** | `/admin` — the dashboard (see below). |
 
 Design language: Helvetica, `//` marks the labs, paper (light) by default with a dark mode, reagent green `#98FC68` as the one accent, drawn 2px square-cap icons. See `TNL-Design-Language-v1.0` in the project files.
@@ -33,19 +34,19 @@ Design language: Helvetica, `//` marks the labs, paper (light) by default with a
 The app and the API used to be two single files of 359KB and 216KB. They now live in `src/` as numbered parts of 24KB or less, which are small enough to review and push one at a time. On every boot, `src/assemble.mjs` joins them byte for byte, in filename order.
 
 ```
-src/app-NN-*.{html,css,js}      the app (26 parts) → built into public/index.html
-src/server-01…11-*.js           the API          → built into src/server.runtime.js
+src/app-NN-*.{html,css,js}      the app (37 parts) → built into public/index.html
+src/server-NN-*.js              the API (18 parts) → built into src/server.runtime.js
 src/server.js                   entry point: assemble, then start
 src/assemble.mjs                the joiner
 src/db.js                       schema, migrations, rep engine, levels, fees
 src/pay.js                      Stripe Connect
 src/mail.js                     email via Resend
-public/studio.js                the Studio (beat maker)
+public/studio.js                the Studio (beat maker; off by default, loads only when used)
 public/admin.html               the admin dashboard (shell; app in public/admin-app/)
 public/door.js                  the door's vial loader and mark
 public/sw.js                    service worker (installable app, offline shell)
 scripts/scientist.mjs           daily read-only checks against the live site
-test/                           26 test suites — run with npm test
+test/                           30 test suites — run with npm test
 ```
 
 **Edit the parts, never the built files.** Parts join in filename order, so two parts can share a number (`app-11-gate-logic`, `app-11-gate-screens`, `app-11-showroom`). `public/index.html` and `src/server.runtime.js` are regenerated on every boot and ignored by git.
@@ -53,13 +54,13 @@ test/                           26 test suites — run with npm test
 | Part | Holds |
 |---|---|
 | `app-01-head` · `app-06-body` · `app-20-tail` | page markup, meta/OG tags, script tags |
-| `app-02…05-styles-*` | styles: base, profile, studio/UI, post creator (`compose`), media, listing editor (`sell`) |
+| `app-02…05-styles-*` | styles: base, profile, studio/UI, chat, post creator (`compose`), icons, media, listing editor (`sell`), and the computer layout (`wide`, loads last) |
 | `app-07-theme-labs-api` | theme, labs and channels, API client |
-| `app-08-state-ui` · `app-09-render-nav` | app state, toasts/modals, routing, top bar |
+| `app-08-state-ui` · `app-09-render-nav` | app state, toasts/modals, routing, top bar; `render()` picks the phone or computer frame and keeps your scroll place across repaints |
 | `app-10-chat-1…6` | Messages v2 (2026-09-29): chat kit, inbox + chat screen, composer/voice notes, sheets (new chat, group, forward, mute), the signed-in live stream, lab rooms as chat |
 | `app-10-dm-search` | search, the door |
 | `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
-| `app-11-showroom` · `app-12…13` | Showroom, lab index, archive/posts, player |
+| `app-11-showroom` · `app-12…13` | Showroom, lab index, archive/posts; the Music lab (`app-13-tracks-player`) and the player bar and queue (`app-13-player`) |
 | `app-14-detail-sell` | listing page and the listing editor |
 | `app-15…16` | profile, wiring |
 | `app-17-market` · `app-17-panels` | market wiring and the listing editor's logic; panels, DMs, Studio mount |
@@ -85,8 +86,8 @@ npm test       # assembles, then runs every suite
 **Deploying:** push to `main`. Railway rebuilds and restarts in about 80 seconds. The deploy log should show:
 
 ```
-[assemble] public/index.html: 24 parts, …
-[assemble] src/server.runtime.js: 11 parts, …
+[assemble] public/index.html: 37 parts, …
+[assemble] src/server.runtime.js: 18 parts, …
 [db] using /app/data/tnl.db
 │ in the lab  N members · N posts · N confirmed collabs
 ```
@@ -184,9 +185,26 @@ Admin-only; every route checks on the server. `public/admin.html` is the shell a
 
 ## Health checks
 
-- **Scientist**, a second Railway service, runs `scripts/scientist.mjs` every day at 18:45 UTC. It makes 8 read-only checks against the live site: the app shell, health, Showroom, levels, Market, builders, the 404 path and the verify page. A failure fails the run.
-- **Sentry** receives server and browser errors.
-- **Admin → Errors** shows the last 100 errors, with 24-hour counts.
+Three layers: stop glitches before they ship, notice the ones that get through, and say so before a member has to.
+
+**Before it ships** (`.github/workflows/tests.yml`, every PR and every push to `main`)
+- `npm test`: every `test/*.test.mjs`.
+- `npm run e2e`: `test/e2e/run.mjs` starts a throwaway app with test members, work and tracks. A real browser then walks it at phone size (390px, touch) and computer size (1440px):
+  - the door, sign-up and the first landing
+  - like (counts once, no repaint, no jump) and fast taps
+  - share, from the feed and from an opened post
+  - the post creator, Music playback and a DM
+  - the sidebar and the admin Glitches panel
+  - **the whole walk must record zero glitches**
+  A red check means don't merge; failure screenshots are attached to the run.
+
+**Once it's live**
+- **After every merge** (`.github/workflows/after-deploy.yml`): it waits until `/api/health` reports the new commit, then runs the scientist against the live site. A failure (or a deploy that never lands) turns the run red, and GitHub emails whoever merged.
+- **Scientist**, a second Railway service, also runs `scripts/scientist.mjs` every day at 18:45 UTC: 8 read-only checks covering the app shell, health, Showroom, levels, Market, builders, the 404 path and the verify page.
+- **Sentry** receives server and browser errors. The alert *New or returning error in TNL LABS* emails on any first-seen, regressed or reappearing issue, at most every 30 minutes.
+- **Glitch signals** (`src/app-19-glitch.js` → `src/server-10-glitch.js`): members' own screens report rage taps, screen jumps, slow screens (over 3s) and failed saves. Admin → System shows the 24-hour count and the week's hotspots.
+- **Watch emails** (`src/server-10-watch.js`, to `ADMIN_EMAIL` via Resend): an email when something spikes within an hour (3 server errors, 10 app crashes, 3 failed saves, or 8 rage taps / screen jumps / slow screens), at most once per rule per 6 hours. There's also a morning digest at 13:00 UTC with yesterday's members, posts, errors, glitches and worst spots.
+- **Admin → System** shows errors and glitches side by side.
 
 ---
 
