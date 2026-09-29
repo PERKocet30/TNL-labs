@@ -56,7 +56,7 @@ t("when is recorded", row.updated_at>0);
 
 console.log("\nSURVIVES A RESTART");
 t("overrides persist", allSettings().headline!=="Cultivators.");
-t("untouched keys still default", allSettings().studioOpen==="1");
+t("untouched keys still default", allSettings().studioOpen==="0");
 
 console.log("\n"+"=".repeat(44));
 console.log(pass+" passed, "+fail+" failed");

@@ -604,7 +604,7 @@ export const SETTING_DEFAULTS = {
   signupsOpen:    "1",     // "0" locks the door — invite-only
   guestAccess:    "1",     // "0" hides everything behind the wall
   marketOpen:     "1",     // "0" hides the Market entirely
-  studioOpen:     "1",
+  studioOpen:     "0",     // the beat maker; off since the Music lab became a player
   loopsOpen:      "1",
   minRepToSell:   "0",     // gate selling behind standing if it gets messy
   autoVerify:     "0",     // "1" skips email verification — use if mail breaks
