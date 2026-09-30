@@ -1,5 +1,5 @@
 function detailHTML(){
-  if(!MKTONE)return `<div class="scroll"><div class="empty">Loading…</div></div>`;
+  if(!MKTONE)return `<div class="scroll">${skel()}</div>`;
   if(MKTONE.kind==="loop")return loopDetailHTML(MKTONE);   // a loop isn't a jacket
   const l=MKTONE, mine=l.seller.username===myName();
   return `<div class="scroll">
@@ -68,7 +68,7 @@ function savedHTML(){
     <div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button></div>
     <div class="page-head"><div class="mono dim">SAVED</div><h2 class="page-h">Your list</h2>
     <p class="page-sub">Everything you've hearted. Sold items stay so you can see what went.</p></div>
-    <div class="mkt-grid">${!SAVED?`<div class="empty">Loading…</div>`
+    <div class="mkt-grid">${!SAVED?`${skel("tiles")}`
       :!SAVED.length?`<div class="empty">Nothing saved yet.<br><br>Tap the heart on anything in the Market.</div>`
       :SAVED.map(mktCardHTML).join("")}</div>
   </div>`}
@@ -276,7 +276,7 @@ function ordersHTML(){
       <button class="ptab ${ORDTAB==="selling"?"on":""}" data-ot="selling">SELLING ${ORDERS?ORDERS.selling.length:""}</button>
     </div>
     <div style="padding:0 20px 30px">
-      ${!ORDERS?`<div class="empty">Loading…</div>`:!list.length?`<div class="empty">Nothing here yet.</div>`
+      ${!ORDERS?`${skel()}`:!list.length?`<div class="empty">Nothing here yet.</div>`
       :list.map(o=>`<div class="ordrow">
         <img class="ordimg" src="${esc(o.listing.images[0]||"")}" alt="">
         <div class="ordbody">

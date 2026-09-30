@@ -17,7 +17,7 @@ function inboxHTML(){
       <button class="${INBOXTAB==="chats"?"on":""}" data-itab="chats" role="tab">Chats</button>
       <button class="${INBOXTAB==="requests"?"on":""}" data-itab="requests" role="tab">Requests${I&&I.requestCount?`<b>${I.requestCount}</b>`:""}</button>
     </div>
-    <div class="cx-list">${!I?`<div class="empty">Loading…</div>`:!list.length
+    <div class="cx-list">${!I?`${skel()}`:!list.length
       ?(INBOXTAB==="requests"?`<div class="cx-empty"><b>No requests</b><span>Messages from people you don't follow land here first.</span></div>`
         :`<div class="cx-empty"><b>No messages yet</b><span>Start a chat with someone you want to make something with.</span><button class="btn" id="cxnew2">New message</button></div>`)
       :list.map(inboxRowHTML).join("")}
@@ -56,7 +56,7 @@ const bigGap=(a,b)=>newDay(a,b)||(b.createdAt-a.createdAt>3600000);
 
 function chatFeedHTML(){
   const c=CHAT;
-  if(!c.messages)return `<div class="empty">Loading…</div>`;
+  if(!c.messages)return `${skel()}`;
   const m=c.meta,o=chatOther()||c.other,msgs=c.messages;
   let h=c.hasMore?`<div class="c-more" id="cxmore">${c.loadingMore?"Loading…":""}</div>`:"";
   if(!c.hasMore&&o&&!(m&&m.isGroup))h+=`<div class="cx-hello">${avHTML(o,"lg")}<b>${esc(o.displayName||o.username)}</b><span class="mono">@${esc(o.username)}</span><button class="btn ghost sm" data-cxprof="${esc(o.username)}">View profile</button></div>`;
@@ -144,7 +144,7 @@ function chatSheetHTML(){
         ${recent.length?`<div class="mono cs-l">Recent</div>${recent.map(c=>`<button class="cx-pick ${(s.chats||[]).includes(c.id)?"on":""}" data-cxchat="${c.id}">
           ${c.isGroup?groupAvHTML(c.people):avHTML(c.other,"sm")}<span><b>${esc(chatTitle(c))}</b>${c.isGroup?`<span class="mono">${c.count} people</span>`:`<span class="mono">@${esc(c.other.username)}</span>`}</span>
           <i class="c-tick">${(s.chats||[]).includes(c.id)?CI.check:""}</i></button>`).join("")}<div class="mono cs-l">People</div>`:""}
-        ${!s.results?`<div class="empty">Loading…</div>`:s.results.filter(p=>!(s.exclude||[]).includes(p.username)).map(p=>personRowHTML(p,picked.some(x=>x.username===p.username))).join("")||`<div class="empty">No one found</div>`}
+        ${!s.results?`${skel()}`:s.results.filter(p=>!(s.exclude||[]).includes(p.username)).map(p=>personRowHTML(p,picked.some(x=>x.username===p.username))).join("")||`<div class="empty">No one found</div>`}
       </div>`;
   } else if(s.kind==="info"){
     const m=CHAT.meta,o=chatOther(),maker=m.createdBy===myName();

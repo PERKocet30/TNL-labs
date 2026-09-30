@@ -16,7 +16,7 @@ const CAROIDX=new Map();   // key → slide, for the screen you're on
 let CAROVIEW="";
 function caroKey(c){return (c.closest("#poov")?"po:":"")+c.dataset.caro}
 function wireCaros(){
-  const view=RVKEY+"|"+(POSTOPEN?POSTOPEN.id:"");
+  const view=MV.key+"|"+(PROFILE&&!MYPAGE()&&PROFILE.user?PROFILE.user.username:"")+"|"+(POSTOPEN?POSTOPEN.id:"");   // screen (app-09-motion) + any profile/post on top
   if(view!==CAROVIEW){CAROVIEW=view;CAROIDX.clear()}   // a new screen starts every carousel at 1
   document.querySelectorAll("[data-caro]").forEach(c=>{
     const track=c.querySelector(".caro-t");

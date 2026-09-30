@@ -71,7 +71,7 @@ function pcomposeHTML(){
 /* Picker rows, extracted so the search box can repaint just the list without
    a full render() stealing the keyboard mid-word. */
 function pcmusRowsHTML(list,searching){
-  if(!list)return `<div class="empty">Loading…</div>`;
+  if(!list)return `${skel()}`;
   if(!list.length)return searching
     ?`<div class="empty">No tracks match that.</div>`
     :`<div class="empty">No tracks in the library yet.<br>Upload one in // Music → Tracks.</div>`;

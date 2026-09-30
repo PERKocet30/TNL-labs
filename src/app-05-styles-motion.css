@@ -1,0 +1,73 @@
+/* ── MOTION v1.0 · 2026-09-30 (app-09-motion.js) ────────────────────────
+   Transform and opacity only — nothing here moves the layout. One curve
+   for everything that arrives (fast out, soft landing), short durations,
+   and none of it when the phone asks for reduced motion. */
+:root{--mv-ease:cubic-bezier(.2,.8,.2,1)}
+@keyframes mvFwd{from{opacity:.01;transform:translate3d(28px,0,0)}to{opacity:1;transform:none}}
+@keyframes mvBack{from{opacity:.01;transform:translate3d(-28px,0,0)}to{opacity:1;transform:none}}
+@keyframes mvFade{from{opacity:0}to{opacity:1}}
+@keyframes mvDrawer{from{transform:translate3d(100%,0,0)}to{transform:none}}
+@keyframes mvSheet{from{transform:translate3d(0,100%,0)}to{transform:none}}
+@keyframes mvPop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes mvZoom{from{opacity:.4;transform:scale(.92)}to{opacity:1;transform:none}}
+@keyframes mvToast{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes mvHeart{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}15%{opacity:.95;transform:translate(-50%,-50%) scale(1.12)}
+  30%{transform:translate(-50%,-50%) scale(.95)}45%{transform:translate(-50%,-50%) scale(1)}80%{opacity:.95}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+@keyframes mvShim{from{background-position:100% 0}to{background-position:-100% 0}}
+
+@media (prefers-reduced-motion:no-preference){
+  /* screens */
+  .content.mv-fwd{animation:mvFwd .28s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  .content.mv-back{animation:mvBack .28s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  .content.mv-fade{animation:mvFade .2s ease;animation-delay:var(--mvd,0s)}
+  /* drawers from the right: another profile, notifications, search, boards, reviews */
+  .sheet.mv-in{animation:mvFade .22s ease;animation-delay:var(--mvd,0s)}
+  .sheet.mv-in .sheetc{animation:mvDrawer .32s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  /* sheets from the bottom (share, invite, pickers); a card on a computer */
+  .pick.mv-in{animation:mvFade .2s ease;animation-delay:var(--mvd,0s)}
+  .pick.mv-in .pickc{animation:mvSheet .32s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  .climb.mv-in{animation:mvSheet .32s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  #trkeov.mv-in{animation:mvSheet .3s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  /* the opened post, the photo viewer, the toast */
+  .po-ov.mv-in{animation:mvFwd .28s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  .lightbox.mv-in{animation:mvFade .2s ease;animation-delay:var(--mvd,0s)}
+  .lightbox.mv-in img{animation:mvZoom .3s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  .toast.mv-in{animation:mvToast .26s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  /* messages: the panel slides in; a chat opens forward, back to the inbox */
+  .cx.mv-in{animation:mvFade .2s ease;animation-delay:var(--mvd,0s)}
+  .cx.mv-in .cx-in{animation:mvDrawer .32s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  .cx-in.mv-tf>*{animation:mvFwd .26s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  .cx-in.mv-tb>*{animation:mvBack .26s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  /* pictures arrive */
+  img[loading="lazy"]{transition:opacity .3s ease}
+  /* the double-tap heart */
+  .mv-heart{animation:mvHeart .9s ease forwards}
+}
+@media (prefers-reduced-motion:no-preference) and (min-width:620px){
+  .pick.mv-in .pickc{animation:mvPop .22s var(--mv-ease);animation-delay:var(--mvd,0s)}
+}
+img.mv-img{opacity:0}
+.mv-heart{position:fixed;z-index:1100;pointer-events:none;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 18px rgba(0,0,0,.35))}
+
+/* Every tap answers: a small press, like a real button. No grey flash. */
+button,a,[role=button],.lx,.trk,.sr-card,.lr-tab,.chip{-webkit-tap-highlight-color:transparent}
+.btn,.igact,.chip,.lr-tab,.lr-tool,.circle,.trk-play,.trk-up,.now-pp,.now-sk,.ib,.pig-th,.gx-btn,.pc-share,.pcmp-share,
+.send,.attach,.vb-btn,.pm,.navb .ic,.cx-ib,.vmute{transition:transform .14s var(--mv-ease)}
+.btn:active,.igact:active,.chip:active,.lr-tab:active,.lr-tool:active,.circle:active,.trk-play:active,.trk-up:active,
+.now-pp:active,.now-sk:active,.ib:active,.pig-th:active,.pc-share:active,.pcmp-share:active,.send:active,.attach:active,
+.vb-btn:active,.pm:active,.navb:active .ic,.cx-ib:active,.vmute:active{transform:scale(.92)}
+.gx-btn:active,.btn.wide:active{transform:scale(.97)}
+.lx:active,.trk:active,.sr-who:active{opacity:.72}
+
+/* Loading shimmer */
+.sk-list{padding:14px 16px;display:flex;flex-direction:column;gap:16px}
+.sk-row{display:flex;align-items:center;gap:11px}
+.sk-lines{flex:1;display:flex;flex-direction:column;gap:7px}
+.sk-av,.sk-bar,.sk-img{display:block;background:linear-gradient(90deg,var(--el) 25%,var(--line) 50%,var(--el) 75%);background-size:200% 100%}
+.sk-av{width:34px;height:34px;border-radius:50%;flex:none}
+.sk-bar{height:10px;border-radius:999px}
+.sk-img{width:100%;aspect-ratio:4/5;margin-top:10px}
+.sk-card{break-inside:avoid;padding:12px;border:1px solid var(--line);margin-bottom:11px}
+.sk-tile{display:flex;flex-direction:column;gap:7px}
+.sk-tile .sk-img{aspect-ratio:1;margin:0 0 3px}
+@media (prefers-reduced-motion:no-preference){.sk-av,.sk-bar,.sk-img{animation:mvShim 1.3s linear infinite}}

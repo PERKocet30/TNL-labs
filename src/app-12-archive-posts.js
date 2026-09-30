@@ -45,7 +45,7 @@ function archiveHTML(){
         ${((A&&A.channels)||[]).map(c=>`<button class="chip sm ${ARCHFILT.channel===c?"on":""}" data-ach="${esc(c)}">#${esc(c)}</button>`).join("")}
         ${(ARCHFILT.q||ARCHFILT.channel||ARCHFILT.sort)?`<button class="clearf mono" id="archclear">${DI.x} Clear</button>`:""}
       </div>
-      ${!A?`<div class="empty">Loading…</div>`
+      ${!A?`${skel()}`
         :!A.images.length?`<div class="empty">
           ${ARCHFILT.q?`Nothing matches "${esc(ARCHFILT.q)}".`
             :`The archive is empty.<br><br>Every image published to a lab lands here — searchable, forever.`}
@@ -76,7 +76,7 @@ function boardsHTML(){
       <input class="in" id="bnew" placeholder="New moodboard — 'Y2K refs', 'FW25'…" maxlength="60">
       <button class="btn green sm" id="bmake" aria-label="New moodboard">${DI.plus}</button>
     </div>
-    ${!BOARDS?`<div class="empty">Loading…</div>`
+    ${!BOARDS?`${skel()}`
       :!BOARDS.length?`<div class="empty">No moodboards yet.<br><br>Make one, then pull anything out of the archive into it.</div>`
       :`<div class="mbgrid">${BOARDS.map(b=>`<button class="mbcard" data-bopen="${b.id}">
         ${b.cover?`<img src="${esc(b.cover)}" alt="" loading="lazy">`:`<div class="mbempty">${DI.board}</div>`}
@@ -150,7 +150,7 @@ function labsHTML(){
     ${CH.archive?archiveHTML():CH.library?tracksHTML():`
     ${CH.beatlab?`<div id="studiomount"></div>`:""}
     ${(CH.gate&&levelFor(myRep()).id<CH.gate)?`<div class="empty">${UI_IC.lock} ${esc(chName(CH))} unlocks at ${LEVELS.find(l=>l.id===CH.gate).name}</div>`
-      :`<div class="feed" id="feed"><div class="empty">Loading…</div></div>
+      :`<div class="feed" id="feed">${skel()}</div>
     <button class="c-jump lr-jump" id="lrjump" aria-label="Jump to latest" hidden></button>
     <div id="lrtyping"></div><div id="lrbar"></div>
     ${QUEUE.length?`<div class="attach-bar">

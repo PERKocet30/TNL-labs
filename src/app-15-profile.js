@@ -104,7 +104,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep),nx=LEVELS.find(x=>x.
     <button class="ptab ${PTAB==="ladder"?"on":""}" data-ptab="ladder" role="tab" aria-selected="${PTAB==="ladder"}" aria-label="Standing">${UI_IC.tabStanding}</button>
   </div>
 
-  ${PTAB==="shop"?`<div class="mkt-grid" style="padding:14px 0 30px">${PROFLISTINGS===null?`<div class="empty">Loading…</div>`:PROFLISTINGS.length?PROFLISTINGS.map(mktCardHTML).join(""):`<div class="empty">${mine?"Nothing listed yet. Head to Market \u2192 Sell to put something up.":"Not selling anything right now."}</div>`}</div>`
+  ${PTAB==="shop"?`<div class="mkt-grid" style="padding:14px 0 30px">${PROFLISTINGS===null?`${skel("tiles")}`:PROFLISTINGS.length?PROFLISTINGS.map(mktCardHTML).join(""):`<div class="empty">${mine?"Nothing listed yet. Head to Market \u2192 Sell to put something up.":"Not selling anything right now."}</div>`}</div>`
   :PTAB==="ladder"?`
     <div style="height:12px"></div>
     <div class="ladder">${LEVELS.map(x=>`<div class="lstep ${u.rep>=x.at?"done":""}"><span class="ldot"></span><span class="mono">${x.at}</span><span>${x.name}</span>${u.rep>=x.at?DI.check:""}</div>`).join("")}</div>
