@@ -129,8 +129,12 @@ console.log("\nNEW MEMBER · PHONE");
 {
   const d = await device("phone-new", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const p = d.page;
-  await step(d, "the door opens into the Showroom", async () => {
+  await step(d, "the door is white with the black mark, then opens into the Showroom", async () => {
     await p.goto(B + "/");
+    await p.waitForSelector("#enterOv .enter-m", { timeout: 8000 });
+    const door = await p.evaluate(() => ({ bg: getComputedStyle(document.querySelector("#enterOv")).backgroundColor,
+      mark: getComputedStyle(document.querySelector("#enterOv .enter-m")).filter }));
+    ok(door.bg === "rgb(255, 255, 255)" && door.mark === "invert(1)", "door: " + JSON.stringify(door));
     await throughDoor(p);
     await fast(p, 4000, () => p.waitForSelector("#sr-grid .sr-card"), "Showroom cards");
   });

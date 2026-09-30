@@ -89,6 +89,7 @@ function wireEnter(){
        overlay is gone, so nothing autoplays behind the intro. */
     primeAudio(true);
     if(v){
+      ov.classList.add("playing");   // the door is white; the film only shows once it plays
       v.muted=false;
       const p=v.play();
       if(p&&p.catch)p.catch(done);

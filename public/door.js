@@ -31,14 +31,14 @@
   var CSS = [
     ".enter-vial{width:min(78vw,340px);margin:2px 0 -4px;display:block}",
     ".enter-cap{font:12px/1 'Helvetica Neue',Helvetica,Archivo,Arial,sans-serif;",
-    "letter-spacing:0;color:#9A9A9A;",
+    "letter-spacing:0;color:#5C5C5C;",
     "min-height:12px;transition:opacity .3s ease}",
     /* The button starts faded, not disabled -- see the header note. */
     ".enter-c.vialed .enter-b{opacity:0;transform:translateY(6px);",
     "transition:opacity .45s ease,transform .45s ease}",
     ".enter-c.vialed.ready .enter-b{opacity:1;transform:none}",
     ".enter-c.vialed .enter-m{height:auto;width:min(32vw,128px);display:block;"
-    + "margin:0 auto 6px;filter:none}",
+    + "margin:0 auto 6px;filter:invert(1)}",
     "@media (prefers-reduced-motion:reduce){",
     ".enter-c.vialed .enter-b{opacity:1;transform:none;transition:none}}"
   ].join("");
@@ -64,12 +64,12 @@
         '</linearGradient>' +
       '</defs>' +
       '<g clip-path="url(#vialClip)">' +
-        '<rect x="6" y="6" width="732" height="148" fill="#242422"/>' +
+        '<rect x="6" y="6" width="732" height="148" fill="#F2F2F2"/>' +
         '<rect id="vialBody" x="0" y="0" width="0" height="160" fill="#489D35"/>' +
         '<polygon id="vialEdge" points="0,0 0,0 0,0" fill="#489D35"/>' +
         '<rect x="6" y="6" width="732" height="148" fill="url(#vialSheen)"/>' +
       '</g>' +
-      '<rect x="6" y="6" width="732" height="148" rx="74" fill="none" stroke="#6a6a64" stroke-width="5"/>' +
+      '<rect x="6" y="6" width="732" height="148" rx="74" fill="none" stroke="#000" stroke-width="5"/>' +
       '<rect x="18" y="18" width="708" height="124" rx="62" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="2"/>' +
     '</svg>';
   }
