@@ -208,7 +208,7 @@ function postOpenHTML(){
       <button class="po-x" id="poclose" aria-label="Close"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="po-ttl">Post</div><span class="po-sp"></span>
     </header>
-    <div class="po-body">${postHTML(p)}</div>
+    <div class="po-body">${(CSLOTPO=true,postHTML(p))}${(CSLOTPO=false,"")}</div>
   </div>`;
 }
 /* Any post currently in memory, wherever it came from. */

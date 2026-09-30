@@ -162,9 +162,9 @@ function wireFeed(){
     try{await api.delPost(b.dataset.delpost);toast("Deleted");loadFeed(true)}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-comments]").forEach(b=>b.onclick=async()=>{
     const id=+b.dataset.comments;
-    if(OPENCOMMENTS===id){OPENCOMMENTS=null;CEDIT=null;return render()}
-    OPENCOMMENTS=id;CEDIT=null;COMMENTS=[];render();
-    try{COMMENTS=(await api.comments(id)).comments;render();setTimeout(()=>$("#cdraft")?.focus(),80)}catch(e){toast(e.message)}});
+    if(OPENCOMMENTS===id){OPENCOMMENTS=null;CEDIT=null;return paintComments()}
+    OPENCOMMENTS=id;CEDIT=null;COMMENTS=[];paintComments();   // opens in place (app-12-comments.js)
+    try{COMMENTS=(await api.comments(id)).comments;if(OPENCOMMENTS===id){paintComments();setTimeout(focusDraft,60)}}catch(e){toast(e.message)}});
   const cs=$("#csend");if(cs){const go=async()=>{
     const t=$("#cdraft").value.trim();if(!t)return;
     const id=OPENCOMMENTS, editing=CEDIT;
@@ -173,26 +173,26 @@ function wireFeed(){
       // show it immediately
       COMMENTS=[...COMMENTS,{id:"tmp"+Date.now(),body:t,createdAt:Date.now(),editedAt:null,pending:true,
         author:{username:ME.username,displayName:ME.displayName,avatarUrl:ME.avatarUrl,role:ME.role,level:levelFor(ME.rep).id}}];
-      const p=POSTS.find(x=>x.id===id);if(p)p.commentCount=(p.commentCount||0)+1;
-      render();setTimeout(()=>$("#cdraft")?.focus(),40);
+      bumpComments(id,1);
+      paintComments();setTimeout(focusDraft,40);
     }
     try{
       if(editing){await api.editComment(editing,t);CEDIT=null}
       else await api.addComment(id,t);
       COMMENTS=(await api.comments(id)).comments;
-      render();setTimeout(()=>$("#cdraft")?.focus(),40);
+      paintComments();setTimeout(focusDraft,40);
     }catch(e){
       COMMENTS=COMMENTS.filter(c=>!c.pending);
-      const p=POSTS.find(x=>x.id===id);if(p)p.commentCount=Math.max(0,(p.commentCount||1)-1);
-      toast(e.message);render();
+      if(!editing)bumpComments(id,-1);
+      toast(e.message);paintComments();
     }};
     cs.onclick=go;$("#cdraft").onkeydown=e=>{if(e.key==="Enter")go()}}
-  const cc=$("#ccancel");if(cc)cc.onclick=()=>{CEDIT=null;render()};
+  const cc=$("#ccancel");if(cc)cc.onclick=()=>{CEDIT=null;paintComments()};
   const cj=$("#cjoinb");if(cj)cj.onclick=()=>needAccount("Give real feedback. It's where most collabs start.");
-  document.querySelectorAll("[data-cedit]").forEach(b=>b.onclick=()=>{CEDIT=+b.dataset.cedit;render();setTimeout(()=>$("#cdraft")?.focus(),80)});
+  document.querySelectorAll("[data-cedit]").forEach(b=>b.onclick=()=>{CEDIT=+b.dataset.cedit;paintComments();setTimeout(focusDraft,60)});
   document.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=async()=>{
     if(!(await uiConfirm("Delete this comment?","",{okLabel:"Delete",danger:true})))return;
-    try{await api.delComment(b.dataset.cdel);COMMENTS=(await api.comments(OPENCOMMENTS)).comments;loadFeed(true);render()}catch(e){toast(e.message)}});
+    try{await api.delComment(b.dataset.cdel);bumpComments(OPENCOMMENTS,-1);COMMENTS=(await api.comments(OPENCOMMENTS)).comments;paintComments()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>{
     const id=+b.dataset.report;
     openPicker({eyebrow:"REPORT",title:"What's wrong?",

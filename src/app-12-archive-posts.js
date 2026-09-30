@@ -230,7 +230,7 @@ function postHTML(p){const mine=p.author.username===myName();
        whole, the way it was made. Chat is a grid: four refs dropped
        mid-sentence are one glance, not a slideshow. */
     ?`<div class="caro" data-caro="${p.id}">
-      <div class="caro-t">${p.images.map(im=>`<img class="caro-i" src="${esc(im.thumb||im.url)}" data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async">`).join("")}</div>
+      <div class="caro-t">${p.images.map(im=>`<img class="caro-i" src="${esc(im.thumb||im.url)}" data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async" style="aspect-ratio:${im.w&&im.h?im.w+"/"+im.h:"4/5"}">`).join("")}</div>
       <div class="caro-d">${p.images.map((_,i)=>`<span class="${i===0?"on":""}"></span>`).join("")}</div>
       <span class="caro-n mono">1/${p.images.length}</span>
     </div>`
@@ -256,8 +256,7 @@ function postHTML(p){const mine=p.author.username===myName();
     ${myPending?`<button class="igpill" data-accept="${p.id}">Accept collab</button>`:""}
     ${!mine?`<button class="igact igflag" data-report="${p.id}" aria-label="Report" title="Report">${IG_FLAG}</button>`:""}
   </div>
-  ${p.commentCount&&OPENCOMMENTS!==p.id?`<button class="ig-viewc" data-comments="${p.id}">View all ${p.commentCount} comment${p.commentCount==1?"":"s"}</button>`:""}
-  ${OPENCOMMENTS===p.id?commentsHTML(p):""}
+  <div class="cslot" data-cslot="${p.id}">${cslotHTML(p)}</div>
   </div>`}
 
 function commentsHTML(p){return `<div class="cwrap">
