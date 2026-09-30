@@ -50,6 +50,7 @@ function lbarHTML(l,mine){
   const out=st.match&&st.match.qty<1;
   return `<div class="lbar">${price}
     ${l.acceptsOffers?`<button class="btn ghost" data-offer="${l.id}">Offer</button>`:""}
+    <button class="btn ghost lbar-bag" data-bagadd="${l.id}" aria-label="Add to bag"${out?" disabled":""}>${UI_IC.navMarket}</button>
     <button class="btn green lbar-buy" data-buy="${l.id}"${out?" disabled":""}>${out?"Sold out":st.need?"Select a "+st.need:"Buy now"}</button></div>`}
 
 function detailHTML(){
@@ -64,7 +65,7 @@ function detailHTML(){
     <div class="dbody">
       <div class="dtop">
         <div style="min-width:0"><h2 class="dtitle">${esc(l.title)}</h2>
-        <div class="dprice">${money(l.price)}<span class="mono dim">${l.shipping?` + ${money(l.shipping)} shipping`:" · free shipping"}${!hasV&&l.quantity>1&&l.quantity<=10?` · ${l.quantity} left`:""}</span></div></div>
+        <div class="dprice">${money(l.price)}${priceHTML(l)}<span class="mono dim">${l.shipping?` + ${money(l.shipping)} shipping`:" · free shipping"}${!hasV&&l.quantity>1&&l.quantity<=10?` · ${l.quantity} left`:""}</span></div></div>
         <button class="mlike big ${l.likedByMe?"on":""}" data-mlike="${l.id}" aria-label="${l.likedByMe?"Saved":"Save"}">${MK_HEART(l.likedByMe)}<span>${l.likeCount||""}</span></button>
       </div>
       ${l.status==="sold"?`<div class="soldbar">SOLD</div>`:""}
@@ -92,7 +93,7 @@ function detailHTML(){
           <div class="obtns"><button class="btn sm green" data-oa="${o.id}:accept">Accept</button>
           <button class="btn sm ghost" data-oa="${o.id}:decline">Decline</button></div>
         </div>`).join(""):`<div class="mono dim">No offers yet.</div>`}
-        <button type="button" class="ldel" data-mdel="${l.id}">Delete listing</button>`
+        <div class="lown"><button type="button" class="ldel" data-mdup="${l.id}">Duplicate</button><button type="button" class="ldel" data-mdel="${l.id}">Delete listing</button></div>`
       :l.status==="active"?`
         ${pend?`<div class="mono dim" style="margin-top:10px">YOUR OFFER: ${money(pend.amount_cents)} — pending</div>`:""}
         ${acc?`<div class="acceptbar">${DI.check} Your offer of ${money(acc.amount_cents)} was accepted — buy now to lock it in</div>`:""}

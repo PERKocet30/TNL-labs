@@ -87,10 +87,11 @@ app.get("/api/market/checkout/done", async (req, res) => {
      the listing marks sold, and no matching money exists. The session
      carries the order id it was created for and the total actually
      charged — assert both before touching anything. */
-  if (String(out.orderId || "") !== String(order.id)) return res.redirect("/?checkout=failed");
-  const expectedCents = order.amount_cents + (order.shipping_cents || 0);
-  if (Number(out.amount) !== expectedCents) return res.redirect("/?checkout=failed");
-  settlePaidOrder(order, out);
+  /* A bag is several rows paid as one: the session must name the lead
+     row and the total must be the whole group (sessionFits, server-07-cart). */
+  const group = sessionFits(order, out);
+  if (!group) return res.redirect("/?checkout=failed");
+  for (const o of group) settlePaidOrder(o, out);
   res.redirect("/?checkout=paid");
 });
 
@@ -141,9 +142,9 @@ async function reconcileOrders(userId) {
     db.prepare(`UPDATE orders SET updated_at=? WHERE id=?`).run(now, order.id);
     const seller = q.userById.get(order.seller_id);
     const out = await verifySession(order.payment_ref, seller?.stripe_account);
-    const expectedCents = order.amount_cents + (order.shipping_cents || 0);
-    if (out.paid && String(out.orderId || "") === String(order.id) && Number(out.amount) === expectedCents) {
-      settlePaidOrder(order, out);
+    const group = sessionFits(order, out);
+    if (group) {
+      for (const o of group) settlePaidOrder(o, out);
     } else if (now - order.created_at > 90000000) {
       db.prepare(`UPDATE orders SET status='cancelled', updated_at=? WHERE id=?`).run(now, order.id);
     }

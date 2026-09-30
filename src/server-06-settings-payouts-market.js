@@ -84,6 +84,7 @@ function shapeListing(r, viewerId, side) {
     acceptsOffers: !!r.accepts_offers,
     quantity: r.quantity ?? 1,
     variants: parseVariants(r),
+    wasPrice: priceDrop(r),
     status: r.status,
     views: r.views,
     createdAt: r.created_at,
@@ -175,7 +176,10 @@ app.get("/api/market", maybeAuth, (req, res) => {
   res.json({ listings: shapeListings(rows.filter((r) => !hidden.has(r.seller_username)), req.user?.id) });
 });
 
-app.get("/api/market/:id", maybeAuth, (req, res) => {
+/* Only numbers are listings — /api/market/saved and /recent (registered
+   later) were caught here and answered "no listing". */
+app.get("/api/market/:id", maybeAuth, (req, res, next) => {
+  if (!/^\d+$/.test(req.params.id)) return next();
   const r = db.prepare(`${LISTING_SELECT} WHERE l.id = ?`).get(Number(req.params.id));
   if (!r) return res.status(404).json({ error: "no listing" });
   if (!req.user || req.user.id !== r.seller_id) {
@@ -323,6 +327,7 @@ app.patch("/api/market/:id", auth, (req, res) => {
     .run(next.title, next.description, next.price_cents, next.shipping_cents, next.status, next.quantity, next.images,
          next.brand, next.size, next.condition, next.colour, next.category, next.ships_from, next.accepts_offers,
          next.bpm, next.musical_key, next.stems, next.variants, Date.now(), l.id);
+  priceChanged(l, next.price_cents, req.user.id);
   res.json({ ok: true });
 });
 

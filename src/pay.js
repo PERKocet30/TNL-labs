@@ -111,14 +111,15 @@ export async function loginLink(accountId) {
 export async function createCheckout({
   orderId, title, amountCents, shippingCents, currency = "usd",
   successUrl, cancelUrl, buyerEmail, sellerAccount, feePct, collectShipping = false,
+  items = null,   // a bag: [{ title, amountCents }] — amountCents is then their sum
 }) {
   if (!KEY) return { error: "payments not configured" };
   if (!sellerAccount) return { error: "seller hasn't connected payouts yet" };
 
-  const line_items = [{
+  const line_items = (items || [{ title, amountCents }]).map((it) => ({
     quantity: 1,
-    price_data: { currency, unit_amount: amountCents, product_data: { name: title.slice(0, 120) } },
-  }];
+    price_data: { currency, unit_amount: it.amountCents, product_data: { name: String(it.title).slice(0, 120) } },
+  }));
   if (shippingCents > 0) {
     line_items.push({
       quantity: 1,

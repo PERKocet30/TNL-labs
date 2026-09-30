@@ -558,6 +558,14 @@ if (!lcols.includes("variants")) db.exec(`ALTER TABLE listings ADD COLUMN varian
 const ocols = db.prepare(`PRAGMA table_info(orders)`).all().map((c) => c.name);
 if (!ocols.includes("variant_id")) db.exec(`ALTER TABLE orders ADD COLUMN variant_id TEXT NOT NULL DEFAULT ''`);
 if (!ocols.includes("variant")) db.exec(`ALTER TABLE orders ADD COLUMN variant TEXT NOT NULL DEFAULT ''`);
+/* A bag checkout: several items from one seller, one payment. Every row
+   carries the lead order's id; the lead's shipping is the combined
+   shipping, the rest carry 0. NULL = a single-item order, as before. */
+if (!ocols.includes("cart_id")) db.exec(`ALTER TABLE orders ADD COLUMN cart_id INTEGER`);
+/* Price drops: the price before the last cut, and when — for the
+   "Price dropped" tag and the heads-up to everyone who saved it. */
+if (!lcols.includes("prev_price_cents")) db.exec(`ALTER TABLE listings ADD COLUMN prev_price_cents INTEGER`);
+if (!lcols.includes("price_dropped_at")) db.exec(`ALTER TABLE listings ADD COLUMN price_dropped_at INTEGER`);
 
 /* Studio telemetry. Never throws — a metrics call must never be able to
    take down the thing it's measuring. */
