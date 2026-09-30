@@ -1,68 +1,4 @@
-function detailHTML(){
-  if(!MKTONE)return `<div class="scroll">${skel()}</div>`;
-  if(MKTONE.kind==="loop")return loopDetailHTML(MKTONE);   // a loop isn't a jacket
-  const l=MKTONE, mine=l.seller.username===myName();
-  return `<div class="scroll">
-    <div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button>
-      <button class="backb2" data-mshare="${l.id}">Share</button></div>
-    <div class="dimgs">${l.images.map(i=>`<img src="${esc(i)}" data-zoom="${esc(i)}" loading="lazy">`).join("")}</div>
-    <div class="dbody">
-      <div class="dtop">
-        <div><h2 class="dtitle">${esc(l.title)}</h2>
-        <div class="dprice">${money(l.price)}${l.shipping?`<span class="mono dim"> + ${money(l.shipping)} shipping</span>`:`<span class="mono dim"> · free shipping</span>`}${l.quantity>1?`<span class="mono dim"> · ${l.quantity} left</span>`:""}</div></div>
-        <button class="mlike big ${l.likedByMe?"on":""}" data-mlike="${l.id}">${MK_HEART(l.likedByMe)}${l.likeCount?" "+l.likeCount:""}</button>
-      </div>
-      ${l.status==="sold"?`<div class="soldbar">SOLD</div>`:""}
-      <div class="dchips">${[l.condition,l.size,l.brand,l.category,l.colour,l.shipsFrom&&("Ships from "+l.shipsFrom)].filter(Boolean).map(v=>`<span class="dchip">${esc(v)}</span>`).join("")}</div>
-      ${l.description?`<p class="ddesc">${esc(l.description)}</p>`:""}
-      <div class="dseller" data-u="${esc(l.seller.username)}">
-        ${avHTML(l.seller,"sm")}
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:900;font-size:13px">${esc(l.seller.displayName)}</div>
-          <div class="mono dim">@${esc(l.seller.username)} · L${l.seller.level}</div>
-          ${MKTSELLER?`<div class="trust mono">
-            ${MKTSELLER.rating!==null?`<span class="star">${DI.star} ${MKTSELLER.rating.toFixed(1)}</span> <span class="dim">(${MKTSELLER.reviews})</span>`:`<span class="dim">No reviews yet</span>`}
-            ${MKTSELLER.sold?` · ${MKTSELLER.sold} sold`:""}
-            ${MKTSELLER.shipRate!==null&&MKTSELLER.sold>2?` · ${MKTSELLER.shipRate}% shipped`:""}
-          </div>`:""}
-        </div>
-        <span class="mono dim">${l.views} views</span>
-      </div>
-      ${MKTMETA.paymentsEnabled?`<div class="dtrust">${DI.lock} <span>Paid through TNL — your card never touches the seller, and you\u2019re covered until it ships.</span></div>`:""}
-      ${mine?`
-        <div class="mono dim" style="margin:16px 0 8px">OFFERS</div>
-        ${MKTOFFERS.length?MKTOFFERS.map(o=>`<div class="orow">
-          <div><b>${money(o.amount_cents)}</b> <span class="mono dim">from ${esc(o.display_name||o.username)}</span></div>
-          <div class="obtns"><button class="btn sm green" data-oa="${o.id}:accept">Accept</button>
-          <button class="btn sm ghost" data-oa="${o.id}:decline">Decline</button></div>
-        </div>`).join(""):`<div class="mono dim">No offers yet.</div>`}
-        <div class="dactions">
-          <button class="btn ghost" data-medit="${l.id}">Edit</button>
-          <button class="btn ghost" data-msold="${l.id}">${l.status==="sold"?"Relist":"Mark sold"}</button>
-          <button class="btn ghost" data-mdel="${l.id}">Delete</button>
-        </div>`
-      :l.status==="active"?`
-        <div class="dactions">
-          <button class="btn green" data-buy="${l.id}">Buy — ${money(l.price+l.shipping)}</button>
-          ${l.acceptsOffers?`<button class="btn ghost" data-offer="${l.id}">Make offer</button>`:""}
-          <button class="btn ghost" data-dmseller="${esc(l.seller.username)}">Ask</button>
-        </div>
-        ${MKTOFFERS.filter(o=>o.status==="pending").length?`<div class="mono dim" style="margin-top:10px">YOUR OFFER: ${money(MKTOFFERS[0].amount_cents)} — pending</div>`:""}
-        ${MKTOFFERS.filter(o=>o.status==="accepted").length?`<div class="acceptbar">${DI.check} Your offer of ${money(MKTOFFERS.find(o=>o.status==="accepted").amount_cents)} was accepted — buy now to lock it in</div>`:""}
-        ${!MKTMETA.paymentsEnabled?`<div class="mono dim" style="margin-top:12px;line-height:1.6">Card payments aren't switched on yet — buying reserves the item and connects you with the seller to settle up directly.</div>`:""}
-      `:`<div class="mono dim" style="margin-top:14px">This item is sold.</div>`}
-
-      ${MKTSIMILAR.length?`<div class="simwrap">
-        <div class="mono dim sim-h">MORE LIKE THIS</div>
-        <div class="simrow">${MKTSIMILAR.map(x=>`<button class="simcard" data-mopen="${x.id}">
-          <img src="${esc(x.images[0]||"")}" alt="" loading="lazy">
-          <div class="simt">${esc(x.title)}</div>
-          <div class="simp">${money(x.price)}</div>
-        </button>`).join("")}</div>
-      </div>`:""}
-    </div>
-  </div>`}
-
+/* The listing page itself lives in app-14-listing.js. */
 function savedHTML(){
   return `<div class="scroll">
     <div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button></div>
@@ -202,13 +138,7 @@ function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
       </div>
       <label class="pf-row"><span>Stems included</span><input type="checkbox" class="pf-sw" id="s-stems" ${f.stems?"checked":""}></label>
     </section>`:`
-    <section class="pf-card">
-      <div class="pf-sec">Inventory</div>
-      <div class="pf-row"><span>Quantity</span>
-        <div class="pf-step"><button type="button" data-qty="-1" aria-label="Fewer">−</button>
-          <input id="s-qty" type="number" inputmode="numeric" min="1" max="500" step="1" value="${f.quantity||1}" aria-label="Quantity">
-          <button type="button" data-qty="1" aria-label="More">+</button></div></div>
-    </section>
+    ${pvHTML(f)}
 
     <section class="pf-card">
       <div class="pf-sec">Shipping</div>
@@ -227,12 +157,13 @@ function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
       ${chips(MKTMETA.categories||[],"data-scat",f.category)}
       <div class="pf-lb">Condition</div>
       ${chips(MKTMETA.conditions||[],"data-scond",f.condition)}
+      ${f.hasVariants?`<label class="pf-lb" for="s-brand">Brand</label><input class="pf-in" id="s-brand" value="${esc(f.brand||"")}" maxlength="60">`:`
       <div class="pf-2">
         <div><label class="pf-lb" for="s-brand">Brand</label><input class="pf-in" id="s-brand" value="${esc(f.brand||"")}" maxlength="60"></div>
         <div><label class="pf-lb" for="s-size">Size</label><input class="pf-in" id="s-size" value="${esc(f.size||"")}" maxlength="20" placeholder="M, 32, 10"></div>
       </div>
       <label class="pf-lb" for="s-colour">Colour</label>
-      <input class="pf-in" id="s-colour" value="${esc(f.colour||"")}" maxlength="30">
+      <input class="pf-in" id="s-colour" value="${esc(f.colour||"")}" maxlength="30">`}
     </section>`}
 
     ${MKTEDIT?`
@@ -281,6 +212,7 @@ function ordersHTML(){
         <img class="ordimg" src="${esc(o.listing.images[0]||"")}" alt="">
         <div class="ordbody">
           <div class="mtitle">${esc(o.listing.title)}</div>
+          ${o.variant?`<div class="ordvar">${esc(o.variant)}</div>`:""}
           <div class="mono dim">${money(o.amount+o.shipping)} · ${ORDTAB==="buying"?"from":"to"} ${esc(o.other.displayName)}</div>
           <div class="ordstatus st-${o.status}">${o.status.toUpperCase()}${o.tracking?` · ${esc(o.tracking)}`:""}</div>
           ${!o.paid&&o.status!=="complete"?`<div class="unpaid">⚠ No payment taken — ${ORDTAB==="buying"?"pay the seller directly":"collect from the buyer directly"}</div>`:""}

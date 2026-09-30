@@ -162,7 +162,16 @@ let MKTEDIT=null;
 let MKTSELLER=null, MKTSIMILAR=[], SAVED=null, REVIEWING=null, REVSTARS=5;
 let SELLKIND="physical", SELLAUDIO=null, SELLAUDIONAME="";
 const $=sel=>document.querySelector(sel);
-function toast(t){TOASTT=t;render();setTimeout(()=>{TOASTT=null;render()},2200)}
+/* A message on its own layer. It used to repaint the whole app twice (on
+   and off) — every "Saved" rebuilt the page under your thumb. */
+let TOASTH=0;
+function toast(t){
+  TOASTT=t;clearTimeout(TOASTH);
+  let el=document.getElementById("toastl");
+  if(!el){el=document.createElement("div");el.id="toastl";document.body.appendChild(el)}
+  el.innerHTML=`<div class="toast mv-in" role="status">${esc(t)}</div>`;
+  TOASTH=setTimeout(()=>{TOASTT=null;el.innerHTML=""},2200);
+}
 /* Modern in-app dialogs — no native prompt()/confirm()/alert() anywhere. These
    render a styled overlay and resolve a Promise, so async handlers can await them. */
 function uiModal({title,body,fields,okLabel="Confirm",cancelLabel="Cancel",danger=false,okOnly=false}){

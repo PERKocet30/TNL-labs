@@ -83,6 +83,7 @@ function shapeListing(r, viewerId, side) {
     isFree: (r.price_cents || 0) === 0,
     acceptsOffers: !!r.accepts_offers,
     quantity: r.quantity ?? 1,
+    variants: parseVariants(r),
     status: r.status,
     views: r.views,
     createdAt: r.created_at,
@@ -106,7 +107,9 @@ const LISTING_SELECT = `
   FROM listings l JOIN users u ON u.id = l.seller_id`;
 
 app.get("/api/market/meta", maybeAuth, (req, res) => {
-  const sizes = db.prepare(`SELECT DISTINCT size FROM listings WHERE status='active' AND size != '' ORDER BY size`).all().map((r) => r.size);
+  const sizes = db.prepare(`SELECT size FROM listings WHERE status='active' AND size != ''
+    UNION SELECT json_extract(v.value,'$.size') FROM listings l, json_each(l.variants) v
+    WHERE l.status='active' AND json_extract(v.value,'$.size') != '' ORDER BY 1`).all().map((r) => r.size);
   const brands = db.prepare(`SELECT brand, COUNT(*) n FROM listings WHERE status='active' AND brand != '' GROUP BY brand ORDER BY n DESC LIMIT 20`).all().map((r) => r.brand);
   res.json({
     categories: CATEGORIES, conditions: CONDITIONS, sizes, brands,
@@ -158,7 +161,7 @@ app.get("/api/market", maybeAuth, (req, res) => {
   if (free === "1") where.push(`l.price_cents = 0`);
   if (bpm) { const b = Number(bpm); where.push(`l.bpm BETWEEN ? AND ?`); params.push(b - 5, b + 5); }
   if (category) { where.push(`l.category = ?`); params.push(category); }
-  if (size) { where.push(`l.size = ?`); params.push(size); }
+  if (size) { where.push(SIZE_MATCH); params.push(size, size); }
   if (condition) { where.push(`l.condition = ?`); params.push(condition); }
   if (brand) { where.push(`l.brand LIKE ?`); params.push(`%${brand}%`); }
   if (seller) { where.push(`u.username = ?`); params.push(seller); }
@@ -228,6 +231,8 @@ app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, 
 
   const { title, description, price, shipping, category, brand, size, condition, colour, images, shipsFrom, acceptsOffers,
           audioUrl, bpm, musicalKey, stems, quantity } = body;
+  const vars = isLoop ? [] : cleanVariants(body.variants);
+  if (vars.length && !stockOf(vars)) return res.status(400).json({ error: "add stock to at least one size" });
   if (!title?.trim()) return res.status(400).json({ error: "title required" });
 
   if (isLoop) {
@@ -250,10 +255,10 @@ app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, 
   const shipCents = isLoop ? 0 : Math.max(0, Math.round(Number(shipping || 0) * 100));
   const now = Date.now();
   const info = db.prepare(`
-    INSERT INTO listings (seller_id, title, description, price_cents, shipping_cents, category, brand, size, condition, colour, images, ships_from, accepts_offers, kind, audio_url, bpm, musical_key, stems, quantity, created_at, updated_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    INSERT INTO listings (seller_id, title, description, price_cents, shipping_cents, category, brand, size, condition, colour, images, ships_from, accepts_offers, kind, audio_url, bpm, musical_key, stems, quantity, variants, created_at, updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     req.user.id, title.trim().slice(0, 120), (description || "").slice(0, 2000), cents, shipCents,
-    cat, (brand || "").slice(0, 60), (size || "").slice(0, 20),
+    cat, (brand || "").slice(0, 60), vars.length ? "" : (size || "").slice(0, 20),
     isLoop ? "" : (CONDITIONS.includes(condition) ? condition : "Good"), (colour || "").slice(0, 30),
     JSON.stringify(imgs), isLoop ? "" : (shipsFrom || "").slice(0, 60),
     (isLoop && free) ? 0 : (acceptsOffers === false ? 0 : 1),
@@ -262,8 +267,8 @@ app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, 
     isLoop ? (Number(bpm) || null) : null,
     isLoop && KEYS.includes(musicalKey) ? musicalKey : "",
     isLoop && stems ? 1 : 0,
-    isLoop ? 1 : Math.min(500, Math.max(1, Math.round(Number(quantity)) || 1)),
-    now, now);
+    isLoop ? 1 : vars.length ? stockOf(vars) : Math.min(500, Math.max(1, Math.round(Number(quantity)) || 1)),
+    JSON.stringify(vars), now, now);
   res.json({ id: Number(info.lastInsertRowid) });
 });
 
@@ -307,10 +312,17 @@ app.patch("/api/market/:id", auth, (req, res) => {
   /* Free loops are legal (price 0) — the old unconditional check made
      them permanently uneditable. */
   if (next.price_cents < 100 && !(isLoop && next.price_cents === 0)) return res.status(400).json({ error: "price too low" });
-  db.prepare(`UPDATE listings SET title=?, description=?, price_cents=?, shipping_cents=?, status=?, quantity=?, images=?, brand=?, size=?, condition=?, colour=?, category=?, ships_from=?, accepts_offers=?, bpm=?, musical_key=?, stems=?, updated_at=? WHERE id=?`)
+  /* Variants replace size and quantity: the stock is theirs to add up. */
+  next.variants = l.variants || "[]";
+  if (!isLoop && req.body?.variants !== undefined) {
+    const vs = cleanVariants(req.body.variants);
+    next.variants = JSON.stringify(vs);
+    if (vs.length) { next.quantity = stockOf(vs); next.size = ""; }
+  }
+  db.prepare(`UPDATE listings SET title=?, description=?, price_cents=?, shipping_cents=?, status=?, quantity=?, images=?, brand=?, size=?, condition=?, colour=?, category=?, ships_from=?, accepts_offers=?, bpm=?, musical_key=?, stems=?, variants=?, updated_at=? WHERE id=?`)
     .run(next.title, next.description, next.price_cents, next.shipping_cents, next.status, next.quantity, next.images,
          next.brand, next.size, next.condition, next.colour, next.category, next.ships_from, next.accepts_offers,
-         next.bpm, next.musical_key, next.stems, Date.now(), l.id);
+         next.bpm, next.musical_key, next.stems, next.variants, Date.now(), l.id);
   res.json({ ok: true });
 });
 

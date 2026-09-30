@@ -239,7 +239,8 @@ function mktCardHTML(l){
   </button>`;return `<div class="mcard" data-mopen="${l.id}">
   <div class="mimgwrap"><img class="mimg" src="${esc(l.images[0]||"")}" alt="${esc(l.title)}" loading="lazy">
     ${l.status==="sold"?`<div class="soldtag">SOLD</div>`:""}
-    ${l.size?`<span class="msize">${esc(l.size)}</span>`:""}
+    ${(()=>{const s=(l.variants||[]).length?[...new Set(l.variants.filter(v=>v.qty>0&&v.size).map(v=>v.size))]:[l.size].filter(Boolean);
+      return s.length?`<span class="msize">${esc(s.length>3?s[0]+"–"+s[s.length-1]:s.join(" · "))}</span>`:""})()}
     <button class="mlike ${l.likedByMe?"on":""}" data-mlike="${l.id}">${MK_HEART(l.likedByMe)}${l.likeCount?" "+l.likeCount:""}</button>
   </div>
   <div class="mbody">

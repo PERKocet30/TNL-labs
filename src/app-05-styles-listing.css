@@ -1,0 +1,75 @@
+/* ── LISTING PAGE · v2 · 2026-09-30 (app-14-listing.js) ── */
+.lpage{display:flex;flex-direction:column}
+.lpage .dnav{display:flex;justify-content:space-between;align-items:center;padding:10px 16px}
+.lpage .dbody{width:100%;box-sizing:border-box;margin:0 auto;padding:14px 20px 24px}
+.lg{position:relative;background:var(--el)}
+.lg-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.lg-track::-webkit-scrollbar{display:none}
+.lg-s{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:4/5;max-height:72vh}
+.lg-s img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+/* over a photo: white on a dark scrim in both themes, like the post carousel */
+.lg-n{position:absolute;top:12px;right:12px;font-size:12px;font-weight:700;background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:3px 9px;pointer-events:none}
+.lg-dots{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:6px;pointer-events:none}
+.lg-dots i{width:6px;height:6px;border-radius:50%;background:#fff;opacity:.5;box-shadow:0 0 2px rgba(0,0,0,.35);transition:opacity .2s,transform .2s}
+.lg-dots i.on{opacity:1;transform:scale(1.25)}
+@media(min-width:760px) and (max-width:1023px){.lg-s{flex-basis:70%;aspect-ratio:1}}
+/* computer: photos on the left and held, the details and Buy on the right */
+@media(min-width:1024px){
+  .lpage{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(340px,1fr);grid-template-rows:auto auto auto 1fr;column-gap:40px;align-content:start;padding:0 40px}
+  .lpage .dnav{grid-column:1/-1;padding:16px 0}
+  .lpage .lg{grid-column:1;grid-row:2/5;align-self:start;position:sticky;top:16px;margin-bottom:40px}
+  .lpage .lg-s{aspect-ratio:4/5;max-height:calc(100vh - 110px)}
+  .lpage .dbody{grid-column:2;grid-row:2;padding:0 0 16px;max-width:none}
+  .lpage .lbar{grid-column:2;grid-row:3;align-self:start;bottom:16px;border:1px solid var(--line);padding:12px 14px;margin:0 0 24px}
+}
+
+/* the save heart: readable in both themes */
+.mlike.big{background:var(--bg);color:var(--tx);border:1px solid var(--line2);padding:9px 14px;flex-shrink:0}
+.mlike.big span:empty{display:none}
+.mlike.big.on{color:var(--tx);border-color:var(--tx)}
+.mlike.big.on svg{color:var(--accent-fill);stroke:var(--tx)}
+
+/* size and colour, like a shop */
+.lv{margin:16px 0 4px}
+.lv-h{font-size:13px;color:var(--tx2);margin:12px 0 8px}
+.lv-h:first-child{margin-top:0}
+.lv-h b{color:var(--tx);font-weight:700;margin-left:4px}
+.lv-row{display:flex;flex-wrap:wrap;gap:8px}
+.lv-o{min-width:48px;height:42px;padding:0 14px;border:1px solid var(--line2);background:var(--bg);color:var(--tx);border-radius:999px;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.lv-o.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.lv-o.out{color:var(--dim);border-style:dashed;text-decoration:line-through}
+.lv-left{font-size:13px;color:var(--tx2);margin-top:10px}
+@keyframes lvNudge{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@media (prefers-reduced-motion:no-preference){.lv-nudge .lv-row{animation:lvNudge .3s ease 2}}
+
+.ddesc{white-space:pre-wrap;line-height:1.5}
+.lsec{font-size:15px;font-weight:700;margin:22px 0 10px}
+.dtrust{background:var(--el);border:1px solid var(--line);color:var(--tx2)}
+.dtrust svg{color:var(--tx);flex-shrink:0}
+.ldel{display:block;background:none;border:0;color:var(--dim);font:inherit;font-size:14px;text-decoration:underline;padding:18px 0 0;cursor:pointer}
+.ordvar{display:inline-block;font-size:12px;font-weight:700;border:1px solid var(--line2);border-radius:999px;padding:1px 8px;margin:3px 0}
+
+/* the Buy bar, pinned to the bottom of the page */
+.lbar{position:sticky;bottom:0;z-index:4;margin-top:auto;display:flex;align-items:center;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line)}
+.lbar-p{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.lbar-p b{font-size:18px;font-weight:800}
+.lbar-p span{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbar .btn{height:46px;padding:0 18px;font-size:15px;justify-content:center;flex-shrink:0}
+.lbar .lbar-buy{min-width:128px}
+.lbar .btn:disabled{opacity:.45}
+
+/* the photo viewer can be pinched */
+.lightbox{touch-action:none}
+.lightbox img{transform-origin:center;will-change:transform}
+
+/* the size and colour editor in the listing form */
+.pv-rows{display:flex;flex-direction:column;gap:8px}
+.pv-row{display:grid;grid-template-columns:1fr 1.3fr auto 34px;gap:6px;align-items:center}
+.pv-row .pf-in{padding:10px 12px;font-size:15px}
+.pv-row .pf-step button{width:32px;height:38px;font-size:18px}
+.pv-row .pf-step input{width:34px;font-size:15px}
+.pv-x{width:34px;height:34px;border:0;background:none;color:var(--dim);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.pv-quick{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 14px}
+.pv-quick .chip{font-size:13px;padding:6px 12px}
+.pv-add{margin-top:10px;background:none;border:1px dashed var(--line2);color:var(--tx);border-radius:999px;font:inherit;font-size:14px;padding:10px;width:100%;cursor:pointer}
+.pv-tot{font-size:13px;color:var(--dim);margin-top:10px}
