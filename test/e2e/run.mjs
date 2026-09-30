@@ -138,6 +138,21 @@ console.log("\nNEW MEMBER · PHONE");
     await throughDoor(p);
     await fast(p, 4000, () => p.waitForSelector("#sr-grid .sr-card"), "Showroom cards");
   });
+  await step(d, "night mode: the moon switches to night, the sun back to day, and it sticks", async () => {
+    const th = () => p.evaluate(() => ({ attr: document.documentElement.dataset.theme, bg: getComputedStyle(document.body).backgroundColor,
+      saved: localStorage.getItem("tnl-theme"), btn: document.querySelector("[data-theme-set]")?.dataset.themeSet }));
+    const t0 = await th();
+    ok(t0.attr === "light" && t0.btn === "dark", "didn't start in day mode: " + JSON.stringify(t0));
+    await p.locator(".top [data-theme-set]").tap(); await p.waitForTimeout(200);
+    const t1 = await th();
+    ok(t1.attr === "dark" && t1.bg === "rgb(0, 0, 0)" && t1.saved === "dark" && t1.btn === "light", "night didn't switch on: " + JSON.stringify(t1));
+    await p.reload(); await p.waitForTimeout(600);
+    ok((await th()).attr === "dark", "night didn't survive a reload");
+    await throughDoor(p);
+    await p.locator(".top [data-theme-set]").tap(); await p.waitForTimeout(200);
+    const t2 = await th();
+    ok(t2.attr === "light" && t2.bg === "rgb(255, 255, 255)" && t2.saved === "light", "day didn't come back: " + JSON.stringify(t2));
+  });
   await step(d, "sign up: email → password → name → username → what you make", async () => {
     await p.locator("#joinBtn").tap();
     const nextOn = async () => { await p.waitForSelector("#gxnext:not([disabled])", { timeout: 4000 }); await p.locator("#gxnext").tap(); };
@@ -265,6 +280,19 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".cx").getByText("hey from e2e").count() > 0, "the message isn't on screen");
     const { token: ft } = await login("friend");
     ok(JSON.stringify(await api("/api/chats", ft)).includes("hey from e2e") || JSON.stringify(await api("/api/dm", ft)).includes("hey from e2e"), "friend's inbox doesn't have it");
+  });
+  await step(d, "Edit profile → Night/Day switch the theme and keep a half-typed bio", async () => {
+    await p.evaluate(() => { DMOPENPANEL = false; CHAT = null; paintLayer(); });
+    await p.locator('.nav [data-tab="profile"]').tap();
+    await p.locator("#editb").tap();
+    await p.locator("#ed-bio").fill("half-typed bio");
+    await p.locator('.pig-theme [data-theme-set="dark"]').tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => document.documentElement.dataset.theme) === "dark", "Night didn't switch");
+    ok(await p.locator("#ed-bio").inputValue() === "half-typed bio", "switching wiped the bio");
+    ok(await p.locator('.pig-theme [data-theme-set="dark"]').evaluate((b) => b.classList.contains("on")), "Night isn't highlighted");
+    await p.locator('.pig-theme [data-theme-set="light"]').tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => document.documentElement.dataset.theme) === "light", "Day didn't switch back");
+    await p.evaluate(() => { EDITING = false; PROFILE = null; TAB = "showroom"; render(); });
   });
   /* Glitch signals (app-19-glitch.js). Everything above is normal use, so it
      must have recorded nothing: no jumps, no slow screens, no failed saves. */
