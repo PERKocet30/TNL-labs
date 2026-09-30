@@ -1,0 +1,68 @@
+/* ── POST CREATOR v3 · 2026-09-30 ── photo editor, drafts, the posting strip,
+   tags / location on cards (app-18-photo-edit.js, app-18-post-queue.js) */
+
+/* the photo editor: full screen, its own layer */
+.ped{position:fixed;inset:0;z-index:95;background:var(--bg);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+body.ped-on{overflow:hidden}
+.ped .pc-top{padding-top:calc(10px + env(safe-area-inset-top))}
+.ped-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:var(--el);touch-action:none;cursor:grab;overflow:hidden;padding:12px}
+.ped-stage canvas{max-width:100%;max-height:100%;display:block;box-shadow:0 0 0 1px var(--line)}
+.ped-tabs{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.ped-tab{flex:1;background:none;border:0;color:var(--dim);font:inherit;font-size:14px;font-weight:700;padding:12px 0;cursor:pointer}
+.ped-tab.on{color:var(--tx);box-shadow:inset 0 -2px 0 var(--tx)}
+/* one height for every tab, so switching never moves the photo */
+.ped-panel{padding:14px 16px 6px;height:196px;overflow-y:auto;box-sizing:border-box}
+.ped-row{display:flex;gap:8px;flex-wrap:wrap}
+.ped-sl{display:flex;align-items:center;gap:12px;font-size:14px;margin:10px 0}
+.ped-sl span{width:84px;flex-shrink:0;color:var(--tx2)}
+.ped-sl input{flex:1;accent-color:var(--tx)}
+.ped-sl b{width:34px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums}
+.ped-hint{font-size:12px;color:var(--dim);margin-top:6px}
+.ped-filters{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;padding:4px 4px 6px;margin:0 -4px;scroll-padding:0 16px}
+.ped-filters::-webkit-scrollbar{display:none}
+.ped-f{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;color:var(--tx2);font:inherit;font-size:12px;padding:0;cursor:pointer}
+.ped-f canvas{width:72px;height:72px;display:block;outline:2px solid transparent;outline-offset:2px}
+.ped-f.on{color:var(--tx);font-weight:700}
+.ped-f.on canvas{outline-color:var(--tx)}
+.ped-reset{align-self:center;background:none;border:0;color:var(--dim);font:inherit;font-size:13px;text-decoration:underline;padding:8px 16px 12px;cursor:pointer}
+
+/* on the creator */
+.pc-edit{position:absolute;left:10px;bottom:10px;display:flex;align-items:center;gap:6px;border:0;border-radius:999px;background:rgba(0,0,0,.6);color:#fff;font:inherit;font-size:13px;font-weight:700;padding:7px 12px;cursor:pointer}
+.pc-th.pc-busy{display:flex;align-items:center;justify-content:center}
+.pc-th.pc-busy .pc-thb{opacity:.45}
+.pc-th.pc-busy .spin{position:absolute}
+.pc-th{touch-action:pan-x;transition:transform .15s var(--mv-ease)}
+.pc-th.pc-lift{z-index:3;transition:none;box-shadow:0 8px 20px rgba(0,0,0,.28)}
+.pc-thb img{-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none}
+.pc-drafts{align-self:flex-end;margin:12px 16px 0;display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--line2);border-radius:999px;color:var(--tx);font:inherit;font-size:13px;font-weight:700;padding:6px 12px;cursor:pointer}
+.pc-drafts span{background:var(--tx);color:var(--bg);border-radius:999px;font-size:11px;padding:1px 7px}
+.pc-cover{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line)}
+.pc-cover input{flex:1;accent-color:var(--tx)}
+.pc-cover .pc-share{padding:7px 14px;font-size:13px}
+.pc-covth{width:24px;height:24px;object-fit:cover;display:block}
+.pc-sw-row{cursor:pointer}
+.pc-sw-row .pf-sw{margin-left:auto}
+
+/* the choice sheet */
+.ui-col{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.ui-choose .ui-title{margin-bottom:2px}
+
+/* Posting… strip */
+#pql{position:fixed;left:0;right:0;top:calc(62px + env(safe-area-inset-top));z-index:85;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;padding:0 12px}
+.pq{pointer-events:auto;width:100%;max-width:520px;box-sizing:border-box;display:flex;align-items:center;gap:10px;background:var(--bg);color:var(--tx);border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.14);padding:8px 10px;animation:mvToast0 .26s var(--mv-ease)}
+@keyframes mvToast0{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.pq img,.pq-t{width:38px;height:38px;object-fit:cover;flex-shrink:0;background:var(--el);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.pq-m{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.pq-m b{font-size:14px}
+.pq-m i{display:block;height:3px;background:var(--line);overflow:hidden}
+.pq-m u{display:block;height:100%;background:var(--accent-fill);transform-origin:left;transition:transform .3s ease;text-decoration:none}
+.pq-b{border:0;border-radius:999px;background:var(--tx);color:var(--bg);font:inherit;font-size:13px;font-weight:700;padding:7px 14px;cursor:pointer}
+.pq-x{border:0;background:none;color:var(--dim);font-size:20px;padding:4px 6px;cursor:pointer}
+@media(min-width:1024px){#pql{top:16px;left:var(--side,240px)}}
+@media (prefers-reduced-motion:reduce){.pq{animation:none}.pq-m u{transition:none}}
+
+/* on the card */
+.px-with{font-size:12px;color:var(--tx2);margin-top:1px}
+.px-u{font-weight:700;color:var(--tx);cursor:pointer}
+.px-off{font-size:13px;padding:2px 0 6px}
+.igact[hidden]{display:none}

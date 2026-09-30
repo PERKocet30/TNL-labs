@@ -11,7 +11,12 @@ const PC_PICK=`<svg viewBox="0 0 24 24" width="40" height="40" fill="none" strok
 /* Frame timing with a fallback — boot.test renders in a DOM without it. */
 const pcRaf=f=>(typeof requestAnimationFrame==="function"?requestAnimationFrame(f):setTimeout(f,16));
 const pcCaf=h=>(typeof cancelAnimationFrame==="function"?cancelAnimationFrame(h):clearTimeout(h));
-const pcCan=c=>!!((c.body||"").trim()||c.imgs.length||c.vid)&&!c.busy&&!c.vidbusy&&!c.upN;
+/* Share is ready as soon as there's something to post — photos still
+   uploading finish in the background (app-18-post-queue.js). */
+const pcCan=c=>!!((c.body||"").trim()||c.imgs.length||c.vid||c.upN||c.vidbusy)&&!c.busy;
+const PC_EDIT=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>`;
+const PC_TAG=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></svg>`;
+const PC_PIN=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>`;
 
 function pcomposeHTML(){
   const c=PCOMPOSE; c.collabs=c.collabs||[]; c.idx=Math.min(c.idx||0,Math.max(0,c.imgs.length-1));
@@ -20,23 +25,25 @@ function pcomposeHTML(){
   if(c.vidbusy)media=`<div class="pc-stage pc-busy"><span class="spin"></span>
       <div class="pc-prog"><i id="pcvidbar" style="width:${Math.round((c.vidprog||0)*100)}%"></i></div>
       <span class="dim" id="pcvidprog">Uploading video · ${Math.round((c.vidprog||0)*100)}%</span></div>`;
-  else if(c.vid)media=`<div class="pc-stage"><video src="${esc(c.vid.url)}" playsinline muted controls preload="metadata"></video>
-      <button class="pc-rm" data-pcvidrm aria-label="Remove video">${PC_X}</button></div>`;
+  else if(c.vid)media=`<div class="pc-stage"><video id="pcvid" src="${esc(c.vid.url)}"${c.cover?` poster="${esc(c.cover)}"`:""} playsinline muted ${c.coverPick?"":"controls "}preload="metadata" crossorigin="anonymous"></video>
+      <button class="pc-rm" data-pcvidrm aria-label="Remove video">${PC_X}</button></div>
+      ${c.coverPick?`<div class="pc-cover"><input type="range" min="0" max="1000" value="0" id="pccovr" aria-label="Pick a frame">
+        <button class="pc-share" id="pccovok">Use this frame</button></div>`:""}`;
   else if(c.imgs.length||c.upN)media=`
     <div class="pc-stage">
       <div class="pc-track" id="pctrack">${c.imgs.map(im=>`<div class="pc-slide"><img src="${esc(im.url||im.thumb)}" alt=""></div>`).join("")}
         ${c.upN&&!c.imgs.length?`<div class="pc-slide pc-busy"><span class="spin"></span></div>`:""}</div>
-      ${c.imgs.length>1?`<span class="pc-count" id="pccount">${c.idx+1}/${c.imgs.length}</span>
-        <button class="pc-mv l" data-pcmv="-1" aria-label="Move left"${c.idx?"":" disabled"}>‹</button>
-        <button class="pc-mv r" data-pcmv="1" aria-label="Move right"${c.idx<c.imgs.length-1?"":" disabled"}>›</button>`:""}
+      ${c.imgs.length>1?`<span class="pc-count" id="pccount">${c.idx+1}/${c.imgs.length}</span>`:""}
+      ${c.imgs.length&&!(c.imgs[c.idx]||{}).gif?`<button class="pc-edit" data-pcedit aria-label="Edit photo">${PC_EDIT}<span>Edit</span></button>`:""}
     </div>
     <div class="pc-strip">
-      ${c.imgs.map((im,i)=>`<div class="pc-th ${i===c.idx?"on":""}"><button class="pc-thb" data-pcgo="${i}" aria-label="Photo ${i+1}"><img src="${esc(im.thumb)}" alt=""></button>
-        <button class="pc-rm sm" data-pcrm="${i}" aria-label="Remove photo">${PC_X}</button></div>`).join("")}
+      ${c.imgs.map((im,i)=>`<div class="pc-th ${i===c.idx?"on":""}${im.busy?" pc-busy":""}" data-pci="${i}"><button class="pc-thb" data-pcgo="${i}" aria-label="Photo ${i+1}"><img src="${esc(im.thumb)}" alt="" draggable="false"></button>
+        ${im.busy?`<span class="spin"></span>`:`<button class="pc-rm sm" data-pcrm="${i}" aria-label="Remove photo">${PC_X}</button>`}</div>`).join("")}
       ${Array.from({length:c.upN||0},()=>`<div class="pc-th pc-busy"><span class="spin"></span></div>`).join("")}
       ${c.imgs.length+(c.upN||0)<10?`<label class="pc-th pc-add" aria-label="Add photos">${UI_IC.plus}${file}</label>`:""}
     </div>`;
-  else media=`<label class="pc-pick">${file}${PC_PICK}<b>Add photos or video</b><span>Up to 10 photos, or 1 video</span></label>`;
+  else media=`${pdRowHTML(c)}<label class="pc-pick">${file}${PC_PICK}<b>Add photos or video</b><span>Up to 10 photos, or 1 video</span></label>`;
+  const tags=c.tags||[];
 
   const lab=c.ch?`${esc(labMark(c.ch.lab))} · ${esc(c.ch.label)}`:"Profile only";
   return `<div class="pcmp-ov" id="pcov"><div class="pc" role="dialog" aria-label="New post">
@@ -63,6 +70,16 @@ function pcomposeHTML(){
           <div class="pcmus-list">${pcmusRowsHTML(c.list,!!(c.q&&c.q.trim()))}</div></div>`:""}
         <button class="pc-opt" id="pclab"><span class="pc-ic lg">//</span><span class="pc-l">Share to a lab</span>
           <span class="pc-v">${lab}</span>${PC_CHEV}</button>
+        <button class="pc-opt" id="pctag"><span class="pc-ic">${PC_TAG}</span><span class="pc-l">Tag people</span>
+          <span class="pc-v">${tags.length?tags.length+" tagged":""}</span>${PC_CHEV}</button>
+        ${tags.length?`<div class="pc-chips">${tags.map((u,i)=>`<span class="pc-chip">${avHTML(u,"")}@${esc(u.username)}
+          <button data-pctrm="${i}" aria-label="Remove">${PC_X}</button></span>`).join("")}</div>`:""}
+        <button class="pc-opt" id="pcloc"><span class="pc-ic">${PC_PIN}</span><span class="pc-l">${c.location?`<b>${esc(c.location)}</b>`:"Add location"}</span>
+          ${c.location?`<span class="pc-x" data-pclocx aria-label="Remove location">${PC_X}</span>`:PC_CHEV}</button>
+        ${c.vid?`<button class="pc-opt" id="pccov"><span class="pc-ic">${c.cover?`<img class="pc-covth" src="${esc(c.cover)}" alt="">`:PC_PICK.replace(/40/g,"22")}</span><span class="pc-l">Cover</span>
+          <span class="pc-v">${c.cover?"Chosen":"First frame"}</span>${PC_CHEV}</button>`:""}
+        <label class="pc-opt pc-sw-row"><span class="pc-ic">${IG_COMMENT}</span><span class="pc-l">Turn off commenting</span>
+          <input type="checkbox" class="pf-sw" id="pccoff" ${c.commentsOff?"checked":""}></label>
       </div>
     </div>
   </div></div>`;
@@ -79,7 +96,7 @@ function pcmusRowsHTML(list,searching){
 }
 
 function wirePCompose(){
-  const ov=$("#pcov");if(!ov)return;const c=PCOMPOSE;
+  const ov=$("#pcov");if(!ov){if(PED&&!PCOMPOSE)pedClose();return}const c=PCOMPOSE;
   const syncGo=()=>{const g=$("#pcgo");if(g)g.disabled=!pcCan(c)};
 
   /* ── media ── */
@@ -94,15 +111,19 @@ function wirePCompose(){
       if(vids.length>1)toast("One video per post");
       if(f.size>650*1024*1024){toast(f.name+" is over 650MB");return}
       if(c.imgs.length){c.imgs=[];toast("Video posts stand alone — photos cleared")}
-      c.vid=null;c.vidbusy=true;c.vidprog=0;render();
+      c.vid=null;c.cover=null;c.vidbusy=true;c.vidprog=0;render();
+      /* Its size, so the feed can hold the space before it loads. */
+      try{const v=document.createElement("video");v.preload="metadata";v.muted=true;const u=URL.createObjectURL(f);
+        v.onloadedmetadata=()=>{c.vw=v.videoWidth||undefined;c.vh=v.videoHeight||undefined;URL.revokeObjectURL(u)};v.src=u}catch(e){}
       try{
-        const up=await uploadStream(f,pr=>{if(PCOMPOSE!==c)return;c.vidprog=pr;
-          const t=$("#pcvidprog"),b=$("#pcvidbar");if(t)t.textContent="Uploading video · "+Math.round(pr*100)+"%";if(b)b.style.width=Math.round(pr*100)+"%"});
-        if(PCOMPOSE!==c)return;   // discarded mid-upload
+        const up=await uploadStream(f,pr=>{if(c.dead)return;c.vidprog=pr;
+          const t=$("#pcvidprog"),b=$("#pcvidbar");if(t)t.textContent="Uploading video · "+Math.round(pr*100)+"%";if(b)b.style.width=Math.round(pr*100)+"%";
+          if(c.queued)pqPaint()});
+        if(c.dead)return;   // discarded mid-upload
         if(up.kind!=="video")throw new Error("That file isn't a video");
         c.vid={url:up.url};
-      }catch(e){if(PCOMPOSE!==c)return;toast(e.message)}
-      c.vidbusy=false;render();return;
+      }catch(e){if(c.dead)return;toast(e.message)}
+      c.vidbusy=false;pcRepaint(c);return;
     }
     if(c.vid||c.vidbusy){toast("Video posts stand alone");return}
     const room=10-c.imgs.length-(c.upN||0);
@@ -112,10 +133,10 @@ function wirePCompose(){
     for(const file of take){
       try{const p=await prepImage(file,true);
         const up=await api.upload(p.full);const th=await api.upload(p.thumb);
-        if(PCOMPOSE!==c)return;
-        c.imgs.push({url:up.url,thumb:th.url,w:p.w,h:p.h});}
-      catch(e){if(PCOMPOSE!==c)return;toast(e.message)}
-      c.upN--;render();
+        if(c.dead)return;
+        c.imgs.push({url:up.url,thumb:th.url,w:p.w,h:p.h,...(p.gif?{gif:true}:{})});}
+      catch(e){if(c.dead)return;toast(e.message)}
+      c.upN--;pcRepaint(c);
     }
   };
   const tr=$("#pctrack");
@@ -129,10 +150,43 @@ function wirePCompose(){
   }
   document.querySelectorAll("[data-pcgo]").forEach(b=>b.onclick=()=>{c.idx=+b.dataset.pcgo;
     if(tr)tr.scrollTo({left:c.idx*tr.clientWidth,behavior:"smooth"})});
-  document.querySelectorAll("[data-pcmv]").forEach(b=>b.onclick=()=>{const i=c.idx||0,j=i+(+b.dataset.pcmv);
-    if(j<0||j>=c.imgs.length)return;[c.imgs[i],c.imgs[j]]=[c.imgs[j],c.imgs[i]];c.idx=j;render()});
+  pcDragWire(c);
+  const ed=document.querySelector("[data-pcedit]");if(ed)ed.onclick=()=>pedOpen(c,c.idx||0);
   document.querySelectorAll("[data-pcrm]").forEach(b=>b.onclick=()=>{c.imgs.splice(+b.dataset.pcrm,1);c.idx=Math.min(c.idx||0,Math.max(0,c.imgs.length-1));render()});
-  const vr=document.querySelector("[data-pcvidrm]");if(vr)vr.onclick=()=>{c.vid=null;render()};
+  const vr=document.querySelector("[data-pcvidrm]");if(vr)vr.onclick=()=>{c.vid=null;c.cover=null;c.coverPick=false;render()};
+  const dr=$("#pcdrafts");if(dr)dr.onclick=()=>pdOpen(c);
+
+  /* ── video cover: scrub to a frame, keep it ── */
+  const cv=$("#pccov");if(cv)cv.onclick=()=>{c.coverPick=!c.coverPick;render()};
+  const vid=$("#pcvid"),rng=$("#pccovr");
+  if(vid&&rng)rng.oninput=()=>{if(vid.duration)vid.currentTime=vid.duration*(+rng.value/1000)};
+  const cok=$("#pccovok");if(cok)cok.onclick=async()=>{
+    if(!vid||!vid.videoWidth)return toast("Give the video a moment to load");
+    cok.disabled=true;
+    try{const cn=document.createElement("canvas"),s=Math.min(1,1600/Math.max(vid.videoWidth,vid.videoHeight));
+      cn.width=Math.round(vid.videoWidth*s);cn.height=Math.round(vid.videoHeight*s);
+      cn.getContext("2d").drawImage(vid,0,0,cn.width,cn.height);
+      c.vw=vid.videoWidth;c.vh=vid.videoHeight;c.coverPick=false;
+      const up=await api.upload(cn.toDataURL("image/jpeg",.85));if(c.dead)return;c.cover=up.url;toast("Cover set")}
+    catch(e){toast(e.message)}
+    pcRepaint(c)};
+
+  /* ── tag people, location, comments ── */
+  const toTag=ppl=>ppl.filter(u=>u.username!==myName()&&!(c.tags||[]).find(x=>x.username===u.username))
+    .map(u=>({label:u.displayName,sub:"@"+u.username+(u.role?" · "+u.role:""),avatar:u.avatarUrl,u}));
+  const tg=$("#pctag");if(tg)tg.onclick=async()=>{
+    if((c.tags||[]).length>=20)return toast("Up to 20 people");
+    openPicker({title:"Tag people",search:"Search people",loading:true,note:"They'll be told they're in it.",
+      onSearch:async q=>toTag((await api.mentionable(q)).people||[]),
+      onPick:it=>{if(PCOMPOSE===c&&it.u){(c.tags=c.tags||[]).push(it.u);render()}}});
+    try{const d=await api.mentionable("");if(PICKER){PICKER.items=toTag(d.people||[]);PICKER.loading=false;render()}}catch(e){}
+  };
+  document.querySelectorAll("[data-pctrm]").forEach(b=>b.onclick=()=>{c.tags.splice(+b.dataset.pctrm,1);render()});
+  const lc=$("#pcloc");if(lc)lc.onclick=async e=>{
+    if(e.target.closest("[data-pclocx]")){c.location="";return render()}
+    const v=await uiPrompt("Add location",{placeholder:"City, venue or studio",value:c.location||"",okLabel:"Add"});
+    if(v!=null&&PCOMPOSE===c){c.location=v.replace(/\s+/g," ").trim().slice(0,60);render()}};
+  const co=$("#pccoff");if(co)co.onchange=()=>{c.commentsOff=co.checked};
 
   /* ── caption: grows as you type, @ suggests people ── */
   const ta=$("#pcbody"),mb=$("#pcment");
@@ -188,15 +242,6 @@ function wirePCompose(){
   /* ── share ── */
   const go=$("#pcgo");if(go)go.onclick=async()=>{
     if(!pcCan(c)){if(!c.busy)toast("Add a photo, a video, or write something");return}
-    c.busy=true;render();
-    try{
-      const d=await api.post({channel:c.ch?c.ch.id:"profile",body:c.body.trim(),images:c.imgs,
-        videoUrl:c.vid?c.vid.url:undefined,isWork:true,audioTrackId:c.track?c.track.id:undefined});
-      let sent=0;const pid=d&&d.post&&d.post.id;
-      if(pid)for(const u of c.collabs){try{await api.invite(pid,u.username);sent++}catch(e){}}
-      PCOMPOSE=null;
-      toast("Shared"+(sent?` · ${sent} invite${sent>1?"s":""} sent`:"")+(c.ch?" · also in "+c.ch.label:""));
-      openProfile(myName());
-    }catch(e){c.busy=false;toast(e.message);render()}
+    pqSubmit(c);   // closes now; posts in the background (app-18-post-queue.js)
   };
 }

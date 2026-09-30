@@ -137,14 +137,9 @@ const MYPAGE=()=>!!(PROFILE&&ME&&PROFILE.user&&PROFILE.user.username===ME.userna
    what is safe to throw away. Dirty is derived, never a flag: a flag has to
    be set on every input path and the one you forget is the one that eats
    somebody's post. */
-const pcDirty=()=>!!(PCOMPOSE&&((PCOMPOSE.body||"").trim()||PCOMPOSE.imgs.length||PCOMPOSE.vid||PCOMPOSE.vidbusy||PCOMPOSE.upN||PCOMPOSE.track||(PCOMPOSE.collabs&&PCOMPOSE.collabs.length)||PCOMPOSE.ch));
-async function pcLeave(){
-  if(!PCOMPOSE)return true;
-  if(PCOMPOSE.busy)return false;   // mid-upload — don't yank it out from under the request
-  if(pcDirty()&&!await uiConfirm("Discard your post?","Your draft won't be saved.",
-     {okLabel:"Discard",cancelLabel:"Keep writing",danger:true}))return false;
-  PCOMPOSE=null;return true;
-}
+const pcDirty=()=>!!(PCOMPOSE&&((PCOMPOSE.body||"").trim()||PCOMPOSE.imgs.length||PCOMPOSE.vid||PCOMPOSE.vidbusy||PCOMPOSE.upN||PCOMPOSE.track||(PCOMPOSE.collabs&&PCOMPOSE.collabs.length)||PCOMPOSE.ch
+  ||(PCOMPOSE.tags&&PCOMPOSE.tags.length)||PCOMPOSE.location));
+/* pcLeave (Cancel / back: save a draft, discard, keep editing) lives in app-18-post-queue.js. */
 const myRep=()=>ME?ME.rep:0;
 function needAccount(why){
   pushView("gate");

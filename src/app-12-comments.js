@@ -9,6 +9,7 @@
    and a send could read the wrong box. */
 let CSLOTPO=false;   // true while the opened post (#poov) is being drawn
 function cslotHTML(p){
+  if(p.commentsOff)return p.commentCount?`<div class="px-off dim">Comments are off</div>`:"";
   const here=OPENCOMMENTS===p.id&&(!POSTOPEN||Number(POSTOPEN.id)!==Number(p.id)||CSLOTPO);
   return (p.commentCount&&!here?`<button class="ig-viewc" data-comments="${p.id}">View all ${p.commentCount} comment${p.commentCount==1?"":"s"}</button>`:"")
     +(here?commentsHTML(p):"");
