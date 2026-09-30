@@ -60,6 +60,8 @@ const me = Number(ins.run("tester","Tester","tester@example.com","Producer",'["P
 const friend = Number(ins.run("friend","Friend","friend@example.com","Graphic Designer",'["Graphic Designer"]',h,now).lastInsertRowid);
 const post = db.prepare("INSERT INTO posts (author_id,channel,body,image_url,thumb_url,media_w,media_h,is_work,created_at) VALUES (?,?,?,?,?,?,?,1,?)");
 for (let i = 0; i < 6; i++) post.run(friend, "graphic-design", "Piece " + (i + 1), "/uploads/e2e-p" + i + ".png", "/uploads/e2e-p" + i + ".png", 800, 1000, now - i * 60000);
+// Piece 1 is a six-frame series (a carousel)
+db.prepare("UPDATE posts SET images = ? WHERE body = 'Piece 1'").run(JSON.stringify([0, 1, 2, 3, 4, 5].map((i) => ({ url: "/uploads/e2e-p" + i + ".png", thumb: "/uploads/e2e-p" + i + ".png", w: 800, h: 1000 }))));
 const tr = db.prepare("INSERT INTO tracks (user_id,title,url,artwork_url,description,duration_ms,bytes,created_at) VALUES (?,?,?,?,?,?,?,?)");
 ["Night Drive","Reagent","Paper Mode"].forEach((t, i) => tr.run(friend, t, "/uploads/e2e-t" + i + ".wav", "", "", 3000, 1000, now - i * 1000));
 `);
@@ -199,6 +201,33 @@ console.log("\nMEMBER · PHONE");
     await p.locator(".pick").getByText("Into a lab", { exact: true }).tap(); await p.waitForTimeout(300);
     await p.locator(".pick").getByText(/general/i).first().tap();
     await p.waitForFunction(() => /Shared to/.test(TOASTT || ""), null, { timeout: 4000 });
+    await p.evaluate(() => { POSTOPEN = null; render(); });
+  });
+  await step(d, "carousel: starts on 1, counter follows the swipe, a refresh keeps your slide", async () => {
+    await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
+    const sel = "#sr-grid [data-caro] .caro-t";
+    await p.waitForSelector(sel); await p.locator(sel).first().scrollIntoViewIfNeeded(); await p.waitForTimeout(500);
+    const at = () => p.evaluate((s) => { const t = document.querySelector(s), c = t.closest("[data-caro]");
+      return { i: Math.round(t.scrollLeft / t.clientWidth), n: c.querySelector(".caro-n").textContent }; }, sel);
+    let a = await at(); ok(a.i === 0 && a.n.startsWith("1/"), `didn't start on slide 1 (${JSON.stringify(a)})`);
+    // the layout moving it, with no finger on it, must not leave it on another slide
+    await p.evaluate((s) => { const t = document.querySelector(s); t.scrollLeft = t.clientWidth * 4; }, sel); await p.waitForTimeout(300);
+    a = await at(); ok(a.i === 0 && a.n.startsWith("1/"), `a scroll nobody made moved it to ${JSON.stringify(a)}`);
+    // a swipe: the counter must change while the frames move, not after they stop
+    const seen = await p.evaluate((s) => new Promise((done) => {
+      const t = document.querySelector(s), w = t.clientWidth, n = t.closest("[data-caro]").querySelector(".caro-n"), out = [];
+      t.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })); t.style.scrollSnapType = "none";
+      let x = 0; const tick = () => { x += w / 12; t.scrollLeft = x;
+        requestAnimationFrame(() => { out.push(n.textContent); if (x < w * 2.2) requestAnimationFrame(tick); else { t.style.scrollSnapType = ""; done(out); } }); };
+      tick(); }), sel);
+    ok(seen.slice(0, 10).includes("2/6"), `the counter lagged the swipe (${seen.slice(0, 10).join(" ")})`);
+    await p.waitForTimeout(300); a = await at(); ok(a.n === "3/6" && a.i === 2, `landed wrong (${JSON.stringify(a)})`);
+    await p.evaluate(() => render()); await p.waitForTimeout(400);
+    a = await at(); ok(a.n === "3/6" && a.i === 2, `a refresh threw it back (${JSON.stringify(a)})`);
+    const id = await p.evaluate((s) => document.querySelector(s).closest("[data-caro]").dataset.caro.replace(/^s/, ""), sel);
+    await p.evaluate((id) => openPostById(Number(id)), id); await p.waitForSelector("#poov [data-caro]"); await p.waitForTimeout(400);
+    const o = await p.evaluate(() => { const t = document.querySelector("#poov [data-caro] .caro-t"); return { i: Math.round(t.scrollLeft / t.clientWidth), n: t.closest("[data-caro]").querySelector(".caro-n").textContent }; });
+    ok(o.i === 0 && o.n.startsWith("1/"), `the opened post didn't start on slide 1 (${JSON.stringify(o)})`);
     await p.evaluate(() => { POSTOPEN = null; render(); });
   });
   await step(d, "post creator: add a photo, caption, share", async () => {
