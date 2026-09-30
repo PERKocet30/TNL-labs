@@ -88,7 +88,6 @@ function render(){
     ${POSTOPEN?postOpenHTML():""}
     ${LIGHTBOX?`<div class="lightbox" id="lb"><img src="${esc(LIGHTBOX)}" alt="full size"></div>`:""}
     ${installCardHTML()}
-    ${TOASTT?`<div class="toast">${esc(TOASTT)}</div>`:""}
     ${ENTER?enterHTML():""}`;
   mvAfter(mvb);
   wire();

@@ -6,6 +6,9 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
   if (l.seller_id === req.user.id) return res.status(400).json({ error: "can't buy your own listing" });
   const isLoop = l.kind === "loop";
   const { name, address } = req.body || {};
+  const v = pickVariant(l, req.body?.variant);
+  if (v?.error) return res.status(400).json({ error: v.error });
+  const vLabel = variantLabel(v);
   // Shipping addresses for physical items are collected by Stripe Checkout now
   // (Depop-style) and saved back on payment — so we don't demand them up front.
   // Loops ship nowhere.
@@ -33,16 +36,16 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
 
   const now = Date.now();
   const info = db.prepare(`
-    INSERT INTO orders (listing_id, buyer_id, seller_id, amount_cents, shipping_cents, ship_name, ship_address, created_at, updated_at)
-    VALUES (?,?,?,?,?,?,?,?,?)`).run(l.id, req.user.id, l.seller_id, amount, l.shipping_cents,
+    INSERT INTO orders (listing_id, buyer_id, seller_id, amount_cents, shipping_cents, ship_name, ship_address, variant_id, variant, created_at, updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(l.id, req.user.id, l.seller_id, amount, l.shipping_cents,
     isLoop ? "" : (name || "").trim().slice(0, 80),
-    isLoop ? "" : (address || "").trim().slice(0, 300), now, now);
+    isLoop ? "" : (address || "").trim().slice(0, 300), v?.id || "", vLabel, now, now);
   const orderId = Number(info.lastInsertRowid);
 
   if (PAYMENTS_ENABLED) {
     const base = baseUrl(req);
     const out = await createCheckout({
-      orderId, title: l.title, amountCents: amount, shippingCents: l.shipping_cents,
+      orderId, title: vLabel ? `${l.title} — ${vLabel}` : l.title, amountCents: amount, shippingCents: l.shipping_cents,
       currency: (l.currency || "usd").toLowerCase(),
       successUrl: `${base}/api/market/checkout/done?session_id={CHECKOUT_SESSION_ID}&o=${orderId}`,
       cancelUrl: `${base}/?checkout=cancelled`,
@@ -64,10 +67,8 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
   // two friends could "buy" from each other all day for free. Rep needs
   // evidence, and in arrange mode there is none. Once Stripe is on, a sale
   // costs real money to fake, so it earns rep.
-  const arrLeft = Math.max(0, (l.quantity ?? 1) - 1);
-  if (arrLeft === 0) db.prepare(`UPDATE listings SET quantity=0, status='sold', sold_at=?, updated_at=? WHERE id=?`).run(now, now, l.id);
-  else db.prepare(`UPDATE listings SET quantity=?, updated_at=? WHERE id=?`).run(arrLeft, now, l.id);
-  notify(l.seller_id, req.user.id, "sale", null, `bought "${l.title}" — arrange payment & shipping`);
+  takeStock(l.id, v?.id);
+  notify(l.seller_id, req.user.id, "sale", null, `bought "${l.title}"${vLabel ? ` (${vLabel})` : ""} — arrange payment & shipping`);
   res.json({ orderId, arrange: true });
 });
 
@@ -104,22 +105,17 @@ function settlePaidOrder(order, out) {
   if (out.ship) db.prepare(`UPDATE orders SET ship_name=?, ship_address=? WHERE id=?`)
     .run((out.ship.name || "").slice(0, 80), (out.ship.address || "").slice(0, 300), order.id);
   const l = db.prepare(`SELECT * FROM listings WHERE id=?`).get(order.listing_id);
-  if (l && l.status === "active") {
-    /* One unit sold. The listing only closes when stock runs out. */
-    const left = Math.max(0, (l.quantity ?? 1) - 1);
-    if (left === 0) db.prepare(`UPDATE listings SET quantity=0, status='sold', sold_at=?, updated_at=? WHERE id=?`).run(Date.now(), Date.now(), l.id);
-    else db.prepare(`UPDATE listings SET quantity=?, updated_at=? WHERE id=?`).run(left, Date.now(), l.id);
-  } else if (l) {
-    /* Stock isn't reserved at checkout, so two buyers can pay for the
-       last unit. The money is real either way — the order still settles
-       below — but the seller is told plainly so they refund one from
-       their Stripe dashboard instead of shipping air. */
-    notify(order.seller_id, order.buyer_id, "sale", null,
-      `OVERSOLD: "${l.title}" was already sold out when this payment landed — refund it from your Stripe dashboard`);
-  }
+  const vl = order.variant ? ` (${order.variant})` : "";
+  /* One unit sold (of the size they picked); the listing only closes when
+     stock runs out. Stock isn't reserved at checkout, so two buyers can pay
+     for the last unit. The money is real either way — the order still
+     settles below — but the seller is told plainly so they refund one from
+     their Stripe dashboard instead of shipping air. */
+  if (l && !takeStock(l.id, order.variant_id)) notify(order.seller_id, order.buyer_id, "sale", null,
+    `OVERSOLD: "${l.title}"${vl} was already sold out when this payment landed — refund it from your Stripe dashboard`);
   // A sale is validation with money behind it — the hardest signal to fake.
   awardRep(order.seller_id, "sale_made", order.id);
-  notify(order.seller_id, order.buyer_id, "sale", null, `paid for "${l?.title || "your listing"}" — ship it`);
+  notify(order.seller_id, order.buyer_id, "sale", null, `paid for "${l?.title || "your listing"}"${vl} — ship it`);
 }
 
 /* The redirect was the ONLY confirmation path. A buyer who pays and
@@ -161,6 +157,7 @@ app.get("/api/orders", auth, async (req, res) => {
     id: r.id, amount: r.amount_cents, shipping: r.shipping_cents, status: r.status,
     paid: ["paid","shipped","complete"].includes(r.status), reviewed: reviewed.has(r.id),
     tracking: r.tracking, shipName: r.ship_name, shipAddress: r.ship_address, createdAt: r.created_at,
+    variant: r.variant || "",
     listing: { id: r.listing_id, title: r.title, images: (() => { try { return JSON.parse(r.images || "[]"); } catch { return []; } })() },
     other: { username: r.other_username, displayName: r.other_name, avatarUrl: r.other_avatar || "" },
   });

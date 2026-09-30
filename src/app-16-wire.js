@@ -318,5 +318,5 @@ function wire(){
   });
   const di=$("#dropimg");if(di)di.onclick=()=>{QUEUE=[];render()};
   wireFeed();wireSheet();wireMarket();wirePicker();wirePCompose();wireTrkEdit();wirePostOpen();wireMusAuto();paintPlayer();
-  const lb=$("#lb");if(lb)lb.onclick=()=>{LIGHTBOX=null;render()};
+  wireLightbox();
 }

@@ -548,6 +548,13 @@ if (!lcols.includes("downloads")) db.exec(`ALTER TABLE listings ADD COLUMN downl
    settle (payment confirmed), listing closes when it hits 0. Existing
    rows default to 1 — every current listing stays one-of-one. */
 if (!lcols.includes("quantity")) db.exec(`ALTER TABLE listings ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1`);
+/* Sizes and colours on one listing: [{id, size, colour, qty}]. Empty = a
+   single item, exactly as before. When set, quantity is their sum. The
+   order remembers which one was bought so the seller ships the right one. */
+if (!lcols.includes("variants")) db.exec(`ALTER TABLE listings ADD COLUMN variants TEXT NOT NULL DEFAULT '[]'`);
+const ocols = db.prepare(`PRAGMA table_info(orders)`).all().map((c) => c.name);
+if (!ocols.includes("variant_id")) db.exec(`ALTER TABLE orders ADD COLUMN variant_id TEXT NOT NULL DEFAULT ''`);
+if (!ocols.includes("variant")) db.exec(`ALTER TABLE orders ADD COLUMN variant TEXT NOT NULL DEFAULT ''`);
 
 /* Studio telemetry. Never throws — a metrics call must never be able to
    take down the thing it's measuring. */

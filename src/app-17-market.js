@@ -1,4 +1,5 @@
 function wireMarket(){
+  wireListing();wireSellVariants();
   document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=async()=>{
     if(guest()&&(b.dataset.mv==="sell"||b.dataset.mv==="orders"))
       return needAccount(b.dataset.mv==="sell"?"Join to sell. Everyone in the lab can — and your rate drops as people vouch for you.":"Join to see your orders.");
@@ -38,6 +39,18 @@ function wireMarket(){
   document.querySelectorAll("[data-mlike]").forEach(b=>b.onclick=async e=>{
     e.stopPropagation();
     if(guest())return needAccount("Join to save items.");
+    /* On the listing page the heart answers at once and nothing else
+       moves: no refetch (that counted a view) and no repaint. */
+    const one=MKTVIEW==="detail"&&MKTONE&&String(MKTONE.id)===b.dataset.mlike&&MKTONE;
+    if(one){
+      if(b._busy)return;b._busy=true;
+      const paint=()=>{b.classList.toggle("on",one.likedByMe);b.innerHTML=MK_HEART(one.likedByMe)+`<span>${one.likeCount||""}</span>`};
+      one.likedByMe=!one.likedByMe;one.likeCount=Math.max(0,(one.likeCount||0)+(one.likedByMe?1:-1));paint();
+      try{const r=await api.mktLike(one.id);
+        if(r&&typeof r.liked==="boolean"&&r.liked!==one.likedByMe){one.likedByMe=r.liked;one.likeCount=Math.max(0,one.likeCount+(r.liked?1:-1));paint()}}
+      catch(x){one.likedByMe=!one.likedByMe;one.likeCount=Math.max(0,one.likeCount+(one.likedByMe?1:-1));paint();toast(x.message)}
+      b._busy=false;return;
+    }
     try{await api.mktLike(b.dataset.mlike);
       if(MKTVIEW==="detail"){const d=await api.mktOne(b.dataset.mlike);MKTONE=d.listing;MKTOFFERS=d.offers||[]}
       else await loadMarket();
@@ -134,10 +147,17 @@ function wireMarket(){
       }else{
         if(!SELLIMGS.length)return toast("Add at least one photo");
         if(!(Number(SELLFORM.price)>=1))return toast("Price must be at least $1");
+        if(SELLFORM.hasVariants){
+          const vs=(SELLFORM.variants||[]).filter(v=>v.size||v.colour);
+          if(!vs.length)return toast("Add a size or colour");
+          if(!vs.some(v=>v.qty>0))return toast("Add stock to at least one size");
+        }
       }
       sp._busy=true;sp.disabled=true;sp.textContent=MKTEDIT?"Saving…":"Publishing…";
       try{
         const body={...SELLFORM,images:SELLIMGS,kind:isLoop?"loop":"physical"};
+        body.variants=!isLoop&&SELLFORM.hasVariants?(SELLFORM.variants||[]):[];
+        delete body.hasVariants;
         if(isLoop){
           body.audioUrl=SELLAUDIO;
           body.bpm=SELLFORM.bpm?Number(SELLFORM.bpm):null;
@@ -156,7 +176,7 @@ function wireMarket(){
           if(isLoop){eb.bpm=body.bpm;eb.musicalKey=body.musicalKey;eb.stems=body.stems}
           else{eb.shipping=Number(body.shipping||0);eb.quantity=Number(body.quantity||1);
             eb.brand=body.brand||"";eb.size=body.size||"";eb.condition=body.condition;
-            eb.colour=body.colour||"";eb.shipsFrom=body.shipsFrom||""}
+            eb.colour=body.colour||"";eb.shipsFrom=body.shipsFrom||"";eb.variants=body.variants}
           await api.mktUpdate(id,eb);
           MKTEDIT=null;SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME="";
           MKTVIEW="detail";MKTONE=null;render();
@@ -218,8 +238,12 @@ function wireMarket(){
   document.querySelectorAll("[data-buy]").forEach(b=>b.onclick=async()=>{
     if(b._busy)return;                          // one buy at a time — no double-orders
     if(guest())return needAccount("Join to buy — you'll need an account to track the order.");
+    const st=MKTONE&&String(MKTONE.id)===b.dataset.buy?lvState(MKTONE):null;
+    if(st&&st.need){toast("Pick a "+st.need+" first");
+      const p=$("#lvpick");if(p){p.scrollIntoView({block:"center",behavior:mvReduced()?"auto":"smooth"});p.classList.remove("lv-nudge");void p.offsetWidth;p.classList.add("lv-nudge")}
+      return}
     b._busy=true;b.disabled=true;
-    try{const d=await api.mktBuy(b.dataset.buy,{});   // Stripe Checkout collects shipping — no prompts
+    try{const d=await api.mktBuy(b.dataset.buy,st&&st.match?{variant:st.match.id}:{});   // Stripe Checkout collects shipping — no prompts
       if(d.checkoutUrl){location.href=d.checkoutUrl;return}
       // arrange mode — be blunt, they have NOT paid
       await uiAlert("Reserved — no payment taken", d.sellerNotConnected
@@ -262,7 +286,8 @@ function wireMarket(){
       quantity:l.quantity||1,category:l.category,condition:l.condition,
       brand:l.brand||"",size:l.size||"",colour:l.colour||"",shipsFrom:l.shipsFrom||"",
       acceptsOffers:l.acceptsOffers!==false,status:l.status==="sold"?"sold":"active",
-      bpm:l.bpm||"",musicalKey:l.musicalKey||"",stems:!!l.stems};
+      bpm:l.bpm||"",musicalKey:l.musicalKey||"",stems:!!l.stems,
+      hasVariants:!!(l.variants||[]).length,variants:(l.variants||[]).map(v=>({...v}))};
     MKTVIEW="edit";render()});
   document.querySelectorAll("[data-mdel]").forEach(b=>b.onclick=async()=>{
     if(!(await uiConfirm("Delete this listing?","",{okLabel:"Delete",danger:true})))return;
@@ -307,6 +332,7 @@ function stashSell(){
   if($("#s-from"))SELLFORM.shipsFrom=g("#s-from");
   if($("#s-desc"))SELLFORM.description=g("#s-desc");
   if($("#s-offers"))SELLFORM.acceptsOffers=$("#s-offers").checked;
+  pvStash();
 }
 async function loadMarket(){
   const qs=new URLSearchParams();

@@ -9,7 +9,7 @@ const src = readFileSync(join(ROOT, "public/index.html"), "utf8");
 const fn = (name) => { const i = src.indexOf("function " + name + "("); const j = src.indexOf("\nfunction ", i + 1); return src.slice(i, j); };
 
 console.log("\nLISTING EDITOR — SECTIONS");
-const sell = fn("sellHTML");
+const sell = fn("sellHTML") + fn("pvHTML");   // Inventory (sizes & colours) is its own part since 2026-09-30
 for (const s of ["Media", "Pricing", "Inventory", "Shipping", "Details", "Status"]) t("has a " + s + " card", sell.includes(`<div class="pf-sec">${s}</div>`));
 t("one Publish / Save button", sell.includes('id="s-post">${MKTEDIT?"Save":"Publish"}'));
 t("sound listings keep their own section", sell.includes('<div class="pf-sec">Sound</div>'));

@@ -5,9 +5,11 @@
 .pc-ttl{font-size:16px;font-weight:700}
 .pc-share{background:var(--tx);color:var(--bg);border:0;border-radius:999px;padding:8px 18px;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
 .pc-share:disabled{opacity:.3;cursor:default}
-.pc-body{overflow-y:auto;display:flex;flex-direction:column;padding-bottom:24px}
-.pc-body>*{flex-shrink:0}
-.pc-pick{margin:14px 16px 4px;aspect-ratio:4/3;border:1px dashed var(--line2);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--tx2);cursor:pointer;text-align:center}
+/* Never sideways: on iPhone the picker's aspect-ratio could size it wider
+   than the screen, and the whole form slid left under your thumb. */
+.pc-body{overflow-y:auto;overflow-x:hidden;overscroll-behavior-x:none;display:flex;flex-direction:column;padding-bottom:24px}
+.pc-body>*{flex-shrink:0;max-width:100%;box-sizing:border-box}
+.pc-pick{margin:14px 16px 4px;height:min(62vw,340px);max-width:calc(100% - 32px);box-sizing:border-box;border:1px dashed var(--line2);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--tx2);cursor:pointer;text-align:center}
 .pc-pick b{font-size:16px;color:var(--tx)}
 .pc-pick span{font-size:13px;color:var(--dim)}
 .pc-stage{position:relative;background:var(--el);border-bottom:1px solid var(--line)}
