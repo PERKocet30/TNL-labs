@@ -95,7 +95,7 @@ function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
       <p class="pf-p">Connect Stripe once — it pays you directly.</p>
       <button class="btn green" id="payconnect2">${ME.hasStripe?"Finish setup":"Connect Stripe"}</button></div></div>`;
   const noShip=!Number(f.shipping);
-  return `<div class="scroll pf">${head}
+  return `<div class="scroll pf">${head}${f._restored&&!MKTEDIT?`<div class="sdraft">Picked up where you left off<button type="button" id="sdraftx">Start over</button></div>`:""}
   <div class="pf-body">
     <section class="pf-card">
       <div class="pf-sec">Media</div>
@@ -201,7 +201,7 @@ function ordersHTML(){
   return `<div class="scroll">
     <div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button></div>
     <div class="page-head"><div class="mono dim">ORDERS</div><h2 class="page-h">${ORDTAB==="buying"?"Bought":"Sold"}</h2></div>
-    ${ORDTAB==="selling"?`<div style="padding:0 20px">${payoutBannerHTML()}</div>`:""}
+    ${ORDTAB==="selling"?`<div style="padding:0 20px">${payoutBannerHTML()}${shopStatsHTML()}</div>`:""}
     <div class="ptabs" style="margin:0 20px 12px">
       <button class="ptab ${ORDTAB==="buying"?"on":""}" data-ot="buying">BUYING ${ORDERS?ORDERS.buying.length:""}</button>
       <button class="ptab ${ORDTAB==="selling"?"on":""}" data-ot="selling">SELLING ${ORDERS?ORDERS.selling.length:""}</button>

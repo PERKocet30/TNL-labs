@@ -170,12 +170,13 @@ function marketHTML(){
   if(MKTVIEW==="orders")return ordersHTML();
   if(MKTVIEW==="saved")return savedHTML();
   if(MKTVIEW==="detail")return detailHTML();
+  if(MKTVIEW==="bag")return bagHTML();
   const afCount=[MKTFILT.size,MKTFILT.condition,MKTFILT.range,MKTFILT.kind,(MKTFILT.sort&&MKTFILT.sort!=="new")?MKTFILT.sort:""].filter(Boolean).length;
   return `<div class="scroll" id="mktscroll">
     <div class="shop-head">
       <div class="shop-top">
         <h2 class="shop-h">Market</h2>
-        <button class="shop-sell" data-mv="sell">Sell</button>
+        <div class="shop-acts">${bagBtnHTML()}<button class="shop-sell" data-mv="sell">Sell</button></div>
       </div>
       <div class="shop-search">
         <label class="shop-qwrap">${UI_IC.search}<input class="in shop-q" id="mktq" aria-label="Search the market" placeholder="Search items, brands…" value="${esc(MKTFILT.q||"")}"></label>
@@ -222,6 +223,7 @@ function marketHTML(){
     <div class="mkt-grid" id="mktgrid">${!MKT?`${skel("tiles")}`
       :!MKT.length?`<div class="empty">Nothing listed yet.</div>`
       :MKT.map(mktCardHTML).join("")}</div>
+    <div id="mktrecent">${recentHTML()}</div>
   </div>`}
 
 function mktCardHTML(l){
@@ -238,13 +240,13 @@ function mktCardHTML(l){
     </div>
   </button>`;return `<div class="mcard" data-mopen="${l.id}">
   <div class="mimgwrap"><img class="mimg" src="${esc(l.images[0]||"")}" alt="${esc(l.title)}" loading="lazy">
-    ${l.status==="sold"?`<div class="soldtag">SOLD</div>`:""}
+    ${l.status==="sold"?`<div class="soldtag">SOLD</div>`:l.wasPrice?`<span class="mdrop">Price drop</span>`:""}
     ${(()=>{const s=(l.variants||[]).length?[...new Set(l.variants.filter(v=>v.qty>0&&v.size).map(v=>v.size))]:[l.size].filter(Boolean);
       return s.length?`<span class="msize">${esc(s.length>3?s[0]+"–"+s[s.length-1]:s.join(" · "))}</span>`:""})()}
     <button class="mlike ${l.likedByMe?"on":""}" data-mlike="${l.id}">${MK_HEART(l.likedByMe)}${l.likeCount?" "+l.likeCount:""}</button>
   </div>
   <div class="mbody">
-    <div class="mprice">${money(l.price)}</div>
+    <div class="mprice">${money(l.price)}${priceHTML(l)}</div>
     <div class="mtitle">${esc(l.title)}</div>
   </div>
 </div>`}

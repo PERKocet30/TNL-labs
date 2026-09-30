@@ -409,6 +409,73 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".ordvar", { hasText: "M" }).count() > 0, "the order row doesn't show the size");
     await p.evaluate(() => { TAB = "showroom"; MKTVIEW = "browse"; render(); });
   });
+  /* ---- the bag, saved, recently viewed, price drops, seller tools (2026-09-30) ---- */
+  await step(d, "bag: two things from one seller, combined shipping, one checkout reserves both", async () => {
+    const { token: ft } = await login("friend");
+    const cap = (await api("/api/market", ft, { title: "Cap", price: 30, shipping: 12, category: "Accessories", images: ["/uploads/e2e-p2.png"] })).id;
+    await api("/api/market/" + dropId, ft, undefined);   // (a view)
+    await toMarket();
+    await p.locator(`[data-mopen="${dropId}"]`).first().tap(); await p.waitForSelector(".lbar-bag");
+    await p.locator(".lbar-bag").tap();
+    ok(await p.evaluate(() => bagList().length) === 0, "added without a size");
+    await p.locator('[data-lvs="L"]').tap(); await p.locator(".lbar-bag").tap();
+    await toMarket();
+    await p.locator(`[data-mopen="${cap}"]`).first().tap(); await p.waitForSelector(".lbar-bag");
+    await p.locator(".lbar-bag").tap();
+    ok(await p.evaluate(() => bagList().length) === 2, "bag doesn't have 2");
+    await toMarket();
+    ok((await p.locator(".shop-bag [data-bagn]").textContent()) === "2", "no 2 on the bag button");
+    await p.locator(".shop-bag").tap();
+    await p.waitForSelector(".bag-g");
+    const tot = await p.locator(".bag-tot b").textContent();
+    ok(tot.replace(/\s/g, "") === "$92.00", "total should be 50 + 30 + 12 shipping (combined): " + tot);
+    const before = (await api("/api/orders", token)).buying.length;
+    await p.locator(".bag-co").tap();
+    await p.locator(".ui-ok").tap({ timeout: 6000 });
+    await p.waitForFunction(() => MKTVIEW === "orders" && ORDERS, null, { timeout: 6000 });
+    const b = (await api("/api/orders", token)).buying;
+    ok(b.length === before + 2, `orders ${before} → ${b.length}`);
+    ok(await p.evaluate(() => bagList().length) === 0, "bag not emptied");
+    await p.evaluate(() => { MKTVIEW = "browse"; render(); });
+  });
+  await step(d, "Saved works (it used to say 'no listing'); Recently viewed shows on the Market", async () => {
+    await p.evaluate(async () => { MKTRECENT = null; MKT = null; });
+    await toMarket();
+    await p.waitForSelector("#mktrecent .simcard", { timeout: 5000 });
+    ok(await p.locator(`#mktrecent [data-mopen="${dropId}"]`).count() === 1, "the tee isn't in Recently viewed");
+    await p.locator('.shop-link[data-mv="saved"]').tap();
+    await p.waitForSelector(".mkt-grid .mcard", { timeout: 5000 });
+    ok(await p.locator(`.mkt-grid [data-mopen="${dropId}"]`).count() === 1, "the saved tee isn't on Saved");
+  });
+  await step(d, "price drop: the seller cuts it, you're told, it's tagged with the old price", async () => {
+    const { token: ft } = await login("friend");
+    const r = await fetch(B + "/api/market/" + dropId, { method: "PATCH", headers: { "content-type": "application/json", authorization: "Bearer " + ft }, body: JSON.stringify({ price: 40 }) });
+    ok(r.ok, "patch failed");
+    ok((await api("/api/notifications", token)).notifications.some((n) => n.kind === "price_drop" && /now \$40\.00 \(was \$50\.00\)/.test(n.body)), "no price-drop notification");
+    await p.evaluate(() => { MKT = null; }); await toMarket();
+    const card = p.locator(`.mkt-grid [data-mopen="${dropId}"]`).first();
+    ok(await card.locator(".mdrop").count() === 1 && /\$50\.00/.test(await card.locator(".mwas").textContent()), "card isn't tagged");
+  });
+  await step(d, "seller tools: shop stats on Selling, Duplicate prefills a new listing, the sell form keeps a draft", async () => {
+    await p.locator('.shop-link[data-mv="orders"]').tap();
+    await p.locator('[data-ot="selling"]').tap();
+    await p.waitForFunction(() => SHOPSTATS && document.querySelectorAll("#shopstats .sst b").length === 6, null, { timeout: 5000 });
+    const mine = (await api("/api/market?seller=tester", token)).listings[0];
+    await p.evaluate(async (id) => { MKTVIEW = "detail"; const d = await api.mktOne(id); MKTONE = d.listing; MKTOFFERS = d.offers || []; MKTSELLER = d.seller; MKTSIMILAR = []; render(); }, mine.id);
+    await p.locator("[data-mdup]").tap();
+    await p.waitForSelector("#s-title");
+    ok(await p.evaluate(() => MKTVIEW === "sell" && !MKTEDIT && SELLFORM.hasVariants && SELLFORM.variants.every((v) => !v.id)), "duplicate isn't a fresh listing");
+    ok((await p.locator("#s-title").inputValue()) === mine.title, "title not copied");
+    await p.locator("#s-title").fill("Half-made listing"); await p.locator("#s-title").blur();
+    await p.reload(); await throughDoor(p);                      // the app was closed and opened again
+    await p.waitForFunction(() => typeof ME !== "undefined" && ME);
+    await toMarket();
+    await p.locator('[data-mv="sell"]').first().tap();
+    ok((await p.locator("#s-title").inputValue()) === "Half-made listing" && await p.locator(".sdraft").count() === 1, "draft not restored");
+    await p.locator("#sdraftx").tap();
+    ok((await p.locator("#s-title").inputValue()) === "", "Start over didn't clear it");
+    await p.evaluate(() => { MKTVIEW = "browse"; SELLFORM = null; TAB = "showroom"; render(); });
+  });
   /* ---- the post creator v3 (2026-09-30) ---- */
   const openCreator = async () => { await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcfile", { state: "attached" }); };
   const myPosts = async () => (await api("/api/users/tester", token)).posts || [];

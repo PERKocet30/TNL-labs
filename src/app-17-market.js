@@ -1,5 +1,5 @@
 function wireMarket(){
-  wireListing();wireSellVariants();
+  wireListing();wireSellVariants();wireBag();
   document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=async()=>{
     if(guest()&&(b.dataset.mv==="sell"||b.dataset.mv==="orders"))
       return needAccount(b.dataset.mv==="sell"?"Join to sell. Everyone in the lab can — and your rate drops as people vouch for you.":"Join to see your orders.");
@@ -8,8 +8,9 @@ function wireMarket(){
        seller posts a duplicate without noticing. */
     if(MKTEDIT){MKTEDIT=null;SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME=""}
     MKTVIEW=b.dataset.mv;
-    if(MKTVIEW==="sell"&&!SELLFORM)SELLFORM={category:"Tops",condition:"Good",acceptsOffers:true};
-    if(MKTVIEW==="orders"){ORDERS=null;render();try{ORDERS=await api.orders()}catch(e){toast(e.message)}}
+    if(MKTVIEW==="sell"&&!SELLFORM&&!sdRestore())SELLFORM={category:"Tops",condition:"Good",acceptsOffers:true};
+    if(MKTVIEW==="bag")return bagLoad();
+    if(MKTVIEW==="orders"){ORDERS=null;render();shopStatsLoad();try{ORDERS=await api.orders()}catch(e){toast(e.message)}}
     if(MKTVIEW==="saved"){
       if(guest()){MKTVIEW="browse";return needAccount("Join to save items you want.")}
       SAVED=null;render();try{SAVED=(await api.saved()).listings}catch(e){toast(e.message)}}
@@ -30,7 +31,7 @@ function wireMarket(){
   document.querySelectorAll("[data-mopen]").forEach(el=>el.onclick=async e=>{
     if(e.target.closest("[data-mlike]"))return;
     PROFILE=null;TAB="market";           // a shop card lives on profiles too — land in the market
-    MKTVIEW="detail";MKTONE=null;render();
+    MKTVIEW="detail";MKTONE=null;LPICK={id:0,size:"",colour:""};render();
     try{const d=await api.mktOne(el.dataset.mopen);
       MKTONE=d.listing;MKTOFFERS=d.offers||[];MKTSELLER=d.seller||null;MKTSIMILAR=d.similar||[];
       pushView("listing",d.listing.id);render();
@@ -186,7 +187,7 @@ function wireMarket(){
         }
         const d=await api.mktCreate(body);
         const free=isLoop&&Number(SELLFORM.price||0)===0;
-        SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME="";
+        SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME="";sdClear();
         MKTVIEW="detail";MKTONE=null;render();
         const one=await api.mktOne(d.id);
         MKTONE=one.listing;MKTOFFERS=one.offers||[];MKTSELLER=one.seller||null;MKTSIMILAR=one.similar||[];
@@ -332,14 +333,17 @@ function stashSell(){
   if($("#s-from"))SELLFORM.shipsFrom=g("#s-from");
   if($("#s-desc"))SELLFORM.description=g("#s-desc");
   if($("#s-offers"))SELLFORM.acceptsOffers=$("#s-offers").checked;
-  pvStash();
+  pvStash();sdSave();
 }
 async function loadMarket(){
   const qs=new URLSearchParams();
   for(const [k,v] of Object.entries(MKTFILT))if(v)qs.set(k,v);
-  try{const d=await api.mkt(qs.toString());MKT=d.listings;
-    const g=$("#mktgrid");
-    if(g&&MKTVIEW==="browse"){g.innerHTML=MKT.length?MKT.map(mktCardHTML).join(""):`<div class="empty">Nothing matches.</div>`;wireMarket()}
+  /* Recently viewed arrives with the first grid, so nothing moves later. */
+  const rec=ME&&!MKTRECENT?api.recentlyViewed().then(d=>d.listings).catch(()=>[]):null;
+  try{const d=await api.mkt(qs.toString());MKT=d.listings;if(rec)MKTRECENT=await rec;
+    const g=$("#mktgrid"),r=$("#mktrecent");
+    if(g&&MKTVIEW==="browse"){g.innerHTML=MKT.length?MKT.map(mktCardHTML).join(""):`<div class="empty">Nothing matches.</div>`;
+      if(r&&rec)r.innerHTML=recentHTML();wireMarket()}
   }catch(e){}
 }
 

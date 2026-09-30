@@ -129,7 +129,7 @@ function topHTML(){
   </div>`}
 
 function notifPanelHTML(){
-  const label=n=>({like:"liked your work",comment:"commented",collab_invite:"wants to collab",collab_accept:"accepted your collab",follow:"followed you",share:"shared your work",dm:"messaged you",reply:"replied to you",mention:"mentioned you",tag:"tagged you in a post"})[n.kind]||n.kind;
+  const label=n=>({like:"liked your work",comment:"commented",collab_invite:"wants to collab",collab_accept:"accepted your collab",follow:"followed you",share:"shared your work",dm:"messaged you",reply:"replied to you",mention:"mentioned you",tag:"tagged you in a post",price_drop:"dropped a price you saved"})[n.kind]||n.kind;
   return `<div class="sheet" id="npbg"><div class="sheetc">
     <div class="sheeth"><div><h2>Notifications</h2></div><button class="x" id="npx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     ${!NOTIFS?`${skel()}`:!NOTIFS.length?`<div class="empty">Nothing yet.<br>Post work and it starts here.</div>`:

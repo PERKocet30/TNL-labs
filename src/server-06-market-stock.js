@@ -57,6 +57,25 @@ function takeStock(listingId, variantId) {
   return true;
 }
 
+/* A seller changed the price. A cut tags the listing "Price dropped" for
+   two weeks and tells everyone who saved it; a rise clears the tag. The
+   "was" price is the highest in the current run of cuts. */
+const DROP_MS = 14 * 86400000;
+const usd = (c) => "$" + (c / 100).toFixed(2);
+function priceChanged(l, cents, actorId) {
+  if (cents === l.price_cents || l.kind === "loop") return;
+  if (cents > l.price_cents) {
+    db.prepare(`UPDATE listings SET prev_price_cents=NULL, price_dropped_at=NULL WHERE id=?`).run(l.id);
+    return;
+  }
+  const running = l.prev_price_cents && Date.now() - (l.price_dropped_at || 0) < DROP_MS ? l.prev_price_cents : 0;
+  db.prepare(`UPDATE listings SET prev_price_cents=?, price_dropped_at=? WHERE id=?`).run(Math.max(l.price_cents, running), Date.now(), l.id);
+  if (l.status !== "active") return;
+  for (const r of db.prepare(`SELECT user_id FROM listing_likes WHERE listing_id=?`).all(l.id))
+    notify(r.user_id, actorId, "price_drop", null, `"${l.title}" is now ${usd(cents)} (was ${usd(l.price_cents)})`);
+}
+const priceDrop = (r) => r.prev_price_cents > r.price_cents && Date.now() - (r.price_dropped_at || 0) < DROP_MS ? r.prev_price_cents : null;
+
 /* Market search by size: the listing's own size, or a variant that's still
    in stock in that size. */
 const SIZE_MATCH = `(l.size = ? OR EXISTS (SELECT 1 FROM json_each(l.variants) v
