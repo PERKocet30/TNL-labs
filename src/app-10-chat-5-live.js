@@ -15,7 +15,7 @@ async function startStream(){
   es.onerror=()=>{if(es){es.close();es=null}retryStream()};
   const on=(t,fn)=>es.addEventListener(t,e=>{try{fn(JSON.parse(e.data))}catch(x){}});
   const refresh=()=>{if(!ME)return;if(TAB==="labs")loadFeed(true);if(TAB==="showroom")loadShowroom(true)};
-  on("comment",d=>{if(OPENCOMMENTS===d.postId)api.comments(d.postId).then(r=>{COMMENTS=r.comments;render()})});
+  on("comment",d=>{if(OPENCOMMENTS===d.postId)api.comments(d.postId).then(r=>{if(OPENCOMMENTS===d.postId){COMMENTS=r.comments;paintComments()}})});
   on("like",d=>{if(d&&d.postId!=null&&!LIKING[String(d.postId)]&&typeof d.likeCount==="number")setLike(String(d.postId),null,d.likeCount)});
   ["collab-invite","collab-accepted"].forEach(t=>on(t,refresh));
   on("post",p=>{if(TAB==="labs"&&CH&&p.channel===CH.id){clearTyping("lab:"+CH.id,p.author&&p.author.username);loadFeed(true)}

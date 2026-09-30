@@ -289,6 +289,55 @@ console.log("\nMEMBER · PHONE");
     await img.click(); await p.waitForFunction(() => PROFILE, null, { timeout: 2000 });
     await p.evaluate(() => { PROFILE = null; render(); });
   });
+  /* The recording of 2026-09-30: tap comment mid-feed → the whole app
+     repainted, pictures collapsed, the Showroom reshuffled, the feed jumped. */
+  const underThumb = () => p.evaluate(() => { const e = document.elementFromPoint(innerWidth / 2, innerHeight * 0.3);
+    const c = e && e.closest(".sr-card"); const b = c && c.querySelector("[data-like]"); return b ? b.dataset.like : null; });
+  await step(d, "comment opens in place: the feed doesn't rebuild or jump, and a comment posts", async () => {
+    await p.evaluate(() => { TAB = "showroom"; PROFILE = null; POSTOPEN = null; OPENCOMMENTS = null; render(); });
+    await p.waitForSelector("#sr-grid .sr-card");
+    const btn = p.locator("#sr-grid [data-comments]").nth(3);
+    await btn.scrollIntoViewIfNeeded(); await p.waitForTimeout(200);
+    await p.evaluate(() => document.querySelectorAll("#sr-grid .sr-card").forEach((c) => (c.dataset.mark = "keep")));
+    const y = await srTop(), who = await underThumb();
+    await btn.tap();
+    await p.waitForSelector("#sr-grid #cdraft", { timeout: 4000 }); await p.waitForTimeout(400);
+    ok(await p.evaluate(() => document.querySelectorAll('#sr-grid .sr-card:not([data-mark="keep"])').length) === 0, "cards were rebuilt");
+    ok(await underThumb() === who, `the card under your thumb changed (${who} → ${await underThumb()})`);
+    ok(Math.abs((await srTop()) - y) < 40, `the feed jumped: ${y} → ${await srTop()}`);
+    await p.locator("#cdraft").fill("clean comment");
+    await p.locator("#csend").tap();
+    await p.waitForFunction(() => [...document.querySelectorAll("#sr-grid .ctext")].some((e) => /clean comment/.test(e.textContent)), null, { timeout: 5000 });
+    ok(await p.evaluate(() => document.querySelectorAll('#sr-grid .sr-card:not([data-mark="keep"])').length) === 0, "sending rebuilt the cards");
+    ok(await underThumb() === who, "sending moved the feed");
+    await btn.tap(); await p.waitForTimeout(300);
+    ok(!(await p.locator("#sr-grid #cdraft").count()), "tapping comment again didn't close it");
+    ok(await p.locator("#sr-grid .ig-viewc").filter({ hasText: /View all \d+ comment/ }).count() > 0, "no View all after closing");
+  });
+  await step(d, "a background refresh that re-ranks the Showroom doesn't move the feed", async () => {
+    const y = await srTop(), who = await underThumb();
+    ok(who, "no card under the thumb");
+    await p.evaluate(() => { window.__showroom = api.showroom; api.showroom = async () => { const d = await window.__showroom(); return { ...d, posts: [...d.posts].reverse() }; }; });
+    await p.evaluate(() => loadShowroom(true)); await p.waitForTimeout(700);
+    await p.evaluate(() => { api.showroom = window.__showroom; });   // the real ranking again
+    ok(await underThumb() === who && Math.abs((await srTop()) - y) < 3, `moved: ${who}@${y} → ${await underThumb()}@${await srTop()}`);
+    ok(await p.evaluate(() => document.querySelectorAll('#sr-grid .sr-card:not([data-mark="keep"])').length) === 0, "the grid was rebuilt");
+    ok(await p.locator("#sr-new").isHidden(), "a reorder alone shouldn't offer new work");
+  });
+  await step(d, "new work waits behind New work; tapping it shows it at the top", async () => {
+    const { token: ft } = await login("friend");
+    const made = await api("/api/posts", ft, { channel: "graphic-design", body: "Fresh one", imageUrl: "/uploads/e2e-p2.png", thumbUrl: "/uploads/e2e-p2.png", mediaW: 800, mediaH: 1000, isWork: true });
+    const newId = String((made.post || made).id);
+    const y = await srTop(), who = await underThumb();
+    await p.evaluate(() => loadShowroom(true)); await p.waitForTimeout(700);
+    ok(await p.locator("#sr-new").isVisible(), "no New work pill");
+    ok(await underThumb() === who && Math.abs((await srTop()) - y) < 3, "new work pushed the feed");
+    ok(!(await p.locator('#sr-grid [data-like="' + newId + '"]').count()), "new work slipped in under you");
+    await p.locator("#sr-new").tap(); await p.waitForTimeout(900);
+    ok((await srTop()) === 0, "didn't go to the top");
+    ok(await p.locator('#sr-grid [data-like="' + newId + '"]').count() === 1, "the new work isn't there");
+    ok(await p.locator("#sr-new").isHidden(), "the pill stayed");
+  });
   await step(d, "post creator: add a photo, caption, share", async () => {
     const before = (await api("/api/users/tester", token)).posts?.length ?? 0;
     await p.locator('.nav [data-tab="post"]').tap();

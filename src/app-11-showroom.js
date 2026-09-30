@@ -1,4 +1,5 @@
 function showroomHTML(){return `<div class="scroll" id="showroom">
+  <div class="sr-newwrap"><button class="sr-new" id="sr-new"${SRNEW?"":" hidden"}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>New work</button></div>
   ${guest()?`<section class="whatis"><p class="wi-tag">Social media by creatives, for creatives.</p></section>`:""}
 
   <div class="sr-builders" id="sr-builders">${srBuildersHTML()}</div>
@@ -17,7 +18,7 @@ function srCardHTML(p){
       </div>
     </div>
     ${(p.images&&p.images.length>1)?`<div class="caro" data-caro="s${p.id}">
-      <div class="caro-t">${p.images.map(im=>`<img class="caro-i" src="${esc(im.thumb||im.url)}" data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async">`).join("")}</div>
+      <div class="caro-t">${p.images.map(im=>`<img class="caro-i" src="${esc(im.thumb||im.url)}" data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async" style="aspect-ratio:${im.w&&im.h?im.w+"/"+im.h:"4/5"}">`).join("")}</div>
       <div class="caro-d">${p.images.map((_,i)=>`<span class="${i===0?"on":""}"></span>`).join("")}</div>
       <span class="caro-n mono">1/${p.images.length}</span>
     </div>`
@@ -40,15 +41,19 @@ function srCardHTML(p){
       </div>
       ${accepted.length?`<div class="sr-collab">${IG_COLLAB_SM} Built with ${accepted.map(c=>esc(c.display_name||c.username)).join(" + ")}</div>`:""}
       ${p.body?`<div class="sr-body"><b>${esc(p.author.username)}</b> ${rich(p.body)}</div>`:""}
-      ${p.commentCount&&OPENCOMMENTS!==p.id?`<button class="ig-viewc" data-comments="${p.id}">View all ${p.commentCount} comment${p.commentCount==1?"":"s"}</button>`:""}
-      ${OPENCOMMENTS===p.id?commentsHTML(p):""}
+      <div class="cslot" data-cslot="${p.id}">${cslotHTML(p)}</div>
     </div>
   </div>`}
 
 /* Kept between paints: render() rebuilds the page, and the row used to
    vanish until the next fetch. */
-let SRB=[];
+let SRB=[], SRBLOADED=false;
 function srBuildersHTML(){
+  /* Until the list has arrived, hold its exact space with placeholder cards
+     built from the same parts, so the feed below doesn't drop ~150px when
+     the real strip lands (it did, on every first load). */
+  if(!SRBLOADED)return `<div class="mono sr-feedhead" style="padding-left:0"><span>Who's building</span></div>
+    <div class="brow" aria-hidden="true">${[0,1,2].map(()=>`<div class="bcard"><div class="av sk-shim"></div><div class="bname">&nbsp;</div><div class="mono dim">&nbsp;</div></div>`).join("")}</div>`;
   if(!SRB.length)return "";
   return `<div class="mono sr-feedhead" style="padding-left:0"><span>Who's building</span></div>
     <div class="brow">${SRB.map(x=>`<button class="bcard" data-u="${esc(x.username)}">
@@ -56,18 +61,62 @@ function srBuildersHTML(){
       <div class="bname">${esc(x.display_name)}</div>
       <div class="mono dim">${esc((x.role||"").charAt(0).toUpperCase()+(x.role||"").slice(1))}</div>
     </button>`).join("")}</div>`}
+/* SCROLL-SAFE REFRESH — 2026-09-30. The Showroom re-ranks on every fetch
+   (age, and work you've responded to sinks), and this used to rebuild the
+   whole grid in the new order every time anything repainted — the page
+   reshuffled under your thumb mid-scroll. Once the grid is on screen it now
+   keeps its order: numbers update in place, a post that's gone is dropped,
+   and genuinely new work waits behind the "New work" pill. Tapping it takes
+   the fresh order and glides to the top. */
+let SRNEW=null, SRBNEXT=null;
+/* "Who's building" sits above the feed: if it appears or disappears under a
+   reader, everything below jumps by its height. So a background refresh
+   only swaps the people in it when the strip stays the same size; a change
+   in size waits for the next full refresh (the New work pill, a first paint). */
+function srBuilders(list,fresh){
+  const bb=$("#sr-builders");
+  if(fresh||!bb||(!!SRB.length)===(!!list.length)||!SRBLOADED){SRB=list;SRBLOADED=true;SRBNEXT=null;if(bb)bb.innerHTML=srBuildersHTML()}
+  else SRBNEXT=list;
+}
+function srPaint(){
+  const g=$("#sr-grid");if(!g)return;
+  g.innerHTML=SRPOSTS.length?SRPOSTS.map(srCardHTML).join("")
+    :`<div class="empty">No work posted yet.<br><br>Be the first — post a piece and it lands here.</div>`;
+  wireFeed();
+}
+function srMerge(fresh){
+  const by=new Map(fresh.map(p=>[p.id,p]));
+  for(const p of SRPOSTS)if(!by.has(p.id)){const b=document.querySelector('#sr-grid [data-like="'+p.id+'"]');const c=b&&b.closest(".sr-card");if(c)c.remove()}
+  SRPOSTS=SRPOSTS.filter(p=>by.has(p.id)).map(p=>{
+    const n=by.get(p.id);
+    if(LIKING[String(p.id)]){n.likedByMe=p.likedByMe;n.likeCount=p.likeCount}   // a tap in flight wins
+    return n;
+  });
+  for(const p of SRPOSTS){
+    if(!LIKING[String(p.id)])setLike(String(p.id),!!p.likedByMe,p.likeCount||0);
+    document.querySelectorAll('#sr-grid [data-share="'+p.id+'"] .igact-n').forEach(n=>{n.textContent=p.shareCount||""});
+  }
+  const have=new Set(SRPOSTS.map(p=>p.id));
+  if(fresh.some(p=>!have.has(p.id))){SRNEW=fresh;const b=$("#sr-new");if(b)b.hidden=false}
+}
+document.addEventListener("click",e=>{
+  if(!(e.target&&e.target.closest&&e.target.closest("#sr-new")))return;
+  if(SRNEW){SRPOSTS=SRNEW;SRNEW=null}
+  const b=$("#sr-new");if(b)b.hidden=true;
+  if(SRBNEXT)srBuilders(SRBNEXT,true);
+  srPaint();
+  const s=$("#showroom");if(s)s.scrollTo({top:0,behavior:mvReduced()?"auto":"smooth"});
+});
 async function loadShowroom(force){
   if(!force && SRAT && Date.now()-SRAT<8000 && SRPOSTS.length) return; // grid paints from cache
   SRAT=Date.now();
   try{
     const [d,b]=await Promise.all([api.showroom(),api.builders()]);
-    SRPOSTS=d.posts||[];
-    const g=$("#sr-grid");
-    if(g)g.innerHTML=d.posts.length?d.posts.map(srCardHTML).join("")
-      :`<div class="empty">No work posted yet.<br><br>Be the first — post a piece and it lands here.</div>`;
-    SRB=b.builders||[];
-    const bb=$("#sr-builders");if(bb)bb.innerHTML=srBuildersHTML();
-    wireFeed();
+    const fresh=d.posts||[];
+    const g=$("#sr-grid"), shown=!!(g&&SRPOSTS.length&&g.querySelector(".sr-card"));
+    if(shown)srMerge(fresh);   // on screen: never reshuffle
+    else{SRPOSTS=fresh;srPaint()}
+    srBuilders(b.builders||[],!shown);
   }catch(e){/* offline */}
 }
 
