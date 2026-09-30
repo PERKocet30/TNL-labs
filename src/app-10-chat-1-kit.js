@@ -136,6 +136,7 @@ function paintLayer(){
   paintPlayer();   // a chat covers the page: lab music and post sound pause (musicScope)
   wireLayer();
   chatRestore(keep);
+  mvLayer();
   syncChatHistory();
 }
 /* Back / swipe-back. While anything chat is open we hold exactly one

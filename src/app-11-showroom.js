@@ -3,7 +3,7 @@ function showroomHTML(){return `<div class="scroll" id="showroom">
 
   <div class="sr-builders" id="sr-builders">${srBuildersHTML()}</div>
 
-  <div class="sr-grid" id="sr-grid">${SRPOSTS.length?SRPOSTS.map(srCardHTML).join(""):`<div class="empty">Loading the work…</div>`}</div>
+  <div class="sr-grid" id="sr-grid">${SRPOSTS.length?SRPOSTS.map(srCardHTML).join(""):skel("cards")}</div>
 </div>`}
 
 function srCardHTML(p){

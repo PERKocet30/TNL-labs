@@ -49,7 +49,6 @@ function initHistory(){
   });
 }
 
-let RVKEY="";
 /* COMPUTER LAYOUT v1.0 — 2026-09-29. From 1024px wide the top bar and the
    bottom nav move into one left sidebar (styles: app-05-styles-wide.css).
    Phones get exactly the markup they always had. Crossing the line (a window
@@ -62,12 +61,10 @@ function render(){
   // Guests see the app. Only the explicit door shows the sign-up form.
   if(GATE){app.innerHTML=gateHTML();wireGate();return}
   GFLOW=null; // the gate closed from somewhere else — next open starts fresh
-  /* A repaint rebuilds every scroller, which used to throw you to the top of
-     the feed whenever a menu opened (share, invite, …). Same screen → same
-     place: scroll positions are put back by id unless the view changed. */
-  const vkey=[TAB,LAB&&LAB.id,CH&&CH.id,ROOMOPEN,PROFILE&&PROFILE.user&&PROFILE.user.username,MKTVIEW].join("|");
-  const kept=vkey===RVKEY?[...app.querySelectorAll("[id]")].filter(e=>e.scrollTop>0).map(e=>[e.id,e.scrollTop]):[];
-  RVKEY=vkey;
+  /* A repaint rebuilds every scroller. mvBefore/mvAfter (app-09-motion.js)
+     remember each screen's place — same screen, or coming back to it — and
+     move what changed. */
+  const mvb=mvBefore(app);
   const W=isWide();
   document.body.classList.toggle("wide",W);
   app.innerHTML=`
@@ -93,7 +90,7 @@ function render(){
     ${installCardHTML()}
     ${TOASTT?`<div class="toast">${esc(TOASTT)}</div>`:""}
     ${ENTER?enterHTML():""}`;
-  for(const [id,top] of kept){const e=document.getElementById(id);if(e)e.scrollTop=top}
+  mvAfter(mvb);
   wire();
   wireEnter();
   if(TAB==="labs")loadFeed();
@@ -136,7 +133,7 @@ function notifPanelHTML(){
   const label=n=>({like:"liked your work",comment:"commented",collab_invite:"wants to collab",collab_accept:"accepted your collab",follow:"followed you",share:"shared your work",dm:"messaged you",reply:"replied to you",mention:"mentioned you"})[n.kind]||n.kind;
   return `<div class="sheet" id="npbg"><div class="sheetc">
     <div class="sheeth"><div><h2>Notifications</h2></div><button class="x" id="npx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    ${!NOTIFS?`<div class="empty">Loading…</div>`:!NOTIFS.length?`<div class="empty">Nothing yet.<br>Post work and it starts here.</div>`:
+    ${!NOTIFS?`${skel()}`:!NOTIFS.length?`<div class="empty">Nothing yet.<br>Post work and it starts here.</div>`:
       NOTIFS.map(n=>`<div class="nrow ${n.read?"":"unread"}" ${n.kind==="dm"&&n.actor?`data-ndm="${esc(n.actor.username)}"`:n.postId?`data-nopen="${n.postId}"`:n.actor?`data-u="${esc(n.actor.username)}"`:""}>
         ${n.actor?avHTML({displayName:n.actor.displayName,avatarUrl:n.actor.avatarUrl},"sm"):`<div class="av sm">·</div>`}
         <div class="nbody"><b>${esc(n.actor?n.actor.displayName:"Someone")}</b> ${label(n)}
@@ -175,7 +172,7 @@ function pickerHTML(){
     ${P.note?`<div class="mono dim picknote">${esc(P.note)}</div>`:""}
     ${P.search?`<input class="in" id="pickq" placeholder="${esc(P.search)}" value="${esc(P.q||"")}">`:""}
     <div class="picklist">
-      ${P.loading?`<div class="empty">Loading…</div>`
+      ${P.loading?`${skel()}`
       :P.items.length?P.items.map((it,i)=>`<button class="pickrow" data-pick="${i}">
         ${it.avatar!==undefined?avHTML({displayName:it.label,avatarUrl:it.avatar},"sm"):`<span class="pickic">${/^<svg class="di"/.test(it.icon||"")?it.icon:esc(it.icon||"#")}</span>`}
         <div class="pickbody"><b>${esc(it.label)}</b>${it.sub?`<div class="mono dim">${esc(it.sub)}</div>`:""}</div>

@@ -64,7 +64,7 @@ function tracksHTML(){
     ${TRKVIDS?vidPickHTML():""}
     <input type="file" id="trkfile" accept="audio/*,.mp3,.m4a,.wav,.aac,.aiff,.aif,.flac,.ogg" hidden>
     <div class="trk-list">${
-      !TRACKS?`<div class="empty">Loading…</div>`
+      !TRACKS?`${skel()}`
       :!TRACKS.length?`<div class="empty">No tracks yet.<br><br>Upload the first one.</div>`
       :TRACKS.map(trackRowHTML).join("")}</div>
   </div>`;
@@ -219,7 +219,7 @@ function marketHTML(){
         <button class="shop-link" data-mv="orders">My orders</button>
       </div>
     </div>
-    <div class="mkt-grid" id="mktgrid">${!MKT?`<div class="empty">Loading…</div>`
+    <div class="mkt-grid" id="mktgrid">${!MKT?`${skel("tiles")}`
       :!MKT.length?`<div class="empty">Nothing listed yet.</div>`
       :MKT.map(mktCardHTML).join("")}</div>
   </div>`}

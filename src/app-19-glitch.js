@@ -42,6 +42,7 @@ function glTarget(el){
   const b=el&&el.closest&&el.closest("button,a,[role=button],[data-like],[data-share],[data-trkplay],[data-lab],.sr-card img");
   if(!b||b.closest("#studiomount"))return null;
   if(b.matches("[data-nownext],[data-nowprev],[data-nowseek],.now-seek"))return null;   // skipping tracks fast is normal
+  if(b.matches(MV_MEDIA))return null;   // a post's picture: double-tap is how you like it (app-09-motion)
   return b;
 }
 const glName=b=>{const k=b.dataset?Object.keys(b.dataset)[0]:null;

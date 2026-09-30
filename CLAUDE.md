@@ -76,6 +76,11 @@ card read `PALETTE`. `test/palette.test.mjs` fails if anything drifts. Icons are
 2px stroke, square caps. Mobile-first — check it at phone width, and at
 1440px: from 1024px the app switches to the computer frame (left sidebar,
 `src/app-05-styles-wide.css`, `isWide()` in `app-09-render-nav.js`).
+Motion lives in `app-09-motion.js` + `app-05-styles-motion.css`: screens keep
+their scroll place, move in (forward from the right, back from the left, tabs
+fade), overlays arrive, taps press. Animate transform/opacity only (anything
+else can shift the layout and trips the glitch watcher), honour reduced
+motion, and show loading with `skel()` rather than "Loading…".
 
 ## Careful areas
 

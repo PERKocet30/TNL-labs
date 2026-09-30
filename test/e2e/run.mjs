@@ -234,6 +234,46 @@ console.log("\nMEMBER · PHONE");
     ok(o.i === 0 && o.n.startsWith("1/"), `the opened post didn't start on slide 1 (${JSON.stringify(o)})`);
     await p.evaluate(() => { POSTOPEN = null; render(); });
   });
+  /* Fluid (app-09-motion.js): places are kept, the tab glides you up,
+     double-tap likes, screens move. */
+  const srTop = () => p.evaluate(() => document.getElementById("showroom")?.scrollTop ?? -1);
+  await step(d, "back from a profile lands where you were in the feed", async () => {
+    await p.evaluate(() => { TAB = "showroom"; PROFILE = null; render(); });
+    await p.waitForSelector("#sr-grid .sr-card");
+    await p.evaluate(() => { document.getElementById("showroom").scrollTop = 1200; }); await p.waitForTimeout(150);
+    const y = await srTop(); ok(y > 600, "couldn't scroll the Showroom");
+    ok(await p.evaluate(() => { openProfile("friend"); return !!document.querySelector("#app .sheet.mv-in"); }), "the profile didn't slide in");
+    await p.waitForFunction(() => PROFILE && PROFILE.user, null, { timeout: 5000 });
+    await p.evaluate(() => history.back()); await p.waitForFunction(() => !PROFILE, null, { timeout: 4000 }); await p.waitForTimeout(200);
+    ok(Math.abs((await srTop()) - y) < 3, `came back at ${await srTop()}, was at ${y}`);
+  });
+  await step(d, "switching tabs and back keeps your place too", async () => {
+    const y = await srTop();
+    await p.locator('.nav [data-tab="labs"]').tap(); await p.waitForSelector(".lx-list");
+    await p.locator('.nav [data-tab="showroom"]').tap(); await p.waitForSelector("#sr-grid");
+    ok(Math.abs((await srTop()) - y) < 3, `came back at ${await srTop()}, was at ${y}`);
+  });
+  await step(d, "tapping the tab you're on glides to the top", async () => {
+    ok((await srTop()) > 0, "not scrolled");
+    await p.locator('.nav [data-tab="showroom"]').tap(); await p.waitForTimeout(900);
+    ok((await srTop()) === 0, "still at " + (await srTop()));
+  });
+  await step(d, "double-tap a picture: liked, with the heart; one tap still opens the artist", async () => {
+    const card = p.locator("#sr-grid .sr-card").nth(1);
+    const img = card.locator(".sr-img, .caro-i").first();
+    await img.scrollIntoViewIfNeeded();
+    const id = await card.locator("[data-like]").getAttribute("data-like");
+    const before = (await serverPost(id)).likedByMe;
+    if (before) { await card.locator("[data-like]").tap(); await p.waitForTimeout(800); }
+    await img.dblclick(); await p.waitForTimeout(150);
+    ok(await p.locator(".mv-heart").count() === 1, "no heart");
+    await p.waitForTimeout(900);
+    ok((await serverPost(id)).likedByMe === true, "the double-tap didn't like it");
+    ok(await card.locator("[data-like]").evaluate((b) => b.classList.contains("on")), "the heart button isn't on");
+    ok(!(await p.evaluate(() => !!PROFILE)), "the double-tap opened the profile");
+    await img.click(); await p.waitForFunction(() => PROFILE, null, { timeout: 2000 });
+    await p.evaluate(() => { PROFILE = null; render(); });
+  });
   await step(d, "post creator: add a photo, caption, share", async () => {
     const before = (await api("/api/users/tester", token)).posts?.length ?? 0;
     await p.locator('.nav [data-tab="post"]').tap();
