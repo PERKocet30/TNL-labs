@@ -20,10 +20,10 @@
 ================================================================ */
 const ffc = (hex) => "0x" + hex.replace("#", "").toUpperCase();   // #RRGGBB → ffmpeg colour
 const CARD = { w: 1200, h: 630, gap: 6, bg: ffc(PALETTE.light.bg), el: ffc(PALETTE.light.el), ink: ffc(PALETTE.light.tx), ink2: ffc(PALETTE.light.dim),
-  version: 3, panel: 440, pad: 48, avatar: 128, mark: 40 };
+  version: 4, panel: 440, pad: 48, avatar: 128, mark: 40 };
 const CARD_DIR = join(DATA_DIR, "og");
 const CARD_FONT = { bold: join(__dirname, "..", "assets", "fonts", "Archivo-Bold.ttf"), reg: join(__dirname, "..", "assets", "fonts", "Archivo-Regular.ttf") };
-const CARD_MARK = join(__dirname, "..", "public", "icon-512.png");
+const CARD_MARK = join(__dirname, "..", "public", "icon-white-512.png");
 
 /* The grid to the right of the panel, by how much work there is: [columns, rows]. */
 const cardShape = (n) => (n >= 6 ? [3, 2] : n >= 4 ? [2, 2] : n >= 1 ? [Math.min(n, 3), 1] : null);
@@ -219,7 +219,7 @@ function profileCardMeta(u, base) {
 app.get("/u/:username/card.jpg", rateLimit({ max: 120, windowMs: 60000 }), async (req, res) => {
   const u = q.userByName.get(req.params.username);
   if (!u) return res.status(404).end();
-  const fallback = () => res.redirect(302, u.avatar_url || "/icon-512.png");
+  const fallback = () => res.redirect(302, u.avatar_url || "/icon-white-512.png");
   if (!FFMPEG) return fallback();
   try {
     const file = await buildProfileCard(u.id, profileCardTiles(u));

@@ -112,7 +112,7 @@ app.get("/u/:username", (req, res) => {
   /* v3 (2026-09-29): the profile card — picture, name, bio and the work,
      like Instagram's (server-10-profile-card.js). No ffmpeg → one piece. */
   const card = profileCardMeta(u, baseUrl(req));
-  const ogImage = card ? card.url : abs(hero && hero.imageUrl) || abs(u.avatar_url) || `${baseUrl(req)}/icon-512.png`;
+  const ogImage = card ? card.url : abs(hero && hero.imageUrl) || abs(u.avatar_url) || `${baseUrl(req)}/icon-white-512.png`;
   const ogW = card ? card.w : (hero && hero.mediaW) || 512;
   const ogH = card ? card.h : (hero && hero.mediaH) || 512;
 

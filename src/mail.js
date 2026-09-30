@@ -82,7 +82,7 @@ export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader }
 <tr><td align="center" style="padding:32px 16px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px">
     <tr><td style="padding:0 4px 18px;font-family:${FONT}">
-      <img src="${origin}/icon-512.png" width="28" height="28" alt="TNL" style="vertical-align:middle;border-radius:50%;border:0">
+      <img src="${origin}/icon-white-512.png" width="28" height="28" alt="TNL" style="vertical-align:middle;border-radius:50%;border:0">
       <span class="t1" style="vertical-align:middle;margin-left:8px;color:${C.ink};font-size:15px;font-weight:700;letter-spacing:.04em">LABS &reg;</span>
     </td></tr>
     <tr><td class="card" style="background:${C.card};border:1px solid ${C.line};padding:32px 28px;font-family:${FONT}">
