@@ -204,6 +204,7 @@ app.get("/api/posts/:id/comments", maybeAuth, (req, res) => {
 app.post("/api/posts/:id/comments", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
   const post = q.postById.get(Number(req.params.id));
   if (!post) return res.status(404).json({ error: "no post" });
+  if (commentsOff(post)) return res.status(403).json({ error: "Comments are off on this post" });
   const body = (req.body?.body || "").toString().trim();
   if (!body) return res.status(400).json({ error: "empty comment" });
   if (body.length > 1000) return res.status(400).json({ error: "comment too long" });

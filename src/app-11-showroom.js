@@ -14,7 +14,7 @@ function srCardHTML(p){
       <div class="sr-who" data-u="${esc(p.author.username)}">
         ${avHTML(p.author,"sm")}
         <div><div class="sr-name">${esc(p.author.displayName)}<span class="lvl">L${p.author.level}</span></div>
-        <div class="dim sr-role">${esc(p.author.role.charAt(0).toUpperCase()+p.author.role.slice(1))}</div>${musChipHTML(p)}</div>
+        <div class="dim sr-role">${p.location?esc(p.location):esc(p.author.role.charAt(0).toUpperCase()+p.author.role.slice(1))}</div>${pxWithHTML(p)}${musChipHTML(p)}</div>
       </div>
     </div>
     ${(p.images&&p.images.length>1)?`<div class="caro" data-caro="s${p.id}">
@@ -26,7 +26,7 @@ function srCardHTML(p){
       ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
       data-u="${esc(p.author.username)}">`
       :p.videoUrl?`<div class="vwrap">
-        <video class="sr-img" src="${esc(p.videoUrl)}" muted loop playsinline preload="none" data-auto></video>
+        <video class="sr-img" src="${esc(p.videoUrl)}"${pxPoster(p)}${p.mediaW?` style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""} muted loop playsinline preload="none" data-auto></video>
         <button class="vmute" data-vmute aria-label="Sound">${DI.soundOff}</button>
       </div>`
       :`<div class="sr-beat"><button class="circle" style="width:34px;height:34px;font-size:12px" data-beatplay='${esc(JSON.stringify(p.beat))}' aria-label="Play">${DI.play}</button>
@@ -34,7 +34,7 @@ function srCardHTML(p){
     <div class="sr-meta">
       <div class="sr-acts">
         <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
-        <button class="igact" data-comments="${p.id}" aria-label="Comment">${IG_COMMENT}</button>
+        <button class="igact" data-comments="${p.id}" aria-label="Comment"${p.commentsOff?" hidden":""}>${IG_COMMENT}</button>
         <button class="igact" data-share="${p.id}" aria-label="Send">${IG_SEND}<span class="igact-n">${p.shareCount||""}</span></button>
         ${p.author.username===myName()?`<button class="igact" data-collab="${p.id}" aria-label="Invite a collaborator" title="Invite a collaborator">${IG_COLLAB}</button>`:""}
         ${p.collaborators.find(c=>c.username===myName()&&c.status==="pending")?`<button class="igpill" data-accept="${p.id}">Accept collab</button>`:""}

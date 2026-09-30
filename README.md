@@ -46,7 +46,7 @@ public/admin.html               the admin dashboard (shell; app in public/admin-
 public/door.js                  the door's vial loader and mark
 public/sw.js                    service worker (installable app, offline shell)
 scripts/scientist.mjs           daily read-only checks against the live site
-test/                           37 test suites — run with npm test
+test/                           38 test suites — run with npm test
 ```
 
 **Edit the parts, never the built files.** Parts join in filename order, so two parts can share a number (`app-11-gate-logic`, `app-11-gate-screens`, `app-11-showroom`). `public/index.html` and `src/server.runtime.js` are regenerated on every boot and ignored by git.
@@ -60,14 +60,15 @@ test/                           37 test suites — run with npm test
 | `app-10-chat-1…6` | Messages v2 (2026-09-29): chat kit, inbox + chat screen, composer/voice notes, sheets (new chat, group, forward, mute), the signed-in live stream, lab rooms as chat |
 | `app-10-dm-search` | search, the door |
 | `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
-| `app-11-showroom` · `app-12…13` | Showroom, lab index, archive/posts; the Music lab (`app-13-tracks-player`) and the player bar and queue (`app-13-player`) |
+| `app-11-showroom` · `app-12…13` (`app-12-post-extras`: tags, place, comments off on a card) | Showroom, lab index, archive/posts; the Music lab (`app-13-tracks-player`) and the player bar and queue (`app-13-player`) |
 | `app-14-detail-sell` · `app-14-listing` · `app-14-sell-variants` | orders and the listing editor; the listing page (photos, size/colour picker, the pinned Buy bar, the pinch-zoom photo viewer); the editor's sizes & colours |
 | `app-15…16` | profile, wiring |
 | `app-17-market` · `app-17-panels` | market wiring and the listing editor's logic; panels, DMs, Studio mount |
-| `app-18-composer` · `app-18-media` | the post creator; carousels, video autoplay, music and the audio unlock |
+| `app-18-composer` · `app-18-media` · `app-18-photo-edit` · `app-18-post-queue` | the post creator; carousels, video autoplay, music and the audio unlock; the photo editor (crop, filters, adjust — on the phone); posting in the background, drafts, drag to reorder |
 | `app-19-feed-boot` | feed, badges, boot |
 | `server-01-boot` | setup, compression, caching rules, Sentry, prepared queries |
 | `server-02…11` | auth/feed, uploads/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/beats/Showroom, social/meta |
+| `server-02-post-extras` | a post's people tagged, place and comments on/off (`posts.extras`) |
 | `server-06-market-stock` | sizes and colours: every unit sold goes through `takeStock()` (the size picked, the listing closes at zero) |
 | `server-10-dm-core` · `-dm-groups` · `-dm-routes` | Messages v2: schema migration (groups; backup first), requests, replies, reactions, edit/unsend, forward, mute |
 | `server-10-links` · `server-10-live` | link previews behind a DNS-level SSRF guard; the signed-in live stream, typing, presence, lab reactions and pins |
@@ -242,6 +243,7 @@ PATCH  /api/posts/:id   (auth)
 DELETE /api/posts/:id   (auth)
 GET    /api/posts/:id/comments
 POST   /api/posts/:id/comments   (auth)
+POST   /api/posts/:id/comments-off   (auth, author)
 POST   /api/posts/:id/send   (auth)
 GET    /api/posts/:id/saves   (auth)
 POST   /api/posts/:id/collab   (auth)

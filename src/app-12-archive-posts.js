@@ -220,7 +220,7 @@ function postHTML(p){const mine=p.author.username===myName();
   ${p.sharedFrom?`<div class="shared-tag">${IC_REMIX_SM} Shared</div>`:""}
   <div class="post-h">${avHTML(p.author)}
     <div><span class="post-by" data-u="${esc(p.author.username)}">${esc(p.author.displayName)}</span><span class="lvl">L${p.author.level}</span>
-    <div class="post-meta">${esc(p.author.role.toUpperCase())} · ${new Date(p.createdAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}${p.editedAt?" · EDITED":""}</div>${musChipHTML(p)}</div>
+    <div class="post-meta">${esc(p.author.role.toUpperCase())} · ${new Date(p.createdAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}${p.editedAt?" · EDITED":""}${p.location?" · "+esc(p.location.toUpperCase()):""}</div>${pxWithHTML(p)}${musChipHTML(p)}</div>
     ${ME&&!p.pending&&!p.failed?`<div class="post-menu"><button class="pm pmore" data-pmore="${p.id}" aria-label="More">${DI.more}</button></div>`:""}
   </div>
   ${p.body?`<div class="post-body">${rich(p.body)}</div>`:""}
@@ -242,7 +242,7 @@ function postHTML(p){const mine=p.author.username===myName();
     ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
     data-u="${esc(p.author.username)}">`:""}
   ${p.videoUrl?`<div class="vwrap">
-    <video class="post-vid" src="${esc(p.videoUrl)}" muted loop playsinline preload="none" data-auto
+    <video class="post-vid" src="${esc(p.videoUrl)}"${pxPoster(p)} muted loop playsinline preload="none" data-auto
       ${p.mediaW?`style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}></video>
     <button class="vmute" data-vmute aria-label="Sound">${DI.soundOff}</button>
   </div>`:""}
@@ -250,7 +250,7 @@ function postHTML(p){const mine=p.author.username===myName();
   ${p.collaborators.length?`<div class="collab-row">${p.collaborators.map(c=>`<span class="ctag ${c.status==="accepted"?"acc":""}">${c.status==="accepted"?DI.check:"…"} ${esc(c.display_name||c.username)}</span>`).join("")}</div>`:""}
   <div class="post-acts">
     <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
-    <button class="igact" data-comments="${p.id}" aria-label="Comment">${IG_COMMENT}</button>
+    <button class="igact" data-comments="${p.id}" aria-label="Comment"${p.commentsOff?" hidden":""}>${IG_COMMENT}</button>
     <button class="igact" data-share="${p.id}" aria-label="Send">${IG_SEND}<span class="igact-n">${p.shareCount||""}</span></button>
     ${mine?`<button class="igact" data-collab="${p.id}" aria-label="Invite a collaborator" title="Invite a collaborator">${IG_COLLAB}</button>`:""}
     ${myPending?`<button class="igpill" data-accept="${p.id}">Accept collab</button>`:""}

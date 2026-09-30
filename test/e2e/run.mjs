@@ -48,6 +48,8 @@ for (let i = 0; i < 6; i++) writeFileSync(join(DATA, "uploads", `e2e-p${i}.png`)
 for (let i = 0; i < 3; i++) writeFileSync(join(DATA, "uploads", `e2e-t${i}.wav`), wav(3, 330 + 110 * i));
 const UPLOAD_PNG = join(TMP, "upload.png");
 writeFileSync(UPLOAD_PNG, Buffer.from(PNG[0], "base64"));
+const UPLOAD_PNG2 = join(TMP, "upload2.png"), UPLOAD_PNG3 = join(TMP, "upload3.png");
+writeFileSync(UPLOAD_PNG2, Buffer.from(PNG[1], "base64")); writeFileSync(UPLOAD_PNG3, Buffer.from(PNG[2], "base64"));
 
 /* ---- seed: two members, published work, three tracks ---- */
 writeFileSync(join(TMP, "seed.mjs"), `
@@ -407,19 +409,79 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".ordvar", { hasText: "M" }).count() > 0, "the order row doesn't show the size");
     await p.evaluate(() => { TAB = "showroom"; MKTVIEW = "browse"; render(); });
   });
-  await step(d, "post creator: add a photo, caption, share", async () => {
-    const before = (await api("/api/users/tester", token)).posts?.length ?? 0;
-    await p.locator('.nav [data-tab="post"]').tap();
-    await p.waitForSelector("#pcfile", { state: "attached" });
+  /* ---- the post creator v3 (2026-09-30) ---- */
+  const openCreator = async () => { await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcfile", { state: "attached" }); };
+  const myPosts = async () => (await api("/api/users/tester", token)).posts || [];
+  await step(d, "creator: never slides sideways; drag a thumbnail to reorder", async () => {
+    await openCreator();
     const side = await p.evaluate(() => { const b = document.querySelector(".pc-body"); b.scrollLeft = 40; return { sl: b.scrollLeft, ox: getComputedStyle(b).overflowX }; });
     ok(side.sl === 0 && side.ox === "hidden", "the form can slide sideways: " + JSON.stringify(side));
-    await p.locator("#pcfile").setInputFiles(UPLOAD_PNG);
-    await p.locator("#pcbody").fill("Made in the e2e lab");
-    await p.waitForSelector("#pcgo:not([disabled])", { timeout: 8000 });
+    await p.locator("#pcfile").setInputFiles([UPLOAD_PNG, UPLOAD_PNG2, UPLOAD_PNG3]);
+    await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 3 && !PCOMPOSE.upN, null, { timeout: 10000 });
+    const order0 = await p.evaluate(() => PCOMPOSE.imgs.map((i) => i.url));
+    const th = await p.locator('.pc-th[data-pci="0"]').boundingBox(), step2 = (await p.locator('.pc-th[data-pci="1"]').boundingBox()).x - th.x;
+    await p.mouse.move(th.x + th.width / 2, th.y + th.height / 2); await p.mouse.down();
+    for (let k = 1; k <= 8; k++) await p.mouse.move(th.x + th.width / 2 + (step2 * 2 * k) / 8, th.y + th.height / 2);
+    await p.mouse.up(); await p.waitForTimeout(200);
+    const order1 = await p.evaluate(() => PCOMPOSE.imgs.map((i) => i.url));
+    ok(order1[2] === order0[0] && order1[0] === order0[1], "drag didn't move the first photo to the end: " + JSON.stringify({ order0, order1 }));
+  });
+  await step(d, "photo editor: square crop + a filter make a new square image", async () => {
+    await p.evaluate(() => { PCOMPOSE.idx = 0; render(); });
+    await p.locator("[data-pcedit]").tap();
+    await p.waitForSelector(".ped #pedc");
+    await p.locator('[data-pedf="mono"]').tap();
+    await p.locator('[data-pedt="crop"]').tap(); await p.locator('[data-peda="1:1"]').tap();
+    await p.locator('[data-pedt="adjust"]').tap();
+    await p.locator('[data-pedj="b"]').fill("40");
+    const before = await p.evaluate(() => PCOMPOSE.imgs[0].url);
+    await p.locator("#pedok").tap();
+    await p.waitForFunction((u) => !PED && PCOMPOSE.imgs[0].url !== u && !PCOMPOSE.upN, before, { timeout: 8000 });
+    const im = await p.evaluate(() => PCOMPOSE.imgs[0]);
+    ok(im.w === im.h && im.edit.filter === "mono" && im.edit.aspect === "1:1" && im.edit.b === 40 && im.orig === before, "edit: " + JSON.stringify(im));
+    await p.locator("[data-pcedit]").tap(); await p.waitForSelector(".ped");
+    ok(await p.locator('[data-pedf="mono"].on').count() === 1, "reopening forgot the edit");
+    await p.locator("#pedx").tap();
+    ok(await p.evaluate(() => !document.querySelector(".ped")), "Cancel didn't close the editor");
+  });
+  await step(d, "drafts: Cancel → Save draft, then Drafts brings it back", async () => {
+    await p.locator("#pcbody").fill("draft from e2e");
+    await p.locator("#pccancel").tap();
+    await p.locator(".ui-choose [data-uic='0']").tap();
+    await p.waitForFunction(() => !PCOMPOSE);
+    ok(await p.evaluate(() => pdList().length) === 1, "no draft saved");
+    await openCreator();
+    await p.locator("#pcdrafts").tap();
+    await p.locator(".pickrow").filter({ hasText: "draft from e2e" }).first().tap();
+    await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.body === "draft from e2e" && PCOMPOSE.imgs.length === 3);
+    ok(await p.locator("#pcbody").inputValue() === "draft from e2e", "caption not restored");
+  });
+  await step(d, "share closes at once and posts in the background; tags, place and comments-off land", async () => {
+    const before = (await myPosts()).length;
+    await p.evaluate(() => { PCOMPOSE.tags = [{ username: "friend", displayName: "Friend" }]; PCOMPOSE.location = "Brooklyn"; render(); });
+    await p.locator("#pccoff").check();
     await p.locator("#pcgo").tap();
-    await p.waitForFunction(() => !PCOMPOSE, null, { timeout: 8000 });
-    const after = (await api("/api/users/tester", token)).posts?.length ?? 0;
-    ok(after === before + 1, `profile posts ${before} → ${after}`);
+    ok(await p.evaluate(() => !PCOMPOSE), "the creator didn't close straight away");
+    await p.waitForSelector("#pql .pq", { timeout: 2000 });
+    await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 10000 });
+    ok(/Posted/.test(await p.locator("#pql .pq").textContent()), "strip doesn't say Posted");
+    const posts = await myPosts();
+    ok(posts.length === before + 1, `profile posts ${before} → ${posts.length}`);
+    const np = posts[0];
+    ok(np.tags.join() === "friend" && np.location === "Brooklyn" && np.commentsOff === true && np.images.length === 3, "extras: " + JSON.stringify({ t: np.tags, l: np.location, c: np.commentsOff }));
+    ok(await p.evaluate(() => pdList().length) === 0, "the draft wasn't cleared after posting");
+    const r = await api("/api/posts/" + np.id + "/comments", token, { body: "hi" });
+    ok(/Comments are off/.test(r.error || ""), "a comment got through: " + JSON.stringify(r));
+    const { token: ft } = await login("friend");
+    ok((await api("/api/notifications", ft)).notifications.some((n) => n.kind === "tag" && n.postId === np.id), "friend wasn't told they're tagged");
+    await p.locator("#pql [data-pqview]").tap();
+    await p.waitForFunction((id) => PROFILE && PROFILE.user && PROFILE.user.username === "tester" && (PROFILE.posts || []).some((x) => x.id === id), np.id, { timeout: 5000 });
+    await p.evaluate((id) => openPost(PROFILE.posts.find((x) => x.id === id)), np.id);
+    await p.waitForSelector("#poov .px-with", { timeout: 5000 });
+    ok(/with @friend/.test(await p.locator("#poov .px-with").first().textContent()), "no 'with @friend' on the post");
+    ok(/BROOKLYN/.test(await p.locator("#poov .post-meta").first().textContent()), "no place on the post");
+    ok(await p.locator('#poov .igact[data-comments]').isHidden(), "comment button still showing");
+    await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; PROFILE = null; TAB = "showroom"; render(); });
   });
   await step(d, "Music: play, the bar shows, the sound moves, next track", async () => {
     await p.locator('.nav [data-tab="labs"]').tap();

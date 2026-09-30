@@ -12,15 +12,15 @@ const html = fn("pcomposeHTML"), wire = fn("wirePCompose");
 console.log("\nPOST CREATOR — LAYOUT");
 t("large swipeable preview with a counter", html.includes('class="pc-track" id="pctrack"') && html.includes('id="pccount"'));
 t("thumbnail strip with remove and add", html.includes('class="pc-strip"') && html.includes("data-pcrm") && html.includes('class="pc-th pc-add"'));
-t("reorder buttons move the current photo", html.includes('data-pcmv="-1"') && html.includes('data-pcmv="1"'));
+t("drag a thumbnail to reorder (2026-09-30)", src.includes("function pcDragWire(c)") && wire.includes("pcDragWire(c);") && html.includes('data-pci="${i}"'));
 t("a spinner tile per photo still uploading", html.includes("Array.from({length:c.upN||0}"));
 t("three rows: invite collaborators, add music, share to a lab",
   html.includes("Invite collaborators") && html.includes("Add music") && html.includes("Share to a lab"));
 t("no explanation note under the caption", !html.includes("pcmp-note") && !/Showroom, where collabs rank highest/.test(src));
 
 console.log("\nPOST CREATOR — BEHAVIOUR");
-t("posts to the profile unless a lab is picked", wire.includes('channel:c.ch?c.ch.id:"profile"'));
-t("collaborator invites go out after the post exists", /const pid=d&&d\.post&&d\.post\.id;\s*if\(pid\)for\(const u of c\.collabs\)\{try\{await api\.invite\(pid,u\.username\)/.test(wire));
+t("posts to the profile unless a lab is picked", src.includes('channel:c.ch?c.ch.id:"profile"'));
+t("collaborator invites go out after the post exists", /const pid=d&&d\.post&&d\.post\.id;\s*if\(pid\)for\(const u of c\.collabs\|\|\[\]\)\{try\{await api\.invite\(pid,u\.username\)/.test(src));
 t("at most 5 collaborators", wire.includes("c.collabs.length>=5"));
 t("lab picker skips Beat Lab, Archive, Tracks and locked rooms", wire.includes("if(ch.beatlab||ch.archive||ch.library||(ch.gate&&levelFor(myRep()).id<ch.gate))continue;"));
 t("@ in the caption asks the server for people", wire.includes("api.mentionable(m[2])"));
@@ -32,8 +32,8 @@ const pcCan = new Function("return " + src.slice(src.indexOf("const pcCan=") + 1
 t("empty → disabled", !pcCan({ body: "", imgs: [] }));
 t("caption only → enabled", pcCan({ body: "hi", imgs: [] }));
 t("photos → enabled", pcCan({ body: "", imgs: [{}] }));
-t("while photos upload → disabled", !pcCan({ body: "hi", imgs: [{}], upN: 1 }));
-t("while video uploads → disabled", !pcCan({ body: "", imgs: [], vid: null, vidbusy: true }));
+t("while photos upload → can share (it posts when they land)", pcCan({ body: "", imgs: [], upN: 1 }));
+t("while video uploads → can share (it posts when it lands)", pcCan({ body: "", imgs: [], vid: null, vidbusy: true }));
 t("while sharing → disabled", !pcCan({ body: "hi", imgs: [], busy: true }));
 
 console.log(`\n  ${pass} passed, ${fail} failed`);

@@ -305,7 +305,7 @@ function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false, p
   const sql = `
     SELECT
       p.id, p.channel, p.body, p.beat_json, p.image_url, p.video_url, p.thumb_url, p.media_w, p.media_h, p.is_work, p.edited_at, p.shared_from, p.created_at, p.audio_track_id,
-      p.images, p.reply_to, p.link_json,
+      p.images, p.reply_to, p.link_json, p.extras,
       tr.title AS track_title, tr.url AS track_url, tr.artwork_url AS track_art, tr.duration_ms AS track_dur, tu.username AS track_by,
       u.username AS author_username, u.display_name AS author_name, u.role AS author_role,
       u.avatar_url AS author_avatar, u.accent AS author_accent, u.rep AS author_rep,
@@ -415,6 +415,7 @@ function shapePost(row, side) {
     commentCount: side ? (side.comments.get(row.id) || 0) : (cntOne.get(row.id)?.n || 0),
     likedByMe: !!row.liked_by_me,
     collaborators: side ? (side.collabs.get(row.id) || []) : collabOne.all(row.id),
+    ...postExtras(row),
   };
 }
 
