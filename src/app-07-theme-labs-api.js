@@ -16,6 +16,21 @@ function applyTheme(t){
 let THEME = localStorage.getItem("tnl-theme") || "light";
 applyTheme(THEME);
 function setTheme(t){ THEME=t; localStorage.setItem("tnl-theme",t); applyTheme(t); applyAccent(ACCENTHEX); }
+/* Every day/night switch (top bar moon/sun, profile Day/Night) is a
+   [data-theme-set] button. One listener for the whole page, so a repaint can
+   never leave one unwired: the old per-render wiring lived in the onboarding
+   code and went with it when sign-up was rebuilt, and the buttons went dead. */
+document.addEventListener("click",e=>{
+  const b=e.target&&e.target.closest?e.target.closest("[data-theme-set]"):null;
+  if(!b)return;
+  const t=b.dataset.themeSet==="dark"?"dark":"light";
+  setTheme(t);
+  /* Inside Edit profile a repaint would throw away a half-typed bio: just
+     move the highlight. Everywhere else repaint, so the moon becomes a sun. */
+  const group=b.closest(".pig-theme");
+  if(group){group.querySelectorAll("[data-theme-set]").forEach(x=>x.classList.toggle("on",x===b));return}
+  render();
+});
 let TOKEN = localStorage.getItem("tnl-token") || null;
 let ME = null;
 let LEVELS = [{id:1,name:"Entry",at:0},{id:2,name:"Verified",at:40},{id:3,name:"Collaborator",at:120},{id:4,name:"Core",at:280},{id:5,name:"Leadership",at:560}];
