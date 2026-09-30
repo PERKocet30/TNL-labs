@@ -3,21 +3,51 @@ function wireInstall(){
   const x=$("[data-installx]");if(x)x.onclick=dismissInstall;
   const go=$("[data-installgo]");if(go)go.onclick=doInstall;
 }
+/* CAROUSELS v2.0 — 2026-09-30.
+   The counter and dots follow your finger: they update on every frame of
+   the swipe and switch at the halfway point (they used to wait until the
+   scroll had fully stopped, which on an iPhone's momentum scroll is long
+   after the next slide is already showing).
+   Where a carousel starts is ours, not the browser's: slide 1 when it first
+   appears (or you open a post), the slide you were on when a live refresh
+   rebuilds the screen. The position is put back as images load until you
+   touch it, so a re-layout can't leave it on a random slide. */
+const CAROIDX=new Map();   // key → slide, for the screen you're on
+let CAROVIEW="";
+function caroKey(c){return (c.closest("#poov")?"po:":"")+c.dataset.caro}
 function wireCaros(){
+  const view=RVKEY+"|"+(POSTOPEN?POSTOPEN.id:"");
+  if(view!==CAROVIEW){CAROVIEW=view;CAROIDX.clear()}   // a new screen starts every carousel at 1
   document.querySelectorAll("[data-caro]").forEach(c=>{
     const track=c.querySelector(".caro-t");
     const dots=[...c.querySelectorAll(".caro-d span")];
     const num=c.querySelector(".caro-n");
     if(!track||c.dataset.caroBound)return;
     c.dataset.caroBound="1";
-    let t=null;
+    const key=caroKey(c), n=dots.length||track.children.length;
+    let idx=Math.min(CAROIDX.get(key)||0,Math.max(0,n-1)), touched=false, raf=0;
+    const show=i=>{
+      if(i===idx&&c.dataset.caroShown)return;
+      idx=i;c.dataset.caroShown="1";CAROIDX.set(key,i);
+      dots.forEach((d,j)=>d.classList.toggle("on",j===i));
+      if(num)num.textContent=(i+1)+"/"+n;
+    };
+    const place=()=>{const w=track.clientWidth;if(w&&Math.abs(track.scrollLeft-idx*w)>1)track.scrollLeft=idx*w};
+    c.dataset.caroShown="";show(idx);
+    requestAnimationFrame(place);
+    // images arriving can re-lay the track out; hold the slide until a finger moves it
+    track.querySelectorAll("img").forEach(im=>{if(!im.complete)im.addEventListener("load",()=>{if(!touched)place()},{once:true})});
+    const hands=()=>{touched=true};
+    track.addEventListener("pointerdown",hands,{passive:true});
+    track.addEventListener("touchstart",hands,{passive:true});
+    track.addEventListener("wheel",hands,{passive:true});
     track.onscroll=()=>{
-      clearTimeout(t);
-      t=setTimeout(()=>{
-        const i=Math.round(track.scrollLeft/track.clientWidth);
-        dots.forEach((d,j)=>d.classList.toggle("on",j===i));
-        if(num)num.textContent=(i+1)+"/"+dots.length;
-      },60);
+      if(raf)return;
+      raf=requestAnimationFrame(()=>{raf=0;
+        const w=track.clientWidth;if(!w)return;
+        if(!touched){place();return}   // nobody's swiping: that was the layout moving, not you
+        show(Math.max(0,Math.min(n-1,Math.round(track.scrollLeft/w))));
+      });
     };
   });
 }

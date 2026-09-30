@@ -144,9 +144,9 @@ video[data-auto]{cursor:pointer}
 .caro{position:relative;margin-top:8px;border-radius:0;overflow:hidden;border:1px solid var(--line);background:var(--el)}
 .caro-t{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .caro-t::-webkit-scrollbar{display:none}
-.caro-i{flex:0 0 100%;width:100%;max-height:520px;object-fit:contain;scroll-snap-align:center;display:block;background:var(--el);cursor:zoom-in}
+.caro-i{flex:0 0 100%;width:100%;max-height:520px;object-fit:contain;scroll-snap-align:start;scroll-snap-stop:always;display:block;background:var(--el);cursor:zoom-in}
 .caro-d{position:absolute;left:0;right:0;bottom:9px;display:flex;justify-content:center;gap:5px;pointer-events:none}
-.caro-d span{width:5px;height:5px;border-radius:50%;background:rgba(var(--fg-rgb),.35);transition:background .15s,width .15s}
+.caro-d span{width:5px;height:5px;border-radius:50%;background:rgba(var(--fg-rgb),.35);transition:background .08s,width .08s}
 .caro-d span.on{background:var(--tx);width:14px;border-radius:0}
 .caro-n{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.68);color:#fff;font-size:11px;
   padding:3px 7px;border-radius:999px;backdrop-filter:blur(3px);pointer-events:none}
