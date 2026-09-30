@@ -303,7 +303,7 @@ app.get("/p/:id", (req, res) => {
   if (!p.isWork) return res.status(404).send(notFound);
 
   const abs = (path) => (path ? (/^https?:/.test(path) ? path : `${baseUrl(req)}${path}`) : null);
-  const img = abs(p.imageUrl) || abs(p.author.avatarUrl) || `${baseUrl(req)}/icon-512.png`;
+  const img = abs(p.imageUrl) || abs(p.author.avatarUrl) || `${baseUrl(req)}/icon-white-512.png`;
   const accepted = p.collaborators.filter((c) => c.status === "accepted");
   const title = accepted.length
     ? `${p.author.displayName} × ${accepted.map((c) => c.display_name || c.username).join(" × ")}`

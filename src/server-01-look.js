@@ -18,6 +18,7 @@ body.center .wrap{max-width:400px}
 a{color:inherit}
 .top{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--tx);font-weight:700;letter-spacing:.04em}
 .top img{width:28px;height:28px;border-radius:50%}
+[data-theme="dark"] .top img{filter:invert(1)}
 .eyebrow{font-size:12px;line-height:16px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:32px 0 12px}
 .mk{color:var(--green)}
 h1{font-size:30px;line-height:34px;font-weight:700;letter-spacing:-.02em;margin:0 0 12px}
@@ -73,7 +74,7 @@ ${head}
 <style>${paletteCss()}
 ${LOOK_CSS}</style></head>
 <body${center ? ' class="center"' : ""}><main class="wrap">
-<a class="top" href="/"><img src="/icon-512.png" alt="">LABS &reg;</a>
+<a class="top" href="/"><img src="/icon-white-512.png" alt="">LABS &reg;</a>
 ${body}
 </main></body></html>`;
 }

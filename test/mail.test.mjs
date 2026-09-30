@@ -28,7 +28,7 @@ const x = renderEmail({ eyebrow: "Test", title: "Hi", lines: ['<script>alert(1)<
 t("names and text are escaped", !/<script>/.test(x.html) && /&lt;script&gt;/.test(x.html));
 t("the link is escaped inside href", /href="https:\/\/x\.test\/\?a=&quot;b&quot;&amp;c=1"/.test(x.html));
 t("verify says 24 hours, reset says 1 hour", /24 hours/.test(v.html) && /1 hour/.test(r.html));
-t("the logo comes from the link's own site", v.html.includes('src="https://labs.tnllabs.com/icon-512.png"'));
+t("the logo comes from the link's own site", v.html.includes('src="https://labs.tnllabs.com/icon-white-512.png"'));
 
 console.log("\nNO OLD STYLE LEFT ANYWHERE THE SERVER BUILDS HTML");
 const src = (f) => readFileSync(new URL("../src/" + f, import.meta.url), "utf8");

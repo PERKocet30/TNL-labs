@@ -6,8 +6,8 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
   "categories": [
     "social",
     "photo",
@@ -15,13 +15,13 @@
   ],
   "icons": [
     {
-      "src": "/icon-512.png",
+      "src": "/icon-white-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icon-white-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
