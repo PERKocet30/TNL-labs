@@ -66,3 +66,16 @@ body.ped-on{overflow:hidden}
 .px-u{font-weight:700;color:var(--tx);cursor:pointer}
 .px-off{font-size:13px;padding:2px 0 6px}
 .igact[hidden]{display:none}
+
+/* shoppable posts: the pieces under the work */
+.pc-prod img{width:22px;height:22px;object-fit:cover;border-radius:50%}
+.px-shop{padding:10px 14px 2px}
+.px-shop-h{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:8px}
+.px-shop-h svg{width:14px;height:14px}
+.px-shop-r{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px 4px}
+.px-shop-r::-webkit-scrollbar{display:none}
+.px-prod{flex:0 0 auto;display:flex;align-items:center;gap:8px;max-width:240px;border:1px solid var(--line2);background:var(--bg);color:var(--tx);border-radius:999px;padding:4px 12px 4px 4px;font:inherit;font-size:13px;cursor:pointer}
+.px-prod img{width:34px;height:34px;border-radius:50%;object-fit:cover;background:var(--el);flex-shrink:0}
+.px-pt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.px-pp{font-weight:800;flex-shrink:0}
+.px-prod.sold{opacity:.55}

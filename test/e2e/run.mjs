@@ -550,6 +550,26 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator('#poov .igact[data-comments]').isHidden(), "comment button still showing");
     await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; PROFILE = null; TAB = "showroom"; render(); });
   });
+  await step(d, "shoppable post: tag a product from your shop, it shows under the work, tapping it opens the listing", async () => {
+    const tee = (await api("/api/market?seller=tester", token)).listings.find((l) => l.title === "E2E Tee");
+    ok(tee, "no E2E Tee to tag");
+    await openCreator();
+    await p.locator("#pcfile").setInputFiles(UPLOAD_PNG);
+    await p.locator("#pcshop").tap();
+    await p.locator(".pickrow", { hasText: "E2E Tee" }).first().tap();
+    ok(await p.evaluate(() => PCOMPOSE.products.length === 1), "product not tagged");
+    await p.waitForFunction(() => !PCOMPOSE.upN, null, { timeout: 8000 });
+    await p.locator("#pcgo").tap();
+    await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 10000 });
+    const np = (await myPosts())[0];
+    ok(np.products.length === 1 && np.products[0].id === tee.id && np.products[0].title === "E2E Tee", "post products: " + JSON.stringify(np.products));
+    await p.evaluate(async (id) => { TAB = "showroom"; SRPOSTS = []; render(); await loadShowroom(true); }, np.id);
+    const chip = p.locator(`#sr-grid .px-prod[data-pxshop="${tee.id}"]`).first();
+    await chip.waitFor({ timeout: 6000 }); await chip.scrollIntoViewIfNeeded();
+    await chip.tap();
+    await p.waitForFunction((id) => TAB === "market" && MKTVIEW === "detail" && MKTONE && MKTONE.id === id, tee.id, { timeout: 6000 });
+    await p.evaluate(() => { TAB = "showroom"; MKTVIEW = "browse"; render(); });
+  });
   await step(d, "Music: play, the bar shows, the sound moves, next track", async () => {
     await p.locator('.nav [data-tab="labs"]').tap();
     await p.locator('[data-lab="culture"]').first().tap();

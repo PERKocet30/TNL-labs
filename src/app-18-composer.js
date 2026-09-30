@@ -74,6 +74,10 @@ function pcomposeHTML(){
           <span class="pc-v">${tags.length?tags.length+" tagged":""}</span>${PC_CHEV}</button>
         ${tags.length?`<div class="pc-chips">${tags.map((u,i)=>`<span class="pc-chip">${avHTML(u,"")}@${esc(u.username)}
           <button data-pctrm="${i}" aria-label="Remove">${PC_X}</button></span>`).join("")}</div>`:""}
+        <button class="pc-opt" id="pcshop"><span class="pc-ic">${UI_IC.navMarket}</span><span class="pc-l">Tag products</span>
+          <span class="pc-v">${(c.products||[]).length?(c.products.length+" tagged"):"From your shop"}</span>${PC_CHEV}</button>
+        ${(c.products||[]).length?`<div class="pc-chips">${c.products.map((l,i)=>`<span class="pc-chip pc-prod"><img src="${esc(l.images[0]||"")}" alt="">${esc(l.title)} · ${money(l.price)}
+          <button data-pcprm="${i}" aria-label="Remove">${PC_X}</button></span>`).join("")}</div>`:""}
         <button class="pc-opt" id="pcloc"><span class="pc-ic">${PC_PIN}</span><span class="pc-l">${c.location?`<b>${esc(c.location)}</b>`:"Add location"}</span>
           ${c.location?`<span class="pc-x" data-pclocx aria-label="Remove location">${PC_X}</span>`:PC_CHEV}</button>
         ${c.vid?`<button class="pc-opt" id="pccov"><span class="pc-ic">${c.cover?`<img class="pc-covth" src="${esc(c.cover)}" alt="">`:PC_PICK.replace(/40/g,"22")}</span><span class="pc-l">Cover</span>
@@ -187,6 +191,16 @@ function wirePCompose(){
     const v=await uiPrompt("Add location",{placeholder:"City, venue or studio",value:c.location||"",okLabel:"Add"});
     if(v!=null&&PCOMPOSE===c){c.location=v.replace(/\s+/g," ").trim().slice(0,60);render()}};
   const co=$("#pccoff");if(co)co.onchange=()=>{c.commentsOff=co.checked};
+  /* ── products from your own shop (shoppable posts) ── */
+  const sh=$("#pcshop");if(sh)sh.onclick=async()=>{
+    if((c.products||[]).length>=5)return toast("Up to 5 products");
+    openPicker({title:"Tag products",loading:true,note:"From your shop. People tap them to buy.",empty:"Nothing for sale yet — list something in the Market first.",
+      onPick:it=>{if(PCOMPOSE===c&&it.l){(c.products=c.products||[]).push(it.l);render()}}});
+    try{const d=await api.mkt("seller="+encodeURIComponent(myName()));
+      if(PICKER){PICKER.items=(d.listings||[]).filter(l=>l.kind!=="loop"&&!(c.products||[]).some(x=>x.id===l.id))
+        .map(l=>({label:l.title,sub:money(l.price),avatar:l.images[0]||"",l}));PICKER.loading=false;render()}}catch(e){if(PICKER){PICKER.loading=false;render()}}
+  };
+  document.querySelectorAll("[data-pcprm]").forEach(b=>b.onclick=()=>{c.products.splice(+b.dataset.pcprm,1);render()});
 
   /* ── caption: grows as you type, @ suggests people ── */
   const ta=$("#pcbody"),mb=$("#pcment");

@@ -42,8 +42,22 @@ const row = q.postById.get(pid), shaped = X.postExtras(row);
 t("saved and shaped", shaped.tags.join() === "amy,bob" && shaped.location === "Studio B" && shaped.commentsOff === true);
 t("each tagged person is told, once", told.filter((a) => a[2] === "tag" && a[3] === pid).map((a) => a[0]).sort().join() === [amy, bob].sort().join());
 t("commentsOff() reads the row", X.commentsOff(row) === true);
-t("an old post (no extras) shapes clean", JSON.stringify(X.postExtras({})) === JSON.stringify({ tags: [], location: "", commentsOff: false }));
+t("an old post (no extras) shapes clean", JSON.stringify(X.postExtras({})) === JSON.stringify({ tags: [], location: "", commentsOff: false, products: [] }));
 t("junk in the column doesn't throw", X.postExtras({ extras: "{nope" }).tags.length === 0);
+
+console.log("\nSHOPPABLE POSTS");
+const Lst = (sid, title, status = "active") => Number(db.prepare(`INSERT INTO listings (seller_id,title,price_cents,images,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)`)
+  .run(sid, title, 4000, '["/uploads/t.jpg"]', status, now, now).lastInsertRowid);
+const mineA = Lst(me, "Tee"), mineB = Lst(me, "Cap"), gone2 = Lst(me, "Old", "removed"), theirs = Lst(amy, "Amy's");
+const px = JSON.parse(X.cleanExtras({ products: [mineA, String(mineB), mineA, theirs, gone2, 99999, "x"] }, me).extras).products;
+t("only your own, for-sale listings, once each", px.join() === [mineA, mineB].join());
+t("at most 5", JSON.parse(X.cleanExtras({ products: [mineA, mineB, Lst(me, "3"), Lst(me, "4"), Lst(me, "5"), Lst(me, "6")] }, me).extras).products.length === 5);
+const pp = X.postExtras({ extras: JSON.stringify({ products: [mineA, mineB] }) }).products;
+t("shaped with title, live price and first photo", pp[0].title === "Tee" && pp[0].price === 4000 && pp[0].image === "/uploads/t.jpg" && pp[0].sold === false);
+db.prepare(`UPDATE listings SET status='sold' WHERE id=?`).run(mineB);
+db.prepare(`UPDATE listings SET status='removed' WHERE id=?`).run(mineA);
+const pp2 = X.postExtras({ extras: JSON.stringify({ products: [mineA, mineB] }) }).products;
+t("a sold one says sold; a deleted one disappears", pp2.length === 1 && pp2[0].id === mineB && pp2[0].sold === true);
 
 console.log("\nCOMMENTS ON / OFF LATER");
 const call = (userId, body) => { let out, code = 200; routes["/api/posts/:id/comments-off"]({ params: { id: String(pid) }, user: { id: userId }, body },
