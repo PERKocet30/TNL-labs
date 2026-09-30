@@ -24,7 +24,7 @@ function uiChoose(title,body,opts){
 const pdKey=()=>"tnl-drafts:"+(myName()||"");
 function pdList(){try{const a=JSON.parse(localStorage.getItem(pdKey())||"[]");return Array.isArray(a)?a:[]}catch(e){return []}}
 function pdPut(a){try{localStorage.setItem(pdKey(),JSON.stringify(a.slice(0,20)));return true}catch(e){return false}}
-const PD_KEEP=["body","imgs","vid","cover","vw","vh","track","ch","collabs","tags","location","commentsOff"];
+const PD_KEEP=["body","imgs","vid","cover","vw","vh","track","ch","collabs","tags","location","commentsOff","products"];
 function pdSave(c){
   if(c.upN||c.vidbusy){toast("Wait for the upload to finish, then save");return false}
   const d={id:c.draftId||("d"+Date.now()),at:Date.now()};
@@ -75,7 +75,7 @@ async function pqKick(c){
     const d=await api.post({channel:c.ch?c.ch.id:"profile",body:(c.body||"").trim(),images:c.imgs.map(({busy,orig,edit,...im})=>im),
       videoUrl:c.vid?c.vid.url:undefined,thumbUrl:c.vid&&c.cover?c.cover:undefined,mediaW:c.vid?c.vw:undefined,mediaH:c.vid?c.vh:undefined,
       isWork:true,audioTrackId:c.track?c.track.id:undefined,
-      tags:(c.tags||[]).map(u=>u.username),location:c.location||"",commentsOff:!!c.commentsOff});
+      tags:(c.tags||[]).map(u=>u.username),location:c.location||"",commentsOff:!!c.commentsOff,products:(c.products||[]).map(l=>l.id)});
     let sent=0;const pid=d&&d.post&&d.post.id;
     if(pid)for(const u of c.collabs||[]){try{await api.invite(pid,u.username);sent++}catch(e){}}
     c.state="done";c.sent=sent;pdDelete(c.draftId);

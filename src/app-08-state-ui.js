@@ -138,7 +138,7 @@ const MYPAGE=()=>!!(PROFILE&&ME&&PROFILE.user&&PROFILE.user.username===ME.userna
    be set on every input path and the one you forget is the one that eats
    somebody's post. */
 const pcDirty=()=>!!(PCOMPOSE&&((PCOMPOSE.body||"").trim()||PCOMPOSE.imgs.length||PCOMPOSE.vid||PCOMPOSE.vidbusy||PCOMPOSE.upN||PCOMPOSE.track||(PCOMPOSE.collabs&&PCOMPOSE.collabs.length)||PCOMPOSE.ch
-  ||(PCOMPOSE.tags&&PCOMPOSE.tags.length)||PCOMPOSE.location));
+  ||(PCOMPOSE.tags&&PCOMPOSE.tags.length)||PCOMPOSE.location||(PCOMPOSE.products&&PCOMPOSE.products.length)));
 /* pcLeave (Cancel / back: save a draft, discard, keep editing) lives in app-18-post-queue.js. */
 const myRep=()=>ME?ME.rep:0;
 function needAccount(why){

@@ -30,7 +30,7 @@ function wireMarket(){
     try{const d=await api.connectDash();window.open(d.url,"_blank")}catch(e){toast(e.message)}};
   document.querySelectorAll("[data-mopen]").forEach(el=>el.onclick=async e=>{
     if(e.target.closest("[data-mlike]"))return;
-    PROFILE=null;TAB="market";           // a shop card lives on profiles too — land in the market
+    PROFILE=null;POSTOPEN=null;TAB="market";   // shop cards live on profiles and posts too — land in the market
     MKTVIEW="detail";MKTONE=null;LPICK={id:0,size:"",colour:""};render();
     try{const d=await api.mktOne(el.dataset.mopen);
       MKTONE=d.listing;MKTOFFERS=d.offers||[];MKTSELLER=d.seller||null;MKTSIMILAR=d.similar||[];

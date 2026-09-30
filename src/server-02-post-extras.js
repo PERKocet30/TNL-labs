@@ -1,13 +1,20 @@
 /* ---- POST EXTRAS · 2026-09-30 ----
    What the post creator adds beyond the work: people tagged (up to 20,
    real members who haven't blocked you — they get told), a place (text,
-   60 chars), and comments off. Stored as one JSON column, posts.extras. */
+   60 chars), comments off, and products from your own shop. Stored as
+   one JSON column, posts.extras. */
 function readExtras(row) {
   try { const x = JSON.parse(row?.extras || "null"); return x && typeof x === "object" ? x : {}; } catch { return {}; }
 }
+/* Shoppable posts: up to 5 of the author's own listings, shown under the
+   work with their live price and whether they've sold. */
+const productQ = db.prepare(`SELECT id, title, price_cents, images, status FROM listings WHERE id = ?`);
 function postExtras(row) {
   const x = readExtras(row);
-  return { tags: Array.isArray(x.tags) ? x.tags : [], location: x.location || "", commentsOff: !!x.commentsOff };
+  const products = (Array.isArray(x.products) ? x.products : []).map((id) => productQ.get(id)).filter((l) => l && l.status !== "removed")
+    .map((l) => ({ id: l.id, title: l.title, price: l.price_cents, sold: l.status !== "active",
+      image: (() => { try { return JSON.parse(l.images || "[]")[0] || ""; } catch { return ""; } })() }));
+  return { tags: Array.isArray(x.tags) ? x.tags : [], location: x.location || "", commentsOff: !!x.commentsOff, products };
 }
 const commentsOff = (post) => !!readExtras(post).commentsOff;
 
@@ -23,7 +30,12 @@ function cleanExtras(body, authorId) {
   }
   const location = String(body?.location || "").replace(/\s+/g, " ").trim().slice(0, 60);
   const off = body?.commentsOff === true;
-  return { extras: tags.length || location || off ? JSON.stringify({ tags, location, commentsOff: off }) : null, tagIds: ids };
+  // Only your own shop, only what's for sale.
+  const own = db.prepare(`SELECT id FROM listings WHERE id = ? AND seller_id = ? AND status = 'active'`);
+  const products = [...new Set((Array.isArray(body?.products) ? body.products : []).slice(0, 10).map(Number))]
+    .filter((id) => Number.isInteger(id) && own.get(id, authorId)).slice(0, 5);
+  const any = tags.length || location || off || products.length;
+  return { extras: any ? JSON.stringify({ tags, location, commentsOff: off, products }) : null, tagIds: ids };
 }
 
 /* Comments on or off later, from the post's own menu. Author only. */

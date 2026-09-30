@@ -5,6 +5,13 @@ function pxWithHTML(p){
   const who=u=>`<b class="px-u" data-u="${esc(u)}">@${esc(u)}</b>`;
   return `<div class="px-with">with ${t.length<=2?t.map(who).join(" and "):who(t[0])+` and <b class="px-u" data-pxtags="${p.id}">${t.length-1} others</b>`}</div>`;
 }
+/* Shoppable posts: the pieces in the work, under it — tap to buy. */
+function pxShopHTML(p){
+  const ps=p.products||[];if(!ps.length)return "";
+  return `<div class="px-shop"><div class="px-shop-h">${UI_IC.navMarket}<span>Shop this post</span></div>
+    <div class="px-shop-r">${ps.map(l=>`<button class="px-prod${l.sold?" sold":""}" data-pxshop="${l.id}">
+      <img src="${esc(l.image)}" alt="" loading="lazy"><span class="px-pt">${esc(l.title)}</span><span class="px-pp">${l.sold?"Sold":money(l.price)}</span></button>`).join("")}</div></div>`;
+}
 /* A video shows its cover until it plays — never a black box. */
 const pxPoster=p=>p.videoUrl&&p.thumbUrl&&p.thumbUrl!==p.imageUrl?` poster="${esc(p.thumbUrl)}"`:"";
 /* Comments switched on/off: show or hide the button in place. */
@@ -12,6 +19,14 @@ function pxPaintActs(id){
   const p=findAnyPost(id);if(!p)return;
   document.querySelectorAll(`.igact[data-comments="${id}"]`).forEach(b=>b.hidden=!!p.commentsOff);
 }
+/* A product on a post opens its listing — from any feed, however it was
+   painted (the Showroom repaints cards without the Market's wiring). */
+async function pxOpenListing(id){
+  PROFILE=null;POSTOPEN=null;OPENCOMMENTS=null;TAB="market";MKTVIEW="detail";MKTONE=null;LPICK={id:0,size:"",colour:""};render();
+  try{const d=await api.mktOne(id);MKTONE=d.listing;MKTOFFERS=d.offers||[];MKTSELLER=d.seller||null;MKTSIMILAR=d.similar||[];
+    pushView("listing",d.listing.id);render()}catch(x){toast(x.message)}
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-pxshop]");if(!b)return;e.stopPropagation();pxOpenListing(+b.dataset.pxshop)},true);
 /* "and 3 others" lists everyone tagged. */
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-pxtags]");if(!b)return;
