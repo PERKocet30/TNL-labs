@@ -606,6 +606,19 @@ console.log("\nMEMBER · PHONE");
   /* Glitch signals (app-19-glitch.js). Everything above is normal use, so it
      must have recorded nothing: no jumps, no slow screens, no failed saves. */
   const glitches = async () => { await p.evaluate(() => glFlush()); await p.waitForTimeout(600); return api("/api/admin/glitches", token); };
+  await step(d, "event: the Showroom banner opens the tournament, its gallery and the enter sheet", async () => {
+    const mk = await fetch(B + "/api/admin/events", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + token },
+      body: JSON.stringify({ slug: "e2e-poster", title: "E2E Poster Tournament", brief: "A poster.", format: "bracket", published: true, opensAt: Date.now() - 1000, submitDays: 7 }) });
+    ok(mk.ok, "couldn't create the event (" + mk.status + ")");
+    // no extra sign-in here: logins are rate-limited, and the computer run needs one
+    await p.evaluate(async () => { await loadEvents(); POSTOPEN = null; TAB = "showroom"; render(); });
+    await p.waitForSelector(".ev-banner", { timeout: 4000 });
+    await p.locator(".ev-banner .ev-go").tap(); await p.waitForSelector(".ev-h", { timeout: 4000 });
+    ok(/0 entries so far/i.test(await p.locator(".ev").innerText()), "the gallery should say there are no entries yet");
+    await p.locator("#eventer").tap(); await p.waitForSelector("#evsheet");
+    ok(await p.locator("#evsend").isDisabled(), "Enter should wait for a piece and the rules box");
+    await p.evaluate(() => { EVENTER = null; TAB = "showroom"; render(); });
+  });
   await step(d, "normal use records no glitches", async () => {
     const g = await glitches();
     ok(!g.recent.length, "recorded: " + g.recent.map((x) => x.kind + " @ " + x.place + " " + x.detail).join(" | "));

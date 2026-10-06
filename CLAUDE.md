@@ -50,6 +50,7 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
 - `public/studio.js` — the Studio (beat maker), hidden unless Admin → Settings
   → Studio is on (`studioOn()`). `public/admin.html` + `public/admin-app/*.js` — `/admin` (keep each ≤ 24KB too).
 - The README has a table of what each numbered part holds, and the API route list.
+- Events (the tournament): `server-10-events-*.js` + `app-17-event-*.js` + admin `8-events.js`. `tickEvent()` is the only thing that moves an event forward; vote counts never leave the server while a stage is open (`test/events.test.mjs` checks).
 
 ## Product rules to preserve
 

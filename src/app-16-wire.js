@@ -317,6 +317,6 @@ function wire(){
     QUEUE.splice(+b.dataset.qdrop,1);render();
   });
   const di=$("#dropimg");if(di)di.onclick=()=>{QUEUE=[];render()};
-  wireFeed();wireSheet();wireMarket();wirePicker();wirePCompose();wireTrkEdit();wirePostOpen();wireMusAuto();paintPlayer();
+  wireFeed();wireSheet();wireEvent();wireMarket();wirePicker();wirePCompose();wireTrkEdit();wirePostOpen();wireMusAuto();paintPlayer();
   wireLightbox();
 }

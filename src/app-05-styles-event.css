@@ -1,0 +1,80 @@
+/* EVENTS v1.0 — 2026-10-06. The tournament screen and the Showroom banner.
+   Paper is square, glass is round: cards and images are square, buttons
+   and the pick dot are round. The accent marks what you picked and who won. */
+.ev-banner{display:flex;align-items:center;gap:12px;width:calc(100% - 32px);margin:12px 16px 4px;padding:10px 12px;background:var(--card);border:1px solid var(--line);color:var(--tx);font-family:inherit;text-align:left;cursor:pointer}
+.ev-banner img{width:44px;height:44px;object-fit:cover;flex:none;background:var(--el)}
+.ev-bt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:15px;line-height:19px}
+.ev-bt b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev-eye{font-size:12px;line-height:16px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.ev-eye b{color:var(--green)}
+.ev-go{flex:none;background:var(--accent-fill);color:var(--on-accent);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700}
+
+.ev{padding:0 16px 120px}
+.ev-head{padding:18px 0 4px}
+.ev-h{font-size:30px;line-height:34px;letter-spacing:-.02em;margin:8px 0 6px}
+.ev-ph{font-size:15px;line-height:21px;font-weight:700}
+.ev-left{color:var(--dim);font-weight:400}
+.ev-prize{display:inline-block;margin-top:10px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:700}
+.ev-cover{display:block;width:100%;max-height:360px;object-fit:cover;margin-top:14px;background:var(--el);cursor:zoom-in}
+.ev-brief{margin:14px 0 0;font-size:15px;line-height:21px;white-space:pre-wrap}
+.ev-meta{display:flex;flex-direction:column;gap:4px;margin-top:12px;font-size:12px;line-height:16px;color:var(--dim)}
+.ev-meta a{color:var(--tx);text-decoration:underline;cursor:pointer}
+.ev-steps{display:flex;gap:0;margin:16px -16px 0;padding:0 16px 2px;list-style:none;overflow-x:auto;scrollbar-width:none;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.ev-steps::-webkit-scrollbar{display:none}
+.ev-steps li{flex:none;display:flex;flex-direction:column;gap:2px;padding:10px 14px 10px 0;margin-right:14px;font-size:12px;line-height:16px;color:var(--dim);border-bottom:2px solid transparent}
+.ev-steps li b{color:var(--dim);font-weight:700}
+.ev-steps li.past b{color:var(--tx2)}
+.ev-steps li.on{border-bottom-color:var(--green)}
+.ev-steps li.on b{color:var(--tx)}
+
+.ev-note{margin:16px 0 12px;padding:12px 14px;background:var(--el);font-size:15px;line-height:21px}
+.ev-small{font-size:12px;line-height:16px;margin-top:6px}
+.ev-cta{display:flex;width:100%;justify-content:center;margin-top:16px;padding:14px 20px;font-size:15px}
+.ev-cta[disabled]{opacity:.4}
+.ev-sec{margin-top:22px}
+.ev-sec h3{font-size:12px;line-height:16px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 10px}
+
+.ev-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.ev-th{position:relative;background:var(--el);border:1px solid var(--line);aspect-ratio:4/5;overflow:hidden}
+.ev-th img{display:block;width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.ev-th.on{outline:3px solid var(--green);outline-offset:-3px}
+.ev-th.big{aspect-ratio:auto}
+.ev-th.big img{height:auto;max-height:70vh;object-fit:contain}
+.ev-pick{position:absolute;right:8px;bottom:30px;width:40px;height:40px;border-radius:999px;border:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);color:#fff;cursor:pointer}
+.ev-th.on .ev-pick{background:var(--accent-fill);color:var(--on-accent)}
+.ev-pick.busy{opacity:.5}
+.ev-mine,.ev-seed{position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:999px;background:var(--tx);color:var(--bg);font-size:11px;font-weight:700}
+.ev-seed{left:auto;right:8px;background:rgba(0,0,0,.6);color:#fff}
+.ev-by{position:absolute;left:0;right:0;bottom:0;padding:6px 8px;font-size:12px;line-height:16px;background:linear-gradient(transparent,rgba(0,0,0,.55));color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.ev-empty{border-style:dashed}
+
+.ev-yours{display:grid;grid-template-columns:140px 1fr;gap:12px;align-items:start}
+.ev-yours p{margin:0 0 10px;font-size:15px;line-height:21px;white-space:pre-wrap}
+.ev-match{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:14px}
+.ev-vs{font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase}
+.ev-side.lost{opacity:.45}
+.ev-side.win .ev-th{outline:3px solid var(--green);outline-offset:-3px}
+.ev-pct{margin-top:4px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.ev-final{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:8px}
+.ev-final.two{grid-template-columns:1fr 1fr;gap:8px}
+.ev-score{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.ev-score button{min-width:32px;height:32px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--tx);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.ev-score button.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.ev-win{margin-top:16px}
+.ev-win h2{font-size:30px;line-height:34px;letter-spacing:-.02em;margin:4px 0 0}
+.ev-win .ev-eye{margin-top:12px}
+.ev-rank{display:grid;grid-template-columns:24px 64px 1fr;gap:10px;align-items:center;margin-bottom:10px}
+.ev-rank .ev-th{aspect-ratio:1}
+.ev-rank .ev-by{display:none}
+.ev-n{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+
+.ev-enter{padding-bottom:24px}
+.ev-drop{display:flex;align-items:center;justify-content:center;min-height:220px;margin:4px 0 12px;background:var(--el);border:1px dashed var(--line2);cursor:pointer;text-align:center;color:var(--dim);font-size:15px;line-height:21px}
+.ev-drop img{display:block;max-width:100%;max-height:50vh}
+.ev-cap{border-radius:0;min-height:76px;resize:none}
+.ev-agree{display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:13px;line-height:18px}
+.ev-agree a{color:var(--tx);text-decoration:underline}
+.ev-agree input{margin-top:2px;width:18px;height:18px;accent-color:var(--tx)}
+@media (min-width:640px){.ev-grid{grid-template-columns:repeat(3,1fr)}}
+.ev-final.two .ev-score{gap:3px}
+.ev-final.two .ev-score button{min-width:0;width:calc(20% - 3px);height:30px;font-size:12px}

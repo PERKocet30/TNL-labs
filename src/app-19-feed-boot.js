@@ -345,7 +345,10 @@ function paintVerifyBar(){
   const path=location.pathname;
   const mu=/^\/u\/([a-z0-9._]+)$/i.exec(path);
   const mm=/^\/m\/(\d+)$/.exec(path);
-  if(mu){openProfile(mu[1])}
+  const me=new URLSearchParams(location.search).get("e");   // /e/:slug pages send people here
+  loadEvents();
+  if(me){history.replaceState({},"","/");TAB="event";EVSLUG=me;loadEvent()}
+  else if(mu){openProfile(mu[1])}
   else if(mm){TAB="market";MKTVIEW="detail";
     try{const d=await api.mktOne(mm[1]);MKTONE=d.listing;MKTOFFERS=d.offers||[]}catch(e){}}
   render();
