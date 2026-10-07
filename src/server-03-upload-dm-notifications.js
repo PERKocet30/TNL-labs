@@ -59,7 +59,8 @@ function sniff(buf) {
 const LIMITS = { image: 30 * 1024 * 1024, video: 650 * 1024 * 1024, audio: 100 * 1024 * 1024 };
 const B64_LIMIT = 8 * 1024 * 1024; // the JSON path stays small on purpose
 
-app.post("/api/upload/stream", auth, verified, rateLimit({ max: 40, windowMs: 300000, key: "user" }), (req, res) => {
+/* 10 photos = 30 files now (original + feed + grid copies). */
+app.post("/api/upload/stream", auth, verified, rateLimit({ max: 120, windowMs: 300000, key: "user" }), (req, res) => {
   const declared = Number(req.get("content-length") || 0);
   if (declared > LIMITS.video) {
     return res.status(413).json({ error: `That file's too big — ${LIMITS.video / 1048576}MB max` });

@@ -135,10 +135,9 @@ function wirePCompose(){
     const take=rest.slice(0,Math.max(0,room));if(!take.length)return;
     c.upN=(c.upN||0)+take.length;render();
     for(const file of take){
-      try{const p=await prepImage(file,true);
-        const up=await api.upload(p.full);const th=await api.upload(p.thumb);
+      try{const im=await uploadWork(file);   // the original + feed and grid copies (app-08-images.js)
         if(c.dead)return;
-        c.imgs.push({url:up.url,thumb:th.url,w:p.w,h:p.h,...(p.gif?{gif:true}:{})});}
+        c.imgs.push(im);}
       catch(e){if(c.dead)return;toast(e.message)}
       c.upN--;pcRepaint(c);
     }

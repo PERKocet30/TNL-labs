@@ -230,7 +230,7 @@ function postHTML(p){const mine=p.author.username===myName();
        whole, the way it was made. Chat is a grid: four refs dropped
        mid-sentence are one glance, not a slideshow. */
     ?`<div class="caro" data-caro="${p.id}">
-      <div class="caro-t">${p.images.map(im=>`<img class="caro-i" src="${esc(im.thumb||im.url)}" data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async" style="aspect-ratio:${im.w&&im.h?im.w+"/"+im.h:"4/5"}">`).join("")}</div>
+      <div class="caro-t">${p.images.map(im=>`<img class="caro-i" ${imgAttrs(im,CSLOTPO)} ${CSLOTPO?`data-zoom="${esc(im.url)}"`:`data-u="${esc(p.author.username)}"`} alt="" loading="lazy" decoding="async" style="aspect-ratio:${im.w&&im.h?im.w+"/"+im.h:"4/5"}">`).join("")}</div>
       <div class="caro-d">${p.images.map((_,i)=>`<span class="${i===0?"on":""}"></span>`).join("")}</div>
       <span class="caro-n mono">1/${p.images.length}</span>
     </div>`
@@ -238,9 +238,9 @@ function postHTML(p){const mine=p.author.username===myName();
     ${p.images.slice(0,4).map((im,i)=>`<img class="gimg" src="${esc(im.thumb||im.url)}" alt="" loading="lazy" decoding="async"
       data-u="${esc(p.author.username)}">${(i===3&&p.images.length>4)?`<span class="galn mono">+${p.images.length-4}</span>`:""}`).join("")}
   </div>`)
-  :p.imageUrl?`<img class="post-img" src="${esc(p.thumbUrl||p.imageUrl)}" alt="attached work" loading="lazy" decoding="async"
+  :p.imageUrl?`<img class="post-img" ${imgAttrs(pxImgs(p)[0],CSLOTPO)} alt="attached work" loading="lazy" decoding="async"${CSLOTPO?` data-zoom="${esc(p.imageUrl)}"`:""}
     ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
-    data-u="${esc(p.author.username)}">`:""}
+    ${CSLOTPO?"":`data-u="${esc(p.author.username)}"`}>`:""}
   ${p.videoUrl?`<div class="vwrap">
     <video class="post-vid" src="${esc(p.videoUrl)}"${pxPoster(p)} muted loop playsinline preload="none" data-auto
       ${p.mediaW?`style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}></video>

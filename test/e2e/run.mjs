@@ -550,6 +550,38 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator('#poov .igact[data-comments]').isHidden(), "comment button still showing");
     await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; PROFILE = null; TAB = "showroom"; render(); });
   });
+  await step(d, "artwork quality: a 3000×4000 transparent PNG is kept exactly, the feed gets sharp copies, the opened post shows the original", async () => {
+    const b64 = await p.evaluate(() => { const c = document.createElement("canvas"); c.width = 3000; c.height = 4000; const x = c.getContext("2d");
+      x.strokeStyle = "#111"; x.lineWidth = 1; for (let i = 0; i < 4000; i += 6) { x.beginPath(); x.moveTo(0, i); x.lineTo(3000, i + 40); x.stroke(); }
+      x.fillStyle = "#98FC68"; x.fillRect(800, 800, 1400, 1400); x.clearRect(1200, 1200, 600, 600);   // a see-through hole
+      return c.toDataURL("image/png").split(",")[1]; });
+    const art = Buffer.from(b64, "base64");
+    await openCreator();
+    await p.locator("#pcfile").setInputFiles({ name: "poster.png", mimeType: "image/png", buffer: art });
+    await p.waitForFunction(() => PCOMPOSE.imgs.length === 1 && !PCOMPOSE.upN, null, { timeout: 30000 });
+    const im = await p.evaluate(() => PCOMPOSE.imgs[0]);
+    ok(im.w === 3000 && im.h === 4000 && im.tw === 1440 && im.sw === 480, "sizes: " + JSON.stringify(im));
+    const orig = Buffer.from(await (await fetch(B + im.url)).arrayBuffer());
+    ok(orig.equals(art), `the original wasn't kept byte for byte (${orig.length} vs ${art.length})`);
+    const th = Buffer.from(await (await fetch(B + im.thumb)).arrayBuffer());
+    ok(th[0] === 0x89 && th[1] === 0x50, "the feed copy of a transparent design isn't a PNG (it would go black)");
+    await p.locator("#pcbody").fill("Tournament entry");
+    await p.locator("#pcgo").tap();
+    await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 15000 });
+    const np = (await myPosts())[0];
+    ok(np.images && np.images[0].tw === 1440 && np.images[0].sm, "the post didn't keep its copies: " + JSON.stringify(np.images));
+    await p.evaluate(async () => { TAB = "showroom"; SRPOSTS = []; render(); await loadShowroom(true); });
+    const img = p.locator(`#sr-grid img[src="${np.images[0].thumb}"]`).first();
+    await img.waitFor({ timeout: 6000 });
+    ok(/480w.*1440w.*3000w/.test(await img.getAttribute("srcset")), "no srcset on the feed picture");
+    await p.evaluate((id) => openPostById(id), np.id);
+    await p.waitForSelector("#poov img[data-zoom]", { timeout: 5000 });
+    ok((await p.locator("#poov img[data-zoom]").first().getAttribute("src")) === np.images[0].url, "the opened post isn't showing the original");
+    await p.locator("#poov img[data-zoom]").first().tap();
+    await p.waitForSelector("#lb img", { timeout: 3000 });
+    ok((await p.locator("#lb img").getAttribute("src")) === np.images[0].url, "zoom isn't the original");
+    await p.evaluate(() => { LIGHTBOX = null; POSTOPEN = null; OPENCOMMENTS = null; TAB = "showroom"; render(); });
+  });
   await step(d, "shoppable post: tag a product from your shop, it shows under the work, tapping it opens the listing", async () => {
     const tee = (await api("/api/market?seller=tester", token)).listings.find((l) => l.title === "E2E Tee");
     ok(tee, "no E2E Tee to tag");

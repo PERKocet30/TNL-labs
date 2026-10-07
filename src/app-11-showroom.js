@@ -18,11 +18,11 @@ function srCardHTML(p){
       </div>
     </div>
     ${(p.images&&p.images.length>1)?`<div class="caro" data-caro="s${p.id}">
-      <div class="caro-t">${p.images.map(im=>`<img class="caro-i" src="${esc(im.thumb||im.url)}" data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async" style="aspect-ratio:${im.w&&im.h?im.w+"/"+im.h:"4/5"}">`).join("")}</div>
+      <div class="caro-t">${p.images.map(im=>`<img class="caro-i" ${imgAttrs(im)} data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async" style="aspect-ratio:${im.w&&im.h?im.w+"/"+im.h:"4/5"}">`).join("")}</div>
       <div class="caro-d">${p.images.map((_,i)=>`<span class="${i===0?"on":""}"></span>`).join("")}</div>
       <span class="caro-n mono">1/${p.images.length}</span>
     </div>`
-    :p.imageUrl?`<img class="sr-img" src="${esc(p.thumbUrl||p.imageUrl)}" alt="work by ${esc(p.author.displayName)}" loading="lazy" decoding="async"
+    :p.imageUrl?`<img class="sr-img" ${imgAttrs(pxImgs(p)[0])} alt="work by ${esc(p.author.displayName)}" loading="lazy" decoding="async"
       ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
       data-u="${esc(p.author.username)}">`
       :p.videoUrl?`<div class="vwrap">

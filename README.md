@@ -46,7 +46,7 @@ public/admin.html               the admin dashboard (shell; app in public/admin-
 public/door.js                  the door's vial loader and mark
 public/sw.js                    service worker (installable app, offline shell)
 scripts/scientist.mjs           daily read-only checks against the live site
-test/                           39 test suites — run with npm test
+test/                           40 test suites — run with npm test
 ```
 
 **Edit the parts, never the built files.** Parts join in filename order, so two parts can share a number (`app-11-gate-logic`, `app-11-gate-screens`, `app-11-showroom`). `public/index.html` and `src/server.runtime.js` are regenerated on every boot and ignored by git.
@@ -56,6 +56,7 @@ test/                           39 test suites — run with npm test
 | `app-01-head` · `app-06-body` · `app-20-tail` | page markup, meta/OG tags, script tags |
 | `app-02…05-styles-*` | styles: base, profile, studio/UI, chat, post creator (`compose`), icons, media, listing editor (`sell`), the listing page (`listing`), and the computer layout (`wide`, loads last) |
 | `app-07-theme-labs-api` | theme, labs and channels, API client |
+| `app-08-images` | image quality: the artist's original kept (hidden data stripped), 1440px feed and 480px grid copies, `srcset` so screens get the sharp one |
 | `app-08-state-ui` · `app-09-render-nav` | app state, toasts/modals, routing, top bar; `render()` picks the phone or computer frame and keeps your scroll place across repaints |
 | `app-10-chat-1…6` | Messages v2 (2026-09-29): chat kit, inbox + chat screen, composer/voice notes, sheets (new chat, group, forward, mute), the signed-in live stream, lab rooms as chat |
 | `app-10-dm-search` | search, the door |

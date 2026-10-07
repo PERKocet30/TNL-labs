@@ -9,7 +9,7 @@ function workCardHTML(p, collab, K) {
   const many = p.images && p.images.length > 1;
   return `<div class="work" data-openpost="${p.id}">
     ${p.beat ? `<div class="work-beat"><button class="circle" style="width:28px;height:28px;font-size:12px" data-beatplay='${esc(JSON.stringify(p.beat))}' aria-label="Play">${DI.play}</button><span class="nm">${esc(p.beat.name || "untitled loop")}</span><span class="mono dim">${p.beat.bpm}BPM</span></div>`
-      : (many || p.imageUrl) ? `<img class="work-img" src="${esc(many ? (p.images[0].thumb || p.images[0].url) : (p.thumbUrl || p.imageUrl))}" alt="work" loading="lazy" decoding="async">`
+      : (many || p.imageUrl) ? `<img class="work-img" src="${esc(imgSmall(pxImgs(p)[0]))}" alt="work" loading="lazy" decoding="async">`
       /* NOT a <video>. With preload="none" and no poster the element renders
          empty AND, on iOS, swallows the tap instead of letting it bubble to
          .work[data-openpost] — so the tile looked blank and could not be
