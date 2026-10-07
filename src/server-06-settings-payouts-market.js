@@ -107,10 +107,21 @@ const LISTING_SELECT = `
          u.avatar_url AS seller_avatar, u.accent AS seller_accent, u.rep AS seller_rep
   FROM listings l JOIN users u ON u.id = l.seller_id`;
 
+/* Sizes read the way a rail hangs: XS S M L XL, then numbers (shoe and
+   waist sizes) low to high, then anything else A–Z. Not "L M S". */
+const SIZE_RAIL = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"];
+function sizeOrder(a, b) {
+  const ra = SIZE_RAIL.indexOf(a.toUpperCase()), rb = SIZE_RAIL.indexOf(b.toUpperCase());
+  if (ra >= 0 || rb >= 0) return ra < 0 ? 1 : rb < 0 ? -1 : ra - rb;
+  const na = parseFloat(a), nb = parseFloat(b);
+  if (!isNaN(na) || !isNaN(nb)) return isNaN(na) ? 1 : isNaN(nb) ? -1 : na - nb || a.localeCompare(b);
+  return a.localeCompare(b);
+}
+
 app.get("/api/market/meta", maybeAuth, (req, res) => {
   const sizes = db.prepare(`SELECT size FROM listings WHERE status='active' AND size != ''
     UNION SELECT json_extract(v.value,'$.size') FROM listings l, json_each(l.variants) v
-    WHERE l.status='active' AND json_extract(v.value,'$.size') != '' ORDER BY 1`).all().map((r) => r.size);
+    WHERE l.status='active' AND json_extract(v.value,'$.size') != ''`).all().map((r) => String(r.size)).sort(sizeOrder);
   const brands = db.prepare(`SELECT brand, COUNT(*) n FROM listings WHERE status='active' AND brand != '' GROUP BY brand ORDER BY n DESC LIMIT 20`).all().map((r) => r.brand);
   res.json({
     categories: CATEGORIES, conditions: CONDITIONS, sizes, brands,

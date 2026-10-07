@@ -99,13 +99,16 @@ app.get("/api/shop/stats", auth, (req, res) => {
   const paid = `status IN ('paid','shipped','complete')`;
   const gross = one(`SELECT COALESCE(SUM(amount_cents),0) n FROM orders WHERE seller_id=? AND ${paid}`, me).n;
   const fee = feeForRep(req.user.rep);
+  // TNL's cut only comes off what went through card checkout; a sale the
+  // buyer paid you for directly is all yours.
+  const carded = one(`SELECT COALESCE(SUM(amount_cents),0) n FROM orders WHERE seller_id=? AND ${paid} AND payment_ref IS NOT NULL AND payment_ref != ''`, me).n;
   res.json({
     active: one(`SELECT COUNT(*) n FROM listings WHERE seller_id=? AND status='active'`, me).n,
     views: one(`SELECT COALESCE(SUM(views),0) n FROM listings WHERE seller_id=? AND status='active'`, me).n,
     saves: one(`SELECT COUNT(*) n FROM listing_likes ll JOIN listings l ON l.id=ll.listing_id WHERE l.seller_id=? AND l.status='active'`, me).n,
     toShip: one(`SELECT COUNT(*) n FROM orders WHERE seller_id=? AND status IN ('pending','paid') AND (status='paid' OR payment_ref IS NULL OR payment_ref='')`, me).n,
     sold: one(`SELECT COUNT(*) n FROM orders WHERE seller_id=? AND ${paid}`, me).n,
-    gross, net: Math.round(gross * (1 - fee / 100)), feePct: fee,
+    gross, net: gross - Math.round(carded * fee / 100), feePct: fee,
     month: one(`SELECT COALESCE(SUM(amount_cents),0) n FROM orders WHERE seller_id=? AND ${paid} AND created_at>?`, me, month).n,
   });
 });

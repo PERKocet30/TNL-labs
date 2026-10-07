@@ -113,6 +113,10 @@
 .sdraft button{background:none;border:0;font:inherit;font-weight:700;text-decoration:underline;color:var(--tx);cursor:pointer}
 .lpol{margin-top:10px;font-size:11px;line-height:16px}
 .lpol a,.mktfoot a{color:inherit}
-.mktfoot{display:flex;flex-wrap:wrap;gap:6px 16px;padding:28px 16px 8px;font-size:11px}
+.mktfoot{display:flex;flex-wrap:wrap;gap:6px 16px;padding:28px 12px 8px;font-size:11px}
 .gx-legal{font-size:12px;line-height:16px;color:var(--dim);margin:0 0 10px;text-align:center}
 .gx-legal a{color:inherit}
+/* The buy bar fits a 360px phone with every button whole, and a toast on a
+   listing sits above the bar instead of over Offer / Buy (2026-10-07). */
+@media (max-width:380px){.lbar{gap:6px;padding-left:12px;padding-right:12px}.lbar .btn{padding:0 13px}.lbar .lbar-buy{min-width:0}}
+@media (max-width:1023px){body:has(.lpage .lbar) .toast{bottom:calc(150px + env(safe-area-inset-bottom))}}

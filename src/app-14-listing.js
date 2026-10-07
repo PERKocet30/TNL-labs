@@ -51,7 +51,7 @@ function lbarHTML(l,mine){
   return `<div class="lbar">${price}
     ${l.acceptsOffers?`<button class="btn ghost" data-offer="${l.id}">Offer</button>`:""}
     <button class="btn ghost lbar-bag" data-bagadd="${l.id}" aria-label="Add to bag"${out?" disabled":""}>${UI_IC.navMarket}</button>
-    <button class="btn green lbar-buy" data-buy="${l.id}"${out?" disabled":""}>${out?"Sold out":st.need?"Select a "+st.need:"Buy now"}</button></div>`}
+    <button class="btn green lbar-buy" data-buy="${l.id}"${out?" disabled":""}>${out?"Sold out":st.need?"Pick "+st.need:"Buy now"}</button></div>`}
 
 function detailHTML(){
   if(!MKTONE)return `<div class="scroll">${skel()}</div>`;

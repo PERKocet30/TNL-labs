@@ -204,7 +204,7 @@ function wireMarket(){
   document.querySelectorAll("[data-offer]").forEach(b=>b.onclick=async()=>{
     if(guest())return needAccount("Join to make an offer.");
     const ask=MKTONE?MKTONE.price:0;
-    const v=await uiPrompt("Make an offer",{body:"Asking "+money(ask),placeholder:"Your offer in $",type:"number",inputmode:"decimal"});if(!v)return;
+    const v=await uiPrompt("Make an offer",{body:"Asking "+money(ask),placeholder:"Your offer in $",type:"number",inputmode:"decimal",okLabel:"Send offer"});if(!v)return;
     try{await api.mktOffer(b.dataset.offer,Number(v));toast("Offer sent");
       const d=await api.mktOne(b.dataset.offer);MKTONE=d.listing;MKTOFFERS=d.offers||[];render()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-oa]").forEach(b=>b.onclick=async()=>{
