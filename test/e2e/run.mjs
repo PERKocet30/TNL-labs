@@ -550,21 +550,27 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator('#poov .igact[data-comments]').isHidden(), "comment button still showing");
     await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; PROFILE = null; TAB = "showroom"; render(); });
   });
-  await step(d, "artwork quality: a 3000×4000 transparent PNG is kept exactly, the feed gets sharp copies, the opened post shows the original", async () => {
-    const b64 = await p.evaluate(() => { const c = document.createElement("canvas"); c.width = 3000; c.height = 4000; const x = c.getContext("2d");
-      x.strokeStyle = "#111"; x.lineWidth = 1; for (let i = 0; i < 4000; i += 6) { x.beginPath(); x.moveTo(0, i); x.lineTo(3000, i + 40); x.stroke(); }
-      x.fillStyle = "#98FC68"; x.fillRect(800, 800, 1400, 1400); x.clearRect(1200, 1200, 600, 600);   // a see-through hole
-      return c.toDataURL("image/png").split(",")[1]; });
-    const art = Buffer.from(b64, "base64");
+  await step(d, "artwork quality: a transparent PNG is kept exactly, an oversized JPEG is capped at 3000px; sharp feed copies; the opened post shows the full size", async () => {
+    const make = (w, h, type = "image/png") => p.evaluate(([w, h, type]) => { const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d");
+      x.strokeStyle = "#111"; x.lineWidth = 1; for (let i = 0; i < h; i += 6) { x.beginPath(); x.moveTo(0, i); x.lineTo(w, i + 40); x.stroke(); }
+      x.fillStyle = "#98FC68"; x.fillRect(w / 4, h / 4, w / 2, h / 2); x.clearRect(w / 3, h / 3, w / 4, h / 4);   // a see-through hole
+      if (type === "image/jpeg") { const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, "#ff7a45"); g.addColorStop(1, "#18c6a0"); x.globalCompositeOperation = "destination-over"; x.fillStyle = g; x.fillRect(0, 0, w, h); }
+      return c.toDataURL(type, .98).split(",")[1]; }, [w, h, type]).then((b) => Buffer.from(b, "base64"));
+    const big = await make(4000, 5000, "image/jpeg"), art = await make(2400, 3000);
     await openCreator();
-    await p.locator("#pcfile").setInputFiles({ name: "poster.png", mimeType: "image/png", buffer: art });
-    await p.waitForFunction(() => PCOMPOSE.imgs.length === 1 && !PCOMPOSE.upN, null, { timeout: 30000 });
-    const im = await p.evaluate(() => PCOMPOSE.imgs[0]);
-    ok(im.w === 3000 && im.h === 4000 && im.tw === 1440 && im.sw === 480, "sizes: " + JSON.stringify(im));
+    await p.locator("#pcfile").setInputFiles([{ name: "print.jpg", mimeType: "image/jpeg", buffer: big }, { name: "poster.png", mimeType: "image/png", buffer: art }]);
+    await p.waitForFunction(() => PCOMPOSE.imgs.length === 2 && !PCOMPOSE.upN, null, { timeout: 45000 });
+    const [capped, im] = await p.evaluate(() => PCOMPOSE.imgs);
+    ok(capped.w === 2400 && capped.h === 3000, "a 4000×5000 upload wasn't capped at 3000: " + JSON.stringify(capped));
+    const cb = Buffer.from(await (await fetch(B + capped.url)).arrayBuffer());
+    ok(cb[0] === 0xff && cb[1] === 0xd8 && cb.length < big.length, "the capped copy isn't a smaller JPEG");
+    console.log(`       (sizes: 4000×5000 JPEG ${(big.length / 1e6).toFixed(1)}MB → stored ${(cb.length / 1e6).toFixed(1)}MB; 2400×3000 PNG kept ${(art.length / 1e6).toFixed(1)}MB)`);
+    ok(im.w === 2400 && im.h === 3000 && im.tw === 1440 && im.sw === 480, "sizes: " + JSON.stringify(im));
     const orig = Buffer.from(await (await fetch(B + im.url)).arrayBuffer());
     ok(orig.equals(art), `the original wasn't kept byte for byte (${orig.length} vs ${art.length})`);
     const th = Buffer.from(await (await fetch(B + im.thumb)).arrayBuffer());
     ok(th[0] === 0x89 && th[1] === 0x50, "the feed copy of a transparent design isn't a PNG (it would go black)");
+    await p.evaluate(() => { PCOMPOSE.imgs.shift(); PCOMPOSE.idx = 0; render(); });
     await p.locator("#pcbody").fill("Tournament entry");
     await p.locator("#pcgo").tap();
     await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 15000 });
@@ -573,7 +579,7 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(async () => { TAB = "showroom"; SRPOSTS = []; render(); await loadShowroom(true); });
     const img = p.locator(`#sr-grid img[src="${np.images[0].thumb}"]`).first();
     await img.waitFor({ timeout: 6000 });
-    ok(/480w.*1440w.*3000w/.test(await img.getAttribute("srcset")), "no srcset on the feed picture");
+    ok(/480w.*1440w.*2400w/.test(await img.getAttribute("srcset")), "no srcset on the feed picture");
     await p.evaluate((id) => openPostById(id), np.id);
     await p.waitForSelector("#poov img[data-zoom]", { timeout: 5000 });
     ok((await p.locator("#poov img[data-zoom]").first().getAttribute("src")) === np.images[0].url, "the opened post isn't showing the original");

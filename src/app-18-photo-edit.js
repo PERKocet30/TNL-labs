@@ -119,11 +119,11 @@ async function pedDone(){
   const clean=JSON.stringify(e)===JSON.stringify(pedNew());
   c.upN=(c.upN||0)+1;im.busy=true;pcRepaint(c);
   try{
-    /* Back to the untouched original, or a new render at up to 4096px —
+    /* Back to the untouched original, or a new render at up to 3000px —
        with the same feed and grid copies as any upload. */
-    const src=clean?img:pedRender(document.createElement("canvas"),img,e,4096);
+    const src=clean?img:pedRender(document.createElement("canvas"),img,e,FULL_MAX);
     const tc=drawFit(src,1440,2400),sc=drawFit(src,480,800);
-    const [url,thumb,sm]=await Promise.all([clean?im.orig:upImg(await canvasBlob(src,"image/jpeg",.95)),
+    const [url,thumb,sm]=await Promise.all([clean?im.orig:upImg(await canvasBlob(src,"image/jpeg",.92)),
       upImg(await canvasBlob(tc,"image/jpeg",.86)),upImg(await canvasBlob(sc,"image/jpeg",.8))]);
     Object.assign(im,{url,thumb,sm,w:src.naturalWidth||src.width,h:src.naturalHeight||src.height,tw:tc.width,sw:sc.width});
   }catch(x){if(!c.dead)toast(x.message)}

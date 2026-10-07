@@ -101,20 +101,29 @@ function drawFit(img,maxW,maxH){
 const canvasBlob=(c,type,q)=>new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error("Couldn't prepare that image")),type,q));
 async function upImg(blob){const r=await uploadStream(blob);if(r.kind&&r.kind!=="image")throw new Error("That isn't an image");return r.url}
 
-/* A piece of work: the original (or a 4096px copy when it can't be kept),
-   a 1440px feed copy and a 480px grid copy. */
+/* A piece of work: the original when it's a sensible size, else a 3000px
+   copy — still twice what Instagram keeps (1440) — plus a 1440px feed copy
+   and a 480px grid copy. The cap is what keeps Railway cheap: a print-size
+   PNG can be 25MB; a 3000px copy is 1–3MB. */
+const FULL_MAX=3000;
 async function uploadWork(file){
   const {img}=await loadImage(file);
   const W=img.naturalWidth||img.width,H=img.naturalHeight||img.height;
-  if(file.type==="image/gif"&&file.size<8*1024*1024){const u=await upImg(file);return {url:u,thumb:u,w:W,h:H,gif:true}}
+  if(file.type==="image/gif"&&file.size<4*1024*1024){const u=await upImg(file);return {url:u,thumb:u,w:W,h:H,gif:true}}
   const alpha=(file.type==="image/png"||file.type==="image/webp")&&hasAlpha(img);
   const copyType=alpha?"image/png":"image/jpeg";
   let full=null,fw=W,fh=H;
-  if(Math.max(W,H)<=6000&&file.size<=28*1024*1024){
-    if(file.type==="image/jpeg")full=await cleanJpeg(file).catch(()=>null);
-    else if(file.type==="image/png")full=await cleanPng(file).catch(()=>null);
+  /* Keep the original when it's a sensible file (≤4MB JPEG, ≤6MB PNG);
+     past 3000px, keep whichever is smaller — it or the 3000px copy (line
+     art often shrinks worse than it started). */
+  if(Math.max(W,H)<=6000){
+    if(file.type==="image/jpeg"&&file.size<=4*1024*1024)full=await cleanJpeg(file).catch(()=>null);
+    else if(file.type==="image/png"&&file.size<=6*1024*1024)full=await cleanPng(file).catch(()=>null);
   }
-  if(!full){const c=drawFit(img,4096,4096);full=await canvasBlob(c,copyType,.95);fw=c.width;fh=c.height}
+  if(!full||Math.max(W,H)>FULL_MAX){
+    const c=drawFit(img,FULL_MAX,FULL_MAX),r=await canvasBlob(c,copyType,alpha?undefined:.92);
+    if(!full||r.size<full.size){full=r;fw=c.width;fh=c.height}
+  }
   const tc=drawFit(img,1440,2400),sc=drawFit(img,480,800);
   const [url,thumb,sm]=await Promise.all([upImg(full),upImg(await canvasBlob(tc,copyType,.86)),upImg(await canvasBlob(sc,copyType,.8))]);
   return {url,thumb,sm,w:fw,h:fh,tw:tc.width,sw:sc.width};
