@@ -91,7 +91,7 @@ function gateHTML(){
       body=`<h1 class="gx-h">What do you make?</h1><p class="gx-p">Pick up to 5. It's how people find you.</p>
         <div class="gx-roles">${ROLES.map(r=>`<button class="chip ${f.roles.includes(r)?"on":""}" data-r="${esc(r)}">${esc(r)}</button>`).join("")}</div>
         <div class="gx-count" id="rcount">${f.roles.length} of 5 selected</div>
-        ${err}<div class="gx-stick">${next("Create account",f.roles.length>0)}</div>`;
+        ${err}<div class="gx-stick"><p class="gx-legal">By creating an account you agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy policy</a>.</p>${next("Create account",f.roles.length>0)}</div>`;
     }
   }else{
     const skip=G.step!=="welcome"?`<button class="gx-skip" id="gxskip">Skip</button>`:"<span></span>";

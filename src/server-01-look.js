@@ -45,7 +45,16 @@ h1{font-size:30px;line-height:34px;font-weight:700;letter-spacing:-.02em;margin:
 .media{display:block;width:100%;max-height:420px;object-fit:cover;margin-top:10px;background:var(--el)}
 .body{margin:10px 0 0;white-space:pre-wrap}
 .meta{margin-top:10px}
-.empty{text-align:center;padding:28px 0}`;
+.empty{text-align:center;padding:28px 0}
+h2{font-size:17px;line-height:22px;font-weight:700;margin:0 0 8px}
+.pol{border-top:1px solid var(--line);padding:20px 0 8px;margin-top:20px}
+.pol p,.pol li{color:var(--tx2,var(--tx));margin:0 0 10px}
+.pol ul,.pol ol{padding-left:20px;margin:0 0 10px}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 4px}
+.toc a{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:12px;line-height:16px;text-decoration:none}
+.foot{border-top:1px solid var(--line);margin-top:48px;padding-top:16px;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px}
+.foot a{text-decoration:none;color:var(--dim)}
+.foot .cap{width:100%;margin-top:6px}`;
 
 const lookEsc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -76,6 +85,7 @@ ${LOOK_CSS}</style></head>
 <body${center ? ' class="center"' : ""}><main class="wrap">
 <a class="top" href="/"><img src="/icon-white-512.png" alt="">LABS &reg;</a>
 ${body}
+${lookFoot()}
 </main></body></html>`;
 }
 

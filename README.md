@@ -72,6 +72,7 @@ test/                           43 test suites — run with npm test
 | `server-01-boot` | setup, compression, caching rules, Sentry, prepared queries |
 | `server-02…11` | auth/feed, uploads/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/beats/Showroom, social/meta |
 | `server-11-profile` | profile v2: links, pronouns, pins (`/api/me/pins`), followers/following lists, the Tagged tab, "Followed by" |
+| `server-12-policies` | the public policy pages Stripe reviews: `/terms`, `/privacy`, `/policies` (shipping, returns, disputes, prohibited items), `/contact`, `/shop`, and `lookFoot()` — the footer on every server-built page. `SUPPORT_EMAIL` sets the inbox |
 | `server-02-post-extras` | a post's people tagged, place, comments on/off and products from your own shop (`posts.extras`) |
 | `server-07-cart` | the bag checkout (several items from one seller, one payment, shipping combined — `sessionFits()` binds a paid session to its whole group), `/api/shop/stats` |
 | `server-06-market-stock` | sizes and colours: every unit sold goes through `takeStock()` (the size picked, the listing closes at zero) |

@@ -93,6 +93,7 @@ function wireProfileV2(){
     {icon:PF_I.level,label:"Level and rates",run:()=>{CLIMB=true;render()}},
     {icon:PF_I.share,label:"Share profile",run:()=>shareProfile(myName())},
     ...(ME&&ME.isAdmin?[{icon:PF_I.admin,label:"Admin dashboard",run:()=>{location.href="/admin"}}]:[]),
+    {icon:PF_I.link,label:"Terms, privacy & help",run:()=>window.open("/contact","_blank","noopener")},
     {icon:PF_I.out,label:"Log out",danger:true,run:logOut}]});
   const mo=$("#profmore");if(mo)mo.onclick=()=>{const u=PROFILE.user;openMenu({react:false,preview:"@"+u.username,actions:[
     {icon:PF_I.share,label:"Share profile",run:()=>shareProfile(u.username)},
