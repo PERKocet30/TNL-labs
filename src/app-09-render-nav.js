@@ -125,6 +125,7 @@ function topHTML(){
             purely geometric: the top bar has no text labels under it, so an
             abstract mark here would be an unlabelled mystery button. \uFE0E forces
             text presentation so iOS draws them as type, not colour emoji. */""}
+      ${/* Night/Day for members too — it used to live only in Edit profile. */""}<button class="ib" data-theme-set="${THEME==="light"?"dark":"light"}" aria-label="${THEME==="light"?"Switch to night":"Switch to day"}">${THEME==="light"?UI_IC.moon:UI_IC.sun}</button>
       <button class="ib gly" id="dmBtn" aria-label="Messages">${UI_IC.dm}${DMUNREAD?`<span class="badge">${DMUNREAD>9?"9+":DMUNREAD}</span>`:""}</button>
       <button class="ib gly" id="notifBtn" aria-label="Notifications">${UI_IC.bell}${UNREAD?`<span class="badge">${UNREAD>9?"9+":UNREAD}</span>`:""}</button>
     </div>
