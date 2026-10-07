@@ -1,5 +1,5 @@
 /* ---- buying ---- */
-app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
+app.post("/api/market/:id/buy", auth, verified, rateLimit({ max: 20, windowMs: 3600000, key: "user" }), async (req, res) => {
   const l = db.prepare(`SELECT * FROM listings WHERE id = ?`).get(Number(req.params.id));
   if (!l) return res.status(404).json({ error: "no listing" });
   if (l.status !== "active") return res.status(400).json({ error: "already sold" });
@@ -56,7 +56,7 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
     });
     if (out.error) {
       db.prepare(`DELETE FROM orders WHERE id = ?`).run(orderId); // don't leave a ghost
-      return res.status(502).json({ error: out.error });
+      return checkoutFailed(res, out, l.seller_id, req.user.id, `"${l.title}"`);
     }
     db.prepare(`UPDATE orders SET payment_ref = ? WHERE id = ?`).run(out.id, orderId);
     return res.json({ orderId, checkoutUrl: out.url });
