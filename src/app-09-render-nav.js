@@ -22,7 +22,7 @@ function initHistory(){
     if(LIGHTBOX){LIGHTBOX=null}
     else if(PICKER){PICKER=null}
     else if(GATE){if(!gateBack())gateClose()}
-    else if(EDITING){EDITING=false}
+    else if(EDITING){if(EDITPF&&EDITPF.sub){EDITPF.sub=null;POPPING=false;pushView("profile");render();return}EDITING=false;EDITPF=null;if(ME)applyAccent(ME.accentHex)}
     else if(PCOMPOSE){
       /* Back can't be cancelled once it has fired, so a dirty draft puts its
          history entry back and then asks. "Keep writing" leaves you exactly
@@ -150,7 +150,7 @@ async function openProfile(username){
   // before showing anything is what made this feel broken.
   pushView("profile",username);
   SEARCHOPEN=false; NOTIFOPEN=false; if(DMOPENPANEL)closeMessages();
-  PTAB="work"; EDITING=false; PROFLISTINGS=null;
+  PTAB="work"; EDITING=false; EDITPF=null; PROFLISTINGS=null; PROFTAGGED=null; PROFTAGLOAD=null;
   const cached=PROFCACHE.get(username);
   PROFILE=cached||{loading:true,user:{username,displayName:username,avatarUrl:"",role:"",roles:[],rep:0,bio:"",link:"",createdAt:Date.now()},
     followers:0,following:0,youFollow:false,stats:{posts:0,likesReceived:0,collabs:0},posts:[],collabs:[]};

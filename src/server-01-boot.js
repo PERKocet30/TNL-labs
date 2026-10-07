@@ -431,6 +431,7 @@ function publicUser(u) {
     rep: u.rep,
     bio: u.bio || "",
     link: u.link || "",
+    ...profileExtras(u),
     emailVerified: !!u.email_verified,
     published: !!u.published,
     isAdmin: !!u.is_admin,

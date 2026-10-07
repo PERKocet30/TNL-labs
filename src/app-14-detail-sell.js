@@ -26,42 +26,26 @@ function rateHTML(){
     <button class="ratelad" id="rateladder">Rates</button>
   </div>`}
 
+/* Levels, short (2026-10-07). It was a chart, an explainer paragraph and five
+   expanding rows; now: where you are, how far to the next, and one line per
+   level. Someone else's pill shows just their level. */
 function climbHTML(){
-  const rep=ME?ME.rep:0, me=levelFor(rep), nx=LEVELS.find(x=>x.at>rep);
+  const other=CLIMBUSER&&(!ME||CLIMBUSER.username!==ME.username)?CLIMBUSER:null;
+  const rep=other?other.rep:(ME?ME.rep:0), me=levelFor(rep), nx=LEVELS.find(x=>x.at>rep);
   const lad=(MKTMETA.feeLadder&&MKTMETA.feeLadder.length)?MKTMETA.feeLadder
     :LEVELS.map(l=>({level:l.id,name:l.name,at:l.at,fee:{1:10,2:8,3:6,4:4,5:2}[l.id]}));
-  const fee=x=>lad.find(r=>r.level===x)?.fee??10;
+  const keep=x=>100-(lad.find(r=>r.level===x)?.fee??10);
   const pct=nx?Math.min(100,Math.round((rep-me.at)/(nx.at-me.at)*100)):100;
-  const perks=Object.fromEntries(LEVELS.map(l=>[l.id,["Sell at "+fee(l.id)+"% — keep $"+(100-fee(l.id))+" of every $100"]]));
-  return `<div class="climb" id="climbbg">
-    <div class="climbw">
-      <button class="climb-x" id="climbx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-      <h1 class="climb-h">Levels</h1>
-      <p class="climb-sub">Your level rises as people respond to your work. Each one lowers your rate.</p>
-      <div class="cmoney">
-        <div class="mono dim">ON EVERY $100 YOU SELL, YOU KEEP</div>
-        <div class="cbars">${LEVELS.map(l=>`<div class="cbar ${me.id>=l.id?"on":""}">
-          <b>$${100-fee(l.id)}</b><i style="height:${(100-fee(l.id))*0.9}px"></i><b>L${l.id}</b></div>`).join("")}</div>
-        <div style="margin-top:12px;font-size:13px">You keep <b style="color:var(--green)">$${100-fee(me.id)}</b> today${nx?` — reach <b>${esc(nx.name)}</b> and keep <b>$${100-fee(nx.id)}</b>`:` — the best rate there is`}.</div>
-      </div>
-      <div class="cprog">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span><span class="pbadge">L${me.id}</span> <b style="margin-left:6px">${esc(me.name)}</b></span>
-          <span class="mono dim">${rep} REP${nx?` · ${nx.at-rep} TO ${esc(nx.name.toUpperCase())}`:" · TOP"}</span>
-        </div>
-        <div class="ptrack" style="margin-top:8px"><div class="pfill" style="width:${pct}%"></div></div>
-      </div>
-      ${LEVELS.map(l=>`<div class="crung ${me.id>=l.id?"done":""} ${me.id===l.id?"here":""}">
-        <button class="crung-t" data-crung="${l.id}">
-          <span class="crung-n">${me.id>=l.id?DI.check:l.id}</span>
-          <span style="flex:1"><b>${esc(l.name)}</b>${me.id===l.id?` <span class="mono" style="color:var(--green);font-size:11px;letter-spacing:.02em">YOU'RE HERE</span>`:""}<br><span class="mono dim" style="font-size:12px">${l.at} REP · KEEP ${100-fee(l.id)}%</span></span>
-          <span class="dim">${CLIMBOPENRUNG===l.id?"–":"+"}</span>
-        </button>
-        ${CLIMBOPENRUNG===l.id?`<div class="crung-b">${perks[l.id].map(p=>`→ ${esc(p)}`).join("<br>")}</div>`:""}
-      </div>`).join("")}
-    </div>
-    <div class="climb-cta"><button class="btn green" id="climbgo">Post your work</button></div>
-  </div>`}
+  return `<div class="climb" id="climbbg"><div class="climbw lv2">
+    <button class="climb-x" id="climbx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="mono dim">${other?"@"+esc(other.username):"YOUR LEVEL"}</div>
+    <h1 class="lv2-h"><span class="pbadge">L${me.id}</span> ${esc(me.name)}</h1>
+    ${other?"":`<div class="ptrack"><div class="pfill" style="width:${pct}%"></div></div>
+    <div class="lv2-meta">${rep} rep${nx?` · ${nx.at-rep} to ${esc(nx.name)}`:" · top level"}</div>
+    <p class="lv2-p">Rep comes from what other people do with your work. Higher levels keep more of every sale.</p>`}
+    <div class="lv2-list">${LEVELS.map(l=>`<div class="lv2-r ${me.id===l.id?"on":""} ${me.id>l.id?"done":""}">
+      <span class="pbadge">L${l.id}</span><b>${esc(l.name)}</b><span class="dim">${l.at} rep</span>${other?"":`<span>keep ${keep(l.id)}%</span>`}</div>`).join("")}</div>
+  </div></div>`}
 function payoutBannerHTML(){
   if(guest())return "";
   if(!MKTMETA.paymentsEnabled)return `<div class="paybar off"><div><b>Card payments are off</b>

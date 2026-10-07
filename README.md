@@ -46,7 +46,7 @@ public/admin.html               the admin dashboard (shell; app in public/admin-
 public/door.js                  the door's vial loader and mark
 public/sw.js                    service worker (installable app, offline shell)
 scripts/scientist.mjs           daily read-only checks against the live site
-test/                           40 test suites — run with npm test
+test/                           43 test suites — run with npm test
 ```
 
 **Edit the parts, never the built files.** Parts join in filename order, so two parts can share a number (`app-11-gate-logic`, `app-11-gate-screens`, `app-11-showroom`). `public/index.html` and `src/server.runtime.js` are regenerated on every boot and ignored by git.
@@ -63,7 +63,7 @@ test/                           40 test suites — run with npm test
 | `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
 | `app-11-showroom` · `app-12…13` (`app-12-post-extras`: tags, place, comments off and "Shop this post" on a card) | Showroom, lab index, archive/posts; the Music lab (`app-13-tracks-player`) and the player bar and queue (`app-13-player`) |
 | `app-14-detail-sell` · `app-14-listing` · `app-14-sell-variants` | orders and the listing editor; the listing page (photos, size/colour picker, the pinned Buy bar, the pinch-zoom photo viewer); the editor's sizes & colours |
-| `app-15…16` | profile, wiring |
+| `app-15-profile` · `app-15-profile-edit` · `app-16` | profile v2 (≡ / ⋯ menus, followers/following, pinned, tagged), the Instagram-style edit page, wiring |
 | `app-17-bag` | the bag (one checkout per seller), recently viewed, price-drop tags, listing drafts, Duplicate, your shop's numbers |
 | `app-17-event-1` · `app-17-event-2` · `app-17-event-3-poll` | Events (2026-10-06, poll 2026-10-07): the tournament screen — brief, enter sheet, gallery, picks, bracket, judges' scores, results — the Showroom banner, and the poll's scoreboard, Instagram vote-link landing (`EVFOCUS`) and Share to Instagram sheet; styles in `app-05-styles-event` |
 | `app-17-market` · `app-17-panels` | market wiring and the listing editor's logic; panels, DMs, Studio mount |
@@ -71,6 +71,7 @@ test/                           40 test suites — run with npm test
 | `app-19-feed-boot` | feed, badges, boot |
 | `server-01-boot` | setup, compression, caching rules, Sentry, prepared queries |
 | `server-02…11` | auth/feed, uploads/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/beats/Showroom, social/meta |
+| `server-11-profile` | profile v2: links, pronouns, pins (`/api/me/pins`), followers/following lists, the Tagged tab, "Followed by" |
 | `server-02-post-extras` | a post's people tagged, place, comments on/off and products from your own shop (`posts.extras`) |
 | `server-07-cart` | the bag checkout (several items from one seller, one payment, shipping combined — `sessionFits()` binds a paid session to its whole group), `/api/shop/stats` |
 | `server-06-market-stock` | sizes and colours: every unit sold goes through `takeStock()` (the size picked, the listing closes at zero) |
@@ -323,6 +324,10 @@ POST   /api/cart/check
 GET    /api/shop/stats   (auth)
 GET    /api/market/checkout/done
 GET    /api/market/saved   (auth)
+GET    /api/users/:username/followers
+GET    /api/users/:username/following
+GET    /api/users/:username/tagged
+POST   /api/me/pins   (auth)
 GET    /api/market/recent   (auth)
 POST   /api/market/:id/download   (auth)
 GET    /api/market/:id/downloads   (auth)
