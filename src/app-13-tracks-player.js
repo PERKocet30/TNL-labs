@@ -224,6 +224,7 @@ function marketHTML(){
       :!MKT.length?`<div class="empty">Nothing listed yet.</div>`
       :MKT.map(mktCardHTML).join("")}</div>
     <div id="mktrecent">${recentHTML()}</div>
+    <div class="mktfoot mono dim"><a href="/policies" target="_blank" rel="noopener">Shipping &amp; returns</a><a href="/terms" target="_blank" rel="noopener">Terms</a><a href="/privacy" target="_blank" rel="noopener">Privacy</a><a href="/contact" target="_blank" rel="noopener">Contact</a></div>
   </div>`}
 
 function mktCardHTML(l){

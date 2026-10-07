@@ -85,7 +85,8 @@ function detailHTML(){
         </div>
         ${mine?`<span class="mono dim">${l.views} views</span>`:`<button class="btn sm ghost" data-dmseller="${esc(l.seller.username)}">Message</button>`}
       </div>
-      ${MKTMETA.paymentsEnabled?`<div class="dtrust">${DI.lock} <span>Paid through TNL — your card never touches the seller, and you’re covered until it ships.</span></div>`:""}
+      ${MKTMETA.paymentsEnabled?`<div class="dtrust">${DI.lock} <span>Paid securely through Stripe. Not as described or never arrived? Full refund within 14 days.</span></div>`:""}
+      ${mine?"":`<div class="lpol mono dim">Sold by @${esc(l.seller.username)} · <a href="/policies" target="_blank" rel="noopener">Shipping &amp; returns</a> · <a href="/terms" target="_blank" rel="noopener">Terms</a></div>`}
       ${mine?`
         <div class="lsec">Offers</div>
         ${MKTOFFERS.length?MKTOFFERS.map(o=>`<div class="orow">
