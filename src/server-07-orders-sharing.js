@@ -56,7 +56,7 @@ app.post("/api/market/:id/buy", auth, verified, async (req, res) => {
     });
     if (out.error) {
       db.prepare(`DELETE FROM orders WHERE id = ?`).run(orderId); // don't leave a ghost
-      return res.status(502).json({ error: out.error });
+      return checkoutFailed(res, out, l.seller_id, req.user.id, `"${l.title}"`);
     }
     db.prepare(`UPDATE orders SET payment_ref = ? WHERE id = ?`).run(out.id, orderId);
     return res.json({ orderId, checkoutUrl: out.url });

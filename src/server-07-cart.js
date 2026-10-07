@@ -70,7 +70,7 @@ app.post("/api/cart/checkout", auth, verified, rateLimit({ max: 20, windowMs: 36
       buyerEmail: req.user.email, sellerAccount: seller.stripe_account,
       feePct: feeForRep(seller.rep), collectShipping: true,
     });
-    if (out.error) { drop(); return res.status(502).json({ error: out.error }); }
+    if (out.error) { drop(); return checkoutFailed(res, out, seller.id, req.user.id, `${lines.length} item${lines.length > 1 ? "s" : ""}`); }
     db.prepare(`UPDATE orders SET payment_ref = ? WHERE cart_id = ?`).run(out.id, lead);
     return res.json({ orderId: lead, checkoutUrl: out.url });
   }
@@ -79,6 +79,18 @@ app.post("/api/cart/checkout", auth, verified, rateLimit({ max: 20, windowMs: 36
   notify(seller.id, req.user.id, "sale", null, `bought ${lines.length} item${lines.length > 1 ? "s" : ""}: ${lines.map((x) => x.l.title + (x.v ? ` (${variantLabel(x.v)})` : "")).join(", ").slice(0, 160)} — arrange payment & shipping`);
   res.json({ orderId: lead, arrange: true, count: lines.length });
 });
+
+/* Stripe wouldn't open checkout. A setup problem on the seller's Stripe
+   account (no payment methods switched on) is the seller's to fix — tell
+   them, and tell the buyer plainly; Stripe's own wording goes to the log. */
+function checkoutFailed(res, out, sellerId, buyerId, what) {
+  if (out.setup) {
+    notify(sellerId, buyerId, "sale", null,
+      `Someone tried to buy ${what}, but your Stripe account can't take cards yet — in Stripe, open Settings → Payment methods and turn on Cards`);
+    return res.status(409).json({ error: "This seller's card payments aren't switched on yet. We've told them — nothing was charged.", sellerNotConnected: true });
+  }
+  return res.status(502).json({ error: "Checkout couldn't open just now — nothing was charged. Try again in a minute." });
+}
 
 /* Your shop at a glance: what's live, what's owed a parcel, what it made. */
 app.get("/api/shop/stats", auth, (req, res) => {
