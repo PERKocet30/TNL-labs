@@ -82,6 +82,7 @@
       PRIMARY KEY (thread_id, user_id)
     );
     CREATE INDEX IF NOT EXISTS idx_dm_members_user ON dm_members(user_id);
+    CREATE INDEX IF NOT EXISTS idx_dm_post ON dm_messages(post_id) WHERE post_id IS NOT NULL; -- ranking counts sends
     CREATE TABLE IF NOT EXISTS reactions (
       kind       TEXT NOT NULL,
       target_id  INTEGER NOT NULL,

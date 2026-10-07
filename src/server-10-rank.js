@@ -11,6 +11,9 @@
    - A response from someone with standing (rep, earned from others) weighs
      a little more than one from a brand-new account — capped, so a few
      established members can't decide the page alone.
+   - Sending a piece to someone in a DM says the most: you put your name
+     to it, to one person (Instagram calls sends its strongest signal for
+     reaching new people). It counts a little more than a comment.
    - Work made together gets a lift — a confirmed collab counts like a
      couple of extra people responding. It no longer dominates (v1 gave a
      collab 30 points against 6 for a like), which let one collab sit on
@@ -26,6 +29,7 @@ const RANK = {
   standingCap: 2.5,       // max weight of one person's response
   collabLift: 1.5,        // per accepted collaborator, up to 3
   commentExtra: 0.5,      // a comment says more than a like
+  sendExtra: 0.75,        // sending it to someone in a DM says more still
   newCreatorLift: 1,      // for someone's first 3 published pieces
   gravity: 1.35,          // how fast age pulls work down
   ageOffsetH: 3,
@@ -43,19 +47,21 @@ function responseQuality(postIds) {
   const q = new Map(postIds.map((id) => [id, 0]));
   if (!postIds.length) return q;
   const holes = postIds.map(() => "?").join(",");
-  // one row per (post, person) who liked, commented, reacted, saved or shared it — never the author
+  // one row per (post, person) who liked, commented, reacted, saved, shared or sent it — never the author
   const rows = db.prepare(`
-    SELECT r.post_id, r.user_id, MAX(r.comment) comment, u.rep FROM (
-      SELECT l.post_id, l.user_id, 0 comment FROM likes l WHERE l.post_id IN (${holes})
-      UNION ALL SELECT c.post_id, c.author_id, 1 FROM comments c WHERE c.post_id IN (${holes})
-      UNION ALL SELECT x.target_id, x.user_id, 0 FROM reactions x WHERE x.kind = 'post' AND x.target_id IN (${holes})
-      UNION ALL SELECT pn.post_id, b.user_id, 0 FROM pins pn JOIN boards b ON b.id = pn.board_id WHERE pn.post_id IN (${holes})
-      UNION ALL SELECT s.shared_from, s.author_id, 0 FROM posts s WHERE s.shared_from IN (${holes})
+    SELECT r.post_id, r.user_id, MAX(r.comment) comment, MAX(r.sent) sent, u.rep FROM (
+      SELECT l.post_id, l.user_id, 0 comment, 0 sent FROM likes l WHERE l.post_id IN (${holes})
+      UNION ALL SELECT c.post_id, c.author_id, 1, 0 FROM comments c WHERE c.post_id IN (${holes})
+      UNION ALL SELECT x.target_id, x.user_id, 0, 0 FROM reactions x WHERE x.kind = 'post' AND x.target_id IN (${holes})
+      UNION ALL SELECT pn.post_id, b.user_id, 0, 0 FROM pins pn JOIN boards b ON b.id = pn.board_id WHERE pn.post_id IN (${holes})
+      UNION ALL SELECT s.shared_from, s.author_id, 0, 0 FROM posts s WHERE s.shared_from IN (${holes})
+      UNION ALL SELECT m.post_id, m.sender_id, 0, 1 FROM dm_messages m WHERE m.post_id IN (${holes}) AND m.deleted_at IS NULL
     ) r
     JOIN posts p ON p.id = r.post_id AND p.author_id != r.user_id
     JOIN users u ON u.id = r.user_id AND u.suspended = 0
-    GROUP BY r.post_id, r.user_id`).all(...postIds, ...postIds, ...postIds, ...postIds, ...postIds);
-  for (const r of rows) q.set(r.post_id, q.get(r.post_id) + standingWeight(r.rep) + (r.comment ? RANK.commentExtra : 0));
+    GROUP BY r.post_id, r.user_id`).all(...postIds, ...postIds, ...postIds, ...postIds, ...postIds, ...postIds);
+  for (const r of rows) q.set(r.post_id, q.get(r.post_id) + standingWeight(r.rep)
+    + (r.comment ? RANK.commentExtra : 0) + (r.sent ? RANK.sendExtra : 0));
   for (const c of db.prepare(`SELECT post_id, COUNT(*) n FROM collaborators WHERE status = 'accepted' AND post_id IN (${holes}) GROUP BY post_id`).all(...postIds))
     q.set(c.post_id, q.get(c.post_id) + RANK.collabLift * Math.min(3, c.n));
   return q;

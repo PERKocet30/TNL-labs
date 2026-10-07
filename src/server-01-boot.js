@@ -102,6 +102,11 @@ app.use("/api", (req, res, next) => {
   next();
 });
 app.use(cors());
+/* Members' work is not AI training data. robots.txt turns the AI crawlers
+   away; these headers say the same on every page and every upload
+   (noai/noimageai, and TDMRep's opt-out for EU text-and-data mining).
+   Ordinary search engines and link previews are unaffected. */
+app.use((req, res, next) => { res.set("X-Robots-Tag", "noai, noimageai"); res.set("tdm-reservation", "1"); next(); });
 /* Real media does NOT come through here — it streams to disk via
    /api/upload/stream. This limit only covers small base64 payloads
    (avatars, beat audio), and stays low on purpose: anything parsed as
