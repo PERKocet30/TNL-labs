@@ -46,7 +46,7 @@ public/admin.html               the admin dashboard (shell; app in public/admin-
 public/door.js                  the door's vial loader and mark
 public/sw.js                    service worker (installable app, offline shell)
 scripts/scientist.mjs           daily read-only checks against the live site
-test/                           43 test suites — run with npm test
+test/                           47 test suites — run with npm test
 ```
 
 **Edit the parts, never the built files.** Parts join in filename order, so two parts can share a number (`app-11-gate-logic`, `app-11-gate-screens`, `app-11-showroom`). `public/index.html` and `src/server.runtime.js` are regenerated on every boot and ignored by git.
@@ -129,6 +129,7 @@ Members' accounts, posts, uploads and rep live on the Railway volume at `/app/da
 - The server writes a **daily backup** of the database to `/app/data/backups` and keeps the last 7. You can also make and download one from Admin → Backups.
 - Uploaded media is on the same volume and is **not** in those backups yet. An off-platform copy (object storage) is the top open item.
 - There is deliberately no seed or reset script. Nothing in the repo can wipe the lab.
+- **Members' work is not AI training data.** `public/robots.txt` turns AI training crawlers away (search engines and link previews still get in), and every response carries `X-Robots-Tag: noai, noimageai` and `tdm-reservation: 1`. `test/no-ai.test.mjs` checks both.
 
 ---
 
