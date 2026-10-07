@@ -630,6 +630,15 @@ console.log("\nMEMBER · PHONE");
     const { token: ft } = await login("friend");
     ok(JSON.stringify(await api("/api/chats", ft)).includes("hey from e2e") || JSON.stringify(await api("/api/dm", ft)).includes("hey from e2e"), "friend's inbox doesn't have it");
   });
+  await step(d, "signed in, the top bar has the moon: Night on, the sun brings Day back", async () => {
+    await p.evaluate(() => { DMOPENPANEL = false; CHAT = null; paintLayer(); PROFILE = null; TAB = "showroom"; render(); });
+    const moon = p.locator('.top [data-theme-set="dark"]');
+    ok(await moon.count() === 1, "no night-mode button in the signed-in top bar");
+    await moon.tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => document.documentElement.dataset.theme === "dark" && localStorage.getItem("tnl-theme") === "dark"), "night didn't switch on");
+    await p.locator('.top [data-theme-set="light"]').tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => document.documentElement.dataset.theme) === "light", "day didn't come back");
+  });
   /* ---- profile v2 (2026-10-07) ---- */
   await step(d, "edit profile: Instagram-style rows; a half-typed bio survives the Links screen; Done saves pronouns, bio, links", async () => {
     await p.evaluate(() => { DMOPENPANEL = false; CHAT = null; paintLayer(); });
