@@ -11,6 +11,7 @@ let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
 const { db } = await import("../src/db.js");
+for (const c of ["post_id INTEGER", "deleted_at INTEGER"]) try { db.exec(`ALTER TABLE dm_messages ADD COLUMN ${c}`); } catch {}
 db.exec(`CREATE TABLE IF NOT EXISTS reactions (kind TEXT, target_id INTEGER, user_id INTEGER, emoji TEXT, created_at INTEGER, PRIMARY KEY (kind, target_id, user_id))`);
 const src = readFileSync(join(ROOT, "src/server-10-rank.js"), "utf8");
 const R = new Function("db", src + "\nreturn { rankShowroom, rankBuilders, standingWeight, RANK };")(db);
@@ -22,7 +23,10 @@ const post = (who, ago, work = 1) => Number(db.prepare(`INSERT INTO posts (autho
 const like = (p, who) => db.prepare(`INSERT OR IGNORE INTO likes (post_id, user_id, created_at) VALUES (?,?,?)`).run(p, users[who], now);
 const comment = (p, who) => db.prepare(`INSERT INTO comments (post_id, author_id, body, created_at) VALUES (?,?,?,?)`).run(p, users[who], "nice", now);
 const collab = (p, who) => db.prepare(`INSERT INTO collaborators (post_id, user_id, status, created_at) VALUES (?,?,'accepted',?)`).run(p, users[who], now);
-const clear = () => { for (const x of ["likes", "comments", "collaborators", "posts", "follows"]) db.exec(`DELETE FROM ${x}`); };
+let tid = 0;
+const thread = () => tid || (tid = Number(db.prepare(`INSERT INTO dm_threads (a_id, b_id, updated_at, created_at) VALUES (?,?,?,?)`).run(users.fan1, users.fan2, now, now).lastInsertRowid));
+const send = (p, who, deleted = null) => db.prepare(`INSERT INTO dm_messages (thread_id, sender_id, body, post_id, deleted_at, created_at) VALUES (?,?,'',?,?,?)`).run(thread(), users[who], p, deleted, now);
+const clear = () => { for (const x of ["likes", "comments", "collaborators", "dm_messages", "posts", "follows"]) db.exec(`DELETE FROM ${x}`); };
 const order = (viewer = 0) => R.rankShowroom(viewer ? users[viewer] : 0, 60);
 for (const u of ["vet", "vet2", "fan1", "fan2", "fan3", "big", "newbie", "viewer"]) mk(u, u === "big" ? 600 : u.startsWith("vet") ? 200 : 0);
 mk("banned", 0, 1);
@@ -36,6 +40,24 @@ like(a, "vet"); comment(a, "vet"); comment(a, "vet");
 t("your own likes and comments on your work move nothing", Math.abs(order().indexOf(a) - order().indexOf(b)) <= 1 && R.standingWeight(0) === 1);
 like(b, "fan1");
 t("one like from someone else does", order().indexOf(b) < order().indexOf(a));
+
+console.log("\nSENDS SAY THE MOST");
+clear(); for (let i = 0; i < 4; i++) { post("vet", 300 * D); post("vet2", 300 * D); }
+a = post("vet", 4 * H); b = post("vet2", 5 * H);
+like(a, "fan1"); like(b, "fan2"); send(b, "fan2");
+t("sending a piece to someone counts on top of liking it", order().indexOf(b) < order().indexOf(a));
+clear(); for (let i = 0; i < 4; i++) { post("vet", 300 * D); post("vet2", 300 * D); }
+a = post("vet", 5 * H); b = post("vet2", 5 * H);
+comment(a, "fan1"); send(b, "fan2");
+t("…and a little more than a comment", order().indexOf(b) < order().indexOf(a));
+clear(); for (let i = 0; i < 4; i++) { post("vet", 300 * D); post("vet2", 300 * D); }
+a = post("vet", 5 * H); b = post("vet2", 5 * H);
+send(a, "fan2"); send(a, "fan2"); send(a, "fan2"); send(b, "fan1"); like(b, "fan3");
+t("sending it again and again is still one person", order().indexOf(b) < order().indexOf(a));
+clear(); for (let i = 0; i < 4; i++) { post("vet", 300 * D); post("vet2", 300 * D); }
+a = post("vet", 5 * H); b = post("vet2", 5 * H);
+send(a, "vet"); send(b, "fan1", now);
+t("sending your own work, or an unsent message, moves nothing", Math.abs(order().indexOf(a) - order().indexOf(b)) <= 1);
 
 console.log("\nSTANDING WEIGHS — A LITTLE, AND CAPPED");
 t("a response from someone established counts more", R.standingWeight(600) > R.standingWeight(0));
