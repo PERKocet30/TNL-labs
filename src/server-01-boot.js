@@ -21,7 +21,7 @@ try { FFMPEG = (await import("ffmpeg-static")).default || null; } catch { FFMPEG
 import { db, awardRep, revokeRep, levelFor, LEVELS, DATA_DIR, notify, ensureAdmin, feeForRep, FEE_BY_LEVEL, ACCENTS, accentHex,
          setting, settingBool, setSetting, allSettings, SETTING_DEFAULTS, logError, backupTo, studioEvent } from "./db.js";
 import { sendVerifyEmail, sendResetEmail, sendAlertEmail, MAIL_ENABLED, MAIL_TEST_SENDER } from "./mail.js";
-import { PALETTE, paletteCss, accentVars, inkFor } from "./palette.js";
+import { PALETTE, paletteCss, accentVars, inkFor, onAccent } from "./palette.js";
 import { createCheckout, verifySession, PAYMENTS_ENABLED, platformFee,
          createSellerAccount, onboardingLink, accountStatus, loginLink } from "./pay.js";
 

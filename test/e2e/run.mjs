@@ -61,6 +61,8 @@ const ins = db.prepare("INSERT INTO users (username,display_name,email,role,role
 const me = Number(ins.run("tester","Tester","tester@example.com","Producer",'["Producer"]',h,now).lastInsertRowid);
 const friend = Number(ins.run("friend","Friend","friend@example.com","Graphic Designer",'["Graphic Designer"]',h,now).lastInsertRowid);
 const post = db.prepare("INSERT INTO posts (author_id,channel,body,image_url,thumb_url,media_w,media_h,is_work,created_at) VALUES (?,?,?,?,?,?,?,1,?)");
+// friend's session, so the poll step needn't sign in again (logins are rate-limited)
+db.prepare("INSERT INTO sessions (token,user_id,created_at) VALUES (?,?,?)").run("e2e-friend-session", friend, now);
 for (let i = 0; i < 6; i++) post.run(friend, "graphic-design", "Piece " + (i + 1), "/uploads/e2e-p" + i + ".png", "/uploads/e2e-p" + i + ".png", 800, 1000, now - i * 60000);
 // Piece 1 is a six-frame series (a carousel)
 db.prepare("UPDATE posts SET images = ? WHERE body = 'Piece 1'").run(JSON.stringify([0, 1, 2, 3, 4, 5].map((i) => ({ url: "/uploads/e2e-p" + i + ".png", thumb: "/uploads/e2e-p" + i + ".png", w: 800, h: 1000 }))));
@@ -644,6 +646,47 @@ console.log("\nMEMBER · PHONE");
   /* Glitch signals (app-19-glitch.js). Everything above is normal use, so it
      must have recorded nothing: no jumps, no slow screens, no failed saves. */
   const glitches = async () => { await p.evaluate(() => glFlush()); await p.waitForTimeout(600); return api("/api/admin/glitches", token); };
+  await step(d, "event: the Showroom banner opens the tournament, its gallery and the enter sheet", async () => {
+    const mk = await fetch(B + "/api/admin/events", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + token },
+      body: JSON.stringify({ slug: "e2e-poster", title: "E2E Poster Tournament", brief: "A poster.", format: "bracket", published: true, opensAt: Date.now() - 1000, submitDays: 7 }) });
+    ok(mk.ok, "couldn't create the event (" + mk.status + ")");
+    // no extra sign-in here: logins are rate-limited, and the computer run needs one
+    await p.evaluate(async () => { await loadEvents(); POSTOPEN = null; TAB = "showroom"; render(); });
+    await p.waitForSelector(".ev-banner", { timeout: 4000 });
+    await p.locator(".ev-banner .ev-go").tap(); await p.waitForSelector(".ev-h", { timeout: 4000 });
+    ok(/0 entries so far/i.test(await p.locator(".ev").innerText()), "the gallery should say there are no entries yet");
+    await p.locator("#eventer").tap(); await p.waitForSelector("#evsheet");
+    ok(await p.locator("#evsend").isDisabled(), "Enter should wait for a piece and the rules box");
+    await p.evaluate(() => { EVENTER = null; TAB = "showroom"; render(); });
+  });
+  await step(d, "poll: an Instagram vote link lands on the piece, Vote counts once and moves the scoreboard, Share makes the Story card", async () => {
+    const mk = await api("/api/admin/events", token, { slug: "e2e-art", title: "E2E Art Tournament", format: "poll", picks: 1, finalists: 2, judgeWeight: 0, minAccountDays: 0, published: true, opensAt: Date.now() - 1000, submitDays: 1, voteDays: 3 });
+    ok(mk.event && mk.event.format === "poll", "couldn't create the poll: " + JSON.stringify(mk).slice(0, 200));
+    const fe = await api("/api/events/e2e-art/enter", "e2e-friend-session", { imageUrl: "/uploads/e2e-p3.png", thumbUrl: "/uploads/e2e-p3.png", w: 800, h: 1000, agree: true });
+    await api("/api/events/e2e-art/enter", token, { imageUrl: "/uploads/e2e-p4.png", thumbUrl: "/uploads/e2e-p4.png", agree: true });
+    const fid = fe.me && fe.me.entry && fe.me.entry.id;
+    ok(fid, "friend couldn't enter: " + JSON.stringify(fe).slice(0, 200));
+    await api(`/api/admin/events/${mk.event.id}/advance`, token, {});
+    // what someone tapping a link sticker on Instagram sees
+    await p.goto(B + "/e/e2e-art/" + fid);
+    await p.locator("a.btn.block").tap();
+    await throughDoor(p);   // the door, as on any fresh load
+    await p.waitForSelector(".ev-focus [data-evpick]", { timeout: 6000 });
+    ok(await p.evaluate(() => EVFOCUS && location.search === ""), "the vote link didn't open that piece");
+    const y0 = await p.evaluate(() => document.querySelector("#evscroll").scrollTop);
+    await p.locator(".ev-focus [data-evpick]").tap();
+    await p.waitForFunction((id) => EV.me.myVotes.includes(id) && EV.board.rows.find((r) => r.entryId === id).votes === 1, fid, { timeout: 4000 });
+    ok(await p.locator(".ev-focus .ev-vote.on").count() === 1 && await p.locator(`.ev-row .ev-vote.on`).count() === 1, "the button and the board row should both say Voted");
+    ok(await p.evaluate(() => document.querySelector("#evscroll").scrollTop) === y0, "voting jumped the screen");
+    ok(await p.locator(".ev-row .ev-mine-s").count() === 1, "your own piece should say Yours, not Vote");
+    const srv = await api("/api/events/e2e-art", token);
+    ok(srv.board.rows.find((r) => r.entryId === fid).votes === 1, "the server doesn't have the vote");
+    await p.locator("#evshare").tap(); await p.waitForSelector("#evshsheet");
+    await p.waitForFunction(() => { const i = document.querySelector("#evshpic"); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 15000 });
+    await p.locator("#evshx").tap();
+    ok(await p.locator("#evshsheet").count() === 0, "the share sheet didn't close");
+    await p.evaluate(() => { EVFOCUS = null; TAB = "showroom"; render(); });
+  });
   await step(d, "normal use records no glitches", async () => {
     const g = await glitches();
     ok(!g.recent.length, "recorded: " + g.recent.map((x) => x.kind + " @ " + x.place + " " + x.detail).join(" | "));

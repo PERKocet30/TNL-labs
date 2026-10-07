@@ -65,6 +65,7 @@ test/                           40 test suites — run with npm test
 | `app-14-detail-sell` · `app-14-listing` · `app-14-sell-variants` | orders and the listing editor; the listing page (photos, size/colour picker, the pinned Buy bar, the pinch-zoom photo viewer); the editor's sizes & colours |
 | `app-15…16` | profile, wiring |
 | `app-17-bag` | the bag (one checkout per seller), recently viewed, price-drop tags, listing drafts, Duplicate, your shop's numbers |
+| `app-17-event-1` · `app-17-event-2` · `app-17-event-3-poll` | Events (2026-10-06, poll 2026-10-07): the tournament screen — brief, enter sheet, gallery, picks, bracket, judges' scores, results — the Showroom banner, and the poll's scoreboard, Instagram vote-link landing (`EVFOCUS`) and Share to Instagram sheet; styles in `app-05-styles-event` |
 | `app-17-market` · `app-17-panels` | market wiring and the listing editor's logic; panels, DMs, Studio mount |
 | `app-18-composer` · `app-18-media` · `app-18-photo-edit` · `app-18-post-queue` | the post creator; carousels, video autoplay, music and the audio unlock; the photo editor (crop, filters, adjust — on the phone); posting in the background, drafts, drag to reorder |
 | `app-19-feed-boot` | feed, badges, boot |
@@ -75,6 +76,7 @@ test/                           40 test suites — run with npm test
 | `server-06-market-stock` | sizes and colours: every unit sold goes through `takeStock()` (the size picked, the listing closes at zero) |
 | `server-10-dm-core` · `-dm-groups` · `-dm-routes` | Messages v2: schema migration (groups; backup first), requests, replies, reactions, edit/unsend, forward, mute |
 | `server-10-links` · `server-10-live` | link previews behind a DNS-level SSRF guard; the signed-in live stream, typing, presence, lab reactions and pins |
+| `server-10-events-1-core` · `-2-routes` · `-3-admin` · `-4-cards` · `-5-pages` | Events: the schema and state machine (`tickEvent()`: submit → vote → bracket rounds → judged final → results, idempotent, runs every minute), entering/voting/judging, the poll's scoreboard (`evBoard`), admin, the Instagram cards (entry Story, scoreboard post/Story) and the public `/e/:slug`, `/rules`, `/board` and `/e/:slug/:entry` pages |
 
 ---
 
@@ -172,13 +174,16 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 | `/u/:username` | a member's public page, rendered on the server so it previews properly |
 | `/p/:id` | a single post, with its own link preview |
 | `/m/:id` | a Market listing |
+| `/e/:slug` · `/e/:slug/rules` | an event and its official rules (draft rules are generated until an admin writes their own) |
+| `/e/:slug/board` · `/e/:slug/:entry` | a poll's public scoreboard, and one entry's vote link (its preview is the piece; Vote opens `/?e=slug&v=entry` in the app) |
+| `/e/:slug/board.jpg` · `/e/:slug/:entry/story.jpg` | Instagram pictures: the scoreboard (1080×1350, `?size=story` 1080×1920) and an entrant's "Vote for my piece" Story |
 | `/` | the app; its link preview uses `og-cover-v3-2026-09-23.jpg` |
 
 ---
 
 ## Admin dashboard (`/admin`) — v2.0, 2026-09-29
 
-Admin-only; every route checks on the server. `public/admin.html` is the shell and styles, the app is `public/admin-app/1-core.js` … `7-studio.js`, and the data comes from `src/server-10-admin.js` plus the older admin routes.
+Admin-only; every route checks on the server. `public/admin.html` is the shell and styles, the app is `public/admin-app/1-core.js` … `8-events.js`, and the data comes from `src/server-10-admin.js` plus the older admin routes.
 
 - **Today:** what needs you (reports, orders not shipped after 3 days, backups, errors, stale collab invites, new members to welcome), eight numbers against the previous period (7, 30 or 90 days), a daily chart, the collab loop with who stopped at each step, lab activity and the most active members.
 - **People:** search, filter (new, never posted, gone quiet, sellers, unverified, suspended, admins) and sort. Each person opens with their stats, recent posts, rep history, a private admin note, and actions: message, confirm email, adjust rep (with a reason), feature, sign out everywhere, suspend. Message a group from the bottom.
@@ -212,6 +217,17 @@ Three layers: stop glitches before they ship, notice the ones that get through, 
 - **Admin → System** shows errors and glitches side by side.
 
 ---
+
+## Events
+
+The tournament runs on a general events system (`src/server-10-events-*.js`, screens in `src/app-17-event-*.js`, admin in `public/admin-app/8-events.js`). An admin creates an event in **Admin → Events**: title, brief, prize, which lab entries post into, the format, and the dates.
+
+- **Phases.** Entries (one per person, posted as a real work post) → a vote (members pick up to N favourites; counts hidden) → **bracket** format: head-to-head rounds, one pick per pair, decided when each round closes (a tie goes to the higher seed) → the **final**, decided by judges' 1–10 scores and member votes (`judge_weight`, 50/50 by default) → results. The **simple** format skips the bracket: the top N from the vote go to the final.
+- **The server decides everything.** `tickEvent()` closes phases on schedule, seeds the bracket (standard seeding; a bracket is the largest power of two that fits), and notifies entrants. "End this phase now" moves every later date earlier by the same amount.
+- **Fair play.** No voting for yourself; voters' accounts must be `min_account_days` old; judges can't enter and score the final instead of voting in it. Admins see live tallies, including votes from accounts under 14 days old, and can disqualify.
+- **Fewer than two entries** when entries close calls the event off.
+- **Poll format** (2026-10-07, what the community asked for): `picks` votes a *day* that add up (stored with the day, yyyymmdd Eastern, in `event_votes.matchup`), a live public scoreboard with places moved in 24h, frozen for the last `freeze_hours` of each stage, then the top N go to a final (judges optional — `judge_weight` 0 means most votes wins). Voters need a confirmed email (`require_verified`).
+- **Instagram leads back to the app.** Votes on Instagram never count. Each entry has a vote link (`/e/:slug/:entry`) and a Story card (`story.jpg`) the entrant shares from the app (Share to Instagram) with a link sticker; TNL posts the scoreboard pictures from Admin → Events → Instagram. Someone who signs up or confirms their email mid-vote is brought back to that piece (`tnl-evret`).
 
 ## API
 

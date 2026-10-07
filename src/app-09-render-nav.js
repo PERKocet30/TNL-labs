@@ -39,6 +39,8 @@ function initHistory(){
     else if(NOTIFOPEN){NOTIFOPEN=false}
     else if(SEARCHOPEN){SEARCHOPEN=false}
     else if(OPENCOMMENTS){OPENCOMMENTS=null}
+    else if(EVENTER){EVENTER=null}
+    else if(EVSHARE){EVSHARE=null}
     else if(TAB==="market"&&MKTVIEW==="edit"){MKTEDIT=null;SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME="";MKTVIEW="detail"}
     else if(TAB==="market"&&MKTVIEW!=="browse"){MKTVIEW="browse";MKTONE=null}
     else if(TAB==="labs"&&(LAB||ROOMOPEN)){ROOMOPEN=false;LAB=null;loadLabs()}
@@ -75,7 +77,7 @@ function render(){
       <button class="vb-btn" id="resendb">Resend</button>
       ${VERIFYURL?`<a class="vb-btn" href="${esc(VERIFYURL)}" target="_blank">Open link</a>`:""}
     </div>`:""}
-    <div class="content">${PCOMPOSE?pcomposeHTML():MYPAGE()?sheetHTML():TAB==="showroom"?showroomHTML():TAB==="labs"?labsHTML():TAB==="market"?marketHTML():studioHTML()}</div>
+    <div class="content">${PCOMPOSE?pcomposeHTML():MYPAGE()?sheetHTML():TAB==="showroom"?showroomHTML():TAB==="labs"?labsHTML():TAB==="market"?marketHTML():TAB==="event"?eventHTML():studioHTML()}</div>
     ${W?"":navHTML()}
     ${(PROFILE&&!MYPAGE())?sheetHTML():""}
     ${NOTIFOPEN?notifPanelHTML():""}
@@ -133,9 +135,9 @@ function notifPanelHTML(){
   return `<div class="sheet" id="npbg"><div class="sheetc">
     <div class="sheeth"><div><h2>Notifications</h2></div><button class="x" id="npx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     ${!NOTIFS?`${skel()}`:!NOTIFS.length?`<div class="empty">Nothing yet.<br>Post work and it starts here.</div>`:
-      NOTIFS.map(n=>`<div class="nrow ${n.read?"":"unread"}" ${n.kind==="dm"&&n.actor?`data-ndm="${esc(n.actor.username)}"`:n.postId?`data-nopen="${n.postId}"`:n.actor?`data-u="${esc(n.actor.username)}"`:""}>
+      NOTIFS.map(n=>`<div class="nrow ${n.read?"":"unread"}" ${n.kind==="event"?`data-nev="1"`:n.kind==="dm"&&n.actor?`data-ndm="${esc(n.actor.username)}"`:n.postId?`data-nopen="${n.postId}"`:n.actor?`data-u="${esc(n.actor.username)}"`:""}>
         ${n.actor?avHTML({displayName:n.actor.displayName,avatarUrl:n.actor.avatarUrl},"sm"):`<div class="av sm">·</div>`}
-        <div class="nbody"><b>${esc(n.actor?n.actor.displayName:"Someone")}</b> ${label(n)}
+        <div class="nbody"><b>${n.kind==="event"?"// Event":esc(n.actor?n.actor.displayName:"Someone")}</b> ${n.kind==="event"?"":label(n)}
         ${n.body?`<div class="nsnip">${esc(n.body)}</div>`:""}
         <div class="mono dim">${timeAgo(n.createdAt)}</div></div>
         ${n.read?"":`<span class="ndot"></span>`}
