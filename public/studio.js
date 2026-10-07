@@ -1415,7 +1415,7 @@
       const id = +e.currentTarget.dataset.sshare;
       const s2 = (S.sounds || []).find((x) => x.id === id);
       if (!s2) return;
-      if (!s2.shared && !(await uiConfirm('Give "' + s2.name + '" to the library?', "Anyone in TNL can build with it — you're credited every time and earn standing when someone uses it. Take it back whenever.", { okLabel: "Share it" }))) return;
+      if (!s2.shared && !(await uiConfirm('Give "' + s2.name + '" to the library?', "Anyone in TNL can build with it — you're credited every time. Take it back whenever.", { okLabel: "Share it" }))) return;
       shareSound(id, !s2.shared);
     });
     on("[data-luse]", "click", (e) => {

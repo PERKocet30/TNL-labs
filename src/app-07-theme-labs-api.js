@@ -63,7 +63,7 @@ const ROLES = [
    picked; the page frame is the same for all of them, which is one
    place to look when something breaks instead of eight. */
 const KIND={tag:"PAGE",work:"POSTS",one:"post",collabLine:"With",empty:"No posts up yet.",
-  blurb:"Their page — posts, collabs, standing.",grid:true};
+  blurb:"Their page on TNL LABS.",grid:true};
 function kindOf(){return KIND}
 /* The header line still speaks the member's trade — "YOUR VISUAL",
    "YOUR SOUND" — because that little descriptor is identity, not
@@ -137,7 +137,7 @@ const LABS = [
     {id:"tracks",label:"tracks",desc:"Upload your music. Press play on everyone's.",library:true},
     {id:"feedback",label:"feedback",desc:"Post your work in progress, get ears. Help someone finish."},
     {id:"music-chat",label:"chat",desc:"Talk music. Releases, gear, who's working on what."},
-    {id:"beats",label:"beats",desc:"The Beat Lab. Loops become collabs.",beatlab:true}]},
+    {id:"beats",label:"beats",desc:"The Beat Lab. Loops, beats, works in progress.",beatlab:true}]},
   {id:"fashion",name:"Fashion",channels:[
     {id:"clothing-design",label:"clothing-design",desc:"Design work and concepts."},
     {id:"clothing-drops",label:"clothing-drops",desc:"What's releasing."}]},

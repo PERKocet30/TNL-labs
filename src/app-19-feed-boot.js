@@ -115,7 +115,7 @@ function wireFeed(){
   document.querySelectorAll("[data-collab]").forEach(b=>b.onclick=async()=>{
     const id=b.dataset.collab;
     const toItems=(people)=>people.map(u=>({label:u.displayName,sub:"@"+u.username+" · "+u.role,avatar:u.avatarUrl,username:u.username}));
-    openPicker({eyebrow:"TWO-SIDED",title:"Invite a collaborator",
+    openPicker({title:"Invite a collaborator",
       note:"They'll get an invite to accept.",
       search:"Search people…",loading:true,
       onSearch:async(q)=>toItems((await api.mentionable(q)).people),
@@ -188,7 +188,7 @@ function wireFeed(){
     }};
     cs.onclick=go;$("#cdraft").onkeydown=e=>{if(e.key==="Enter")go()}}
   const cc=$("#ccancel");if(cc)cc.onclick=()=>{CEDIT=null;paintComments()};
-  const cj=$("#cjoinb");if(cj)cj.onclick=()=>needAccount("Give real feedback. It's where most collabs start.");
+  const cj=$("#cjoinb");if(cj)cj.onclick=()=>needAccount("Join to comment.");
   document.querySelectorAll("[data-cedit]").forEach(b=>b.onclick=()=>{CEDIT=+b.dataset.cedit;paintComments();setTimeout(focusDraft,60)});
   document.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=async()=>{
     if(!(await uiConfirm("Delete this comment?","",{okLabel:"Delete",danger:true})))return;
@@ -207,7 +207,7 @@ function wireSheet(){
   const sx=$("#sheetx");if(sx)sx.onclick=()=>{PROFILE=null;EDITING=false;render()};
   wireProfileV2();   // profile v2: edit page, ≡ / ⋯ menus, follower lists, tagged (app-15-profile-edit.js)
   const fb=$("#followb");if(fb)fb.onclick=async()=>{
-    if(guest())return needAccount("Follow the people you want to build with.");
+    if(guest())return needAccount("Join to follow people.");
     const u=PROFILE.user.username;
     // optimistic — the button responds now, the server catches up
     PROFILE.youFollow=!PROFILE.youFollow;
@@ -222,7 +222,7 @@ function wireSheet(){
          else { await navigator.clipboard.writeText(url); toast("Profile link copied"); } }
     catch(e){ /* dismissed the share sheet -- nothing to do */ }
   };
-  const mb=$("#msgb");if(mb)mb.onclick=()=>{if(guest())return needAccount("Message people directly. Most collabs start with a DM.");openDM(PROFILE.user.username)};
+  const mb=$("#msgb");if(mb)mb.onclick=()=>{if(guest())return needAccount("Join to message people.");openDM(PROFILE.user.username)};
 
   document.querySelectorAll("[data-ptab]").forEach(b=>b.onclick=async()=>{PTAB=b.dataset.ptab;render();
     if(PTAB==="shop"&&PROFLISTINGS===null&&PROFILE){try{const d=await api.mkt("seller="+encodeURIComponent(PROFILE.user.username));PROFLISTINGS=d.listings||[];render()}catch(e){PROFLISTINGS=[];render()}}});

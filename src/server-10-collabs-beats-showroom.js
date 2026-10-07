@@ -171,7 +171,7 @@ ${u.link ? `<a class="cap" href="${/^https?:\/\//.test(u.link) ? esc(u.link) : "
   <div><b>${collabs}</b><span class="cap">Collabs</span></div>
 </div>
 ${work || `<div class="cap empty">Nothing published yet.</div>`}
-<a class="btn block acc" href="/">Build with ${esc(u.display_name)} — enter the lab</a>`,
+<a class="btn block acc" href="/">See more on LABS</a>`,
   }));
 });
 

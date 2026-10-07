@@ -11,7 +11,7 @@ function wire(){
       PCOMPOSE={body:"",imgs:[],vid:null,busy:false};pushView("compose");render();return;
     }
     if(b.dataset.tab==="profile"){
-      if(guest())return needAccount("Join to build your profile — your work, your standing, your shop.");
+      if(guest())return needAccount("Join to make your profile — your work and your shop.");
       openProfile(myName());return;
     }
     TAB=b.dataset.tab;PROFILE=null;if(window.TNLStudio)TNLStudio.unmount();if(TAB==="market"){MKTVIEW="browse";loadMarket()}if(TAB==="labs")loadLabs();render()});

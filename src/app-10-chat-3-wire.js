@@ -5,7 +5,7 @@ const isMine=x=>!!(x&&x.from&&ME&&x.from.username===ME.username);
 
 /* ---- opening and closing ---- */
 function openMessages(){
-  if(guest())return needAccount("Message people directly. Most collabs start with a DM.");
+  if(guest())return needAccount("Join to message people.");
   DMOPENPANEL=true;CHAT=null;CHATSHEET=null;CMENU=null;paintLayer();loadInbox();
 }
 async function loadInbox(){
@@ -16,7 +16,7 @@ async function loadInbox(){
 /* Any "Message" button in the app lands here. A chat is only created once
    something is sent, so opening one never leaves an empty thread behind. */
 async function openDM(username){
-  if(guest())return needAccount("Message people directly. Most collabs start with a DM.");
+  if(guest())return needAccount("Join to message people.");
   const fromPanel=DMOPENPANEL;
   DMOPENPANEL=true;PROFILE=null;CHATSHEET=null;CMENU=null;
   CHAT={id:null,to:username,other:null,messages:null,direct:!fromPanel,draft:CHATDRAFTS["u:"+username]||""};

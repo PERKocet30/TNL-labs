@@ -221,7 +221,7 @@ function wireMarket(){
   const wg=$("#whograbbed");if(wg)wg.onclick=async()=>{
     try{const d=await api.loopGrabs(MKTONE.id);
       openPicker({eyebrow:"YOUR LOOP",title:"Who's grabbed it",
-        note:"Every one of these is someone who might build with you. Message them.",
+        note:"Tap someone to message them.",
         items:d.downloads.map(u=>({label:u.displayName,sub:"@"+u.username+" · "+u.role+" · "+timeAgo(u.at),avatar:u.avatarUrl,username:u.username})),
         empty:"Nobody yet.",
         onPick:(it)=>openDM(it.username)});
@@ -295,7 +295,7 @@ function wireMarket(){
     if(!(await uiConfirm("Delete this listing?","",{okLabel:"Delete",danger:true})))return;
     try{await api.mktDelete(b.dataset.mdel);toast("Deleted");MKTEDIT=null;SELLFORM=null;SELLIMGS=[];MKTVIEW="browse";await loadMarket();render()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-dmseller]").forEach(b=>b.onclick=()=>{
-    if(guest())return needAccount("Message people directly. Most collabs start with a DM.");
+    if(guest())return needAccount("Join to message people.");
     openDM(b.dataset.dmseller)});
   document.querySelectorAll("[data-ship]").forEach(b=>b.onclick=async()=>{
     const t=(await uiPrompt("Mark as shipped",{placeholder:"Tracking number (optional)"}))||"";

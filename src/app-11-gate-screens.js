@@ -88,7 +88,7 @@ function gateHTML(){
         <div class="gx-sugg" id="unsugg">${(G.un.sugg||[]).map(s=>`<button class="chip" data-sugg="${esc(s)}">${esc(s)}</button>`).join("")}</div>
         ${err}${next("Next",G.un.state==="ok")}`;
     }else{
-      body=`<h1 class="gx-h">What do you make?</h1><p class="gx-p">Pick up to 5. It's how collaborators find you.</p>
+      body=`<h1 class="gx-h">What do you make?</h1><p class="gx-p">Pick up to 5. It's how people find you.</p>
         <div class="gx-roles">${ROLES.map(r=>`<button class="chip ${f.roles.includes(r)?"on":""}" data-r="${esc(r)}">${esc(r)}</button>`).join("")}</div>
         <div class="gx-count" id="rcount">${f.roles.length} of 5 selected</div>
         ${err}<div class="gx-stick">${next("Create account",f.roles.length>0)}</div>`;

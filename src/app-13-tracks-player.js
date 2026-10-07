@@ -1,6 +1,6 @@
 const EMPTY={
   "general":["Say what you make.","Post one line about what you're working on. Someone here does the thing you need."],
-  "collab-posts":["Looking for someone?","Say what you're building and what you're missing. That's how collabs start."],
+  "collab-posts":["Looking for someone?","Say what you're building and what you're missing."],
   "graphic-design":["Post a piece.","Finished, half-done, or a bad first draft. This room is for the work.","Post your work"],
   "photography":["Drop a shot.","Raw or edited. Tap + to add one."],
   "clothing-design":["Show a design.","Sketch, mockup, or the real thing."],
@@ -288,7 +288,7 @@ function loopDetailHTML(l){
         ${mine?`<div class="mono dim" style="margin-top:14px">This is yours.${l.downloads?` <button class="st-link" id="whograbbed">See who's grabbed it →</button>`:""}</div>`
         :l.isFree?`
           <button class="btn green wide" data-grab="${l.id}">↓ Grab it — free</button>
-          <div class="mono dim" style="margin-top:8px;line-height:1.6">${esc(l.seller.displayName)} gets told you took it. If you build something with it, tell them — that's a collab.</div>`
+          <div class="mono dim" style="margin-top:8px;line-height:1.6">${esc(l.seller.displayName)} gets told you took it. If you make something with it, credit them.</div>`
         :`
           <button class="btn green wide" data-buy="${l.id}">Buy — ${money(l.price)}</button>
           ${l.acceptsOffers?`<button class="btn ghost wide" data-offer="${l.id}">Make an offer</button>`:""}
