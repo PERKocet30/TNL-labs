@@ -132,7 +132,7 @@ ${state === "ok" ? `<script>setTimeout(()=>location.href="/",2500)</script>` : "
   q.clearVerifyTokens.run(row.user_id);
   const u = q.userById.get(row.user_id);
   console.log(`[auth] @${u?.username} verified`);
-  res.send(page("You're in", "Email confirmed. Your account's live — post work, collab, and sell.", "ok"));
+  res.send(page("You're in", "Email confirmed. Your account's live.", "ok"));
 });
 
 /* Resend, with a real cooldown. Without one, an impatient person taps five

@@ -273,7 +273,7 @@ function commentsHTML(p){return `<div class="cwrap">
       <button class="pm" data-cdel="${c.id}" aria-label="Delete">${DI.trash}</button></div>`:""}
   </div>`).join("")}
   ${guest()
-    ?`<button class="cjoin" id="cjoinb">Join to give feedback — it's where collabs start</button>`
+    ?`<button class="cjoin" id="cjoinb">Join to comment</button>`
     :`<div class="cform">
       <input class="in" id="cdraft" placeholder="${CEDIT?"Edit comment…":"Add feedback…"}" value="${CEDIT?esc(COMMENTS.find(x=>x.id===CEDIT)?.body||""):""}">
       <button class="send" id="csend" aria-label="Send">${CEDIT?DI.check:UI_IC.arrow}</button>
