@@ -5,7 +5,7 @@
 const API = location.origin;
 let TOKEN = null; try { TOKEN = localStorage.getItem("tnl-token"); } catch (e) {}
 let ME = null, TAB = "today", RANGE = 30, D = {}, TOASTT = null;
-const TABS = [["today", "Today"], ["people", "People"], ["content", "Content"], ["market", "Market"], ["system", "System"]];
+const TABS = [["today", "Today"], ["people", "People"], ["content", "Content"], ["events", "Events"], ["market", "Market"], ["system", "System"]];
 try { const h = location.hash.slice(1); if (TABS.some(([k]) => k === h)) TAB = h; RANGE = +localStorage.getItem("tnl-admin-range") || 30; } catch (e) {}
 
 const $ = (s, r = document) => r.querySelector(s);
