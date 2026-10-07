@@ -32,6 +32,17 @@ app.patch("/api/me", auth, (req, res) => {
   res.json({ user: publicUser(q.userById.get(req.user.id)) });
 });
 
+/* What anyone may see about a member. publicUser() is the account as its
+   OWNER sees it (email, payouts, admin flag); this route is public — no
+   sign-in needed — so until 2026-10-07 it handed every member's email to
+   anyone who asked. Private fields only go to the member themself. */
+const PRIVATE_FIELDS = ["email", "emailVerified", "payoutsReady", "hasStripe", "isAdmin", "published"];
+function profileUser(u, viewer) {
+  const pu = publicUser(u);
+  if (!viewer || viewer.id !== u.id) for (const k of PRIVATE_FIELDS) delete pu[k];
+  return pu;
+}
+
 /* Full profile = the portfolio. Everything they've published, plus the
    stats that make standing legible: work, validation received, collabs. */
 app.get("/api/users/:username", maybeAuth, (req, res) => {
@@ -60,7 +71,7 @@ app.get("/api/users/:username", maybeAuth, (req, res) => {
   ).get(u.id).n;
 
   res.json({
-    user: publicUser(u),
+    user: profileUser(u, req.user),
     followers: q.followerCount.get(u.id).n,
     following: db.prepare(`SELECT COUNT(*) n FROM follows WHERE follower_id = ?`).get(u.id).n,
     youFollow: req.user ? !!q.followExists.get(req.user.id, u.id) : false,
