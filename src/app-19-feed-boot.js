@@ -346,8 +346,10 @@ function paintVerifyBar(){
   const mu=/^\/u\/([a-z0-9._]+)$/i.exec(path);
   const mm=/^\/m\/(\d+)$/.exec(path);
   const me=new URLSearchParams(location.search).get("e");   // /e/:slug pages send people here
+  const mv=Number(new URLSearchParams(location.search).get("v"))||null;   // …and /e/:slug/:entry, to that piece
+  const back=!me&&!mu&&!mm?evReturn():null;   // confirmed your email elsewhere: back to the vote
   loadEvents();
-  if(me){history.replaceState({},"","/");TAB="event";EVSLUG=me;loadEvent()}
+  if(me||back){history.replaceState({},"","/");TAB="event";EVSLUG=me||back.slug;EVFOCUS=me?mv:back.v||null;loadEvent()}
   else if(mu){openProfile(mu[1])}
   else if(mm){TAB="market";MKTVIEW="detail";
     try{const d=await api.mktOne(mm[1]);MKTONE=d.listing;MKTOFFERS=d.offers||[]}catch(e){}}

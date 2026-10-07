@@ -1,6 +1,8 @@
-/* TNL LABS admin — Events v1.0, 2026-10-06. Set up and run events (the
+/* TNL LABS admin — Events v1.1, 2026-10-07. Set up and run events (the
    tournament): dates, format, judges, the live tallies members never see,
-   disqualifying, and "End this phase now". The server enforces all of it. */
+   disqualifying, and "End this phase now". The server enforces all of it.
+   v1.1: the Poll format (votes a day + a live scoreboard), and the
+   Instagram kit — scoreboard pictures to post, each entry's vote link. */
 let EVID = null, EVFORM = null;
 LOADERS.events = async () => {
   D.events = await req("/api/admin/events");
@@ -38,13 +40,17 @@ function evFormHTML() {
   </div>
   <h2 class="sec">Format ${locked ? `<span class="mono">locked — voting has closed</span>` : ""}</h2>
   <div class="panel evf">
-    ${sel("format", "Format", f.format || "bracket", [["bracket", "Bracket — vote, head-to-head rounds, judged final"], ["simple", "Simple — open vote, judged final"]])}
+    ${sel("format", "Format", f.format || "poll", [["poll", "Poll — votes every day, live scoreboard, top finalists to a final"], ["bracket", "Bracket — vote, head-to-head rounds, judged final"], ["simple", "Simple — open vote, judged final"]])}
     <div class="grid g2">
       ${sel("bracketSize", "Bracket (largest)", f.bracketSize || 16, [[4, "4"], [8, "8"], [16, "16"], [32, "32"]])}
-      ${field("finalists", "Finalists (simple)", f.finalists ?? 8, 'type="number" min="2" max="20"')}
-      ${field("picks", "Picks per member in the vote", f.picks ?? 3, 'type="number" min="1" max="10"')}
-      ${field("judgeWeight", "Judges' share of the final, %", f.judgeWeight ?? 50, 'type="number" min="0" max="100"')}
-      ${field("minAccountDays", "Accounts must be this many days old to vote", f.minAccountDays ?? 3, 'type="number" min="0" max="60"')}
+      ${field("finalists", "Finalists (poll, simple)", f.finalists ?? 8, 'type="number" min="2" max="20"')}
+      ${field("picks", "Votes per member (poll: per day)", f.picks ?? 1, 'type="number" min="1" max="10"')}
+      ${field("judgeWeight", "Judges' share of the final, % (0 = votes only)", f.judgeWeight ?? 50, 'type="number" min="0" max="100"')}
+      ${field("minAccountDays", "Accounts must be this many days old to vote", f.minAccountDays ?? 0, 'type="number" min="0" max="60"')}
+      ${field("freezeHours", "Poll: freeze the scoreboard for the last … hours", f.freezeHours ?? 24, 'type="number" min="0" max="72"')}
+    </div>
+    <label class="row" style="margin-top:12px;font-size:14px"><input type="checkbox" data-f="requireVerified" ${f.requireVerified !== false ? "checked" : ""}> Voters need a confirmed email (recommended — it stops throwaway accounts)</label>
+    <div>
     </div>
   </div>
   <h2 class="sec">Dates</h2>
@@ -73,7 +79,14 @@ function evDetailHTML(d) {
   return `<div class="row sp wrapx"><button class="btn ghost sm" id="evback">${I.chev} All events</button>
     <div class="row" style="gap:6px"><a class="btn ghost sm" href="/e/${esc(e.slug)}" target="_blank">Page</a><a class="btn ghost sm" href="/e/${esc(e.slug)}/rules" target="_blank">Rules</a><button class="btn ghost sm" id="evedit">Edit</button></div></div>
   <h1 style="font-size:22px;margin-top:14px">${esc(e.title)} ${e.published ? `<span class="tag on">live</span>` : `<span class="tag">draft</span>`}</h1>
-  <p class="dim" style="font-size:13px;margin-top:4px">${e.format === "bracket" ? `Bracket of up to ${e.bracketSize}` : `Simple · top ${e.finalists} to the final`} · ${e.picks} picks · final ${e.judgeWeight}% judges · voters ${e.minAccountDays}+ days old · ${d.voters} people have voted${e.prize ? " · " + esc(e.prize) : ""}</p>
+  <p class="dim" style="font-size:13px;margin-top:4px">${e.format === "bracket" ? `Bracket of up to ${e.bracketSize}` : e.format === "poll" ? `Poll · ${e.picks} vote${e.picks === 1 ? "" : "s"} a day · board freezes ${e.freezeHours}h before each close · top ${e.finalists} to the final` : `Simple · top ${e.finalists} to the final`}${e.format === "poll" ? "" : ` · ${e.picks} picks`} · final ${e.judgeWeight ? e.judgeWeight + "% judges" : "votes only"}${e.requireVerified ? " · confirmed emails" : ""}${e.minAccountDays ? ` · voters ${e.minAccountDays}+ days old` : ""} · ${d.voters} people have voted${e.prize ? " · " + esc(e.prize) : ""}</p>
+  ${e.format === "poll" ? `<h2 class="sec">Instagram <span class="mono">every link leads back to the app — only votes there count</span></h2>
+  <div class="panel"><div class="row wrapx" style="gap:6px">
+    <a class="btn ghost sm" href="/e/${esc(e.slug)}/board" target="_blank">Scoreboard page</a>
+    <a class="btn ghost sm" href="/e/${esc(e.slug)}/board.jpg?t=${Date.now()}" target="_blank">Scoreboard post (1080×1350)</a>
+    <a class="btn ghost sm" href="/e/${esc(e.slug)}/board.jpg?size=story&t=${Date.now()}" target="_blank">Scoreboard Story (1080×1920)</a>
+    <button class="btn ghost sm" data-evcopy="${esc(location.origin + "/e/" + e.slug)}">Copy event link</button></div>
+    <p class="dim" style="font-size:12px;margin-top:10px">Post the scoreboard daily with a link sticker to the event. Entrants get their own Story card and vote link in the app (Share to Instagram); theirs are below too.</p></div>` : ""}
   ${st.void ? `<div class="panel" style="margin-top:12px">Called off: fewer than two entries when entries closed.</div>` : ""}
 
   <h2 class="sec">Now: ${phName(e.phase)} <span class="mono">${e.phase.end ? "until " + when(e.phase.end) : ""}</span></h2>
@@ -97,7 +110,7 @@ function evDetailHTML(d) {
     ${E.map((x) => `<tr style="${x.dqReason ? "opacity:.5" : ""}"><td><a href="${esc(x.imageUrl)}" target="_blank"><img src="${esc(x.thumbUrl)}" alt="" style="width:44px;height:44px;object-fit:cover;display:block"></a></td>
       <td>@${esc(x.author.username)}${x.dqReason ? `<div class="dim" style="font-size:11px">DQ: ${esc(x.dqReason)}</div>` : ""}</td>
       <td class="num">${x.seed ?? "—"}</td><td class="num">${vcell(x, "qualify")}</td>${stage && stage !== "qualify" ? `<td class="num">${vcell(x, stage)}</td>` : ""}
-      <td>${x.scores.map((s) => `${esc(s.judge)}: ${s.score}`).join(", ") || "—"}</td>
+      <td>${x.scores.map((s) => `${esc(s.judge)}: ${s.score}`).join(", ") || "—"}${x.dqReason ? "" : `<div style="white-space:nowrap;margin-top:4px"><button class="btn ghost sm" data-evcopy="${esc(location.origin + "/e/" + e.slug + "/" + x.id)}">Vote link</button> <a class="btn ghost sm" href="/e/${esc(e.slug)}/${x.id}/story.jpg?t=${Date.now()}" target="_blank">Story</a></div>`}</td>
       <td>${x.dqReason ? `<button class="btn ghost sm" data-undq="${x.id}">Reinstate</button>` : `<button class="btn danger sm" data-dq="${x.id}">Disqualify</button>`}</td></tr>`).join("") || `<tr><td colspan="7" class="dim">No entries yet.</td></tr>`}</table></div>
   <div style="height:40px"></div>`;
 }
@@ -105,7 +118,8 @@ function evDetailHTML(d) {
 WIRES.events = () => {
   const reload = async () => { await LOADERS.events(); paint(); };
   const on = (s, fn) => { const el = $(s); if (el) el.onclick = fn; };
-  on("#evnew", () => { EVFORM = { format: "bracket", bracketSize: 16, published: false, plan: { opensAt: Date.now() + 14 * 864e5, submitDays: 14, voteDays: 3, roundDays: 2, finalDays: 3 } }; paint(); });
+  on("#evnew", () => { EVFORM = { format: "poll", bracketSize: 16, finalists: 5, picks: 1, judgeWeight: 0, minAccountDays: 0, freezeHours: 24, requireVerified: true, published: false, plan: { opensAt: Date.now() + 14 * 864e5, submitDays: 14, voteDays: 7, roundDays: 2, finalDays: 3 } }; paint(); });
+  $$("[data-evcopy]").forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.evcopy); toast("Link copied"); } catch { toast("Couldn't copy"); } });
   $$("[data-ev]").forEach((b) => b.onclick = async () => { EVID = +b.dataset.ev; D.event = null; paint(); await reload(); });
   on("#evback", () => { EVID = null; D.event = null; paint(); });
   on("#evcancel", () => { EVFORM = null; paint(); });

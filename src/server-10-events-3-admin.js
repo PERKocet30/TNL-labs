@@ -1,12 +1,12 @@
 
 /* ================================================================
-   EVENTS v1.0 — 2026-10-06. Running an event (admin only, enforced
+   EVENTS v1.1 — 2026-10-07. Running an event (admin only, enforced
    here) and its public pages: /e/:slug and /e/:slug/rules.
    Admins see the live tallies members never do, including how many
    votes came from brand-new accounts: the usual sign of someone
    stuffing the box.
 ================================================================ */
-const EV_FIELDS = ["title", "brief", "rules", "prize", "cover_url", "channel", "format", "bracket_size", "finalists", "judge_weight", "picks", "min_account_days", "published"];
+const EV_FIELDS = ["title", "brief", "rules", "prize", "cover_url", "channel", "format", "bracket_size", "finalists", "judge_weight", "picks", "min_account_days", "freeze_hours", "require_verified", "published"];
 
 function evClean(b, ev = {}) {
   const o = {};
@@ -14,11 +14,13 @@ function evClean(b, ev = {}) {
   const int = (k, lo, hi) => { if (b[k] !== undefined) o[k] = Math.min(hi, Math.max(lo, Math.round(Number(b[k]) || 0))); };
   str("title", 120); str("brief", 4000); str("rules", 20000); str("prize", 200); str("channel", 60);
   if (b.coverUrl !== undefined) o.cover_url = /^\/uploads\/[A-Za-z0-9._-]+$/.test(b.coverUrl || "") ? b.coverUrl : null;
-  if (b.format !== undefined) o.format = b.format === "simple" ? "simple" : "bracket";
+  if (b.format !== undefined) o.format = ["simple", "poll"].includes(b.format) ? b.format : "bracket";
   if (b.bracketSize !== undefined) o.bracket_size = [4, 8, 16, 32, 64].includes(Number(b.bracketSize)) ? Number(b.bracketSize) : 16;
   int("finalists", 2, 20); int("judgeWeight", 0, 100); int("picks", 1, 10); int("minAccountDays", 0, 60);
   if (o.judgeWeight !== undefined) { o.judge_weight = o.judgeWeight; delete o.judgeWeight; }
   if (o.minAccountDays !== undefined) { o.min_account_days = o.minAccountDays; delete o.minAccountDays; }
+  if (b.freezeHours !== undefined) o.freeze_hours = Math.min(72, Math.max(0, Math.round(Number(b.freezeHours) || 0)));
+  if (b.requireVerified !== undefined) o.require_verified = b.requireVerified ? 1 : 0;
   if (b.published !== undefined) o.published = b.published ? 1 : 0;
   return o;
 }
@@ -46,13 +48,14 @@ function evAdminView(ev) {
   return {
     event: { id: ev.id, slug: ev.slug, title: ev.title, brief: ev.brief, rules: ev.rules, prize: ev.prize, coverUrl: ev.cover_url, channel: ev.channel,
       format: ev.format, bracketSize: ev.bracket_size, finalists: ev.finalists, judgeWeight: ev.judge_weight, picks: ev.picks,
-      minAccountDays: ev.min_account_days, published: !!ev.published, plan: evJSON(ev.plan, {}), schedule: sched, phase: phaseAt(sched), state: st },
+      minAccountDays: ev.min_account_days, freezeHours: ev.freeze_hours, requireVerified: !!ev.require_verified, published: !!ev.published, plan: evJSON(ev.plan, {}), schedule: sched, phase: phaseAt(sched), state: st },
     judges: evJudges(ev.id).map((j) => ({ username: j.username, displayName: j.display_name })),
     entries: entries.map((e) => ({ ...evEntryShape(e), userId: e.user_id, dqReason: e.dq_reason,
       votes: Object.fromEntries(stages.map((s) => [s, t[s].get(e.id) || { votes: 0, fresh: 0 }])),
       scores: scores.filter((s) => s.entry_id === e.id).map((s) => ({ judge: s.username, score: s.score })) })),
     matchups: db.prepare(`SELECT round, slot, a_entry a, b_entry b, winner_entry winner FROM event_matchups WHERE event_id = ? ORDER BY round, slot`).all(ev.id),
     voters: db.prepare(`SELECT COUNT(DISTINCT voter_id) n FROM event_votes WHERE event_id = ?`).get(ev.id).n,
+    board: evBoard(ev, EV_STAGE(phaseAt(sched)), phaseAt(sched)),
   };
 }
 
@@ -77,6 +80,8 @@ app.post("/api/admin/events", auth, admin, (req, res) => {
   if (evRow(slug)) return res.status(409).json({ error: "That link name is taken." });
   const f = evClean(b);
   if (!f.title) return res.status(400).json({ error: "Give the event a title." });
+  // a poll starts the way the community asked: a vote a day, any confirmed account
+  if (f.format === "poll") { if (f.picks === undefined) f.picks = 1; if (f.min_account_days === undefined) f.min_account_days = 0; }
   const now = Date.now(), plan = evPlan(b);
   const ev = { format: f.format || "bracket", bracket_size: f.bracket_size || 16 };
   const info = db.prepare(`INSERT INTO events (slug, title, created_at, updated_at) VALUES (?,?,?,?)`).run(slug, f.title, now, now);
@@ -162,8 +167,12 @@ function evDefaultRules(ev) {
     `Your entry must be your own original work, made by you. Don't include anyone else's artwork, photos, logos or trademarks unless you have the right to use them. Entries that break these rules, the TNL community guidelines or the law will be removed.`,
     `How the winner is picked. ${ev.format === "bracket"
       ? `Members vote for their favourites to set a bracket. Head-to-head rounds follow, decided by member votes (a tie goes to the higher seed). The last two meet in the final.`
-      : `Members vote for their favourites; the top ${ev.finalists} go to the final.`} In the final, judges score each finalist from 1 to 10 for originality, craft and response to the brief. The winner is decided ${ev.judge_weight}% by the judges' scores and ${100 - ev.judge_weight}% by member votes.`,
-    `Fair voting. One account per person. Accounts must be at least ${ev.min_account_days} days old to vote, and you can't vote for yourself. TNL may remove votes, and disqualify entries, that come from fake, bought or coordinated accounts.`,
+      : ev.format === "poll"
+      ? `Members vote in the app: ${ev.picks === 1 ? "one vote" : ev.picks + " votes"} a day, resetting at midnight Eastern, on a public scoreboard${ev.freeze_hours ? ` that freezes for the last ${ev.freeze_hours} hours of each stage` : ""}. Votes on Instagram or anywhere else don't count. The top ${ev.finalists} go to the final.`
+      : `Members vote for their favourites; the top ${ev.finalists} go to the final.`} ${ev.judge_weight > 0
+      ? `In the final, judges score each finalist from 1 to 10 for originality, craft and response to the brief. The winner is decided ${ev.judge_weight}% by the judges' scores and ${100 - ev.judge_weight}% by member votes.`
+      : `In the final, members vote again and the most votes wins.`}`,
+    `Fair voting. One account per person.${ev.require_verified ? " You need a confirmed email to vote." : ""}${ev.min_account_days ? ` Accounts must be at least ${ev.min_account_days} days old to vote.` : ""} You can't vote for yourself. TNL may remove votes, and disqualify entries, that come from fake, bought or coordinated accounts.`,
     `Prize. ${ev.prize ? ev.prize : "The prize will be announced before entries open."} The winner will be contacted through the app within 7 days of the final and must reply within 14 days, or a runner-up may be named instead. The prize can't be transferred. The winner is responsible for any taxes, and TNL may ask for tax forms (such as a W-9) where the law requires.`,
     `Your work stays yours. You keep all rights to your entry. By entering, you let TNL show your entry, your name and your username in the app and in promotion of this event, without further payment.`,
     `General. TNL may change, pause or cancel the event if something outside its control affects it, and will tell entrants in the app. By entering you agree to these rules and to TNL's decisions, which are final.`,

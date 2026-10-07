@@ -1,4 +1,5 @@
-/* EVENTS v1.0 — 2026-10-06. The tournament screen and the Showroom banner.
+/* EVENTS v1.1 — 2026-10-07. The tournament screen, the Showroom banner,
+   the poll's scoreboard and the Share to Instagram sheet.
    Paper is square, glass is round: cards and images are square, buttons
    and the pick dot are round. The accent marks what you picked and who won. */
 .ev-banner{display:flex;align-items:center;gap:12px;width:calc(100% - 32px);margin:12px 16px 4px;padding:10px 12px;background:var(--card);border:1px solid var(--line);color:var(--tx);font-family:inherit;text-align:left;cursor:pointer}
@@ -78,3 +79,36 @@
 @media (min-width:640px){.ev-grid{grid-template-columns:repeat(3,1fr)}}
 .ev-final.two .ev-score{gap:3px}
 .ev-final.two .ev-score button{min-width:0;width:calc(20% - 3px);height:30px;font-size:12px}
+
+/* the poll: a scoreboard you vote from */
+.ev-board{border-top:1px solid var(--line)}
+.ev-row{display:grid;grid-template-columns:28px 56px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.ev-row img{width:56px;height:56px;object-fit:cover;display:block;background:var(--el);cursor:zoom-in}
+.ev-rk{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center}
+.ev-rwho{min-width:0;display:flex;flex-direction:column;gap:2px;font-size:15px;line-height:19px}
+.ev-rwho b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.ev-rwho .dim{font-size:13px;line-height:17px;font-variant-numeric:tabular-nums}
+.ev-mv{margin-left:4px;font-weight:700;color:var(--dim)}
+.ev-mv.up{color:var(--tx)}
+.ev-vote{display:inline-flex;align-items:center;gap:4px;min-width:76px;justify-content:center;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--tx);background:transparent;color:var(--tx);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.ev-vote svg{width:14px;height:14px}
+.ev-vote.on{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
+.ev-vote.busy{opacity:.5}
+.ev-mine-s{font-size:12px;font-weight:700;color:var(--dim);padding:0 6px}
+.ev-you{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 4px;font-size:15px;line-height:21px}
+.ev-you .btn svg,.ev-yours .btn svg{width:16px;height:16px;margin-right:6px}
+.ev-yours .btn{margin:0 6px 8px 0}
+.ev-boardlink{display:inline-block;margin-top:14px;font-size:13px;color:var(--tx);text-decoration:underline}
+/* the piece someone came from Instagram for */
+.ev-focus{margin:16px 0 4px}
+.ev-fbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 4px;font-size:17px;line-height:22px}
+.ev-fbar .ev-vote{height:44px;min-width:110px;font-size:15px}
+/* Share to Instagram */
+.ev-shimg{display:flex;justify-content:center;align-items:center;min-height:200px;background:var(--el);padding:12px;margin:4px 0 12px}
+.ev-shimg img{display:block;height:46vh;max-height:420px;width:auto;box-shadow:0 1px 0 var(--line)}
+.ev-howto{margin:0 0 12px;padding-left:20px;font-size:13px;line-height:19px}
+.ev-link{display:flex;align-items:center;gap:8px;border:1px solid var(--line);padding:6px 6px 6px 12px;font-size:13px}
+.ev-link span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev-link .btn{padding:8px 12px;font-size:13px}
+.ev-link .btn svg{width:14px;height:14px;margin-right:4px}
+.ev-focus .ev-by{display:none}

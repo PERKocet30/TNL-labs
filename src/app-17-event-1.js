@@ -1,9 +1,10 @@
 /* ================================================================
-   EVENT SCREEN v1.0 — 2026-10-06 (state + what you see). The tournament
+   EVENT SCREEN v1.1 — 2026-10-07 (state + what you see). The tournament
    lives here: the brief, entering, the gallery, the vote, the bracket,
    the final and the results. The server decides everything; this only
    shows the phase you're in and sends your picks. Wiring:
-   app-17-event-2.js. Engine: server-10-events-*.js.
+   app-17-event-2.js. The poll + scoreboard: app-17-event-3-poll.js.
+   Engine: server-10-events-*.js.
 ================================================================ */
 let EVLIST=null;          // {current, events} — for the Showroom banner
 let EV=null, EVSLUG=null; // the open event, as the server shapes it
@@ -50,7 +51,7 @@ function evThumb(e,opts={}){
   if(!e)return `<div class="ev-th ev-empty"></div>`;
   const mine=EV.me.entry&&EV.me.entry.id===e.id, picked=EV.me.myVotes.includes(e.id);
   return `<div class="ev-th ${picked?"on":""} ${opts.big?"big":""}">
-    <img src="${esc(e.thumbUrl||e.imageUrl)}" alt="" loading="lazy" data-evzoom="${esc(e.imageUrl)}">
+    <img src="${esc(opts.big?e.imageUrl:(e.thumbUrl||e.imageUrl))}" alt="" ${opts.big?`style="aspect-ratio:${e.w&&e.h?e.w+"/"+e.h:"4/5"}"`:`loading="lazy"`} data-evzoom="${esc(e.imageUrl)}">
     ${opts.pick&&!mine?`<button class="ev-pick" data-evpick="${e.id}" aria-label="${picked?"Take back":"Pick"}">${picked?DI.check:DI.plus}</button>`:""}
     ${mine?`<span class="ev-mine">Yours</span>`:""}
     ${opts.seed&&e.seed?`<span class="ev-seed">${e.seed}</span>`:""}
@@ -67,7 +68,7 @@ function evHeadHTML(){
     ${e.coverUrl?`<img class="ev-cover" src="${esc(e.coverUrl)}" alt="" data-evzoom="${esc(e.coverUrl)}">`:""}
     ${e.brief?`<p class="ev-brief">${rich(e.brief)}</p>`:""}
     <div class="ev-meta">
-      <span>${e.format==="bracket"?"Bracket":"Open vote"} · final ${e.judgeWeight}% judges, ${100-e.judgeWeight}% votes</span>
+      <span>${e.format==="bracket"?"Bracket":e.format==="poll"?`Open vote · live scoreboard · ${e.picks===1?"1 vote":e.picks+" votes"} a day`:"Open vote"} · final ${e.judgeWeight?`${e.judgeWeight}% judges, ${100-e.judgeWeight}% votes`:"most votes wins"}</span>
       ${J.length?`<span>Judges: ${J.map(j=>`<a data-u="${esc(j.username)}">@${esc(j.username)}</a>`).join(", ")}</span>`:""}
       <a href="/e/${esc(e.slug)}/rules" target="_blank" rel="noopener">Official rules</a>
     </div>
@@ -87,7 +88,7 @@ function evSubmitHTML(){
   let mine="";
   if(me.isJudge)mine=`<div class="ev-note">You're judging this one. You'll score the finalists in the final.</div>`;
   else if(me.entry)mine=`<div class="ev-sec"><h3>Your entry</h3><div class="ev-yours">${evThumb(me.entry)}
-      <div><p>${esc(me.entry.caption||"")}</p><button class="btn ghost" id="evwithdraw">Withdraw</button>
+      <div><p>${esc(me.entry.caption||"")}</p><button class="btn green" id="evshare">${DI.out} Share to Instagram</button> <button class="btn ghost" id="evwithdraw">Withdraw</button>
       <div class="dim ev-small">You can withdraw and enter something else until entries close.</div></div></div></div>`;
   else mine=`<button class="btn green ev-cta" id="eventer">${me.signedIn?"Enter your piece":"Sign in to enter"}</button>
     <div class="dim ev-small">One piece per person, your own original work.</div>`;
@@ -133,7 +134,7 @@ function evResultsHTML(){
       <h2>${esc(w?w.author.displayName:"")}</h2></div>
     <div class="ev-sec"><h3>The final</h3>${R.ranking.map((r,i)=>{const e=evById(r.entryId);return e?`<div class="ev-rank">
       <span class="ev-n">${i+1}</span>${evThumb(e)}<div><b>${esc(e.author.displayName)}</b>
-      <div class="dim ev-small">Judges ${r.judgePct}% · Votes ${r.votePct}% · Score ${r.score}</div></div></div>`:""}).join("")}</div>
+      <div class="dim ev-small">${EV.event.judgeWeight?`Judges ${r.judgePct}% · Votes ${r.votePct}% · Score ${r.score}`:`${r.votePct}% of the votes`}</div></div></div>`:""}).join("")}</div>
     ${evBracketHTML()}`;
 }
 
@@ -142,8 +143,8 @@ function eventHTML(){
   const p=EV.event.phase.phase;
   const body=EV.event.void?`<div class="ev-note">This one was called off — not enough entries came in.</div>`
     :p==="upcoming"?`<div class="ev-note">Entries open ${evDay(EV.event.phase.end)}. Start thinking.</div>`
-    :p==="submit"?evSubmitHTML():p==="qualify"?evQualifyHTML():p==="round"?evBracketHTML():p==="final"?evFinalHTML():evResultsHTML();
-  return `<div class="scroll ev" id="evscroll">${evHeadHTML()}${body}</div>${EVENTER?evEnterHTML():""}`;
+    :p==="submit"?evSubmitHTML():EV.board&&!(p==="final"&&EV.me.isJudge)?evPollHTML():p==="qualify"?evQualifyHTML():p==="round"?evBracketHTML():p==="final"?evFinalHTML():evResultsHTML();
+  return `<div class="scroll ev" id="evscroll">${evFocusHTML()}${evHeadHTML()}${body}</div>${EVENTER?evEnterHTML():""}${EVSHARE?evShareHTML():""}`;
 }
 
 function evEnterHTML(){

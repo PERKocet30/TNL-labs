@@ -40,6 +40,7 @@ function initHistory(){
     else if(SEARCHOPEN){SEARCHOPEN=false}
     else if(OPENCOMMENTS){OPENCOMMENTS=null}
     else if(EVENTER){EVENTER=null}
+    else if(EVSHARE){EVSHARE=null}
     else if(TAB==="market"&&MKTVIEW==="edit"){MKTEDIT=null;SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME="";MKTVIEW="detail"}
     else if(TAB==="market"&&MKTVIEW!=="browse"){MKTVIEW="browse";MKTONE=null}
     else if(TAB==="labs"&&(LAB||ROOMOPEN)){ROOMOPEN=false;LAB=null;loadLabs()}

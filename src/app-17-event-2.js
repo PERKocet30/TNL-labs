@@ -1,12 +1,12 @@
 /* ================================================================
-   EVENT SCREEN v1.0 — 2026-10-06 (wiring). Opening an event, the
+   EVENT SCREEN v1.1 — 2026-10-07 (wiring). Opening an event, the
    Showroom banner, picks, judging, entering and withdrawing. Every
    change goes to the server and the screen shows what it says back.
 ================================================================ */
 function openEvent(slug){
   if(!slug)return;
   pushView("event",slug);
-  TAB="event"; EVSLUG=slug; PROFILE=null; POSTOPEN=null; NOTIFOPEN=false; SEARCHOPEN=false; EVENTER=null;
+  TAB="event"; EVSLUG=slug; PROFILE=null; POSTOPEN=null; NOTIFOPEN=false; SEARCHOPEN=false; EVENTER=null; EVSHARE=null; EVFOCUS=null;
   render(); loadEvent();
 }
 async function loadEvent(){
@@ -47,14 +47,15 @@ function wireEvent(){
     try{EV=await evApi.withdraw(EVSLUG);toast("Withdrawn");render()}catch(e){toast(e.message)}
   });
   if(EVENTER)wireEvEnter();
+  wireEvPoll();
 }
 
 async function evPick(id,btn){
-  if(!ME)return needAccount("Join to vote.");
+  if(!ME){if(!EVFOCUS)EVFOCUS=id;evRemember();return needAccount("Join to vote.")}
   const on=!EV.me.myVotes.includes(id);
   if(btn)btn.classList.add("busy");
-  try{const d=await evApi.vote(EVSLUG,id,on);EV.me.myVotes=d.myVotes;render();if(on&&navigator.vibrate)navigator.vibrate(8)}
-  catch(e){toast(e.message);if(btn)btn.classList.remove("busy")}
+  try{const d=await evApi.vote(EVSLUG,id,on);EV.me.myVotes=d.myVotes;if(d.board)EV.board=d.board;render();if(on&&navigator.vibrate)navigator.vibrate(8)}
+  catch(e){toast(e.message);if(/confirm your email/i.test(e.message||"")){if(!EVFOCUS)EVFOCUS=id;evRemember()}if(btn)btn.classList.remove("busy")}
 }
 async function evScore(id,n){
   try{await evApi.score(EVSLUG,id,n);EV.me.myScores[id]=n;render()}catch(e){toast(e.message)}

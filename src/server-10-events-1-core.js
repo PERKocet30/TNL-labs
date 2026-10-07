@@ -1,6 +1,6 @@
 
 /* ================================================================
-   EVENTS v1.0 — 2026-10-06. The engine behind TNL's events. The first
+   EVENTS v1.1 — 2026-10-07. The engine behind TNL's events. The first
    is the graphic design / art tournament.
 
    An event runs on a schedule of phases:
@@ -10,10 +10,15 @@
      final   → judges' scores + member votes decide (judge_weight %)
      results → winner, finalists, the full breakdown
 
-   Two formats, picked per event (the community chooses):
+   Three formats, picked per event (the community chooses):
      bracket — qualify → top 16 (or the largest power of two there is) →
                head-to-head rounds → the last two meet in the final
      simple  — open vote → top `finalists` → the final
+     poll    — simple, run like a poll: `picks` votes a DAY (they add up,
+               resetting at midnight Eastern) and a live public scoreboard,
+               frozen for the last `freeze_hours` of each stage. What the
+               community asked for. Instagram sends people in; every vote
+               is counted here.
 
    tickEvent() is the whole state machine. It is idempotent and runs on
    every read and once a minute, so phases close on time with nobody
@@ -35,6 +40,8 @@ CREATE TABLE IF NOT EXISTS events (
   judge_weight INTEGER NOT NULL DEFAULT 50,
   picks INTEGER NOT NULL DEFAULT 3,
   min_account_days INTEGER NOT NULL DEFAULT 3,
+  freeze_hours INTEGER NOT NULL DEFAULT 24,
+  require_verified INTEGER NOT NULL DEFAULT 1,
   plan TEXT NOT NULL DEFAULT '{}',
   schedule TEXT NOT NULL DEFAULT '[]',
   state TEXT NOT NULL DEFAULT '{}',
@@ -55,11 +62,11 @@ CREATE TABLE IF NOT EXISTS event_entries (
 CREATE TABLE IF NOT EXISTS event_votes (
   event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   stage TEXT NOT NULL,
-  matchup INTEGER NOT NULL DEFAULT 0,
+  matchup INTEGER NOT NULL DEFAULT 0,  -- the slot in a round; the day (yyyymmdd, Eastern) in a poll
   entry_id INTEGER NOT NULL REFERENCES event_entries(id) ON DELETE CASCADE,
   voter_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_at INTEGER NOT NULL,
-  PRIMARY KEY (event_id, stage, voter_id, entry_id)
+  PRIMARY KEY (event_id, stage, matchup, voter_id, entry_id)
 );
 CREATE INDEX IF NOT EXISTS idx_event_votes ON event_votes(event_id, stage, entry_id);
 CREATE TABLE IF NOT EXISTS event_judges (
@@ -87,6 +94,9 @@ CREATE TABLE IF NOT EXISTS event_matchups (
 `);
 
 const EV_DAY = 86400000;
+/* A poll's voting day: 20261120 — the calendar date in New York, so
+   "resets at midnight" means midnight for the people running it. */
+const evDayKey = (t = Date.now()) => Number(new Date(t).toLocaleDateString("en-CA", { timeZone: "America/New_York" }).replace(/-/g, ""));
 const evJSON = (s, d) => { try { return JSON.parse(s); } catch { return d; } };
 const evRow = (idOrSlug) => typeof idOrSlug === "number"
   ? db.prepare(`SELECT * FROM events WHERE id = ?`).get(idOrSlug)

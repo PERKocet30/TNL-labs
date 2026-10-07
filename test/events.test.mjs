@@ -1,10 +1,11 @@
-// Events v1.0 (2026-10-06): a whole tournament against the real server.
-// Bracket and simple formats, every voting rule, judging, results, and
-// that vote counts never leak while a stage is open.
+// Events v1.1 (2026-10-07): a whole tournament against the real server.
+// Bracket, simple and poll formats, every voting rule, judging, results,
+// that vote counts never leak while a stage is open (except a poll's live
+// scoreboard, which freezes before the end), and the Instagram pages and cards.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "test/.tmp/events");
 rmSync(DATA, { recursive: true, force: true }); mkdirSync(join(DATA, "uploads"), { recursive: true });
@@ -14,20 +15,26 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "�
 
 const { db } = await import("../src/db.js");
 const now = Date.now(), D = 86400000;
-const mk = (u, { admin = 0, age = 60 } = {}) => {
-  const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified) VALUES (?,?,?,?,?,1)`)
-    .run(u, u.toUpperCase(), u + "@x.test", "x", now - age * D).lastInsertRowid);
+const mk = (u, { admin = 0, age = 60, verified = 1 } = {}) => {
+  const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified) VALUES (?,?,?,?,?,?)`)
+    .run(u, u.toUpperCase(), u + "@x.test", "x", now - age * D, verified).lastInsertRowid);
   if (admin) db.prepare(`UPDATE users SET is_admin = 1 WHERE id = ?`).run(id);
   db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?,?,?)`).run("tok-" + u, id, now);
   return id;
 };
 const MEMBERS = "abcdefghijkl".split("");
-mk("boss", { admin: 1 }); mk("judge"); mk("newbie", { age: 1 });
+mk("boss", { admin: 1 }); mk("judge"); mk("newbie", { age: 1 }); mk("unv", { verified: 0 });
 for (const m of MEMBERS) mk(m);
 for (let i = 0; i < 14; i++) writeFileSync(join(DATA, "uploads", `e${i}.jpg`), "x");
+// real pictures for the Instagram cards, when there's an ffmpeg to draw them
+let FF = null;
+try { FF = (await import("ffmpeg-static")).default || null; } catch {}
+if (FF) for (let i = 0; i < 4; i++) execFileSync(FF, ["-v", "error", "-y", "-f", "lavfi", "-i", `color=c=0x${(0x3366AA + i * 0x224411).toString(16)}:s=800x1000`, "-frames:v", "1", join(DATA, "uploads", `p${i}.jpg`)]);
+else for (let i = 0; i < 4; i++) writeFileSync(join(DATA, "uploads", `p${i}.jpg`), "x");
 db.close();
 
 const PORT = 18700 + (process.pid % 200);
+const DBFILE = join(DATA, "tnl.db");
 const srv = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), TNL_DATA: DATA }, stdio: ["ignore", "pipe", "pipe"] });
 let log = ""; srv.stdout.on("data", (d) => log += d); srv.stderr.on("data", (d) => log += d);
 for (let i = 0; i < 100 && !/listening/.test(log); i++) await new Promise((r) => setTimeout(r, 100));
@@ -158,6 +165,68 @@ try {
   await call("k", "POST", "/api/events/lonely/enter", { imageUrl: "/uploads/e1.jpg", agree: true });
   await call("boss", "POST", `/api/admin/events/${r.j.event.id}/advance`);
   t("one entry when entries close: the event is called off, not run", (await view("k", "lonely")).event.void === true);
+
+  console.log("\nTHE POLL: DAILY VOTES, A LIVE SCOREBOARD");
+  r = await call("boss", "POST", "/api/admin/events", { slug: "art", title: "Art Tournament", format: "poll", picks: 1, finalists: 3, judgeWeight: 0, minAccountDays: 0, freezeHours: 24, published: true, opensAt: now - 1000, submitDays: 1, voteDays: 3, finalDays: 2 });
+  const pId = r.j.event.id;
+  t("poll: submit, vote, final, results", r.j.event.schedule.map((p) => p.phase).join(",") === "submit,qualify,final,results" && r.j.event.format === "poll");
+  for (const [w, i] of [["k", 0], ["l", 1], ["h", 2], ["i", 3]]) await call(w, "POST", "/api/events/art/enter", { imageUrl: `/uploads/p${i}.jpg`, thumbUrl: `/uploads/p${i}.jpg`, agree: true });
+  await call("boss", "POST", `/api/admin/events/${pId}/advance`);
+  v = await view("a", "art");
+  const pu = Object.fromEntries(v.entries.map((e) => [e.author.username, e.id]));
+  t("the scoreboard is live from the start: everyone, at 0", v.board && !v.board.frozen && v.board.rows.length === 4 && v.board.rows.every((x) => x.votes === 0 && x.rank === 1));
+  t("unconfirmed emails can't vote", (await vote("unv", pu.h, true, "art")).s === 403);
+  t("a new account can, when the event allows it", (await vote("newbie", pu.h, true, "art")).s === 200);
+  r = await vote("a", pu.h, true, "art");
+  t("a vote comes back with the new board", r.s === 200 && r.j.board.rows[0].entryId === pu.h && r.j.board.rows[0].votes === 2);
+  t("one vote a day", (await vote("a", pu.l, true, "art")).s === 400);
+  r = await vote("a", pu.h, false, "art");
+  t("today's vote can be taken back…", r.s === 200 && r.j.myVotes.length === 0);
+  t("…and given to someone else", (await vote("a", pu.l, true, "art")).s === 200 && (await view("a", "art")).me.myVotes.join() === String(pu.l));
+  // yesterday: a voted for h. Written straight to the database, as the server would have.
+  { const { DatabaseSync } = await import("node:sqlite"); const d2 = new DatabaseSync(DBFILE); const y = new Date(now - D).toLocaleDateString("en-CA", { timeZone: "America/New_York" }).replace(/-/g, "");
+    d2.prepare(`INSERT INTO event_votes (event_id, stage, matchup, entry_id, voter_id, created_at) VALUES (?, 'qualify', ?, ?, (SELECT id FROM users WHERE username = 'a'), ?)`).run(pId, Number(y), pu.h, now - 2 * 3600000); d2.close(); }
+  v = await view("b", "art");
+  const row = (id) => v.board.rows.find((x) => x.entryId === id);
+  t("votes add up across days: h has 2, l has 1", row(pu.h).votes === 2 && row(pu.l).votes === 1 && row(pu.h).rank === 1 && row(pu.l).rank === 2);
+  t("yesterday's vote doesn't use up today's", (await vote("a", pu.l, true, "art")).s === 200 && (await view("a", "art")).me.myVotes.length === 1);
+  r = await call(null, "GET", "/e/art/board");
+  t("/e/art/board: the scoreboard for anyone, no account", r.s === 200 && r.text.includes("@h") && r.text.includes("Live") && r.text.includes(`/e/art/${pu.h}`));
+  r = await call(null, "GET", `/e/art/${pu.h}`);
+  t("/e/art/:entry: the piece is the link preview, Vote opens the app", r.s === 200 && r.text.includes(`og:image" content="http://127.0.0.1:${PORT}/uploads/p2.jpg`) && r.text.includes(`/?e=art&amp;v=${pu.h}`) && r.text.includes("#1 ON THE BOARD"));
+  t("a piece that isn't in the event is a 404", (await call(null, "GET", "/e/art/99999")).s === 404 && (await call(null, "GET", `/e/poster/${pu.h}`)).s === 404);
+  const jpeg = async (path) => { const res = await fetch(`http://127.0.0.1:${PORT}` + path, { redirect: "manual" }); const b = Buffer.from(await res.arrayBuffer());
+    let w = 0, h = 0; for (let i = 2; i < b.length - 9; i++) if (b[i] === 0xFF && b[i + 1] >= 0xC0 && b[i + 1] <= 0xC2) { h = b.readUInt16BE(i + 5); w = b.readUInt16BE(i + 7); break; }
+    return { s: res.status, jpg: b[0] === 0xFF && b[1] === 0xD8, w, h }; };
+  if (FF) {
+    let j = await jpeg(`/e/art/${pu.h}/story.jpg`);
+    t("an entrant's Instagram Story card: a real 1080×1920 picture", j.s === 200 && j.jpg && j.w === 1080 && j.h === 1920);
+    j = await jpeg("/e/art/board.jpg");
+    t("TNL's scoreboard post: 1080×1350", j.s === 200 && j.jpg && j.w === 1080 && j.h === 1350);
+    j = await jpeg("/e/art/board.jpg?size=story");
+    t("…and as a Story: 1080×1920", j.s === 200 && j.jpg && j.w === 1080 && j.h === 1920);
+    t("no card has an empty spot where text failed", !/event card/.test(log));
+  } else {
+    const j = await jpeg(`/e/art/${pu.h}/story.jpg`);
+    t("no ffmpeg here: the Story link falls back to the piece itself", j.s === 302);
+  }
+  t("cards only for real entries", (await jpeg("/e/art/99999/story.jpg")).s === 404 && (await jpeg("/e/poster/board.jpg")).s === 404);
+  r = await call("boss", "PATCH", `/api/admin/events/${pId}`, { freezeHours: 72 });
+  v = await view("b", "art");
+  t("the freeze: the board stops where it was, votes still count", v.board.frozen && v.board.total === 1 && (await vote("b", pu.k, true, "art")).s === 200 && (await view("b", "art")).board.total === 1);
+  t("admins still see the live tally during the freeze", (await call("boss", "GET", `/api/admin/events/${pId}`)).j.entries.find((e) => e.id === pu.k).votes.qualify.votes === 1);
+  await call("boss", "PATCH", `/api/admin/events/${pId}`, { freezeHours: 24 });
+  r = await call(null, "GET", "/e/art/rules");
+  t("the rules say how it works: a vote a day, Instagram votes don't count, most votes wins", r.text.includes("one vote a day") && r.text.includes("Votes on Instagram or anywhere else don") && r.text.includes("most votes wins") && r.text.includes("confirmed email"));
+  await call("boss", "POST", `/api/admin/events/${pId}/advance`);
+  v = await view("c", "art");
+  t("the top 3 by votes make the final, and its board shows just them", v.event.phase.phase === "final" && v.finalists.length === 3 && v.board.rows.length === 3 && v.finalists.includes(pu.h));
+  for (const w of ["c", "d", "e"]) await vote(w, pu.l, true, "art");
+  await vote("f", pu.h, true, "art");
+  await call("boss", "POST", `/api/admin/events/${pId}/advance`);
+  v = await view("c", "art");
+  t("no judges: the final's votes decide", v.event.phase.phase === "results" && v.results.winner === pu.l && v.results.ranking[0].votePct === 75);
+  t("after the vote, no live board", v.board === null);
 
   console.log("\nDISQUALIFYING");
   r = await call("boss", "POST", `/api/admin/events/${sId}/entries/${su.h}/dq`, { reason: "Not original work." });
