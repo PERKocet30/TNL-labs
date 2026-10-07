@@ -392,14 +392,22 @@ console.log("\nMEMBER · PHONE");
   await step(d, "sizes: sold-out one crossed out, can't buy without a pick, buying takes stock off that size", async () => {
     ok(await p.locator('.lv-o.out[data-lvs="S"]').count() === 1, "S isn't shown sold out");
     const before = (await api("/api/orders", token)).buying.length;
-    ok((await p.locator(".lbar-buy").textContent()).trim() === "Select a size", "button: " + (await p.locator(".lbar-buy").textContent()));
+    ok((await p.locator(".lbar-buy").textContent()).trim() === "Pick size", "button: " + (await p.locator(".lbar-buy").textContent()));
+    /* Every button in the Buy bar whole (it used to squash Offer to "O"
+       and clip "Select a colour"), and the "pick first" toast above the
+       bar, not over Offer / Buy (2026-10-07). */
+    const barWhole = () => p.evaluate(() => [...document.querySelectorAll(".lbar .btn, .lbar-p b")].every((e) => e.scrollWidth <= e.clientWidth + 1));
+    ok(await barWhole(), "a Buy bar button is clipped");
     await p.locator(".lbar-buy").tap(); await p.waitForTimeout(500);
+    ok(await p.evaluate(() => { const t = document.querySelector(".toast"), b = document.querySelector(".lbar").getBoundingClientRect();
+      if (!t) return true; const r = t.getBoundingClientRect(); return r.bottom <= b.top + 1 || r.top >= b.bottom - 1 || innerWidth >= 1024; }), "the toast covers the Buy bar");
     ok((await api("/api/orders", token)).buying.length === before, "bought without a size");
     const r = await api("/api/market/" + dropId + "/buy", token, {});
     ok(/Pick a size/.test(r.error || ""), "server let a size-less buy through: " + JSON.stringify(r));
     await p.locator('[data-lvs="M"]').tap(); await p.waitForTimeout(150);
     ok(await p.evaluate(() => !!document.querySelector('.lg[data-mark="e2e"]')), "picking a size repainted the page");
     ok((await p.locator(".lbar-buy").textContent()).trim() === "Buy now", "button didn't become Buy now");
+    ok(await barWhole(), "a Buy bar button is clipped after picking a size");
     ok(/Only 1 left/.test(await p.locator(".lv-left").textContent()), "no low-stock line");
     await p.locator(".lbar-buy").tap();
     await p.locator(".ui-ok").tap({ timeout: 6000 });

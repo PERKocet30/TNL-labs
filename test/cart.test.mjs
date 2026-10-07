@@ -108,4 +108,14 @@ t("so does the reconciler", rt.slice(rt.indexOf("async function reconcileOrders"
 t("the old single-order amount check is gone (sessionFits covers it)", !done.includes("const expectedCents"));
 t("/api/market/saved and /recent aren't swallowed by /api/market/:id", rt.includes('if (!/^\\d+$/.test(req.params.id)) return next();'));
 t("editing a price runs priceChanged", rt.includes("priceChanged(l, next.price_cents, req.user.id)"));
+
+console.log("\nSHOP STATS AND SIZES (2026-10-07)");
+db.exec(`DELETE FROM orders`);
+const sold = (amt, ref) => db.prepare(`INSERT INTO orders (listing_id,buyer_id,seller_id,amount_cents,shipping_cents,status,payment_ref,created_at,updated_at) VALUES (?,?,?,?,0,'shipped',?,?,?)`).run(cap, buyer, seller, amt, ref, now, now);
+sold(10000, "cs_paid"); sold(5000, "");
+let stats; routes["GET /api/shop/stats"]({ user: q.userById.get(seller) }, { json: (o) => (stats = o) });
+t("TNL's cut comes off card sales only, not ones paid directly", stats.gross === 15000 && stats.net === 15000 - 1000);
+const meta = readFileSync(join(ROOT, "src/server-06-settings-payouts-market.js"), "utf8");
+const sizeOrder = new Function(meta.slice(meta.indexOf("const SIZE_RAIL"), meta.indexOf('app.get("/api/market/meta"')) + "return sizeOrder;")();
+t("sizes read S M L XL, then numbers, then the rest", ["XL", "M", "10", "S", "One size", "8.5", "L", "xs"].sort(sizeOrder).join() === "xs,S,M,L,XL,8.5,10,One size");
 console.log(`\n  ${pass} passed, ${fail} failed`);

@@ -319,6 +319,7 @@ function paintVerifyBar(){
   loadEvents();
   if(me||back){history.replaceState({},"","/");TAB="event";EVSLUG=me||back.slug;EVFOCUS=me?mv:back.v||null;loadEvent()}
   else if(mu){openProfile(mu[1])}
+  else if(path==="/shop"){TAB="market";MKTVIEW="browse"}
   else if(mm){TAB="market";MKTVIEW="detail";
     try{const d=await api.mktOne(mm[1]);MKTONE=d.listing;MKTOFFERS=d.offers||[]}catch(e){}}
   render();

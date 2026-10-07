@@ -182,7 +182,8 @@ function uiModal({title,body,fields,okLabel="Confirm",cancelLabel="Cancel",dange
       </div></div>`;
     document.body.appendChild(ov);
     const ins=[...ov.querySelectorAll("[data-uif]")];
-    if(ins[0])setTimeout(()=>{ins[0].focus();ins[0].select&&ins[0].select()},50);
+    /* Focus lands inside, so Escape / Enter work on a computer even with no field. */
+    setTimeout(()=>{if(ins[0]){ins[0].focus();ins[0].select&&ins[0].select()}else ov.querySelector(".ui-ok").focus({preventScroll:true})},50);
     const done=v=>{ov.remove();resolve(v)};
     ov.querySelector(".ui-cancel")?.addEventListener("click",()=>done(okOnly?true:null));
     ov.querySelector(".ui-ok").addEventListener("click",()=>done(ins.length?ins.map(i=>i.value):true));

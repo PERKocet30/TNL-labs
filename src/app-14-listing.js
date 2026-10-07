@@ -51,7 +51,7 @@ function lbarHTML(l,mine){
   return `<div class="lbar">${price}
     ${l.acceptsOffers?`<button class="btn ghost" data-offer="${l.id}">Offer</button>`:""}
     <button class="btn ghost lbar-bag" data-bagadd="${l.id}" aria-label="Add to bag"${out?" disabled":""}>${UI_IC.navMarket}</button>
-    <button class="btn green lbar-buy" data-buy="${l.id}"${out?" disabled":""}>${out?"Sold out":st.need?"Select a "+st.need:"Buy now"}</button></div>`}
+    <button class="btn green lbar-buy" data-buy="${l.id}"${out?" disabled":""}>${out?"Sold out":st.need?"Pick "+st.need:"Buy now"}</button></div>`}
 
 function detailHTML(){
   if(!MKTONE)return `<div class="scroll">${skel()}</div>`;
@@ -85,7 +85,7 @@ function detailHTML(){
         </div>
         ${mine?`<span class="mono dim">${l.views} views</span>`:`<button class="btn sm ghost" data-dmseller="${esc(l.seller.username)}">Message</button>`}
       </div>
-      ${MKTMETA.paymentsEnabled?`<div class="dtrust">${DI.lock} <span>Paid through TNL — your card never touches the seller, and you’re covered until it ships.</span></div>`:""}
+      ${mine?"":`<div class="lpol mono dim">Sold by @${esc(l.seller.username)}${MKTMETA.paymentsEnabled?" · Checkout by Stripe":""} · <a href="/policies" target="_blank" rel="noopener">Shipping &amp; returns</a> · <a href="/terms" target="_blank" rel="noopener">Terms</a></div>`}
       ${mine?`
         <div class="lsec">Offers</div>
         ${MKTOFFERS.length?MKTOFFERS.map(o=>`<div class="orow">

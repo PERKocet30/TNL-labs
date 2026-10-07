@@ -65,6 +65,7 @@ Sign up at **resend.com** (free, 3,000/month) → API Keys → create.
 | --- | --- |
 | `RESEND_API_KEY` | `re_xxxxxxxx` |
 | `MAIL_FROM` | `TNL LABS <onboarding@resend.dev>` |
+| `SUPPORT_EMAIL` | `support@tnllabs.com` — the inbox shown on /terms, /privacy, /policies, /contact and every public page footer. Must be one you read. |
 
 `onboarding@resend.dev` is Resend's test sender — works with no domain
 setup, but **only delivers to the address you signed up to Resend with**.

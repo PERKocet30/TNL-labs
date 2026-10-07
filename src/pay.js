@@ -131,6 +131,12 @@ export async function createCheckout({
     account: sellerAccount, // charge lives on the seller's account
     body: {
       mode: "payment",
+      /* Say "card" outright. Left to Stripe's automatic choice, a seller
+         whose Stripe account has no payment methods switched on for the
+         currency gets "No valid payment method types for this Checkout
+         Session" and nobody can buy (first live checkout, 2026-10-07).
+         Card covers Apple Pay and Google Pay in Checkout. */
+      payment_method_types: ["card"],
       success_url: successUrl,
       cancel_url: cancelUrl,
       client_reference_id: String(orderId),
@@ -144,7 +150,7 @@ export async function createCheckout({
       payment_intent_data: { application_fee_amount: platformFee(amountCents, feePct) },
     },
   });
-  if (out.error) return out;
+  if (out.error) return { error: out.error, setup: /payment method|capabilit|activate|not enabled|charges_enabled/i.test(out.error) };
   return { url: out.url, id: out.id };
 }
 

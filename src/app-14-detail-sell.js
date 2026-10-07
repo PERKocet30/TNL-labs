@@ -200,7 +200,7 @@ function ordersHTML(){
           <div class="mono dim">${money(o.amount+o.shipping)} · ${ORDTAB==="buying"?"from":"to"} ${esc(o.other.displayName)}</div>
           <div class="ordstatus st-${o.status}">${o.status.toUpperCase()}${o.tracking?` · ${esc(o.tracking)}`:""}</div>
           ${!o.paid&&o.status!=="complete"?`<div class="unpaid">⚠ No payment taken — ${ORDTAB==="buying"?"pay the seller directly":"collect from the buyer directly"}</div>`:""}
-          ${ORDTAB==="selling"&&o.status!=="complete"?`<div class="mono dim ordaddr">${esc(o.shipName)} — ${esc(o.shipAddress)}</div>`:""}
+          ${ORDTAB==="selling"&&o.status!=="complete"&&(o.shipName||o.shipAddress)?`<div class="mono dim ordaddr">${[o.shipName,o.shipAddress].filter(Boolean).map(esc).join(" — ")}</div>`:""}
         </div>
         <div class="obtns">
           ${ORDTAB==="selling"&&(o.status==="pending"||o.status==="paid")?`<button class="btn sm green" data-ship="${o.id}">Mark shipped</button>`:""}

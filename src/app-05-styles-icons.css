@@ -4,7 +4,7 @@
 ================================================================ */
 svg.di{display:inline-block;vertical-align:-.16em;flex-shrink:0}
 .circle,.trk-play,.now-pp,.loopplay,.vplay,.vthumb,.archsave,.qadd,.crung-n,.vmute,.lcard-play{display:inline-flex;align-items:center;justify-content:center}
-.backb2,.clearf,.trk-up,#myboards,.acceptbar,.dtrust,.distro-go{display:inline-flex;align-items:center;gap:5px}
+.backb2,.clearf,.trk-up,#myboards,.acceptbar,.distro-go{display:inline-flex;align-items:center;gap:5px}
 .distro-ic,.lcard-go{display:flex;align-items:center}
 .pm{display:flex;align-items:center;justify-content:center;padding:5px}
 .pmore{color:var(--dim);border-radius:999px}
