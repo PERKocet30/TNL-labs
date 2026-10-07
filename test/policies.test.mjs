@@ -39,7 +39,7 @@ try {
   t("sign-up agrees to the terms", app.includes("By creating an account you agree to the"));
   t("the Market's foot links all four", ['/policies', '/terms', '/privacy', '/contact'].every((h) => app.includes(`<a href="${h}" target="_blank"`)));
   t("settings menu reaches them", app.includes('"Terms, privacy & help"'));
-  t("no promise the app can't keep", !app.includes("you’re covered until it ships"));
+  t("no 'Paid through TNL' box — the seller line says it quietly", !app.includes('class="dtrust"') && !app.includes("Paid through TNL") && app.includes("Checkout by Stripe"));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

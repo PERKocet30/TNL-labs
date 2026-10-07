@@ -32,8 +32,6 @@
 .dprice .mono{font-size:11px;font-weight:400}
 .dchips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
 .dchip{border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:12.5px;color:var(--tx);background:var(--el)}
-.dtrust{display:flex;gap:9px;align-items:center;margin:16px 0;padding:12px 14px;border-radius:0;background:rgba(56,189,248,.10);border:1px solid rgba(56,189,248,.30);font-size:12.5px;line-height:1.4;color:var(--tx2)}
-.dtrust span{flex:1}
 .climb{position:fixed;inset:0;z-index:70;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
 .climbw{max-width:520px;margin:0 auto;padding:20px 20px 110px}
 .climb-x{position:sticky;top:12px;margin-left:auto;display:flex;width:38px;height:38px;align-items:center;justify-content:center;border-radius:999px;background:var(--el);border:1px solid var(--line);color:var(--tx);z-index:2}

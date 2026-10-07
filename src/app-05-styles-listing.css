@@ -44,8 +44,6 @@
 
 .ddesc{white-space:pre-wrap;line-height:1.5}
 .lsec{font-size:15px;font-weight:700;margin:22px 0 10px}
-.dtrust{background:var(--el);border:1px solid var(--line);color:var(--tx2)}
-.dtrust svg{color:var(--tx);flex-shrink:0}
 .ldel{display:block;background:none;border:0;color:var(--dim);font:inherit;font-size:14px;text-decoration:underline;padding:18px 0 0;cursor:pointer}
 .ordvar{display:inline-block;font-size:12px;font-weight:700;border:1px solid var(--line2);border-radius:999px;padding:1px 8px;margin:3px 0}
 
