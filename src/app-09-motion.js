@@ -126,7 +126,10 @@ document.addEventListener("click",e=>{
     return;
   }
   clearTimeout(MVDT.timer);
-  MVDT={card,t:now,timer:setTimeout(()=>{MVDT.card=null;if(m.isConnected&&m.dataset.u)openProfile(m.dataset.u)},280)};
+  /* One tap: in the feed, the artist; in an opened post, the full-size
+     original to zoom into. */
+  MVDT={card,t:now,timer:setTimeout(()=>{MVDT.card=null;if(!m.isConnected)return;
+    if(m.dataset.zoom){LIGHTBOX=m.dataset.zoom;render()}else if(m.dataset.u)openProfile(m.dataset.u)},280)};
 },true);
 function mvHeart(over){
   const r=over.getBoundingClientRect(),h=document.createElement("div");

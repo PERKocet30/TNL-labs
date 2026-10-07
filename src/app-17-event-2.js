@@ -69,7 +69,10 @@ function wireEvEnter(){
   const f=$("#evfile");if(f)f.onchange=async()=>{
     const file=f.files&&f.files[0];f.value="";if(!file)return;
     if(!/^image\//.test(file.type))return toast("Images only");
-    try{s.prep=await prepImage(file,true);render()}catch(e){toast("Couldn't read that image")}
+    /* A preview straight away; the real upload (the original + sharp
+       copies, app-08-images.js) happens on Enter. */
+    if(s.prep&&s.prep.local)URL.revokeObjectURL(s.prep.thumb);
+    s.file=file;s.prep={thumb:URL.createObjectURL(file),local:true};render()
   };
   const cap=$("#evcap");if(cap)cap.oninput=()=>{s.caption=cap.value};
   const ag=$("#evagree");if(ag)ag.onchange=()=>{s.agree=ag.checked;const b=$("#evsend");if(b)b.disabled=!(s.prep&&s.agree&&!s.busy)};
@@ -77,9 +80,8 @@ function wireEvEnter(){
     if(!s.prep||!s.agree||s.busy)return;
     s.busy=true;s.pct=0;render();
     try{
-      const up=await uploadStream(dataUrlToBlob(s.prep.full),p=>{s.pct=p*.9;const b=$("#evsend");if(b)b.textContent=`Uploading ${Math.round(s.pct*100)}%`});
-      const th=await uploadStream(dataUrlToBlob(s.prep.thumb));
-      EV=await evApi.enter(EVSLUG,{imageUrl:up.url,thumbUrl:th.url,w:s.prep.w,h:s.prep.h,caption:s.caption,agree:true});
+      const im=await uploadWork(s.file);
+      EV=await evApi.enter(EVSLUG,{imageUrl:im.url,thumbUrl:im.thumb,w:im.w,h:im.h,tw:im.tw,sm:im.sm,sw:im.sw,caption:s.caption,agree:true});
       EVENTER=null;toast("You're in");render();
     }catch(e){s.busy=false;toast(e.message||"Couldn't enter");render()}
   };

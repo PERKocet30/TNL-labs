@@ -249,12 +249,17 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
      image_url stays the first one, so old posts, link previews and OG tags
      keep working with no special-casing anywhere. */
   const gallery = Array.isArray(images)
-    ? images.filter((i) => i && typeof i.url === "string" && i.url.startsWith("/uploads/")).slice(0, 10)
-      .map((i) => ({
-        url: i.url,
-        thumb: typeof i.thumb === "string" && i.thumb.startsWith("/uploads/") ? i.thumb : i.url,
-        w: Number(i.w) || null, h: Number(i.h) || null,
-      }))
+    ? images.filter((i) => i && typeof i.url === "string" && /^\/uploads\/[A-Za-z0-9._-]+$/.test(i.url)).slice(0, 10)
+      .map((i) => {
+        const own = (v) => (typeof v === "string" && /^\/uploads\/[A-Za-z0-9._-]+$/.test(v) ? v : null);
+        const px = (v) => (Number.isInteger(Number(v)) && Number(v) > 0 && Number(v) <= 20000 ? Number(v) : null);
+        /* The original, a feed copy (tw wide) and a grid copy (sw wide) —
+           the widths let the browser pick the right one (srcset). */
+        const g = { url: i.url, thumb: own(i.thumb) || i.url, w: px(i.w), h: px(i.h) };
+        if (own(i.thumb) && px(i.tw)) g.tw = px(i.tw);
+        if (own(i.sm) && px(i.sw)) { g.sm = own(i.sm); g.sw = px(i.sw); }
+        return g;
+      })
     : [];
   const first = gallery[0];
 
@@ -268,7 +273,9 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
     (first ? first.thumb : thumbUrl) || null,
     Number(first ? first.w : mediaW) || null, Number(first ? first.h : mediaH) || null,
     work, null,
-    gallery.length > 1 ? JSON.stringify(gallery) : null,   // 1 image isn't a gallery
+    /* Kept for one picture too since 2026-10-07: it carries the copies'
+       widths. The client still only makes a carousel from 2 or more. */
+    gallery.length > 1 || gallery.some((g) => g.tw || g.sm) ? JSON.stringify(gallery) : null,
     atid,
     Date.now()
   );

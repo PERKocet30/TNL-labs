@@ -48,7 +48,7 @@ function evPollHTML(){
     <div class="ev-board">${B.rows.map(r=>{const e=evById(r.entryId);if(!e)return "";
       return `<div class="ev-row ${me.myVotes.includes(e.id)?"on":""}">
         <span class="ev-rk">${r.rank}</span>
-        <img src="${esc(e.thumbUrl||e.imageUrl)}" alt="" loading="lazy" data-evzoom="${esc(e.imageUrl)}">
+        <img ${imgAttrs({url:e.imageUrl,thumb:e.thumbUrl,w:e.w,h:e.h,tw:e.tw,sm:e.sm,sw:e.sw})} alt="" loading="lazy" data-evzoom="${esc(e.imageUrl)}">
         <div class="ev-rwho"><b data-u="${esc(e.author.username)}">@${esc(e.author.username)}</b>
           <span class="dim">${r.votes} ${r.votes===1?"vote":"votes"} ${evMove(r.move)}</span></div>
         ${evVoteBtn(e)}</div>`}).join("")}</div></div>

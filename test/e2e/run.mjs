@@ -552,6 +552,44 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator('#poov .igact[data-comments]').isHidden(), "comment button still showing");
     await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; PROFILE = null; TAB = "showroom"; render(); });
   });
+  await step(d, "artwork quality: a transparent PNG is kept exactly, an oversized JPEG is capped at 3000px; sharp feed copies; the opened post shows the full size", async () => {
+    const make = (w, h, type = "image/png") => p.evaluate(([w, h, type]) => { const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d");
+      x.strokeStyle = "#111"; x.lineWidth = 1; for (let i = 0; i < h; i += 6) { x.beginPath(); x.moveTo(0, i); x.lineTo(w, i + 40); x.stroke(); }
+      x.fillStyle = "#98FC68"; x.fillRect(w / 4, h / 4, w / 2, h / 2); x.clearRect(w / 3, h / 3, w / 4, h / 4);   // a see-through hole
+      if (type === "image/jpeg") { const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, "#ff7a45"); g.addColorStop(1, "#18c6a0"); x.globalCompositeOperation = "destination-over"; x.fillStyle = g; x.fillRect(0, 0, w, h); }
+      return c.toDataURL(type, .98).split(",")[1]; }, [w, h, type]).then((b) => Buffer.from(b, "base64"));
+    const big = await make(4000, 5000, "image/jpeg"), art = await make(2400, 3000);
+    await openCreator();
+    await p.locator("#pcfile").setInputFiles([{ name: "print.jpg", mimeType: "image/jpeg", buffer: big }, { name: "poster.png", mimeType: "image/png", buffer: art }]);
+    await p.waitForFunction(() => PCOMPOSE.imgs.length === 2 && !PCOMPOSE.upN, null, { timeout: 45000 });
+    const [capped, im] = await p.evaluate(() => PCOMPOSE.imgs);
+    ok(capped.w === 2400 && capped.h === 3000, "a 4000×5000 upload wasn't capped at 3000: " + JSON.stringify(capped));
+    const cb = Buffer.from(await (await fetch(B + capped.url)).arrayBuffer());
+    ok(cb[0] === 0xff && cb[1] === 0xd8 && cb.length < big.length, "the capped copy isn't a smaller JPEG");
+    console.log(`       (sizes: 4000×5000 JPEG ${(big.length / 1e6).toFixed(1)}MB → stored ${(cb.length / 1e6).toFixed(1)}MB; 2400×3000 PNG kept ${(art.length / 1e6).toFixed(1)}MB)`);
+    ok(im.w === 2400 && im.h === 3000 && im.tw === 1440 && im.sw === 480, "sizes: " + JSON.stringify(im));
+    const orig = Buffer.from(await (await fetch(B + im.url)).arrayBuffer());
+    ok(orig.equals(art), `the original wasn't kept byte for byte (${orig.length} vs ${art.length})`);
+    const th = Buffer.from(await (await fetch(B + im.thumb)).arrayBuffer());
+    ok(th[0] === 0x89 && th[1] === 0x50, "the feed copy of a transparent design isn't a PNG (it would go black)");
+    await p.evaluate(() => { PCOMPOSE.imgs.shift(); PCOMPOSE.idx = 0; render(); });
+    await p.locator("#pcbody").fill("Tournament entry");
+    await p.locator("#pcgo").tap();
+    await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 15000 });
+    const np = (await myPosts())[0];
+    ok(np.images && np.images[0].tw === 1440 && np.images[0].sm, "the post didn't keep its copies: " + JSON.stringify(np.images));
+    await p.evaluate(async () => { TAB = "showroom"; SRPOSTS = []; render(); await loadShowroom(true); });
+    const img = p.locator(`#sr-grid img[src="${np.images[0].thumb}"]`).first();
+    await img.waitFor({ timeout: 6000 });
+    ok(/480w.*1440w.*2400w/.test(await img.getAttribute("srcset")), "no srcset on the feed picture");
+    await p.evaluate((id) => openPostById(id), np.id);
+    await p.waitForSelector("#poov img[data-zoom]", { timeout: 5000 });
+    ok((await p.locator("#poov img[data-zoom]").first().getAttribute("src")) === np.images[0].url, "the opened post isn't showing the original");
+    await p.locator("#poov img[data-zoom]").first().tap();
+    await p.waitForSelector("#lb img", { timeout: 3000 });
+    ok((await p.locator("#lb img").getAttribute("src")) === np.images[0].url, "zoom isn't the original");
+    await p.evaluate(() => { LIGHTBOX = null; POSTOPEN = null; OPENCOMMENTS = null; TAB = "showroom"; render(); });
+  });
   await step(d, "shoppable post: tag a product from your shop, it shows under the work, tapping it opens the listing", async () => {
     const tee = (await api("/api/market?seller=tester", token)).listings.find((l) => l.title === "E2E Tee");
     ok(tee, "no E2E Tee to tag");
@@ -619,6 +657,20 @@ console.log("\nMEMBER · PHONE");
     ok(/0 entries so far/i.test(await p.locator(".ev").innerText()), "the gallery should say there are no entries yet");
     await p.locator("#eventer").tap(); await p.waitForSelector("#evsheet");
     ok(await p.locator("#evsend").isDisabled(), "Enter should wait for a piece and the rules box");
+    /* An entry goes up at full quality: the original kept, sharp copies, srcset in the gallery. */
+    const art = await p.evaluate(() => { const c = document.createElement("canvas"); c.width = 2000; c.height = 2500; const x = c.getContext("2d");
+      for (let i = 0; i < 2500; i += 5) { x.fillStyle = i % 10 ? "#111" : "#98FC68"; x.fillRect(0, i, 2000, 2); }
+      return c.toDataURL("image/png").split(",")[1]; }).then((b) => Buffer.from(b, "base64"));
+    await p.locator("#evfile").setInputFiles({ name: "entry.png", mimeType: "image/png", buffer: art });
+    await p.waitForSelector(".ev-drop img");
+    await p.locator("#evagree").check();
+    await p.locator("#evsend").tap();
+    await p.waitForFunction(() => !EVENTER && EV && EV.me && EV.me.entry, null, { timeout: 30000 });
+    const en = await p.evaluate(() => EV.me.entry);
+    ok(en.w === 2000 && en.h === 2500 && en.tw === 1440 && en.sm && en.sw === 480, "entry copies: " + JSON.stringify(en));
+    ok(Buffer.from(await (await fetch(B + en.imageUrl)).arrayBuffer()).equals(art), "the entry's original wasn't kept byte for byte");
+    await p.waitForSelector(`.ev img[srcset*="1440w"]`, { timeout: 5000 });
+    await fetch(B + "/api/events/e2e-poster/entry", { method: "DELETE", headers: { authorization: "Bearer " + token } });   // withdraw: the next steps enter elsewhere
     await p.evaluate(() => { EVENTER = null; TAB = "showroom"; render(); });
   });
   await step(d, "poll: an Instagram vote link lands on the piece, Vote counts once and moves the scoreboard, Share makes the Story card", async () => {

@@ -72,7 +72,7 @@ async function pqKick(c){
   if(c.upN||c.vidbusy){c.state="waiting";pqPaint();return}   // the upload finishing calls back here
   c.state="posting";pqPaint();
   try{
-    const d=await api.post({channel:c.ch?c.ch.id:"profile",body:(c.body||"").trim(),images:c.imgs.map(({busy,orig,edit,...im})=>im),
+    const d=await api.post({channel:c.ch?c.ch.id:"profile",body:(c.body||"").trim(),images:c.imgs.map(({busy,orig,edit,gif,...im})=>im),
       videoUrl:c.vid?c.vid.url:undefined,thumbUrl:c.vid&&c.cover?c.cover:undefined,mediaW:c.vid?c.vw:undefined,mediaH:c.vid?c.vh:undefined,
       isWork:true,audioTrackId:c.track?c.track.id:undefined,
       tags:(c.tags||[]).map(u=>u.username),location:c.location||"",commentsOff:!!c.commentsOff,products:(c.products||[]).map(l=>l.id)});

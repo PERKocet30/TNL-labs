@@ -13,7 +13,9 @@ const evJudges = (evId) => db.prepare(`SELECT u.id, u.username, u.display_name, 
 function evEntryShape(e) {
   const p = q.postById.get(e.post_id), u = q.userById.get(e.user_id);
   if (!p || !u) return null;
-  return { id: e.id, postId: p.id, imageUrl: p.image_url, thumbUrl: p.thumb_url || p.image_url, w: p.media_w, h: p.media_h,
+  /* The sharp feed and grid copies (posts.images, since 2026-10-07). */
+  let cp = {}; try { const g = JSON.parse(p.images || "null"); if (Array.isArray(g) && g[0]) cp = { tw: g[0].tw || null, sm: g[0].sm || null, sw: g[0].sw || null }; } catch {}
+  return { id: e.id, postId: p.id, imageUrl: p.image_url, thumbUrl: p.thumb_url || p.image_url, w: p.media_w, h: p.media_h, ...cp,
     caption: p.body, seed: e.seed ?? null, dq: !!e.dq_reason,
     author: { username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url } };
 }
@@ -167,8 +169,14 @@ app.post("/api/events/:slug/enter", auth, rateLimit({ max: 10, windowMs: 600000,
   if (!imageUrl) return res.status(400).json({ error: "Add your piece." });
   const caption = String(b.caption || "").trim().slice(0, 500);
   const now = Date.now();
+  /* Keep the copies' widths (as POST /api/posts does) so the voting grid
+     can serve the sharp one: srcset in app-08-images.js. */
+  const px = (v) => (Number.isInteger(Number(v)) && Number(v) > 0 && Number(v) <= 20000 ? Number(v) : null);
+  const g = { url: imageUrl, thumb: thumbUrl, w: px(b.w), h: px(b.h) };
+  if (up(b.thumbUrl) && px(b.tw)) g.tw = px(b.tw);
+  if (up(b.sm) && px(b.sw)) { g.sm = up(b.sm); g.sw = px(b.sw); }
   const info = q.createPost.run(req.user.id, ev.channel || "general", caption, null, imageUrl, null, thumbUrl,
-    Number(b.w) || null, Number(b.h) || null, 1, null, null, null, now);
+    g.w, g.h, 1, null, g.tw || g.sm ? JSON.stringify([g]) : null, null, now);
   const postId = Number(info.lastInsertRowid);
   db.prepare(`INSERT INTO event_entries (event_id, user_id, post_id, created_at) VALUES (?,?,?,?)`).run(ev.id, req.user.id, postId, now);
   const row = feedRows({ authorId: req.user.id, viewerId: req.user.id, limit: 1 }).find((r) => r.id === postId);
