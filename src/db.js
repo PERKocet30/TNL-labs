@@ -530,6 +530,11 @@ if (!cols.includes("is_admin")) db.exec(`ALTER TABLE users ADD COLUMN is_admin I
 /* Suspension, not deletion. Deleting a member cascades their work out of
    everyone else's collabs and threads — that punishes the wrong people. */
 if (!cols.includes("suspended")) db.exec(`ALTER TABLE users ADD COLUMN suspended INTEGER NOT NULL DEFAULT 0`);
+/* Profile v2 (2026-10-07): pronouns, up to five links [{title,url}], and up
+   to three pinned posts (ids) at the top of the grid. */
+if (!cols.includes("pronouns")) db.exec(`ALTER TABLE users ADD COLUMN pronouns TEXT NOT NULL DEFAULT ''`);
+if (!cols.includes("links")) db.exec(`ALTER TABLE users ADD COLUMN links TEXT NOT NULL DEFAULT '[]'`);
+if (!cols.includes("pinned")) db.exec(`ALTER TABLE users ADD COLUMN pinned TEXT NOT NULL DEFAULT '[]'`);
 
 const lcols = db.prepare(`PRAGMA table_info(listings)`).all().map((c) => c.name);
 if (!lcols.includes("sold_at")) db.exec(`ALTER TABLE listings ADD COLUMN sold_at INTEGER`);

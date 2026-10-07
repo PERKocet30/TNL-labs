@@ -630,18 +630,58 @@ console.log("\nMEMBER · PHONE");
     const { token: ft } = await login("friend");
     ok(JSON.stringify(await api("/api/chats", ft)).includes("hey from e2e") || JSON.stringify(await api("/api/dm", ft)).includes("hey from e2e"), "friend's inbox doesn't have it");
   });
-  await step(d, "Edit profile → Night/Day switch the theme and keep a half-typed bio", async () => {
+  /* ---- profile v2 (2026-10-07) ---- */
+  await step(d, "edit profile: Instagram-style rows; a half-typed bio survives the Links screen; Done saves pronouns, bio, links", async () => {
     await p.evaluate(() => { DMOPENPANEL = false; CHAT = null; paintLayer(); });
     await p.locator('.nav [data-tab="profile"]').tap();
     await p.locator("#editb").tap();
-    await p.locator("#ed-bio").fill("half-typed bio");
-    await p.locator('.pig-theme [data-theme-set="dark"]').tap(); await p.waitForTimeout(200);
-    ok(await p.evaluate(() => document.documentElement.dataset.theme) === "dark", "Night didn't switch");
-    ok(await p.locator("#ed-bio").inputValue() === "half-typed bio", "switching wiped the bio");
-    ok(await p.locator('.pig-theme [data-theme-set="dark"]').evaluate((b) => b.classList.contains("on")), "Night isn't highlighted");
-    await p.locator('.pig-theme [data-theme-set="light"]').tap(); await p.waitForTimeout(200);
-    ok(await p.evaluate(() => document.documentElement.dataset.theme) === "light", "Day didn't switch back");
-    await p.evaluate(() => { EDITING = false; PROFILE = null; TAB = "showroom"; render(); });
+    await p.locator("#ed-bio").fill("Beats with @friend.");
+    await p.locator("#ed-pro").fill("he/him");
+    await p.locator("#ed-links").tap();
+    await p.locator('[data-k="url"]').first().fill("tnllabs.com");
+    await p.locator('[data-k="title"]').first().fill("Site");
+    await p.locator("#pe-addlink").tap();
+    await p.locator('[data-k="url"]').nth(1).fill("javascript:alert(1)");
+    await p.locator("#pe-back").tap();
+    ok(await p.locator("#ed-bio").inputValue() === "Beats with @friend.", "the Links screen wiped the bio");
+    await p.locator("#ed-roles").tap();
+    await p.locator("#pe-rq").fill("dj");
+    await p.locator('#pe-rlist [data-er="DJ"]').tap();
+    await p.locator("#pe-back").tap();
+    await p.locator("#ed-save").tap();
+    await p.waitForFunction(() => !EDITING && PROFILE && PROFILE.user.pronouns === "he/him", null, { timeout: 6000 });
+    const u = (await api("/api/users/tester")).user;
+    ok(u.bio === "Beats with @friend." && u.pronouns === "he/him" && u.roles.includes("DJ"), "not saved: " + JSON.stringify({ b: u.bio, p: u.pronouns, r: u.roles }));
+    ok(u.links.length === 1 && u.links[0].url === "https://tnllabs.com/" && u.links[0].title === "Site", "links: " + JSON.stringify(u.links));
+    ok(!("email" in u), "a public profile still carries the email");
+    ok((await p.locator(".pig .plink").textContent()).includes("Site") && (await p.locator(".pig-pro").textContent()) === "he/him", "the profile doesn't show them");
+    ok(await p.locator('.pbio .mention[data-u="friend"]').count() === 1, "the @mention isn't a link (or took the full stop)");
+  });
+  await step(d, "profile: no level bar or ladder on the page; ≡ has Night mode; the level pill opens the short Levels sheet", async () => {
+    ok(await p.locator(".plvl, .ladder, [data-ptab=ladder], #logoutb, #blockb").count() === 0, "old clutter still on the profile");
+    await p.locator("#profmenu").tap();
+    await p.locator(".c-ma", { hasText: "Night mode" }).tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => document.documentElement.dataset.theme) === "dark", "Night didn't switch from ≡");
+    await p.locator("#profmenu").tap();
+    await p.locator(".c-ma", { hasText: "Day mode" }).tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => document.documentElement.dataset.theme) === "light", "Day didn't come back");
+    await p.locator("#lvlpill").tap();
+    await p.waitForSelector(".lv2");
+    ok(await p.locator(".lv2-r").count() === 5 && await p.locator(".cbars, .crung").count() === 0, "Levels isn't the short version");
+    await p.locator("#climbx").tap();
+  });
+  await step(d, "followers / following open as lists; Tagged shows posts you're tagged in; ⋯ on someone else has Block and Report", async () => {
+    await p.locator('[data-flist="following"]').tap();
+    await p.waitForSelector(".pick .pickrow, .pick .empty", { timeout: 5000 });
+    await p.evaluate(() => { PICKER = null; render(); });
+    await p.evaluate(() => openProfile("friend"));
+    await p.waitForFunction(() => PROFILE && PROFILE.user.username === "friend" && !PROFILE.loading);
+    await p.locator('[data-ptab="tagged"]').tap();
+    await p.waitForFunction(() => Array.isArray(PROFTAGGED), null, { timeout: 5000 });
+    ok(await p.evaluate(() => PROFTAGGED.length) >= 1 && await p.locator(".worklist .work").count() >= 1, "friend's Tagged tab is empty (tester tagged them earlier)");
+    await p.locator("#profmore").tap();
+    ok(await p.locator(".c-ma", { hasText: "Block" }).count() === 1 && await p.locator(".c-ma", { hasText: "Report" }).count() === 1, "⋯ is missing Block/Report");
+    await p.evaluate(() => { CMENU = null; paintLayer(); EDITING = false; PROFILE = null; TAB = "showroom"; render(); });
   });
   /* Glitch signals (app-19-glitch.js). Everything above is normal use, so it
      must have recorded nothing: no jumps, no slow screens, no failed saves. */

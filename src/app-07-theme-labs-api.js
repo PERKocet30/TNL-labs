@@ -165,7 +165,7 @@ const avHTML=(u,cls)=>u&&u.avatarUrl?`<img class="av ${cls||""}" src="${esc(u.av
 function rich(t){
   let h=esc(t);
   h=h.replace(/(https?:\/\/[^\s<]+)/g,(u)=>`<a class="lnk" href="${u}" target="_blank" rel="noreferrer nofollow">${u.replace(/^https?:\/\//,"").slice(0,42)}${u.length>50?"…":""}</a>`);
-  h=h.replace(/@([a-z0-9._]{2,20})/gi,(m,u)=>`<span class="mention" data-u="${esc(u.toLowerCase())}">@${esc(u)}</span>`);
+  h=h.replace(/@([a-z0-9._]{1,19}[a-z0-9_])/gi,(m,u)=>`<span class="mention" data-u="${esc(u.toLowerCase())}">@${esc(u)}</span>`);
   return h;
 }
 function firstUrl(t){const m=/(https?:\/\/[^\s<]+)/.exec(t||"");return m?m[1]:null}

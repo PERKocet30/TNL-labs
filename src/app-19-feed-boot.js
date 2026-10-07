@@ -203,8 +203,9 @@ function wireFeed(){
 }
 function wireSheet(){
   const bg=$("#sheetbg");if(!bg)return;
-  bg.onclick=e=>{if(e.target===bg){PROFILE=null;EDITING=false;render()}};
-  $("#sheetx").onclick=()=>{PROFILE=null;EDITING=false;render()};
+  bg.onclick=e=>{if(e.target===bg&&!EDITING){PROFILE=null;render()}};
+  const sx=$("#sheetx");if(sx)sx.onclick=()=>{PROFILE=null;EDITING=false;render()};
+  wireProfileV2();   // profile v2: edit page, ≡ / ⋯ menus, follower lists, tagged (app-15-profile-edit.js)
   const fb=$("#followb");if(fb)fb.onclick=async()=>{
     if(guest())return needAccount("Follow the people you want to build with.");
     const u=PROFILE.user.username;
@@ -221,51 +222,18 @@ function wireSheet(){
          else { await navigator.clipboard.writeText(url); toast("Profile link copied"); } }
     catch(e){ /* dismissed the share sheet -- nothing to do */ }
   };
-  const lo=$("#logoutb");if(lo)lo.onclick=()=>{
-    TOKEN=null;ME=null;PROFILE=null;UNREADS={};UNREAD=0;DMUNREAD=0;applyAccent((ACCENTS.lab||{}).hex);
-    localStorage.removeItem("tnl-token");
-    if(es)es.close();
-    TAB="showroom";GATE=null;render();toast("Signed out")};
   const mb=$("#msgb");if(mb)mb.onclick=()=>{if(guest())return needAccount("Message people directly. Most collabs start with a DM.");openDM(PROFILE.user.username)};
-  const bb=$("#blockb");if(bb)bb.onclick=async()=>{
-    if(!(await uiConfirm("Block "+PROFILE.user.displayName+"?","You won't see each other's work.",{okLabel:"Block",danger:true})))return;
-    try{const d=await api.block(PROFILE.user.username);toast(d.blocked?"Blocked":"Unblocked");PROFILE=null;render()}catch(e){toast(e.message)}};
-  const ru=$("#reportu");if(ru)ru.onclick=()=>{
-    const un=PROFILE.user.username;
-    openPicker({eyebrow:"REPORT",title:"Why?",
-      items:["Spam","Harassment","Stolen work","Impersonation","Something else"].map(r=>({label:r,icon:DI.flag,reason:r})),
-      onPick:async(it)=>{try{await api.report({username:un,reason:it.reason});toast("Reported — thank you")}catch(e){toast(e.message)}}});
-  };
 
   document.querySelectorAll("[data-ptab]").forEach(b=>b.onclick=async()=>{PTAB=b.dataset.ptab;render();
     if(PTAB==="shop"&&PROFLISTINGS===null&&PROFILE){try{const d=await api.mkt("seller="+encodeURIComponent(PROFILE.user.username));PROFLISTINGS=d.listings||[];render()}catch(e){PROFLISTINGS=[];render()}}});
 
   const pp=$("#profpost");if(pp)pp.onclick=()=>{PCOMPOSE={body:"",imgs:[],vid:null,busy:false};pushView("compose");render()};
-  const eb=$("#editb");if(eb)eb.onclick=()=>{EDITING=true;EDITACCENT=PROFILE.user.accent||"lab";
-    EDITROLES=(PROFILE.user.roles&&PROFILE.user.roles.length?[...PROFILE.user.roles]:[PROFILE.user.role]).filter(Boolean);render()};
-  document.querySelectorAll("[data-accent]").forEach(b=>b.onclick=()=>{
-    EDITACCENT=b.dataset.accent;
-    applyAccent((ACCENTS[EDITACCENT]||{}).hex);   // see it immediately, not after saving
-    render();
-  });
   const avb=$("#avbtn");if(avb)avb.onclick=()=>$("#avin").click();
   const avi=$("#avin");if(avi)avi.onchange=async()=>{
     const f=avi.files&&avi.files[0];if(!f)return;avi.value="";
     try{const data=await compressImage(f,600,.85);const d=await api.avatar(data);
       ME=d.user;PROFCACHE.delete(ME.username);PROFILE=await api.profile(ME.username);toast("Photo updated");render()}catch(e){toast(e.message)}};
   /* pubtoggle removed in 064 — every page is public. */
-  const ec=$("#ed-cancel");if(ec)ec.onclick=()=>{EDITING=false;applyAccent(ME.accentHex);render()};
-  document.querySelectorAll("[data-er]").forEach(b=>b.onclick=()=>{
-    const r=b.dataset.er;
-    if(EDITROLES.includes(r))EDITROLES=EDITROLES.filter(x=>x!==r);
-    else if(EDITROLES.length<5)EDITROLES=[...EDITROLES,r];
-    else toast("Up to 5 roles");
-    render()});
-  const es_=$("#ed-save");if(es_)es_.onclick=async()=>{
-    try{
-      const d=await api.updateMe({displayName:$("#ed-name").value,bio:$("#ed-bio").value,link:$("#ed-link").value,roles:EDITROLES,accent:EDITACCENT});
-      ME=d.user;EDITING=false;applyAccent(ME.accentHex);PROFCACHE.delete(ME.username);PROFILE=await api.profile(ME.username);toast("Profile updated");render();
-    }catch(e){toast(e.message)}};
 
   // beat playback + opening a piece from the portfolio
   document.querySelectorAll("[data-beatplay]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const beat=JSON.parse(b.dataset.beatplay);withStudio(()=>TNLStudio.preview(beat))});

@@ -14,7 +14,7 @@ app.post("/api/users/:username/follow", auth, (req, res) => {
 
 /* Edit your own profile — bio, link, display name, role. */
 app.patch("/api/me", auth, (req, res) => {
-  const { displayName, bio, link, roles, accent } = req.body || {};
+  const { displayName, bio, link, roles, accent, pronouns, links } = req.body || {};
   let roleList = null;
   if (Array.isArray(roles)) {
     roleList = roles.filter((r) => typeof r === "string" && r.trim()).slice(0, 5).map((r) => r.slice(0, 40));
@@ -26,9 +26,14 @@ app.patch("/api/me", auth, (req, res) => {
     roles: roleList ?? JSON.parse(req.user.roles || "[]"),
   };
   const nextAccent = (accent && ACCENTS[accent]) ? accent : (req.user.accent || "lab");
-  db.prepare(`UPDATE users SET display_name = ?, bio = ?, link = ?, roles = ?, role = ?, accent = ? WHERE id = ?`)
+  /* Profile v2: several links (the first is also the old single `link`). */
+  if (Array.isArray(links)) { const ls = cleanLinks(links); next.links = JSON.stringify(ls); next.link = ls[0] ? ls[0].url : ""; }
+  else if (link !== undefined) next.links = JSON.stringify(cleanLinks(next.link ? [{ url: next.link }] : []));
+  else next.links = req.user.links || "[]";
+  next.pronouns = (pronouns ?? req.user.pronouns ?? "").toString().replace(/\s+/g, " ").trim().slice(0, 30);
+  db.prepare(`UPDATE users SET display_name = ?, bio = ?, link = ?, roles = ?, role = ?, accent = ?, pronouns = ?, links = ? WHERE id = ?`)
     .run(next.displayName, next.bio, next.link, JSON.stringify(next.roles),
-         next.roles[0] || req.user.role, nextAccent, req.user.id);
+         next.roles[0] || req.user.role, nextAccent, next.pronouns, next.links, req.user.id);
   res.json({ user: publicUser(q.userById.get(req.user.id)) });
 });
 
@@ -75,6 +80,7 @@ app.get("/api/users/:username", maybeAuth, (req, res) => {
     followers: q.followerCount.get(u.id).n,
     following: db.prepare(`SELECT COUNT(*) n FROM follows WHERE follower_id = ?`).get(u.id).n,
     youFollow: req.user ? !!q.followExists.get(req.user.id, u.id) : false,
+    followedBy: followedBy(req.user?.id, u.id),
     stats: { posts: posts.length, likesReceived, collabs: collabCount },
     posts,
     collabs: shapePosts(collabRows),

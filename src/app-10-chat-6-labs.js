@@ -148,6 +148,12 @@ function postMenu(id){
       for(const x of likeCopies(p.id))x.commentsOff=r.commentsOff;
       if(OPENCOMMENTS===p.id)OPENCOMMENTS=null;
       pxPaintActs(p.id);paintComments();toast(r.commentsOff?"Comments off":"Comments on")}catch(e){toast(e.message)}}});
+  /* Pin up to 3 to the top of your profile grid (profile v2). */
+  if(mine&&p.isWork){const pinned=((ME&&ME.pinned)||[]).map(Number).includes(Number(p.id));
+    acts.push({icon:CI.pin||IG_COMMENT,label:pinned?"Unpin from profile":"Pin to profile",run:async()=>{
+      try{const r=await req("/api/me/pins",{method:"POST",body:{postId:p.id,pin:!pinned}});ME.pinned=r.pinned;
+        if(PROFILE&&PROFILE.user.username===myName()){PROFILE.user.pinned=r.pinned;PROFCACHE.delete(myName());render()}
+        toast(pinned?"Unpinned":"Pinned to your profile")}catch(e){toast(e.message)}}})}
   if(mine||admin)acts.push({icon:CI.trash,label:"Delete",danger:true,run:async()=>{
     if(!(await uiConfirm("Delete this post?",mine?"":"You're removing someone else's post as an admin.",{okLabel:"Delete",danger:true})))return;
     try{mine?await api.delPost(p.id):await req("/api/admin/posts/"+p.id,{method:"DELETE"});
