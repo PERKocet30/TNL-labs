@@ -20,7 +20,9 @@ const exif = (orient, extra = "") => {   // Exif\0\0 + little-endian TIFF with o
 const pixels = Buffer.from([0x12, 0x34, 0xff, 0x00, 0x56, 0x78, 0x9a]);   // stand-in scan data (incl. a stuffed FF00)
 const jpeg = (orient) => Buffer.concat([Buffer.from([0xff, 0xd8]), seg(0xe0, "JFIF\0\x01\x01"), seg(0xe1, exif(orient, "GPS 40.7128N 74.0060W")),
   seg(0xe1, "http://ns.adobe.com/xap/1.0/\0<x:xmpmeta>Lens</x:xmpmeta>"), seg(0xe2, "ICC_PROFILE\0\x01\x01Display P3"), seg(0xed, "Photoshop 3.0\0IRB"),
-  seg(0xfe, "made on my phone"), seg(0xdb, "\0quant"), seg(0xc0, "\x08\x00\x10\x00\x10\x03"), seg(0xda, "\x03scan"), pixels, Buffer.from([0xff, 0xd9])]);
+  seg(0xfe, "made on my phone"), seg(0xe6, "GoPro GPS5 34.05N"), seg(0xe2, "MPF\0 preview index"), seg(0xee, "Adobe\0"),
+  seg(0xdb, "\0quant"), seg(0xc0, "\x08\x00\x10\x00\x10\x03"), seg(0xda, "\x03scan"), pixels, Buffer.from([0xff, 0xd0, 0x11, 0x22]), Buffer.from([0xff, 0xd9]),
+  Buffer.from("ftypmp42 motion photo video with GPS 51.5N")]);
 const blob = (buf, type) => new Blob([buf], { type });
 const bytes = async (b) => Buffer.from(await b.arrayBuffer());
 
@@ -28,9 +30,13 @@ console.log("\nJPEG: KEEP THE PICTURE, DROP WHAT IT GIVES AWAY");
 const out = await bytes(await I.cleanJpeg(blob(jpeg(1), "image/jpeg")));
 const s = out.toString("latin1");
 t("GPS / EXIF gone", !s.includes("Exif") && !s.includes("40.7128"));
+t("other camera blocks (APP6 GPS, MPF) gone; Adobe colour flag kept", !s.includes("GoPro") && !s.includes("MPF") && s.includes("Adobe"));
+t("a video or second picture tacked on after the end is cut off", !s.includes("motion photo") && !s.includes("51.5N"));
 t("XMP, Photoshop data and comments gone", !s.includes("xmpmeta") && !s.includes("Photoshop") && !s.includes("my phone"));
 t("the colour profile stays", s.includes("ICC_PROFILE") && s.includes("Display P3"));
-t("the image data is byte-for-byte the same", out.subarray(out.indexOf(Buffer.from([0xff, 0xda]))).equals(jpeg(1).subarray(jpeg(1).indexOf(Buffer.from([0xff, 0xda])))));
+const src = jpeg(1), sos = src.indexOf(Buffer.from([0xff, 0xda])), eoi = src.indexOf(Buffer.from([0xff, 0xd9]), sos) + 2;
+t("the image data (scan, restart markers, end) is byte-for-byte the same", out.subarray(out.indexOf(Buffer.from([0xff, 0xda]))).equals(src.subarray(sos, eoi)));
+t("no end marker → not trusted (canvas instead)", (await I.cleanJpeg(blob(src.subarray(0, eoi - 2), "image/jpeg"))) === null);
 t("still a JPEG (starts FFD8, ends FFD9)", out[0] === 0xff && out[1] === 0xd8 && out.at(-2) === 0xff && out.at(-1) === 0xd9);
 t("a photo turned by its EXIF tag goes through the canvas instead (null)", (await I.cleanJpeg(blob(jpeg(6), "image/jpeg"))) === null);
 t("not a JPEG → null", (await I.cleanJpeg(blob(Buffer.from("hello"), "image/jpeg"))) === null);

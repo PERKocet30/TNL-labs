@@ -39,21 +39,36 @@ function jpegOrientation(b,i,len){
   for(let k=0;k<n;k++){const e=ifd+2+k*12;if(e+12>i+len)break;if(u16(e)===0x0112)return u16(e+8)}
   return 1;
 }
+/* An allowlist, not a blocklist: of the APPn blocks only JFIF (APP0), the
+   colour profile (APP2 ICC_PROFILE) and Adobe's colour flag (APP14) stay —
+   cameras hide GPS in others (GoPro's APP6, MPF previews). And it stops at
+   the picture's real end (FFD9): phones tack whole files on after it
+   (motion-photo videos, gain maps) that carry their own location. Anything
+   it can't read goes through the canvas instead (null). */
 async function cleanJpeg(file){
-  const b=new Uint8Array(await file.arrayBuffer());
+  const b=new Uint8Array(await file.arrayBuffer()),n=b.length;
   if(b[0]!==0xFF||b[1]!==0xD8)return null;
-  const keep=[b.subarray(0,2)];let i=2;
-  while(i+4<=b.length){
+  const keep=[b.subarray(0,2)],tag=(i,s)=>String.fromCharCode(...b.subarray(i,i+s.length))===s;
+  let i=2;
+  while(i+1<n){
     if(b[i]!==0xFF)return null;
     const m=b[i+1];
-    if(m===0xD8||m===0x01||(m>=0xD0&&m<=0xD7)){keep.push(b.subarray(i,i+2));i+=2;continue}
-    if(m===0xDA){keep.push(b.subarray(i));break}        // the picture itself: copied untouched
-    const len=b[i+2]<<8|b[i+3];
-    if(m===0xE1&&jpegOrientation(b,i+4,len)>1)return null;
-    if(m!==0xE1&&m!==0xED&&m!==0xFE)keep.push(b.subarray(i,i+2+len));
+    if(m===0xFF){i++;continue}                                  // fill byte
+    if(m===0xD9){keep.push(b.subarray(i,i+2));return new Blob(keep,{type:"image/jpeg"})}   // the end — nothing after it
+    if(m===0x01||(m>=0xD0&&m<=0xD7)){keep.push(b.subarray(i,i+2));i+=2;continue}
+    if(i+4>n)return null;
+    const len=b[i+2]<<8|b[i+3];if(len<2||i+2+len>n)return null;
+    if(m>=0xE0&&m<=0xEF){
+      if(m===0xE1&&jpegOrientation(b,i+4,len)>1)return null;
+      if(m===0xE0||m===0xEE||(m===0xE2&&tag(i+4,"ICC_PROFILE\0")))keep.push(b.subarray(i,i+2+len));
+    }else if(m!==0xFE)keep.push(b.subarray(i,i+2+len));        // tables, frame, scan header (COM dropped)
     i+=2+len;
+    if(m===0xDA){                                               // the picture data, up to the next real marker
+      let j=i;while(j+1<n&&!(b[j]===0xFF&&b[j+1]!==0x00&&!(b[j+1]>=0xD0&&b[j+1]<=0xD7)))j++;
+      keep.push(b.subarray(i,j));i=j;
+    }
   }
-  return new Blob(keep,{type:"image/jpeg"});
+  return null;                                                  // no end marker: don't trust it
 }
 /* PNG: drop text and EXIF chunks; keep the colour profile and the pixels. */
 async function cleanPng(file){
