@@ -657,6 +657,20 @@ console.log("\nMEMBER · PHONE");
     ok(/0 entries so far/i.test(await p.locator(".ev").innerText()), "the gallery should say there are no entries yet");
     await p.locator("#eventer").tap(); await p.waitForSelector("#evsheet");
     ok(await p.locator("#evsend").isDisabled(), "Enter should wait for a piece and the rules box");
+    /* An entry goes up at full quality: the original kept, sharp copies, srcset in the gallery. */
+    const art = await p.evaluate(() => { const c = document.createElement("canvas"); c.width = 2000; c.height = 2500; const x = c.getContext("2d");
+      for (let i = 0; i < 2500; i += 5) { x.fillStyle = i % 10 ? "#111" : "#98FC68"; x.fillRect(0, i, 2000, 2); }
+      return c.toDataURL("image/png").split(",")[1]; }).then((b) => Buffer.from(b, "base64"));
+    await p.locator("#evfile").setInputFiles({ name: "entry.png", mimeType: "image/png", buffer: art });
+    await p.waitForSelector(".ev-drop img");
+    await p.locator("#evagree").check();
+    await p.locator("#evsend").tap();
+    await p.waitForFunction(() => !EVENTER && EV && EV.me && EV.me.entry, null, { timeout: 30000 });
+    const en = await p.evaluate(() => EV.me.entry);
+    ok(en.w === 2000 && en.h === 2500 && en.tw === 1440 && en.sm && en.sw === 480, "entry copies: " + JSON.stringify(en));
+    ok(Buffer.from(await (await fetch(B + en.imageUrl)).arrayBuffer()).equals(art), "the entry's original wasn't kept byte for byte");
+    await p.waitForSelector(`.ev img[srcset*="1440w"]`, { timeout: 5000 });
+    await fetch(B + "/api/events/e2e-poster/entry", { method: "DELETE", headers: { authorization: "Bearer " + token } });   // withdraw: the next steps enter elsewhere
     await p.evaluate(() => { EVENTER = null; TAB = "showroom"; render(); });
   });
   await step(d, "poll: an Instagram vote link lands on the piece, Vote counts once and moves the scoreboard, Share makes the Story card", async () => {

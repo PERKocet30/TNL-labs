@@ -51,7 +51,7 @@ function evThumb(e,opts={}){
   if(!e)return `<div class="ev-th ev-empty"></div>`;
   const mine=EV.me.entry&&EV.me.entry.id===e.id, picked=EV.me.myVotes.includes(e.id);
   return `<div class="ev-th ${picked?"on":""} ${opts.big?"big":""}">
-    <img src="${esc(opts.big?e.imageUrl:(e.thumbUrl||e.imageUrl))}" alt="" ${opts.big?`style="aspect-ratio:${e.w&&e.h?e.w+"/"+e.h:"4/5"}"`:`loading="lazy"`} data-evzoom="${esc(e.imageUrl)}">
+    <img ${imgAttrs({url:e.imageUrl,thumb:e.thumbUrl,w:e.w,h:e.h,tw:e.tw,sm:e.sm,sw:e.sw},!!opts.big)} alt="" ${opts.big?`style="aspect-ratio:${e.w&&e.h?e.w+"/"+e.h:"4/5"}"`:`loading="lazy"`} data-evzoom="${esc(e.imageUrl)}">
     ${opts.pick&&!mine?`<button class="ev-pick" data-evpick="${e.id}" aria-label="${picked?"Take back":"Pick"}">${picked?DI.check:DI.plus}</button>`:""}
     ${mine?`<span class="ev-mine">Yours</span>`:""}
     ${opts.seed&&e.seed?`<span class="ev-seed">${e.seed}</span>`:""}
@@ -156,6 +156,6 @@ function evEnterHTML(){
     <textarea class="in ev-cap" id="evcap" maxlength="500" placeholder="Say something about it (optional)">${esc(s.caption||"")}</textarea>
     <label class="ev-agree"><input type="checkbox" id="evagree" ${s.agree?"checked":""}>
       <span>This is my own original work, and I agree to the <a href="/e/${esc(EV.event.slug)}/rules" target="_blank" rel="noopener">official rules</a>.</span></label>
-    <button class="btn green ev-cta" id="evsend" ${s.prep&&s.agree&&!s.busy?"":"disabled"}>${s.busy?`Uploading ${Math.round((s.pct||0)*100)}%`:"Enter"}</button>
+    <button class="btn green ev-cta" id="evsend" ${s.prep&&s.agree&&!s.busy?"":"disabled"}>${s.busy?"Uploading…":"Enter"}</button>
   </div></div>`;
 }
