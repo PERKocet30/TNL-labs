@@ -58,7 +58,7 @@ function wireCaros(){
    is every few seconds, and the video never played (2026-10-08). Now the
    players on screen are set aside before the repaint and put back where
    the same video is drawn again: same buffer, same place, same sound. */
-const vKey=v=>[v.getAttribute("src"),v.getAttribute("poster"),v.className,v.getAttribute("style"),v.dataset.vs,v.dataset.ve,"vsilent" in v.dataset].join("|");
+const vKey=v=>[v.getAttribute("src")||v.dataset.src,v.getAttribute("poster"),v.className,v.getAttribute("style"),v.dataset.vs,v.dataset.ve,"vsilent" in v.dataset].join("|");
 function vKeep(root){
   const m=new Map();
   for(const v of root.querySelectorAll("video[data-auto]")){const k=vKey(v);if(!m.has(k))m.set(k,[]);m.get(k).push(v)}
@@ -72,30 +72,71 @@ function vRestore(root,m){
     const b=old.parentElement&&old.parentElement.querySelector("[data-vmute]");if(b)b.innerHTML=old.muted?DI.soundOff:DI.soundOn;
   }
 }
+/* Scrolling through a feed of videos on a phone (2026-10-08): every video
+   used to start the instant it was half on screen — a flick past ten
+   started ten downloads — and every player stayed loaded however far
+   behind you it was. Now a video starts once it has stayed in view for a
+   moment (VDWELL), and one more than two screens away lets go of its
+   decoder and buffer (it shows its cover, and loads again on the way
+   back) — the way Instagram keeps only the players near you alive. */
+const VDWELL=220;
+let VFAR=null;
+/* Sound stays on (2026-10-08). A phone's volume buttons never reach a web
+   page, so "raise the volume to unmute" can't be done here; this is the
+   rest of Instagram's behaviour: unmute one video and every video after it
+   plays with sound as you scroll, until you mute one. A video and post
+   music never play over each other. Kept for this visit (sessionStorage). */
+/* Data saver (2026-10-08) — for a phone short on storage, battery or
+   signal: videos wait for a tap instead of playing themselves, and post
+   music waits for its chip. On by itself when the phone asks for less data
+   (Android's Data Saver); a switch in ≡ for everyone else. */
+const liteOn=()=>{try{const v=localStorage.getItem("tnl-lite");return v?v==="1":!!(navigator.connection&&navigator.connection.saveData)}catch(e){return false}};   // your switch wins over the phone's
+function setLite(on){try{localStorage.setItem("tnl-lite",on?"1":"0")}catch(e){}}
+/* A play button on a video that won't start itself (Data saver, or Low Power Mode). */
+function vPlayBtn(v){
+  const w=v.parentElement;if(!w||w.querySelector(".vplay"))return;
+  const b=document.createElement("button");
+  b.className="vplay"; b.innerHTML=DI.play.replace(/width="16" height="16"/,'width="22" height="22"'); b.setAttribute("aria-label","Play");
+  b.onclick=(ev)=>{ev.stopPropagation();vReload(v);v.play().then(()=>b.remove()).catch(()=>{})};
+  w.appendChild(b);
+}
+let VSOUND=(()=>{try{return sessionStorage.getItem("tnl-vsound")==="1"}catch(e){return false}})();
+function setVSound(on){VSOUND=on;try{sessionStorage.setItem("tnl-vsound",on?"1":"0")}catch(e){}}
+const vIcon=v=>{const b=v.parentElement&&v.parentElement.querySelector("[data-vmute]");if(b)b.innerHTML=v.muted?DI.soundOff:DI.soundOn};
+/* This one has the sound: quiet every other video, and the post music. */
+function vTakeSound(v){
+  for(const o of document.querySelectorAll("video[data-auto]"))if(o!==v&&!o.muted){o.muted=true;vIcon(o)}
+  try{const a=audioEl();if(a&&!a.paused&&!(a.getAttribute("src")||"").startsWith("data:")){a.pause();paintPlayer()}}catch(e){}
+}
+function vUnload(v){const s=v.getAttribute("src");if(!s)return;v.dataset.src=s;try{v.pause()}catch(e){}v.removeAttribute("src");try{v.load()}catch(e){}}
+function vReload(v){if(v.getAttribute("src")||!v.dataset.src)return;v.setAttribute("src",v.dataset.src);delete v.dataset.src}
 function wireVideos(){
   if(VOBS){VOBS.disconnect();VOBS=null}
+  if(VFAR){VFAR.disconnect();VFAR=null}
   const vids=[...document.querySelectorAll("video[data-auto]")];
   if(!vids.length)return;
 
+  VFAR=new IntersectionObserver((entries)=>{for(const e of entries){if(e.isIntersecting)vReload(e.target);else vUnload(e.target)}},{rootMargin:"200% 0px 200% 0px"});
   VOBS=new IntersectionObserver((entries)=>{
     for(const e of entries){
       const v=e.target;
+      clearTimeout(v._dwell);
       if(e.isIntersecting&&e.intersectionRatio>0.55){
+        v._dwell=setTimeout(()=>{
+        if(liteOn()&&v.paused)return vPlayBtn(v);   // Data saver: it waits for a tap
+        vReload(v);
+        if(VSOUND&&!("vsilent" in v.dataset)){v.muted=false;vIcon(v);vTakeSound(v)}
         const p=v.play();
         if(p&&p.catch)p.catch((err)=>{
           /* iOS refuses autoplay outright in Low Power Mode — no code can
              override that. Don't leave a dead black box: show a play button
              and let them start it by hand. */
-          if(err&&err.name==="NotAllowedError"){
-            const w=v.parentElement;
-            if(w&&!w.querySelector(".vplay")){
-              const b=document.createElement("button");
-              b.className="vplay"; b.innerHTML=DI.play.replace(/width="16" height="16"/,'width="22" height="22"'); b.setAttribute("aria-label","Play");
-              b.onclick=(ev)=>{ev.stopPropagation();v.play().then(()=>b.remove()).catch(()=>{})};
-              w.appendChild(b);
-            }
-          }
+          /* The phone wouldn't start it WITH sound without a fresh tap: start it
+             muted instead (one tap on it brings the sound back). */
+          if(err&&err.name==="NotAllowedError"&&!v.muted){v.muted=true;vIcon(v);v.play().catch(()=>{});return}
+          if(err&&err.name==="NotAllowedError")vPlayBtn(v);
         });
+        },VDWELL);
       }else{
         try{v.pause()}catch(err){}
       }
@@ -107,22 +148,17 @@ function wireVideos(){
     /* Without this iOS shows a black rectangle until you press play —
        #t=0.1 makes it decode one frame so there's something to look at. */
     if(v.src&&!/#t=/.test(v.src))v.src=v.src+"#t=0.1";
-    VOBS.observe(v);
+    VOBS.observe(v);VFAR.observe(v);
     /* A trimmed video loops inside its trim: back to the start at the end,
        and when the file's own loop comes round to 0. */
     if(v.dataset.vs||v.dataset.ve){const s=(+v.dataset.vs||0)/1000,e=v.dataset.ve?+v.dataset.ve/1000:Infinity;
       v.ontimeupdate=()=>{if(v.currentTime>=e-.05||v.currentTime<s-.3)v.currentTime=s}}
     v.onclick=()=>{
       if("vsilent" in v.dataset){if(v.paused)v.play().catch(()=>{});return}   // its author turned the sound off
-      v.muted=!v.muted;
-      const btn=v.parentElement&&v.parentElement.querySelector("[data-vmute]");
-      if(btn)btn.innerHTML=v.muted?DI.soundOff:DI.soundOn;
+      v.muted=!v.muted;vIcon(v);
+      setVSound(!v.muted);   // your choice carries on down the feed
       if(v.paused)v.play().catch(()=>{});
-      if(!v.muted){ // only one thing makes noise at a time
-        for(const o of vids) if(o!==v){o.muted=true;
-          const b=o.parentElement&&o.parentElement.querySelector("[data-vmute]");
-          if(b)b.innerHTML=DI.soundOff}
-      }
+      if(!v.muted)vTakeSound(v);   // only one thing makes noise at a time
     };
   }
   document.querySelectorAll("[data-vmute]").forEach(b=>b.onclick=(e)=>{
@@ -144,7 +180,7 @@ function musChipHTML(p){
    someone pauses on purpose — without it, the next scroll would restart the
    track they just silenced. MUSAUTOID marks a track that autoplay started, so
    scrolling away only stops music the reader didn't ask for. */
-let MUSOK=false, MUSMUTE=null, MUSAUTOID=null, MOBS=null;
+let MUSOK=false, MUSMUTE=null, MUSAUTOID=null, MOBS=null, MUSDWELL=0;
 /* Post ids whose card has actually ENTERED the centre band. "Stops the
    instant it leaves" requires having been in — a Set, not element state,
    because render() rebuilds the DOM and the observer with it. */
@@ -288,12 +324,23 @@ function wireMusAuto(){
         if(MUSMUTE!=null&&String(MUSMUTE)===String(p.id))continue;
         MUSMUTE=null;
         if(MUSAUTOID===p.id&&NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id&&!a.paused)continue;
-        MUSAUTOID=p.id;
-        if(NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id){
-          a.currentTime=0;
-          const pr=a.play();if(pr&&pr.catch)pr.catch(()=>{});
-          paintPlayer();
-        }else playTrack(p.audioTrack,true);
+        /* Settle first (2026-10-08): a flick past five posts used to start and
+           abort five song downloads. The song starts once its post has stayed
+           centred for a moment; stopping on the way out is still instant. */
+        clearTimeout(MUSDWELL);
+        MUSDWELL=setTimeout(()=>{
+          if(!MUSBAND.has(String(p.id)))return;   // it left before it settled
+          if(liteOn())return;                       // Data saver: music waits for its chip
+          if([...document.querySelectorAll("video[data-auto]")].some(v=>!v.paused&&!v.muted))return;   // a video has the sound
+          MUSAUTOID=p.id;
+          if(NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id){
+            a.currentTime=0;
+            const pr=a.play();if(pr&&pr.catch)pr.catch(()=>{});
+            paintPlayer();
+          }else playTrack(p.audioTrack,true);
+        },300);
+      }else if(!e.isIntersecting&&MUSBAND.has(String(p.id))&&MUSAUTOID!==p.id){
+        MUSBAND.delete(String(p.id));   // passed through without settling: nothing was playing for it
       }else if(MUSAUTOID===p.id&&NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id){
         /* "Stops the instant it LEAVES" — leaving requires having been in.
            Every render() rebuilds this observer, and its first pass reports

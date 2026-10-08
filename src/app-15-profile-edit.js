@@ -91,6 +91,8 @@ function wireProfileV2(){
   const pm=$("#profmenu");if(pm)pm.onclick=()=>openMenu({react:false,actions:[
     {icon:PF_I.theme,label:THEME==="dark"?"Day mode":"Night mode",run:()=>{setTheme(THEME==="dark"?"light":"dark");render()}},
     {icon:PF_I.level,label:"Level and rates",run:()=>{CLIMB=true;render()}},
+    {icon:PF_I.theme,label:liteOn()?"Data saver: on":"Data saver: off",run:()=>{setLite(!liteOn());
+      toast(liteOn()?"Data saver on — videos and music wait for a tap":"Data saver off");render()}},
     {icon:PF_I.share,label:"Share profile",run:()=>shareProfile(myName())},
     ...(ME&&ME.isAdmin?[{icon:PF_I.admin,label:"Admin dashboard",run:()=>{location.href="/admin"}}]:[]),
     {icon:PF_I.link,label:"Terms, privacy & help",run:()=>window.open("/contact","_blank","noopener")},

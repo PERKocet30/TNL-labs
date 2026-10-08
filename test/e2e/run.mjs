@@ -671,8 +671,10 @@ console.log("\nMEMBER · PHONE");
     ok(/-feed\.mp4$/.test(np.videoPlayUrl || ""), "no light feed copy: " + np.videoPlayUrl);
     ok(JSON.stringify(np.video) === JSON.stringify({ start: 1000, end: 4000, muted: true, ratio: "4:5" }) && /-poster\.jpg$/.test(np.thumbUrl), "post: " + JSON.stringify({ v: np.video, th: np.thumbUrl }));
     await p.evaluate(async () => { TAB = "showroom"; SRPOSTS = []; render(); await loadShowroom(true); });
-    const v = p.locator(`#sr-grid video[src*="${np.videoUrl.replace(/\.[^.]+$/, "")}"]`).first();   // the original or its light feed copy
+    const vbase = np.videoUrl.replace(/\.[^.]+$/, "");   // the original or its light feed copy
+    const v = p.locator(`#sr-grid video[src*="${vbase}"], #sr-grid video[data-src*="${vbase}"]`).first();
     await v.waitFor({ state: "attached", timeout: 6000 });
+    await v.scrollIntoViewIfNeeded(); await p.waitForTimeout(500);   // near you, a player is loaded (far ones let go)
     const f = await v.evaluate((el) => ({ fill: el.classList.contains("vfill"), ve: el.dataset.ve, silent: "vsilent" in el.dataset, poster: el.getAttribute("poster"),
       mute: !!el.parentElement.querySelector("[data-vmute]") }));
     ok(f.fill && f.ve === "4000" && f.silent && !f.mute && /-poster\.jpg$/.test(f.poster || ""), "feed video: " + JSON.stringify(f));
@@ -681,6 +683,58 @@ console.log("\nMEMBER · PHONE");
     await v.evaluate((el) => { el.dataset.e2eKeep = "1"; });
     await p.evaluate(() => { render(); srPaint(); });
     ok(await p.locator('#sr-grid video[data-e2e-keep="1"]').count() === 1, "a repaint threw the video player away (it starts loading from scratch)");
+  });
+  /* "The app struggles when scrolling thru video and post" (2026-10-08): only players near you stay loaded. */
+  await step(d, "scrolling: a video two screens away lets go of its player and keeps its cover; it loads again on the way back", async () => {
+    await p.evaluate(() => { TAB = "showroom"; POSTOPEN = null; PROFILE = null; render(); });
+    const vid = await p.evaluate(() => (SRPOSTS.find((x) => x.videoUrl) || {}).videoPlayUrl || (SRPOSTS.find((x) => x.videoUrl) || {}).videoUrl);
+    ok(vid, "no video in the Showroom to test with");
+    await p.evaluate((vid) => { const g = document.querySelector("#sr-grid");
+      g.insertAdjacentHTML("afterbegin", `<div id="e2efar"><div style="height:${innerHeight * 4}px"></div><div class="vwrap"><video class="sr-img" src="${vid}#t=0.10" poster="/icon-512.png" muted loop playsinline preload="none" data-auto></video></div></div>`);
+      document.querySelector(".content .scroll, #app .scroll")?.scrollTo(0, 0); wireVideos(); }, vid);
+    await p.waitForTimeout(400);
+    const far = await p.evaluate(() => { const v = document.querySelector("#e2efar video"); return { src: v.getAttribute("src"), kept: v.dataset.src, poster: v.getAttribute("poster") }; });
+    ok(!far.src && far.kept && far.poster, "a far-away video still holds its player: " + JSON.stringify(far));
+    await p.locator("#e2efar video").scrollIntoViewIfNeeded(); await p.waitForTimeout(600);
+    ok(await p.evaluate(() => !!document.querySelector("#e2efar video").getAttribute("src")), "the video didn't load again when scrolled to");
+    await p.evaluate(() => { document.querySelector("#e2efar")?.remove(); });
+  });
+  /* "Raising volume unmutes video" can't reach a web page; this is the rest of it (2026-10-08). */
+  await step(d, "sound stays on: unmute one video and the next one in view plays with sound, until you mute", async () => {
+    await p.evaluate(() => { TAB = "showroom"; POSTOPEN = null; PROFILE = null; setVSound(false); render(); });
+    const vid = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.videoUrl); return x && (x.videoPlayUrl || x.videoUrl); });
+    ok(vid, "no video with sound in the Showroom to test with");
+    await p.evaluate((vid) => { const g = document.querySelector("#sr-grid"), one = (i) => `<div class="vwrap" id="e2eS${i}"><video class="sr-img" src="${vid}#t=0.10" muted loop playsinline preload="none" data-auto></video><button class="vmute" data-vmute aria-label="Sound"></button></div>`;
+      g.insertAdjacentHTML("afterbegin", `<div id="e2esnd">${one(1)}<div style="height:${innerHeight * 1.2}px"></div>${one(2)}</div>`); wireVideos(); }, vid);
+    await p.locator("#e2eS1 video").scrollIntoViewIfNeeded(); await p.waitForTimeout(500);
+    await p.locator("#e2eS1 [data-vmute]").tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => !document.querySelector("#e2eS1 video").muted && VSOUND), "tapping sound didn't unmute / turn sound on");
+    await p.locator("#e2eS2 video").scrollIntoViewIfNeeded(); await p.waitForTimeout(700);
+    const st = await p.evaluate(() => ({ first: document.querySelector("#e2eS1 video").muted, next: document.querySelector("#e2eS2 video").muted }));
+    ok(st.next === false && st.first === true, "the next video didn't take the sound (or two play at once): " + JSON.stringify(st));
+    await p.locator("#e2eS2 [data-vmute]").tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => document.querySelector("#e2eS2 video").muted && !VSOUND), "muting didn't turn sound off for the feed");
+    await p.evaluate(() => { document.querySelector("#e2esnd")?.remove(); setVSound(false); });
+  });
+  /* "Low storage … build and plan for it so things are more efficient" (2026-10-08). */
+  await step(d, "Data saver: videos wait for a tap (a play button) instead of playing themselves; off, they play again", async () => {
+    await p.evaluate(() => { TAB = "showroom"; POSTOPEN = null; PROFILE = null; setLite(true); render(); });
+    // the original WebM — this Chromium has no H.264, so it can't play the light feed copy
+    const vid = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.videoUrl && /\.webm$/.test(q.videoUrl)); return x && x.videoUrl; });
+    ok(vid, "no WebM video in the Showroom to test with");
+    const put = (id) => p.evaluate(([vid, id]) => { document.querySelector("#sr-grid").insertAdjacentHTML("afterbegin",
+      `<div class="vwrap" id="${id}"><video class="sr-img" src="${vid}#t=0.10" muted loop playsinline preload="none" data-auto></video></div>`); wireVideos(); }, [vid, id]);
+    await put("e2elite"); await p.locator("#e2elite video").scrollIntoViewIfNeeded(); await p.waitForTimeout(700);
+    ok(await p.evaluate(() => document.querySelector("#e2elite video").paused && !!document.querySelector("#e2elite .vplay")), "Data saver didn't hold the video for a tap");
+    await p.locator("#e2elite .vplay").tap(); await p.waitForTimeout(600);
+    ok(await p.evaluate(() => !document.querySelector("#e2elite video").paused), "the play button didn't start it");
+    await p.evaluate(() => { document.querySelector("#e2elite").remove(); setLite(false); });
+    await put("e2elite2"); await p.locator("#e2elite2 video").scrollIntoViewIfNeeded(); await p.waitForTimeout(700);
+    ok(await p.evaluate(() => !document.querySelector("#e2elite2 video").paused && !document.querySelector("#e2elite2 .vplay")), "with Data saver off the video didn't play itself");
+    await p.evaluate(() => { document.querySelector("#e2elite2").remove(); try { localStorage.removeItem("tnl-lite"); } catch (e) {} });
+    await p.locator('.nav [data-tab="profile"]').tap(); await p.locator("#profmenu").tap();
+    ok(await p.locator(".c-ma", { hasText: "Data saver" }).count() === 1, "no Data saver switch in ≡");
+    await p.evaluate(() => { closeMenu(); TAB = "showroom"; PROFILE = null; render(); });
   });
   await step(d, "Music: play, the bar shows, the sound moves, next track", async () => {
     await p.locator('.nav [data-tab="labs"]').tap();
