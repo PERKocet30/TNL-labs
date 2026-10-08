@@ -242,9 +242,7 @@ function postHTML(p){const mine=p.author.username===myName();
     ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
     ${CSLOTPO?"":`data-u="${esc(p.author.username)}"`}>`:""}
   ${p.videoUrl?`<div class="vwrap">
-    <video class="post-vid" src="${esc(p.videoUrl)}"${pxPoster(p)} muted loop playsinline preload="none" data-auto
-      ${p.mediaW?`style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}></video>
-    <button class="vmute" data-vmute aria-label="Sound">${DI.soundOff}</button>
+    ${pxVideo(p,"post-vid")}
   </div>`:""}
   ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}' aria-label="Play">${DI.play}</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM${p.beat.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:""}</div></div>${studioOn()?`<button class="act" data-remix="${p.id}" style="margin-left:auto">${IC_REMIX_SM} Remix</button>`:""}</div>`:""}
   ${pxShopHTML(p)}

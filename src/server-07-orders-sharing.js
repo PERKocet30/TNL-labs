@@ -301,7 +301,7 @@ app.get("/p/:id", (req, res) => {
   if (!p.isWork) return res.status(404).send(notFound);
 
   const abs = (path) => (path ? (/^https?:/.test(path) ? path : `${baseUrl(req)}${path}`) : null);
-  const img = abs(p.imageUrl) || abs(p.author.avatarUrl) || `${baseUrl(req)}/icon-white-512.png`;
+  const img = abs(p.imageUrl) || abs(p.videoUrl && p.thumbUrl) || abs(p.author.avatarUrl) || `${baseUrl(req)}/icon-white-512.png`;
   const accepted = p.collaborators.filter((c) => c.status === "accepted");
   const title = accepted.length
     ? `${p.author.displayName} × ${accepted.map((c) => c.display_name || c.username).join(" × ")}`
@@ -343,7 +343,7 @@ app.get("/p/:id", (req, res) => {
 </a>
 ${p.body ? `<p class="body" style="margin:0 0 14px">${esc(p.body)}</p>` : ""}
 ${p.imageUrl ? `<img class="media" src="${esc(p.imageUrl)}" alt="" style="max-height:none">` : ""}
-${p.videoUrl ? `<video class="media" src="${esc(p.videoUrl)}" controls playsinline></video>` : ""}
+${p.videoUrl ? `<video class="media" src="${esc(p.videoUrl)}#t=${((p.video?.start || 0) / 1000).toFixed(2)}${p.video?.end ? "," + (p.video.end / 1000).toFixed(2) : ""}"${p.thumbUrl && p.thumbUrl !== p.imageUrl ? ` poster="${esc(p.thumbUrl)}"` : ""}${p.video?.muted ? " muted" : ""} controls playsinline preload="metadata"></video>` : ""}
 ${p.beat ? `<div class="card"><b>${esc(p.beat.name || "untitled loop")}</b><div class="cap">${p.beat.bpm} BPM · made in the TNL studio</div></div>` : ""}
 ${accepted.length ? `<div class="cap meta"><span class="mk">//</span> Built with ${accepted.map((c) => esc(c.display_name || c.username)).join(" + ")}</div>` : ""}
 <div class="cap meta">${lookCount(p.likeCount, "like")} · ${lookCount(p.shareCount, "share")} · #${esc(p.channel)}</div>

@@ -20,7 +20,7 @@ const blocks = new Set([blocker + ":" + me]);
 const told = [], routes = {};
 const part = readFileSync(join(ROOT, "src/server-02-post-extras.js"), "utf8");
 const X = new Function("db", "q", "isBlocked", "notify", "app", "auth",
-  part + "\nreturn {postExtras,cleanExtras,applyExtras,commentsOff};")(db, q,
+  part + "\nreturn {postExtras,cleanExtras,applyExtras,commentsOff,cleanVideoEdit};")(db, q,
   (a, b) => blocks.has(a + ":" + b) || blocks.has(b + ":" + a), (...a) => told.push(a),
   { post: (path, _a, fn) => { routes[path] = fn; } }, null);
 const post = () => Number(db.prepare(`INSERT INTO posts (author_id,channel,body,created_at) VALUES (?,?,?,?)`).run(me, "profile", "hi", now).lastInsertRowid);
@@ -42,7 +42,7 @@ const row = q.postById.get(pid), shaped = X.postExtras(row);
 t("saved and shaped", shaped.tags.join() === "amy,bob" && shaped.location === "Studio B" && shaped.commentsOff === true);
 t("each tagged person is told, once", told.filter((a) => a[2] === "tag" && a[3] === pid).map((a) => a[0]).sort().join() === [amy, bob].sort().join());
 t("commentsOff() reads the row", X.commentsOff(row) === true);
-t("an old post (no extras) shapes clean", JSON.stringify(X.postExtras({})) === JSON.stringify({ tags: [], location: "", commentsOff: false, products: [] }));
+t("an old post (no extras) shapes clean", JSON.stringify(X.postExtras({})) === JSON.stringify({ tags: [], location: "", commentsOff: false, products: [], video: null }));
 t("junk in the column doesn't throw", X.postExtras({ extras: "{nope" }).tags.length === 0);
 
 console.log("\nSHOPPABLE POSTS");
@@ -71,4 +71,11 @@ const rt = readFileSync(join(ROOT, "src/server.runtime.js"), "utf8");
 t("new posts save their extras", rt.includes("applyExtras(Number(info.lastInsertRowid), req.body, req.user.id)"));
 t("the comment route refuses when they're off", /if \(commentsOff\(post\)\) return res\.status\(403\)/.test(rt));
 t("every shaped post carries them", rt.includes("...postExtras(row),") && rt.includes("p.link_json, p.extras,"));
+
+console.log("\nVIDEO EDITS (2026-10-08)");
+t("a trim, sound off and a frame are kept", JSON.stringify(X.cleanVideoEdit({ start: 1200.4, end: 9000, muted: true, ratio: "4:5" })) === JSON.stringify({ start: 1200, end: 9000, muted: true, ratio: "4:5" }));
+t("nothing changed → nothing stored", X.cleanVideoEdit({ start: 0, end: 0, muted: false, ratio: "orig" }) === null && X.cleanVideoEdit("x") === null);
+t("junk is dropped: an end before the start, a made-up shape, a negative start", JSON.stringify(X.cleanVideoEdit({ start: -5, end: 300, ratio: "3:1", muted: "yes" })) === "null");
+const vx = JSON.parse(X.cleanExtras({ video: { end: 5000, ratio: "1:1" } }, amy).extras);
+t("…and they ride in the post's extras", vx.video.end === 5000 && vx.video.ratio === "1:1");
 console.log(`\n  ${pass} passed, ${fail} failed`);

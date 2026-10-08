@@ -26,10 +26,10 @@ function pcomposeHTML(){
       <div class="pc-prog"><i id="pcvidbar" style="width:${Math.round((c.vidprog||0)*100)}%"></i></div>
       <span class="dim" id="pcvidprog">Uploading video · ${Math.round((c.vidprog||0)*100)}%</span>
       <span class="dim pc-keep">Keep LABS open until it's done</span></div>`;
-  else if(c.vid)media=`<div class="pc-stage"><video id="pcvid" src="${esc(c.vid.url)}"${c.cover?` poster="${esc(c.cover)}"`:""} playsinline muted ${c.coverPick?"":"controls "}preload="metadata" crossorigin="anonymous"></video>
-      <button class="pc-rm" data-pcvidrm aria-label="Remove video">${PC_X}</button></div>
-      ${c.coverPick?`<div class="pc-cover"><input type="range" min="0" max="1000" value="0" id="pccovr" aria-label="Pick a frame">
-        <button class="pc-share" id="pccovok">Use this frame</button></div>`:""}`;
+  else if(c.vid){const ve=c.vedit||{},r=VRATIO[ve.ratio];
+    media=`<div class="pc-stage"><video id="pcvid" class="${r?"vfill":""}" src="${esc(c.vid.url)}#t=${((ve.start||0)/1000||.1).toFixed(2)}"${c.cover?` poster="${esc(c.cover)}"`:""}${r?` style="aspect-ratio:${r}"`:""} playsinline ${ve.muted?"muted ":""}controls preload="metadata"></video>
+      <button class="pc-rm" data-pcvidrm aria-label="Remove video">${PC_X}</button>
+      <button class="pc-edit pc-edit-top" data-pcvedit aria-label="Edit video">${PC_EDIT}<span>Edit</span></button></div>`}
   else if(c.imgs.length||c.upN)media=`
     <div class="pc-stage">
       <div class="pc-track" id="pctrack">${c.imgs.map(im=>`<div class="pc-slide"><img src="${esc(im.url||im.thumb)}" alt=""></div>`).join("")}
@@ -82,7 +82,9 @@ function pcomposeHTML(){
         <button class="pc-opt" id="pcloc"><span class="pc-ic">${PC_PIN}</span><span class="pc-l">${c.location?`<b>${esc(c.location)}</b>`:"Add location"}</span>
           ${c.location?`<span class="pc-x" data-pclocx aria-label="Remove location">${PC_X}</span>`:PC_CHEV}</button>
         ${c.vid?`<button class="pc-opt" id="pccov"><span class="pc-ic">${c.cover?`<img class="pc-covth" src="${esc(c.cover)}" alt="">`:PC_PICK.replace(/40/g,"22")}</span><span class="pc-l">Cover</span>
-          <span class="pc-v">${c.cover?"Chosen":"First frame"}</span>${PC_CHEV}</button>`:""}
+          <span class="pc-v">${c.cover?"Change":"First frame"}</span>${PC_CHEV}</button>
+          <button class="pc-opt" id="pcved"><span class="pc-ic">${PC_EDIT}</span><span class="pc-l">Edit video</span>
+          <span class="pc-v">${vedSummary(c.vedit)}</span>${PC_CHEV}</button>`:""}
         <label class="pc-opt pc-sw-row"><span class="pc-ic">${IG_COMMENT}</span><span class="pc-l">Turn off commenting</span>
           <input type="checkbox" class="pf-sw" id="pccoff" ${c.commentsOff?"checked":""}></label>
       </div>
@@ -116,7 +118,7 @@ function wirePCompose(){
       if(vids.length>1)toast("One video per post");
       if(f.size>650*1024*1024){toast(f.name+" is over 650MB");return}
       if(c.imgs.length){c.imgs=[];toast("Video posts stand alone — photos cleared")}
-      c.vid=null;c.cover=null;c.vidbusy=true;c.vidprog=0;render();
+      c.vid=null;c.cover=null;c.vedit=null;c.vidbusy=true;c.vidprog=0;render();
       /* Its size, so the feed can hold the space before it loads. */
       try{const v=document.createElement("video");v.preload="metadata";v.muted=true;const u=URL.createObjectURL(f);
         v.onloadedmetadata=()=>{c.vw=v.videoWidth||undefined;c.vh=v.videoHeight||undefined;URL.revokeObjectURL(u)};v.src=u}catch(e){}
@@ -157,23 +159,14 @@ function wirePCompose(){
   pcDragWire(c);
   const ed=document.querySelector("[data-pcedit]");if(ed)ed.onclick=()=>pedOpen(c,c.idx||0);
   document.querySelectorAll("[data-pcrm]").forEach(b=>b.onclick=()=>{c.imgs.splice(+b.dataset.pcrm,1);c.idx=Math.min(c.idx||0,Math.max(0,c.imgs.length-1));render()});
-  const vr=document.querySelector("[data-pcvidrm]");if(vr)vr.onclick=()=>{c.vid=null;c.cover=null;c.coverPick=false;render()};
+  const vr=document.querySelector("[data-pcvidrm]");if(vr)vr.onclick=()=>{c.vid=null;c.cover=null;c.vedit=null;render()};
   const dr=$("#pcdrafts");if(dr)dr.onclick=()=>pdOpen(c);
 
   /* ── video cover: scrub to a frame, keep it ── */
-  const cv=$("#pccov");if(cv)cv.onclick=()=>{c.coverPick=!c.coverPick;render()};
-  const vid=$("#pcvid"),rng=$("#pccovr");
-  if(vid&&rng)rng.oninput=()=>{if(vid.duration)vid.currentTime=vid.duration*(+rng.value/1000)};
-  const cok=$("#pccovok");if(cok)cok.onclick=async()=>{
-    if(!vid||!vid.videoWidth)return toast("Give the video a moment to load");
-    cok.disabled=true;
-    try{const cn=document.createElement("canvas"),s=Math.min(1,1600/Math.max(vid.videoWidth,vid.videoHeight));
-      cn.width=Math.round(vid.videoWidth*s);cn.height=Math.round(vid.videoHeight*s);
-      cn.getContext("2d").drawImage(vid,0,0,cn.width,cn.height);
-      c.vw=vid.videoWidth;c.vh=vid.videoHeight;c.coverPick=false;
-      const up=await api.upload(cn.toDataURL("image/jpeg",.85));if(c.dead)return;c.cover=up.url;toast("Cover set")}
-    catch(e){toast(e.message)}
-    pcRepaint(c)};
+  /* Trim, cover, sound, frame — the video editor (app-18-video-edit). */
+  const cv=$("#pccov");if(cv)cv.onclick=()=>vedOpen(c,"cover");
+  const vd=$("#pcved");if(vd)vd.onclick=()=>vedOpen(c,"trim");
+  const ve=document.querySelector("[data-pcvedit]");if(ve)ve.onclick=()=>vedOpen(c,"trim");
 
   /* ── tag people, location, comments ── */
   const toTag=ppl=>ppl.filter(u=>u.username!==myName()&&!(c.tags||[]).find(x=>x.username===u.username))

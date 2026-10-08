@@ -14,6 +14,14 @@ function pxShopHTML(p){
 }
 /* A video shows its cover until it plays — never a black box. */
 const pxPoster=p=>p.videoUrl&&p.thumbUrl&&p.thumbUrl!==p.imageUrl?` poster="${esc(p.thumbUrl)}"`:"";
+/* A posted video as its author edited it (2026-10-08): the frame shape
+   (filled, like Instagram), the trim (wireVideos loops inside it) and the
+   original sound off — no sound button then. One template for every feed. */
+const VRATIO={"1:1":"1/1","4:5":"4/5","9:16":"9/16","16:9":"16/9"};
+function pxVideo(p,cls){
+  const v=p.video||{},r=VRATIO[v.ratio],ar=r||(p.mediaW?p.mediaW+"/"+p.mediaH:"");
+  return `<video class="${cls}${r?" vfill":""}" src="${esc(p.videoUrl)}#t=${((v.start||0)/1000||.1).toFixed(2)}"${pxPoster(p)}${ar?` style="aspect-ratio:${ar}"`:""} muted loop playsinline preload="none" data-auto${v.start?` data-vs="${v.start}"`:""}${v.end?` data-ve="${v.end}"`:""}${v.muted?" data-vsilent":""}></video>
+    ${v.muted?"":`<button class="vmute" data-vmute aria-label="Sound">${DI.soundOff}</button>`}`}
 /* Comments switched on/off: show or hide the button in place. */
 function pxPaintActs(id){
   const p=findAnyPost(id);if(!p)return;

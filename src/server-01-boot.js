@@ -6,7 +6,7 @@ import { randomBytes, createHash } from "node:crypto";
 import { crc32 as zlibCrc32 } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { writeFileSync, readFileSync, mkdirSync, existsSync, createWriteStream, rename, rm, statSync, readdirSync, rmSync } from "node:fs";
+import { writeFileSync, readFileSync, mkdirSync, existsSync, createWriteStream, rename, rm, statSync, readdirSync, rmSync, openSync, readSync, closeSync, fstatSync } from "node:fs";
 import { execFile } from "node:child_process";
 
 /* ffmpeg, for pulling the audio out of a video. Resolved from the

@@ -71,6 +71,29 @@ console.log("\nA VIDEO SHOWS UP AT ONCE");
   srv.kill(); await srv.exited;
 }
 
+console.log("\nOLD VIDEOS, FIXED ON BOOT");
+{
+  const { execFileSync } = await import("node:child_process");
+  const { copyFileSync, existsSync } = await import("node:fs");
+  const up = join(DATA, "uploads"); mkdirSync(up, { recursive: true });
+  copyFileSync(join(DATA, "phone.mov"), join(up, "old-1.mov"));
+  copyFileSync(join(DATA, "phone.mov"), join(up, "old-2.mov"));
+  const P = (v, th) => Number(db.prepare(`INSERT INTO posts (author_id, channel, body, video_url, thumb_url, is_work, created_at) VALUES (?,?,?,?,?,1,?)`).run(uid, "profile", "v", v, th, now).lastInsertRowid);
+  const a = P("/uploads/old-1.mov", null), a2 = P("/uploads/old-1.mov", null), b = P("/uploads/old-2.mov", "/uploads/mine.jpg");
+  const p = spawn(process.execPath, ["--experimental-sqlite", "--no-warnings", "src/server.runtime.js"], {
+    cwd: ROOT, env: { ...process.env, TNL_DATA: DATA, PORT: "8878", STRIPE_SECRET_KEY: "", TNL_VIDEO_FIX_DELAY_MS: "200" }, stdio: "ignore" });
+  const row = (id) => db.prepare(`SELECT video_url, thumb_url FROM posts WHERE id = ?`).get(id);
+  for (let i = 0; i < 80 && !(row(a).thumb_url && row(b).video_url !== "/uploads/old-2.mov"); i++) await sleep(100);
+  p.kill(); await new Promise((r) => p.on("exit", r));
+  const A = row(a), A2 = row(a2), B = row(b);
+  const fixed = readFileSync(join(DATA, A.video_url.replace(/^\//, "")));
+  t("an old iPhone video moves to a copy with its index first", A.video_url === "/uploads/old-1-fs.mov" && fixed.indexOf("moov") < fixed.indexOf("mdat"));
+  t("every post using it moves with it", A2.video_url === A.video_url);
+  t("the original stays on disk (DMs and old links)", existsSync(join(up, "old-1.mov")));
+  t("a video with no cover gets one", /^\/uploads\/old-1-fs-poster\.jpg$/.test(A.thumb_url || ""));
+  t("a cover someone picked is never replaced", B.thumb_url === "/uploads/mine.jpg" && B.video_url === "/uploads/old-2-fs.mov");
+}
+
 srv = await boot(8876);
 const t0 = Date.now(); srv.kill("SIGTERM");
 const code2 = await Promise.race([srv.exited, sleep(3000).then(() => "still running")]);

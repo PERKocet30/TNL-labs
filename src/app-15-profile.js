@@ -16,7 +16,7 @@ function workCardHTML(p, collab, K, pinned) {
          opened at all. A tile only ever needs to look like something and be
          tappable; the real player lives in the expanded post. Replace with a
          plain div until videos get real poster frames generated at upload. */
-      : p.videoUrl ? `<div class="work-vid" aria-label="Video"></div>`
+      : p.videoUrl ? (p.thumbUrl && p.thumbUrl !== p.imageUrl ? `<img class="work-img" src="${esc(p.thumbUrl)}" alt="video" loading="lazy" decoding="async">` : `<div class="work-vid" aria-label="Video"></div>`)
       : `<div class="work-body">${esc(p.body || "—")}</div>`}
     ${pinned ? `<span class="work-ind work-pin" aria-label="Pinned">${PF_PIN}</span>` : many ? `<span class="work-ind" aria-label="${p.images.length} photos">${DI.stack}</span>`
       : p.videoUrl ? `<span class="work-ind" aria-label="Video">${DI.video}</span>` : ""}

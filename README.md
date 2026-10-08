@@ -68,12 +68,13 @@ test/                           49 test suites — run with npm test
 | `app-17-bag` | the bag (one checkout per seller), recently viewed, price-drop tags, listing drafts, Duplicate, your shop's numbers |
 | `app-17-event-1` · `app-17-event-2` · `app-17-event-3-poll` | Events (2026-10-06, poll 2026-10-07): the tournament screen — brief, enter sheet, gallery, picks, bracket, judges' scores, results — the Showroom banner, and the poll's scoreboard, Instagram vote-link landing (`EVFOCUS`) and Share to Instagram sheet; styles in `app-05-styles-event` |
 | `app-17-market` · `app-17-panels` | market wiring and the listing editor's logic; panels, DMs, Studio mount |
-| `app-18-composer` · `app-18-media` · `app-18-photo-edit` · `app-18-post-queue` | the post creator; carousels, video autoplay, music and the audio unlock; the photo editor (crop, filters, adjust — on the phone); posting in the background, drafts, drag to reorder |
+| `app-18-composer` · `app-18-media` · `app-18-photo-edit` · `app-18-post-queue` · `app-18-video-edit` | the post creator; carousels, video autoplay, music and the audio unlock; the photo editor (crop, filters, adjust — on the phone); posting in the background, drafts, drag to reorder; the video editor (trim, cover from a frame or the camera roll, sound on/off, frame shape — kept as instructions on the post in `extras.video`, never re-encoded) |
 | `app-19-feed-boot` | feed, badges, boot |
 | `server-01-boot` | setup, compression, caching rules, Sentry, prepared queries |
 | `server-02…11` | auth/feed, uploads/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/beats/Showroom, social/meta |
 | `server-11-profile` | profile v2: links, pronouns, pins (`/api/me/pins`), followers/following lists, the Tagged tab, "Followed by" |
 | `server-12-policies` | the public policy pages Stripe reviews: `/terms`, `/privacy`, `/policies` (shipping, returns, disputes, prohibited items), `/contact`, `/shop`, and `lookFoot()` — the footer on every server-built page. `SUPPORT_EMAIL` sets the inbox |
+| `server-12-video` | old videos fixed on boot: an index-at-the-end iPhone video gets an index-first copy (the posts move to it, the original stays) and a cover where it has none. New uploads get both in `server-03` |
 | `server-02-post-extras` | a post's people tagged, place, comments on/off and products from your own shop (`posts.extras`) |
 | `server-07-cart` | the bag checkout (several items from one seller, one payment, shipping combined — `sessionFits()` binds a paid session to its whole group), `/api/shop/stats` |
 | `server-06-market-stock` | sizes and colours: every unit sold goes through `takeStock()` (the size picked, the listing closes at zero) |
