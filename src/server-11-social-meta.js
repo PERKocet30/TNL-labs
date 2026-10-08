@@ -135,7 +135,7 @@ setTimeout(() => {
   }, 24 * 3600 * 1000);
 }, 3600 * 1000);
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   /* A deploy log that only says "started" tells you nothing. This says what
      is actually switched on — so you can see at a glance whether the thing
      you just set in Railway took effect.
@@ -161,6 +161,23 @@ app.listen(PORT, () => {
   } catch (e) {
     console.log(`TNL LABS listening on :${PORT} (banner failed: ${e.message})`);
   }
+});
+
+/* A phone video over a weak signal can take longer than Node's default
+   5 minutes to arrive; the upload route has its own size limits, so give
+   a whole request 30. (2026-10-08) */
+server.requestTimeout = 30 * 60 * 1000;
+
+/* A deploy sends SIGTERM to the old server. Stop taking new connections,
+   let uploads already coming in finish (Railway waits up to
+   RAILWAY_DEPLOYMENT_DRAINING_SECONDS), then go. With nothing in flight
+   this exits at once, so an ordinary deploy is no slower. */
+process.on("SIGTERM", () => {
+  console.log(`[shutdown] SIGTERM — ${UPLOADS_IN_FLIGHT} upload(s) still coming in`);
+  server.close();
+  server.closeIdleConnections?.();
+  const wait = () => (UPLOADS_IN_FLIGHT > 0 ? setTimeout(wait, 250) : process.exit(0));
+  wait();
 });
 
 /* Last line of defence. An unhandled rejection anywhere — a Stripe call, a

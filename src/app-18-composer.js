@@ -24,7 +24,8 @@ function pcomposeHTML(){
   let media;
   if(c.vidbusy)media=`<div class="pc-stage pc-busy"><span class="spin"></span>
       <div class="pc-prog"><i id="pcvidbar" style="width:${Math.round((c.vidprog||0)*100)}%"></i></div>
-      <span class="dim" id="pcvidprog">Uploading video · ${Math.round((c.vidprog||0)*100)}%</span></div>`;
+      <span class="dim" id="pcvidprog">Uploading video · ${Math.round((c.vidprog||0)*100)}%</span>
+      <span class="dim pc-keep">Keep LABS open until it's done</span></div>`;
   else if(c.vid)media=`<div class="pc-stage"><video id="pcvid" src="${esc(c.vid.url)}"${c.cover?` poster="${esc(c.cover)}"`:""} playsinline muted ${c.coverPick?"":"controls "}preload="metadata" crossorigin="anonymous"></video>
       <button class="pc-rm" data-pcvidrm aria-label="Remove video">${PC_X}</button></div>
       ${c.coverPick?`<div class="pc-cover"><input type="range" min="0" max="1000" value="0" id="pccovr" aria-label="Pick a frame">
