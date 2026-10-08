@@ -167,6 +167,10 @@ function toast(t){
   el.innerHTML=`<div class="toast mv-in" role="status">${esc(t)}</div>`;
   TOASTH=setTimeout(()=>{TOASTT=null;el.innerHTML=""},2200);
 }
+/* A shareable profile link. A username ending in "." would lose the dot
+   to Instagram / iMessage link finders, so it's spelled %2E. */
+const profileLink=n=>location.origin+"/u/"+encodeURIComponent(n).replace(/\.+$/,m=>"%2E".repeat(m.length));
+
 /* Modern in-app dialogs — no native prompt()/confirm()/alert() anywhere. These
    render a styled overlay and resolve a Promise, so async handlers can await them. */
 function uiModal({title,body,fields,okLabel="Confirm",cancelLabel="Cancel",danger=false,okOnly=false}){

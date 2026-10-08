@@ -75,3 +75,24 @@ function followedBy(viewerId, uid) {
     JOIN users x ON x.id = mine.followee_id WHERE mine.follower_id = ? AND theirs.followee_id = ? ORDER BY theirs.created_at DESC`).all(viewerId, uid);
   return rows.length ? { names: rows.slice(0, 2).map((r) => r.username), count: rows.length } : null;
 }
+
+/* ── Usernames that end in "." (2026-10-08) ─────────────────────────
+   "xstart." is a fine name, but Instagram, iMessage and most link
+   finders read a final "." as the end of the sentence and drop it, so
+   a shared /u/xstart. opened as /u/xstart — "Not found". Links we make
+   spell the dot as %2E (decoded back to "." before routing), and a name
+   arriving without its trailing dots still finds its one owner. New
+   usernames can't end in "." any more. */
+function profileHref(name) {
+  return "/u/" + encodeURIComponent(name).replace(/\.+$/, (m) => "%2E".repeat(m.length));
+}
+function userByLooseName(name) {
+  const n = String(name || "");
+  const exact = q.userByName.get(n);
+  if (exact) return exact;
+  const bare = n.replace(/\.+$/, "");
+  if (!bare) return null;
+  const rows = db.prepare(`SELECT * FROM users WHERE username LIKE ? ESCAPE '\\' AND rtrim(username, '.') = ? LIMIT 2`)
+    .all(bare.replace(/[\\%_]/g, (c) => "\\" + c) + "%", bare);
+  return rows.length === 1 ? rows[0] : null;
+}

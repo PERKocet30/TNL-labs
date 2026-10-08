@@ -51,7 +51,7 @@ function profileUser(u, viewer) {
 /* Full profile = the portfolio. Everything they've published, plus the
    stats that make standing legible: work, validation received, collabs. */
 app.get("/api/users/:username", maybeAuth, (req, res) => {
-  const u = q.userByName.get(req.params.username);
+  const u = userByLooseName(req.params.username);
   if (!u) return res.status(404).json({ error: "no such user" });
   const posts = shapePosts(feedRows({ authorId: u.id, viewerId: req.user?.id, limit: 40, workOnly: true }));
 

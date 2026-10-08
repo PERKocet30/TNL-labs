@@ -56,7 +56,7 @@ async function issueVerification(user, req) {
    public (every profile has a URL), so answering this leaks nothing. */
 app.get("/api/auth/username", rateLimit({ max: 120, windowMs: 600000 }), (req, res) => {
   const u = String(req.query.u || "").trim().toLowerCase();
-  const valid = (x) => /^[a-z0-9._]{2,20}$/.test(x);
+  const valid = (x) => /^[a-z0-9._]{2,20}$/.test(x) && !x.endsWith(".");   // a final "." falls off shared links
   if (!valid(u)) return res.json({ available: false, valid: false, suggestions: [] });
   if (!q.userByName.get(u)) return res.json({ available: true, valid: true, suggestions: [] });
   const base = u.slice(0, 16).replace(/[._]+$/, "");
@@ -76,7 +76,7 @@ app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (
   }
   const { username, displayName, email, role, roles, password } = req.body || {};
   const roleList = Array.isArray(roles) ? roles.filter(r=>typeof r==="string"&&r.trim()).slice(0,5) : (role ? [role] : []);
-  if (!/^[a-z0-9._]{2,20}$/.test(username || "")) return res.status(400).json({ error: "bad username" });
+  if (!/^[a-z0-9._]{2,20}$/.test(username || "") || username.endsWith(".")) return res.status(400).json({ error: "bad username" });
   if (!displayName?.trim()) return res.status(400).json({ error: "display name required" });
   if (!/^\S+@\S+\.\S+$/.test(email || "")) return res.status(400).json({ error: "bad email" });
   if (!password || password.length < 6) return res.status(400).json({ error: "password too short" });
