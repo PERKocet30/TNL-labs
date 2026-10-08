@@ -108,6 +108,13 @@ function vTakeSound(v){
   for(const o of document.querySelectorAll("video[data-auto]"))if(o!==v&&!o.muted){o.muted=true;vIcon(o)}
   try{const a=audioEl();if(a&&!a.paused&&!(a.getAttribute("src")||"").startsWith("data:")){a.pause();paintPlayer()}}catch(e){}
 }
+/* A video asked to start WITH sound and no tap: iOS may neither play nor
+   refuse it — it just sits grey (Jorge's recording, 2026-10-08). If it hasn't
+   started in a moment, it starts muted; a tap brings the sound back. */
+function vLoud(v){
+  soundOn();let on=false;v.addEventListener("playing",()=>{on=true},{once:true});
+  setTimeout(()=>{if(on||v.muted||!v.isConnected)return;v.muted=true;vIcon(v);v.play().catch(()=>{})},1500);
+}
 function vUnload(v){const s=v.getAttribute("src");if(!s)return;v.dataset.src=s;try{v.pause()}catch(e){}v.removeAttribute("src");try{v.load()}catch(e){}}
 function vReload(v){if(v.getAttribute("src")||!v.dataset.src)return;v.setAttribute("src",v.dataset.src);delete v.dataset.src}
 function wireVideos(){
@@ -126,6 +133,7 @@ function wireVideos(){
         if(liteOn()&&v.paused)return vPlayBtn(v);   // Data saver: it waits for a tap
         vReload(v);
         if(VSOUND&&!("vsilent" in v.dataset)){v.muted=false;vIcon(v);vTakeSound(v)}
+        if(!v.muted)vLoud(v);
         const p=v.play();
         if(p&&p.catch)p.catch((err)=>{
           /* iOS refuses autoplay outright in Low Power Mode — no code can
@@ -155,7 +163,7 @@ function wireVideos(){
       v.ontimeupdate=()=>{if(v.currentTime>=e-.05||v.currentTime<s-.3)v.currentTime=s}}
     v.onclick=()=>{
       if("vsilent" in v.dataset){if(v.paused)v.play().catch(()=>{});return}   // its author turned the sound off
-      v.muted=!v.muted;vIcon(v);
+      v.muted=!v.muted;vIcon(v);if(!v.muted)soundOn();
       setVSound(!v.muted);   // your choice carries on down the feed
       if(v.paused)v.play().catch(()=>{});
       if(!v.muted)vTakeSound(v);   // only one thing makes noise at a time

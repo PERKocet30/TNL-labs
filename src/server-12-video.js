@@ -95,21 +95,25 @@ function queueFeedVideo(url) {
   FEED_Q.push({ url, kind: "video" }); feedNext();
 }
 function queueListenCopy(url) {
-  if (!FFMPEG || !url || !url.startsWith("/uploads/") || AUDIO_PLAY.has(url) || queued(url, "audio")) return;
+  if (!FFMPEG || !url || !url.startsWith("/uploads/") || listenOk(AUDIO_PLAY.get(url)) || queued(url, "audio")) return;
   FEED_Q.unshift({ url, kind: "audio" }); feedNext();
 }
 const ffProbe = (path) => new Promise((ok) => execFile(FFMPEG, ["-hide_banner", "-i", path], { timeout: 30000, maxBuffer: 1024 * 1024 }, (_e, _o, err) => {
   const s = String(err || ""), v = s.match(/Video: (\w+)[^\n]*?, (\d{2,5})x(\d{2,5})/), fps = s.match(/([\d.]+) fps/), br = s.match(/bitrate: (\d+) kb\/s/),
-    a = s.match(/Audio: (\w+)/);
-  ok(v || a ? { codec: v ? v[1] : null, w: v ? +v[2] : 0, h: v ? +v[3] : 0, fps: fps ? +fps[1] : 30, kbps: br ? +br[1] : 0, audio: a ? a[1] : null } : null);
+    a = s.match(/Audio: (\w+)[^\n]*?(\d{4,6}) Hz/) || s.match(/Audio: (\w+)/);
+  ok(v || a ? { codec: v ? v[1] : null, w: v ? +v[2] : 0, h: v ? +v[3] : 0, fps: fps ? +fps[1] : 30, kbps: br ? +br[1] : 0, audio: a ? a[1] : null, hz: a && a[2] ? +a[2] : 0 } : null);
 }));
+/* v2 (2026-10-08): the first copies kept the upload's sample rate — 96kHz
+   for "power|poker", which iPhones don't reliably play as AAC. Copies are
+   44.1kHz now (-listen.m4a); a v1 -play.m4a is made again on boot. */
+const listenOk = (play) => !!play && !/-play\.m4a$/.test(play);
 async function listenCopy(url) {
   const name = url.slice("/uploads/".length), src = join(UPLOAD_DIR, name);
   const info = /^[A-Za-z0-9._-]+$/.test(name) && existsSync(src) ? await ffProbe(src) : null;
   if (!info || !info.audio) return;
-  const light = /^(aac|mp3)$/.test(info.audio) && info.kbps && info.kbps <= 256;
-  const play = light ? null : name.replace(/\.[^.]+$/, "") + "-play.m4a";
-  if (light || await ffRun(["-nostdin", "-y", "-i", src, "-map", "0:a:0", "-vn", "-c:a", "aac", "-b:a", "128k", "-ac", "2",
+  const light = /^(aac|mp3)$/.test(info.audio) && info.kbps && info.kbps <= 256 && (!info.hz || info.hz <= 48000);
+  const play = light ? null : name.replace(/\.[^.]+$/, "") + "-listen.m4a";
+  if (light || await ffRun(["-nostdin", "-y", "-i", src, "-map", "0:a:0", "-vn", "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-ar", "44100",
     "-movflags", "+faststart", join(UPLOAD_DIR, play)])) {
     const out = play ? `/uploads/${play}` : url;
     db.prepare(`INSERT OR REPLACE INTO audio_play (src, play, created_at) VALUES (?, ?, ?)`).run(url, out, Date.now());
@@ -133,7 +137,7 @@ async function feedNext() {
       if (light || await ffRun(["-nostdin", "-y", "-i", src, "-map", "0:v:0", "-map", "0:a:0?",
         "-vf", `${portrait ? "scale=-2:'min(1280,ih)'" : "scale='min(1280,iw)':-2"},fps=30`,
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "26", "-maxrate", "1800k", "-bufsize", "3600k", "-profile:v", "high", "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-b:a", "96k", "-movflags", "+faststart", "-threads", "2", join(UPLOAD_DIR, feed)])) {
+        "-c:a", "aac", "-b:a", "96k", "-ar", "44100", "-movflags", "+faststart", "-threads", "2", join(UPLOAD_DIR, feed)])) {
         const out = feed ? `/uploads/${feed}` : url;
         db.prepare(`INSERT OR REPLACE INTO video_feed (src, feed, created_at) VALUES (?, ?, ?)`).run(url, out, Date.now());
         VIDEO_FEED.set(url, out);

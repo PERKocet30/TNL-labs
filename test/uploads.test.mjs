@@ -7,7 +7,7 @@ import { spawn } from "node:child_process";
 import { request } from "node:http";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { rmSync, mkdirSync, readFileSync } from "node:fs";
+import { rmSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "test/.tmp/uploads");
 rmSync(DATA, { recursive: true, force: true }); mkdirSync(DATA, { recursive: true });
@@ -82,9 +82,10 @@ console.log("\nA VIDEO SHOWS UP AT ONCE");
   const sp = (await (await fetch("http://127.0.0.1:8877/api/users/up", { headers: { Authorization: "Bearer tok-up" } })).json()).posts.find((x) => x.id === pid) || {};
   t("players get the copy; the original stays the post's video", sp.videoPlayUrl === row?.feed && sp.videoUrl === up.url);
 
-  /* A WAV track gets a light listening copy; players get it as the track's url. */
-  const wav = Buffer.alloc(44 + 44100 * 2 * 2 * 3); wav.write("RIFF", 0); wav.writeUInt32LE(wav.length - 8, 4); wav.write("WAVEfmt ", 8);
-  wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(2, 22); wav.writeUInt32LE(44100, 24); wav.writeUInt32LE(44100 * 4, 28);
+  /* A WAV track gets a light listening copy; players get it as the track's url.
+     96kHz, like "power|poker" — the copy must come out at 44.1kHz for iPhones. */
+  const wav = Buffer.alloc(44 + 96000 * 2 * 2 * 3); wav.write("RIFF", 0); wav.writeUInt32LE(wav.length - 8, 4); wav.write("WAVEfmt ", 8);
+  wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(2, 22); wav.writeUInt32LE(96000, 24); wav.writeUInt32LE(96000 * 4, 28);
   wav.writeUInt16LE(4, 32); wav.writeUInt16LE(16, 34); wav.write("data", 36); wav.writeUInt32LE(wav.length - 44, 40);
   for (let i = 44; i < wav.length; i += 2) wav.writeInt16LE(Math.round(Math.sin(i / 20) * 6000), i);
   const wup = await (await fetch("http://127.0.0.1:8877/api/upload/stream", { method: "POST", headers: { Authorization: "Bearer tok-up", "Content-Type": "application/octet-stream" }, body: wav })).json();
@@ -93,7 +94,10 @@ console.log("\nA VIDEO SHOWS UP AT ONCE");
   t("a new track answers with its file (the copy comes after)", tr.track && tr.track.fileUrl === wup.url);
   let arow = null;
   for (let i = 0; i < 100 && !arow; i++) { arow = db.prepare(`SELECT play FROM audio_play WHERE src = ?`).get(wup.url); if (!arow) await sleep(100); }
-  t("a WAV track gets a light AAC listening copy", !!arow && /-play\.m4a$/.test(arow.play) && /Audio: aac/.test(probe(join(DATA, arow.play.replace(/^\//, "")))));
+  const ap = arow ? probe(join(DATA, arow.play.replace(/^\//, ""))) : "";
+  t("a WAV track gets a light AAC listening copy", !!arow && /-listen\.m4a$/.test(arow.play) && /Audio: aac/.test(ap));
+  t("…at 44.1kHz, which every phone plays (not the upload's 96kHz)", /44100 Hz/.test(ap) && !/96000 Hz/.test(ap));
+  writeFileSync(join(DATA, "song96.wav"), wav);
   const lib = await (await fetch("http://127.0.0.1:8877/api/tracks", { headers: { Authorization: "Bearer tok-up" } })).json();
   const mine = (lib.tracks || []).find((x) => x.id === tr.track.id) || {};
   t("players get the copy as the track's url; the WAV stays its file", mine.url === arow?.play && mine.fileUrl === wup.url);
@@ -110,10 +114,15 @@ console.log("\nOLD VIDEOS, FIXED ON BOOT");
   copyFileSync(join(DATA, "phone.mov"), join(up, "old-2.mov"));
   const P = (v, th) => Number(db.prepare(`INSERT INTO posts (author_id, channel, body, video_url, thumb_url, is_work, created_at) VALUES (?,?,?,?,?,1,?)`).run(uid, "profile", "v", v, th, now).lastInsertRowid);
   const a = P("/uploads/old-1.mov", null), a2 = P("/uploads/old-1.mov", null), b = P("/uploads/old-2.mov", "/uploads/mine.jpg");
+  // a track whose listening copy is a v1 (-play.m4a, its 96kHz rate kept): made again
+  copyFileSync(join(DATA, "song96.wav"), join(up, "old-song.wav"));
+  db.prepare(`INSERT INTO tracks (user_id, title, url, created_at) VALUES (?, 'Old', '/uploads/old-song.wav', ?)`).run(uid, now);
+  db.prepare(`INSERT OR REPLACE INTO audio_play (src, play, created_at) VALUES ('/uploads/old-song.wav', '/uploads/old-song-play.m4a', ?)`).run(now);
+  const song = () => db.prepare(`SELECT play FROM audio_play WHERE src = '/uploads/old-song.wav'`).get().play;
   const p = spawn(process.execPath, ["--experimental-sqlite", "--no-warnings", "src/server.runtime.js"], {
     cwd: ROOT, env: { ...process.env, TNL_DATA: DATA, PORT: "8878", STRIPE_SECRET_KEY: "", TNL_VIDEO_FIX_DELAY_MS: "200" }, stdio: "ignore" });
   const row = (id) => db.prepare(`SELECT video_url, thumb_url FROM posts WHERE id = ?`).get(id);
-  for (let i = 0; i < 80 && !(row(a).thumb_url && row(b).video_url !== "/uploads/old-2.mov"); i++) await sleep(100);
+  for (let i = 0; i < 150 && !(row(a).thumb_url && row(b).video_url !== "/uploads/old-2.mov" && /-listen/.test(song())); i++) await sleep(100);
   p.kill(); await new Promise((r) => p.on("exit", r));
   const A = row(a), A2 = row(a2), B = row(b);
   const fixed = readFileSync(join(DATA, A.video_url.replace(/^\//, "")));
@@ -121,6 +130,7 @@ console.log("\nOLD VIDEOS, FIXED ON BOOT");
   t("every post using it moves with it", A2.video_url === A.video_url);
   t("the original stays on disk (DMs and old links)", existsSync(join(up, "old-1.mov")));
   t("a video with no cover gets one", /^\/uploads\/old-1-fs-poster\.jpg$/.test(A.thumb_url || ""));
+  t("an old 96kHz listening copy is made again at 44.1kHz", song() === "/uploads/old-song-listen.m4a" && existsSync(join(up, "old-song-listen.m4a")));
   t("a cover someone picked is never replaced", B.thumb_url === "/uploads/mine.jpg" && B.video_url === "/uploads/old-2-fs.mov");
 }
 

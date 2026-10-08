@@ -77,7 +77,9 @@ execSync(`node --experimental-sqlite ${JSON.stringify(join(TMP, "seed.mjs"))}`, 
 
 /* ---- the app ---- */
 const server = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], {
-  cwd: ROOT, env: { ...process.env, TNL_DATA: DATA, PORT: String(PORT), PUBLIC_URL: B, SENTRY_DSN: "", ADMIN_EMAIL: "tester@example.com" }, stdio: ["ignore", "pipe", "pipe"] });
+  cwd: ROOT, env: { ...process.env, TNL_DATA: DATA, PORT: String(PORT), PUBLIC_URL: B, SENTRY_DSN: "", ADMIN_EMAIL: "tester@example.com",
+    // no boot backfill: its AAC copies of the seeded WAVs land mid-run, and this Chromium plays no AAC
+    TNL_NO_VIDEO_FIX: "1" }, stdio: ["ignore", "pipe", "pipe"] });
 let serverLog = ""; server.stdout.on("data", (d) => (serverLog += d)); server.stderr.on("data", (d) => (serverLog += d));
 const stop = () => { try { server.kill(); } catch {} };
 process.on("exit", stop);
@@ -716,6 +718,24 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => document.querySelector("#e2eS2 video").muted && !VSOUND), "muting didn't turn sound off for the feed");
     await p.evaluate(() => { document.querySelector("#e2esnd")?.remove(); setVSound(false); });
   });
+  /* Jorge's recording (2026-10-08): sound on, the video came back grey — iOS
+     neither played nor refused a video asked to start with sound and no tap. */
+  await step(d, "a video that won't start with sound (no tap) starts muted instead of sitting grey; chosen sound is playback", async () => {
+    await p.evaluate(() => { TAB = "showroom"; POSTOPEN = null; PROFILE = null; setVSound(true); render();
+      Object.defineProperty(navigator, "audioSession", { value: { type: "auto" }, configurable: true }); });
+    const vid = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.videoUrl && /\.webm$/.test(q.videoUrl)); return x && x.videoUrl; });
+    ok(vid, "no WebM video in the Showroom to test with");
+    await p.evaluate((vid) => { document.querySelector("#sr-grid").insertAdjacentHTML("afterbegin",
+      `<div class="vwrap" id="e2eG"><video class="sr-img" src="${vid}#t=0.10" muted loop playsinline preload="none" data-auto></video><button class="vmute" data-vmute aria-label="Sound"></button></div>`);
+      const v = document.querySelector("#e2eG video");
+      v.play = function () { return this.muted ? HTMLMediaElement.prototype.play.call(this) : new Promise(() => {}); };   // iOS: holds it, never answers
+      wireVideos(); }, vid);
+    await p.locator("#e2eG video").scrollIntoViewIfNeeded(); await p.waitForTimeout(2600);
+    const g = await p.evaluate(() => { const v = document.querySelector("#e2eG video"); return { muted: v.muted, paused: v.paused, session: navigator.audioSession.type }; });
+    ok(g.muted && !g.paused, "the video sat waiting for sound instead of playing muted: " + JSON.stringify(g));
+    ok(g.session === "playback", "sound wasn't asked for as playback (the silent switch mutes it): " + g.session);
+    await p.evaluate(() => { document.querySelector("#e2eG").remove(); setVSound(false); navigator.audioSession.type = "auto"; });
+  });
   /* "Low storage … build and plan for it so things are more efficient" (2026-10-08). */
   await step(d, "Data saver: videos wait for a tap (a play button) instead of playing themselves; off, they play again", async () => {
     await p.evaluate(() => { TAB = "showroom"; POSTOPEN = null; PROFILE = null; setLite(true); render(); });
@@ -740,8 +760,10 @@ console.log("\nMEMBER · PHONE");
     await p.locator('.nav [data-tab="labs"]').tap();
     await p.locator('[data-lab="culture"]').first().tap();
     await fast(p, 3000, () => p.waitForSelector("[data-trkplay]"), "the Music lab's tracks");
+    await p.evaluate(() => { if (navigator.audioSession) navigator.audioSession.type = "auto"; });
     await p.locator("[data-trkplay]").first().tap(); await p.waitForTimeout(900);
-    const s = await p.evaluate(() => ({ t: NOWPLAYING && NOWPLAYING.title, playing: !!AUDIO && !AUDIO.paused, at: AUDIO && AUDIO.currentTime,
+    ok(await p.evaluate(() => !navigator.audioSession || navigator.audioSession.type === "playback"), "music wasn't played as playback — an iPhone's silent switch mutes it");
+    const s = await p.evaluate(() => ({ src: AUDIO && AUDIO.src, rs: AUDIO && AUDIO.readyState, err: AUDIO && AUDIO.error && AUDIO.error.code, t: NOWPLAYING && NOWPLAYING.title, playing: !!AUDIO && !AUDIO.paused, at: AUDIO && AUDIO.currentTime,
       bar: getComputedStyle(document.querySelector(".nowbar")).display }));
     ok(s.t && s.playing && s.at > 0 && s.bar !== "none", "playback: " + JSON.stringify(s));
     await p.locator("[data-nownext]").tap(); await p.waitForTimeout(400);
