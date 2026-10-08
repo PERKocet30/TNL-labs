@@ -46,7 +46,7 @@ function pcomposeHTML(){
   else media=`${pdRowHTML(c)}<label class="pc-pick">${file}${PC_PICK}<b>Add photos or video</b><span>Up to 10 photos, or 1 video</span></label>`;
   const tags=c.tags||[];
 
-  const lab=c.ch?`${esc(labMark(c.ch.lab))} · ${esc(c.ch.label)}`:"Profile only";
+  const lab=c.ch?esc(labMark(c.ch.lab)):"Profile only";
   return `<div class="pcmp-ov" id="pcov"><div class="pc" role="dialog" aria-label="New post">
     <header class="pc-top">
       <button class="pc-cancel" id="pccancel">Cancel</button>
@@ -56,7 +56,7 @@ function pcomposeHTML(){
     <div class="pc-body">
       ${media}
       <div class="pc-cap">${avHTML(ME,"")}
-        <textarea class="pc-ta" id="pcbody" rows="3" placeholder="Write a caption…">${esc(c.body||"")}</textarea></div>
+        <textarea class="pc-ta" id="pcbody" rows="3" placeholder="Write a caption… #tag it so people find it">${esc(c.body||"")}</textarea></div>
       <div class="pc-ment" id="pcment" hidden></div>
       <div class="pc-opts">
         <button class="pc-opt" id="pccollab"><span class="pc-ic">${IG_COLLAB}</span><span class="pc-l">Invite collaborators</span>
@@ -201,7 +201,17 @@ function wirePCompose(){
   let mt=null;
   if(ta){grow();ta.oninput=()=>{c.body=ta.value;grow();syncGo();
     const m=/(^|\s)@([a-z0-9._]{0,20})$/i.exec(ta.value.slice(0,ta.selectionStart));
+    const h=/(^|\s)#([a-z0-9_]{0,30})$/i.exec(ta.value.slice(0,ta.selectionStart));
     clearTimeout(mt);
+    /* # suggests the tags people already use (in the lab you're sharing to) */
+    if(h){mt=setTimeout(async()=>{let tg=[];try{tg=(await papi.tags(c.ch?(labOfCh(c.ch.id)||{}).id:"",h[2])).tags||[]}catch(e){}
+      if(!mb||PCOMPOSE!==c)return;
+      mb.innerHTML=tg.slice(0,6).map(t=>`<button class="pc-mrow pc-trow" data-pctag="${esc(t.tag)}"><span class="pc-hash">#</span><span><b>#${esc(t.tag)}</b><span class="dim">${t.count} ${t.count===1?"post":"posts"}</span></span></button>`).join("");
+      mb.hidden=!tg.length;
+      mb.querySelectorAll("[data-pctag]").forEach(x=>x.onmousedown=e=>{e.preventDefault();
+        const pos=ta.selectionStart,before=ta.value.slice(0,pos).replace(/#([a-z0-9_]{0,30})$/i,"#"+x.dataset.pctag+" ");
+        ta.value=before+ta.value.slice(pos);c.body=ta.value;ta.setSelectionRange(before.length,before.length);
+        mb.hidden=true;mb.innerHTML="";grow();syncGo();ta.focus()})},200);return}
     if(!m){if(mb){mb.hidden=true;mb.innerHTML=""}return}
     mt=setTimeout(async()=>{let ppl=[];try{ppl=(await api.mentionable(m[2])).people||[]}catch(e){}
       if(!mb||PCOMPOSE!==c)return;
@@ -226,9 +236,9 @@ function wirePCompose(){
   document.querySelectorAll("[data-pccrm]").forEach(b=>b.onclick=()=>{c.collabs.splice(+b.dataset.pccrm,1);render()});
   const lb=$("#pclab");if(lb)lb.onclick=()=>{
     const items=[{label:"Profile only",sub:"Not in a lab",icon:DI.check,ch:null}];
-    for(const l of LABS)for(const ch of l.channels){
-      if(ch.beatlab||ch.archive||ch.library||(ch.gate&&levelFor(myRep()).id<ch.gate))continue;
-      items.push({label:chName(ch),sub:labMark(l.name),icon:"//",ch:{id:ch.id,label:chName(ch),lab:l.name}})}
+    /* Labs are places now: pick the genre, tag the rest with #hashtags. */
+    for(const l of LABS){const ch=labHome(l);
+      items.push({label:labMark(l.name),sub:(LAB_ID[l.id]||{}).for||"",icon:"//",ch:{id:ch.id,label:l.name,lab:l.name}})}
     openPicker({title:"Share to a lab",items,onPick:it=>{if(PCOMPOSE===c){c.ch=it.ch;render()}}});
   };
   const ma=document.querySelector("[data-pcmusadd]");if(ma)ma.onclick=async()=>{

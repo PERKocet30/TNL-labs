@@ -25,11 +25,11 @@ const mvReduced=()=>{try{return matchMedia("(prefers-reduced-motion: reduce)").m
 function mvKey(){
   if(PCOMPOSE)return "compose";
   if(MYPAGE())return "me";
-  return [TAB,TAB==="labs"?[ROOMOPEN,LAB&&LAB.id,CH&&CH.id].join("/"):"",TAB==="market"?MKTVIEW:""].join("|");
+  return [TAB,TAB==="labs"?[ROOMOPEN,LAB&&LAB.id,LAB?LABVIEW:"",TAGVIEW?TAGVIEW.tag:""].join("/"):"",TAB==="market"?MKTVIEW:""].join("|");
 }
 function mvDepth(){
   if(PCOMPOSE)return 2;
-  if(TAB==="labs"&&ROOMOPEN&&!MYPAGE())return 1;
+  if(TAB==="labs"&&(ROOMOPEN||TAGVIEW)&&!MYPAGE())return 1;
   if(TAB==="market"&&MKTVIEW&&MKTVIEW!=="browse"&&!MYPAGE())return 1;
   return 0;
 }

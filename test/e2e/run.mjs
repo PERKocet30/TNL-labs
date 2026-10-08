@@ -899,6 +899,29 @@ console.log("\nMEMBER · PHONE");
     await fetch(B + "/api/events/e2e-poster/entry", { method: "DELETE", headers: { authorization: "Bearer " + token } });   // withdraw: the next steps enter elsewhere
     await p.evaluate(() => { EVENTER = null; TAB = "showroom"; render(); });
   });
+  await step(d, "labs are places: a ring opens Work, a #tag narrows it, Talk sends, a #tag in chat opens its page, back comes home", async () => {
+    await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; render(); });
+    // Labs keeps the lab you were in (Music, from earlier); Labs again goes to the index
+    await p.locator('.nav [data-tab="labs"]').tap(); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => LAB && LAB.id === "culture"), "coming back to Labs should keep the lab you were in");
+    await p.locator('.nav [data-tab="labs"]').tap(); await p.waitForSelector(".lx-rings");
+    await p.locator('.lx-ring[data-lab="pharmacy"]').tap();
+    await p.waitForSelector("#plbody .pl-grid .pl-tile img", { timeout: 6000 });
+    ok(await p.evaluate(() => LAB && LAB.id === "pharmacy" && LABVIEW === "work"), "the lab didn't open on Work");
+    ok(await p.locator(".pl-tabs [data-pltab]").count() === 4, "Work, Talk, Open, Pulse");
+    await p.locator('[data-pltag="graphicdesign"]').first().tap();
+    await p.waitForFunction(() => LABTAG === "graphicdesign" && (PLACE.pharmacy || {})["work:graphicdesign"], null, { timeout: 5000 });
+    ok(await p.locator("#plbody .pl-tile").count() >= 1, "an old #graphic-design post should carry #graphicdesign");
+    await p.locator('[data-pltab="talk"]').tap(); await p.waitForSelector("#draft");
+    await p.locator("#draft").fill("testing places #e2etag"); await p.locator("#sendb").tap();
+    const tag = p.locator('#feed .htag[data-tag="e2etag"]').first();
+    await tag.waitFor({ timeout: 6000 }); await tag.tap();
+    await p.waitForFunction(() => TAGVIEW && TAGVIEW.tag === "e2etag" && TAGVIEW.d && TAGVIEW.d.count === 1, null, { timeout: 5000 });
+    await p.evaluate(() => history.back());
+    await p.waitForFunction(() => !TAGVIEW && LAB && LAB.id === "pharmacy" && LABVIEW === "talk", null, { timeout: 4000 });
+    await p.locator("#labback").tap(); await p.waitForSelector(".lx-list");
+    await p.evaluate(() => { TAB = "showroom"; render(); });
+  });
   await step(d, "poll: an Instagram vote link lands on the piece, Vote counts once and moves the scoreboard, Share makes the Story card", async () => {
     const mk = await api("/api/admin/events", token, { slug: "e2e-art", title: "E2E Art Tournament", format: "poll", picks: 1, finalists: 2, judgeWeight: 0, minAccountDays: 0, published: true, opensAt: Date.now() - 1000, submitDays: 1, voteDays: 3 });
     ok(mk.event && mk.event.format === "poll", "couldn't create the poll: " + JSON.stringify(mk).slice(0, 200));

@@ -62,6 +62,7 @@ test/                           51 test suites — run with npm test
 | `app-10-chat-1…6` | Messages v2 (2026-09-29): chat kit, inbox + chat screen, composer/voice notes, sheets (new chat, group, forward, mute), the signed-in live stream, lab rooms as chat |
 | `app-10-dm-search` | search, the door |
 | `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
+| `app-11-places` | Labs as places (2026-10-08): a lab's Work · Talk · Open · Pulse tabs, its home channel (`LAB_HOME`), the #tag page, tag suggestions; styles in `app-05-styles-places` |
 | `app-11-showroom` · `app-12…13` (`app-12-post-extras`: tags, place, comments off and "Shop this post" on a card) | Showroom, lab index, archive/posts; the Music lab (`app-13-tracks-player`) and the player bar and queue (`app-13-player`) |
 | `app-14-detail-sell` · `app-14-listing` · `app-14-sell-variants` | orders and the listing editor; the listing page (photos, size/colour picker, the pinned Buy bar, the pinch-zoom photo viewer); the editor's sizes & colours |
 | `app-15-profile` · `app-15-profile-edit` · `app-16` | profile v2 (≡ / ⋯ menus, followers/following, pinned, tagged), the Instagram-style edit page, wiring |
@@ -81,6 +82,7 @@ test/                           51 test suites — run with npm test
 | `server-06-market-stock` | sizes and colours: every unit sold goes through `takeStock()` (the size picked, the listing closes at zero) |
 | `server-10-dm-core` · `-dm-groups` · `-dm-routes` | Messages v2: schema migration (groups; backup first), requests, replies, reactions, edit/unsend, forward, mute |
 | `server-10-links` · `server-10-live` | link previews behind a DNS-level SSRF guard; the signed-in live stream, typing, presence, lab reactions and pins |
+| `server-10-places` | Labs as places: `PLACES` (each lab's channels and home), #tags read from captions plus the old channel's tag for posts from before the cutover, and the lab feed / work / open / pulse and tag routes |
 | `server-10-events-1-core` · `-2-routes` · `-3-admin` · `-4-cards` · `-5-pages` | Events: the schema and state machine (`tickEvent()`: submit → vote → bracket rounds → judged final → results, idempotent, runs every minute), entering/voting/judging, the poll's scoreboard (`evBoard`), admin, the Instagram cards (entry Story, scoreboard post/Story) and the public `/e/:slug`, `/rules`, `/board` and `/e/:slug/:entry` pages |
 
 ---
@@ -223,6 +225,15 @@ Three layers: stop glitches before they ship, notice the ones that get through, 
 - **Admin → System** shows errors and glitches side by side.
 
 ---
+
+## Labs as places
+
+Since 2026-10-08 a lab is a place, one per genre (General, Visual, Music, Fashion, Anime, News, Business), not a server of sub-channels. Inside: **Work** (a grid of everything made there, narrowed by #tag), **Talk** (one conversation), **Open** (live events, #collab / #gig calls) and **Pulse** (this week: rising work, tags, who's making). People #tag their own work in the caption; any #tag opens its page across every lab.
+
+- **No data moved.** Every channel id still holds its posts. Each lab has a home channel (`PLACES` in `server-10-places.js`, `LAB_HOME` in `app-11-places.js`) where new talk and lab posts go; Talk and Work read all of the lab's channels.
+- **Old channels became tags.** Posts from before the cutover (`place_meta.cutover`, set on first boot) carry their channel's tag (#photography, #feedback…), worked out when read. Captions are never rewritten.
+- **Tools stay:** Music's Work is the tracks library; Visual's archive and boards are one tap from Work; the Studio button is in Music's header.
+- `test/places.test.mjs` checks the app and server agree on the map, the tag rules and every route.
 
 ## Events
 
@@ -405,6 +416,13 @@ GET    /api/levels
 
 # labs
 GET    /api/labs   (auth)
+GET    /api/places
+GET    /api/labs/:lab/feed   (auth)
+GET    /api/labs/:lab/work   (auth)
+GET    /api/labs/:lab/open   (auth)
+GET    /api/labs/:lab/pulse   (auth)
+GET    /api/tags   (auth)
+GET    /api/tags/:tag   (auth)
 
 # builders
 GET    /api/builders

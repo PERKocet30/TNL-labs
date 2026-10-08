@@ -50,6 +50,7 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
 - `public/studio.js` — the Studio (beat maker), hidden unless Admin → Settings
   → Studio is on (`studioOn()`). `public/admin.html` + `public/admin-app/*.js` — `/admin` (keep each ≤ 24KB too).
 - The README has a table of what each numbered part holds, and the API route list.
+- Labs are places (2026-10-08): `server-10-places.js` + `app-11-places.js`. A lab = Work · Talk · Open · Pulse and #tags, no sub-channels on screen. Channel ids still hold every post; `PLACES` / `LAB_HOME` map each lab to its channels and home channel and must match `LABS` (`test/places.test.mjs` checks).
 - Events (the tournament): `server-10-events-*.js` + `app-17-event-*.js` + admin `8-events.js`. `tickEvent()` is the only thing that moves an event forward; vote counts never leave the server while a stage is open — the one exception is the poll format's scoreboard, which is public by design and freezes for the last `freeze_hours` (`test/events.test.mjs` checks both). Instagram is for reach; votes only count in the app.
 
 ## Product rules to preserve
