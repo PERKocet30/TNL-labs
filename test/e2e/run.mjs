@@ -691,6 +691,7 @@ console.log("\nMEMBER · PHONE");
      share sheet, the tap used to do nothing at all. Now it copies the link,
      or puts it in front of you to copy. */
   await step(d, "Share profile when the phone refuses the share sheet: the link is copied or shown, never nothing", async () => {
+    await p.evaluate(() => { window.__gl = []; window.__glReal = window.glitch; window.glitch = (k, x) => window.__gl.push(k + " " + x); });
     await p.evaluate(() => { window.__shareTried = 0; navigator.share = () => { window.__shareTried++; return Promise.reject(new DOMException("blocked", "NotAllowedError")); };
       navigator.clipboard.writeText = () => Promise.reject(new Error("no clipboard")); });
     await p.locator("#shareprof").tap();
@@ -701,6 +702,8 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { navigator.share = () => Promise.reject(new DOMException("closed", "AbortError")); });
     await p.locator("#shareprof").tap(); await p.waitForTimeout(400);
     ok(await p.locator(".ui-ov").count() === 0, "closing the sheet yourself shouldn't pop anything up");
+    const gl = await p.evaluate(() => { const g = window.__gl; window.glitch = window.__glReal; return g; });
+    ok(gl.length === 1 && /share sheet → NotAllowedError/.test(gl[0]), "the refusal wasn't reported (once) for the Glitches page: " + JSON.stringify(gl));
   });
   await step(d, "followers / following open as lists; Tagged shows posts you're tagged in; ⋯ on someone else has Block and Report", async () => {
     await p.locator('[data-flist="following"]').tap();
