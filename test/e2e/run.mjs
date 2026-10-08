@@ -759,15 +759,26 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { window.__shareTried = 0; navigator.share = () => { window.__shareTried++; return Promise.reject(new DOMException("blocked", "NotAllowedError")); };
       navigator.clipboard.writeText = () => Promise.reject(new Error("no clipboard")); });
     await p.locator("#shareprof").tap();
+    await p.locator(".pick").getByText("Send off the app", { exact: true }).tap();
     await p.waitForSelector(".ui-ov .ui-in", { timeout: 4000 });
     ok(await p.evaluate(() => window.__shareTried) === 1, "didn't try the share sheet first");
     ok((await p.locator(".ui-ov .ui-in").inputValue()).endsWith("/u/tester"), "the link offered isn't the profile");
     await p.locator(".ui-ok").tap();
     await p.evaluate(() => { navigator.share = () => Promise.reject(new DOMException("closed", "AbortError")); });
-    await p.locator("#shareprof").tap(); await p.waitForTimeout(400);
+    await p.locator("#shareprof").tap();
+    await p.locator(".pick").getByText("Send off the app", { exact: true }).tap(); await p.waitForTimeout(400);
     ok(await p.locator(".ui-ov").count() === 0, "closing the sheet yourself shouldn't pop anything up");
     const gl = await p.evaluate(() => { const g = window.__gl; window.glitch = window.__glReal; return g; });
     ok(gl.length === 1 && /share sheet → NotAllowedError/.test(gl[0]), "the refusal wasn't reported (once) for the Glitches page: " + JSON.stringify(gl));
+    /* "…to IG stories — for anything on the app": a profile, a listing and a track each have a Story card in their share menu. */
+    await p.locator("#shareprof").tap();
+    ok(await p.locator(".pick").getByText("Instagram Story", { exact: true }).count() === 1, "no Instagram Story in the profile's share menu");
+    await p.evaluate(() => { PICKER = null; render(); });
+    const sz = (u) => p.evaluate((u) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i.naturalWidth + "x" + i.naturalHeight); i.onerror = () => ok("error"); i.src = u; }), u);
+    const lid = (await api("/api/market", token)).listings.find((l) => l.images && l.images.length)?.id;
+    const tid = (await api("/api/tracks", token)).tracks[0]?.id;
+    for (const u of ["/u/tester/story.jpg", lid && `/m/${lid}/story.jpg`, tid && `/tr/${tid}/story.jpg`].filter(Boolean))
+      ok((await sz(u)) === "1080x1920", u + " isn't a 1080×1920 Story card: " + await sz(u));
   });
   await step(d, "followers / following open as lists; Tagged shows posts you're tagged in; ⋯ on someone else has Block and Report", async () => {
     await p.locator('[data-flist="following"]').tap();

@@ -1,18 +1,30 @@
 /* ── SHARE TO INSTAGRAM STORIES · 2026-10-08 ───────────────────────────
-   From a post's share menu: the Story card (/p/:id/story.jpg — the work,
-   who made it, in their colour, and the link), then one tap shares it
-   through the phone's sheet (Instagram → Story) with the post's link
+   From any share menu — a post, a profile, a listing, a track: its Story
+   card (server-12-story — the work, who made it, in their colour, and the
+   link), then one tap shares it
+   through the phone's sheet (Instagram → Story) with the link
    already copied for a Link sticker. The card is fetched while the sheet
    is open, so the tap goes straight to navigator.share — iOS only allows
    the share sheet inside the tap itself, not after a download. Its own
    layer: nothing behind it repaints. */
 let IGS=null;
-function igStoryOpen(postId,link){
-  IGS={id:postId,link,img:`/p/${postId}/story.jpg`,file:null,failed:false};igsPaint();
-  fetch(IGS.img).then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()}).then(b=>{
-    if(!IGS||IGS.id!==postId)return;
-    IGS.file=new File([b],`labs-${postId}.jpg`,{type:"image/jpeg"});const g=$("#igsgo");if(g){g.disabled=false;g.textContent="Share to Instagram"}
-  }).catch(()=>{if(IGS&&IGS.id===postId){IGS.failed=true;igsPaint()}});
+/* img: the card's address (/p/1/story.jpg, /u/x/story.jpg, /m/1/…, /tr/1/…); link: what the sticker opens. */
+function igStoryOpen(img,link){
+  const id=img;
+  IGS={id,link,img,file:null,failed:false};igsPaint();
+  fetch(img).then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()}).then(b=>{
+    if(!IGS||IGS.id!==id)return;
+    IGS.file=new File([b],"labs-story.jpg",{type:"image/jpeg"});const g=$("#igsgo");if(g){g.disabled=false;g.textContent="Share to Instagram"}
+  }).catch(()=>{if(IGS&&IGS.id===id){IGS.failed=true;igsPaint()}});
+}
+/* The one share menu for anything (2026-10-08): a profile, a listing, a
+   track. Instagram Story first; then the phone's own sheet; then the link. */
+function shareMenu({title,link,story,note}){
+  openPicker({eyebrow:"SHARE",title:title||"Share",note:note||"",items:[
+    ...(story?[{label:"Instagram Story",sub:"A picture of it for your Story, with the link to paste",icon:DI.out,act:"story"}]:[]),
+    ...(navigator.share?[{label:"Send off the app",sub:"Messages, WhatsApp, AirDrop — anywhere on your phone",icon:DI.out,act:"native"}]:[]),
+    {label:"Copy link",sub:link.replace(/^https?:\/\//,""),icon:DI.copy,act:"copy"}],
+    onPick:it=>{if(it.act==="story")return igStoryOpen(story,link);if(it.act==="native")return shareOut({title,url:link});copyText(link)}});
 }
 function igsHTML(){
   const s=IGS;
@@ -20,7 +32,7 @@ function igsHTML(){
     <div class="sheeth"><div><h2>Share to your Story</h2></div><button class="x" id="igsx" aria-label="Close">${DI.x}</button></div>
     <div class="ev-shimg">${s.failed?`<div class="dim">Couldn't make the picture. Your link still works.</div>`:`<img src="${esc(s.img)}" alt="Your Story card">`}</div>
     <ol class="ev-howto"><li>Tap <b>Share to Instagram</b>, then pick <b>Instagram → Stories</b>.</li>
-      <li>Your link is copied — add a <b>Link</b> sticker and paste it, so people can tap through to the post.</li></ol>
+      <li>Your link is copied — add a <b>Link</b> sticker and paste it, so people can tap straight through.</li></ol>
     <div class="ev-link"><span>${esc(s.link.replace(/^https?:\/\//,""))}</span><button class="btn ghost" id="igscopy">${DI.copy} Copy</button></div>
     <button class="btn green ev-cta" id="igsgo"${s.file||s.failed?"":" disabled"}>${s.failed?"Share the link":s.file?"Share to Instagram":"Making your card…"}</button>
   </div></div>`}

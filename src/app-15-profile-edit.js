@@ -122,8 +122,7 @@ function wireProfileV2(){
       .catch(()=>{if(PROFILE&&PROFILE.user.username===un){PROFTAGGED=[];render()}})}
 }
 async function shareProfile(un){
-  const url=profileLink(un);
-  await shareOut({title:"@"+un+" on LABS",url});
+  shareMenu({title:"@"+un+" on LABS",link:profileLink(un),story:"/u/"+encodeURIComponent(un)+"/story.jpg"});
 }
 function logOut(){
   TOKEN=null;ME=null;PROFILE=null;UNREADS={};UNREAD=0;DMUNREAD=0;applyAccent((ACCENTS.lab||{}).hex);
