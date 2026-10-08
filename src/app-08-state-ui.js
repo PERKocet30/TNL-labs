@@ -13,11 +13,14 @@ let FEEDAT={}, SRAT=0;  // freshness stamps — render() must not hammer the net
    When a member's phone breaks, the error reports itself with a stack —
    no more debugging from dark screen recordings. DSNs are public by design. */
 const SENTRY_DSN="https://dd32635170e2123131bb2583d08e2aed@o4511775840468992.ingest.us.sentry.io/4511775846957056";
+/* Only phones on the real site report to Sentry (2026-10-08) — test browsers
+   on localhost were adding noise. The admin Health mirror still gets all. */
+const SENTRY_ON=!/^(localhost|127\.|0\.0\.0\.0|\[|10\.|192\.168\.)/.test(location.hostname);
 const _sentSeen=new Set();
 function sentryClient(msg,stack,where){
   try{
     if(_sentSeen.size>=8||_sentSeen.has(msg))return;_sentSeen.add(msg);
-    const m=/^https:\/\/([a-f0-9]+)@([^/]+)\/(\d+)$/.exec(SENTRY_DSN);if(!m)return;
+    const m=SENTRY_ON&&/^https:\/\/([a-f0-9]+)@([^/]+)\/(\d+)$/.exec(SENTRY_DSN);
     const ev={timestamp:Date.now()/1000,platform:"javascript",level:"error",
       tags:{where:where||"web",user:(typeof ME!=="undefined"&&ME)?ME.username:"guest"},
       request:{url:location.href},
@@ -25,10 +28,10 @@ function sentryClient(msg,stack,where){
       extra:{stack:String(stack||"").slice(0,4000),ua:navigator.userAgent}};
     const env=JSON.stringify({dsn:SENTRY_DSN,sent_at:new Date().toISOString()})+"\n"+
       JSON.stringify({type:"event"})+"\n"+JSON.stringify(ev)+"\n";
-    const url=`https://${m[2]}/api/${m[3]}/envelope/`;
+    if(m){const url=`https://${m[2]}/api/${m[3]}/envelope/`;
     /* No cookies, plain text: sendBeacon always sends credentials, and Sentry's
        ingest answers "*" to CORS, so the browser refused every report (2026-10-08). */
-    fetch(url,{method:"POST",body:env,keepalive:true,credentials:"omit",mode:"cors",headers:{"Content-Type":"text/plain;charset=UTF-8"}}).catch(()=>{});
+    fetch(url,{method:"POST",body:env,keepalive:true,credentials:"omit",mode:"cors",headers:{"Content-Type":"text/plain;charset=UTF-8"}}).catch(()=>{})}
     /* Mirror into the app's own intake so the admin Health tab sees member-
        phone errors too — one dashboard, both worlds. */
     try{fetch(API+"/api/client-error",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"include",
