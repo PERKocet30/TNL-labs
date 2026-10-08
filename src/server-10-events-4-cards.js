@@ -15,7 +15,7 @@
    drawn — a new rank is a new file. Instagram covers the top ~250px and
    bottom ~250px of a Story, so nothing that matters goes there.
 ================================================================ */
-const EVC = { version: 1, w: 1080, pad: 72 };
+const EVC = { version: 2, w: 1080, pad: 72 };
 
 /* An ASS script of positioned lines. at(text, x, y, size, bold, colour, align) */
 function evAss(dir, w, h) {
@@ -51,7 +51,8 @@ function evGraph(w, h) {
 /* The TNL mark and "LABS ®", bottom-left. */
 function evMark(g, t, x, y) {
   if (!existsSync(CARD_MARK)) return;
-  const i = g.input(CARD_MARK); g.f.push(`[${i}:v]scale=56:56[mk]`); g.lay("mk", x, y);
+  /* The mark file is black on solid white; key the white out so it sits on the card, not in a box. */
+  const i = g.input(CARD_MARK); g.f.push(`[${i}:v]scale=56:56,format=rgba,colorkey=0xFFFFFF:0.3:0.2[mk]`); g.lay("mk", x, y);
   t.at("LABS ®", x + 70, y + 28, 34, true, CARD.ink, 4);
 }
 const evUpper = (s, max) => { const c = cardClean(s).toUpperCase(); return c.length > max ? c.slice(0, max - 1) + "…" : c; };

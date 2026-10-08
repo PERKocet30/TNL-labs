@@ -178,7 +178,7 @@ function pickerHTML(){
     <div class="picklist">
       ${P.loading?`${skel()}`
       :P.items.length?P.items.map((it,i)=>`<button class="pickrow" data-pick="${i}">
-        ${it.avatar!==undefined?avHTML({displayName:it.label,avatarUrl:it.avatar},"sm"):`<span class="pickic">${/^<svg class="di"/.test(it.icon||"")?it.icon:esc(it.icon||"#")}</span>`}
+        ${it.avatar!==undefined?avHTML({displayName:it.label,avatarUrl:it.avatar},"sm"):`<span class="pickic${it.icon==="//"?" mk":""}">${/^<svg class="di"/.test(it.icon||"")?it.icon:esc(it.icon||"#")}</span>`}
         <div class="pickbody"><b>${esc(it.label)}</b>${it.sub?`<div class="mono dim">${esc(it.sub)}</div>`:""}</div>
       </button>`).join(""):`<div class="empty">${esc(P.empty||"Nothing here.")}</div>`}
     </div>

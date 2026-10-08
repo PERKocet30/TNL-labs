@@ -2,7 +2,9 @@
 .lpage{display:flex;flex-direction:column}
 .lpage .dnav{display:flex;justify-content:space-between;align-items:center;padding:10px 16px}
 .lpage .dbody{width:100%;box-sizing:border-box;margin:0 auto;padding:14px 20px 24px}
-.lg{position:relative;background:var(--el)}
+/* The gallery is .lgal — it was .lg, which is also the green // mark, so
+   every // in the app wore the gallery's grey box (2026-10-08). */
+.lgal{position:relative;background:var(--el)}
 .lg-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .lg-track::-webkit-scrollbar{display:none}
 .lg-s{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:4/5;max-height:72vh}
@@ -17,7 +19,7 @@
 @media(min-width:1024px){
   .lpage{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(340px,1fr);grid-template-rows:auto auto auto 1fr;column-gap:40px;align-content:start;padding:0 40px}
   .lpage .dnav{grid-column:1/-1;padding:16px 0}
-  .lpage .lg{grid-column:1;grid-row:2/5;align-self:start;position:sticky;top:16px;margin-bottom:40px}
+  .lpage .lgal{grid-column:1;grid-row:2/5;align-self:start;position:sticky;top:16px;margin-bottom:40px}
   .lpage .lg-s{aspect-ratio:4/5;max-height:calc(100vh - 110px)}
   .lpage .dbody{grid-column:2;grid-row:2;padding:0 0 16px;max-width:none}
   .lpage .lbar{grid-column:2;grid-row:3;align-self:start;bottom:16px;border:1px solid var(--line);padding:12px 14px;margin:0 0 24px}

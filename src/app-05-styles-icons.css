@@ -22,3 +22,7 @@ svg.di{display:inline-block;vertical-align:-.16em;flex-shrink:0}
 .crung-n svg{width:13px;height:13px}
 /* menus and sheets sit above the full-screen post view (z 130) */
 .c-mbg,.cs-bg{z-index:140}.c-zoom{z-index:145}
+/* The // mark is the brand, not an icon in a box (2026-10-08): no grey
+   circle in a menu, no frame round an empty lab tile. */
+.pickic.mk{background:none;border:0;color:var(--green);font-size:17px;font-weight:700;letter-spacing:-.04em}
+.lx-media.bare{background:none;border-color:transparent}

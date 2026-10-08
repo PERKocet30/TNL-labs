@@ -50,7 +50,7 @@ function trackRowHTML(t){
       <div class="trk-t">${esc(t.title)}</div>
       <div class="mono dim trk-by" data-u="${esc(t.by.username)}">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}${t.plays?" · "+t.plays+(t.plays===1?" play":" plays"):""}</div>
     </div>
-    ${t.by.username===myName()?`<button class="trk-more" data-trkmore="${t.id}" aria-label="More">${DI.more}</button>`:""}
+    <button class="trk-more" data-trkmore="${t.id}" aria-label="More">${DI.more}</button>
   </div>`;
 }
 
@@ -74,7 +74,9 @@ function tracksHTML(){
 
 /* One … menu per track, the same hold menu posts use: no loose Edit / ✕. */
 function trackMenu(t){
-  const acts=[];
+  const acts=[{icon:DI.out,label:"Share",run:()=>shareMenu({title:t.title+" · @"+t.by.username,link:profileLink(t.by.username),story:`/tr/${t.id}/story.jpg`,
+    note:"The link opens @"+t.by.username+"'s page, where the track is."})}];
+  if(t.by.username!==myName())return openMenu({react:false,preview:(t.title+" · @"+t.by.username).slice(0,120),actions:acts});
   acts.push({icon:DI.edit,label:"Edit title and cover",run:()=>{
     TRKEDIT={id:t.id,title:t.title,artworkUrl:t.artworkUrl||"",busy:false,fresh:false};render()}});
   acts.push({icon:DI.trash,label:"Delete",danger:true,run:async()=>{

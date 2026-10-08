@@ -66,6 +66,7 @@ function wireFeed(){
     const canNative = shareable && typeof navigator!=="undefined" && !!navigator.share;
     const items=shareable?[
       {label:"Into a lab",sub:"Share it in a room.",icon:"//",act:"lab"},
+      ...(post&&(post.imageUrl||post.thumbUrl||(post.body||"").trim())?[{label:"Instagram Story",sub:"A picture of it for your Story, with the link to paste",icon:DI.out,act:"story"}]:[]),
       ...(canNative?[{label:"Send off the app",sub:"Messages, WhatsApp, AirDrop — anywhere on your phone",icon:DI.out,act:"native"}]:[]),
       {label:"Send inside TNL",sub:"Lands in their DMs here",icon:DI.mail,act:"dm"},
       {label:canNative?"Copy link":"Copy link to share",sub:link.replace(/^https?:\/\//,""),icon:DI.copy,act:"copy"},
@@ -93,6 +94,7 @@ function wireFeed(){
               try{await api.share(id,{channel:c.ch});toast("Shared to "+c.label)}catch(e){toast(e.message)}}});
           return;
         }
+        if(it.act==="story")return igStoryOpen(`/p/${pubId}/story.jpg`,link);
         if(it.act==="native"){
           const data={title:post.author.displayName+" on TNL LABS",
             text:post.body?post.body.slice(0,140):"Made in the labs.",url:link};
@@ -215,8 +217,7 @@ function wireSheet(){
       if(PROFILE&&PROFILE.user.username===u){PROFILE=d;PROFCACHE.set(u,d);render()}}
     catch(e){toast(e.message);PROFCACHE.delete(u)}};
   const spb=$("#shareprof");if(spb)spb.onclick=async()=>{
-    const url=profileLink(spb.dataset.shareU);
-    await shareOut({title:"@"+spb.dataset.shareU+" on LABS",url});
+    shareProfile(spb.dataset.shareU);
   };
   const mb=$("#msgb");if(mb)mb.onclick=()=>{if(guest())return needAccount("Join to message people.");openDM(PROFILE.user.username)};
 

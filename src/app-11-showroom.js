@@ -151,7 +151,7 @@ function labsGridHTML(){
       const id=LAB_ID[l.id]||{for:"",ic:""};
       const st=all[i];
       return `<button class="lx ${st.unread?"new":""}" data-lab="${l.id}">
-        <span class="lx-media">${st.art?`<img src="${esc(st.art.url)}" alt="" loading="lazy">`:`<span class="lx-ic">${id.ic}</span>`}</span>
+        <span class="lx-media${st.art?"":" bare"}">${st.art?`<img src="${esc(st.art.url)}" alt="" loading="lazy">`:`<span class="lx-ic">${id.ic}</span>`}</span>
         <span class="lx-body">
           <span class="lx-top"><span class="lx-no">${String(i+1).padStart(2,"0")}</span>
             ${st.unread?`<span class="lx-new">${st.unread>9?"9+":st.unread} new</span>`
