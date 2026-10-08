@@ -88,7 +88,12 @@ function wireVideos(){
        #t=0.1 makes it decode one frame so there's something to look at. */
     if(v.src&&!/#t=/.test(v.src))v.src=v.src+"#t=0.1";
     VOBS.observe(v);
+    /* A trimmed video loops inside its trim: back to the start at the end,
+       and when the file's own loop comes round to 0. */
+    if(v.dataset.vs||v.dataset.ve){const s=(+v.dataset.vs||0)/1000,e=v.dataset.ve?+v.dataset.ve/1000:Infinity;
+      v.ontimeupdate=()=>{if(v.currentTime>=e-.05||v.currentTime<s-.3)v.currentTime=s}}
     v.onclick=()=>{
+      if("vsilent" in v.dataset){if(v.paused)v.play().catch(()=>{});return}   // its author turned the sound off
       v.muted=!v.muted;
       const btn=v.parentElement&&v.parentElement.querySelector("[data-vmute]");
       if(btn)btn.innerHTML=v.muted?DI.soundOff:DI.soundOn;

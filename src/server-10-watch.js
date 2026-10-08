@@ -19,7 +19,7 @@ const WATCH_RULES = [
 const GLITCH_OF = { failed_saves: "action_failed", rage_taps: "rage_tap", screen_jumps: "layout_jump", slow_screens: "slow_screen" };
 const lastSent = db.prepare(`SELECT last_at FROM alert_log WHERE rule = ?`);
 const markSent = db.prepare(`INSERT INTO alert_log (rule, last_at) VALUES (?, ?) ON CONFLICT(rule) DO UPDATE SET last_at = excluded.last_at`);
-const adminLink = () => (process.env.PUBLIC_URL || "https://labs.tnllabs.com").replace(/\/+$/, "") + "/admin#system";
+const adminLink = () => (process.env.PUBLIC_URL || "https://labs.tnllabs.com").trim().replace(/\/+$/, "") + "/admin#system";   // trimmed: a stray newline in the variable broke the alert's button
 
 /* One pass. Returns what it sent, so tests can call it with their own clock
    and mailer: send(subject, heading, lines) → promise. */

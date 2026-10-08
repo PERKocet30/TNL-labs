@@ -60,7 +60,12 @@ const LIMITS = { image: 30 * 1024 * 1024, video: 650 * 1024 * 1024, audio: 100 *
 const B64_LIMIT = 8 * 1024 * 1024; // the JSON path stays small on purpose
 
 /* 10 photos = 30 files now (original + feed + grid copies). */
+/* Uploads still coming in — a deploy waits for these before it stops the
+   old server (the SIGTERM handler in server-11-social-meta). */
+let UPLOADS_IN_FLIGHT = 0;
 app.post("/api/upload/stream", auth, verified, rateLimit({ max: 120, windowMs: 300000, key: "user" }), (req, res) => {
+  UPLOADS_IN_FLIGHT++;
+  res.once("close", () => { UPLOADS_IN_FLIGHT--; });
   const declared = Number(req.get("content-length") || 0);
   if (declared > LIMITS.video) {
     return res.status(413).json({ error: `That file's too big — ${LIMITS.video / 1048576}MB max` });
@@ -108,12 +113,42 @@ app.post("/api/upload/stream", auth, verified, rateLimit({ max: 120, windowMs: 3
     if (!type) { done = true; rm(tmp, { force: true }, () => {}); return res.status(400).json({ error: "empty file" }); }
     done = true;
     const name = `${Date.now()}-${randomBytes(8).toString("hex")}.${type.ext}`;
-    rename(tmp, join(UPLOAD_DIR, name), (err) => {
+    const land = () => rename(tmp, join(UPLOAD_DIR, name), (err) => {
       if (err) return res.status(500).json({ error: "couldn't save" });
-      res.json({ url: `/uploads/${name}`, kind: type.kind, bytes: written });
+      if (type.kind !== "video") return res.json({ url: `/uploads/${name}`, kind: type.kind, bytes: written });
+      videoPoster(name, (poster) => res.json({ url: `/uploads/${name}`, kind: type.kind, bytes: written, poster }));
     });
+    if (type.kind === "video" && /^(mov|mp4|m4v)$/.test(type.ext)) videoFaststart(tmp, type.ext, land);
+    else land();
   });
 });
+
+/* ── A video that shows up at once (2026-10-08) ─────────────────────
+   An iPhone writes a .mov with its index (the "moov") at the END, so a
+   phone has to fetch the tail of a 50MB file before it can show frame
+   one — on a weak signal the post sat as a grey box. Rewrite it with the
+   index first: the same streams copied byte for byte (no re-encode, same
+   quality, same container and codec tags, so HEVC still plays), about a
+   second for a big clip. And pull a cover from 1s in, used when the
+   poster doesn't pick one. Either step failing leaves the upload as it
+   was — never worse than before. */
+function videoFaststart(tmp, ext, done) {
+  if (!FFMPEG) return done();
+  const out = `${tmp}.fs.${ext}`;
+  execFile(FFMPEG, ["-nostdin", "-y", "-i", tmp, "-map", "0", "-c", "copy", "-movflags", "+faststart", "-f", ext === "mov" ? "mov" : "mp4", out],
+    { timeout: 180000, maxBuffer: 1024 * 1024 }, (err) => {
+      if (err) { rm(out, { force: true }, () => {}); return done(); }
+      rename(out, tmp, (e) => { if (e) rm(out, { force: true }, () => {}); done(); });
+    });
+}
+function videoPoster(name, done) {
+  if (!FFMPEG) return done(null);
+  const jpg = name.replace(/\.[^.]+$/, "") + "-poster.jpg";
+  const grab = (at, next) => execFile(FFMPEG, ["-nostdin", "-y", ...(at ? ["-ss", at] : []), "-i", join(UPLOAD_DIR, name),
+    "-frames:v", "1", "-vf", "scale='min(1080,iw)':-2", "-q:v", "3", join(UPLOAD_DIR, jpg)],
+    { timeout: 60000, maxBuffer: 1024 * 1024 }, (err) => (err || !existsSync(join(UPLOAD_DIR, jpg)) ? next() : done(`/uploads/${jpg}`)));
+  grab("1", () => grab(null, () => done(null)));   // a clip under a second: its first frame
+}
 
 app.post("/api/upload", auth, verified, rateLimit({ max: 30, windowMs: 300000, key: "user" }), (req, res) => {
   const { data } = req.body || {};

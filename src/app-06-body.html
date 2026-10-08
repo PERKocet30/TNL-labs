@@ -47,6 +47,11 @@
   }
   window.addEventListener("error",function(e){
     if(benign(e.error)) return;
+    /* Chrome's "ResizeObserver loop completed with undelivered notifications"
+       is a warning raised as an error event (no error object) when a layout
+       settles over two frames — a video's shape changing did it. It breaks
+       nothing; it used to replace the whole app with this screen. */
+    if(/ResizeObserver loop/i.test(String(e.message||""))) return;
     // an <img>/<video> that 404s fires error on the ELEMENT, not the window
     if(e.target && e.target !== window && e.target.tagName) return;
     crash(e.message||e.error, e.filename?(e.filename.split("/").pop()+":"+e.lineno+":"+e.colno):"");

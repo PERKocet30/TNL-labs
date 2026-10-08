@@ -11,7 +11,7 @@
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { spawn, execSync } from "node:child_process";
+import { spawn, execSync, execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -49,6 +49,10 @@ for (let i = 0; i < 3; i++) writeFileSync(join(DATA, "uploads", `e2e-t${i}.wav`)
 const UPLOAD_PNG = join(TMP, "upload.png");
 writeFileSync(UPLOAD_PNG, Buffer.from(PNG[0], "base64"));
 const UPLOAD_PNG2 = join(TMP, "upload2.png"), UPLOAD_PNG3 = join(TMP, "upload3.png");
+/* A 6-second clip for the video editor — WebM, because this Chromium has no H.264. */
+const UPLOAD_WEBM = join(TMP, "clip.webm");
+execFileSync((await import("ffmpeg-static")).default, ["-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "testsrc=size=320x240:rate=25:duration=6",
+  "-f", "lavfi", "-i", "sine=frequency=440:duration=6", "-c:v", "libvpx", "-b:v", "300k", "-c:a", "libvorbis", "-shortest", UPLOAD_WEBM]);
 writeFileSync(UPLOAD_PNG2, Buffer.from(PNG[1], "base64")); writeFileSync(UPLOAD_PNG3, Buffer.from(PNG[2], "base64"));
 
 /* ---- seed: two members, published work, three tracks ---- */
@@ -617,6 +621,37 @@ console.log("\nMEMBER · PHONE");
     await chip.tap();
     await p.waitForFunction((id) => TAB === "market" && MKTVIEW === "detail" && MKTONE && MKTONE.id === id, tee.id, { timeout: 6000 });
     await p.evaluate(() => { TAB = "showroom"; MKTVIEW = "browse"; render(); });
+  });
+  /* "Update the post maker to simple video editing, cover etc like Instagram" (2026-10-08). */
+  await step(d, "video editor: a cover arrives by itself; trim, sound off and 4:5 ride on the post and the feed honours them", async () => {
+    await openCreator();
+    await p.locator("#pcfile").setInputFiles(UPLOAD_WEBM);
+    await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.vid && !PCOMPOSE.vidbusy, null, { timeout: 15000 });
+    ok(await p.evaluate(() => /^\/uploads\/.+-poster\.jpg$/.test(PCOMPOSE.cover || "")), "no automatic cover: " + await p.evaluate(() => PCOMPOSE.cover));
+    await p.locator("[data-pcvedit]").tap();
+    await p.waitForSelector(".ved");
+    await p.waitForFunction(() => VED && VED.dur > 5000, null, { timeout: 8000 });
+    const set = (sel, v) => p.locator(sel).evaluate((el, v) => { el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); }, v);
+    await set('[data-vedh="start"]', 1000); await set('[data-vedh="end"]', 4000);
+    ok((await p.locator("#vedlen").textContent()) === "0:03", "trim length shows " + await p.locator("#vedlen").textContent());
+    await set('[data-vedh="start"]', 3800);
+    ok(await p.evaluate(() => VED.e.start === 3000), "the handles crossed / went under a second: " + await p.evaluate(() => VED.e.start));
+    await set('[data-vedh="start"]', 1000);
+    await p.locator('[data-vedt="sound"]').tap(); await p.locator("#vedsnd").uncheck();
+    await p.locator('[data-vedt="frame"]').tap(); await p.locator('[data-vedr="4:5"]').tap();
+    ok(await p.evaluate(() => getComputedStyle(document.querySelector(".ved-frame")).aspectRatio.replace(/\s/g, "") === "4/5"), "the preview isn't 4:5");
+    await p.locator("#vedok").tap();
+    ok((await p.locator("#pcved .pc-v").textContent()) === "Trimmed · Sound off · 4:5", "summary: " + await p.locator("#pcved .pc-v").textContent());
+    await p.locator("#pcgo").tap();
+    await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 10000 });
+    const np = (await myPosts())[0];
+    ok(JSON.stringify(np.video) === JSON.stringify({ start: 1000, end: 4000, muted: true, ratio: "4:5" }) && /-poster\.jpg$/.test(np.thumbUrl), "post: " + JSON.stringify({ v: np.video, th: np.thumbUrl }));
+    await p.evaluate(async () => { TAB = "showroom"; SRPOSTS = []; render(); await loadShowroom(true); });
+    const v = p.locator(`#sr-grid video[src*="${np.videoUrl}"]`).first();
+    await v.waitFor({ state: "attached", timeout: 6000 });
+    const f = await v.evaluate((el) => ({ fill: el.classList.contains("vfill"), ve: el.dataset.ve, silent: "vsilent" in el.dataset, poster: el.getAttribute("poster"),
+      mute: !!el.parentElement.querySelector("[data-vmute]") }));
+    ok(f.fill && f.ve === "4000" && f.silent && !f.mute && /-poster\.jpg$/.test(f.poster || ""), "feed video: " + JSON.stringify(f));
   });
   await step(d, "Music: play, the bar shows, the sound moves, next track", async () => {
     await p.locator('.nav [data-tab="labs"]').tap();

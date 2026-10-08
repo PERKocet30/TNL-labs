@@ -14,7 +14,8 @@ function postExtras(row) {
   const products = (Array.isArray(x.products) ? x.products : []).map((id) => productQ.get(id)).filter((l) => l && l.status !== "removed")
     .map((l) => ({ id: l.id, title: l.title, price: l.price_cents, sold: l.status !== "active",
       image: (() => { try { return JSON.parse(l.images || "[]")[0] || ""; } catch { return ""; } })() }));
-  return { tags: Array.isArray(x.tags) ? x.tags : [], location: x.location || "", commentsOff: !!x.commentsOff, products };
+  return { tags: Array.isArray(x.tags) ? x.tags : [], location: x.location || "", commentsOff: !!x.commentsOff, products,
+    video: x.video || null };
 }
 const commentsOff = (post) => !!readExtras(post).commentsOff;
 
@@ -34,8 +35,26 @@ function cleanExtras(body, authorId) {
   const own = db.prepare(`SELECT id FROM listings WHERE id = ? AND seller_id = ? AND status = 'active'`);
   const products = [...new Set((Array.isArray(body?.products) ? body.products : []).slice(0, 10).map(Number))]
     .filter((id) => Number.isInteger(id) && own.get(id, authorId)).slice(0, 5);
-  const any = tags.length || location || off || products.length;
-  return { extras: any ? JSON.stringify({ tags, location, commentsOff: off, products }) : null, tagIds: ids };
+  const video = cleanVideoEdit(body?.video);
+  const any = tags.length || location || off || products.length || video;
+  return { extras: any ? JSON.stringify({ tags, location, commentsOff: off, products, ...(video ? { video } : {}) }) : null, tagIds: ids };
+}
+
+/* The video editor's choices (2026-10-08): a trim (ms), the original
+   sound off, and a frame shape. Kept as instructions, never baked into
+   the file — the upload stays the untouched original at full quality, and
+   every player honours them. Null when nothing was changed. */
+const VIDEO_RATIOS = ["1:1", "4:5", "9:16", "16:9"];
+function cleanVideoEdit(v) {
+  if (!v || typeof v !== "object") return null;
+  const ms = (n) => (Number.isFinite(Number(n)) && Number(n) >= 0 ? Math.min(Math.round(Number(n)), 4 * 3600 * 1000) : 0);
+  const start = ms(v.start), end = ms(v.end);
+  const out = {};
+  if (start) out.start = start;
+  if (end && end - start >= 500) out.end = end;
+  if (v.muted === true) out.muted = true;
+  if (VIDEO_RATIOS.includes(v.ratio)) out.ratio = v.ratio;
+  return Object.keys(out).length ? out : null;
 }
 
 /* Comments on or off later, from the post's own menu. Author only. */
