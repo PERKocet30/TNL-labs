@@ -217,7 +217,7 @@ function wireSheet(){
       if(PROFILE&&PROFILE.user.username===u){PROFILE=d;PROFCACHE.set(u,d);render()}}
     catch(e){toast(e.message);PROFCACHE.delete(u)}};
   const spb=$("#shareprof");if(spb)spb.onclick=async()=>{
-    const url=location.origin+"/u/"+spb.dataset.shareU;
+    const url=profileLink(spb.dataset.shareU);
     try{ if(navigator.share) await navigator.share({title:"@"+spb.dataset.shareU+" on LABS",url});
          else { await navigator.clipboard.writeText(url); toast("Profile link copied"); } }
     catch(e){ /* dismissed the share sheet -- nothing to do */ }
@@ -310,7 +310,7 @@ function paintVerifyBar(){
   }
   try{MKTMETA=await api.mktMeta()}catch(e){}   // public — guests see the Market too
   // deep links — a shared /u/ or /m/ URL should land where it says
-  const path=location.pathname;
+  let path=location.pathname;try{path=decodeURIComponent(path)}catch(e){}   // /u/xstart%2E → /u/xstart.
   const mu=/^\/u\/([a-z0-9._]+)$/i.exec(path);
   const mm=/^\/m\/(\d+)$/.exec(path);
   const me=new URLSearchParams(location.search).get("e");   // /e/:slug pages send people here
