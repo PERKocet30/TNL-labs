@@ -126,7 +126,7 @@ function wirePCompose(){
           if(c.queued)pqPaint()});
         if(c.dead)return;   // discarded mid-upload
         if(up.kind!=="video")throw new Error("That file isn't a video");
-        c.vid={url:up.url};
+        c.vid={url:up.url};if(!c.cover&&up.poster)c.cover=up.poster;   // the server's frame from 1s in, until they pick one
       }catch(e){if(c.dead)return;toast(e.message)}
       c.vidbusy=false;pcRepaint(c);return;
     }

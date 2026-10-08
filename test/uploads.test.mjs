@@ -48,6 +48,29 @@ t("…and the upload finishes", res.status === 200 && /"url":"\/uploads\//.test(
 const code = await Promise.race([srv.exited, sleep(3000).then(() => "still running")]);
 t("then it exits cleanly", code === 0);
 
+console.log("\nA VIDEO SHOWS UP AT ONCE");
+{
+  const { execFileSync } = await import("node:child_process");
+  const FF = (await import("ffmpeg-static")).default;
+  const clip = join(DATA, "phone.mov");
+  execFileSync(FF, ["-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "testsrc=size=320x240:rate=25:duration=2", "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
+    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", "-f", "mov", clip]);
+  const raw = readFileSync(clip);
+  t("(the test clip has its index at the end, like an iPhone's)", raw.indexOf("moov") > raw.indexOf("mdat"));
+  srv = await boot(8877);
+  const up = await (await fetch("http://127.0.0.1:8877/api/upload/stream", { method: "POST", headers: { Authorization: "Bearer tok-up", "Content-Type": "application/octet-stream" }, body: raw })).json();
+  const saved = readFileSync(join(DATA, up.url.replace(/^\//, "")));
+  t("it's kept as a .mov video", up.kind === "video" && up.url.endsWith(".mov"));
+  t("the index now comes first, so a phone can start at once", saved.indexOf("moov") >= 0 && saved.indexOf("moov") < saved.indexOf("mdat"));
+  const probe = (f) => { try { execFileSync(FF, ["-hide_banner", "-i", f]); } catch (e) { return String(e.stderr).match(/Stream #.*/g).map((x) => x.replace(/\[0x\w+\]|\(default\)|\d+ kb\/s,? ?/g, "").trim()).join(" | "); } };
+  t("same streams, copied not re-encoded", probe(clip) === probe(join(DATA, up.url.replace(/^\//, ""))));
+  const poster = up.poster && readFileSync(join(DATA, up.poster.replace(/^\//, "")));
+  t("a cover image comes back with it", !!poster && poster[0] === 0xff && poster[1] === 0xd8);
+  const img = await (await fetch("http://127.0.0.1:8877/api/upload/stream", { method: "POST", headers: { Authorization: "Bearer tok-up", "Content-Type": "application/octet-stream" }, body })).json();
+  t("a photo upload is untouched (no cover)", img.kind === "image" && !("poster" in img));
+  srv.kill(); await srv.exited;
+}
+
 srv = await boot(8876);
 const t0 = Date.now(); srv.kill("SIGTERM");
 const code2 = await Promise.race([srv.exited, sleep(3000).then(() => "still running")]);
