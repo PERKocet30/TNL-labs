@@ -52,6 +52,26 @@ function wireCaros(){
   });
 }
 
+/* A repaint used to throw every <video> away and build a new one, so a
+   feed video began loading from nothing each time anything changed — a
+   like, a notification, someone coming online. On a phone signal that
+   is every few seconds, and the video never played (2026-10-08). Now the
+   players on screen are set aside before the repaint and put back where
+   the same video is drawn again: same buffer, same place, same sound. */
+const vKey=v=>[v.getAttribute("src"),v.getAttribute("poster"),v.className,v.getAttribute("style"),v.dataset.vs,v.dataset.ve,"vsilent" in v.dataset].join("|");
+function vKeep(root){
+  const m=new Map();
+  for(const v of root.querySelectorAll("video[data-auto]")){const k=vKey(v);if(!m.has(k))m.set(k,[]);m.get(k).push(v)}
+  return m;
+}
+function vRestore(root,m){
+  if(!m.size)return;
+  for(const n of root.querySelectorAll("video[data-auto]")){
+    const old=(m.get(vKey(n))||[]).shift();if(!old)continue;
+    n.replaceWith(old);old._kept=true;
+    const b=old.parentElement&&old.parentElement.querySelector("[data-vmute]");if(b)b.innerHTML=old.muted?DI.soundOff:DI.soundOn;
+  }
+}
 function wireVideos(){
   if(VOBS){VOBS.disconnect();VOBS=null}
   const vids=[...document.querySelectorAll("video[data-auto]")];
@@ -83,7 +103,7 @@ function wireVideos(){
   },{threshold:[0,0.55,1]});
 
   for(const v of vids){
-    v.muted=true;                 // required, or autoplay is refused outright
+    if(!v._kept)v.muted=true;     // required, or autoplay is refused outright (a kept one keeps the sound you chose)
     /* Without this iOS shows a black rectangle until you press play —
        #t=0.1 makes it decode one frame so there's something to look at. */
     if(v.src&&!/#t=/.test(v.src))v.src=v.src+"#t=0.1";

@@ -74,7 +74,7 @@ test/                           49 test suites — run with npm test
 | `server-02…11` | auth/feed, uploads/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/beats/Showroom, social/meta |
 | `server-11-profile` | profile v2: links, pronouns, pins (`/api/me/pins`), followers/following lists, the Tagged tab, "Followed by" |
 | `server-12-policies` | the public policy pages Stripe reviews: `/terms`, `/privacy`, `/policies` (shipping, returns, disputes, prohibited items), `/contact`, `/shop`, and `lookFoot()` — the footer on every server-built page. `SUPPORT_EMAIL` sets the inbox |
-| `server-12-video` | old videos fixed on boot: an index-at-the-end iPhone video gets an index-first copy (the posts move to it, the original stays) and a cover where it has none. New uploads get both in `server-03` |
+| `server-12-video` | old videos fixed on boot (index-first copy, a cover where none); and the light feed copy — 720p, 30fps, ~1.3 Mbps, made in the background one at a time after a video is posted (`video_feed` table → `videoPlayUrl`; the original stays `videoUrl`) |
 | `server-02-post-extras` | a post's people tagged, place, comments on/off and products from your own shop (`posts.extras`) |
 | `server-07-cart` | the bag checkout (several items from one seller, one payment, shipping combined — `sessionFits()` binds a paid session to its whole group), `/api/shop/stats` |
 | `server-06-market-stock` | sizes and colours: every unit sold goes through `takeStock()` (the size picked, the listing closes at zero) |

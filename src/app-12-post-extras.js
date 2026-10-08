@@ -20,7 +20,7 @@ const pxPoster=p=>p.videoUrl&&p.thumbUrl&&p.thumbUrl!==p.imageUrl?` poster="${es
 const VRATIO={"1:1":"1/1","4:5":"4/5","9:16":"9/16","16:9":"16/9"};
 function pxVideo(p,cls){
   const v=p.video||{},r=VRATIO[v.ratio],ar=r||(p.mediaW?p.mediaW+"/"+p.mediaH:"");
-  return `<video class="${cls}${r?" vfill":""}" src="${esc(p.videoUrl)}#t=${((v.start||0)/1000||.1).toFixed(2)}"${pxPoster(p)}${ar?` style="aspect-ratio:${ar}"`:""} muted loop playsinline preload="none" data-auto${v.start?` data-vs="${v.start}"`:""}${v.end?` data-ve="${v.end}"`:""}${v.muted?" data-vsilent":""}></video>
+  return `<video class="${cls}${r?" vfill":""}" src="${esc(p.videoPlayUrl||p.videoUrl)}#t=${((v.start||0)/1000||.1).toFixed(2)}"${pxPoster(p)}${ar?` style="aspect-ratio:${ar}"`:""} muted loop playsinline preload="none" data-auto${v.start?` data-vs="${v.start}"`:""}${v.end?` data-ve="${v.end}"`:""}${v.muted?" data-vsilent":""}></video>
     ${v.muted?"":`<button class="vmute" data-vmute aria-label="Sound">${DI.soundOff}</button>`}`}
 /* Comments switched on/off: show or hide the button in place. */
 function pxPaintActs(id){

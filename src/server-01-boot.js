@@ -392,6 +392,8 @@ function shapePost(row, side) {
        made before this existed — the client falls back to imageUrl. */
     images: (() => { try { return row.images ? JSON.parse(row.images) : null; } catch { return null; } })(),
     videoUrl: row.video_url || null,
+    /* What players load: the light feed copy once it's made (server-12-video). */
+    videoPlayUrl: row.video_url ? videoPlayUrl(row.video_url) : null,
     /* The sound credit — Instagram model. Null when no music, or when the
        track was later deleted (LEFT JOIN finds nothing). */
     audioTrack: row.track_url ? { id: row.audio_track_id, title: row.track_title, url: row.track_url,

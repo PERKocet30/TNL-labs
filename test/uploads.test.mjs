@@ -21,7 +21,7 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "�
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const boot = async (port) => {
   const p = spawn(process.execPath, ["--experimental-sqlite", "--no-warnings", "src/server.runtime.js"], {
-    cwd: ROOT, env: { ...process.env, TNL_DATA: DATA, PORT: String(port), STRIPE_SECRET_KEY: "" }, stdio: "ignore" });
+    cwd: ROOT, env: { ...process.env, TNL_DATA: DATA, PORT: String(port), STRIPE_SECRET_KEY: "" }, stdio: process.env.DBG ? "inherit" : "ignore" });
   p.exited = new Promise((r) => p.on("exit", (code) => r(code)));
   for (let i = 0; i < 100; i++) { try { if ((await fetch(`http://127.0.0.1:${port}/api/health`)).ok) break; } catch {} await sleep(100); }
   return p;
@@ -68,6 +68,19 @@ console.log("\nA VIDEO SHOWS UP AT ONCE");
   t("a cover image comes back with it", !!poster && poster[0] === 0xff && poster[1] === 0xd8);
   const img = await (await fetch("http://127.0.0.1:8877/api/upload/stream", { method: "POST", headers: { Authorization: "Bearer tok-up", "Content-Type": "application/octet-stream" }, body })).json();
   t("a photo upload is untouched (no cover)", img.kind === "image" && !("poster" in img));
+
+  /* A post with a video gets a light copy for the feed, in the background. */
+  const post = await (await fetch("http://127.0.0.1:8877/api/posts", { method: "POST", headers: { Authorization: "Bearer tok-up", "Content-Type": "application/json" },
+    body: JSON.stringify({ channel: "profile", body: "clip", isWork: true, videoUrl: up.url, thumbUrl: up.poster }) })).json();
+  let row = null;
+  for (let i = 0; i < 100 && !row; i++) { row = db.prepare(`SELECT feed FROM video_feed WHERE src = ?`).get(up.url); if (!row) await sleep(100); }
+  t("posting a video queues a light feed copy", !!row && /-feed\.mp4$/.test(row.feed));
+  const feedFile = row && join(DATA, row.feed.replace(/^\//, ""));
+  const fp = feedFile ? probe(feedFile) : "";
+  t("…H.264 at most 720p, 30fps, index first", /h264/.test(fp) && /30 fps/.test(fp) && readFileSync(feedFile).indexOf("moov") < readFileSync(feedFile).indexOf("mdat"));
+  const pid = post.post?.id || post.id;
+  const sp = (await (await fetch("http://127.0.0.1:8877/api/users/up", { headers: { Authorization: "Bearer tok-up" } })).json()).posts.find((x) => x.id === pid) || {};
+  t("players get the copy; the original stays the post's video", sp.videoPlayUrl === row?.feed && sp.videoUrl === up.url);
   srv.kill(); await srv.exited;
 }
 
