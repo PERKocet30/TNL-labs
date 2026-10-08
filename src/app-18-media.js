@@ -86,6 +86,20 @@ let VFAR=null;
    rest of Instagram's behaviour: unmute one video and every video after it
    plays with sound as you scroll, until you mute one. A video and post
    music never play over each other. Kept for this visit (sessionStorage). */
+/* Data saver (2026-10-08) — for a phone short on storage, battery or
+   signal: videos wait for a tap instead of playing themselves, and post
+   music waits for its chip. On by itself when the phone asks for less data
+   (Android's Data Saver); a switch in ≡ for everyone else. */
+const liteOn=()=>{try{const v=localStorage.getItem("tnl-lite");return v?v==="1":!!(navigator.connection&&navigator.connection.saveData)}catch(e){return false}};   // your switch wins over the phone's
+function setLite(on){try{localStorage.setItem("tnl-lite",on?"1":"0")}catch(e){}}
+/* A play button on a video that won't start itself (Data saver, or Low Power Mode). */
+function vPlayBtn(v){
+  const w=v.parentElement;if(!w||w.querySelector(".vplay"))return;
+  const b=document.createElement("button");
+  b.className="vplay"; b.innerHTML=DI.play.replace(/width="16" height="16"/,'width="22" height="22"'); b.setAttribute("aria-label","Play");
+  b.onclick=(ev)=>{ev.stopPropagation();vReload(v);v.play().then(()=>b.remove()).catch(()=>{})};
+  w.appendChild(b);
+}
 let VSOUND=(()=>{try{return sessionStorage.getItem("tnl-vsound")==="1"}catch(e){return false}})();
 function setVSound(on){VSOUND=on;try{sessionStorage.setItem("tnl-vsound",on?"1":"0")}catch(e){}}
 const vIcon=v=>{const b=v.parentElement&&v.parentElement.querySelector("[data-vmute]");if(b)b.innerHTML=v.muted?DI.soundOff:DI.soundOn};
@@ -109,6 +123,7 @@ function wireVideos(){
       clearTimeout(v._dwell);
       if(e.isIntersecting&&e.intersectionRatio>0.55){
         v._dwell=setTimeout(()=>{
+        if(liteOn()&&v.paused)return vPlayBtn(v);   // Data saver: it waits for a tap
         vReload(v);
         if(VSOUND&&!("vsilent" in v.dataset)){v.muted=false;vIcon(v);vTakeSound(v)}
         const p=v.play();
@@ -119,15 +134,7 @@ function wireVideos(){
           /* The phone wouldn't start it WITH sound without a fresh tap: start it
              muted instead (one tap on it brings the sound back). */
           if(err&&err.name==="NotAllowedError"&&!v.muted){v.muted=true;vIcon(v);v.play().catch(()=>{});return}
-          if(err&&err.name==="NotAllowedError"){
-            const w=v.parentElement;
-            if(w&&!w.querySelector(".vplay")){
-              const b=document.createElement("button");
-              b.className="vplay"; b.innerHTML=DI.play.replace(/width="16" height="16"/,'width="22" height="22"'); b.setAttribute("aria-label","Play");
-              b.onclick=(ev)=>{ev.stopPropagation();v.play().then(()=>b.remove()).catch(()=>{})};
-              w.appendChild(b);
-            }
-          }
+          if(err&&err.name==="NotAllowedError")vPlayBtn(v);
         });
         },VDWELL);
       }else{
@@ -323,6 +330,7 @@ function wireMusAuto(){
         clearTimeout(MUSDWELL);
         MUSDWELL=setTimeout(()=>{
           if(!MUSBAND.has(String(p.id)))return;   // it left before it settled
+          if(liteOn())return;                       // Data saver: music waits for its chip
           if([...document.querySelectorAll("video[data-auto]")].some(v=>!v.paused&&!v.muted))return;   // a video has the sound
           MUSAUTOID=p.id;
           if(NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id){

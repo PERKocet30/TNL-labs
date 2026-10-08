@@ -3,8 +3,27 @@
    stale social data is worse than no social data. */
 /* Bump this on every deploy that changes the shell. A stale cached
    index.html will happily serve a broken build forever otherwise. */
-const CACHE = "tnl-shell-v9";   // v9: home-screen name "LABS 🧪" (2026-09-30)
-const MEDIA = "tnl-media-v2";
+const CACHE = "tnl-shell-v10";  // v10: the media cache is bounded (2026-10-08)
+/* v3 (2026-10-08): the media cache was unbounded — every picture ever
+   scrolled past, kept forever, on phones that are short of storage. v2 is
+   deleted on activate; v3 keeps only small things (avatars, feed copies,
+   covers under MEDIA_MAX_BYTES), at most MEDIA_MAX files, oldest out
+   first, and nothing at all when the phone is nearly full. */
+const MEDIA = "tnl-media-v3";
+const MEDIA_MAX = 80, MEDIA_MAX_BYTES = 1024 * 1024, MEDIA_MIN_FREE = 200 * 1024 * 1024;
+async function roomToCache() {
+  try { const e = await self.navigator.storage.estimate(); return !e.quota || e.quota - (e.usage || 0) > MEDIA_MIN_FREE; }
+  catch (err) { return true; }
+}
+async function mediaPut(c, req, res) {
+  const len = Number(res.headers.get("content-length") || 0);
+  if (!len || len > MEDIA_MAX_BYTES || !(await roomToCache())) return;
+  try {
+    await c.put(req, res);
+    const keys = await c.keys();   // insertion order: the oldest first
+    for (const k of keys.slice(0, Math.max(0, keys.length - MEDIA_MAX))) await c.delete(k);
+  } catch (err) {}
+}
 /* Only things that definitely exist. If addAll() 404s on ANY entry the whole
    install rejects and the worker never activates — a silent failure. */
 const SHELL = ["/", "/manifest.webmanifest"];
@@ -44,7 +63,7 @@ self.addEventListener("fetch", (e) => {
         const hit = await c.match(e.request);
         if (hit) return hit;
         const res = await fetch(e.request);
-        if (res.status === 200) { try { await c.put(e.request, res.clone()); } catch (err) {} }
+        if (res.status === 200) e.waitUntil(mediaPut(c, e.request, res.clone()));
         return res;
       })
     );

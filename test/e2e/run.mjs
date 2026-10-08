@@ -716,6 +716,26 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => document.querySelector("#e2eS2 video").muted && !VSOUND), "muting didn't turn sound off for the feed");
     await p.evaluate(() => { document.querySelector("#e2esnd")?.remove(); setVSound(false); });
   });
+  /* "Low storage … build and plan for it so things are more efficient" (2026-10-08). */
+  await step(d, "Data saver: videos wait for a tap (a play button) instead of playing themselves; off, they play again", async () => {
+    await p.evaluate(() => { TAB = "showroom"; POSTOPEN = null; PROFILE = null; setLite(true); render(); });
+    // the original WebM — this Chromium has no H.264, so it can't play the light feed copy
+    const vid = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.videoUrl && /\.webm$/.test(q.videoUrl)); return x && x.videoUrl; });
+    ok(vid, "no WebM video in the Showroom to test with");
+    const put = (id) => p.evaluate(([vid, id]) => { document.querySelector("#sr-grid").insertAdjacentHTML("afterbegin",
+      `<div class="vwrap" id="${id}"><video class="sr-img" src="${vid}#t=0.10" muted loop playsinline preload="none" data-auto></video></div>`); wireVideos(); }, [vid, id]);
+    await put("e2elite"); await p.locator("#e2elite video").scrollIntoViewIfNeeded(); await p.waitForTimeout(700);
+    ok(await p.evaluate(() => document.querySelector("#e2elite video").paused && !!document.querySelector("#e2elite .vplay")), "Data saver didn't hold the video for a tap");
+    await p.locator("#e2elite .vplay").tap(); await p.waitForTimeout(600);
+    ok(await p.evaluate(() => !document.querySelector("#e2elite video").paused), "the play button didn't start it");
+    await p.evaluate(() => { document.querySelector("#e2elite").remove(); setLite(false); });
+    await put("e2elite2"); await p.locator("#e2elite2 video").scrollIntoViewIfNeeded(); await p.waitForTimeout(700);
+    ok(await p.evaluate(() => !document.querySelector("#e2elite2 video").paused && !document.querySelector("#e2elite2 .vplay")), "with Data saver off the video didn't play itself");
+    await p.evaluate(() => { document.querySelector("#e2elite2").remove(); try { localStorage.removeItem("tnl-lite"); } catch (e) {} });
+    await p.locator('.nav [data-tab="profile"]').tap(); await p.locator("#profmenu").tap();
+    ok(await p.locator(".c-ma", { hasText: "Data saver" }).count() === 1, "no Data saver switch in ≡");
+    await p.evaluate(() => { closeMenu(); TAB = "showroom"; PROFILE = null; render(); });
+  });
   await step(d, "Music: play, the bar shows, the sound moves, next track", async () => {
     await p.locator('.nav [data-tab="labs"]').tap();
     await p.locator('[data-lab="culture"]').first().tap();
