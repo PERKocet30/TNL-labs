@@ -34,7 +34,7 @@ function lvPickHTML(l){
 function lgHTML(l){
   const imgs=l.images||[], i=Math.min(LGIDX[l.id]||0,Math.max(0,imgs.length-1));
   if(!imgs.length)return "";
-  return `<div class="lg">
+  return `<div class="lgal">
     <div class="lg-track" id="lgtrack">${imgs.map((src,k)=>`<div class="lg-s"><img src="${esc(src)}" data-zoom="${esc(src)}" alt="${esc(l.title)} ${k+1}"${k?` loading="lazy"`:""}></div>`).join("")}</div>
     ${imgs.length>1?`<span class="lg-n" id="lgn">${i+1}/${imgs.length}</span>
       <div class="lg-dots" id="lgdots">${imgs.map((_,k)=>`<i${k===i?` class="on"`:""}></i>`).join("")}</div>`:""}

@@ -20,7 +20,7 @@
 ================================================================ */
 const ffc = (hex) => "0x" + hex.replace("#", "").toUpperCase();   // #RRGGBB → ffmpeg colour
 const CARD = { w: 1200, h: 630, gap: 6, bg: ffc(PALETTE.light.bg), el: ffc(PALETTE.light.el), ink: ffc(PALETTE.light.tx), ink2: ffc(PALETTE.light.dim),
-  version: 4, panel: 440, pad: 48, avatar: 128, mark: 40 };
+  version: 5, panel: 440, pad: 48, avatar: 128, mark: 40 };
 const CARD_DIR = join(DATA_DIR, "og");
 const CARD_FONT = { bold: join(__dirname, "..", "assets", "fonts", "Archivo-Bold.ttf"), reg: join(__dirname, "..", "assets", "fonts", "Archivo-Regular.ttf") };
 const CARD_MARK = join(__dirname, "..", "public", "icon-white-512.png");
@@ -125,7 +125,8 @@ function profileCardArgs(card, out, textDir) {
   const hasMark = existsSync(CARD_MARK);
   if (hasMark) {
     args.push("-i", CARD_MARK); const mi = k++;
-    f.push(`[${mi}:v]split=2[m0][m1]`, `[m0]scale=${M}:${M}[m]`, `[m1]scale=160:160[mb]`);
+    // the mark is black on solid white: key the white out so it sits on the card, not in a box
+    f.push(`[${mi}:v]split=2[m0][m1]`, `[m0]scale=${M}:${M},format=rgba,colorkey=0xFFFFFF:0.3:0.2[m]`, `[m1]scale=160:160,format=rgba,colorkey=0xFFFFFF:0.3:0.2[mb]`);
     lay("m", pad, h - pad - M);
     if (!card.shape) lay("mb", gx + Math.round((gw - 160) / 2), Math.round((h - 160) / 2));
     else f.push(`[mb]nullsink`);

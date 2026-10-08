@@ -19,7 +19,7 @@ const SC = { w: 1080, h: 1920, pad: 72, top: 250, by: 410, bh: 1000 };
 
 /* c: { prefix, head, sub, art?, tiles?, quote?, cover?, lead?, tag, handle, url, accent } */
 function storyCard(c) {
-  const hash = createHash("sha1").update(JSON.stringify([4, c])).digest("hex").slice(0, 12);
+  const hash = createHash("sha1").update(JSON.stringify([5, c])).digest("hex").slice(0, 12);
   const make = (out, dir) => {
     const W = SC.w, H = SC.h, P = SC.pad, g = evGraph(W, H), t = evAss(dir, W, H), bw = W - 2 * P, by = SC.by, bh = SC.bh;
     t.at(c.head, P, SC.top, 64, true, CARD.ink);
