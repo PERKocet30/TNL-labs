@@ -206,8 +206,13 @@ app.use("/uploads", express.static(UPLOAD_DIR, {
 /* ── SENTRY ──────────────────────────────────────────────────────────
    Errors report themselves instead of arriving as screenshots. Zero new
    dependencies — a DSN is just an HTTP address, so this posts Sentry's
-   envelope format with plain fetch. No DSN configured = silent no-op. */
-const SENTRY_DSN = process.env.SENTRY_DSN || "https://dd32635170e2123131bb2583d08e2aed@o4511775840468992.ingest.us.sentry.io/4511775846957056";
+   envelope format with plain fetch. No DSN configured = silent no-op.
+   v1.1 2026-10-08: only the live server reports (Railway, or SENTRY_DSN set
+   on purpose). Test and dev servers used to send their own noise —
+   "EADDRINUSE :8877" from the upload test — so Sentry now shows members'
+   problems only. The admin Health log still records every error. */
+const SENTRY_LIVE = !!(process.env.SENTRY_DSN || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
+const SENTRY_DSN = SENTRY_LIVE ? (process.env.SENTRY_DSN || "https://dd32635170e2123131bb2583d08e2aed@o4511775840468992.ingest.us.sentry.io/4511775846957056") : "";
 const SENTRY = (() => {
   const m = /^https:\/\/([a-f0-9]+)@([^/]+)\/(\d+)$/.exec(SENTRY_DSN || "");
   return m ? { key: m[1], host: m[2], project: m[3] } : null;
