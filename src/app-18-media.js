@@ -58,7 +58,7 @@ function wireCaros(){
    is every few seconds, and the video never played (2026-10-08). Now the
    players on screen are set aside before the repaint and put back where
    the same video is drawn again: same buffer, same place, same sound. */
-const vKey=v=>[v.getAttribute("src"),v.getAttribute("poster"),v.className,v.getAttribute("style"),v.dataset.vs,v.dataset.ve,"vsilent" in v.dataset].join("|");
+const vKey=v=>[v.getAttribute("src")||v.dataset.src,v.getAttribute("poster"),v.className,v.getAttribute("style"),v.dataset.vs,v.dataset.ve,"vsilent" in v.dataset].join("|");
 function vKeep(root){
   const m=new Map();
   for(const v of root.querySelectorAll("video[data-auto]")){const k=vKey(v);if(!m.has(k))m.set(k,[]);m.get(k).push(v)}
@@ -72,15 +72,31 @@ function vRestore(root,m){
     const b=old.parentElement&&old.parentElement.querySelector("[data-vmute]");if(b)b.innerHTML=old.muted?DI.soundOff:DI.soundOn;
   }
 }
+/* Scrolling through a feed of videos on a phone (2026-10-08): every video
+   used to start the instant it was half on screen — a flick past ten
+   started ten downloads — and every player stayed loaded however far
+   behind you it was. Now a video starts once it has stayed in view for a
+   moment (VDWELL), and one more than two screens away lets go of its
+   decoder and buffer (it shows its cover, and loads again on the way
+   back) — the way Instagram keeps only the players near you alive. */
+const VDWELL=220;
+let VFAR=null;
+function vUnload(v){const s=v.getAttribute("src");if(!s)return;v.dataset.src=s;try{v.pause()}catch(e){}v.removeAttribute("src");try{v.load()}catch(e){}}
+function vReload(v){if(v.getAttribute("src")||!v.dataset.src)return;v.setAttribute("src",v.dataset.src);delete v.dataset.src}
 function wireVideos(){
   if(VOBS){VOBS.disconnect();VOBS=null}
+  if(VFAR){VFAR.disconnect();VFAR=null}
   const vids=[...document.querySelectorAll("video[data-auto]")];
   if(!vids.length)return;
 
+  VFAR=new IntersectionObserver((entries)=>{for(const e of entries){if(e.isIntersecting)vReload(e.target);else vUnload(e.target)}},{rootMargin:"200% 0px 200% 0px"});
   VOBS=new IntersectionObserver((entries)=>{
     for(const e of entries){
       const v=e.target;
+      clearTimeout(v._dwell);
       if(e.isIntersecting&&e.intersectionRatio>0.55){
+        v._dwell=setTimeout(()=>{
+        vReload(v);
         const p=v.play();
         if(p&&p.catch)p.catch((err)=>{
           /* iOS refuses autoplay outright in Low Power Mode — no code can
@@ -96,6 +112,7 @@ function wireVideos(){
             }
           }
         });
+        },VDWELL);
       }else{
         try{v.pause()}catch(err){}
       }
@@ -107,7 +124,7 @@ function wireVideos(){
     /* Without this iOS shows a black rectangle until you press play —
        #t=0.1 makes it decode one frame so there's something to look at. */
     if(v.src&&!/#t=/.test(v.src))v.src=v.src+"#t=0.1";
-    VOBS.observe(v);
+    VOBS.observe(v);VFAR.observe(v);
     /* A trimmed video loops inside its trim: back to the start at the end,
        and when the file's own loop comes round to 0. */
     if(v.dataset.vs||v.dataset.ve){const s=(+v.dataset.vs||0)/1000,e=v.dataset.ve?+v.dataset.ve/1000:Infinity;
@@ -144,7 +161,7 @@ function musChipHTML(p){
    someone pauses on purpose — without it, the next scroll would restart the
    track they just silenced. MUSAUTOID marks a track that autoplay started, so
    scrolling away only stops music the reader didn't ask for. */
-let MUSOK=false, MUSMUTE=null, MUSAUTOID=null, MOBS=null;
+let MUSOK=false, MUSMUTE=null, MUSAUTOID=null, MOBS=null, MUSDWELL=0;
 /* Post ids whose card has actually ENTERED the centre band. "Stops the
    instant it leaves" requires having been in — a Set, not element state,
    because render() rebuilds the DOM and the observer with it. */
@@ -288,12 +305,21 @@ function wireMusAuto(){
         if(MUSMUTE!=null&&String(MUSMUTE)===String(p.id))continue;
         MUSMUTE=null;
         if(MUSAUTOID===p.id&&NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id&&!a.paused)continue;
-        MUSAUTOID=p.id;
-        if(NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id){
-          a.currentTime=0;
-          const pr=a.play();if(pr&&pr.catch)pr.catch(()=>{});
-          paintPlayer();
-        }else playTrack(p.audioTrack,true);
+        /* Settle first (2026-10-08): a flick past five posts used to start and
+           abort five song downloads. The song starts once its post has stayed
+           centred for a moment; stopping on the way out is still instant. */
+        clearTimeout(MUSDWELL);
+        MUSDWELL=setTimeout(()=>{
+          if(!MUSBAND.has(String(p.id)))return;   // it left before it settled
+          MUSAUTOID=p.id;
+          if(NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id){
+            a.currentTime=0;
+            const pr=a.play();if(pr&&pr.catch)pr.catch(()=>{});
+            paintPlayer();
+          }else playTrack(p.audioTrack,true);
+        },300);
+      }else if(!e.isIntersecting&&MUSBAND.has(String(p.id))&&MUSAUTOID!==p.id){
+        MUSBAND.delete(String(p.id));   // passed through without settling: nothing was playing for it
       }else if(MUSAUTOID===p.id&&NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id){
         /* "Stops the instant it LEAVES" — leaving requires having been in.
            Every render() rebuilds this observer, and its first pass reports
