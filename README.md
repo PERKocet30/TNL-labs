@@ -75,6 +75,7 @@ test/                           50 test suites — run with npm test
 | `server-11-profile` | profile v2: links, pronouns, pins (`/api/me/pins`), followers/following lists, the Tagged tab, "Followed by" |
 | `server-12-policies` | the public policy pages Stripe reviews: `/terms`, `/privacy`, `/policies` (shipping, returns, disputes, prohibited items), `/contact`, `/shop`, and `lookFoot()` — the footer on every server-built page. `SUPPORT_EMAIL` sets the inbox |
 | `server-12-video` | old videos fixed on boot (index-first copy, a cover where none); and the light copies made in the background one at a time: for video, 720p/30fps/~1.3 Mbps (`video_feed` → `videoPlayUrl`; the original stays `videoUrl`); for music, 128 kbps AAC (`audio_play` → a track's `url`; the upload stays `fileUrl`) |
+| `server-12-story` · `app-18-story-share` | a post as an Instagram Story: `/p/:id/story.jpg` (1080×1920, the work over a blurred fill of itself, who made it in their colour, the link) and the share menu's "Instagram Story" sheet — one tap shares the picture and copies the link for a Link sticker |
 | `server-02-post-extras` | a post's people tagged, place, comments on/off and products from your own shop (`posts.extras`) |
 | `server-07-cart` | the bag checkout (several items from one seller, one payment, shipping combined — `sessionFits()` binds a paid session to its whole group), `/api/shop/stats` |
 | `server-06-market-stock` | sizes and colours: every unit sold goes through `takeStock()` (the size picked, the listing closes at zero) |

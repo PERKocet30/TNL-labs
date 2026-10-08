@@ -230,6 +230,26 @@ console.log("\nMEMBER · PHONE");
     await p.waitForFunction(() => /Shared to/.test(TOASTT || ""), null, { timeout: 4000 });
     await p.evaluate(() => { POSTOPEN = null; render(); });
   });
+  /* "Make it so I can share a post off the app to IG stories" (2026-10-08). */
+  await step(d, "Instagram Story: the share menu makes a 1080×1920 card; one tap shares the picture and copies the link", async () => {
+    await p.evaluate(() => { window.__igs = []; window.__clip = "";
+      navigator.canShare = (d) => !!(d && d.files); navigator.share = (d) => { window.__igs.push(d); return Promise.resolve(); };
+      navigator.clipboard.writeText = (t) => { window.__clip = t; return Promise.resolve(); }; });
+    const pid = await p.evaluate(() => (SRPOSTS.find((x) => x.imageUrl && x.isWork) || {}).id);
+    ok(pid, "no published picture in the Showroom to share");
+    await p.locator(`#sr-grid [data-share="${pid}"]`).first().tap(); await p.waitForTimeout(300);
+    await p.locator(".pick").getByText("Instagram Story", { exact: true }).tap();
+    await p.waitForSelector("#igsbg");
+    await p.waitForFunction(() => { const b = document.querySelector("#igsgo"); return b && !b.disabled; }, null, { timeout: 15000 });
+    const size = await p.evaluate(() => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i.naturalWidth + "x" + i.naturalHeight); i.onerror = () => ok("error"); i.src = IGS.img; }));
+    ok(size === "1080x1920", "story card is " + size);
+    await p.locator("#igsgo").tap(); await p.waitForTimeout(400);
+    const r = await p.evaluate(() => ({ n: __igs.length, type: __igs[0] && __igs[0].files && __igs[0].files[0].type, clip: __clip }));
+    ok(r.n === 1 && r.type === "image/jpeg", "the share sheet didn't get the picture: " + JSON.stringify(r));
+    ok(new RegExp("/p/" + pid + "$").test(r.clip), "the link wasn't copied for the sticker: " + r.clip);
+    await p.locator("#igsx").tap();
+    ok(await p.locator("#igsbg").count() === 0, "the Story sheet didn't close");
+  });
   await step(d, "carousel: starts on 1, counter follows the swipe, a refresh keeps your slide", async () => {
     await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
     const sel = "#sr-grid [data-caro] .caro-t";
