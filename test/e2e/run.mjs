@@ -644,14 +644,23 @@ console.log("\nMEMBER · PHONE");
     ok((await p.locator("#pcved .pc-v").textContent()) === "Trimmed · Sound off · 4:5", "summary: " + await p.locator("#pcved .pc-v").textContent());
     await p.locator("#pcgo").tap();
     await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 10000 });
-    const np = (await myPosts())[0];
+    let np = (await myPosts())[0];
+    /* The light feed copy is made in the background; once it lands the feed swaps to it (once). Wait for it,
+       so the repaint check below compares like with like on a fast or a slow runner. */
+    for (let i = 0; i < 120 && np.videoPlayUrl === np.videoUrl; i++) { await p.waitForTimeout(250); np = (await myPosts())[0]; }
+    ok(/-feed\.mp4$/.test(np.videoPlayUrl || ""), "no light feed copy: " + np.videoPlayUrl);
     ok(JSON.stringify(np.video) === JSON.stringify({ start: 1000, end: 4000, muted: true, ratio: "4:5" }) && /-poster\.jpg$/.test(np.thumbUrl), "post: " + JSON.stringify({ v: np.video, th: np.thumbUrl }));
     await p.evaluate(async () => { TAB = "showroom"; SRPOSTS = []; render(); await loadShowroom(true); });
-    const v = p.locator(`#sr-grid video[src*="${np.videoUrl}"]`).first();
+    const v = p.locator(`#sr-grid video[src*="${np.videoUrl.replace(/\.[^.]+$/, "")}"]`).first();   // the original or its light feed copy
     await v.waitFor({ state: "attached", timeout: 6000 });
     const f = await v.evaluate((el) => ({ fill: el.classList.contains("vfill"), ve: el.dataset.ve, silent: "vsilent" in el.dataset, poster: el.getAttribute("poster"),
       mute: !!el.parentElement.querySelector("[data-vmute]") }));
     ok(f.fill && f.ve === "4000" && f.silent && !f.mute && /-poster\.jpg$/.test(f.poster || ""), "feed video: " + JSON.stringify(f));
+    /* "Video still not playing" (2026-10-08): every repaint rebuilt the player, so on a slow
+       signal it restarted loading every few seconds. The same player must survive a repaint. */
+    await v.evaluate((el) => { el.dataset.e2eKeep = "1"; });
+    await p.evaluate(() => { render(); srPaint(); });
+    ok(await p.locator('#sr-grid video[data-e2e-keep="1"]').count() === 1, "a repaint threw the video player away (it starts loading from scratch)");
   });
   await step(d, "Music: play, the bar shows, the sound moves, next track", async () => {
     await p.locator('.nav [data-tab="labs"]').tap();

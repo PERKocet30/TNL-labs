@@ -26,15 +26,18 @@ function sentryClient(msg,stack,where){
     const env=JSON.stringify({dsn:SENTRY_DSN,sent_at:new Date().toISOString()})+"\n"+
       JSON.stringify({type:"event"})+"\n"+JSON.stringify(ev)+"\n";
     const url=`https://${m[2]}/api/${m[3]}/envelope/`;
-    if(navigator.sendBeacon)navigator.sendBeacon(url,new Blob([env],{type:"application/x-sentry-envelope"}));
-    else fetch(url,{method:"POST",body:env,keepalive:true}).catch(()=>{});
+    /* No cookies, plain text: sendBeacon always sends credentials, and Sentry's
+       ingest answers "*" to CORS, so the browser refused every report (2026-10-08). */
+    fetch(url,{method:"POST",body:env,keepalive:true,credentials:"omit",mode:"cors",headers:{"Content-Type":"text/plain;charset=UTF-8"}}).catch(()=>{});
     /* Mirror into the app's own intake so the admin Health tab sees member-
        phone errors too — one dashboard, both worlds. */
     try{fetch(API+"/api/client-error",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"include",
       body:JSON.stringify({message:String(msg).slice(0,300),detail:String(stack||"").slice(0,1200),path:location.pathname}),keepalive:true}).catch(()=>{})}catch(e){}
   }catch(e){}
 }
-window.addEventListener("error",e=>sentryClient(e.message,e.error&&e.error.stack,"error"));
+window.addEventListener("error",e=>{if(e.target&&e.target!==window)return;   // a missing <img>/<video>, not a crash
+  if(/ResizeObserver loop/i.test(String(e.message||"")))return;              // Chrome's harmless layout warning
+  sentryClient(e.message,e.error&&e.error.stack,"error")});
 window.addEventListener("unhandledrejection",e=>{const r=e.reason||{};sentryClient(r.message||String(r),r.stack,"promise")});      // profile-first composer: {body,imgs:[{url,thumb,w,h}],busy}   // a profile's active market listings (lazy-loaded when the SHOP tab opens)
 let CLIMB=false, CLIMBOPENRUNG=0; // THE CLIMB — the one screen where the whole progression system is legible
 /* Discord-style: several files at once. Each posts separately. */

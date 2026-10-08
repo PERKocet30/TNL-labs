@@ -343,7 +343,7 @@ app.get("/p/:id", (req, res) => {
 </a>
 ${p.body ? `<p class="body" style="margin:0 0 14px">${esc(p.body)}</p>` : ""}
 ${p.imageUrl ? `<img class="media" src="${esc(p.imageUrl)}" alt="" style="max-height:none">` : ""}
-${p.videoUrl ? `<video class="media" src="${esc(p.videoUrl)}#t=${((p.video?.start || 0) / 1000).toFixed(2)}${p.video?.end ? "," + (p.video.end / 1000).toFixed(2) : ""}"${p.thumbUrl && p.thumbUrl !== p.imageUrl ? ` poster="${esc(p.thumbUrl)}"` : ""}${p.video?.muted ? " muted" : ""} controls playsinline preload="metadata"></video>` : ""}
+${p.videoUrl ? `<video class="media" src="${esc(p.videoPlayUrl || p.videoUrl)}#t=${((p.video?.start || 0) / 1000).toFixed(2)}${p.video?.end ? "," + (p.video.end / 1000).toFixed(2) : ""}"${p.thumbUrl && p.thumbUrl !== p.imageUrl ? ` poster="${esc(p.thumbUrl)}"` : ""}${p.video?.muted ? " muted" : ""} controls playsinline preload="metadata"></video>` : ""}
 ${p.beat ? `<div class="card"><b>${esc(p.beat.name || "untitled loop")}</b><div class="cap">${p.beat.bpm} BPM · made in the TNL studio</div></div>` : ""}
 ${accepted.length ? `<div class="cap meta"><span class="mk">//</span> Built with ${accepted.map((c) => esc(c.display_name || c.username)).join(" + ")}</div>` : ""}
 <div class="cap meta">${lookCount(p.likeCount, "like")} · ${lookCount(p.shareCount, "share")} · #${esc(p.channel)}</div>

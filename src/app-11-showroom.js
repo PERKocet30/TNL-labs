@@ -81,8 +81,10 @@ function srBuilders(list,fresh){
 }
 function srPaint(){
   const g=$("#sr-grid");if(!g)return;
+  const vk=vKeep(g);
   g.innerHTML=SRPOSTS.length?SRPOSTS.map(srCardHTML).join("")
     :`<div class="empty">No work posted yet.<br><br>Be the first — post a piece and it lands here.</div>`;
+  vRestore(g,vk);
   wireFeed();
 }
 function srMerge(fresh){

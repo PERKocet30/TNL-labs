@@ -280,6 +280,7 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
     Date.now()
   );
   applyExtras(Number(info.lastInsertRowid), req.body, req.user.id);   // tags, place, comments off
+  if (videoUrl) queueFeedVideo(videoUrl);   // a light copy for the feed, in the background
   const row = feedRows({ authorId: req.user.id, viewerId: req.user.id, limit: 1 })
     .find((r) => r.id === Number(info.lastInsertRowid));
   /* A reply in a lab quotes a message from the same room. */

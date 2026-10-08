@@ -67,6 +67,7 @@ function render(){
      remember each screen's place — same screen, or coming back to it — and
      move what changed. */
   const mvb=mvBefore(app);
+  const vk=vKeep(app);   // videos carry on through the repaint (app-18-media)
   const W=isWide();
   document.body.classList.toggle("wide",W);
   app.innerHTML=`
@@ -91,6 +92,7 @@ function render(){
     ${LIGHTBOX?`<div class="lightbox" id="lb"><img src="${esc(LIGHTBOX)}" alt="full size"></div>`:""}
     ${installCardHTML()}
     ${ENTER?enterHTML():""}`;
+  vRestore(app,vk);
   mvAfter(mvb);
   wire();
   wireEnter();
