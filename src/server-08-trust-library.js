@@ -387,6 +387,7 @@ app.post("/api/tracks", auth, verified, rateLimit({ max: 12, windowMs: 3600000, 
   const row = db.prepare(`
     SELECT t.*, u.username, u.display_name, u.avatar_url, u.rep
     FROM tracks t JOIN users u ON u.id = t.user_id WHERE t.id = ?`).get(info.lastInsertRowid);
+  queueListenCopy(url);   // a light copy for phones, in the background
   res.json({ track: shapeTrack(row) });
 });
 

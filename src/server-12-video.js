@@ -59,6 +59,7 @@ async function fixOldVideos() {
   if (moved || covered) console.log(`[videos] old uploads fixed — ${moved} made quick to start, ${covered} given a cover`);
   // …and every posted video without a feed copy gets one, one at a time.
   for (const r of db.prepare(`SELECT DISTINCT video_url u FROM posts WHERE video_url LIKE '/uploads/%' ORDER BY id DESC`).all()) queueFeedVideo(r.u);
+  for (const r of db.prepare(`SELECT DISTINCT url u FROM tracks WHERE url LIKE '/uploads/%'`).all()) queueListenCopy(r.u);
 }
 if (!process.env.TNL_NO_VIDEO_FIX) setTimeout(() => fixOldVideos().catch((e) => console.error("[videos]", e.message)), Number(process.env.TNL_VIDEO_FIX_DELAY_MS || 60000)).unref();
 
@@ -75,24 +76,56 @@ db.exec(`CREATE TABLE IF NOT EXISTS video_feed (src TEXT PRIMARY KEY, feed TEXT 
 var VIDEO_FEED = new Map(db.prepare(`SELECT src, feed FROM video_feed`).all().map((r) => [r.src, r.feed]));
 function videoPlayUrl(src) { return (src && VIDEO_FEED && VIDEO_FEED.get(src)) || src || null; }
 
+/* ── A listening copy for music (2026-10-08) ─────────────────────────
+   Same story for sound: tracks were uploaded as WAV — "power|poker" is
+   55MB for 2½ minutes (~3 Mbps), and on a phone signal post music
+   stuttered or never started. Players get a 128 kbps AAC copy (~2MB,
+   index first), the way Apple Music streams; the WAV stays the track's
+   file. An MP3/AAC that's already light plays as it is. */
+db.exec(`CREATE TABLE IF NOT EXISTS audio_play (src TEXT PRIMARY KEY, play TEXT NOT NULL, created_at INTEGER NOT NULL)`);
+var AUDIO_PLAY = new Map(db.prepare(`SELECT src, play FROM audio_play`).all().map((r) => [r.src, r.play]));
+function audioPlayUrl(src) { return (src && AUDIO_PLAY && AUDIO_PLAY.get(src)) || src || null; }
+
+/* One queue for both, one job at a time; music first — it takes seconds. */
 const FEED_Q = [];
 let FEED_BUSY = false;
+const queued = (url, kind) => FEED_Q.some((j) => j.url === url && j.kind === kind);
 function queueFeedVideo(url) {
-  if (!FFMPEG || !url || !url.startsWith("/uploads/") || VIDEO_FEED.has(url) || FEED_Q.includes(url)) return;
-  FEED_Q.push(url); feedNext();
+  if (!FFMPEG || !url || !url.startsWith("/uploads/") || VIDEO_FEED.has(url) || queued(url, "video")) return;
+  FEED_Q.push({ url, kind: "video" }); feedNext();
+}
+function queueListenCopy(url) {
+  if (!FFMPEG || !url || !url.startsWith("/uploads/") || AUDIO_PLAY.has(url) || queued(url, "audio")) return;
+  FEED_Q.unshift({ url, kind: "audio" }); feedNext();
 }
 const ffProbe = (path) => new Promise((ok) => execFile(FFMPEG, ["-hide_banner", "-i", path], { timeout: 30000, maxBuffer: 1024 * 1024 }, (_e, _o, err) => {
-  const s = String(err || ""), v = s.match(/Video: (\w+)[^\n]*?, (\d{2,5})x(\d{2,5})/), fps = s.match(/([\d.]+) fps/), br = s.match(/bitrate: (\d+) kb\/s/);
-  ok(v ? { codec: v[1], w: +v[2], h: +v[3], fps: fps ? +fps[1] : 30, kbps: br ? +br[1] : 0 } : null);
+  const s = String(err || ""), v = s.match(/Video: (\w+)[^\n]*?, (\d{2,5})x(\d{2,5})/), fps = s.match(/([\d.]+) fps/), br = s.match(/bitrate: (\d+) kb\/s/),
+    a = s.match(/Audio: (\w+)/);
+  ok(v || a ? { codec: v ? v[1] : null, w: v ? +v[2] : 0, h: v ? +v[3] : 0, fps: fps ? +fps[1] : 30, kbps: br ? +br[1] : 0, audio: a ? a[1] : null } : null);
 }));
+async function listenCopy(url) {
+  const name = url.slice("/uploads/".length), src = join(UPLOAD_DIR, name);
+  const info = /^[A-Za-z0-9._-]+$/.test(name) && existsSync(src) ? await ffProbe(src) : null;
+  if (!info || !info.audio) return;
+  const light = /^(aac|mp3)$/.test(info.audio) && info.kbps && info.kbps <= 256;
+  const play = light ? null : name.replace(/\.[^.]+$/, "") + "-play.m4a";
+  if (light || await ffRun(["-nostdin", "-y", "-i", src, "-map", "0:a:0", "-vn", "-c:a", "aac", "-b:a", "128k", "-ac", "2",
+    "-movflags", "+faststart", join(UPLOAD_DIR, play)])) {
+    const out = play ? `/uploads/${play}` : url;
+    db.prepare(`INSERT OR REPLACE INTO audio_play (src, play, created_at) VALUES (?, ?, ?)`).run(url, out, Date.now());
+    AUDIO_PLAY.set(url, out);
+    if (play) console.log(`[music] listening copy of ${name} ready`);
+  } else rmSync(join(UPLOAD_DIR, play), { force: true });
+}
 async function feedNext() {
   if (FEED_BUSY || !FEED_Q.length) return;
   FEED_BUSY = true;
-  const url = FEED_Q.shift(), name = url.slice("/uploads/".length);
+  const job = FEED_Q.shift(), url = job.url, name = url.slice("/uploads/".length);
   try {
     const src = join(UPLOAD_DIR, name);
-    const info = /^[A-Za-z0-9._-]+$/.test(name) && existsSync(src) ? await ffProbe(src) : null;
-    if (info) {
+    const info = job.kind === "video" && /^[A-Za-z0-9._-]+$/.test(name) && existsSync(src) ? await ffProbe(src) : null;
+    if (job.kind === "audio") await listenCopy(url);
+    else if (info && info.codec) {
       const light = info.codec === "h264" && Math.min(info.w, info.h) <= 720 && info.fps <= 31 && info.kbps && info.kbps <= 2200 && /\.mp4$/i.test(name);
       const feed = light ? null : name.replace(/\.[^.]+$/, "") + "-feed.mp4";
       const portrait = info.h > info.w;
