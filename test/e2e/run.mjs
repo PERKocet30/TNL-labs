@@ -699,6 +699,23 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => !!document.querySelector("#e2efar video").getAttribute("src")), "the video didn't load again when scrolled to");
     await p.evaluate(() => { document.querySelector("#e2efar")?.remove(); });
   });
+  /* "Raising volume unmutes video" can't reach a web page; this is the rest of it (2026-10-08). */
+  await step(d, "sound stays on: unmute one video and the next one in view plays with sound, until you mute", async () => {
+    await p.evaluate(() => { TAB = "showroom"; POSTOPEN = null; PROFILE = null; setVSound(false); render(); });
+    const vid = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.videoUrl); return x && (x.videoPlayUrl || x.videoUrl); });
+    ok(vid, "no video with sound in the Showroom to test with");
+    await p.evaluate((vid) => { const g = document.querySelector("#sr-grid"), one = (i) => `<div class="vwrap" id="e2eS${i}"><video class="sr-img" src="${vid}#t=0.10" muted loop playsinline preload="none" data-auto></video><button class="vmute" data-vmute aria-label="Sound"></button></div>`;
+      g.insertAdjacentHTML("afterbegin", `<div id="e2esnd">${one(1)}<div style="height:${innerHeight * 1.2}px"></div>${one(2)}</div>`); wireVideos(); }, vid);
+    await p.locator("#e2eS1 video").scrollIntoViewIfNeeded(); await p.waitForTimeout(500);
+    await p.locator("#e2eS1 [data-vmute]").tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => !document.querySelector("#e2eS1 video").muted && VSOUND), "tapping sound didn't unmute / turn sound on");
+    await p.locator("#e2eS2 video").scrollIntoViewIfNeeded(); await p.waitForTimeout(700);
+    const st = await p.evaluate(() => ({ first: document.querySelector("#e2eS1 video").muted, next: document.querySelector("#e2eS2 video").muted }));
+    ok(st.next === false && st.first === true, "the next video didn't take the sound (or two play at once): " + JSON.stringify(st));
+    await p.locator("#e2eS2 [data-vmute]").tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => document.querySelector("#e2eS2 video").muted && !VSOUND), "muting didn't turn sound off for the feed");
+    await p.evaluate(() => { document.querySelector("#e2esnd")?.remove(); setVSound(false); });
+  });
   await step(d, "Music: play, the bar shows, the sound moves, next track", async () => {
     await p.locator('.nav [data-tab="labs"]').tap();
     await p.locator('[data-lab="culture"]').first().tap();

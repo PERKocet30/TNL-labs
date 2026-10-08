@@ -81,6 +81,19 @@ function vRestore(root,m){
    back) — the way Instagram keeps only the players near you alive. */
 const VDWELL=220;
 let VFAR=null;
+/* Sound stays on (2026-10-08). A phone's volume buttons never reach a web
+   page, so "raise the volume to unmute" can't be done here; this is the
+   rest of Instagram's behaviour: unmute one video and every video after it
+   plays with sound as you scroll, until you mute one. A video and post
+   music never play over each other. Kept for this visit (sessionStorage). */
+let VSOUND=(()=>{try{return sessionStorage.getItem("tnl-vsound")==="1"}catch(e){return false}})();
+function setVSound(on){VSOUND=on;try{sessionStorage.setItem("tnl-vsound",on?"1":"0")}catch(e){}}
+const vIcon=v=>{const b=v.parentElement&&v.parentElement.querySelector("[data-vmute]");if(b)b.innerHTML=v.muted?DI.soundOff:DI.soundOn};
+/* This one has the sound: quiet every other video, and the post music. */
+function vTakeSound(v){
+  for(const o of document.querySelectorAll("video[data-auto]"))if(o!==v&&!o.muted){o.muted=true;vIcon(o)}
+  try{const a=audioEl();if(a&&!a.paused&&!(a.getAttribute("src")||"").startsWith("data:")){a.pause();paintPlayer()}}catch(e){}
+}
 function vUnload(v){const s=v.getAttribute("src");if(!s)return;v.dataset.src=s;try{v.pause()}catch(e){}v.removeAttribute("src");try{v.load()}catch(e){}}
 function vReload(v){if(v.getAttribute("src")||!v.dataset.src)return;v.setAttribute("src",v.dataset.src);delete v.dataset.src}
 function wireVideos(){
@@ -97,11 +110,15 @@ function wireVideos(){
       if(e.isIntersecting&&e.intersectionRatio>0.55){
         v._dwell=setTimeout(()=>{
         vReload(v);
+        if(VSOUND&&!("vsilent" in v.dataset)){v.muted=false;vIcon(v);vTakeSound(v)}
         const p=v.play();
         if(p&&p.catch)p.catch((err)=>{
           /* iOS refuses autoplay outright in Low Power Mode — no code can
              override that. Don't leave a dead black box: show a play button
              and let them start it by hand. */
+          /* The phone wouldn't start it WITH sound without a fresh tap: start it
+             muted instead (one tap on it brings the sound back). */
+          if(err&&err.name==="NotAllowedError"&&!v.muted){v.muted=true;vIcon(v);v.play().catch(()=>{});return}
           if(err&&err.name==="NotAllowedError"){
             const w=v.parentElement;
             if(w&&!w.querySelector(".vplay")){
@@ -131,15 +148,10 @@ function wireVideos(){
       v.ontimeupdate=()=>{if(v.currentTime>=e-.05||v.currentTime<s-.3)v.currentTime=s}}
     v.onclick=()=>{
       if("vsilent" in v.dataset){if(v.paused)v.play().catch(()=>{});return}   // its author turned the sound off
-      v.muted=!v.muted;
-      const btn=v.parentElement&&v.parentElement.querySelector("[data-vmute]");
-      if(btn)btn.innerHTML=v.muted?DI.soundOff:DI.soundOn;
+      v.muted=!v.muted;vIcon(v);
+      setVSound(!v.muted);   // your choice carries on down the feed
       if(v.paused)v.play().catch(()=>{});
-      if(!v.muted){ // only one thing makes noise at a time
-        for(const o of vids) if(o!==v){o.muted=true;
-          const b=o.parentElement&&o.parentElement.querySelector("[data-vmute]");
-          if(b)b.innerHTML=DI.soundOff}
-      }
+      if(!v.muted)vTakeSound(v);   // only one thing makes noise at a time
     };
   }
   document.querySelectorAll("[data-vmute]").forEach(b=>b.onclick=(e)=>{
@@ -311,6 +323,7 @@ function wireMusAuto(){
         clearTimeout(MUSDWELL);
         MUSDWELL=setTimeout(()=>{
           if(!MUSBAND.has(String(p.id)))return;   // it left before it settled
+          if([...document.querySelectorAll("video[data-auto]")].some(v=>!v.paused&&!v.muted))return;   // a video has the sound
           MUSAUTOID=p.id;
           if(NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id){
             a.currentTime=0;
