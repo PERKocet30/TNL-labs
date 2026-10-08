@@ -132,8 +132,13 @@ function lockScreen(){
   }catch(e){}
 }
 
+/* Sound you chose is playback, not background noise (2026-10-08). Left to
+   itself iOS can file a page's sound as "ambient", which the silent switch
+   mutes: Control Center showed LABS playing and nothing came out (Jorge's
+   recording, switch on). Saying "playback" makes it play like a music app. */
+function soundOn(){try{const s=navigator.audioSession;if(s&&s.type!=="playback")s.type="playback"}catch(e){}}
 function playTrack(t,silent){
-  const a=audioEl();
+  const a=audioEl();soundOn();
   /* Same track already loaded: this is a toggle, not a new play. The promise
      used to be dropped on the floor here, so an iOS refusal looked identical
      to a dead button. */
