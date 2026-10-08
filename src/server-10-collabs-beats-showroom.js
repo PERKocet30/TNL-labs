@@ -69,8 +69,9 @@ function kindFor(rolesJson, role) {
 /* Public, credential-free portfolio page. Server-rendered so it works
    in link previews and for people with no account. */
 app.get("/u/:username", (req, res) => {
-  const u = q.userByName.get(req.params.username);
+  const u = userByLooseName(req.params.username);
   /* 064: every page is public — the only 404 is a name that doesn't exist. */
+  if (u && u.username !== req.params.username) return res.redirect(301, profileHref(u.username));
   if (!u) {
     return res.status(404).send(lookNotFound("This portfolio doesn't exist."));
   }
@@ -125,7 +126,7 @@ app.get("/u/:username", (req, res) => {
     likes ? `${likes} ♥` : null,
   ].filter(Boolean).join(" · ");
   const ogDesc = [u.bio || K.blurb, roleLine, stats].filter(Boolean).join(" — ").slice(0, 200);
-  const canonical = `${baseUrl(req)}/u/${encodeURIComponent(u.username)}`;
+  const canonical = `${baseUrl(req)}${profileHref(u.username)}`;
 
   /* Cache the profile page briefly at the edge. Long enough that a link
      dropped in a 226-person chat doesn't hammer Railway when everyone taps

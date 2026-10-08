@@ -96,9 +96,7 @@ function wireFeed(){
         if(it.act==="native"){
           const data={title:post.author.displayName+" on TNL LABS",
             text:post.body?post.body.slice(0,140):"Made in the labs.",url:link};
-          try{await navigator.share(data)}
-          catch(e){/* they cancelled — not an error */}
-          return;
+          return shareOut(data);
         }
         if(it.act==="copy"){
           try{
@@ -217,10 +215,8 @@ function wireSheet(){
       if(PROFILE&&PROFILE.user.username===u){PROFILE=d;PROFCACHE.set(u,d);render()}}
     catch(e){toast(e.message);PROFCACHE.delete(u)}};
   const spb=$("#shareprof");if(spb)spb.onclick=async()=>{
-    const url=location.origin+"/u/"+spb.dataset.shareU;
-    try{ if(navigator.share) await navigator.share({title:"@"+spb.dataset.shareU+" on LABS",url});
-         else { await navigator.clipboard.writeText(url); toast("Profile link copied"); } }
-    catch(e){ /* dismissed the share sheet -- nothing to do */ }
+    const url=profileLink(spb.dataset.shareU);
+    await shareOut({title:"@"+spb.dataset.shareU+" on LABS",url});
   };
   const mb=$("#msgb");if(mb)mb.onclick=()=>{if(guest())return needAccount("Join to message people.");openDM(PROFILE.user.username)};
 
@@ -310,7 +306,7 @@ function paintVerifyBar(){
   }
   try{MKTMETA=await api.mktMeta()}catch(e){}   // public — guests see the Market too
   // deep links — a shared /u/ or /m/ URL should land where it says
-  const path=location.pathname;
+  let path=location.pathname;try{path=decodeURIComponent(path)}catch(e){}   // /u/xstart%2E → /u/xstart.
   const mu=/^\/u\/([a-z0-9._]+)$/i.exec(path);
   const mm=/^\/m\/(\d+)$/.exec(path);
   const me=new URLSearchParams(location.search).get("e");   // /e/:slug pages send people here

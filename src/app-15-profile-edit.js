@@ -97,7 +97,7 @@ function wireProfileV2(){
     {icon:PF_I.out,label:"Log out",danger:true,run:logOut}]});
   const mo=$("#profmore");if(mo)mo.onclick=()=>{const u=PROFILE.user;openMenu({react:false,preview:"@"+u.username,actions:[
     {icon:PF_I.share,label:"Share profile",run:()=>shareProfile(u.username)},
-    {icon:PF_I.link,label:"Copy profile link",run:()=>copyText(location.origin+"/u/"+u.username)},
+    {icon:PF_I.link,label:"Copy profile link",run:()=>copyText(profileLink(u.username))},
     ...(ME?[{icon:PF_I.block,label:"Block",danger:true,run:async()=>{
       if(!(await uiConfirm("Block "+u.displayName+"?","You won't see each other's work.",{okLabel:"Block",danger:true})))return;
       try{const d=await api.block(u.username);toast(d.blocked?"Blocked":"Unblocked");PROFILE=null;render()}catch(e){toast(e.message)}}},
@@ -122,8 +122,8 @@ function wireProfileV2(){
       .catch(()=>{if(PROFILE&&PROFILE.user.username===un){PROFTAGGED=[];render()}})}
 }
 async function shareProfile(un){
-  const url=location.origin+"/u/"+un;
-  try{if(navigator.share)await navigator.share({title:"@"+un+" on LABS",url});else{await navigator.clipboard.writeText(url);toast("Profile link copied")}}catch(e){}
+  const url=profileLink(un);
+  await shareOut({title:"@"+un+" on LABS",url});
 }
 function logOut(){
   TOKEN=null;ME=null;PROFILE=null;UNREADS={};UNREAD=0;DMUNREAD=0;applyAccent((ACCENTS.lab||{}).hex);

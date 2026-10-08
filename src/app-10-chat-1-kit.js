@@ -187,3 +187,18 @@ function cmenuHTML(){const m=CMENU;
 function openMenu(m){CMENU=m;paintLayer()}
 function closeMenu(){if(!CMENU)return;CMENU=null;paintLayer()}
 async function copyText(t){try{await navigator.clipboard.writeText(t);toast("Copied")}catch(e){toast("Couldn't copy")}}
+/* Every "share" goes through here (2026-10-08). The phone's share sheet
+   when there is one; if the phone refuses it (anything but "they closed
+   it") the link is copied instead — and if even that's blocked, it's put
+   in front of them to copy by hand. A refusal used to vanish into a
+   catch{} and the button looked dead. The reason is reported, so the
+   admin Glitches page shows what the phone said. */
+async function shareOut(d){
+  if(navigator.share){
+    try{await navigator.share(d);return}
+    catch(e){if(e&&e.name==="AbortError")return;
+      try{glitch("action_failed","share sheet → "+((e&&e.name)||"error")+": "+String((e&&e.message)||"").slice(0,90))}catch(_){}}
+  }
+  try{await navigator.clipboard.writeText(d.url);toast("Link copied — paste it anywhere");return}catch(e){}
+  await uiPrompt("Copy this link",{value:d.url,okLabel:"Done"});
+}

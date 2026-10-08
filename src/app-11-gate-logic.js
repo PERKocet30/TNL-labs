@@ -105,6 +105,7 @@ function gxCheck(){
   clearTimeout(GXT);
   if(!u){G.un={state:"",msg:"",sugg:[]};return paint()}
   if(!/^[a-z0-9._]{2,20}$/.test(u)){G.un={state:"bad",msg:"2–20 characters: lowercase letters, numbers, . and _",sugg:[]};return paint()}
+  if(u.endsWith(".")){G.un={state:"bad",msg:"Can't end with a full stop — links drop it",sugg:[]};return paint()}
   G.un={state:"wait",msg:"",sugg:[]};paint();
   GXT=setTimeout(async()=>{
     try{const d=await api.usernameCheck(u);if(GFLOW!==G||G.f.username!==u)return;

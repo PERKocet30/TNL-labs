@@ -263,11 +263,7 @@ function wireMarket(){
        read it — this is the first button that hands the link out. */
     const url=location.origin+"/m/"+b.dataset.mshare;
     const title=MKTONE?MKTONE.title:"TNL Market";
-    if(typeof navigator!=="undefined"&&navigator.share){
-      try{await navigator.share({title,url})}catch(e){}
-    }else{
-      try{await navigator.clipboard.writeText(url);toast("Link copied")}catch(e){toast(url)}
-    }});
+    await shareOut({title,url});});
   /* data-medit used to toggle sold while wearing a button labelled Edit —
      the loop detail page has said Edit since 047 and never edited anything.
      It opens the editor now; the sold/relist toggle moved to data-msold. */
