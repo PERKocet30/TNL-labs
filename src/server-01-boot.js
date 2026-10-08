@@ -362,7 +362,9 @@ function sidecar(rows) {
 /* One place decides what a track looks like to the client. */
 function shapeTrack(r) {
   return {
-    id: r.id, title: r.title, url: r.url,
+    /* url is what players load — the light listening copy once it's made
+       (server-12-video); fileUrl is the track as uploaded. */
+    id: r.id, title: r.title, url: audioPlayUrl(r.url), fileUrl: r.url,
     artworkUrl: r.artwork_url || "", description: r.description || "",
     durationMs: r.duration_ms || 0, plays: r.plays || 0, createdAt: r.created_at,
     by: {
@@ -396,7 +398,7 @@ function shapePost(row, side) {
     videoPlayUrl: row.video_url ? videoPlayUrl(row.video_url) : null,
     /* The sound credit — Instagram model. Null when no music, or when the
        track was later deleted (LEFT JOIN finds nothing). */
-    audioTrack: row.track_url ? { id: row.audio_track_id, title: row.track_title, url: row.track_url,
+    audioTrack: row.track_url ? { id: row.audio_track_id, title: row.track_title, url: audioPlayUrl(row.track_url),
       artworkUrl: row.track_art || "", durationMs: row.track_dur || 0, by: { username: row.track_by } } : null,
     isWork: !!row.is_work,
     /* Lab chat: the message this one answers, emoji reactions, and the
