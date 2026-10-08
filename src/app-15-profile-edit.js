@@ -123,7 +123,7 @@ function wireProfileV2(){
 }
 async function shareProfile(un){
   const url=location.origin+"/u/"+un;
-  try{if(navigator.share)await navigator.share({title:"@"+un+" on LABS",url});else{await navigator.clipboard.writeText(url);toast("Profile link copied")}}catch(e){}
+  await shareOut({title:"@"+un+" on LABS",url});
 }
 function logOut(){
   TOKEN=null;ME=null;PROFILE=null;UNREADS={};UNREAD=0;DMUNREAD=0;applyAccent((ACCENTS.lab||{}).hex);

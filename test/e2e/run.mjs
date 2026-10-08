@@ -687,6 +687,21 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".lv2-r").count() === 5 && await p.locator(".cbars, .crung").count() === 0, "Levels isn't the short version");
     await p.locator("#climbx").tap();
   });
+  /* "Share button isn't working" (2026-10-08): when the phone refuses the
+     share sheet, the tap used to do nothing at all. Now it copies the link,
+     or puts it in front of you to copy. */
+  await step(d, "Share profile when the phone refuses the share sheet: the link is copied or shown, never nothing", async () => {
+    await p.evaluate(() => { window.__shareTried = 0; navigator.share = () => { window.__shareTried++; return Promise.reject(new DOMException("blocked", "NotAllowedError")); };
+      navigator.clipboard.writeText = () => Promise.reject(new Error("no clipboard")); });
+    await p.locator("#shareprof").tap();
+    await p.waitForSelector(".ui-ov .ui-in", { timeout: 4000 });
+    ok(await p.evaluate(() => window.__shareTried) === 1, "didn't try the share sheet first");
+    ok((await p.locator(".ui-ov .ui-in").inputValue()).endsWith("/u/tester"), "the link offered isn't the profile");
+    await p.locator(".ui-ok").tap();
+    await p.evaluate(() => { navigator.share = () => Promise.reject(new DOMException("closed", "AbortError")); });
+    await p.locator("#shareprof").tap(); await p.waitForTimeout(400);
+    ok(await p.locator(".ui-ov").count() === 0, "closing the sheet yourself shouldn't pop anything up");
+  });
   await step(d, "followers / following open as lists; Tagged shows posts you're tagged in; ⋯ on someone else has Block and Report", async () => {
     await p.locator('[data-flist="following"]').tap();
     await p.waitForSelector(".pick .pickrow, .pick .empty", { timeout: 5000 });
