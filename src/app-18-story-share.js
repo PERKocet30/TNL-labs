@@ -30,11 +30,12 @@ function igsHTML(){
   const s=IGS;
   return `<div class="sheet" id="igsbg"><div class="sheetc ev-share" role="dialog" aria-label="Share to Instagram">
     <div class="sheeth"><div><h2>Share to your Story</h2></div><button class="x" id="igsx" aria-label="Close">${DI.x}</button></div>
+    ${inApp()&&!s.failed?igHoldHTML(s.img,s.link):`
     <div class="ev-shimg">${s.failed?`<div class="dim">Couldn't make the picture. Your link still works.</div>`:`<img src="${esc(s.img)}" alt="Your Story card">`}</div>
     <ol class="ev-howto"><li>Tap <b>Share to Instagram</b>, then pick <b>Instagram → Stories</b>.</li>
       <li>Your link is copied — add a <b>Link</b> sticker and paste it, so people can tap straight through.</li></ol>
     <div class="ev-link"><span>${esc(s.link.replace(/^https?:\/\//,""))}</span><button class="btn ghost" id="igscopy">${DI.copy} Copy</button></div>
-    <button class="btn green ev-cta" id="igsgo"${s.file||s.failed?"":" disabled"}>${s.failed?"Share the link":s.file?"Share to Instagram":"Making your card…"}</button>
+    <button class="btn green ev-cta" id="igsgo"${s.file||s.failed?"":" disabled"}>${s.failed?"Share the link":s.file?"Share to Instagram":"Making your card…"}</button>`}
   </div></div>`}
 function igsPaint(){
   let l=document.getElementById("igsl");
@@ -44,6 +45,7 @@ function igsPaint(){
   const close=()=>{IGS=null;igsPaint()};
   $("#igsx").onclick=close;
   $("#igsbg").onclick=e=>{if(e.target.id==="igsbg")close()};
+  if(!$("#igsgo"))return;   // inside Instagram's browser: press-and-hold mode (app-18-ig.js)
   $("#igscopy").onclick=()=>copyText(IGS.link);
   $("#igsgo").onclick=()=>{
     const s=IGS;if(!s)return;

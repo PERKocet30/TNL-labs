@@ -287,9 +287,44 @@ app.post("/api/posts/:id/send", auth, verified, rateLimit({ max: 20, windowMs: 6
    sign-up wall and they just leave. Server-rendered so it previews in
    iMessage, Discord, and IG DMs. */
 /* A shared listing link. The SPA reads /m/:id on boot and opens the
-   listing (guests included — the Market is public); the server's only
-   job is to hand over the app instead of a 404. */
-app.get("/m/:id", (_req, res) => res.sendFile(join(__dirname, "..", "public", "index.html")));
+   listing (guests included — the Market is public). v2 2026-10-09: the
+   app shell gets the listing's link preview in its <head>, so a listing
+   pasted into an Instagram DM shows its photo, title and price instead of
+   a bare link. */
+let SHELL_HTML = null;
+app.get("/m/:id", (req, res) => {
+  if (SHELL_HTML === null) { try { SHELL_HTML = readFileSync(join(__dirname, "..", "public", "index.html"), "utf8"); } catch { SHELL_HTML = ""; } }
+  const l = db.prepare(`SELECT * FROM listings WHERE id = ? AND status != 'removed'`).get(Number(req.params.id) || 0);
+  const seller = l && q.userById.get(l.seller_id);
+  res.set("Cache-Control", "no-cache");
+  if (!SHELL_HTML || !l || !seller || seller.suspended) return res.sendFile(join(__dirname, "..", "public", "index.html"));
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  let first = null; try { first = JSON.parse(l.images || "[]")[0]; } catch {}
+  if (first && typeof first === "object") first = first.url;
+  const base = baseUrl(req), url = `${base}/m/${l.id}`;
+  const img = typeof first === "string" && first ? (/^https?:/.test(first) ? first : base + first) : `${base}/icon-white-512.png`;
+  const price = "$" + (l.price_cents / 100).toFixed(l.price_cents % 100 ? 2 : 0);
+  const desc = [price, l.status === "sold" ? "Sold" : l.condition, "@" + seller.username + " on TNL LABS"].filter(Boolean).join(" · ");
+  const meta = `<meta property="og:type" content="product"><meta property="og:site_name" content="TNL LABS">
+<meta property="og:title" content="${esc(l.title)}"><meta property="og:description" content="${esc(desc)}">
+<meta property="og:image" content="${esc(img)}"><meta property="og:image:secure_url" content="${esc(img)}"><meta property="og:url" content="${esc(url)}">
+<meta name="twitter:card" content="summary_large_image"><meta name="description" content="${esc(desc)}">
+`;
+  // the shell's own site-wide preview tags come out, so these are the only ones
+  const html = Buffer.from(SHELL_HTML.replace(/<meta (?:property="og:[^"]*"|name="twitter:[^"]*"|name="description")[^>]*>\n?/g, "").replace("</head>", meta + "</head>"));
+  res.type("html");
+  if (/\bgzip\b/.test(req.headers["accept-encoding"] || "")) { res.set("Content-Encoding", "gzip"); res.set("Vary", "Accept-Encoding"); return res.send(zlib.gzipSync(html)); }
+  res.send(html);
+});
+
+/* One post for the app (a /?p= link from its public page). Published work
+   for anyone; chat only for members, like the labs. */
+app.get("/api/posts/:id", maybeAuth, (req, res) => {
+  const rows = feedRows({ viewerId: req.user?.id || 0, limit: 1, postId: Number(req.params.id) || 0 });
+  if (!rows.length || (!rows[0].is_work && !req.user)) return res.status(404).json({ error: "This post isn't available." });
+  if (req.user && blockedIds(req.user.id).has(rows[0].author_username)) return res.status(404).json({ error: "This post isn't available." });
+  res.json({ post: shapePost(rows[0]) });
+});
 
 app.get("/p/:id", (req, res) => {
   const rows = feedRows({ viewerId: 0, limit: 1, postId: Number(req.params.id) });
@@ -347,7 +382,8 @@ ${p.videoUrl ? `<video class="media" src="${esc(p.videoPlayUrl || p.videoUrl)}#t
 ${p.beat ? `<div class="card"><b>${esc(p.beat.name || "untitled loop")}</b><div class="cap">${p.beat.bpm} BPM · made in the TNL studio</div></div>` : ""}
 ${accepted.length ? `<div class="cap meta"><span class="mk">//</span> Built with ${accepted.map((c) => esc(c.display_name || c.username)).join(" + ")}</div>` : ""}
 <div class="cap meta">${lookCount(p.likeCount, "like")} · ${lookCount(p.shareCount, "share")} · #${esc(p.channel)}</div>
-<a class="btn block acc" href="/">See what else is being made</a>`,
+<a class="btn block acc" href="/?p=${p.id}">Open in the app</a>
+<p class="cap" style="margin-top:14px;text-align:center"><a href="/">See what else is being made</a></p>`,
   }));
 });
 

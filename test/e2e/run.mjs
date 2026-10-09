@@ -944,6 +944,60 @@ console.log("\nMEMBER · PHONE");
   await d.ctx.close();
 }
 
+/* ============ 2b. Arriving from Instagram (its in-app browser) ============
+   2026-10-09: a link in a Story or a DM opens LABS inside Instagram. No
+   share sheet, no downloads there — so: a quick door, land on the thing,
+   a bar to open Safari, and Story pictures you press and hold to save. */
+console.log("\nFROM INSTAGRAM · ITS BROWSER");
+{
+  const IG_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 389.0.0.29.88 (iPhone15,3; iOS 18_5; en_US; en; scale=3.00; 1290x2796; 735447294)";
+  const d = await device("instagram", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, userAgent: IG_UA });
+  const p = d.page;
+  await d.page.addInitScript(() => { localStorage.setItem("tnl-token", "e2e-friend-session"); });
+  const pid = (await api("/api/users/friend", "e2e-friend-session")).posts.find((x) => x.isWork && x.imageUrl).id;
+  await step(d, "a post's public page previews and its Open in the app lands on that post: quick door, no film", async () => {
+    await p.goto(B + "/p/" + pid);
+    ok(await p.locator('meta[property="og:image"]').count() === 1, "no link preview on the post page");
+    await p.locator("a.btn.block").tap();
+    await p.waitForSelector("#enterOv", { timeout: 8000 });
+    ok(await p.locator("#enterVid").count() === 0, "a deep link shouldn't play the intro film");
+    await throughDoor(p);
+    await p.waitForFunction((id) => POSTOPEN && POSTOPEN.id === id, pid, { timeout: 6000 });
+    ok(await p.evaluate(() => location.search === ""), "the ?p= should be cleaned from the address");
+  });
+  await step(d, "inside Instagram: Share to your Story shows the picture to press and hold, not a share button that can't work", async () => {
+    ok(await p.locator(".iab-bar").count() === 0, "the bar shouldn't sit over an open post");
+    await p.locator(".po-ov [data-share]").first().tap(); await p.waitForTimeout(300);
+    await p.locator(".pick").getByText("Instagram Story", { exact: true }).tap();
+    await p.waitForSelector("#igsbg .ig-hold img");
+    await p.waitForFunction(() => { const i = document.querySelector(".ig-hold img"); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 15000 });
+    ok(await p.locator("#igsgo").count() === 0, "no share button in Instagram's browser — it has nowhere to go");
+    ok(/Press and hold the picture/.test(await p.locator("#igsbg").innerText()), "the press-and-hold steps are missing");
+    ok(await p.evaluate(() => { const r = document.querySelector("#igsx").getBoundingClientRect(); const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return !!(e && e.closest("#igsbg")); }), "the Story sheet is behind the open post");
+    await p.locator("#igsx").tap();
+    ok(await p.locator("#igsbg").count() === 0, "the Story sheet didn't close");
+    await p.locator("#poclose").tap(); await p.waitForFunction(() => !POSTOPEN, null, { timeout: 4000 });
+  });
+  await step(d, "inside Instagram: on the feed a bar offers Safari, its steps open, and hiding it lasts", async () => {
+    await p.waitForSelector(".iab-bar", { timeout: 4000 });
+    ok(/Instagram's browser/.test(await p.locator(".iab-bar").innerText()), "the bar should name Instagram");
+    await p.locator("#iabgo").tap(); await p.waitForSelector(".iab-steps");
+    ok(/Open in external browser/.test(await p.locator(".iab-steps").innerText()), "the iPhone steps are missing");
+    await p.locator("#iabx2").tap(); await p.waitForSelector(".iab-bar");
+    await p.locator("#iabx").tap(); await p.waitForTimeout(200);
+    ok(await p.locator(".iab-bar").count() === 0, "the bar didn't hide");
+    await p.evaluate(() => render()); await p.waitForTimeout(200);
+    ok(await p.locator(".iab-bar").count() === 0, "the bar came back after a repaint");
+  });
+  await step(d, "a profile's public page opens that profile in the app", async () => {
+    await p.goto(B + "/u/friend");
+    await p.locator("a.btn.block").tap();
+    await throughDoor(p);
+    await p.waitForFunction(() => PROFILE && PROFILE.user && PROFILE.user.username === "friend", null, { timeout: 6000 });
+  });
+  await d.ctx.close();
+}
+
 /* ================= 3. A member, on a computer ================= */
 console.log("\nMEMBER · COMPUTER");
 {

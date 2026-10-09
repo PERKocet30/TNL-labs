@@ -146,7 +146,8 @@ async function openPostById(id){
   closeMessages();
   const p=(POSTS||[]).find(x=>x.id===id)||(SRPOSTS||[]).find(x=>x.id===id);
   if(p){POSTOPEN=p;OPENCOMMENTS=id;COMMENTS=[];render();try{COMMENTS=(await api.comments(id)).comments;render()}catch(e){}return}
-  location.href="/p/"+id;
+  /* Not on screen (a ?p= link from Instagram): fetch just that post. */
+  try{const d=await req("/api/posts/"+encodeURIComponent(id));if(d&&d.post)return openPost(d.post)}catch(e){toast(e.message||"Couldn't open that post")}
 }
 
 /* ---- reactions (DM messages and lab posts share this) ---- */

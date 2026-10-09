@@ -60,12 +60,13 @@ function evShareHTML(){
   const s=EVSHARE, url=evVoteUrl(s.id);
   return `<div class="sheet" id="evshsheet"><div class="sheetc ev-share">
     <div class="sheeth"><div><h2>Share to Instagram</h2></div><button class="x" id="evshx" aria-label="Close">${DI.x}</button></div>
+    ${inApp()&&!s.failed?igHoldHTML(s.img,url):`
     <div class="ev-shimg">${s.failed?`<div class="dim">Couldn't make the picture. Your link still works.</div>`:`<img src="${esc(s.img)}" alt="Your Story card" id="evshpic">`}</div>
     <ol class="ev-howto"><li>Share the picture to your Story (or save it).</li>
       <li>Add a <b>Link</b> sticker with your vote link.</li>
       <li>Only votes in the app count — the link takes people straight to your piece.</li></ol>
     <div class="ev-link"><span>${esc(url.replace(/^https?:\/\//,""))}</span><button class="btn ghost" id="evshcopy">${DI.copy} Copy</button></div>
-    <button class="btn green ev-cta" id="evshgo">Share picture</button>
+    <button class="btn green ev-cta" id="evshgo">Share picture</button>`}
   </div></div>`;
 }
 function evOpenShare(id){

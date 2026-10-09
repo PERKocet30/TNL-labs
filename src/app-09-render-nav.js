@@ -96,6 +96,7 @@ function render(){
   mvAfter(mvb);
   wire();
   wireEnter();
+  iabPaint();   // the "open in Safari / Chrome" bar, inside Instagram's browser (app-18-ig.js)
   if(TAB==="labs")loadFeed();
   if(TAB==="showroom")loadShowroom();
   if(TAB==="market"&&MKTVIEW==="browse"&&!MKT)loadMarket();

@@ -75,6 +75,7 @@ test/                           51 test suites — run with npm test
 | `server-11-profile` | profile v2: links, pronouns, pins (`/api/me/pins`), followers/following lists, the Tagged tab, "Followed by" |
 | `server-12-policies` | the public policy pages Stripe reviews: `/terms`, `/privacy`, `/policies` (shipping, returns, disputes, prohibited items), `/contact`, `/shop`, and `lookFoot()` — the footer on every server-built page. `SUPPORT_EMAIL` sets the inbox |
 | `server-12-video` | old videos fixed on boot (index-first copy, a cover where none); and the light copies made in the background one at a time: for video, 720p/30fps/~1.3 Mbps (`video_feed` → `videoPlayUrl`; the original stays `videoUrl`); for music, 128 kbps AAC (`audio_play` → a track's `url`; the upload stays `fileUrl`) |
+| `app-18-ig` | Alongside Instagram (2026-10-09): `inApp()` knows Instagram / Facebook / Threads / TikTok's in-app browsers; there, a bar on the main screens offers Safari / Chrome (an intent link on Android, the two taps on iPhone), and Story sheets show the picture to press and hold (no share sheet or downloads in there); styles in `app-05-styles-ig` |
 | `server-12-story` · `app-18-story-share` | anything on LABS as an Instagram Story: 1080×1920 cards for a post (`/p/:id/story.jpg`, a text post as a quote), a profile (`/u/:name/story.jpg`), a listing (`/m/:id/story.jpg`) and a track (`/tr/:id/story.jpg`); `shareMenu()` — Instagram Story, Send off the app, Copy link — on profiles, listings and tracks, and the post menu's "Instagram Story" sheet: one tap shares the picture and copies the link for a Link sticker |
 | `server-02-post-extras` | a post's people tagged, place, comments on/off and products from your own shop (`posts.extras`) |
 | `server-07-cart` | the bag checkout (several items from one seller, one payment, shipping combined — `sessionFits()` binds a paid session to its whole group), `/api/shop/stats` |
@@ -179,7 +180,7 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 |---|---|
 | `/u/:username` | a member's public page, rendered on the server so it previews properly |
 | `/p/:id` | a single post, with its own link preview |
-| `/m/:id` | a Market listing |
+| `/m/:id` | a Market listing — the app, with the listing's own link preview (photo, title, price) for Instagram DMs |
 | `/e/:slug` · `/e/:slug/rules` | an event and its official rules (draft rules are generated until an admin writes their own) |
 | `/e/:slug/board` · `/e/:slug/:entry` | a poll's public scoreboard, and one entry's vote link (its preview is the piece; Vote opens `/?e=slug&v=entry` in the app) |
 | `/e/:slug/board.jpg` · `/e/:slug/:entry/story.jpg` | Instagram pictures: the scoreboard (1080×1350, `?size=story` 1080×1920) and an entrant's "Vote for my piece" Story |
@@ -266,6 +267,7 @@ POST   /api/posts/:id/like   (auth)
 POST   /api/posts/:id/share   (auth)
 PATCH  /api/posts/:id   (auth)
 DELETE /api/posts/:id   (auth)
+GET    /api/posts/:id
 GET    /api/posts/:id/comments
 POST   /api/posts/:id/comments   (auth)
 POST   /api/posts/:id/comments-off   (auth, author)
