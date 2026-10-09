@@ -23,6 +23,37 @@ function workCardHTML(p, collab, K, pinned) {
   </div>`;
 }
 
+/* ── Music on the profile (v2.1 · 2026-10-09) ─────────────────────────
+   The music you upload shows in your grid, its cover as the tile — newest
+   in with your posts by date, pinned posts still first. Tap to play, tap
+   again to pause; they count in your posts number. It's a post's kind of sound (MUSAUTOID = "trk<id>"):
+   it plays while the tile is on screen and stops when you leave. */
+function withTracks(posts,pins){
+  const tr=(PROFILE&&PROFILE.tracks||[]).map(t=>({trk:t,createdAt:t.createdAt}));
+  if(!tr.length)return posts;
+  const top=posts.filter(p=>pins.includes(Number(p.id)));
+  return [...top,...[...posts.filter(p=>!pins.includes(Number(p.id))),...tr].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))];
+}
+const trkOn=t=>MUSAUTOID==="trk"+t.id&&NOWPLAYING&&NOWPLAYING.id===t.id&&AUDIO&&!AUDIO.paused;
+function trackTileHTML(t){
+  const on=trkOn(t);
+  return `<div class="work work-trk${on?" on":""}" role="button" tabindex="0" data-trkplay="${t.id}" data-trkown="trk${t.id}" aria-label="${on?"Pause":"Play"} ${esc(t.title)}">
+    ${t.artworkUrl?`<img class="work-img" src="${esc(t.artworkUrl)}" alt="${esc(t.title)} — cover" loading="lazy" decoding="async">`
+      :`<div class="work-trkbare">${UI_IC.music}<b>${esc(t.title)}</b></div>`}
+    <span class="work-ind" aria-hidden="true">${on?DI.pause:DI.music}</span>
+  </div>`;
+}
+(function wireTrackTiles(){
+  /* capture phase, like the post music chips — before anything else takes the tap */
+  document.addEventListener("click",e=>{
+    const b=e.target.closest("[data-trkplay]");if(!b)return;
+    const t=(PROFILE&&PROFILE.tracks||[]).find(x=>String(x.id)===b.dataset.trkplay);if(!t)return;
+    e.stopPropagation();e.preventDefault();
+    MUSOK=true;MUSAUTOID="trk"+t.id;
+    playTrack(t);render();
+  },true);
+})();
+
 /* ── PROFILE v2 · 2026-10-07 ───────────────────────────────────────────
    Instagram's shape, TNL's look. Username up top with ＋ and ≡ (yours) or
    ⋯ (theirs); photo and three numbers you can open (posts, followers,
@@ -41,7 +72,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
   /* Your own profile is the page; anyone else's stays a peek (sheet). */
   const pins=(u.pinned||[]).map(Number);
   const pinnedFirst=list=>[...pins.map(id=>list.find(p=>Number(p.id)===id)).filter(Boolean),...list.filter(p=>!pins.includes(Number(p.id)))];
-  const list=PTAB==="collabs"?PROFILE.collabs:PTAB==="tagged"?(PROFTAGGED||[]):pinnedFirst(PROFILE.posts);
+  const list=PTAB==="collabs"?PROFILE.collabs:PTAB==="tagged"?(PROFTAGGED||[]):withTracks(pinnedFirst(PROFILE.posts),pins);
   const links=u.links&&u.links.length?u.links:(u.link?[{title:"",url:/^https?:\/\//.test(u.link)?u.link:"https://"+u.link}]:[]);
   const linkTxt=x=>x.title||x.url.replace(/^https?:\/\/(www\.)?/,"").replace(/\/$/,"");
   const fb=PROFILE.followedBy;
@@ -54,7 +85,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
   <div class="pig-head">
     ${u.avatarUrl?`<img class="pav pig-av" src="${esc(u.avatarUrl)}" alt="">`:`<div class="pav pig-av">${esc(u.displayName.slice(0,2).toUpperCase())}</div>`}
     <div class="pstats pig-stats ${ld?"sk":""}">
-      ${num(st.posts,esc(K.work.toLowerCase()))}
+      ${num(st.posts+(PROFILE.tracks||[]).length,esc(K.work.toLowerCase()))}
       ${num(PROFILE.followers,"followers",`data-flist="followers"`)}
       ${num(PROFILE.following??0,"following",`data-flist="following"`)}
     </div>
@@ -74,7 +105,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
   </div>
 
   <div class="ptabs" role="tablist">
-    <button class="ptab ${PTAB==="work"?"on":""}" data-ptab="work" role="tab" aria-selected="${PTAB==="work"}" aria-label="${esc(K.work.charAt(0)+K.work.slice(1).toLowerCase())} ${st.posts}">${UI_IC.tabGrid}</button>
+    <button class="ptab ${PTAB==="work"?"on":""}" data-ptab="work" role="tab" aria-selected="${PTAB==="work"}" aria-label="${esc(K.work.charAt(0)+K.work.slice(1).toLowerCase())} ${st.posts+(PROFILE.tracks||[]).length}">${UI_IC.tabGrid}</button>
     <button class="ptab ${PTAB==="shop"?"on":""}" data-ptab="shop" role="tab" aria-selected="${PTAB==="shop"}" aria-label="Shop">${UI_IC.tabShop}</button>
     <button class="ptab ${PTAB==="collabs"?"on":""}" data-ptab="collabs" role="tab" aria-selected="${PTAB==="collabs"}" aria-label="Collabs ${PROFILE.collabs.length}">${UI_IC.tabCollab}</button>
     <button class="ptab ${PTAB==="tagged"?"on":""}" data-ptab="tagged" role="tab" aria-selected="${PTAB==="tagged"}" aria-label="Tagged">${PF_TAGGED}</button>
@@ -82,7 +113,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
 
   ${PTAB==="shop"?`<div class="mkt-grid" style="padding:14px 0 30px">${PROFLISTINGS===null?`${skel("tiles")}`:PROFLISTINGS.length?PROFLISTINGS.map(mktCardHTML).join(""):`<div class="empty">${mine?"Nothing listed yet. Head to Market → Sell to put something up.":"Not selling anything right now."}</div>`}</div>`
   :ld||(PTAB==="tagged"&&PROFTAGGED===null)?`<div class="worklist asgrid">${[0,1,2].map(()=>`<div class="work skel"><div class="skelbar"></div></div>`).join("")}</div>`
-  :list.length?`<div class="worklist ${K.grid||PTAB==="tagged"?"asgrid":""}">${list.map(p=>workCardHTML(p,PTAB==="collabs",K,PTAB==="work"&&pins.includes(Number(p.id)))).join("")}</div>`
+  :list.length?`<div class="worklist ${K.grid||PTAB==="tagged"?"asgrid":""}">${list.map(p=>p.trk?trackTileHTML(p.trk):workCardHTML(p,PTAB==="collabs",K,PTAB==="work"&&pins.includes(Number(p.id)))).join("")}</div>`
   :`<div class="empty">${PTAB==="collabs"?"No collabs yet.":PTAB==="tagged"?(mine?"When people tag you in their work, it shows up here.":"No tagged posts yet."):mine?K.empty+" Hit + Post and it lands here.":esc(K.empty)}</div>`}
 </div></div>`}
 

@@ -83,7 +83,7 @@ function wireFeed(){
       onPick:async(it)=>{
         if(it.act==="dm")return sendPostSheet(id);   // pick one or several people and chats
         if(it.act==="lab"){
-          const chans=LABS.map(l=>({label:labMark(l.name),sub:(LAB_ID[l.id]||{}).for||"",icon:"//",ch:labHome(l).id}));
+          const chans=labsOrdered().map(   /* your labs first (2026-10-09) */ l=>({label:labMark(l.name),sub:(LAB_ID[l.id]||{}).for||"",icon:"//",ch:labHome(l).id}));
           openPicker({title:"Share to a lab",
             note:"",
             items:chans,onPick:async(c)=>{

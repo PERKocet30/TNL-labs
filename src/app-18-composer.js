@@ -1,4 +1,4 @@
-/* ── POST CREATOR · v2 · 2026-09-28 ────────────────────────────────
+/* ── POST CREATOR · v2.1 · 2026-10-09 (v2 2026-09-28; v2.1: your labs first in Share to a lab) ────────────────────────────────
    Instagram / Facebook grade, TNL look. One page: the work large at the
    top (swipe it, reorder it, see each upload land), the caption with
    @mentions, then three rows — invite collaborators, add music, share to a
@@ -237,7 +237,7 @@ function wirePCompose(){
   const lb=$("#pclab");if(lb)lb.onclick=()=>{
     const items=[{label:"Profile only",sub:"Not in a lab",icon:DI.check,ch:null}];
     /* Labs are places now: pick the genre, tag the rest with #hashtags. */
-    for(const l of LABS){const ch=labHome(l);
+    for(const l of labsOrdered()){const ch=labHome(l);
       items.push({label:labMark(l.name),sub:(LAB_ID[l.id]||{}).for||"",icon:"//",ch:{id:ch.id,label:l.name,lab:l.name}})}
     openPicker({title:"Share to a lab",items,onPick:it=>{if(PCOMPOSE===c){c.ch=it.ch;render()}}});
   };

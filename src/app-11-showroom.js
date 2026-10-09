@@ -132,10 +132,9 @@ function labsGridHTML(){
   const st=l=>{let unread=0,art=null;
     for(const c of l.channels){unread+=A.unread[c.id]||0;const a=A.art[c.id];if(a&&(!art||a.at>art.at))art=a}
     return {unread,art}};
-  return `<div class="scroll">
-    <div class="lx-head"><h2 class="page-h">Labs</h2>
-      <p class="lx-sub">Pick a genre. Tag your work so people find it.</p></div>
-    <div class="lx-list" id="lxlist">${LABS.map(l=>{const id=LAB_ID[l.id]||{for:"",ic:""},x=st(l),tags=labTagList(l.id).slice(0,3);
+  /* your labs first (v1.2, 2026-10-09 — labsForMe in app-11-places.js) */
+  const o=labsForMe();
+  const card=l=>{const id=LAB_ID[l.id]||{for:"",ic:""},x=st(l),tags=labTagList(l.id).slice(0,3);
       return `<div class="lx" role="button" tabindex="0" data-lab="${l.id}">
         <span class="lx-media${x.art?"":" bare"}">${x.art?`<img src="${esc(x.art.url)}" alt="" loading="lazy">`:`<span class="lx-ic">${id.ic}</span>`}</span>
         <span class="lx-body">
@@ -144,7 +143,11 @@ function labsGridHTML(){
           ${tags.length?`<span class="lx-tags">${tags.map(t=>`<button class="lx-tag" data-labtag="${l.id}" data-t="${esc(t)}">#${esc(t)}</button>`).join("")}</span>`:""}
         </span>
         <span class="lx-go" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><path d="M9 5l7 7-7 7"/></svg></span>
-      </div>`}).join("")}</div>
+      </div>`};
+  return `<div class="scroll">
+    <div class="lx-head"><h2 class="page-h">Labs</h2>
+      <p class="lx-sub">Pick a genre. Tag your work so people find it.</p></div>
+    <div class="lx-list" id="lxlist">${o.mine.length?`<div class="lx-sec">For you <span>· from what you make</span></div>`:""}${o.mine.map(card).join("")}${o.mine.length&&o.rest.length?`<div class="lx-sec">More labs</div>`:""}${o.rest.map(card).join("")}</div>
   </div>`;
 }
 

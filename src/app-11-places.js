@@ -1,5 +1,5 @@
 /* ================================================================
-   PLACES v1.1 — 2026-10-09. A lab is a place — a genre — not a Discord
+   PLACES v1.2 — 2026-10-09. A lab is a place — a genre — not a Discord
    server full of channels. Familiar like Instagram, ours in the details.
    v1.1, simpler: one list of genres, each explained by its #hashtags,
    and inside a lab just two tabs —
@@ -9,8 +9,35 @@
    Old channel ids still hold every post (they never change) — each lab
    just has a home channel new talk goes to. Music's Work is its tracks
    library; Visual keeps the archive and boards one tap from Work.
+   v1.2: the labs that match what you make (the roles you picked at
+   signup or in Edit profile) come first — on the labs list and in every
+   "share to a lab" picker. ROLE_LABS maps each role in ROLES to its labs
+   (test/places.test.mjs checks every role has one).
    Server: server-10-places.js. Styles: app-05-styles-places.css.
 ================================================================ */
+const ROLE_LABS={
+  "Graphic Designer":["pharmacy"],"Illustrator":["pharmacy","akatsuki"],"3D Artist":["pharmacy"],"Motion Designer":["pharmacy"],
+  "Animator":["pharmacy","akatsuki"],"Art Director":["pharmacy","fashion"],"Painter":["pharmacy"],"Sculptor":["pharmacy"],
+  "Tattoo Artist":["pharmacy"],"Curator":["pharmacy","casino"],"Manga Artist":["akatsuki","pharmacy"],"Character Designer":["akatsuki","pharmacy"],
+  "Photographer":["pharmacy","fashion"],"Videographer":["pharmacy"],"Video Editor":["pharmacy"],"Cinematographer":["pharmacy"],"AMV Editor":["akatsuki","pharmacy"],
+  "Fashion Designer":["fashion"],"Stylist":["fashion"],"Model":["fashion"],"Tailor":["fashion"],"Sneaker Customizer":["fashion"],"Cosplayer":["akatsuki","fashion"],
+  "Producer":["culture"],"Beatmaker":["culture"],"Lyricist / Singer":["culture"],"Rapper":["culture"],"DJ":["culture"],"Audio Engineer":["culture"],"Musician":["culture"],
+  "Writer":["casino"],"Copywriter":["casino","tna"],"Journalist":["casino"],"Content Creator":["casino","pharmacy"],"Actor":["pharmacy"],
+  "Web Designer":["pharmacy","tna"],"Web Developer":["tna"],"App Developer":["tna"],"UI/UX Designer":["pharmacy","tna"],"Product Designer":["pharmacy","tna"],
+  "Entrepreneur":["tna"],"Founder":["tna"],"Brand Strategist":["tna","casino"],"Marketer":["tna","casino"],"Manager":["tna","culture"],"A&R":["culture","tna"],
+  "Photographer's Agent":["tna","pharmacy"],"Event Organizer":["tna","hq"],
+};
+/* Your labs first: each role you picked counts for its labs — the first
+   role you picked most, a role's second lab half. Then everything else,
+   in the usual order. Signed out, or no roles: the usual order. */
+function labsForMe(){
+  const roles=ME?((ME.roles&&ME.roles.length?ME.roles:[ME.role])||[]).filter(Boolean):[];
+  const score={};
+  roles.slice(0,5).forEach((r,i)=>(ROLE_LABS[r]||[]).forEach((lab,j)=>{score[lab]=(score[lab]||0)+(5-i)*(j?0.5:1)}));
+  const mine=LABS.filter(l=>score[l.id]).sort((a,b)=>score[b.id]-score[a.id]||LABS.indexOf(a)-LABS.indexOf(b));
+  return {mine,rest:LABS.filter(l=>!score[l.id])};
+}
+const labsOrdered=()=>{const o=labsForMe();return [...o.mine,...o.rest]};
 const LAB_HOME={hq:"general",pharmacy:"creators",culture:"music-chat",fashion:"clothing-design",akatsuki:"anime-chat",casino:"news",tna:"opportunities"};
 const labHome=l=>l?(l.channels.find(c=>c.id===LAB_HOME[l.id])||l.channels[0]):null;
 const labOfCh=id=>LABS.find(l=>l.channels.some(c=>c.id===id))||null;
