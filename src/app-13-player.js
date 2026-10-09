@@ -1,4 +1,4 @@
-/* THE PLAYER v2.2 — 2026-10-09 (v2.1 — 2026-09-29; v2.2: a profile's music tile repaints on play / pause)
+/* THE PLAYER v2.2 — 2026-10-09 (v2.1 — 2026-09-29; v2.2: a profile's Music tab repaints on play / pause, and plays on to the next song)
    One audio element for the whole app, parked outside #app so a repaint
    can't interrupt playback. Built on first use — no element for people who
    never press play, and nothing constructed at parse time.
@@ -22,7 +22,10 @@ function audioEl(){
   const sync=()=>{paintPlayer();if((TAB==="labs"&&CH.library)||String(MUSAUTOID).startsWith("trk"))render()};
   AUDIO.addEventListener("play",sync);
   AUDIO.addEventListener("pause",sync);
-  AUDIO.addEventListener("ended",()=>{if(MUSAUTOID==null&&nextTrack())return;sync()});
+  AUDIO.addEventListener("ended",()=>{if(MUSAUTOID==null&&nextTrack())return;
+    /* a profile's Music tab plays on down the list (2026-10-09) */
+    if(String(MUSAUTOID).startsWith("trk")){const n=nextProfileTrack();if(n){MUSAUTOID="trk"+n.id;playTrack(n,true);render();return}}
+    sync()});
   AUDIO.addEventListener("timeupdate",paintProgress);
   AUDIO.addEventListener("loadedmetadata",paintProgress);
   return AUDIO;

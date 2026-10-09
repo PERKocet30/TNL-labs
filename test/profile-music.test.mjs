@@ -1,5 +1,5 @@
-// Music on the profile v1.0 (2026-10-09): the music a member uploads shows
-// in their profile grid, its cover as the tile. Runs the real server on a
+// Music on the profile v1.1 (2026-10-09): the music a member uploads has its
+// own Music tab on their profile — a song list, not tiles in the visual grid. Runs the real server on a
 // throwaway database; checks the profile carries the tracks (newest first,
 // with covers), only that member's, for guests too — and that the app
 // draws a cover tile, falls back to the title without one, and plays it as
@@ -44,12 +44,15 @@ try {
   t("guests see it too, like the rest of the profile", (await call(null, "/api/users/sky")).j.tracks.length === 2);
   t("no music: an empty list, not missing", Array.isArray((await call(null, "/api/users/ben")).j.tracks));
 
-  console.log("\nTHE APP DRAWS IT");
+  console.log("\nTHE APP DRAWS IT — ITS OWN MUSIC TAB, NOT THE VISUAL GRID (v1.1)");
   const app = readFileSync(join(ROOT, "public/index.html"), "utf8");
-  t("the cover is the tile", app.includes(`\${t.artworkUrl?\`<img class="work-img" src="\${esc(t.artworkUrl)}" alt="\${esc(t.title)} — cover"`));
-  t("no cover: the title on a plain square", app.includes(`<div class="work-trkbare">\${UI_IC.music}<b>\${esc(t.title)}</b></div>`));
-  t("mixed into the grid by date, pinned posts still first", app.includes("withTracks(pinnedFirst(PROFILE.posts),pins)"));
-  t("tapping plays it as a post's sound (stops when the tile leaves the screen)", app.includes(`MUSOK=true;MUSAUTOID="trk"+t.id;`) && app.includes('!!document.querySelector(`[data-trkown="${MUSAUTOID}"]`)'));
+  t("songs are not tiles in the grid any more", !app.includes("withTracks(") && !app.includes("work-trk") && app.includes("(PROFTAGGED||[]):pinnedFirst(PROFILE.posts);"));
+  t("a Music tab, shown when they have songs (or it's yours)", app.includes(`\${(PROFILE.tracks||[]).length||mine?\`<button class="ptab \${PTAB==="music"?"on":""}" data-ptab="music"`));
+  t("a song list: number, cover, title, plays, length", app.includes('<span class="pmus-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}"') && app.includes('<span class="pmus-d">${mmss(t.durationMs)}</span>'));
+  t("Play at the top", app.includes('<button class="pmus-play" data-pftrk="${(cur||T[0]).id}"'));
+  t("the posts number counts posts only", app.includes("${num(st.posts,esc(K.work.toLowerCase()))}"));
+  t("a song plays as a post's sound (stops when the list leaves the screen)", app.includes(`MUSOK=true;MUSAUTOID="trk"+t.id;`) && app.includes('!!document.querySelector(`[data-trkown="${MUSAUTOID}"]`)'));
+  t("…and when one ends, the next one down plays", app.includes("const n=nextProfileTrack();if(n){MUSAUTOID=\"trk\"+n.id;playTrack(n,true)"));
 } catch (e) {
   fail++; console.log("  ✗  threw: " + e.message); console.log(log.slice(-1500));
 } finally { srv.kill(); }
