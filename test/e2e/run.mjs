@@ -1005,7 +1005,8 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator("nav.tabs [data-tab=content]", { hasText: "Labs" }).count() === 1, "the Content tab isn't called Labs");
     await p.screenshot({ path: join(SHOTS, "admin-today.png"), fullPage: false });
     await p.locator("tr[data-labf=pharmacy]").click();
-    await fast(p, 5000, () => p.locator("#clab").waitFor(), "the Labs tab");
+    // the lab list arrives with the posts — wait for it, not just the empty select
+    await fast(p, 5000, () => p.locator("#clab option[value=pharmacy]").waitFor({ state: "attached" }), "the Labs tab");
     ok(await p.locator("#clab").inputValue() === "pharmacy", "the lab filter wasn't set");
     await p.goto(B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
