@@ -1,12 +1,11 @@
 
 /* ================================================================
-   PLACES v1.0 — 2026-10-08. Labs are places, one per genre — not
-   Discord servers full of channels. Inside each lab:
+   PLACES v1.1 — 2026-10-09. Labs are places, one per genre — not
+   Discord servers full of channels. Inside each lab (v1.1: just two):
      Work   everything made here, a grid — filter by #tag
      Talk   one conversation (the lab's home channel; the old channels'
             history is merged in)
-     Open   what you can join right now: events, #collab calls, gigs
-     Pulse  what's rising this week, the tags, who's active
+   and on the labs list, each genre's #tags (/api/labs/tags).
 
    Sub-channels are gone from the app, not from the data: every channel
    id stays exactly as stored (CLAUDE.md: ids never change). New posts go
@@ -34,8 +33,6 @@ const CHANNEL_TAG = {
   "anime-news": "animenews", "anime-ideas": "ideas", "magazine": "magazine", "news": "news", "promos": "promos",
   "opportunities": "opportunities", "coding": "coding", "finance": "finance",
 };
-/* Tags that mean "join me / hire me" — they fill a lab's Open tab. */
-const CALL_TAGS = new Set(["collab", "opencall", "lookingfor", "gig", "gigs", "hiring", "opportunities", "brief", "commission", "commissions"]);
 const LAB_OF = Object.fromEntries(Object.entries(PLACES).flatMap(([lab, p]) => p.channels.map((c) => [c, lab])));
 
 /* When the old channels stopped being rooms. Set once, on the first boot
@@ -93,7 +90,7 @@ function topTags(rows, n = 12) {
   return [...c].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, n).map(([tag, count]) => ({ tag, count }));
 }
 
-app.get("/api/places", (_req, res) => res.json({ places: PLACES, callTags: [...CALL_TAGS] }));
+app.get("/api/places", (_req, res) => res.json({ places: PLACES }));
 
 /* Talk: one conversation per lab — every channel's history, newest 50.
    Pins are the home channel's. */
@@ -112,39 +109,26 @@ app.get("/api/labs/:lab/work", auth, (req, res) => {
     ? tagCandidates(tag, P.channels, { workOnly: true, limit: 120 }).map((r) => r.id)
     : db.prepare(`SELECT id FROM posts WHERE channel IN (${inList(P.channels)}) AND is_work = 1 ORDER BY created_at DESC LIMIT 120`).all().map((r) => r.id);
   const recent = db.prepare(`SELECT body, channel, created_at FROM posts WHERE channel IN (${inList(P.channels)}) ORDER BY created_at DESC LIMIT 400`).all();
-  res.json({ lab: req.params.lab, tag: tag || null, posts: placePosts(ids, req), tags: topTags(recent) });
+  res.json({ lab: req.params.lab, tag: tag || null, posts: placePosts(ids, req), tags: topTags(recent, 16).filter((t) => !PLAIN_TAGS.has(t.tag)) });
 });
 
-/* Open: what you can join right now — live events in this lab, and calls
-   (#collab, #gig, #opportunities…) from the last 45 days. */
-app.get("/api/labs/:lab/open", auth, (req, res) => {
-  const P = placeOr404(req, res); if (!P) return;
-  const events = db.prepare(`SELECT * FROM events WHERE published = 1 AND channel IN (${inList(P.channels)}) ORDER BY id DESC LIMIT 10`).all()
-    .map((e) => { tickEvent(e); const ph = phaseAt(evJSON(e.schedule, []));
-      return evJSON(e.state, {}).void || ph.phase === "results" ? null : { slug: e.slug, title: e.title, coverUrl: e.cover_url, prize: e.prize, phase: ph.phase, end: ph.end }; })
-    .filter(Boolean);
-  const since = Date.now() - 45 * 86400000;
-  const rows = db.prepare(`SELECT id, body, channel, created_at FROM posts WHERE channel IN (${inList(P.channels)}) AND created_at >= ? ORDER BY created_at DESC LIMIT 600`).all(since);
-  const calls = rows.filter((r) => rowTags(r).some((t) => CALL_TAGS.has(t))).slice(0, 30).map((r) => r.id);
-  res.json({ lab: req.params.lab, events, calls: placePosts(calls, req) });
-});
-
-/* Pulse: the lab this week — what's rising, the tags, who's making. */
-app.get("/api/labs/:lab/pulse", auth, (req, res) => {
-  const P = placeOr404(req, res); if (!P) return;
-  const D = 86400000, now = Date.now(), wk = now - 7 * D, prev = now - 14 * D, chs = inList(P.channels);
-  const week = (from, to) => db.prepare(`SELECT COUNT(*) posts, SUM(is_work) pieces, COUNT(DISTINCT author_id) people FROM posts WHERE channel IN (${chs}) AND created_at >= ? AND created_at < ?`).get(from, to);
-  const tw = week(wk, now + 1), lw = week(prev, wk);
-  const rising = db.prepare(`SELECT p.id,
-      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) * 2 + (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) * 3
-      + (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS score
-    FROM posts p WHERE p.channel IN (${chs}) AND p.is_work = 1 AND p.created_at >= ? ORDER BY score DESC, p.created_at DESC LIMIT 6`).all(wk).map((r) => r.id);
-  const people = db.prepare(`SELECT u.username, u.display_name, u.avatar_url, u.accent, COUNT(*) n FROM posts p JOIN users u ON u.id = p.author_id
-    WHERE p.channel IN (${chs}) AND p.created_at >= ? GROUP BY u.id ORDER BY n DESC, MAX(p.created_at) DESC LIMIT 8`).all(wk)
-    .map((u) => ({ username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url, posts: u.n }));
-  const recent = db.prepare(`SELECT body, channel, created_at FROM posts WHERE channel IN (${chs}) AND created_at >= ?`).all(wk);
-  const n = (r) => ({ posts: r.posts || 0, pieces: r.pieces || 0, people: r.people || 0 });
-  res.json({ lab: req.params.lab, thisWeek: n(tw), lastWeek: n(lw), rising: placePosts(rising, req), tags: topTags(recent, 10), people });
+/* The labs list: each genre explained by its #tags — its own first (so a
+   new or quiet lab still says what it's for), then what people use most
+   there. Generic room names don't count as tags here. (v1.1, 2026-10-09) */
+const GENRE_TAGS = {
+  hq: ["collab", "intro", "wip"], pharmacy: ["graphicdesign", "photography", "film"], culture: ["beats", "feedback", "tracks"],
+  fashion: ["streetwear", "clothingdesign", "drops"], akatsuki: ["manga", "anime", "ideas"], casino: ["news", "magazine", "promos"],
+  tna: ["opportunities", "coding", "finance"],
+};
+const PLAIN_TAGS = new Set(["chat", "general", "creators"]);
+app.get("/api/labs/tags", auth, (_req, res) => {
+  const tags = {};
+  for (const [lab, P] of Object.entries(PLACES)) {
+    const rows = db.prepare(`SELECT body, channel, created_at FROM posts WHERE channel IN (${inList(P.channels)}) ORDER BY created_at DESC LIMIT 400`).all();
+    const used = topTags(rows, 20).map((t) => t.tag).filter((t) => !PLAIN_TAGS.has(t));
+    tags[lab] = [...new Set([...GENRE_TAGS[lab], ...used])].slice(0, 8);
+  }
+  res.json({ tags });
 });
 
 /* A #tag across every lab: the work that carries it first, then the talk. */

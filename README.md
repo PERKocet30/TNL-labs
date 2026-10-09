@@ -62,7 +62,7 @@ test/                           51 test suites — run with npm test
 | `app-10-chat-1…6` | Messages v2 (2026-09-29): chat kit, inbox + chat screen, composer/voice notes, sheets (new chat, group, forward, mute), the signed-in live stream, lab rooms as chat |
 | `app-10-dm-search` | search, the door |
 | `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
-| `app-11-places` | Labs as places (2026-10-08): a lab's Work · Talk · Open · Pulse tabs, its home channel (`LAB_HOME`), the #tag page, tag suggestions; styles in `app-05-styles-places` |
+| `app-11-places` | Labs as places (2026-10-08; v1.1 2026-10-09: one list of genres with their #tags, Work · Talk only): a lab's tabs, its home channel (`LAB_HOME`), the #tag page, tag suggestions; styles in `app-05-styles-places` |
 | `app-11-showroom` · `app-12…13` (`app-12-post-extras`: tags, place, comments off and "Shop this post" on a card) | Showroom, lab index, archive/posts; the Music lab (`app-13-tracks-player`) and the player bar and queue (`app-13-player`) |
 | `app-14-detail-sell` · `app-14-listing` · `app-14-sell-variants` | orders and the listing editor; the listing page (photos, size/colour picker, the pinned Buy bar, the pinch-zoom photo viewer); the editor's sizes & colours |
 | `app-15-profile` · `app-15-profile-edit` · `app-16` | profile v2 (≡ / ⋯ menus, followers/following, pinned, tagged), the Instagram-style edit page, wiring |
@@ -229,7 +229,7 @@ Three layers: stop glitches before they ship, notice the ones that get through, 
 
 ## Labs as places
 
-Since 2026-10-08 a lab is a place, one per genre (General, Visual, Music, Fashion, Anime, News, Business), not a server of sub-channels. Inside: **Work** (a grid of everything made there, narrowed by #tag), **Talk** (one conversation), **Open** (live events, #collab / #gig calls) and **Pulse** (this week: rising work, tags, who's making). People #tag their own work in the caption; any #tag opens its page across every lab.
+Since 2026-10-08 a lab is a place, one per genre (General, Visual, Music, Fashion, Anime, News, Business), not a server of sub-channels. The labs list shows each genre once, explained by its #tags (`GENRE_TAGS` first, then the tags people use there — `/api/labs/tags`); tapping a tag opens that lab's work narrowed to it. Inside: **Work** (a grid of everything made there, narrowed by #tag) and **Talk** (one conversation). (Open and Pulse were cut on 2026-10-09 to keep it simple.) People #tag their own work in the caption; any #tag opens its page across every lab.
 
 - **No data moved.** Every channel id still holds its posts. Each lab has a home channel (`PLACES` in `server-10-places.js`, `LAB_HOME` in `app-11-places.js`) where new talk and lab posts go; Talk and Work read all of the lab's channels.
 - **Old channels became tags.** Posts from before the cutover (`place_meta.cutover`, set on first boot) carry their channel's tag (#photography, #feedback…), worked out when read. Captions are never rewritten.
@@ -421,8 +421,7 @@ GET    /api/labs   (auth)
 GET    /api/places
 GET    /api/labs/:lab/feed   (auth)
 GET    /api/labs/:lab/work   (auth)
-GET    /api/labs/:lab/open   (auth)
-GET    /api/labs/:lab/pulse   (auth)
+GET    /api/labs/tags   (auth)
 GET    /api/tags   (auth)
 GET    /api/tags/:tag   (auth)
 

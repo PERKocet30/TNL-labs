@@ -123,58 +123,28 @@ async function loadShowroom(force){
   }catch(e){/* offline */}
 }
 
-/* The lab index. One row per genre, numbered like a specimen shelf: the
-   latest piece made there (or the genre's drawn mark), what's unread, who's
-   been in this week. Readable on paper and in dark mode alike. */
-/* The labs index — places, v2 2026-10-08: a row of rings like Stories
-   (lit when something's new), then each place as a card. */
+/* The labs index — v3 2026-10-09: one list, nothing twice. Each genre is a
+   card: the latest piece made there, its name, one line on what it is, and
+   its #hashtags — tap one to land on that work. */
 function labsGridHTML(){
-  const A=LABACT||{byChannel:{},art:{},people:{},unread:{}};
-  const labStats=(l)=>{
-    let today=0,week=0,unread=0,last=0,art=null,people=[];
-    for(const c of l.channels){
-      const b=A.byChannel[c.id];
-      if(b){today+=b.today||0;week+=b.week||0;if(b.last_at>last)last=b.last_at}
-      unread+=A.unread[c.id]||0;
-      const a=A.art[c.id];
-      if(a&&(!art||a.at>art.at))art=a;
-      for(const p of (A.people[c.id]||[])) if(!people.find(x=>x.username===p.username))people.push(p);
-    }
-    return {today,week,unread,last,art,people};
-  };
-  const all=LABS.map(labStats);
-  const weekTotal=all.reduce((n,st)=>n+st.week,0);
+  if(!LABTAGS)loadLabTags();
+  const A=LABACT||{byChannel:{},art:{},unread:{}};
+  const st=l=>{let unread=0,art=null;
+    for(const c of l.channels){unread+=A.unread[c.id]||0;const a=A.art[c.id];if(a&&(!art||a.at>art.at))art=a}
+    return {unread,art}};
   return `<div class="scroll">
-    <div class="lx-head">
-      <h2 class="page-h">Labs</h2>
-      <p class="lx-sub">${LABS.length} genres${weekTotal?` · ${weekTotal} posts this week`:""}</p>
-    </div>
-    <div class="lx-rings">${LABS.map((l,i)=>{const st=all[i],id=LAB_ID[l.id]||{ic:""};
-      return `<button class="lx-ring ${st.unread?"new":st.today?"live":""}" data-lab="${l.id}" aria-label="${esc(l.name)}">
-        <span class="lx-rc">${st.art?`<img src="${esc(st.art.url)}" alt="" loading="lazy">`:`<span class="lx-ic">${id.ic}</span>`}</span>
-        <span class="lx-rn">${esc(l.name)}</span></button>`}).join("")}</div>
-    <div class="lx-list">${LABS.map((l,i)=>{
-      const id=LAB_ID[l.id]||{for:"",ic:""};
-      const st=all[i];
-      return `<button class="lx ${st.unread?"new":""}" data-lab="${l.id}">
-        <span class="lx-media${st.art?"":" bare"}">${st.art?`<img src="${esc(st.art.url)}" alt="" loading="lazy">`:`<span class="lx-ic">${id.ic}</span>`}</span>
+    <div class="lx-head"><h2 class="page-h">Labs</h2>
+      <p class="lx-sub">Pick a genre. Tag your work so people find it.</p></div>
+    <div class="lx-list" id="lxlist">${LABS.map(l=>{const id=LAB_ID[l.id]||{for:"",ic:""},x=st(l),tags=labTagList(l.id).slice(0,3);
+      return `<div class="lx" role="button" tabindex="0" data-lab="${l.id}">
+        <span class="lx-media${x.art?"":" bare"}">${x.art?`<img src="${esc(x.art.url)}" alt="" loading="lazy">`:`<span class="lx-ic">${id.ic}</span>`}</span>
         <span class="lx-body">
-          <span class="lx-top"><span class="lx-no">${String(i+1).padStart(2,"0")}</span>
-            ${st.unread?`<span class="lx-new">${st.unread>9?"9+":st.unread} new</span>`
-              :st.today?`<span class="lx-live"><i></i>Active today</span>`:""}</span>
-          <span class="lx-name"><span class="lg">//</span> ${esc(l.name)}</span>
+          <span class="lx-name"><span class="lg">//</span> ${esc(l.name)}${x.unread?`<span class="lx-new">${x.unread>9?"9+":x.unread} new</span>`:""}</span>
           <span class="lx-for">${esc(id.for)}</span>
-          <span class="lx-foot">
-            ${st.people.length?`<span class="lx-ppl">${st.people.slice(0,4).map(p=>
-              p.avatarUrl?`<img src="${esc(p.avatarUrl)}" alt="">`
-                :`<span>${esc(p.displayName.slice(0,1).toUpperCase())}</span>`).join("")}</span>`:""}
-            <span class="lx-meta">${st.week?st.week+" this week"
-              :st.last?"Last post "+timeAgo(st.last).toLowerCase()
-              :"No posts yet"}</span>
-          </span>
+          ${tags.length?`<span class="lx-tags">${tags.map(t=>`<button class="lx-tag" data-labtag="${l.id}" data-t="${esc(t)}">#${esc(t)}</button>`).join("")}</span>`:""}
         </span>
         <span class="lx-go" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><path d="M9 5l7 7-7 7"/></svg></span>
-      </button>`}).join("")}</div>
+      </div>`}).join("")}</div>
   </div>`;
 }
 

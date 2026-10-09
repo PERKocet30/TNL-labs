@@ -1,5 +1,6 @@
-// Places v1.0 (2026-10-08): labs are places — one per genre — with Work,
-// Talk, Open and Pulse, and #hashtags instead of sub-channels. Runs the real
+// Places v1.1 (2026-10-09): labs are places — one per genre — with Work
+// and Talk, and #hashtags instead of sub-channels; each genre is explained
+// on the labs list by its #tags. Runs the real
 // server. Old posts keep their channel as a tag; nothing is rewritten.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -73,6 +74,7 @@ try {
   t("an old post carries its channel as a tag (#photography)", tagsOf(oldPhoto).includes("photography"));
   t("…plus any it wrote itself (#poster + #graphicdesign)", tagsOf(oldGd).includes("poster") && tagsOf(oldGd).includes("graphicdesign"));
   t("a new post gets only the tags it wrote, lowercased — not its channel's", JSON.stringify(tagsOf(fresh).sort()) === JSON.stringify(["poster", "typography"]));
+  t("Work's tag pills skip the plain room names (#creators)", !r.j.tags.some((x) => x.tag === "creators"));
   t("the lab's tags are listed, most used first", r.j.tags[0].count === 2 && r.j.tags.some((x) => x.tag === "poster" && x.count === 2));
   r = await call("dee", "GET", "/api/labs/pharmacy/work?tag=photography");
   t("?tag=photography → just that", JSON.stringify(ids(r.j.posts)) === JSON.stringify([oldPhoto]));
@@ -84,26 +86,16 @@ try {
   const tr = all.find((p) => p.id === tricky)?.tags || [];
   t("a # inside a link or an &#39; isn't a tag; one letter is too short", JSON.stringify(tr) === JSON.stringify(["ok_tag", "creators"]));
 
-  console.log("\nOPEN: WHAT YOU CAN JOIN");
-  await call("ben", "POST", "/api/posts", { channel: "general", body: "anyone want to make a zine? #collab", isWork: false });
-  r = await call("dee", "GET", "/api/labs/hq/open");
-  t("calls: a new #collab post and the old #collab-posts room", r.j.calls.length === 2 && ids(r.j.calls).includes(oldCollab));
-  r = await call("dee", "GET", "/api/labs/pharmacy/open");
-  t("no calls in Visual yet", r.s === 200 && r.j.calls.length === 0 && r.j.events.length === 0);
-  // an event that posts into graphic-design belongs to Visual
-  const db2 = new (await import("node:sqlite")).DatabaseSync(join(DATA, "tnl.db"));
-  db2.prepare(`INSERT INTO events (slug, title, channel, format, published, plan, schedule, state, created_at, updated_at) VALUES ('art','Art Tournament','graphic-design','poll',1,'{}',?, '{}', ?, ?)`)
-    .run(JSON.stringify([{ phase: "submit", start: now - H, end: now + 9 * D }, { phase: "qualify", start: now + 9 * D, end: now + 16 * D }, { phase: "final", start: now + 16 * D, end: now + 19 * D }, { phase: "results", start: now + 19 * D, end: null }]), now, now);
-  db2.close();
-  r = await call("dee", "GET", "/api/labs/pharmacy/open");
-  t("a live event in one of Visual's channels shows in Visual's Open", r.j.events.length === 1 && r.j.events[0].slug === "art" && r.j.events[0].phase === "submit");
-
-  console.log("\nPULSE: THIS WEEK");
-  r = await call("dee", "GET", "/api/labs/pharmacy/pulse");
-  t("this week: pieces, posts and people counted", r.j.thisWeek.pieces === 3 && r.j.thisWeek.posts === 5 && r.j.thisWeek.people === 3);
-  t("rising: the most-liked piece first", r.j.rising[0].id === oldGd);
-  t("tags this week, and who's making", r.j.tags.some((x) => x.tag === "poster") && r.j.people.length === 3);
-  t("last week is there to compare", r.j.lastWeek && r.j.lastWeek.posts === 0);
+  console.log("\nEACH GENRE, EXPLAINED BY ITS #TAGS (v1.1)");
+  await call("ben", "POST", "/api/posts", { channel: "general", body: "anyone want to make a zine? #zine", isWork: false });
+  r = await call("dee", "GET", "/api/labs/tags");
+  t("every lab has tags for the labs list", r.s === 200 && LABS.every((l) => Array.isArray(r.j.tags[l.id]) && r.j.tags[l.id].length >= 3));
+  t("a genre's own tags come first (Visual: #graphicdesign #photography #film)", JSON.stringify(r.j.tags.pharmacy.slice(0, 3)) === JSON.stringify(["graphicdesign", "photography", "film"]));
+  t("then what people actually use there (#poster in Visual, #zine in General)", r.j.tags.pharmacy.includes("poster") && r.j.tags.hq.includes("zine"));
+  t("old room names that say nothing (#creators, #chat) aren't shown as a genre's tags", !r.j.tags.pharmacy.includes("creators") && !r.j.tags.culture.includes("chat"));
+  t("an empty lab still says what it's for (Fashion)", JSON.stringify(r.j.tags.fashion.slice(0, 3)) === JSON.stringify(["streetwear", "clothingdesign", "drops"]));
+  t("for members, like the labs", (await call(null, "GET", "/api/labs/tags")).s === 401);
+  t("Open and Pulse are gone for now", (await call("dee", "GET", "/api/labs/pharmacy/open")).s === 404 && (await call("dee", "GET", "/api/labs/pharmacy/pulse")).s === 404);
 
   console.log("\nA #TAG ACROSS EVERY LAB");
   r = await call("dee", "GET", "/api/tags/poster");

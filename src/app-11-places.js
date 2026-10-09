@@ -1,12 +1,11 @@
 /* ================================================================
-   PLACES v1.0 — 2026-10-08. A lab is a place — a genre — not a Discord
+   PLACES v1.1 — 2026-10-09. A lab is a place — a genre — not a Discord
    server full of channels. Familiar like Instagram, ours in the details.
-   Inside every lab, four tabs, one for each way to take part:
+   v1.1, simpler: one list of genres, each explained by its #hashtags,
+   and inside a lab just two tabs —
      Work   everything made here, a grid; tap a #tag to narrow it
-     Talk   one conversation, like a group DM (the old room, merged)
-     Open   what you can join right now: events, #collab calls, gigs
-     Pulse  this week: what's rising, the tags, who's making
-   The sub-channels are gone from the screen; people #tag their own work.
+     Talk   one conversation, like a group DM (the old rooms, merged)
+   (Open and Pulse are gone for now.) People #tag their own work.
    Old channel ids still hold every post (they never change) — each lab
    just has a home channel new talk goes to. Music's Work is its tracks
    library; Visual keeps the archive and boards one tap from Work.
@@ -16,13 +15,12 @@ const LAB_HOME={hq:"general",pharmacy:"creators",culture:"music-chat",fashion:"c
 const labHome=l=>l?(l.channels.find(c=>c.id===LAB_HOME[l.id])||l.channels[0]):null;
 const labOfCh=id=>LABS.find(l=>l.channels.some(c=>c.id===id))||null;
 const labUnread=l=>l.channels.reduce((n,c)=>n+(UNREADS[c.id]||0),0);
-let LABVIEW="work", LABTAG=null, PLACE={}, TAGVIEW=null;
-const PLV=[["work","Work"],["talk","Talk"],["open","Open"],["pulse","Pulse"]];
+let LABVIEW="work", LABTAG=null, PLACE={}, TAGVIEW=null, LABTAGS=null;
+const PLV=[["work","Work"],["talk","Talk"]];
 const papi={
   feed:l=>req("/api/labs/"+l+"/feed"),
   work:(l,t)=>req("/api/labs/"+l+"/work"+(t?"?tag="+encodeURIComponent(t):"")),
-  open:l=>req("/api/labs/"+l+"/open"),
-  pulse:l=>req("/api/labs/"+l+"/pulse"),
+  labTags:()=>req("/api/labs/tags"),
   tag:t=>req("/api/tags/"+encodeURIComponent(t)),
   tags:(lab,q)=>req("/api/tags?lab="+encodeURIComponent(lab||"")+"&q="+encodeURIComponent(q||"")),
 };
@@ -39,7 +37,7 @@ function openLab(id,view,tag){
   pushView("lab",l.id);
   TAB="labs";LAB=l;LABVIEW=view||"work";LABTAG=tag||null;TAGVIEW=null;ROOMOPEN=true;
   PROFILE=null;POSTOPEN=null;OPENCOMMENTS=null;placeCH();
-  render();loadPlace();if(!LABACT)loadLabs();   // the header's "this week" numbers
+  render();loadPlace();if(!LABTAGS)loadLabTags();
 }
 function setLabView(v){if(!LAB)return;LABVIEW=v;if(v!=="work")LABTAG=null;placeCH();render();loadPlace()}
 const placeKey=()=>LABVIEW+(LABVIEW==="work"?":"+(LABTAG||""):"");
@@ -49,7 +47,7 @@ async function loadPlace(){
   if(v==="archive"){loadArchive();if(!BOARDS)loadBoards();return}
   if(v==="work"&&CH&&CH.library)return;   // the tracks library loads itself
   const P=PLACE[lab]||(PLACE[lab]={});
-  try{const d=v==="work"?await papi.work(lab,LABTAG):v==="open"?await papi.open(lab):await papi.pulse(lab);
+  try{const d=await papi.work(lab,LABTAG);
     P[key]=d}catch(e){P[key]=P[key]||{error:e.message||"Couldn't load this."}}
   if(LAB&&LAB.id===lab&&placeKey()===key)paintPlace();
 }
@@ -69,12 +67,15 @@ const plGridHTML=list=>`<div class="pl-grid">${list.map(plTileHTML).join("")}</d
 const plChip=(t,on,n)=>`<button class="pl-chip ${on?"on":""}" data-pltag="${esc(t)}">${t?"#"+esc(t):"All"}${n?`<span>${n}</span>`:""}</button>`;
 const plEmpty=(h,p)=>`<div class="empty estate"><div class="eh">${esc(h)}</div><div class="ep">${esc(p)}</div></div>`;
 const plErr=d=>d&&d.error?plEmpty("Couldn't load this.",d.error):"";
-function plHeroHTML(){
-  const id=LAB_ID[LAB.id]||{for:"",ic:""}, A=LABACT||{byChannel:{},people:{}};
-  let week=0;const ppl=new Set();
-  for(const c of LAB.channels){const b=A.byChannel[c.id];if(b)week+=b.week||0;for(const p of (A.people[c.id]||[]))ppl.add(p.username)}
-  return `<div class="pl-hero"><span class="pl-ic">${id.ic}</span><div class="pl-hb">
-    <div class="pl-for">${esc(id.for)}</div><div class="pl-meta">${week?week+" posts this week":"Quiet this week"}${ppl.size?" · "+ppl.size+" making":""}</div></div></div>`;
+/* A genre's tags: its own (the ones that explain it) first, then
+   whatever else people tag their work with here. */
+let LABTAGSBUSY=false;
+async function loadLabTags(){if(LABTAGSBUSY)return;LABTAGSBUSY=true;
+  try{LABTAGS=(await papi.labTags()).tags;if($("#lxlist")&&TAB==="labs"&&!LAB)render()}catch(e){}finally{LABTAGSBUSY=false}}
+function labTagList(lab,used){
+  const out=[...((LABTAGS&&LABTAGS[lab])||[])];
+  for(const t of (used||[]))if(!out.includes(t.tag))out.push(t.tag);
+  return out.slice(0,12);
 }
 
 /* The archive and the tracks library bring their own scroller; the rest
@@ -87,36 +88,17 @@ function placeBodyHTML(){
 function plInnerHTML(){
   const P=PLACE[LAB.id]||{}, d=P[placeKey()];
   if(LABVIEW==="work"){
-    const tags=(d&&d.tags)||[];
-    const chips=LABTAG&&!tags.some(t=>t.tag===LABTAG)?[{tag:LABTAG},...tags]:tags;
-    return `${plHeroHTML()}
-      ${chips.length?`<div class="pl-tags">${plChip("",!LABTAG)}${chips.map(t=>plChip(t.tag,LABTAG===t.tag)).join("")}</div>`:""}
+    const chips=labTagList(LAB.id,d&&d.tags);
+    if(LABTAG&&!chips.includes(LABTAG))chips.unshift(LABTAG);
+    return `<p class="pl-for">${esc((LAB_ID[LAB.id]||{}).for||"")}</p>
+      ${chips.length?`<div class="pl-tags">${plChip("",!LABTAG)}${chips.map(t=>plChip(t,LABTAG===t)).join("")}</div>`:""}
       ${LAB.channels.some(c=>c.archive)?`<button class="pl-link" id="plarchive">Search the archive and your boards</button>`:""}
       ${!d?`<div class="pl-grid">${Array.from({length:9},()=>`<i class="pl-tile sk-img"></i>`).join("")}</div>`
         :d.error?plErr(d):d.posts.length?plGridHTML(d.posts)
         :LABTAG?plEmpty("Nothing tagged #"+LABTAG+" here yet.","Tag your work with #"+LABTAG+" when you post it.")
         :plEmpty("No work here yet.","Post a piece and share it to "+labMark(LAB.name)+". Tag it so people find it.")}`;
   }
-  if(!d)return skel();
-  if(d.error)return plErr(d);
-  if(LABVIEW==="open")return `
-    ${d.events.length?`<div class="pl-sec"><h3>Happening now</h3>${d.events.map(e=>`<button class="pl-ev" data-evopen="${esc(e.slug)}">
-      ${e.coverUrl?`<img src="${esc(e.coverUrl)}" alt="">`:`<span class="pl-evi">//</span>`}
-      <span class="pl-evb"><span class="ev-eye"><b>//</b> Event</span><b>${esc(e.title)}</b>
-        <span class="dim">${esc(({upcoming:"Coming up",submit:"Entries open",qualify:"Voting",round:"Voting",final:"The final"})[e.phase]||"")}${e.end?" · "+evLeft(e.end):""}</span></span>
-      <span class="ev-go">Open</span></button>`).join("")}</div>`:""}
-    <div class="pl-sec"><h3>Looking for</h3>
-      ${d.calls.length?d.calls.map(p=>`<button class="pl-call" data-plcall="${p.id}">${avHTML(p.author,"sm")}
-        <span class="pl-cb"><b>${esc(p.author.displayName)}</b> <span class="dim">${esc(timeAgo(p.createdAt))}</span>
-        <span class="pl-cs">${esc((p.body||"").slice(0,160))}</span></span></button>`).join("")
-        :`<p class="dim pl-note">No open calls right now. Looking for someone to make something with? Post it with #collab, or #gig if it's paid.</p>`}
-      <button class="btn green pl-cta" id="plcall">Post a call</button></div>`;
-  /* pulse */
-  const tw=d.thisWeek,lw=d.lastWeek,delta=(a,b)=>a===b?"":`<span class="pl-d ${a>b?"up":""}">${a>b?"↑":"↓"}${Math.abs(a-b)}</span>`;
-  return `<div class="pl-stats">${[["pieces","Pieces"],["posts","Posts"],["people","People"]].map(([k,n])=>`<div class="pl-st"><b>${tw[k]}</b><span>${n} this week ${delta(tw[k],lw[k])}</span></div>`).join("")}</div>
-    <div class="pl-sec"><h3>Rising this week</h3>${d.rising.length?plGridHTML(d.rising):`<p class="dim pl-note">Nothing new this week yet. Be the first.</p>`}</div>
-    ${d.tags.length?`<div class="pl-sec"><h3>Tags this week</h3><div class="pl-tags wrap">${d.tags.map(t=>plChip(t.tag,false,t.count)).join("")}</div></div>`:""}
-    ${d.people.length?`<div class="pl-sec"><h3>Most active</h3><div class="pl-ppl">${d.people.map(u=>`<button class="pl-pp" data-plu="${esc(u.username)}">${avHTML(u,"")}<span>@${esc(u.username)}</span><span class="dim">${u.posts} ${u.posts===1?"post":"posts"}</span></button>`).join("")}</div></div>`:""}`;
+  return "";
 }
 
 function wirePlace(){
@@ -125,13 +107,11 @@ function wirePlace(){
   document.querySelectorAll("[data-pltag]").forEach(b=>b.onclick=()=>{LABTAG=b.dataset.pltag||null;LABVIEW="work";placeCH();
     if(!$("#plbody"))return render(),loadPlace();
     document.querySelectorAll("[data-pltab]").forEach(t=>t.classList.toggle("on",t.dataset.pltab==="work"));paintPlace();loadPlace()});
-  const all=()=>{const P=PLACE[LAB&&LAB.id]||{};return Object.values(P).flatMap(d=>d&&!d.error?[...(d.posts||[]),...(d.calls||[]),...(d.rising||[])]:[])};
-  document.querySelectorAll("[data-plpost],[data-plcall]").forEach(b=>b.onclick=()=>{const id=Number(b.dataset.plpost||b.dataset.plcall);
+  const all=()=>{const P=PLACE[LAB&&LAB.id]||{};return Object.values(P).flatMap(d=>d&&!d.error?(d.posts||[]):[])};
+  document.querySelectorAll("[data-plpost]").forEach(b=>b.onclick=()=>{const id=Number(b.dataset.plpost);
     const p=all().find(x=>x.id===id)||(TAGVIEW&&TAGVIEW.d&&TAGVIEW.d.posts.find(x=>x.id===id));if(p)openPost(p)});
-  document.querySelectorAll("[data-plu]").forEach(b=>b.onclick=()=>openProfile(b.dataset.plu));
   on("#plarchive",()=>setLabView("archive"));
   on("#plwork",()=>setLabView("work"));
-  on("#plcall",()=>{LABDRAFT="#collab ";setLabView("talk");setTimeout(()=>{const d=$("#draft");if(d){d.value=LABDRAFT;d.focus()}},50)});
   if(TAGVIEW){on("#tagback",()=>history.back());
     document.querySelectorAll("[data-taglab]").forEach(b=>b.onclick=()=>openLab(b.dataset.taglab,"work",TAGVIEW.tag))}
 }
@@ -167,4 +147,8 @@ function wirePlacesGlobal(){
   if(PLDELEG)return;PLDELEG=true;
   document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-tag]");if(!t)return;
     e.preventDefault();e.stopPropagation();openTag(t.dataset.tag)},true);
+  /* a genre's #tag on the labs list: that lab's work, narrowed to it */
+  document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-labtag]");if(!t)return;
+    e.preventDefault();e.stopPropagation();openLab(t.dataset.labtag,"work",t.dataset.t)},true);
+  document.addEventListener("keydown",e=>{if(e.key!=="Enter")return;const l=e.target.closest&&e.target.closest("div.lx[data-lab]");if(l)openLab(l.dataset.lab)});
 }
