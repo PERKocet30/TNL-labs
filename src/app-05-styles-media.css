@@ -225,6 +225,9 @@ input, textarea, select, .in, .search { font-size: 16px !important; }
 .gx-p{font-size:15px;line-height:1.45;color:var(--tx2);margin:0 0 20px;word-break:break-word}
 .gx-p b{color:var(--tx);font-weight:600}
 .gx-why{font-size:14px;line-height:1.4;color:var(--tx2);margin:0 0 16px}
+/* inside Instagram's browser (app-18-instagram): one quiet line, the button under it */
+.gx-out{font-size:13px;line-height:1.45;color:var(--tx2);border:1px solid var(--line2);padding:10px 12px;margin:0 0 16px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.gx-out .gx-link{padding:0;margin:0;font-size:13px;color:var(--tx);font-weight:700;text-decoration:underline}
 .gx-body.center .gx-why{text-align:center}
 .gx-brand{display:flex;flex-direction:column;align-items:center;gap:14px;margin:0 0 32px}
 .gx-mark{height:68px;width:auto}

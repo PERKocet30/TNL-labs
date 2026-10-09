@@ -1003,6 +1003,46 @@ console.log("\nMEMBER · COMPUTER");
   await d.ctx.close();
 }
 
+/* ================= Inside Instagram's own browser (2026-10-09) ================= */
+console.log("\nINSIDE INSTAGRAM · PHONE");
+{
+  const d = await device("instagram", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true,
+    userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22H20 Instagram 350.0.0.0 (iPhone15,2; iOS 18_7; en_US; en; scale=3.00; 1179x2556)" });
+  const p = d.page;
+  await p.addInitScript(() => localStorage.setItem("tnl-intro-seen", "1"));
+  await p.goto(B + "/"); await throughDoor(p);
+  /* Chromium has no x-safari: link (and stops taking taps once asked to open one): record where it went instead */
+  await p.evaluate(() => { goOut = (u) => { window.__out = u; }; });
+  await step(d, "Join says you're in Instagram's browser; Open in Safari tries Safari, then shows the taps that always work", async () => {
+    await p.evaluate(() => { GATE = "join"; render(); });
+    const out = p.locator(".gx-out");
+    ok(await out.count() === 1 && /Instagram's browser/.test(await out.innerText()), "no Instagram line on Join");
+    await out.locator("[data-outgo]").tap(); await p.waitForTimeout(1500);
+    ok(await p.evaluate(() => window.__out) === "x-safari-" + B + "/", "didn't ask Safari to open this page: " + await p.evaluate(() => window.__out));
+    const m = p.locator(".ui-ov");
+    ok(await m.count() === 1 && /Open in Safari/.test(await m.innerText()) && /•••/.test(await m.innerText()), "no fallback help over Join");
+    await p.locator(".ui-ov .ui-ok").tap(); await p.waitForTimeout(200);
+    ok(await p.locator(".ui-ov").count() === 0, "the help didn't close");
+    await p.evaluate(() => { gateClose(); render(); });
+  });
+  await step(d, "the Story sheet offers Safari instead of a share that can't happen here", async () => {
+    await p.evaluate(() => igStoryOpen("/icon-white-512.png", location.origin + "/u/friend")); await p.waitForTimeout(400);
+    ok(await p.locator("#igsgo").count() === 0, "the Share to Instagram button is still there inside Instagram");
+    ok(/Open in Safari/.test(await p.locator("#igsl [data-outgo]").innerText()), "no Open in Safari on the Story sheet");
+    ok(await p.locator("#igsl img").count() === 1, "the picture isn't there to press and hold");
+    await p.locator("#igsx").tap();
+  });
+  await step(d, "keep-it-on-your-phone becomes Open in Safari (no Add to Home Screen steps that can't work here)", async () => {
+    await p.evaluate(() => { try { localStorage.removeItem("tnl_install_dismissed"); } catch (e) {} maybeOfferInstall(); });
+    const c = p.locator(".installc");
+    ok(await c.count() === 1 && /Instagram's browser/.test(await c.innerText()) && !/Add to Home Screen/.test(await c.innerText()), "the card isn't the Safari one");
+    await p.screenshot({ path: join(SHOTS, "instagram-card.png") });
+    await c.locator("[data-installx]").tap(); await p.waitForTimeout(200);
+    ok(await p.locator(".installc").count() === 0, "the card didn't close");
+  });
+  await d.ctx.close();
+}
+
 await browser.close();
 stop();
 console.log(`\n  ${pass} passed, ${fail} failed`);

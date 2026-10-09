@@ -210,7 +210,7 @@ const uiPrompt=(title,o={})=>uiModal({title,body:o.body,fields:[{placeholder:o.p
    sense. Cold-open prompts are why everyone reflexively dismisses them. */
 function maybeOfferInstall(){
   const st=installState();
-  if(st!=="ios"&&st!=="android")return;
+  if(st!=="ios"&&st!=="android"&&st!=="inapp")return;
   if(INSTALLCARD)return;
   // only after they've done something real, and only once ever
   try{if(localStorage.getItem("tnl_install_dismissed"))return}catch(e){}
@@ -220,6 +220,7 @@ function maybeOfferInstall(){
 function installCardHTML(){
   if(!INSTALLCARD)return "";
   const st=installState();
+  if(st==="inapp")return inappCardHTML();
   if(st==="ios"){
     /* iOS has no install API. The honest thing is to show the exact taps,
        because there's no button we can press for them. */
@@ -257,6 +258,7 @@ function installState(){
   if(isStandalone())return "installed";
   try{if(localStorage.getItem("tnl_installed"))return "installed"}catch(e){}
   try{if(localStorage.getItem("tnl_install_dismissed"))return "dismissed"}catch(e){}
+  if(INAPP)return "inapp";          // inside Instagram: no home screen there — Safari first (app-18-instagram)
   if(onIOS())return "ios";          // can only show instructions
   if(INSTALLEVT)return "android";   // can fire a real prompt
   return "none";                    // desktop, or not eligible yet

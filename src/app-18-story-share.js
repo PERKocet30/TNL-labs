@@ -1,4 +1,4 @@
-/* ── SHARE TO INSTAGRAM STORIES · 2026-10-08 ───────────────────────────
+/* ── SHARE TO INSTAGRAM STORIES · v1.1 — 2026-10-09 (inside Instagram: open Safari) ───────────────────────────
    From any share menu — a post, a profile, a listing, a track: its Story
    card (server-12-story — the work, who made it, in their colour, and the
    link), then one tap shares it
@@ -31,10 +31,13 @@ function igsHTML(){
   return `<div class="sheet" id="igsbg"><div class="sheetc ev-share" role="dialog" aria-label="Share to Instagram">
     <div class="sheeth"><div><h2>Share to your Story</h2></div><button class="x" id="igsx" aria-label="Close">${DI.x}</button></div>
     <div class="ev-shimg">${s.failed?`<div class="dim">Couldn't make the picture. Your link still works.</div>`:`<img src="${esc(s.img)}" alt="Your Story card">`}</div>
-    <ol class="ev-howto"><li>Tap <b>Share to Instagram</b>, then pick <b>Instagram → Stories</b>.</li>
-      <li>Your link is copied — add a <b>Link</b> sticker and paste it, so people can tap straight through.</li></ol>
+    ${INAPP?`<ol class="ev-howto"><li>${esc(INAPP)}'s browser can't hand a picture to your Story. Open LABS in <b>${outBrowser()}</b> and share it from there.</li>
+      <li>Or press and hold the picture to save it, and add it to your Story yourself.</li></ol>`
+    :`<ol class="ev-howto"><li>Tap <b>Share to Instagram</b>, then pick <b>Instagram → Stories</b>.</li>
+      <li>Your link is copied — add a <b>Link</b> sticker and paste it, so people can tap straight through.</li></ol>`}
     <div class="ev-link"><span>${esc(s.link.replace(/^https?:\/\//,""))}</span><button class="btn ghost" id="igscopy">${DI.copy} Copy</button></div>
-    <button class="btn green ev-cta" id="igsgo"${s.file||s.failed?"":" disabled"}>${s.failed?"Share the link":s.file?"Share to Instagram":"Making your card…"}</button>
+    ${INAPP?`<button class="btn green ev-cta" data-outgo>Open in ${outBrowser()}</button>`
+    :`<button class="btn green ev-cta" id="igsgo"${s.file||s.failed?"":" disabled"}>${s.failed?"Share the link":s.file?"Share to Instagram":"Making your card…"}</button>`}
   </div></div>`}
 function igsPaint(){
   let l=document.getElementById("igsl");
@@ -45,7 +48,7 @@ function igsPaint(){
   $("#igsx").onclick=close;
   $("#igsbg").onclick=e=>{if(e.target.id==="igsbg")close()};
   $("#igscopy").onclick=()=>copyText(IGS.link);
-  $("#igsgo").onclick=()=>{
+  if($("#igsgo"))$("#igsgo").onclick=()=>{
     const s=IGS;if(!s)return;
     /* Both inside the tap: copy the link for the sticker, open the sheet. */
     try{navigator.clipboard&&navigator.clipboard.writeText(s.link).catch(()=>{})}catch(e){}
