@@ -1032,6 +1032,34 @@ console.log("\nINSIDE INSTAGRAM · PHONE");
     ok(await p.locator("#igsl img").count() === 1, "the picture isn't there to press and hold");
     await p.locator("#igsx").tap();
   });
+  /* v1.1: from a public page straight to the thing, behind the quick door */
+  await step(d, "a post's public page: Open in the app lands on that post — quick door, no film — and its Story sheet sits on top", async () => {
+    const pid = (await api("/api/users/friend", "e2e-friend-session")).posts.find((x) => x.isWork && x.imageUrl).id;
+    await p.evaluate(() => { localStorage.removeItem("tnl-intro-seen"); localStorage.setItem("tnl-token", "e2e-friend-session"); });
+    await p.goto(B + "/p/" + pid);
+    await p.locator("a.btn.block").tap();
+    await p.waitForSelector("#enterOv", { timeout: 8000 });
+    ok(await p.locator("#enterVid").count() === 0, "a deep link shouldn't play the intro film");
+    await throughDoor(p);
+    await p.evaluate(() => { goOut = (u) => { window.__out = u; }; });
+    await p.waitForFunction((id) => POSTOPEN && POSTOPEN.id === id, pid, { timeout: 6000 });
+    ok(await p.evaluate(() => location.search === ""), "the ?p= should be cleaned from the address");
+    await p.locator(".po-ov [data-share]").first().tap(); await p.waitForTimeout(300);
+    await p.locator(".pick").getByText("Instagram Story", { exact: true }).tap(); await p.waitForTimeout(400);
+    ok(await p.evaluate(() => { const r = document.querySelector("#igsx").getBoundingClientRect(); const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return !!(e && e.closest("#igsbg")); }), "the Story sheet is behind the open post");
+    await p.locator("#igsx").tap(); await p.locator("#poclose").tap();
+  });
+  await step(d, "a profile's public page: Open in the app opens that profile", async () => {
+    await p.goto(B + "/u/friend");
+    await p.locator("a.btn.block").tap();
+    await throughDoor(p);
+    await p.evaluate(() => { goOut = (u) => { window.__out = u; }; });
+    await p.waitForFunction(() => PROFILE && PROFILE.user && PROFILE.user.username === "friend", null, { timeout: 6000 });
+    // back to how this section started: a visitor, intro seen
+    await p.evaluate(() => { localStorage.removeItem("tnl-token"); localStorage.setItem("tnl-intro-seen", "1"); });
+    await p.goto(B + "/"); await throughDoor(p);
+    await p.evaluate(() => { goOut = (u) => { window.__out = u; }; });
+  });
   await step(d, "keep-it-on-your-phone becomes Open in Safari (no Add to Home Screen steps that can't work here)", async () => {
     await p.evaluate(() => { try { localStorage.removeItem("tnl_install_dismissed"); } catch (e) {} maybeOfferInstall(); });
     const c = p.locator(".installc");

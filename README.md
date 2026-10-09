@@ -278,6 +278,7 @@ POST   /api/posts/:id/like   (auth)
 POST   /api/posts/:id/share   (auth)
 PATCH  /api/posts/:id   (auth)
 DELETE /api/posts/:id   (auth)
+GET    /api/posts/:id
 GET    /api/posts/:id/comments
 POST   /api/posts/:id/comments   (auth)
 POST   /api/posts/:id/comments-off   (auth, author)

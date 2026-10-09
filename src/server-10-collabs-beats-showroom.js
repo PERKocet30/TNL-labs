@@ -172,7 +172,7 @@ ${u.link ? `<a class="cap" href="${/^https?:\/\//.test(u.link) ? esc(u.link) : "
   <div><b>${collabs}</b><span class="cap">Collabs</span></div>
 </div>
 ${work || `<div class="cap empty">Nothing published yet.</div>`}
-<a class="btn block acc" href="/">See more on LABS</a>`,
+<a class="btn block acc" href="/?u=${encodeURIComponent(u.username)}">Open in the app</a>`,
   }));
 });
 

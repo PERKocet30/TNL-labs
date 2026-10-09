@@ -291,6 +291,15 @@ app.post("/api/posts/:id/send", auth, verified, rateLimit({ max: 20, windowMs: 6
    job is to hand over the app instead of a 404. */
 app.get("/m/:id", (req, res) => listingPage(req, res));   // with the listing's own preview (server-12-instagram)
 
+/* One post for the app — a /?p= link from its public page (2026-10-09).
+   Published work for anyone; chat only for members, like the labs. */
+app.get("/api/posts/:id", maybeAuth, (req, res) => {
+  const rows = feedRows({ viewerId: req.user?.id || 0, limit: 1, postId: Number(req.params.id) || 0 });
+  if (!rows.length || (!rows[0].is_work && !req.user)) return res.status(404).json({ error: "This post isn't available." });
+  if (req.user && blockedIds(req.user.id).has(rows[0].author_username)) return res.status(404).json({ error: "This post isn't available." });
+  res.json({ post: shapePost(rows[0]) });
+});
+
 app.get("/p/:id", (req, res) => {
   const rows = feedRows({ viewerId: 0, limit: 1, postId: Number(req.params.id) });
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -347,7 +356,8 @@ ${p.videoUrl ? `<video class="media" src="${esc(p.videoPlayUrl || p.videoUrl)}#t
 ${p.beat ? `<div class="card"><b>${esc(p.beat.name || "untitled loop")}</b><div class="cap">${p.beat.bpm} BPM · made in the TNL studio</div></div>` : ""}
 ${accepted.length ? `<div class="cap meta"><span class="mk">//</span> Built with ${accepted.map((c) => esc(c.display_name || c.username)).join(" + ")}</div>` : ""}
 <div class="cap meta">${lookCount(p.likeCount, "like")} · ${lookCount(p.shareCount, "share")} · #${esc(p.channel)}</div>
-<a class="btn block acc" href="/">See what else is being made</a>`,
+<a class="btn block acc" href="/?p=${p.id}">Open in the app</a>
+<p class="cap" style="margin-top:14px;text-align:center"><a href="/">See what else is being made</a></p>`,
   }));
 });
 

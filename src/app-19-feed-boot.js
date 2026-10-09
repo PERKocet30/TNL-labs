@@ -308,10 +308,14 @@ function paintVerifyBar(){
   const mm=/^\/m\/(\d+)$/.exec(path);
   const me=new URLSearchParams(location.search).get("e");   // /e/:slug pages send people here
   const mv=Number(new URLSearchParams(location.search).get("v"))||null;   // …and /e/:slug/:entry, to that piece
-  const back=!me&&!mu&&!mm?evReturn():null;   // confirmed your email elsewhere: back to the vote
+  /* /u/ and /p/ are public pages (they preview in Instagram DMs); their
+     "Open in the app" sends ?u= / ?p= so the app lands on that exact thing. */
+  const qs=new URLSearchParams(location.search), qu=qs.get("u"), qp=Number(qs.get("p"))||null;
+  const back=!me&&!mu&&!mm&&!qu&&!qp?evReturn():null;   // confirmed your email elsewhere: back to the vote
   loadEvents();
   if(me||back){history.replaceState({},"","/");TAB="event";EVSLUG=me||back.slug;EVFOCUS=me?mv:back.v||null;loadEvent()}
-  else if(mu){openProfile(mu[1])}
+  else if(mu||qu){if(qu)history.replaceState({},"","/");openProfile(mu?mu[1]:qu)}
+  else if(qp){history.replaceState({},"","/");openPostById(qp)}
   else if(path==="/shop"){TAB="market";MKTVIEW="browse"}
   else if(mm){TAB="market";MKTVIEW="detail";
     try{const d=await api.mktOne(mm[1]);MKTONE=d.listing;MKTOFFERS=d.offers||[]}catch(e){}}
