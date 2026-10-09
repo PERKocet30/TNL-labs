@@ -130,24 +130,22 @@ function labsHTML(){
       <button class="btn ghost" id="loginBtn3">Sign in</button></div>
   </div></div>`;
 
-  /* Outside a lab: the index. Inside: one header, the channels as pills,
-     then the conversation — no sidebar, no hash list. */
-  if(!LAB)return labsGridHTML();
-
-  const locked=c=>c.gate&&levelFor(myRep()).id<c.gate;
+  /* Outside a lab: the index (or a #tag page). Inside: a place — one
+     header, Work · Talk · Open · Pulse (app-11-places.js). Talk is the
+     conversation below; the other tabs paint into #plbody. */
+  if(!LAB)return TAGVIEW?tagHTML():labsGridHTML();
+  const talk=LABVIEW==="talk";
   return `<div class="labs-wrap roomopen">
   <section class="room">
     <div class="lr-head">
       <button class="lr-back" id="labback" aria-label="All labs"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="lr-title"><span class="lg">//</span> ${esc(LAB.name)}</div>
       ${LAB.id==="culture"&&studioOn()?`<button class="lr-tool" id="openstudio">${UI_IC.music}<span>Studio</span></button>`:""}
-      ${CH.archive||CH.library?"":`<button class="lr-bell" id="lrbell" aria-label="Mute this channel">${UI_IC.bell}</button>`}
+      ${talk?`<button class="lr-bell" id="lrbell" aria-label="Mute this lab">${UI_IC.bell}</button>`:""}
     </div>
-    <div class="lr-tabs" role="tablist">${LAB.channels.map(c=>{const n=UNREADS[c.id]||0;
-      return `<button class="lr-tab ${CH.id===c.id?"on":""}" role="tab" aria-selected="${CH.id===c.id}" data-ch="${c.id}">${locked(c)?UI_IC.lock:""}${esc(chName(c))}${n&&CH.id!==c.id?`<i class="lr-dot" aria-label="${n} new"></i>`:""}</button>`}).join("")}</div>
-    ${CH.desc?`<div class="lr-desc">${esc(CH.desc)}</div>`:""}
-    <div id="lrpins"></div>
-    ${CH.archive?archiveHTML():CH.library?tracksHTML():`
+    ${placeTabsHTML()}
+    ${talk?`<div id="lrpins"></div>`:""}
+    ${!talk?`<div class="pl-body" id="plbody">${placeBodyHTML()}</div>`:`
     ${CH.beatlab?`<div id="studiomount"></div>`:""}
     ${(CH.gate&&levelFor(myRep()).id<CH.gate)?`<div class="empty">${UI_IC.lock} ${esc(chName(CH))} unlocks at ${LEVELS.find(l=>l.id===CH.gate).name}</div>`
       :`<div class="feed" id="feed">${skel()}</div>
@@ -179,7 +177,7 @@ function labsHTML(){
     <div class="composer">
       <input type="file" id="filein" accept="image/*,video/*" multiple hidden>
       <button class="attach" id="attachb" title="Attach image or video" aria-label="Attach image or video">${UI_IC.plus}</button>
-      <input class="in" id="draft" placeholder="${EDITID?"Edit your message…":"Message "+esc(chName(CH))}" value="${EDITID?"":esc(LABDRAFT)}" autocomplete="off">
+      <input class="in" id="draft" placeholder="${EDITID?"Edit your message…":"Message "+esc(labMark(LAB.name))}" value="${EDITID?"":esc(LABDRAFT)}" autocomplete="off">
       ${EDITID?`<button class="send ghostsend" id="canceledit" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:""}
       <button class="send" id="sendb" aria-label="Send">${EDITID?DI.check:UI_IC.arrow}</button>
     </div>`}

@@ -143,7 +143,7 @@ const MYPAGE=()=>!!(PROFILE&&ME&&PROFILE.user&&PROFILE.user.username===ME.userna
    what is safe to throw away. Dirty is derived, never a flag: a flag has to
    be set on every input path and the one you forget is the one that eats
    somebody's post. */
-const pcDirty=()=>!!(PCOMPOSE&&((PCOMPOSE.body||"").trim()||PCOMPOSE.imgs.length||PCOMPOSE.vid||PCOMPOSE.vidbusy||PCOMPOSE.upN||PCOMPOSE.track||(PCOMPOSE.collabs&&PCOMPOSE.collabs.length)||PCOMPOSE.ch
+const pcDirty=()=>!!(PCOMPOSE&&((PCOMPOSE.body||"").trim()||PCOMPOSE.imgs.length||PCOMPOSE.vid||PCOMPOSE.vidbusy||PCOMPOSE.upN||PCOMPOSE.track||(PCOMPOSE.collabs&&PCOMPOSE.collabs.length)||(PCOMPOSE.ch&&!PCOMPOSE.ch.auto)
   ||(PCOMPOSE.tags&&PCOMPOSE.tags.length)||PCOMPOSE.location||(PCOMPOSE.products&&PCOMPOSE.products.length)));
 /* pcLeave (Cancel / back: save a draft, discard, keep editing) lives in app-18-post-queue.js. */
 const myRep=()=>ME?ME.rep:0;
@@ -341,13 +341,16 @@ async function loadFeed(force){
      app crawled on phone networks. Fresh-enough data now short-circuits;
      posting, deleting, and live SSE events pass force=true. */
   /* …but a render() still has to repaint the room it just emptied. */
+  /* A lab's Talk is the whole lab: every old channel merged (app-11-places). */
+  if(TAB!=="labs"||!LAB||LABVIEW!=="talk")return;
   if(!force && FEEDAT[CH.id] && Date.now()-FEEDAT[CH.id]<8000){if(POSTSCH===CH.id)renderRoomFeed();return}
   FEEDAT[CH.id]=Date.now();
-  const ch=CH.id;
-  try{const d=await api.feed(ch);if(!CH||CH.id!==ch)return;POSTS=d.posts;LABPINS=d.pins||[];renderRoomFeed()}catch(e){/* not fatal */}
-  // opening a channel clears its dot
-  if(UNREADS[CH.id]){delete UNREADS[CH.id];paintUnreads()}
-  try{await api.readChannel(CH.id)}catch(e){}
+  const ch=CH.id, lab=LAB.id;
+  try{const d=await papi.feed(lab);if(!CH||CH.id!==ch||LABVIEW!=="talk")return;POSTS=d.posts;LABPINS=d.pins||[];renderRoomFeed()}catch(e){/* not fatal */}
+  // opening Talk clears the whole lab's dots
+  const had=LAB.channels.map(c=>c.id).filter(c=>UNREADS[c]);
+  if(had.length){had.forEach(c=>delete UNREADS[c]);paintUnreads()}
+  for(const c of new Set([ch,...had]))try{await api.readChannel(c)}catch(e){}
 }
 function paintUnreads(){
   document.querySelectorAll("[data-ch]").forEach(el=>{

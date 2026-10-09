@@ -8,12 +8,14 @@ function wire(){
          about what the button is. Selling keeps its own ＋ Sell button in
          the Market header; the nav ＋ does one thing everywhere. */
       if(guest())return needAccount("Join to post — it lands on your profile and the Showroom.");
-      PCOMPOSE={body:"",imgs:[],vid:null,busy:false};pushView("compose");render();return;
+      PCOMPOSE={body:"",imgs:[],vid:null,busy:false,ch:pcLabNow()};pushView("compose");render();return;
     }
     if(b.dataset.tab==="profile"){
       if(guest())return needAccount("Join to make your profile — your work and your shop.");
       openProfile(myName());return;
     }
+    /* Labs again while inside a lab (or a #tag page) → back to the index. */
+    if(TAB==="labs"&&b.dataset.tab==="labs"){LAB=null;ROOMOPEN=false;TAGVIEW=null;LABVIEW="work";LABTAG=null}
     TAB=b.dataset.tab;PROFILE=null;if(window.TNLStudio)TNLStudio.unmount();if(TAB==="market"){MKTVIEW="browse";loadMarket()}if(TAB==="labs")loadLabs();render()});
   document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{TAB=b.dataset.goto;PROFILE=null;render()});
   const srp=$("#sr-post");if(srp)srp.onclick=()=>{
@@ -21,7 +23,7 @@ function wire(){
        is chat now, so that button led away from the one place a post can
        be made. Same destination as the nav ＋: the post composer. */
     if(guest())return needAccount("Join to post — it lands on your profile and the Showroom.");
-    PCOMPOSE={body:"",imgs:[],vid:null,busy:false};pushView("compose");render();
+    PCOMPOSE={body:"",imgs:[],vid:null,busy:false,ch:pcLabNow()};pushView("compose");render();
   };
   /* ---- the archive + moodboards ---- */
   const pgo=$("#pastego"), pin_=$("#pastein");
@@ -124,7 +126,6 @@ function wire(){
     try{await api.delBoard(BOARDONE.board.id);BOARDONE=null;BOARDS=null;await loadBoards();toast("Deleted")}
     catch(e){toast(e.message)}};
 
-  document.querySelectorAll("[data-lab]").forEach(b=>b.onclick=()=>{const l=LABS.find(x=>x.id===b.dataset.lab);LAB=l;CH=l.channels[0];TAB="labs";ROOMOPEN=true;render()});
   const nb=$("#notifBtn");if(nb)nb.onclick=async()=>{
     NOTIFOPEN=true;NOTIFS=null;render();
     try{const d=await api.notifs();NOTIFS=d.notifications;render();
@@ -140,22 +141,14 @@ function wire(){
       if(d.verifyUrl){VERIFYURL=d.verifyUrl;toast("Email isn't set up — tap Open link");render()}
       else toast("Sent to "+(d.email||"your inbox")+" — check spam too");
     }catch(e){toast(e.message)}};
-  document.querySelectorAll("[data-lab]").forEach(b=>b.onclick=()=>{
-    const l=LABS.find(x=>x.id===b.dataset.lab);
-    if(!l)return;
-    pushView("lab",l.id);
-    LAB=l; CH=l.channels[0]; ROOMOPEN=true;
-    render(); loadFeed(true);
-  });
+  /* Labs are places (app-11-places.js): a lab opens on its Work tab. */
+  document.querySelectorAll("[data-lab]").forEach(b=>b.onclick=()=>openLab(b.dataset.lab));
   const lbk=$("#labback");if(lbk)lbk.onclick=()=>{
-    LAB=null; ROOMOPEN=false;
+    LAB=null; ROOMOPEN=false; LABVIEW="work"; LABTAG=null;
     render(); loadLabs();
   };
-  document.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>{
-    const c2=LAB.channels.find(x=>x.id===b.dataset.ch);
-    if(c2&&c2.archive){CH=c2;ROOMOPEN=true;render();loadArchive();if(!BOARDS)loadBoards();return}
-    for(const l of LABS){const c=l.channels.find(x=>x.id===b.dataset.ch);if(c){LAB=l;CH=c}}
-    ROOMOPEN=true;if(window.TNLStudio)TNLStudio.unmount();render()});
+  wirePlacesGlobal();
+  if(TAB==="labs"&&(LAB||TAGVIEW))wirePlace();
   const bb=$("#backb");if(bb)bb.onclick=()=>{ROOMOPEN=false;render()};
   const sendb=$("#sendb");if(sendb){const go=async()=>{
     const t=$("#draft").value.trim();

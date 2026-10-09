@@ -126,6 +126,8 @@ async function loadShowroom(force){
 /* The lab index. One row per genre, numbered like a specimen shelf: the
    latest piece made there (or the genre's drawn mark), what's unread, who's
    been in this week. Readable on paper and in dark mode alike. */
+/* The labs index — places, v2 2026-10-08: a row of rings like Stories
+   (lit when something's new), then each place as a card. */
 function labsGridHTML(){
   const A=LABACT||{byChannel:{},art:{},people:{},unread:{}};
   const labStats=(l)=>{
@@ -147,6 +149,10 @@ function labsGridHTML(){
       <h2 class="page-h">Labs</h2>
       <p class="lx-sub">${LABS.length} genres${weekTotal?` · ${weekTotal} posts this week`:""}</p>
     </div>
+    <div class="lx-rings">${LABS.map((l,i)=>{const st=all[i],id=LAB_ID[l.id]||{ic:""};
+      return `<button class="lx-ring ${st.unread?"new":st.today?"live":""}" data-lab="${l.id}" aria-label="${esc(l.name)}">
+        <span class="lx-rc">${st.art?`<img src="${esc(st.art.url)}" alt="" loading="lazy">`:`<span class="lx-ic">${id.ic}</span>`}</span>
+        <span class="lx-rn">${esc(l.name)}</span></button>`}).join("")}</div>
     <div class="lx-list">${LABS.map((l,i)=>{
       const id=LAB_ID[l.id]||{for:"",ic:""};
       const st=all[i];

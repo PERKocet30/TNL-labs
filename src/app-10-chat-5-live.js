@@ -18,7 +18,7 @@ async function startStream(){
   on("comment",d=>{if(OPENCOMMENTS===d.postId)api.comments(d.postId).then(r=>{if(OPENCOMMENTS===d.postId){COMMENTS=r.comments;paintComments()}})});
   on("like",d=>{if(d&&d.postId!=null&&!LIKING[String(d.postId)]&&typeof d.likeCount==="number")setLike(String(d.postId),null,d.likeCount)});
   ["collab-invite","collab-accepted"].forEach(t=>on(t,refresh));
-  on("post",p=>{if(TAB==="labs"&&CH&&p.channel===CH.id){clearTyping("lab:"+CH.id,p.author&&p.author.username);loadFeed(true)}
+  on("post",p=>{if(TAB==="labs"&&LAB&&labOfCh(p.channel)===LAB){if(LABVIEW==="talk"){clearTyping("lab:"+CH.id,p.author&&p.author.username);loadFeed(true)}}
     else if(TAB==="showroom")loadShowroom(true);
     if(p.author&&p.author.username!==myName())loadUnreads()});
   on("post-edit",p=>{const i=(POSTS||[]).findIndex(x=>x.id===p.id);if(i>=0){POSTS[i]=p;renderRoomFeed()}else refresh()});
