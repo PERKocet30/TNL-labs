@@ -83,7 +83,8 @@ test/                           51 test suites — run with npm test
 | `server-06-market-stock` | sizes and colours: every unit sold goes through `takeStock()` (the size picked, the listing closes at zero) |
 | `server-10-dm-core` · `-dm-groups` · `-dm-routes` | Messages v2: schema migration (groups; backup first), requests, replies, reactions, edit/unsend, forward, mute |
 | `server-10-links` · `server-10-live` | link previews behind a DNS-level SSRF guard; the signed-in live stream, typing, presence, lab reactions and pins |
-| `server-10-places` | Labs as places: `PLACES` (each lab's channels and home), #tags read from captions plus the old channel's tag for posts from before the cutover, and the lab feed / work / open / pulse and tag routes |
+| `server-10-places` | Labs as places: `PLACES` (each lab's channels and home), #tags read from captions plus the old channel's tag for posts from before the cutover, and the lab feed / work / tags and #tag routes; pins from any of the lab's channels |
+| `server-10-pulse-labs` | Admin · the direction: `/api/admin/direction` — each lab's work, talk and #tags, trending #tags, the tournament and what needs you about it, how people take part. `LAB_NAME` must match `LABS` |
 | `server-10-events-1-core` · `-2-routes` · `-3-admin` · `-4-cards` · `-5-pages` | Events: the schema and state machine (`tickEvent()`: submit → vote → bracket rounds → judged final → results, idempotent, runs every minute), entering/voting/judging, the poll's scoreboard (`evBoard`), admin, the Instagram cards (entry Story, scoreboard post/Story) and the public `/e/:slug`, `/rules`, `/board` and `/e/:slug/:entry` pages |
 
 ---
@@ -190,15 +191,16 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 
 ---
 
-## Admin dashboard (`/admin`) — v2.0, 2026-09-29
+## Admin dashboard (`/admin`) — v2.2, 2026-10-09
 
-Admin-only; every route checks on the server. `public/admin.html` is the shell and styles, the app is `public/admin-app/1-core.js` … `8-events.js`, and the data comes from `src/server-10-admin.js` plus the older admin routes.
+Admin-only; every route checks on the server. `public/admin.html` is the shell and styles, the app is `public/admin-app/1-core.js` … `8-events.js`, and the data comes from `src/server-10-admin.js`, `src/server-10-pulse-labs.js` plus the older admin routes. v2.2 follows the app's direction: labs are places (genres + #tags), the tournament is the centre, Instagram brings people in and the app is where they take part.
 
-- **Today:** what needs you (reports, orders not shipped after 3 days, backups, errors, stale collab invites, new members to welcome), eight numbers against the previous period (7, 30 or 90 days), a daily chart, the collab loop with who stopped at each step, lab activity and the most active members.
-- **People:** search, filter (new, never posted, gone quiet, sellers, unverified, suspended, admins) and sort. Each person opens with their stats, recent posts, rep history, a private admin note, and actions: message, confirm email, adjust rep (with a reason), feature, sign out everywhere, suspend. Message a group from the bottom.
-- **Content:** open reports first, then every post, filterable by lab, kind and text; pin, delete. Studio stats live here.
+- **Today:** what needs you (reports, orders not shipped after 3 days, backups, errors, stale collab invites, new members to welcome, and the tournament — a draft, entries or voting ending within 48h with a nudge to post on Instagram), the tournament (stage, entries, voters, votes), eight numbers against the previous period (7, 30 or 90 days — work posted and tournament votes among them), a daily chart, how people take part (build, talk, feedback, the tournament, collabs, selling) with who hasn't yet, each lab with its #tags, the #tags people are using, and the most active members. A tournament vote counts as activity.
+- **People:** search, filter (new, never posted, gone quiet, in the tournament, sellers, unverified, suspended, admins) and sort. Each person opens with their stats, recent posts, rep history, a private admin note, and actions: message, confirm email, adjust rep (with a reason), feature, sign out everywhere, suspend. Message a group from the bottom.
+- **Labs** (was Content): open reports first, then every post, filterable by lab, #tag, work or talk, and text; pin, delete. Tap a lab or a #tag on Today to land here filtered.
+- **Tournament** (was Events): set up and run events, with the Instagram kit.
 - **Market:** sales, commission, orders by status, top sellers, stale listings.
-- **System:** switches and landing text, backups, email test, unused files, errors, and the **admin log** — every change made from the dashboard, with who and when (`admin_log`, written by a hook on `/api/admin` writes).
+- **System:** switches and landing text (Studio stats sit by the Studio switch when it's on), backups, email test, unused files, errors, and the **admin log** — every change made from the dashboard, with who and when (`admin_log`, written by a hook on `/api/admin` writes).
 
 ---
 
@@ -432,7 +434,9 @@ GET    /api/builders
 GET    /api/health
 
 # admin
-GET    /api/admin/pulse?days=&tz=   (admin)  Today: numbers, series, loop, labs, needs-you
+GET    /api/admin/pulse?days=&tz=   (admin)  Today: numbers, series, needs-you
+GET    /api/admin/direction?days=&tz=   (admin)  Today: labs + #tags, the tournament, taking part, tournament needs
+GET    /api/admin/posts?lab=&tag=&kind=&q=   (admin)  moderation by lab and #tag
 GET    /api/admin/people · /api/admin/people/:username   (admin)
 POST   /api/admin/people/:username/note · /signout   (admin)
 GET    /api/admin/posts · /api/admin/log   (admin)

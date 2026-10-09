@@ -1,4 +1,4 @@
-// Admin v2.0 (2026-09-29): boots the real server on a throwaway database and
+// Admin v2.1 (2026-10-09; v2.0 2026-09-29): boots the real server on a throwaway database and
 // checks the dashboard's numbers, the people tools, the audit log, and that
 // none of it answers anyone but an admin.
 import { fileURLToPath } from "node:url";
@@ -55,11 +55,8 @@ try {
   t("active this week: ana, ben (posting / liking)", p.now.active === 2);
   t("collabs confirmed this week: 1", p.now.collabs === 1);
   t("posts per day add up", p.series.posts.reduce((a, b) => a + b, 0) === 2);
-  const loop = Object.fromEntries(p.loop.map((s) => [s.label, s]));
-  t("loop: 5 joined → 3 posted → 1 got feedback", loop.Joined.n === 5 && loop.Posted.n === 3 && loop["Got feedback"].n === 1);
-  t("posted but no feedback yet: ben and dee", loop["Got feedback"].stuck.map((x) => x.username).sort().join() === "ben,dee");
-  t("joined but never posted: boss and cam", loop.Posted.stuck.map((x) => x.username).sort().join() === "boss,cam");
-  t("labs this week: general and music", p.labs.map((l) => l.channel).sort().join() === "general,music");
+  t("work posted per day: ana's piece", p.now.work === 1 && p.series.work.reduce((a, b) => a + b, 0) === 1);
+  t("the old collab loop and per-channel labs moved to /api/admin/direction", p.loop === undefined && p.labs === undefined);
   t("needs you: cam is new and hasn't posted", p.inbox.some((i) => i.kind === "welcome" && i.people.includes("cam")));
   t("needs you: no backup yet", p.inbox.some((i) => i.kind === "backup"));
   t("a nonsense range falls back to 30 days", (await call("boss", "GET", "/api/admin/pulse?days=999")).j.days === 30);
@@ -98,7 +95,8 @@ try {
   console.log("\nCONTENT");
   const c = (await call("boss", "GET", "/api/admin/posts?channel=general")).j;
   t("filter by lab", c.posts.length === 3 && c.posts.every((x) => x.channel === "general"));
-  t("channels listed with counts", c.channels.find((x) => x.channel === "general").n === 3);
+  t("labs listed with counts (General holds #general)", c.labs.find((x) => x.id === "hq").n === 3 && c.labs.some((x) => x.id === "profile"));
+  t("each post says its lab", c.posts.every((x) => x.labName === "General"));
   t("search by text or author", (await call("boss", "GET", "/api/admin/posts?q=ben")).j.posts.length === 1);
 } catch (e) {
   fail++; console.log("  ✗  threw: " + e.message); console.log(log.slice(-1500));

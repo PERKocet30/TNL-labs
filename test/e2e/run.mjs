@@ -112,6 +112,8 @@ async function step(d, title, fn) {
     pass++; console.log(`  ✓  [${d.name}] ${title}`);
   } catch (e) {
     fail++; console.log(`  ✗  [${d.name}] ${title}\n       ${String(e.message || e).split("\n")[0]}`);
+    // on GitHub, also as an annotation — readable from the PR's checks without the log
+    if (process.env.GITHUB_ACTIONS) console.log(`::error title=tap-through::[${d.name}] ${title} — ${String(e.message || e).split("\n")[0].replace(/[\r\n%]/g, " ")}`);
     await d.page.screenshot({ path: join(SHOTS, `${d.name}-${title.replace(/[^a-z0-9]+/gi, "-")}.png`) }).catch(() => {});
   }
 }
@@ -992,6 +994,20 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.getByText(/× rage taps · /).count() > 0, "the rage tap isn't listed");
     ok(await p.getByText(/Glitches, 24h/).count() > 0, "no Glitches KPI");
     await p.screenshot({ path: join(SHOTS, "admin-glitches.png"), fullPage: false });
+    await p.goto(B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
+  });
+  // 2026-10-09: Today runs on the direction — the tournament, the labs and their #tags
+  await step(d, "admin → Today leads with the tournament; a lab opens its posts in Labs", async () => {
+    await p.goto(B + "/admin#today");
+    await fast(p, 6000, () => p.locator("h2.sec", { hasText: "The tournament" }).first().waitFor(), "the admin Today page");
+    ok(await p.locator(".tour [data-ev-open]").count() === 1, "no tournament panel");
+    ok(await p.locator("h2.sec", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
+    ok(await p.locator("nav.tabs [data-tab=content]", { hasText: "Labs" }).count() === 1, "the Content tab isn't called Labs");
+    await p.screenshot({ path: join(SHOTS, "admin-today.png"), fullPage: false });
+    await p.locator("tr[data-labf=pharmacy]").click();
+    // the lab list arrives with the posts — wait for it, not just the empty select
+    await fast(p, 5000, () => p.locator("#clab option[value=pharmacy]").waitFor({ state: "attached" }), "the Labs tab");
+    ok(await p.locator("#clab").inputValue() === "pharmacy", "the lab filter wasn't set");
     await p.goto(B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
   await step(d, "resizing to phone width switches to the phone frame", async () => {

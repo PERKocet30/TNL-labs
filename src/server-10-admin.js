@@ -1,11 +1,12 @@
 /* ================================================================
-   ADMIN v2.0 — 2026-09-29. What the dashboard runs on.
+   ADMIN v2.1 — 2026-10-09. What the dashboard runs on.
    - /api/admin/pulse: the numbers that matter for a date range, each
-     against the range before it, plus daily series, the collab loop
-     with who's stuck at each step, lab activity, and "needs you".
+     against the range before it, plus daily series and "needs you".
+     (v2.1: labs, #tags, the tournament and how people take part moved
+     to /api/admin/direction, server-10-pulse-labs.js.)
    - /api/admin/people: members to filter, sort and act on, with a
      private note per person and "sign out everywhere".
-   - /api/admin/posts: content to moderate, filterable.
+   - /api/admin/posts: content to moderate, by lab, #tag, work or talk.
    - /api/admin/log: every admin change, written down (auditAdmin, hooked
      in server-01 for all /api/admin writes).
    Every route is behind auth + admin(), checked here on the server.
@@ -46,13 +47,14 @@ const ADAY = 86400000;
 const PAID = `('paid','shipped','complete')`;
 const aone = (sql, ...p) => db.prepare(sql).get(...p)?.n ?? 0;
 /* Doing anything counts as active: posting, feedback, a like or reaction,
-   a message. Opening the app only counts from messaging v2 on (last_seen_at). */
+   a message, a tournament vote (v2.1). Opening the app only counts from messaging v2 on (last_seen_at). */
 const ACTIVITY = `
   SELECT author_id u, created_at t FROM posts
   UNION ALL SELECT author_id, created_at FROM comments
   UNION ALL SELECT user_id, created_at FROM likes
   UNION ALL SELECT user_id, created_at FROM reactions
-  UNION ALL SELECT sender_id, created_at FROM dm_messages WHERE kind = 'msg'`;
+  UNION ALL SELECT sender_id, created_at FROM dm_messages WHERE kind = 'msg'
+  UNION ALL SELECT voter_id, created_at FROM event_votes`;
 const feeOf = (o) => Math.round(o.amount_cents * (feeForRep(o.seller_rep) / 100));
 
 function windowStats(a, b) {
@@ -74,30 +76,6 @@ function windowStats(a, b) {
   };
 }
 
-/* The collab loop, person by person. Each step counts everyone who has done
-   it; `stuck` = did the step before, not this one — the people to nudge. */
-function loopSteps() {
-  const set = (sql) => new Set(db.prepare(sql).all().map((r) => r.u));
-  const live = set(`SELECT id u FROM users WHERE suspended = 0`);
-  const steps = [
-    ["Joined", live],
-    ["Posted", set(`SELECT DISTINCT author_id u FROM posts`)],
-    ["Got feedback", set(`SELECT DISTINCT p.author_id u FROM posts p WHERE EXISTS (SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id != p.author_id)
-      OR EXISTS (SELECT 1 FROM comments c WHERE c.post_id = p.id AND c.author_id != p.author_id)
-      OR EXISTS (SELECT 1 FROM reactions x WHERE x.kind = 'post' AND x.target_id = p.id AND x.user_id != p.author_id)`)],
-    ["Messaged someone", set(`SELECT DISTINCT sender_id u FROM dm_messages WHERE kind = 'msg'`)],
-    ["In a collab", set(`SELECT user_id u FROM collaborators UNION SELECT p.author_id FROM collaborators c JOIN posts p ON p.id = c.post_id`)],
-    ["Collab confirmed", set(`SELECT user_id u FROM collaborators WHERE status = 'accepted' UNION SELECT p.author_id FROM collaborators c JOIN posts p ON p.id = c.post_id WHERE c.status = 'accepted'`)],
-    ["Sold something", set(`SELECT DISTINCT seller_id u FROM orders WHERE status IN ${PAID}`)],
-  ].map(([label, ids]) => ({ label, ids: new Set([...ids].filter((u) => live.has(u))) }));
-  const names = new Map(db.prepare(`SELECT id, username, display_name, avatar_url FROM users`).all().map((u) => [u.id, u]));
-  return steps.map((st, i) => {
-    const stuck = i ? [...steps[i - 1].ids].filter((u) => !st.ids.has(u)) : [];
-    return { label: st.label, n: st.ids.size, stuckCount: stuck.length,
-      stuck: stuck.slice(0, 40).map((u) => { const x = names.get(u); return x ? { username: x.username, displayName: x.display_name, avatarUrl: x.avatar_url || "" } : null; }).filter(Boolean) };
-  });
-}
-
 app.get("/api/admin/pulse", auth, admin, (req, res) => {
   const days = [7, 30, 90].includes(Number(req.query.days)) ? Number(req.query.days) : 30;
   const tz = Math.max(-840, Math.min(840, Number(req.query.tz) || 0)) * 60000;   // Date#getTimezoneOffset, in ms
@@ -117,13 +95,11 @@ app.get("/api/admin/pulse", auth, admin, (req, res) => {
     signups: bucket(`SELECT ${dayExpr} d, COUNT(*) n FROM users WHERE created_at >= ?1 GROUP BY d`),
     active: bucket(`SELECT CAST((t - ?1) / ${ADAY} AS INTEGER) d, COUNT(DISTINCT u) n FROM (${ACTIVITY}) WHERE t >= ?1 GROUP BY d`),
     posts: bucket(`SELECT ${dayExpr} d, COUNT(*) n FROM posts WHERE created_at >= ?1 GROUP BY d`),
+    work: bucket(`SELECT ${dayExpr} d, COUNT(*) n FROM posts WHERE is_work = 1 AND created_at >= ?1 GROUP BY d`),
     messages: bucket(`SELECT ${dayExpr} d, COUNT(*) n FROM dm_messages WHERE kind = 'msg' AND created_at >= ?1 GROUP BY d`),
     gmv: bucket(`SELECT ${dayExpr} d, SUM(amount_cents + shipping_cents) n FROM orders WHERE status IN ${PAID} AND created_at >= ?1 GROUP BY d`),
   };
 
-  const labs = db.prepare(`
-    SELECT channel, COUNT(*) posts, COUNT(DISTINCT author_id) people, MAX(created_at) last
-    FROM posts WHERE created_at >= ? AND channel != 'profile' GROUP BY channel ORDER BY posts DESC`).all(start);
   const top = db.prepare(`
     SELECT u.username, u.display_name, u.avatar_url, COUNT(*) n
     FROM (${ACTIVITY}) a JOIN users u ON u.id = a.u WHERE a.t >= ? GROUP BY a.u ORDER BY n DESC LIMIT 6`).all(start);
@@ -137,8 +113,7 @@ app.get("/api/admin/pulse", auth, admin, (req, res) => {
       collabs: aone(`SELECT COUNT(*) n FROM collaborators WHERE status = 'accepted'`),
       gmv: aone(`SELECT COALESCE(SUM(amount_cents + shipping_cents), 0) n FROM orders WHERE status IN ${PAID}`),
     },
-    series, loop: loopSteps(),
-    labs: labs.map((l) => ({ channel: l.channel, posts: l.posts, people: l.people, last: l.last })),
+    series,
     top: top.map((t) => ({ username: t.username, displayName: t.display_name, avatarUrl: t.avatar_url || "", n: t.n })),
     inbox: inboxItems(now),
   });
@@ -183,6 +158,7 @@ app.get("/api/admin/people", auth, admin, (req, res) => {
     silent: [`posts = 0`, []],
     quiet: [`posts > 0`, []],   // + no activity in 14 days, applied below
     sellers: [`listings > 0`, []],
+    tournament: [`tour > 0`, []],
     admins: [`u.is_admin = 1`, []],
     suspended: [`u.suspended = 1`, []],
     unverified: [`u.email_verified = 0`, []],
@@ -195,6 +171,7 @@ app.get("/api/admin/people", auth, admin, (req, res) => {
         (SELECT COUNT(*) FROM listings l WHERE l.seller_id = u.id) listings,
         (SELECT COUNT(*) FROM collaborators c WHERE c.user_id = u.id AND c.status = 'accepted') collabs,
         (SELECT COUNT(*) FROM follows f WHERE f.followee_id = u.id) followers,
+        (SELECT COUNT(*) FROM event_entries e WHERE e.user_id = u.id) + (SELECT COUNT(*) FROM event_votes v WHERE v.voter_id = u.id) tour,
         (SELECT COALESCE(SUM(o.amount_cents), 0) FROM orders o WHERE o.seller_id = u.id AND o.status IN ${PAID}) gross,
         (SELECT 1 FROM admin_notes n WHERE n.user_id = u.id AND n.body != '') has_note
       FROM users u ${where.length ? "WHERE " + where.join(" AND ") : ""}
@@ -211,7 +188,7 @@ app.get("/api/admin/people", auth, admin, (req, res) => {
     rep: r.rep, level: levelFor(r.rep).id, levelName: levelFor(r.rep).name,
     verified: !!r.email_verified, isAdmin: !!r.is_admin, suspended: !!r.suspended, payouts: !!r.stripe_ready,
     joined: r.created_at, lastSeen: r.last_seen_at || null, lastActive: r.last_active || null,
-    posts: r.posts, listings: r.listings, collabs: r.collabs, followers: r.followers, gross: r.gross, note: !!r.has_note,
+    posts: r.posts, listings: r.listings, collabs: r.collabs, followers: r.followers, gross: r.gross, note: !!r.has_note, tournament: r.tour > 0,
   })) });
 });
 
@@ -245,11 +222,13 @@ app.get("/api/admin/people/:username", auth, admin, (req, res) => {
       bought: aone(`SELECT COUNT(*) n FROM orders WHERE buyer_id = ? AND status IN ${PAID}`, id),
       reportsAgainst: aone(`SELECT COUNT(*) n FROM reports r LEFT JOIN posts p ON p.id = r.post_id WHERE r.user_id = ? OR p.author_id = ?`, id, id),
       blockedBy: aone(`SELECT COUNT(*) n FROM blocks WHERE blocked_id = ?`, id),
+      entered: aone(`SELECT COUNT(*) n FROM event_entries WHERE user_id = ?`, id),
+      votes: aone(`SELECT COUNT(*) n FROM event_votes WHERE voter_id = ?`, id),
       sessions: aone(`SELECT COUNT(*) n FROM sessions WHERE user_id = ?`, id),
     },
     posts: db.prepare(`SELECT p.id, p.channel, p.body, p.thumb_url, p.image_url, p.video_url, p.is_work, p.created_at,
       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) likes FROM posts p WHERE p.author_id = ? ORDER BY p.created_at DESC LIMIT 9`).all(id)
-      .map((p) => ({ id: p.id, channel: p.channel, body: (p.body || "").slice(0, 160), thumbUrl: p.thumb_url || p.image_url || null,
+      .map((p) => ({ id: p.id, channel: p.channel, labName: labName(p.channel), body: (p.body || "").slice(0, 160), thumbUrl: p.thumb_url || p.image_url || null,
         video: !!p.video_url, isWork: !!p.is_work, createdAt: p.created_at, likes: p.likes })),
     rep: db.prepare(`SELECT kind, amount, created_at FROM rep_events WHERE user_id = ? ORDER BY created_at DESC LIMIT 12`).all(id)
       .map((r) => ({ kind: r.kind, amount: r.amount, at: r.created_at })),
@@ -281,6 +260,11 @@ app.get("/api/admin/posts", auth, admin, (req, res) => {
   const ch = (req.query.channel || "").toString().slice(0, 40);
   const term = (req.query.q || "").toString().toLowerCase().slice(0, 60);
   if (ch) { where.push(`p.channel = ?`); params.push(ch); }
+  const lab = String(req.query.lab || "");   // a lab (its channels), or "profile"
+  if (lab === "profile") where.push(`p.channel = 'profile'`);
+  else if (PLACES[lab]) where.push(`p.channel IN (${inList(PLACES[lab].channels)})`);
+  const tag = cleanTag(req.query.tag);
+  if (tag.length >= 2) { const ids = tagCandidates(tag, null, { limit: 2000 }).map((r) => Number(r.id)); where.push(ids.length ? `p.id IN (${ids.join(",")})` : `0`); }
   if (term) { where.push(`(LOWER(p.body) LIKE ? OR LOWER(u.username) LIKE ?)`); params.push(`%${term}%`, `%${term}%`); }
   if (req.query.kind === "work") where.push(`p.is_work = 1`);
   if (req.query.kind === "talk") where.push(`p.is_work = 0`);
@@ -296,13 +280,15 @@ app.get("/api/admin/posts", auth, admin, (req, res) => {
       (SELECT 1 FROM channel_pins cp WHERE cp.post_id = p.id) pinned
     FROM posts p JOIN users u ON u.id = p.author_id ${where.length ? "WHERE " + where.join(" AND ") : ""}
     ORDER BY p.created_at DESC LIMIT 60`).all(...params);
-  const channels = db.prepare(`SELECT channel, COUNT(*) n FROM posts GROUP BY channel ORDER BY n DESC`).all();
+  const per = new Map(db.prepare(`SELECT channel, COUNT(*) n FROM posts GROUP BY channel`).all().map((r) => [r.channel, r.n]));
+  const labs = [...Object.keys(PLACES).map((id) => ({ id, name: LAB_NAME[id], n: PLACES[id].channels.reduce((s, c) => s + (per.get(c) || 0), 0) })),
+    { id: "profile", name: "Profiles", n: per.get("profile") || 0 }];
   res.json({
-    posts: rows.map((r) => ({ id: r.id, channel: r.channel, body: r.body, thumbUrl: r.thumb_url || r.image_url || null,
+    posts: rows.map((r) => ({ id: r.id, channel: r.channel, labName: labName(r.channel), tags: rowTags(r), body: r.body, thumbUrl: r.thumb_url || r.image_url || null,
       video: !!r.video_url, beat: !!r.beat_json, isWork: !!r.is_work, createdAt: r.created_at, likes: r.likes, comments: r.comments,
       reports: r.reports, pinned: !!r.pinned,
       author: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "" } })),
-    channels,
+    labs,
   });
 });
 

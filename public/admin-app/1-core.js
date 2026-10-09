@@ -1,11 +1,11 @@
-/* TNL LABS admin v2.0 — 2026-09-29. Core: state, API, helpers, charts, shell.
-   Five places: Today (what needs you + how it's going), People, Content,
-   Market, System. Every number here comes from an admin-only endpoint; the
+/* TNL LABS admin v2.2 — 2026-10-09. Core: state, API, helpers, charts, shell.
+   Today (what needs you, the tournament, how people take part), People,
+   Labs (every post by lab and #tag), Tournament, Market, System. Every number here comes from an admin-only endpoint; the
    server checks, not this page. */
 const API = location.origin;
 let TOKEN = null; try { TOKEN = localStorage.getItem("tnl-token"); } catch (e) {}
 let ME = null, TAB = "today", RANGE = 30, D = {}, TOASTT = null;
-const TABS = [["today", "Today"], ["people", "People"], ["content", "Content"], ["events", "Events"], ["market", "Market"], ["system", "System"]];
+const TABS = [["today", "Today"], ["people", "People"], ["content", "Labs"], ["events", "Tournament"], ["market", "Market"], ["system", "System"]];
 try { const h = location.hash.slice(1); if (TABS.some(([k]) => k === h)) TAB = h; RANGE = +localStorage.getItem("tnl-admin-range") || 30; } catch (e) {}
 
 const $ = (s, r = document) => r.querySelector(s);

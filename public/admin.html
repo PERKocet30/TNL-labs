@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- TNL LABS admin v2.1 — 2026-09-29. Shell and styles; the app is public/admin-app/*.js; colours from /palette.css -->
+<!-- TNL LABS admin v2.2 — 2026-10-09. Shell and styles; the app is public/admin-app/*.js; colours from /palette.css -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -173,17 +173,27 @@ details.more summary::-webkit-details-marker{display:none}
 .modal .box{background:var(--card);border:1px solid var(--line2);width:100%;max-width:380px;padding:18px}
 .modal .box b{display:block;font-size:16px;margin-bottom:6px}.modal .box p{color:var(--dim);font-size:13px;white-space:pre-line}
 .modal .box .in{margin-top:10px}.modal .row{justify-content:flex-end;margin-top:14px}
+/* direction (2026-10-09): the tournament panel, lab rows, #tags */
+.tour .stats{margin:12px 0 10px}
+.tgs{display:flex;flex-wrap:wrap;gap:6px}
+.chip.tg{padding:3px 10px;font-weight:700}.chip.tg span{font-weight:400;color:var(--dim)}
+.chip.tg.on{background:var(--tx);border-color:var(--tx);color:var(--bg)}
+.htg{padding:0;font-size:12px;font-weight:700}
+.tbl tr.clk{cursor:pointer}.tbl tr.clk:hover td{background:var(--el)}
+.step i.mono{font-style:normal;margin-left:3px}
+.loop.part .step{grid-template-columns:172px 1fr 44px}
+@media(max-width:520px){.loop.part .step{grid-template-columns:118px 1fr 36px}}
 </style>
 </head>
 <body><div id="app"></div><div id="layer"></div>
-<script src="/admin-app/1-core.js?v=2.1"></script>
-<script src="/admin-app/2-today.js?v=2.0"></script>
-<script src="/admin-app/3-people.js?v=2.0"></script>
-<script src="/admin-app/4-content.js?v=2.0"></script>
+<script src="/admin-app/1-core.js?v=2.2"></script>
+<script src="/admin-app/2-today.js?v=3.0"></script>
+<script src="/admin-app/3-people.js?v=2.1"></script>
+<script src="/admin-app/4-content.js?v=3.0"></script>
 <script src="/admin-app/5-market.js?v=2.0"></script>
-<script src="/admin-app/6-system.js?v=2.0"></script>
+<script src="/admin-app/6-system.js?v=2.1"></script>
 <script src="/admin-app/7-studio.js?v=2.0"></script>
-<script src="/admin-app/8-events.js?v=1.1"></script>
+<script src="/admin-app/8-events.js?v=1.2"></script>
 <script>boot()</script>
 </body>
 </html>

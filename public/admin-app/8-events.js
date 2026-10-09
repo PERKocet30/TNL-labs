@@ -1,4 +1,5 @@
-/* TNL LABS admin — Events v1.1, 2026-10-07. Set up and run events (the
+/* TNL LABS admin — Events v1.2, 2026-10-09 (the Tournament tab; v1.2: named for it).
+   Events v1.1, 2026-10-07. Set up and run events (the
    tournament): dates, format, judges, the live tallies members never see,
    disqualifying, and "End this phase now". The server enforces all of it.
    v1.1: the Poll format (votes a day + a live scoreboard), and the
@@ -18,8 +19,8 @@ VIEWS.events = () => {
   if (EVID) return D.event ? evDetailHTML(D.event) : `<div class="empty">Loading…</div>`;
   const L = D.events?.events;
   if (!L) return `<div class="empty">Loading…</div>`;
-  return `<div class="row sp"><h1 style="font-size:22px">Events</h1><button class="btn fill" id="evnew">New event</button></div>
-    <p class="dim" style="margin:8px 0 14px;font-size:13px">Your tournament lives here. Members see the event on the Showroom and at labs.tnllabs.com/e/your-link.</p>
+  return `<div class="row sp"><h1 style="font-size:22px">Tournament</h1><button class="btn fill" id="evnew">New event</button></div>
+    <p class="dim" style="margin:8px 0 14px;font-size:13px">Your tournament lives here. Members see it on the Showroom and at labs.tnllabs.com/e/your-link. Votes only count in the app — Instagram is for reach: each event's Instagram kit has the scoreboard to post and every entry's vote link.</p>
     <div class="list">${L.length ? L.map((e) => `<button class="li" data-ev="${e.id}"><div class="b"><b>${esc(e.title)}${e.published ? "" : `<span class="tag">draft</span>`}</b>
       <span>/e/${esc(e.slug)} · ${e.format} · ${e.entries} entr${e.entries === 1 ? "y" : "ies"}</span></div><div class="r">${phName(e.phase)}</div>${I.chev}</button>`).join("")
       : `<div class="empty">No events yet.</div>`}</div>`;

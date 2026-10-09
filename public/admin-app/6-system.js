@@ -1,4 +1,5 @@
-/* TNL LABS admin v2.0 — 2026-09-29. System: switches, safety nets, and the log of who changed what. */
+/* TNL LABS admin v2.1 — 2026-10-09. System: switches, safety nets, and the log of who changed what.
+   v2.1: Studio stats live here, by the Studio switch (they were under Content). */
 let MAILRESULT = null;
 LOADERS.system = async () => {
   const [health, settings, backups, errors, maillog, log, glitches] = await Promise.all(["/api/admin/health", "/api/admin/settings", "/api/admin/backups",
@@ -42,7 +43,7 @@ VIEWS.system = () => {
   <div class="panel">${tog("signupsOpen", "Signups open", "Off makes TNL invite-only.")}${tog("guestAccess", "Guests can look around", "The Showroom, Market and profiles without an account.")}
     ${tog("autoVerify", "Skip email confirmation", "Only while email is broken — anyone could sign up with an address they don't own.")}</div>
   <h2 class="sec">What's open</h2>
-  <div class="panel">${tog("marketOpen", "Market", "Buying and selling.")}${tog("studioOpen", "Studio", "The beat maker.")}${tog("loopsOpen", "Loop market", "Producers selling sounds.")}
+  <div class="panel">${tog("marketOpen", "Market", "Buying and selling.")}${tog("studioOpen", "Studio", "The beat maker.")}${g.studioOpen === "1" ? `<div class="set"><div class="t"><span>Studio is on.</span></div><button class="btn ghost sm" data-studio>Studio stats ${I.chev}</button></div>` : ""}${tog("loopsOpen", "Loop market", "Producers selling sounds.")}
     <div class="set"><div class="t"><b>Rep needed to sell</b><span>0 lets anyone list.</span></div><input class="in" id="minrep" type="number" min="0" max="1000" value="${esc(g.minRepToSell)}" style="width:90px"></div>
     ${tog("distroOn", "Offer distribution", "Reach the level below and TNL puts your music out. It costs real money per artist.")}
     ${g.distroOn === "1" ? `<div class="set"><div class="t"><b>Level that earns it</b></div><select class="sel" id="distrolvl">${[[2, "Verified"], [3, "Collaborator"], [4, "Core"], [5, "Leadership"]]
@@ -88,6 +89,7 @@ VIEWS.system = () => {
 };
 
 WIRES.system = () => {
+  const stu = $("[data-studio]"); if (stu) stu.onclick = () => go("studio");
   const save = async (body, msg = "Saved — live now") => { const d = await act(() => req("/api/admin/settings", { method: "PATCH", body }), msg); if (d) { D.settings.settings = d.settings; paint(); } };
   $$("[data-tog]").forEach((b) => b.onclick = async () => {
     const k = b.dataset.tog, on = D.settings.settings[k] === "1";
