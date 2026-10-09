@@ -1,4 +1,4 @@
-/* ── POST CREATOR · v2 · 2026-09-28 ── the work large, caption, three rows */
+/* ── POST CREATOR · v2.2 · 2026-10-09 (v2 2026-09-28) ── the work large, caption, three rows; v2.2: upload a song, its cover as the picture */
 .pc{background:var(--bg);width:100%;max-width:560px;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .pc-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);flex-shrink:0}
 .pc-cancel{background:none;border:0;color:var(--tx);font:inherit;font-size:15px;padding:6px 2px;cursor:pointer}
@@ -66,3 +66,15 @@
 .pc-chip button{background:none;border:0;color:var(--dim);display:flex;padding:3px;cursor:pointer}
 .pc-mus{padding:10px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
 .pc-q{width:100%;box-sizing:border-box;background:var(--el);border:1px solid var(--line2);border-radius:999px;color:var(--tx);font:inherit;font-size:16px;padding:10px 16px;outline:none}
+/* upload a song from here; a song's cover as the picture (v2.2) */
+.pcmus-up{display:flex;align-items:center;gap:12px;padding:10px 8px;border:1px dashed var(--line2);background:var(--card);color:var(--tx);cursor:pointer}
+.pcmus-up b{font-weight:700}
+.pcmus-up.busy{cursor:default;border-style:solid;font-size:14px}
+.pc-cov{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}
+.pc-covtag{position:absolute;left:12px;bottom:12px;display:inline-flex;align-items:center;gap:6px;padding:5px 11px 5px 8px;border-radius:999px;background:var(--bg);color:var(--tx);font-size:12px;line-height:16px;font-weight:700}
+.pc-covtag svg{width:15px;height:15px}
+.pc-pick.pc-pick-sm{height:auto;min-height:0;padding:14px;margin-top:10px}
+.pc-pick.pc-pick-sm b{font-size:14px}
+/* the track's name-and-cover sheet is a page of its own, over everything —
+   it used to share the screen with whatever was under it (2026-10-09) */
+#trkeov{position:fixed;inset:0;z-index:150;background:var(--bg);padding-top:env(safe-area-inset-top)}

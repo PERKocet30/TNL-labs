@@ -646,6 +646,28 @@ console.log("\nMEMBER · PHONE");
     await p.waitForFunction((id) => TAB === "market" && MKTVIEW === "detail" && MKTONE && MKTONE.id === id, tee.id, { timeout: 6000 });
     await p.evaluate(() => { TAB = "showroom"; MKTVIEW = "browse"; render(); });
   });
+  /* "You should be able to upload music with the post composer too" (2026-10-09). */
+  await step(d, "upload a song from the post creator: name it, add a cover — with no photos the cover is the post's picture", async () => {
+    await openCreator();
+    await p.locator("[data-pcmusadd]").tap();
+    await p.locator("#pcmusfile").setInputFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) });
+    await p.waitForSelector("#trkeov", { timeout: 10000 });
+    ok(await p.evaluate(() => PCOMPOSE.track && PCOMPOSE.track.title === "my-song"), "the song isn't on the post");
+    await p.locator("#trketitle").fill("Composer Song");
+    await p.locator("#trkeart").setInputFiles(UPLOAD_PNG2);
+    await p.waitForFunction(() => TRKEDIT && TRKEDIT.artworkUrl, null, { timeout: 8000 });
+    await p.locator("#trkesave").tap();
+    await p.waitForFunction(() => !TRKEDIT && PCOMPOSE && PCOMPOSE.track.title === "Composer Song" && PCOMPOSE.track.artworkUrl, null, { timeout: 8000 });
+    ok(await p.locator(".pc-cov").count() === 1 && await p.locator(".pc-covtag", { hasText: "Song cover" }).count() === 1, "the cover isn't the picture in the creator");
+    await p.locator("#pcgo").tap();
+    await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 10000 });
+    const np = (await myPosts())[0];
+    ok(np.audioTrack && np.audioTrack.title === "Composer Song" && np.imageUrl && np.imageUrl === np.audioTrack.artworkUrl && np.mediaW > 0,
+      "post: " + JSON.stringify({ t: np.audioTrack, img: np.imageUrl, w: np.mediaW }));
+    // out of the library again, so the Music steps below play the seeded songs they expect
+    await fetch(B + "/api/tracks/" + np.audioTrack.id, { method: "DELETE", headers: { authorization: "Bearer " + token } });
+    await p.evaluate(() => { TRACKS = null; });   // the save above loaded the library list; let it load fresh
+  });
   /* "Update the post maker to simple video editing, cover etc like Instagram" (2026-10-08). */
   await step(d, "video editor: a cover arrives by itself; trim, sound off and 4:5 ride on the post and the feed honours them", async () => {
     await openCreator();
@@ -871,18 +893,22 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".c-ma", { hasText: "Block" }).count() === 1 && await p.locator(".c-ma", { hasText: "Report" }).count() === 1, "⋯ is missing Block/Report");
     await p.evaluate(() => { CMENU = null; paintLayer(); EDITING = false; PROFILE = null; TAB = "showroom"; render(); });
   });
-  // 2026-10-09: the music you upload is in your grid, its cover as the tile; it plays while it's on screen
-  await step(d, "a profile shows its music: the cover is the tile, a tap plays it, leaving stops it", async () => {
+  // 2026-10-09: the music you upload has its own Music tab (a song list), not tiles in the visual grid
+  await step(d, "a profile's Music tab: songs with covers, a tap plays, the next one follows, leaving stops it", async () => {
     await p.evaluate(() => openProfile("friend"));
     await p.waitForFunction(() => PROFILE && PROFILE.user.username === "friend" && !PROFILE.loading && Array.isArray(PROFILE.tracks));
     await p.locator('[data-ptab="work"]').tap();
-    ok(await p.locator('.work-trk img[src="/uploads/e2e-p1.png"]').count() === 1, "Night Drive's cover isn't a tile");
-    ok(await p.locator(".work-trk .work-trkbare", { hasText: "Reagent" }).count() === 1, "a track without a cover should show its title");
-    await p.locator('.work-trk img[src="/uploads/e2e-p1.png"]').tap();
+    ok(await p.locator(".worklist .pmus-row, .worklist [data-pftrk]").count() === 0, "songs shouldn't be in the visual grid");
+    await p.locator('[data-ptab="music"]').tap();
+    ok(await p.locator('.pmus-row .pmus-art img[src="/uploads/e2e-p1.png"]').count() === 1, "Night Drive's cover isn't on its row");
+    ok(await p.locator(".pmus-row", { hasText: "Reagent" }).count() === 1 && await p.locator(".pmus-row").count() === 3, "the songs aren't all listed");
+    await p.locator(".pmus-row", { hasText: "Night Drive" }).tap();
     await p.waitForFunction(() => String(MUSAUTOID).startsWith("trk") && NOWPLAYING && NOWPLAYING.title === "Night Drive", null, { timeout: 4000 });
+    ok(await p.evaluate(() => nextProfileTrack() && nextProfileTrack().title === "Reagent"), "the next song isn't queued");
     await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
     await p.waitForFunction(() => MUSAUTOID === null && (!AUDIO || AUDIO.paused), null, { timeout: 4000 });
   });
+
   /* Glitch signals (app-19-glitch.js). Everything above is normal use, so it
      must have recorded nothing: no jumps, no slow screens, no failed saves. */
   const glitches = async () => { await p.evaluate(() => glFlush()); await p.waitForTimeout(600); return api("/api/admin/glitches", token); };

@@ -391,7 +391,7 @@ function trkEditHTML(){
           ${e.artworkUrl?`<button class="trke-rm" id="trkeartrm">Remove cover</button>`:""}
         </div>
       </div>
-      <div class="pcmp-note">The name and cover are yours to change any time — they travel with the track everywhere it gets used.</div>
+      <div class="pcmp-note">The name and cover are yours to change any time — they travel with the track everywhere it gets used.${PCOMPOSE?" With no photos, the cover is your post's picture.":""}</div>
     </div>
   </div></div>`;
 }
@@ -417,6 +417,7 @@ function wireTrkEdit(){
     TRKEDIT.busy=true;render();
     try{
       await api.updateTrack(TRKEDIT.id,{title:TRKEDIT.title.trim(),artworkUrl:TRKEDIT.artworkUrl});
+      const pc=PCOMPOSE;if(pc&&pc.track&&pc.track.id===TRKEDIT.id)pc.track={...pc.track,title:TRKEDIT.title.trim(),artworkUrl:TRKEDIT.artworkUrl};   // the post creator's song too
       TRKEDIT=null;await loadTracks();toast("Saved.");render();
     }catch(err){TRKEDIT.busy=false;render();toast(err.message||"Save failed")}
   };
