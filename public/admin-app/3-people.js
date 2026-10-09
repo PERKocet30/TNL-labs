@@ -1,7 +1,8 @@
-/* TNL LABS admin v2.0 — 2026-09-29. People: find anyone, see their story, act. */
+/* TNL LABS admin v2.1 — 2026-10-09. People: find anyone, see their story, act.
+   v2.1: who's in the tournament; posts say which lab they're in. */
 let PQ = "", PFILTER = "all", PSORT = "joined", PERSON = null;
 const PFILTERS = [["all", "Everyone"], ["new", "New this week"], ["silent", "Never posted"], ["quiet", "Gone quiet"],
-  ["sellers", "Sellers"], ["unverified", "Unverified"], ["suspended", "Suspended"], ["admins", "Admins"]];
+  ["tournament", "In the tournament"], ["sellers", "Sellers"], ["unverified", "Unverified"], ["suspended", "Suspended"], ["admins", "Admins"]];
 const PSORTS = [["joined", "Newest"], ["active", "Last active"], ["rep", "Rep"], ["posts", "Posts"], ["sales", "Sales"]];
 
 LOADERS.people = async () => {
@@ -71,7 +72,7 @@ function personHTML() {
     <div class="stats">
       ${stat(p.rep, "rep · L" + p.level + " " + esc(p.levelName))}${stat(p.fee + "%", "their commission")}${stat(s.collabs, "collabs" + (s.pendingCollabs ? ` · ${s.pendingCollabs} pending` : ""))}
       ${stat(s.posts, s.work + " published")}${stat(s.likesGot + s.commentsGot, "feedback received")}${stat(s.feedbackGiven, "feedback given")}
-      ${stat(s.messages, "messages sent")}${stat(s.followers, "followers · " + s.following + " following")}${stat(money(s.gross), s.sold + " sold · " + s.bought + " bought")}
+      ${stat(s.votes, "tournament votes" + (s.entered ? " · entered" : ""))}${stat(s.messages, "messages sent")}${stat(s.followers, "followers · " + s.following + " following")}${stat(money(s.gross), s.sold + " sold · " + s.bought + " bought")}
     </div>
     ${s.reportsAgainst || s.blockedBy ? `<div class="warnbox">${s.reportsAgainst} report${s.reportsAgainst === 1 ? "" : "s"} involving them · blocked by ${s.blockedBy}</div>` : ""}
     <div class="acts">
@@ -86,7 +87,7 @@ function personHTML() {
     <textarea class="in" id="pnote" rows="3" maxlength="2000" placeholder="How you know them, what they make, what they need…">${esc(d.note ? d.note.body : "")}</textarea>
     <div class="row sp" style="margin-top:6px"><span class="mono">${d.note && d.note.at ? "saved " + ago(d.note.at) + " ago" + (d.note.by ? " by @" + esc(d.note.by) : "") : ""}</span><button class="btn sm ghost" data-pa="note">Save note</button></div>
     <h2 class="sec">Recent posts</h2>
-    ${d.posts.length ? `<div class="thumbs">${d.posts.map((x) => `<div title="${esc(chName(x.channel))} · ${x.likes} likes">${x.thumbUrl ? `<img src="${esc(x.thumbUrl)}" alt="" loading="lazy">` : esc(x.body || (x.video ? "Video" : "Post"))}</div>`).join("")}</div>` : `<div class="empty">Hasn't posted yet.</div>`}
+    ${d.posts.length ? `<div class="thumbs">${d.posts.map((x) => `<div title="${esc(x.labName === "Profile" ? "Profile" : "// " + x.labName)} · ${x.likes} likes">${x.thumbUrl ? `<img src="${esc(x.thumbUrl)}" alt="" loading="lazy">` : esc(x.body || (x.video ? "Video" : "Post"))}</div>`).join("")}</div>` : `<div class="empty">Hasn't posted yet.</div>`}
     <h2 class="sec">Rep history</h2>
     ${d.rep.length ? `<table class="tbl"><tbody>${d.rep.map((r) => `<tr><td>${esc(r.kind.replace(/_/g, " "))}</td><td class="num">${r.amount > 0 ? "+" : ""}${r.amount}</td><td class="num dim">${ago(r.at)}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">No rep yet.</div>`}`;
 }

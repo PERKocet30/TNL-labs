@@ -994,6 +994,19 @@ console.log("\nMEMBER · COMPUTER");
     await p.screenshot({ path: join(SHOTS, "admin-glitches.png"), fullPage: false });
     await p.goto(B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
+  // 2026-10-09: Today runs on the direction — the tournament, the labs and their #tags
+  await step(d, "admin → Today leads with the tournament; a lab opens its posts in Labs", async () => {
+    await p.goto(B + "/admin#today");
+    await fast(p, 6000, () => p.locator("h2.sec", { hasText: "The tournament" }).first().waitFor(), "the admin Today page");
+    ok(await p.locator(".tour [data-ev-open]").count() === 1, "no tournament panel");
+    ok(await p.locator("h2.sec", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
+    ok(await p.locator("nav.tabs [data-tab=content]", { hasText: "Labs" }).count() === 1, "the Content tab isn't called Labs");
+    await p.screenshot({ path: join(SHOTS, "admin-today.png"), fullPage: false });
+    await p.locator("tr[data-labf=pharmacy]").click();
+    await fast(p, 5000, () => p.locator("#clab").waitFor(), "the Labs tab");
+    ok(await p.locator("#clab").inputValue() === "pharmacy", "the lab filter wasn't set");
+    await p.goto(B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
+  });
   await step(d, "resizing to phone width switches to the phone frame", async () => {
     await p.setViewportSize({ width: 700, height: 900 }); await p.waitForTimeout(300);
     ok(await p.locator(".side").count() === 0 && (await p.locator(".app > .nav").count()) === 1, "didn't switch to the phone frame");

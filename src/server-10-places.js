@@ -1,6 +1,6 @@
 
 /* ================================================================
-   PLACES v1.1 — 2026-10-09. Labs are places, one per genre — not
+   PLACES v1.2 — 2026-10-09. Labs are places, one per genre — not
    Discord servers full of channels. Inside each lab (v1.1: just two):
      Work   everything made here, a grid — filter by #tag
      Talk   one conversation (the lab's home channel; the old channels'
@@ -93,12 +93,15 @@ function topTags(rows, n = 12) {
 app.get("/api/places", (_req, res) => res.json({ places: PLACES }));
 
 /* Talk: one conversation per lab — every channel's history, newest 50.
-   Pins are the home channel's. */
+   Pins: the newest three pinned anywhere in the lab (v1.2 — a post pinned
+   from /admin in an old channel used to vanish; pins are kept per channel). */
 app.get("/api/labs/:lab/feed", auth, (req, res) => {
   const P = placeOr404(req, res); if (!P) return;
   const ids = db.prepare(`SELECT id FROM posts WHERE channel IN (${inList(P.channels)}) ORDER BY created_at DESC LIMIT 50`).all().map((r) => r.id);
   const hidden = blockedIds(req.user.id);
-  res.json({ lab: req.params.lab, home: P.home, posts: placePosts(ids, req), pins: pinsFor(P.home).filter((p) => !hidden.has(p.author.username)) });
+  const pinIds = db.prepare(`SELECT post_id FROM channel_pins WHERE channel IN (${inList(P.channels)}) ORDER BY created_at DESC LIMIT 3`).all().map((r) => r.post_id);
+  const pins = shapePosts(pinIds.map((id) => feedRows({ postId: id, limit: 1 })[0]).filter(Boolean));
+  res.json({ lab: req.params.lab, home: P.home, posts: placePosts(ids, req), pins: pins.filter((p) => !hidden.has(p.author.username)) });
 });
 
 /* Work: everything made here, optionally one #tag; plus the lab's tags. */

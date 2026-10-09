@@ -186,7 +186,7 @@ app.get("/api/admin/reports", auth, admin, (req, res) => {
     LEFT JOIN users tu ON tu.id = r.user_id
     LEFT JOIN posts p ON p.id = r.post_id
     WHERE r.handled_at IS NULL ORDER BY r.created_at DESC LIMIT 50`).all();
-  res.json({ reports: rows });
+  res.json({ reports: rows.map((r) => ({ ...r, post_lab: r.post_channel ? labName(r.post_channel) : "" })) });
 });
 
 app.post("/api/admin/reports/:id/handle", auth, admin, (req, res) => {
