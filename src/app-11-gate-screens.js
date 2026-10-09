@@ -1,4 +1,4 @@
-/* ── SIGN UP · LOG IN · v2 · 2026-09-28 ──────────────────────────────
+/* ── SIGN UP · LOG IN · v2.1 · 2026-10-09 (a line inside Instagram) ──────────────────────────────
    Instagram-shaped: one question per screen, Next under the field, a live
    username check, then photo → people → welcome once the account exists.
    State lives in GFLOW, not in the DOM, so a background render() (SSE,
@@ -48,7 +48,7 @@ function gateHTML(){
     center=true;
     top=`<span></span><button class="gx-ic" id="gatex" aria-label="Close">${GX_X}</button>`;
     body=`<div class="gx-brand"><img class="mark gx-mark" src="${GX_MARK}" alt="TNL"><div class="gx-word"><span class="lg">//</span> LABS</div></div>
-      ${why}
+      ${why}${inappGateHTML()}
       ${gxField("u","Username or email",{value:f.username,attrs:'autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"'})}
       ${pw("p","current-password")}
       ${err}
@@ -70,7 +70,7 @@ function gateHTML(){
       <span class="gx-sp"></span>`;
     const next=(label,ok)=>`<button class="gx-btn" id="gxnext"${ok&&!G.busy?"":" disabled"}>${G.busy?"One moment…":label}</button>`;
     if(G.step==="email"){
-      body=`${why}<h1 class="gx-h">What's your email?</h1><p class="gx-p">You'll use it to log in and to reset your password.</p>
+      body=`${why}${inappGateHTML()}<h1 class="gx-h">What's your email?</h1><p class="gx-p">You'll use it to log in and to reset your password.</p>
         ${gxField("em","Email",{type:"email",value:f.email,attrs:'autocomplete="email" autocapitalize="none" inputmode="email"'})}
         ${err}${next("Next",/^\S+@\S+\.\S+$/.test(f.email.trim()))}`;
       foot=`<button class="gx-link" id="gxlogin">I already have an account</button>`;

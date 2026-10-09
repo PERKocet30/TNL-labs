@@ -289,7 +289,7 @@ app.post("/api/posts/:id/send", auth, verified, rateLimit({ max: 20, windowMs: 6
 /* A shared listing link. The SPA reads /m/:id on boot and opens the
    listing (guests included — the Market is public); the server's only
    job is to hand over the app instead of a 404. */
-app.get("/m/:id", (_req, res) => res.sendFile(join(__dirname, "..", "public", "index.html")));
+app.get("/m/:id", (req, res) => listingPage(req, res));   // with the listing's own preview (server-12-instagram)
 
 app.get("/p/:id", (req, res) => {
   const rows = feedRows({ viewerId: 0, limit: 1, postId: Number(req.params.id) });
