@@ -97,6 +97,31 @@ function vidPickHTML(){
     </div>`).join("")}</div>`;
 }
 
+/* Uploading a song — the library's Upload and the post creator's "Upload a
+   song" (2026-10-09) both go through here. No prompt() on the way in: the
+   file lands, then the edit sheet opens pre-filled so it gets a real name
+   and a cover in one pass. */
+const TRACK_ACCEPT="audio/*,.mp3,.m4a,.wav,.aac,.aiff,.aif,.flac,.ogg";
+function trackFileOk(file){
+  const isAud=/^audio\//.test(file.type)||/\.(mp3|m4a|wav|aac|aiff|aif|flac|ogg)$/i.test(file.name);
+  if(!isAud){toast("Audio files only");return false}
+  if(file.size>100*1024*1024){toast("Over 100MB — trim it down");return false}
+  return true;
+}
+async function uploadTrackFile(file){
+  const title=file.name.replace(/\.[a-z0-9]+$/i,"")||"Untitled";
+  const up=await uploadStream(file);
+  let durationMs=0;
+  try{
+    durationMs=await new Promise(res=>{
+      const a=new Audio();a.preload="metadata";
+      a.onloadedmetadata=()=>res(Math.round((a.duration||0)*1000));
+      a.onerror=()=>res(0);a.src=up.url;
+    });
+  }catch(e){}
+  const made=await api.addTrack({title:title.trim(),url:up.url,durationMs,bytes:file.size});
+  return made&&made.track;
+}
 function wireTracks(){
   const q=$("#trkq");
   if(q){let d=null;q.oninput=()=>{TRKQ=q.value;clearTimeout(d);d=setTimeout(loadTracks,300)}}
@@ -131,27 +156,12 @@ function wireTracks(){
   const f=$("#trkfile");
   if(f)f.onchange=async()=>{
     const file=f.files&&f.files[0];f.value="";
-    if(!file)return;
-    const isAud=/^audio\//.test(file.type)||/\.(mp3|m4a|wav|aac|aiff|aif|flac|ogg)$/i.test(file.name);
-    if(!isAud)return toast("Audio files only");
-    if(file.size>100*1024*1024)return toast("Over 100MB — trim it down");
-    /* No prompt() on the way in — the file lands, then the edit sheet opens
-       pre-filled so it gets a real name and a cover in one pass. */
-    const title=file.name.replace(/\.[a-z0-9]+$/i,"")||"Untitled";
+    if(!file||!trackFileOk(file))return;
     TRKUP=true;render();
     try{
-      const up=await uploadStream(file);
-      let durationMs=0;
-      try{
-        durationMs=await new Promise(res=>{
-          const a=new Audio();a.preload="metadata";
-          a.onloadedmetadata=()=>res(Math.round((a.duration||0)*1000));
-          a.onerror=()=>res(0);a.src=up.url;
-        });
-      }catch(e){}
-      const made=await api.addTrack({title:title.trim(),url:up.url,durationMs,bytes:file.size});
+      const t=await uploadTrackFile(file);
       TRKUP=false;await loadTracks();
-      if(made&&made.track)TRKEDIT={id:made.track.id,title:made.track.title,artworkUrl:made.track.artworkUrl||"",busy:false,fresh:true};
+      if(t)TRKEDIT={id:t.id,title:t.title,artworkUrl:t.artworkUrl||"",busy:false,fresh:true};
       render();
     }catch(e){TRKUP=false;render();toast(e.message||"Upload failed")}
   };

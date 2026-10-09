@@ -1,4 +1,4 @@
-/* ── POSTING IN THE BACKGROUND + DRAFTS · 2026-09-30 ───────────────────
+/* ── POSTING IN THE BACKGROUND + DRAFTS · 2026-09-30 (2026-10-09: a song's cover goes up as the picture when there are no photos) ───────────────────
    Share closes the creator straight away, like Instagram: a strip at the
    top says Posting… (it waits for any photos still uploading), then
    Posted · View. If it fails nothing is lost — it's kept as a draft.
@@ -72,7 +72,10 @@ async function pqKick(c){
   if(c.upN||c.vidbusy){c.state="waiting";pqPaint();return}   // the upload finishing calls back here
   c.state="posting";pqPaint();
   try{
-    const d=await api.post({channel:c.ch?c.ch.id:"profile",body:(c.body||"").trim(),images:c.imgs.map(({busy,orig,edit,gif,...im})=>im),
+    /* no photos, a song with a cover: the cover is the picture (its size, so the feed reserves the space) */
+    const cov=pcCover(c), cw=cov?await new Promise(r=>{const i=new Image();i.onload=()=>r([i.naturalWidth,i.naturalHeight]);i.onerror=()=>r([0,0]);i.src=cov}):null;
+    const imgs=c.imgs.length?c.imgs.map(({busy,orig,edit,gif,...im})=>im):cov?[{url:cov,thumb:cov,w:cw[0]||undefined,h:cw[1]||undefined}]:[];
+    const d=await api.post({channel:c.ch?c.ch.id:"profile",body:(c.body||"").trim(),images:imgs,
       videoUrl:c.vid?c.vid.url:undefined,thumbUrl:c.vid&&c.cover?c.cover:undefined,video:c.vid&&c.vedit?c.vedit:undefined,mediaW:c.vid?c.vw:undefined,mediaH:c.vid?c.vh:undefined,
       isWork:true,audioTrackId:c.track?c.track.id:undefined,
       tags:(c.tags||[]).map(u=>u.username),location:c.location||"",commentsOff:!!c.commentsOff,products:(c.products||[]).map(l=>l.id)});

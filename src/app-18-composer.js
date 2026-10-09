@@ -1,4 +1,4 @@
-/* ── POST CREATOR · v2.1 · 2026-10-09 (v2 2026-09-28; v2.1: your labs first in Share to a lab) ────────────────────────────────
+/* ── POST CREATOR · v2.2 · 2026-10-09 (v2 2026-09-28; v2.1: your labs first in Share to a lab; v2.2: upload a song from here, and its cover is the post's picture when there are no photos) ────────────────────────────────
    Instagram / Facebook grade, TNL look. One page: the work large at the
    top (swipe it, reorder it, see each upload land), the caption with
    @mentions, then three rows — invite collaborators, add music, share to a
@@ -13,7 +13,9 @@ const pcRaf=f=>(typeof requestAnimationFrame==="function"?requestAnimationFrame(
 const pcCaf=h=>(typeof cancelAnimationFrame==="function"?cancelAnimationFrame(h):clearTimeout(h));
 /* Share is ready as soon as there's something to post — photos still
    uploading finish in the background (app-18-post-queue.js). */
-const pcCan=c=>!!((c.body||"").trim()||c.imgs.length||c.vid||c.upN||c.vidbusy)&&!c.busy;
+const pcCan=c=>!!((c.body||"").trim()||c.imgs.length||c.vid||c.upN||c.vidbusy||pcCover(c))&&!c.busy&&!c.musup;
+/* A song with a cover and no photos or video: the cover is the picture. */
+const pcCover=c=>!c.imgs.length&&!c.upN&&!c.vid&&!c.vidbusy&&c.track&&c.track.artworkUrl||"";
 const PC_EDIT=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>`;
 const PC_TAG=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></svg>`;
 const PC_PIN=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>`;
@@ -43,6 +45,8 @@ function pcomposeHTML(){
       ${Array.from({length:c.upN||0},()=>`<div class="pc-th pc-busy"><span class="spin"></span></div>`).join("")}
       ${c.imgs.length+(c.upN||0)<10?`<label class="pc-th pc-add" aria-label="Add photos">${UI_IC.plus}${file}</label>`:""}
     </div>`;
+  else if(pcCover(c))media=`<div class="pc-stage"><img class="pc-cov" src="${esc(pcCover(c))}" alt="${esc(c.track.title)} — cover"><span class="pc-covtag">${UI_IC.music} Song cover</span></div>
+    <label class="pc-pick pc-pick-sm">${file}<b>Add photos or video instead</b></label>`;
   else media=`${pdRowHTML(c)}<label class="pc-pick">${file}${PC_PICK}<b>Add photos or video</b><span>Up to 10 photos, or 1 video</span></label>`;
   const tags=c.tags||[];
 
@@ -67,7 +71,9 @@ function pcomposeHTML(){
             <span class="pc-l"><b>${esc(c.track.title)}</b><span class="dim">@${esc(c.track.by.username)}</span></span>
             <button class="pc-x" data-pcmusrm aria-label="Remove music">${PC_X}</button></div>`
           :`<button class="pc-opt" data-pcmusadd><span class="pc-ic">${UI_IC.music}</span><span class="pc-l">Add music</span><span class="pc-v"></span>${PC_CHEV}</button>`}
-        ${c.pick?`<div class="pc-mus"><input class="pc-q" id="pcmusq" placeholder="Search tracks or artists" value="${esc(c.q||"")}">
+        ${c.musup?`<div class="pc-mus"><div class="pcmus-up busy"><span class="spin"></span><b>Uploading your song…</b></div></div>`:""}
+        ${c.pick&&!c.musup?`<div class="pc-mus"><label class="pcmus-up"><span class="pc-ic">${UI_IC.plus}</span><span class="pc-l"><b>Upload a song</b><span class="dim">Then name it and add a cover</span></span><input type="file" id="pcmusfile" accept="${TRACK_ACCEPT}" hidden></label>
+          <input class="pc-q" id="pcmusq" placeholder="Search tracks or artists" value="${esc(c.q||"")}">
           <div class="pcmus-list">${pcmusRowsHTML(c.list,!!(c.q&&c.q.trim()))}</div></div>`:""}
         <button class="pc-opt" id="pclab"><span class="pc-ic lg">//</span><span class="pc-l">Share to a lab</span>
           <span class="pc-v">${lab}</span>${PC_CHEV}</button>
@@ -98,7 +104,7 @@ function pcmusRowsHTML(list,searching){
   if(!list)return `${skel()}`;
   if(!list.length)return searching
     ?`<div class="empty">No tracks match that.</div>`
-    :`<div class="empty">No tracks in the library yet.<br>Upload one in // Music → Tracks.</div>`;
+    :`<div class="empty">No tracks in the library yet.<br>Upload yours above.</div>`;
   return list.map(t=>`<div class="pcmus-row" data-pcmuspick="${t.id}"><div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="">`:DI.music}</div><div class="pcmus-meta"><div class="pcmus-t">${esc(t.title)}</div><div class="dim">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}</div></div></div>`).join("");
 }
 
@@ -250,6 +256,17 @@ function wirePCompose(){
     dq=setTimeout(async()=>{try{c.list=(await api.tracks(c.q)).tracks}catch(e){c.list=[]}
       const box=document.querySelector(".pcmus-list");   // repaint rows only — keeps the keyboard up
       if(box){box.innerHTML=pcmusRowsHTML(c.list,!!c.q.trim());box.querySelectorAll("[data-pcmuspick]").forEach(pickTrack)}},300)}}
+  const mf=$("#pcmusfile");if(mf)mf.onchange=async()=>{
+    const file=mf.files&&mf.files[0];mf.value="";
+    if(!file||!trackFileOk(file))return;
+    c.musup=true;c.pick=false;render();
+    try{
+      const t=await uploadTrackFile(file);
+      c.musup=false;c.list=null;
+      if(t){c.track=t;if(PCOMPOSE===c)TRKEDIT={id:t.id,title:t.title,artworkUrl:"",busy:false,fresh:true}}
+      render();
+    }catch(e){c.musup=false;render();toast(e.message||"Upload failed")}
+  };
   const mr=document.querySelector("[data-pcmusrm]");if(mr)mr.onclick=()=>{c.track=null;render()};
   const mp=document.querySelector("[data-pcmusplay]");if(mp)mp.onclick=()=>{if(c.track)playTrack(c.track)};
 

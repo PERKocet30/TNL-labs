@@ -37,7 +37,7 @@ function withTracks(posts,pins){
 const trkOn=t=>MUSAUTOID==="trk"+t.id&&NOWPLAYING&&NOWPLAYING.id===t.id&&AUDIO&&!AUDIO.paused;
 function trackTileHTML(t){
   const on=trkOn(t);
-  return `<div class="work work-trk${on?" on":""}" role="button" tabindex="0" data-trkplay="${t.id}" data-trkown="trk${t.id}" aria-label="${on?"Pause":"Play"} ${esc(t.title)}">
+  return `<div class="work work-trk${on?" on":""}" role="button" tabindex="0" data-pftrk="${t.id}" data-trkown="trk${t.id}" aria-label="${on?"Pause":"Play"} ${esc(t.title)}">
     ${t.artworkUrl?`<img class="work-img" src="${esc(t.artworkUrl)}" alt="${esc(t.title)} — cover" loading="lazy" decoding="async">`
       :`<div class="work-trkbare">${UI_IC.music}<b>${esc(t.title)}</b></div>`}
     <span class="work-ind" aria-hidden="true">${on?DI.pause:DI.music}</span>
@@ -46,8 +46,8 @@ function trackTileHTML(t){
 (function wireTrackTiles(){
   /* capture phase, like the post music chips — before anything else takes the tap */
   document.addEventListener("click",e=>{
-    const b=e.target.closest("[data-trkplay]");if(!b)return;
-    const t=(PROFILE&&PROFILE.tracks||[]).find(x=>String(x.id)===b.dataset.trkplay);if(!t)return;
+    const b=e.target.closest("[data-pftrk]");if(!b)return;
+    const t=(PROFILE&&PROFILE.tracks||[]).find(x=>String(x.id)===b.dataset.pftrk);if(!t)return;
     e.stopPropagation();e.preventDefault();
     MUSOK=true;MUSAUTOID="trk"+t.id;
     playTrack(t);render();

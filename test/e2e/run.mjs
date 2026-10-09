@@ -646,6 +646,28 @@ console.log("\nMEMBER · PHONE");
     await p.waitForFunction((id) => TAB === "market" && MKTVIEW === "detail" && MKTONE && MKTONE.id === id, tee.id, { timeout: 6000 });
     await p.evaluate(() => { TAB = "showroom"; MKTVIEW = "browse"; render(); });
   });
+  /* "You should be able to upload music with the post composer too" (2026-10-09). */
+  await step(d, "upload a song from the post creator: name it, add a cover — with no photos the cover is the post's picture", async () => {
+    await openCreator();
+    await p.locator("[data-pcmusadd]").tap();
+    await p.locator("#pcmusfile").setInputFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) });
+    await p.waitForSelector("#trkeov", { timeout: 10000 });
+    ok(await p.evaluate(() => PCOMPOSE.track && PCOMPOSE.track.title === "my-song"), "the song isn't on the post");
+    await p.locator("#trketitle").fill("Composer Song");
+    await p.locator("#trkeart").setInputFiles(UPLOAD_PNG2);
+    await p.waitForFunction(() => TRKEDIT && TRKEDIT.artworkUrl, null, { timeout: 8000 });
+    await p.locator("#trkesave").tap();
+    await p.waitForFunction(() => !TRKEDIT && PCOMPOSE && PCOMPOSE.track.title === "Composer Song" && PCOMPOSE.track.artworkUrl, null, { timeout: 8000 });
+    ok(await p.locator(".pc-cov").count() === 1 && await p.locator(".pc-covtag", { hasText: "Song cover" }).count() === 1, "the cover isn't the picture in the creator");
+    await p.locator("#pcgo").tap();
+    await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 10000 });
+    const np = (await myPosts())[0];
+    ok(np.audioTrack && np.audioTrack.title === "Composer Song" && np.imageUrl && np.imageUrl === np.audioTrack.artworkUrl && np.mediaW > 0,
+      "post: " + JSON.stringify({ t: np.audioTrack, img: np.imageUrl, w: np.mediaW }));
+    // out of the library again, so the Music steps below play the seeded songs they expect
+    await fetch(B + "/api/tracks/" + np.audioTrack.id, { method: "DELETE", headers: { authorization: "Bearer " + token } });
+    await p.evaluate(() => { TRACKS = null; });   // the save above loaded the library list; let it load fresh
+  });
   /* "Update the post maker to simple video editing, cover etc like Instagram" (2026-10-08). */
   await step(d, "video editor: a cover arrives by itself; trim, sound off and 4:5 ride on the post and the feed honours them", async () => {
     await openCreator();
