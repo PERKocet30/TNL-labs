@@ -71,7 +71,7 @@ for (let i = 0; i < 6; i++) post.run(friend, "graphic-design", "Piece " + (i + 1
 // Piece 1 is a six-frame series (a carousel)
 db.prepare("UPDATE posts SET images = ? WHERE body = 'Piece 1'").run(JSON.stringify([0, 1, 2, 3, 4, 5].map((i) => ({ url: "/uploads/e2e-p" + i + ".png", thumb: "/uploads/e2e-p" + i + ".png", w: 800, h: 1000 }))));
 const tr = db.prepare("INSERT INTO tracks (user_id,title,url,artwork_url,description,duration_ms,bytes,created_at) VALUES (?,?,?,?,?,?,?,?)");
-["Night Drive","Reagent","Paper Mode"].forEach((t, i) => tr.run(friend, t, "/uploads/e2e-t" + i + ".wav", "", "", 3000, 1000, now - i * 1000));
+["Night Drive","Reagent","Paper Mode"].forEach((t, i) => tr.run(friend, t, "/uploads/e2e-t" + i + ".wav", i ? "" : "/uploads/e2e-p1.png", "", 3000, 1000, now - i * 1000));   // Night Drive has a cover
 `);
 execSync(`node --experimental-sqlite ${JSON.stringify(join(TMP, "seed.mjs"))}`, { cwd: ROOT, stdio: "pipe" });
 
@@ -871,6 +871,18 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".c-ma", { hasText: "Block" }).count() === 1 && await p.locator(".c-ma", { hasText: "Report" }).count() === 1, "⋯ is missing Block/Report");
     await p.evaluate(() => { CMENU = null; paintLayer(); EDITING = false; PROFILE = null; TAB = "showroom"; render(); });
   });
+  // 2026-10-09: the music you upload is in your grid, its cover as the tile; it plays while it's on screen
+  await step(d, "a profile shows its music: the cover is the tile, a tap plays it, leaving stops it", async () => {
+    await p.evaluate(() => openProfile("friend"));
+    await p.waitForFunction(() => PROFILE && PROFILE.user.username === "friend" && !PROFILE.loading && Array.isArray(PROFILE.tracks));
+    await p.locator('[data-ptab="work"]').tap();
+    ok(await p.locator('.work-trk img[src="/uploads/e2e-p1.png"]').count() === 1, "Night Drive's cover isn't a tile");
+    ok(await p.locator(".work-trk .work-trkbare", { hasText: "Reagent" }).count() === 1, "a track without a cover should show its title");
+    await p.locator('.work-trk img[src="/uploads/e2e-p1.png"]').tap();
+    await p.waitForFunction(() => String(MUSAUTOID).startsWith("trk") && NOWPLAYING && NOWPLAYING.title === "Night Drive", null, { timeout: 4000 });
+    await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
+    await p.waitForFunction(() => MUSAUTOID === null && (!AUDIO || AUDIO.paused), null, { timeout: 4000 });
+  });
   /* Glitch signals (app-19-glitch.js). Everything above is normal use, so it
      must have recorded nothing: no jumps, no slow screens, no failed saves. */
   const glitches = async () => { await p.evaluate(() => glFlush()); await p.waitForTimeout(600); return api("/api/admin/glitches", token); };
@@ -921,6 +933,16 @@ console.log("\nMEMBER · PHONE");
     await p.waitForFunction(() => !TAGVIEW && LAB && LAB.id === "pharmacy" && LABVIEW === "talk", null, { timeout: 4000 });
     await p.locator("#labback").tap(); await p.waitForSelector(".lx-list");
     await p.evaluate(() => { TAB = "showroom"; render(); });
+  });
+  // 2026-10-09: the labs that match what you make come first
+  await step(d, "your labs first: a stylist who shoots sees Fashion, then Visual, under For you", async () => {
+    const was = await p.evaluate(() => ME.roles);
+    await p.evaluate(() => { ME.roles = ["Stylist", "Photographer"]; LAB = null; TAB = "labs"; render(); });
+    await p.waitForSelector("#lxlist .lx");
+    const ids = await p.evaluate(() => [...document.querySelectorAll("#lxlist .lx")].map((x) => x.dataset.lab));
+    ok(ids.slice(0, 2).join() === "fashion,pharmacy" && ids.length === 7, "order was " + ids.join());
+    ok(await p.locator("#lxlist .lx-sec", { hasText: "For you" }).count() === 1 && await p.locator("#lxlist .lx-sec", { hasText: "More labs" }).count() === 1, "no For you / More labs");
+    await p.evaluate((r) => { ME.roles = r; TAB = "showroom"; render(); }, was);
   });
   await step(d, "poll: an Instagram vote link lands on the piece, Vote counts once and moves the scoreboard, Share makes the Story card", async () => {
     const mk = await api("/api/admin/events", token, { slug: "e2e-art", title: "E2E Art Tournament", format: "poll", picks: 1, finalists: 2, judgeWeight: 0, minAccountDays: 0, published: true, opensAt: Date.now() - 1000, submitDays: 1, voteDays: 3 });

@@ -1,4 +1,4 @@
-/* MEDIA — photos, video, post sound. v1.1 2026-09-29: post sound plays only while its post is on screen. */
+/* MEDIA — photos, video, post sound. v1.2 2026-10-09 (v1.1 2026-09-29): post sound plays only while its post — or a profile's music tile — is on screen. */
 function wireInstall(){
   const x=$("[data-installx]");if(x)x.onclick=dismissInstall;
   const go=$("[data-installgo]");if(go)go.onclick=doInstall;
@@ -301,7 +301,7 @@ function wireMusAuto(){
      screen the sound stops with it. Chats and drawers laid over the page are
      handled by musicScope() (app-13-player.js). */
   if(MUSAUTOID!=null&&NOWPLAYING){
-    const still=chips.some(c=>String(c.dataset.mustrack)===String(MUSAUTOID));
+    const still=chips.some(c=>String(c.dataset.mustrack)===String(MUSAUTOID))||!!document.querySelector(`[data-trkown="${MUSAUTOID}"]`);   // a profile's music tile (2026-10-09)
     if(!still){const a=audioEl();if(!a.paused)a.pause();MUSAUTOID=null;NOWPLAYING=null;paintPlayer();}   // and it doesn't resurface in the lab bar
   }
   if(!chips.length)return;

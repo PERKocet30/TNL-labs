@@ -1,4 +1,4 @@
-/* PLACES v1.1 — 2026-10-09. Labs as places: the index (one list, each
+/* PLACES v1.2 — 2026-10-09 (v1.2: "For you" / "More labs" on the index). Labs as places: the index (one list, each
    genre with its #tags), a lab's Work · Talk tabs, the #tag page, and #tags
    in text. Familiar like Instagram — square grid, underline tabs, pills —
    in TNL's white, black and green. Logic: app-11-places.js. */
@@ -8,6 +8,10 @@
 .lx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .lx-tag{border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--tx);padding:4px 10px;font-family:inherit;font-size:12px;line-height:16px;font-weight:700;cursor:pointer}
 .lx-tag:active{background:var(--el)}
+
+.lx-sec{grid-column:1/-1;padding:18px 0 8px;font-size:13px;line-height:18px;font-weight:700;color:var(--tx)}
+.lx-sec span{font-weight:400;color:var(--dim)}
+.lx-sec:first-child{padding-top:2px}
 
 /* ── inside a lab: Work · Talk, underlined like a profile ── */
 .pl-tabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px}

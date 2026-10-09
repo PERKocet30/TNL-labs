@@ -1,4 +1,4 @@
-/* THE PLAYER v2.1 — 2026-09-29
+/* THE PLAYER v2.2 — 2026-10-09 (v2.1 — 2026-09-29; v2.2: a profile's music tile repaints on play / pause)
    One audio element for the whole app, parked outside #app so a repaint
    can't interrupt playback. Built on first use — no element for people who
    never press play, and nothing constructed at parse time.
@@ -18,7 +18,8 @@ function audioEl(){
   if(AUDIO)return AUDIO;
   AUDIO=new Audio();
   AUDIO.preload="none";
-  const sync=()=>{paintPlayer();if(TAB==="labs"&&CH.library)render()};
+  /* a profile's music tile shows play / pause too (2026-10-09) */
+  const sync=()=>{paintPlayer();if((TAB==="labs"&&CH.library)||String(MUSAUTOID).startsWith("trk"))render()};
   AUDIO.addEventListener("play",sync);
   AUDIO.addEventListener("pause",sync);
   AUDIO.addEventListener("ended",()=>{if(MUSAUTOID==null&&nextTrack())return;sync()});

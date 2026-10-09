@@ -1,4 +1,4 @@
-// Places v1.1 (2026-10-09): labs are places — one per genre — with Work
+// Places v1.2 (2026-10-09; v1.2: your labs first, from the roles you picked): labs are places — one per genre — with Work
 // and Talk, and #hashtags instead of sub-channels; each genre is explained
 // on the labs list by its #tags. Runs the real
 // server. Old posts keep their channel as a tag; nothing is rewritten.
@@ -53,6 +53,22 @@ try {
   t("every app lab is a server place, with the same channels", LABS.every((l) => pl[l.id] && JSON.stringify(pl[l.id].channels) === JSON.stringify(l.channels.map((c) => c.id))) && Object.keys(pl).length === LABS.length);
   t("each lab's home channel matches, and is one of its own channels", LABS.every((l) => pl[l.id].home === LAB_HOME[l.id] && pl[l.id].channels.includes(LAB_HOME[l.id])));
   t("no home is a tool (archive, tracks, beats)", LABS.every((l) => { const c = l.channels.find((x) => x.id === LAB_HOME[l.id]); return c && !c.archive && !c.library && !c.beatlab; }));
+
+  console.log("\nYOUR LABS FIRST — FROM WHAT YOU MAKE (v1.2)");
+  const ROLES = new Function(app07.slice(app07.indexOf("const ROLES = ["), app07.indexOf("];", app07.indexOf("const ROLES = [")) + 2) + "\nreturn ROLES;")();
+  const forMe = new Function("LABS", "ME", appPlaces.slice(appPlaces.indexOf("const ROLE_LABS={"), appPlaces.indexOf("const labsOrdered=")) + "\nreturn [ROLE_LABS, labsForMe];");
+  const [ROLE_LABS] = forMe(LABS, null);
+  const order = (me) => { const o = forMe(LABS, me)[1](); return [...o.mine, ...o.rest].map((l) => l.id).join(); };
+  const mineOf = (me) => forMe(LABS, me)[1]().mine.map((l) => l.id).join();
+  t("every role someone can pick leads to a lab", ROLES.every((r) => (ROLE_LABS[r] || []).length > 0));
+  t("…and only to real labs", Object.values(ROLE_LABS).flat().every((id) => LABS.some((l) => l.id === id)));
+  t("signed out: the usual order", order(null) === LABS.map((l) => l.id).join() && mineOf(null) === "");
+  t("a producer: Music first", mineOf({ roles: ["Producer"] }) === "culture" && order({ roles: ["Producer"] }).startsWith("culture,hq,pharmacy"));
+  t("a stylist who shoots: Fashion, then Visual", mineOf({ roles: ["Stylist", "Photographer"] }) === "fashion,pharmacy");
+  t("the first role you picked counts most (Rapper, then Graphic Designer → Music, Visual)", mineOf({ roles: ["Rapper", "Graphic Designer"] }) === "culture,pharmacy");
+  t("…but two visual roles outweigh one music role", mineOf({ roles: ["Rapper", "Graphic Designer", "Illustrator"] }) === "pharmacy,culture,akatsuki");
+  t("an old account with just one role still works", mineOf({ roles: [], role: "Manga Artist" }) === "akatsuki,pharmacy");
+  t("a role we don't know changes nothing", mineOf({ roles: ["Astronaut"] }) === "");
 
   console.log("\nNEW POSTS GO HOME, AND #TAG THEMSELVES");
   let r = await call("ana", "POST", "/api/posts", { channel: "creators", body: "first piece in the new Visual #Poster #typography", isWork: true, imageUrl: "/uploads/a.jpg" });
