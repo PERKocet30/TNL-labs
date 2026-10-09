@@ -112,6 +112,8 @@ async function step(d, title, fn) {
     pass++; console.log(`  ✓  [${d.name}] ${title}`);
   } catch (e) {
     fail++; console.log(`  ✗  [${d.name}] ${title}\n       ${String(e.message || e).split("\n")[0]}`);
+    // on GitHub, also as an annotation — readable from the PR's checks without the log
+    if (process.env.GITHUB_ACTIONS) console.log(`::error title=tap-through::[${d.name}] ${title} — ${String(e.message || e).split("\n")[0].replace(/[\r\n%]/g, " ")}`);
     await d.page.screenshot({ path: join(SHOTS, `${d.name}-${title.replace(/[^a-z0-9]+/gi, "-")}.png`) }).catch(() => {});
   }
 }
