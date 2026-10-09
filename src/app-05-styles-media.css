@@ -270,3 +270,6 @@ input, textarea, select, .in, .search { font-size: 16px !important; }
 .gx-fbtn.on{background:none;color:var(--tx);border-color:var(--line2)}
 /* A video framed to a shape in the editor fills it, like Instagram. */
 video.vfill{object-fit:cover}
+/* Story sheets above an opened post (.po-ov is 130): sharing a post you'd
+   opened put the sheet behind it (2026-10-09). */
+#igsl .sheet{z-index:140}

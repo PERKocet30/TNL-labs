@@ -51,6 +51,7 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
   → Studio is on (`studioOn()`). `public/admin.html` + `public/admin-app/*.js` — `/admin` (keep each ≤ 24KB too).
 - The README has a table of what each numbered part holds, and the API route list.
 - Events (the tournament): `server-10-events-*.js` + `app-17-event-*.js` + admin `8-events.js`. `tickEvent()` is the only thing that moves an event forward; vote counts never leave the server while a stage is open — the one exception is the poll format's scoreboard, which is public by design and freezes for the last `freeze_hours` (`test/events.test.mjs` checks both). Instagram is for reach; votes only count in the app.
+- Alongside Instagram: most visitors arrive inside Instagram's in-app browser (`INAPP` in `app-18-instagram.js` — no share sheet, no downloads there). Keep any new share or save flow working there. Public pages' "Open in the app" go to `/?u=` / `/?p=` / `/?e=`, which land on that exact thing behind the quick door (`test/instagram.test.mjs`).
 
 ## Product rules to preserve
 

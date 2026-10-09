@@ -1,7 +1,8 @@
 // LABS alongside Instagram (2026-10-09): a shop link pasted in an Instagram
 // DM previews as the piece — photo, title, price, seller — not the generic
 // LABS cover; and inside Instagram's own browser the app offers Safari for
-// the things that can't happen there.
+// the things that can't happen there. v1.1: public pages' "Open in the app"
+// land on that exact profile or post, behind the quick door.
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -15,6 +16,9 @@ const now = Date.now();
 const uid = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified) VALUES (?,?,?,?,?,1)`).run("seller", "Seller", "s@x.com", "h", now).lastInsertRowid);
 const L = (title, cents, status, images) => Number(db.prepare(`INSERT INTO listings (seller_id, title, description, price_cents, size, condition, images, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`)
   .run(uid, title, "Heavy cotton, boxy fit", cents, "L", "Like new", JSON.stringify(images), status, now, now).lastInsertRowid);
+db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES ('tok-seller', ?, ?)`).run(uid, now);
+const work = Number(db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, image_url, created_at) VALUES (?,?,?,1,?,?)`).run(uid, "profile", "a piece", "/uploads/tee.jpg", now).lastInsertRowid);
+const chat = Number(db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, created_at) VALUES (?,?,?,0,?)`).run(uid, "general", "just talk", now).lastInsertRowid);
 const tee = L(`Camo "Shiesty" tee`, 4500, "active", ["/uploads/tee.jpg"]), gone = L("Gone", 1000, "removed", ["/uploads/g.jpg"]), sold = L("Hoodie", 8050, "sold", ["/uploads/h.jpg"]);
 
 const PORT = 8872, BASE = `http://localhost:${PORT}`;
@@ -44,12 +48,26 @@ try {
   t("a removed listing gives nothing away (the plain LABS preview)", meta(g.html, "og:title") === "LABS 🧪 — Cultivators" && !g.html.includes("Gone"));
   t("a listing that never existed still opens the app", (await get("/m/99999")).html.includes('id="app"'));
 
+  console.log("\nPUBLIC PAGES LAND ON THE THING IN THE APP");
+  t("a profile's Open in the app → /?u=", (await get("/u/seller")).html.includes('href="/?u=seller"'));
+  t("a post's Open in the app → /?p=", (await get(`/p/${work}`)).html.includes(`href="/?p=${work}"`));
+  const one = async (id, tok) => { const r = await fetch(`${BASE}/api/posts/${id}`, { headers: tok ? { Authorization: "Bearer " + tok } : {} }); return { s: r.status, j: await r.json().catch(() => ({})) }; };
+  let o = await one(work);
+  t("the app can fetch one published post, signed out", o.s === 200 && o.j.post.id === work);
+  t("chat stays for members", (await one(chat)).s === 404 && (await one(chat, "tok-seller")).s === 200);
+  t("a missing post is a 404", (await one(999999)).s === 404);
+  const door = readFileSync(join(ROOT, "src/app-10-dm-search.js"), "utf8");
+  const deep = new Function(door.slice(door.indexOf("const isDeepLanding="), door.indexOf("\n", door.indexOf("const isDeepLanding="))) + "\nreturn isDeepLanding;")();
+  t("a deep link gets the quick door: ?e= ?u= ?p= and /m/…", deep({ search: "?p=4", pathname: "/" }) && deep({ search: "?e=art&v=2", pathname: "/" }) && deep({ search: "", pathname: "/m/9" }) && !deep({ search: "", pathname: "/" }));
+
   console.log("\nINSIDE INSTAGRAM'S BROWSER");
   const app = readFileSync(join(ROOT, "public/index.html"), "utf8");
   t("the app knows Instagram's, Facebook's and TikTok's browsers", app.includes("/Instagram/.test(u)") && app.includes("FBAN|FBAV") && app.includes("BytedanceWebview"));
   t("one tap opens Safari on an iPhone, the browser on Android", app.includes('"x-safari-"+url') && app.includes("#Intent;scheme=https;"));
   t("if Instagram blocks that, it shows the taps that always work", app.includes("Open in ${onIOS()?\"external browser\":\"Chrome\"}"));
   t("the home-screen card becomes Open in Safari there", app.includes('if(st==="inapp")return inappCardHTML();'));
+  t("the tournament's Story sheet offers Safari there too", /\$\{INAPP\?`<button class="btn green ev-cta" data-outgo>Open in \$\{outBrowser\(\)\}<\/button>`:`<button class="btn green ev-cta" id="evshgo">/.test(app));
+  t("Story sheets sit above an opened post", /#igsl \.sheet\{z-index:140\}/.test(app));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

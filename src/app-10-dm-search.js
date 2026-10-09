@@ -51,6 +51,12 @@ function searchPanelHTML(){return `<div class="sheet" id="sbg"><div class="sheet
 </div></div>`}
 /* Missing video, blocked playback, a stalled network — every one of those
    ends in done(), never in a locked screen. The 20s timer is the last resort. */
+/* Someone who tapped a link to one thing — a vote, a profile, a post, a
+   listing — gets the quick door, not the film: one tap and they're there.
+   The tap stays: it's what unlocks sound. Read once at load, before boot
+   tidies the address bar. (2026-10-09) */
+const isDeepLanding=(loc)=>/[?&](e|u|p)=/.test(loc.search)||/^\/m\/\d/.test(loc.pathname);
+const DEEPLANDING=typeof location!=="undefined"&&isDeepLanding(location);
 function enterHTML(){
   const mark = (document.querySelector(".mark")||{}).src || "";
   /* First visit gets the film. Every visit after that gets the same door
@@ -58,6 +64,7 @@ function enterHTML(){
      wireEnter already treats a missing video as "nothing to wait for" and
      goes on the tap, so omitting the element IS the fast path. */
   let seen=false; try{ seen = !!localStorage.getItem("tnl-intro-seen") }catch(e){}
+  if(DEEPLANDING)seen=true;
   return `<div class="enter${seen?" quick":""}" id="enterOv">
     ${seen?"":`<video class="enter-v" id="enterVid" playsinline preload="metadata"
       poster="/tnl-enter-poster.jpg" src="/tnl-enter.mp4"></video>`}

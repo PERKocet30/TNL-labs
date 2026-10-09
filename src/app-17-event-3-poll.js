@@ -61,11 +61,13 @@ function evShareHTML(){
   return `<div class="sheet" id="evshsheet"><div class="sheetc ev-share">
     <div class="sheeth"><div><h2>Share to Instagram</h2></div><button class="x" id="evshx" aria-label="Close">${DI.x}</button></div>
     <div class="ev-shimg">${s.failed?`<div class="dim">Couldn't make the picture. Your link still works.</div>`:`<img src="${esc(s.img)}" alt="Your Story card" id="evshpic">`}</div>
-    <ol class="ev-howto"><li>Share the picture to your Story (or save it).</li>
+    ${INAPP?`<ol class="ev-howto"><li>${esc(INAPP)}'s browser can't hand a picture to your Story. Open LABS in <b>${outBrowser()}</b> and share it from there.</li>
+      <li>Or press and hold the picture to save it, add it to your Story, and put a <b>Link</b> sticker on it with your vote link.</li></ol>`
+    :`<ol class="ev-howto"><li>Share the picture to your Story (or save it).</li>
       <li>Add a <b>Link</b> sticker with your vote link.</li>
-      <li>Only votes in the app count — the link takes people straight to your piece.</li></ol>
+      <li>Only votes in the app count — the link takes people straight to your piece.</li></ol>`}
     <div class="ev-link"><span>${esc(url.replace(/^https?:\/\//,""))}</span><button class="btn ghost" id="evshcopy">${DI.copy} Copy</button></div>
-    <button class="btn green ev-cta" id="evshgo">Share picture</button>
+    ${INAPP?`<button class="btn green ev-cta" data-outgo>Open in ${outBrowser()}</button>`:`<button class="btn green ev-cta" id="evshgo">Share picture</button>`}
   </div></div>`;
 }
 function evOpenShare(id){
