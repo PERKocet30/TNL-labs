@@ -43,7 +43,8 @@ function initHistory(){
     else if(EVSHARE){EVSHARE=null}
     else if(TAB==="market"&&MKTVIEW==="edit"){MKTEDIT=null;SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME="";MKTVIEW="detail"}
     else if(TAB==="market"&&MKTVIEW!=="browse"){MKTVIEW="browse";MKTONE=null}
-    else if(TAB==="labs"&&(LAB||ROOMOPEN)){ROOMOPEN=false;LAB=null;loadLabs()}
+    else if(TAB==="labs"&&TAGVIEW){closeTag()}
+    else if(TAB==="labs"&&(LAB||ROOMOPEN)){ROOMOPEN=false;LAB=null;LABVIEW="work";LABTAG=null;loadLabs()}
     else if(TAB!=="showroom"){TAB="showroom"}
     else{POPPING=false;return}   // at the root — let the browser leave
     render();
