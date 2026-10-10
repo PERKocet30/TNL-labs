@@ -2,8 +2,10 @@
    Instagram's edit page, TNL's look: Cancel · Edit profile · Done, your
    photo in the middle, then quiet rows — name, pronouns, bio, links, what
    you make, your colour. Links and roles open their own small screens
-   instead of a wall of fields. Theme, levels, admin and log out live in ≡. */
-let EDITPF=null, PROFTAGGED=null, PROFTAGLOAD=null, CLIMBUSER=null;
+   instead of a wall of fields. Theme, levels, admin and log out live in ≡.
+   2026-10-10: the Music tab loads the artist's merch, and a song link
+   brings its song into view. */
+let EDITPF=null, PROFTAGGED=null, PROFTAGLOAD=null, PROFMERCHLOAD=null, CLIMBUSER=null;
 const PF_MENU=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`;
 const PF_TAGGED=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17"/><circle cx="12" cy="10" r="3"/><path d="M7 20c1-3 3-4.5 5-4.5s4 1.5 5 4.5"/></svg>`;
 const PF_CHEV=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>`;
@@ -117,6 +119,13 @@ function wireProfileV2(){
     catch(e){if(PICKER){PICKER.loading=false;render()}toast(e.message)}});
   const pl=$("#pflinks");if(pl)pl.onclick=()=>openPicker({title:"Links",items:(PROFILE.user.links||[]).map(x=>({label:x.title||x.url.replace(/^https?:\/\/(www\.)?/,""),sub:x.url,icon:DI.out,url:x.url})),
     onPick:it=>window.open(it.url,"_blank","noopener")});
+  /* the Music tab's merch loads when it shows — a song link lands straight on it (2026-10-10) */
+  if(PTAB==="music"&&PROFLISTINGS===null&&PROFILE&&!PROFILE.loading&&PROFMERCHLOAD!==PROFILE.user.username){
+    const un=PROFMERCHLOAD=PROFILE.user.username;
+    api.mkt("seller="+encodeURIComponent(un)).then(d=>{if(PROFILE&&PROFILE.user.username===un&&PROFLISTINGS===null){PROFLISTINGS=d.listings||[];render()}})
+      .catch(()=>{if(PROFILE&&PROFILE.user.username===un&&PROFLISTINGS===null){PROFLISTINGS=[];render()}})}
+  /* a song link's song: bring it into view once */
+  if(PTAB==="music"&&PFSONG&&PROFILE&&!PROFILE.loading){const r=document.querySelector(`.pmus-row[data-pftrk="${PFSONG}"]`);if(r&&!r.dataset.seen){r.dataset.seen="1";r.scrollIntoView({block:"center"})}}
   /* the Tagged tab loads when you open it */
   if(PTAB==="tagged"&&PROFTAGGED===null&&PROFILE&&!PROFILE.loading&&PROFTAGLOAD!==PROFILE.user.username){
     const un=PROFTAGLOAD=PROFILE.user.username;

@@ -23,40 +23,71 @@ function workCardHTML(p, collab, K, pinned) {
   </div>`;
 }
 
-/* ── Music on the profile (v2.2 · 2026-10-09) ─────────────────────────
-   Songs aren't pictures, so they don't sit in the visual grid (v2.1 had
-   them there): they have their own Music tab, like an artist page on
-   Spotify — Play, then the songs, newest first, each with its cover,
-   plays and length. Tap a song to play it, again to pause; when one ends
-   the next one plays. It's a post's kind of sound (MUSAUTOID = "trk<id>"):
-   it plays while the list is on screen and stops when you leave it. */
+/* ── Music on the profile (v2.3 · 2026-10-10) ─────────────────────────
+   Songs aren't pictures, so they have their own Music tab (v2.2), like an
+   artist page on Spotify — Play, then the songs, each with its cover,
+   plays and length. v2.3 adds what an artist page has:
+     - a pinned song at the top (⋯ → Pin to top, on your own page)
+     - ⋯ → Share song: a /s/:id link that previews right in an Instagram DM
+     - Merch: the artist's Market listings under their music
+   Tap a song to play it, again to pause; when one ends the next one down
+   plays. It's a post's kind of sound (MUSAUTOID = "trk<id>"): it plays
+   while the list is on screen and stops when you leave it.
+   A /s/:id page's "Open in the app" lands here with that song picked out
+   (PFSONG). Server: server-12-music.js. Styles: app-05-styles-music.css. */
+let PFSONG=null;
 const trkOn=t=>MUSAUTOID==="trk"+t.id&&NOWPLAYING&&NOWPLAYING.id===t.id&&AUDIO&&!AUDIO.paused;
+/* The songs in the order they show: the pinned one first, then newest. */
+function profileSongs(){
+  const T=PROFILE&&PROFILE.tracks||[], pin=PROFILE&&PROFILE.pinnedTrack;
+  const p=pin&&T.find(t=>t.id===pin);
+  return p?[p,...T.filter(t=>t!==p)]:T;
+}
 function musicTabHTML(mine){
-  const T=PROFILE.tracks||[];
+  const T=profileSongs(), pin=PROFILE.pinnedTrack;
   if(!T.length)return `<div class="empty">${mine?"Your music lives here. Upload a song from + Post → Add music, or in // Music.":"No music yet."}</div>`;
-  const plays=T.reduce((n,t)=>n+(t.plays||0),0), cur=T.find(trkOn);
+  const plays=T.reduce((n,t)=>n+(t.plays||0),0), cur=T.find(trkOn), L=(PROFLISTINGS||[]).filter(l=>l.status!=="sold").slice(0,8);
   return `<div class="pmus">
     <div class="pmus-top"><button class="pmus-play" data-pftrk="${(cur||T[0]).id}" aria-label="${cur?"Pause":"Play"}">${cur?DI.pause:DI.play}</button>
       <span class="pmus-sum"><b>${T.length} song${T.length===1?"":"s"}</b><span>${plays.toLocaleString()} play${plays===1?"":"s"}</span></span></div>
-    <div class="pmus-list" role="list">${T.map((t,i)=>{const on=trkOn(t);
-      return `<div class="pmus-row${on?" on":""}" role="button" tabindex="0" data-pftrk="${t.id}" data-trkown="trk${t.id}" aria-label="${on?"Pause":"Play"} ${esc(t.title)}">
-        <span class="pmus-n">${on?UI_IC.music:i+1}</span>
+    <div class="pmus-list" role="list">${T.map((t,i)=>{const on=trkOn(t),pinned=t.id===pin;
+      return `<div class="pmus-row${on?" on":""}${PFSONG===t.id?" hl":""}" role="button" tabindex="0" data-pftrk="${t.id}" data-trkown="trk${t.id}" aria-label="${on?"Pause":"Play"} ${esc(t.title)}">
+        <span class="pmus-n">${on?UI_IC.music:pinned?PF_PIN:i+1-(pin&&T[0].id===pin?1:0)}</span>
         <span class="pmus-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="" loading="lazy" decoding="async">`:UI_IC.music}</span>
-        <span class="pmus-t"><b>${esc(t.title)}</b><span>${(t.plays||0).toLocaleString()} play${t.plays===1?"":"s"}</span></span>
-        <span class="pmus-d">${mmss(t.durationMs)}</span></div>`}).join("")}</div></div>`;
+        <span class="pmus-t"><b>${esc(t.title)}</b><span>${pinned?"Pinned · ":""}${(t.plays||0).toLocaleString()} play${t.plays===1?"":"s"}</span></span>
+        <span class="pmus-d">${mmss(t.durationMs)}</span>
+        <button class="pmus-more" data-pftrkmore="${t.id}" aria-label="More for ${esc(t.title)}">${DI.more}</button></div>`}).join("")}</div>
+    ${L.length?`<div class="pmus-merch"><div class="pmus-h"><b>Merch</b><button data-ptab="shop">See all</button></div>
+      <div class="pmus-mrow">${L.map(mktCardHTML).join("")}</div></div>`:""}
+  </div>`;
 }
 /* After a song ends on a profile: the next one down, if there is one. */
 function nextProfileTrack(){
-  const T=PROFILE&&PROFILE.tracks||[], i=T.findIndex(t=>"trk"+t.id===MUSAUTOID);
+  const T=profileSongs(), i=T.findIndex(t=>"trk"+t.id===MUSAUTOID);
   return i>=0&&i<T.length-1?T[i+1]:null;
+}
+const songLink=t=>location.origin+"/s/"+t.id;
+const SONG_PIN=di('<path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/>',18);   // drawn, so the picker shows it
+function songMenu(t){
+  const mine=PROFILE&&PROFILE.user.username===myName(), pinned=PROFILE&&PROFILE.pinnedTrack===t.id;
+  openPicker({title:t.title,items:[
+    {label:"Share song",sub:"A link that shows the cover and plays — Instagram DMs included",icon:DI.out,act:"share"},
+    ...(mine?[{label:pinned?"Unpin":"Pin to top",sub:pinned?"Back in with the rest":"First on your Music tab",icon:SONG_PIN,act:"pin"}]:[])],
+    onPick:async it=>{
+      if(it.act==="share")return shareMenu({title:t.title+" — @"+(t.by&&t.by.username||""),link:songLink(t)});
+      try{const d=await req("/api/me/pinned-track",{method:"POST",body:{trackId:pinned?null:t.id}});
+        if(PROFILE){PROFILE.pinnedTrack=d.pinnedTrack;PROFCACHE.delete(PROFILE.user.username)}
+        toast(pinned?"Unpinned":"Pinned to the top");render()}catch(e){toast(e.message)}}});
 }
 (function wireProfileMusic(){
   /* capture phase, like the post music chips — before anything else takes the tap */
   document.addEventListener("click",e=>{
-    const b=e.target.closest("[data-pftrk]");if(!b)return;
-    const t=(PROFILE&&PROFILE.tracks||[]).find(x=>String(x.id)===b.dataset.pftrk);if(!t)return;
+    const m=e.target.closest("[data-pftrkmore]"), b=m||e.target.closest("[data-pftrk]");if(!b)return;
+    const id=m?m.dataset.pftrkmore:b.dataset.pftrk;
+    const t=(PROFILE&&PROFILE.tracks||[]).find(x=>String(x.id)===id);if(!t)return;
     e.stopPropagation();e.preventDefault();
-    MUSOK=true;MUSAUTOID="trk"+t.id;
+    if(m)return songMenu(t);
+    MUSOK=true;MUSAUTOID="trk"+t.id;PFSONG=null;
     playTrack(t);render();
   },true);
 })();

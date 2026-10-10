@@ -153,7 +153,7 @@ async function openProfile(username){
   // before showing anything is what made this feel broken.
   pushView("profile",username);
   SEARCHOPEN=false; NOTIFOPEN=false; if(DMOPENPANEL)closeMessages();
-  PTAB="work"; EDITING=false; EDITPF=null; PROFLISTINGS=null; PROFTAGGED=null; PROFTAGLOAD=null;
+  PTAB="work"; EDITING=false; EDITPF=null; PROFLISTINGS=null; PROFTAGGED=null; PROFTAGLOAD=null; PROFMERCHLOAD=null;
   const cached=PROFCACHE.get(username);
   PROFILE=cached||{loading:true,user:{username,displayName:username,avatarUrl:"",role:"",roles:[],rep:0,bio:"",link:"",createdAt:Date.now()},
     followers:0,following:0,youFollow:false,stats:{posts:0,likesReceived:0,collabs:0},posts:[],collabs:[]};
