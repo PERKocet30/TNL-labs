@@ -535,6 +535,8 @@ if (!cols.includes("suspended")) db.exec(`ALTER TABLE users ADD COLUMN suspended
 if (!cols.includes("pronouns")) db.exec(`ALTER TABLE users ADD COLUMN pronouns TEXT NOT NULL DEFAULT ''`);
 if (!cols.includes("links")) db.exec(`ALTER TABLE users ADD COLUMN links TEXT NOT NULL DEFAULT '[]'`);
 if (!cols.includes("pinned")) db.exec(`ALTER TABLE users ADD COLUMN pinned TEXT NOT NULL DEFAULT '[]'`);
+/* Music tab (2026-10-10): one song pinned to the top, like an artist pick. */
+if (!cols.includes("pinned_track")) db.exec(`ALTER TABLE users ADD COLUMN pinned_track INTEGER`);
 
 const lcols = db.prepare(`PRAGMA table_info(listings)`).all().map((c) => c.name);
 if (!lcols.includes("sold_at")) db.exec(`ALTER TABLE listings ADD COLUMN sold_at INTEGER`);

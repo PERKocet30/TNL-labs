@@ -894,7 +894,7 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { CMENU = null; paintLayer(); EDITING = false; PROFILE = null; TAB = "showroom"; render(); });
   });
   // 2026-10-09: the music you upload has its own Music tab (a song list), not tiles in the visual grid
-  await step(d, "a profile's Music tab: songs with covers, a tap plays, the next one follows, leaving stops it", async () => {
+  await step(d, "a profile's Music tab: songs with covers, a tap plays, the next one follows, ⋯ shares, a song link picks its song out, leaving stops it", async () => {
     await p.evaluate(() => openProfile("friend"));
     await p.waitForFunction(() => PROFILE && PROFILE.user.username === "friend" && !PROFILE.loading && Array.isArray(PROFILE.tracks));
     await p.locator('[data-ptab="work"]').tap();
@@ -905,6 +905,16 @@ console.log("\nMEMBER · PHONE");
     await p.locator(".pmus-row", { hasText: "Night Drive" }).tap();
     await p.waitForFunction(() => String(MUSAUTOID).startsWith("trk") && NOWPLAYING && NOWPLAYING.title === "Night Drive", null, { timeout: 4000 });
     ok(await p.evaluate(() => nextProfileTrack() && nextProfileTrack().title === "Reagent"), "the next song isn't queued");
+    // ⋯ on someone else's song: Share song, no Pin (2026-10-10)
+    await p.locator(".pmus-row", { hasText: "Night Drive" }).locator("[data-pftrkmore]").tap();
+    await p.waitForSelector(".pick", { timeout: 4000 });
+    ok(await p.locator(".pick", { hasText: "Share song" }).count() === 1 && await p.locator(".pick", { hasText: "Pin to top" }).count() === 0, "the song menu is wrong");
+    await p.evaluate(() => { PICKER = null; render(); });
+    // a song link's landing picks its song out
+    const nd = await p.evaluate(() => PROFILE.tracks.find((t) => t.title === "Reagent").id);
+    await p.evaluate((id) => { PFSONG = id; render(); }, nd);
+    ok(await p.locator(`.pmus-row.hl[data-pftrk="${nd}"]`).count() === 1, "the linked song isn't picked out");
+    await p.evaluate(() => { PFSONG = null; });
     await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
     await p.waitForFunction(() => MUSAUTOID === null && (!AUDIO || AUDIO.paused), null, { timeout: 4000 });
   });

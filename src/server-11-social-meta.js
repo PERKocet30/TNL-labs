@@ -1,7 +1,8 @@
 /* ================================================================
    SOCIAL GRAPH — follow / unfollow / profile
    v1.1 — 2026-10-09: a profile carries the music its member uploaded
-   (tracks, newest first, with their covers) — it shows in their grid.
+   (tracks, newest first, with their covers) — its own Music tab.
+   v1.2 — 2026-10-10: and which song they pinned to the top.
 ================================================================ */
 app.post("/api/users/:username/follow", auth, (req, res) => {
   const target = q.userByName.get(req.params.username);
@@ -88,6 +89,7 @@ app.get("/api/users/:username", maybeAuth, (req, res) => {
     collabs: shapePosts(collabRows),
     tracks: db.prepare(`SELECT t.*, u.username, u.display_name, u.avatar_url, u.rep FROM tracks t JOIN users u ON u.id = t.user_id
       WHERE t.user_id = ? ORDER BY t.created_at DESC LIMIT 40`).all(u.id).map(shapeTrack),
+    pinnedTrack: u.pinned_track || null,
   });
 });
 

@@ -218,7 +218,7 @@ function wireSheet(){
   const mb=$("#msgb");if(mb)mb.onclick=()=>{if(guest())return needAccount("Join to message people.");openDM(PROFILE.user.username)};
 
   document.querySelectorAll("[data-ptab]").forEach(b=>b.onclick=async()=>{PTAB=b.dataset.ptab;render();
-    if(PTAB==="shop"&&PROFLISTINGS===null&&PROFILE){try{const d=await api.mkt("seller="+encodeURIComponent(PROFILE.user.username));PROFLISTINGS=d.listings||[];render()}catch(e){PROFLISTINGS=[];render()}}});
+    if((PTAB==="shop"||PTAB==="music")&&PROFLISTINGS===null&&PROFILE){   /* the Music tab shows their merch too (2026-10-10) */try{const d=await api.mkt("seller="+encodeURIComponent(PROFILE.user.username));PROFLISTINGS=d.listings||[];render()}catch(e){PROFLISTINGS=[];render()}}});
 
   const pp=$("#profpost");if(pp)pp.onclick=()=>{PCOMPOSE={body:"",imgs:[],vid:null,busy:false};pushView("compose");render()};
   const avb=$("#avbtn");if(avb)avb.onclick=()=>$("#avin").click();
@@ -310,11 +310,11 @@ function paintVerifyBar(){
   const mv=Number(new URLSearchParams(location.search).get("v"))||null;   // …and /e/:slug/:entry, to that piece
   /* /u/ and /p/ are public pages (they preview in Instagram DMs); their
      "Open in the app" sends ?u= / ?p= so the app lands on that exact thing. */
-  const qs=new URLSearchParams(location.search), qu=qs.get("u"), qp=Number(qs.get("p"))||null;
+  const qs=new URLSearchParams(location.search), qu=qs.get("u"), qp=Number(qs.get("p"))||null, qsong=Number(qs.get("s"))||null;   // /s/:id → ?u=&s= : their Music tab, that song picked out (2026-10-10)
   const back=!me&&!mu&&!mm&&!qu&&!qp?evReturn():null;   // confirmed your email elsewhere: back to the vote
   loadEvents();
   if(me||back){history.replaceState({},"","/");TAB="event";EVSLUG=me||back.slug;EVFOCUS=me?mv:back.v||null;loadEvent()}
-  else if(mu||qu){if(qu)history.replaceState({},"","/");openProfile(mu?mu[1]:qu)}
+  else if(mu||qu){if(qu)history.replaceState({},"","/");openProfile(mu?mu[1]:qu);if(qsong){PTAB="music";PFSONG=qsong}}
   else if(qp){history.replaceState({},"","/");openPostById(qp)}
   else if(path==="/shop"){TAB="market";MKTVIEW="browse"}
   else if(mm){TAB="market";MKTVIEW="detail";
