@@ -15,7 +15,7 @@
    drawn — a new rank is a new file. Instagram covers the top ~250px and
    bottom ~250px of a Story, so nothing that matters goes there.
 ================================================================ */
-const EVC = { version: 3, w: 1080, pad: 72 };   // 3: the Story cards' look — the work blurred behind white type (2026-10-11)
+const EVC = { version: 4, w: 1080, pad: 72 };   // 3: the Story cards' look — the work blurred behind white type (2026-10-11)
 
 /* An ASS script of positioned lines. at(text, x, y, size, bold, colour, align) */
 function evAss(dir, w, h) {
@@ -118,7 +118,8 @@ function evBoardCard(ev, size, base) {
     const e = db.prepare(`SELECT * FROM event_entries WHERE id = ?`).get(r.entryId);
     const p = e && q.postById.get(e.post_id), u = e && q.userById.get(e.user_id);
     return { rank: "#" + r.rank, handle: u ? "@" + (u.username.length > 20 ? u.username.slice(0, 19) + "…" : u.username) : "", votes: `${r.votes} ${r.votes === 1 ? "vote" : "votes"}`,
-      move: r.move > 0 ? `up ${r.move}` : r.move < 0 ? `down ${-r.move}` : "", file: cardFile(p?.thumb_url) || cardFile(p?.image_url) };
+      move: r.move > 0 ? `up ${r.move}` : r.move < 0 ? `down ${-r.move}` : "", file: cardFile(p?.thumb_url) || cardFile(p?.image_url),
+      av: u ? cardFile(u.avatar_url) : null, ini: u ? u.username.slice(0, 2).toUpperCase() : "" };
   });
   const asOf = new Date(board.asOf).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
   const text = { eye: evUpper(ev.title, 34), head: stage === "final" ? "The final" : "Scoreboard",
@@ -143,8 +144,14 @@ function evBoardCard(ev, size, base) {
       const x = P + 120;
       if (r.file) { const k = g.input(r.file); g.f.push(`[${k}:v]scale=${th}:${th}:force_original_aspect_ratio=increase,crop=${th}:${th},setsar=1,format=rgb24[t${i}]`); g.lay(`t${i}`, x, y); }
       else g.box(`${SCK.shade}@0.4`, th, th, x, y);
-      t.at(r.handle, x + th + 32, y + th / 2 - 6, 44, true, ink, 1);
-      t.at(r.votes, x + th + 32, y + th / 2 + 4, 32, false, ink, 7);
+      /* their profile picture, round, beside the handle */
+      const A = story ? 72 : 64, ax = x + th + 28, ay = y + (th - A) / 2, tx = ax + A + 20;
+      const round = `format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lte(hypot(X-${A - 0.5},Y-${A - 0.5}),${A}),255,0)',scale=${A}:${A}`;
+      if (r.av) { const k = g.input(r.av); g.f.push(`[${k}:v]scale=${A * 2}:${A * 2}:force_original_aspect_ratio=increase,crop=${A * 2}:${A * 2},setsar=1,${round}[a${i}]`); }
+      else { g.f.push(`color=c=${SCK.el}:s=${A * 2}x${A * 2}:d=1,${round}[a${i}]`); t.at(r.ini, ax + A / 2, ay + A / 2, 26, true, ink, 5); }
+      g.lay(`a${i}`, ax, ay);
+      t.at(r.handle, tx, y + th / 2 - 6, 44, true, ink, 1);
+      t.at(r.votes, tx, y + th / 2 + 4, 32, false, ink, 7);
       if (r.move) t.at(r.move, W - P, y + th / 2, 32, true, r.move.startsWith("up") ? up : ink, 6);
     });
     /* the call in Lab green, as a tag — like every card's */

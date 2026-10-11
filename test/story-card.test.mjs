@@ -16,11 +16,14 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "�
 // a placeholder piece, never anyone's work: red on top, blue below
 execFileSync(FF, ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=0xD01010:s=800x500:d=1", "-f", "lavfi", "-i", "color=c=0x1030D0:s=800x500:d=1",
   "-filter_complex", "[0][1]vstack", "-frames:v", "1", join(DATA, "uploads", "piece.jpg")]);
+// …and a placeholder profile picture: flat yellow
+execFileSync(FF, ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=0xF0D020:s=300x300:d=1", "-frames:v", "1", join(DATA, "uploads", "face.jpg")]);
 process.env.TNL_DATA = DATA;
 const { db } = await import(join(ROOT, "src/db.js"));
 const now = Date.now();
 const uid = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, role, accent) VALUES (?,?,?,?,?,1,?,?)`)
   .run("maker", "Maker", "m@x.com", "h", now, "Producer", "lab").lastInsertRowid);
+db.prepare(`UPDATE users SET avatar_url = '/uploads/face.jpg' WHERE id = ?`).run(uid);
 const tr = Number(db.prepare(`INSERT INTO tracks (user_id, title, url, created_at) VALUES (?, 'Night Song', '/uploads/none.wav', ?)`).run(uid, now).lastInsertRowid);
 const P = (body, img, track) => Number(db.prepare(`INSERT INTO posts (author_id, channel, body, image_url, media_w, media_h, is_work, audio_track_id, created_at) VALUES (?,?,?,?,800,1000,1,?,?)`)
   .run(uid, "graphic-design", body, img, track, now).lastInsertRowid);
@@ -43,6 +46,7 @@ try {
   // away from the darkened edges, clear of the type: just above the piece and just below the tag
   const hi = px(f, 700, 390), lo = px(f, 700, 1680);
   t("…and coloured by it, not plain black (red at the top, blue at the bottom)", hi[0] > hi[2] + 10 && lo[2] > lo[0] + 10);
+  t("their profile picture is on it, top left (round, ringed in their colour)", near(px(f, 128, 298), [0xF0, 0xD0, 0x20], 40) && near(px(f, 72 - 5, 298), [0x98, 0xFC, 0x68], 60));
   const mid = px(f, 540, 920);
   t("the piece itself sits large in the middle", !near(mid, corner, 25));
   console.log("\nA TEXT POST");

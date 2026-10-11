@@ -22,12 +22,12 @@ const SC = { w: 1080, h: 1920, pad: 72, top: 250, by: 420, bh: 1000 };
    song if it has one, how many in the series, then the tag in their
    colour, the mark and the link — all in white. A text post is its words
    on their colour; a profile, its four pieces over the first one, blurred. */
-const SCK = { ink: ffc(PALETTE.dark.tx), ink2: ffc(PALETTE.dark.dim), shade: ffc(PALETTE.dark.bg) };
+const SCK = { ink: ffc(PALETTE.dark.tx), ink2: ffc(PALETTE.dark.dim), shade: ffc(PALETTE.dark.bg), el: ffc(PALETTE.dark.el) };
 
 /* c: { prefix, head, sub, art?, bg?, avatar?, tiles?, quote?, cover?, lead?, music?, count?, tag, handle, cta?, url, accent }
    The tournament's entry Story is one of these too (server-10-events-4-cards). */
 function storyCard(c) {
-  const hash = createHash("sha1").update(JSON.stringify([7, c])).digest("hex").slice(0, 12);
+  const hash = createHash("sha1").update(JSON.stringify([8, c])).digest("hex").slice(0, 12);
   const make = (out, dir) => {
     const W = SC.w, H = SC.h, P = SC.pad, g = evGraph(W, H), t = evAss(dir, W, H), bw = W - 2 * P, by = SC.by, bh = SC.bh;
     const acc = ffc(c.accent), onAcc = ffc(onAccent(c.accent));
@@ -40,15 +40,24 @@ function storyCard(c) {
     } else g.box(c.cover || c.quote ? acc : SCK.shade, W, H, 0, 0);
     /* white on the work; on their colour, whatever reads on it */
     const onCol = !ground && (c.cover || c.quote), ink = onCol ? onAcc : SCK.ink, ink2 = onCol || ground ? ink : SCK.ink2;   // grey doesn't read on bright work
-    /* who: their photo, their name, what they do */
-    let hx = P;
+    /* who: their profile picture — round, ringed in their colour, as on their
+       profile in the app (initials when there's no picture) — then name and role */
+    const A = 112, ay = SC.top - 8;
+    const round = (d) => `format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lte(hypot(X-${d - 0.5},Y-${d - 0.5}),${d}),255,0)',scale=${d}:${d}`;
+    const disc = (color, d, label, x, y) => { g.f.push(`color=c=${color}:s=${d * 2}x${d * 2}:d=1,${round(d)}[${label}]`); g.lay(label, x, y); };
+    disc(onCol ? SCK.shade : acc, A + 14, "ring", P - 7, ay - 7);
+    disc(SCK.shade, A + 6, "gap", P - 3, ay - 3);
     if (c.avatar) {
       const i = g.input(c.avatar);
-      g.f.push(`[${i}:v]scale=96:96:force_original_aspect_ratio=increase,crop=96:96,setsar=1,format=rgb24[av]`);
-      g.lay("av", P, SC.top); hx = P + 120;
+      g.f.push(`[${i}:v]scale=${A * 2}:${A * 2}:force_original_aspect_ratio=increase,crop=${A * 2}:${A * 2},setsar=1,${round(A)}[av]`);
+      g.lay("av", P, ay);
+    } else {
+      disc(SCK.el, A, "av", P, ay);
+      t.at(String(c.handle || c.head || "").replace(/^@/, "").slice(0, 2).toUpperCase(), P + A / 2, ay + A / 2, 40, true, SCK.ink, 5);
     }
-    t.at(c.head, hx, SC.top + (c.avatar ? 0 : 0), 64, true, ink);
-    if (c.sub) t.at(c.sub, hx, SC.top + 76, 28, false, ink2);
+    const hx = P + A + 32;
+    t.at(c.head, hx, SC.top - 2, 60, true, ink);
+    if (c.sub) t.at(c.sub, hx, SC.top + 70, 28, false, ink2);
     let below = by + bh;
     if (c.art) {
       /* the piece, whole and as large as the frame allows, on a soft shadow */
