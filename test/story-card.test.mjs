@@ -13,8 +13,9 @@ const FF = createRequire(import.meta.url)("ffmpeg-static");
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
-// a placeholder piece: a red-to-blue test pattern, never anyone's work
-execFileSync(FF, ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "gradients=s=800x1000:c0=0xD01010:c1=0x1030D0:x0=0:y0=0:x1=800:y1=1000:d=1", "-frames:v", "1", join(DATA, "uploads", "piece.jpg")]);
+// a placeholder piece, never anyone's work: red on top, blue below
+execFileSync(FF, ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=0xD01010:s=800x500:d=1", "-f", "lavfi", "-i", "color=c=0x1030D0:s=800x500:d=1",
+  "-filter_complex", "[0][1]vstack", "-frames:v", "1", join(DATA, "uploads", "piece.jpg")]);
 process.env.TNL_DATA = DATA;
 const { db } = await import(join(ROOT, "src/db.js"));
 const now = Date.now();
@@ -39,7 +40,9 @@ try {
   t("a 1080×1920 picture", r.status === 200 && /1080x1920/.test(probe));
   const corner = px(f, 20, 20), low = px(f, 20, 1880);
   t("no white sheet: the corners are the work's colours, not white", !near(corner, [255, 255, 255], 60) && !near(low, [255, 255, 255], 60));
-  t("…and coloured by it, not plain black (red at the top, blue at the bottom)", corner[0] > corner[2] && low[2] > low[0]);
+  // away from the darkened edges, clear of the type: just above the piece and just below the tag
+  const hi = px(f, 700, 390), lo = px(f, 700, 1680);
+  t("…and coloured by it, not plain black (red at the top, blue at the bottom)", hi[0] > hi[2] + 10 && lo[2] > lo[0] + 10);
   const mid = px(f, 540, 920);
   t("the piece itself sits large in the middle", !near(mid, corner, 25));
   console.log("\nA TEXT POST");
