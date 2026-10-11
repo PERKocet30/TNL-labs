@@ -123,7 +123,7 @@ async function loadShowroom(force){
   }catch(e){/* offline */}
 }
 
-/* The labs index — v3 2026-10-09: one list, nothing twice. Each genre is a
+/* The labs index — v3.1 2026-10-11 (Music wears its most-played cover); v3 2026-10-09: one list, nothing twice. Each genre is a
    card: the latest piece made there, its name, one line on what it is, and
    its #hashtags — tap one to land on that work. */
 function labsGridHTML(){
@@ -131,12 +131,13 @@ function labsGridHTML(){
   const A=LABACT||{byChannel:{},art:{},unread:{}};
   const st=l=>{let unread=0,art=null;
     for(const c of l.channels){unread+=A.unread[c.id]||0;const a=A.art[c.id];if(a&&(!art||a.at>art.at))art=a}
+    if(A.labArt&&A.labArt[l.id])art=A.labArt[l.id];   // Music: the cover of the song played most this week (2026-10-11)
     return {unread,art}};
   /* your labs first (v1.2, 2026-10-09 — labsForMe in app-11-places.js) */
   const o=labsForMe();
   const card=l=>{const id=LAB_ID[l.id]||{for:"",ic:""},x=st(l),tags=labTagList(l.id).slice(0,3);
       return `<div class="lx" role="button" tabindex="0" data-lab="${l.id}">
-        <span class="lx-media${x.art?"":" bare"}">${x.art?`<img src="${esc(x.art.url)}" alt="" loading="lazy">`:`<span class="lx-ic">${id.ic}</span>`}</span>
+        <span class="lx-media${x.art?"":" bare"}">${x.art?`<img src="${esc(x.art.url)}" alt="${x.art.title?esc("Most played: "+x.art.title):""}" loading="lazy">`:`<span class="lx-ic">${id.ic}</span>`}</span>
         <span class="lx-body">
           <span class="lx-name"><span class="lg">//</span> ${esc(l.name)}${x.unread?`<span class="lx-new">${x.unread>9?"9+":x.unread} new</span>`:""}</span>
           <span class="lx-for">${esc(id.for)}</span>
