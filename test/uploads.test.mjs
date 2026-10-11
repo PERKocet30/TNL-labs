@@ -102,6 +102,17 @@ console.log("\nA VIDEO SHOWS UP AT ONCE");
   const mine = (lib.tracks || []).find((x) => x.id === tr.track.id) || {};
   t("players get the copy as the track's url; the WAV stays its file", mine.url === arow?.play && mine.fileUrl === wup.url);
   t("the copy is far smaller", arow && readFileSync(join(DATA, arow.play.replace(/^\//, ""))).length * 4 < wav.length);
+
+  /* The same song twice (2026-10-11): a member added a song, then added the same file again from the post maker. */
+  const upAgain = async (buf) => (await (await fetch("http://127.0.0.1:8877/api/upload/stream", { method: "POST", headers: { Authorization: "Bearer tok-up", "Content-Type": "application/octet-stream" }, body: buf })).json()).url;
+  const add = async (u, title) => (await fetch("http://127.0.0.1:8877/api/tracks", { method: "POST", headers: { Authorization: "Bearer tok-up", "Content-Type": "application/json" },
+    body: JSON.stringify({ title, url: u, durationMs: 3000, bytes: wav.length }) })).json();
+  const nTracks = () => db.prepare(`SELECT COUNT(*) n FROM tracks WHERE user_id = ?`).get(uid).n;
+  const before = nTracks(), again = await add(await upAgain(wav), "Song (2)");
+  t("the same file added again gives back the song you have — no second copy", again.existing === true && again.track.id === tr.track.id && nTracks() === before);
+  const other = Buffer.from(wav); other.writeInt16LE(1234, 100);   // same size, different sound
+  const diff = await add(await upAgain(other), "Song");
+  t("a different file of the very same size (and name) is its own song", !diff.existing && diff.track.id !== tr.track.id && nTracks() === before + 1);
   srv.kill(); await srv.exited;
 }
 

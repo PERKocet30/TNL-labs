@@ -120,6 +120,8 @@ async function uploadTrackFile(file){
     });
   }catch(e){}
   const made=await api.addTrack({title:title.trim(),url:up.url,durationMs,bytes:file.size});
+  /* Already added this exact file: that one comes back, named and covered as it is (2026-10-11). */
+  if(made&&made.existing){toast("You already have this song — using that one");made.track.existing=true}
   return made&&made.track;
 }
 function wireTracks(){
@@ -161,7 +163,7 @@ function wireTracks(){
     try{
       const t=await uploadTrackFile(file);
       TRKUP=false;await loadTracks();
-      if(t)TRKEDIT={id:t.id,title:t.title,artworkUrl:t.artworkUrl||"",busy:false,fresh:true};
+      if(t&&!t.existing)TRKEDIT={id:t.id,title:t.title,artworkUrl:t.artworkUrl||"",busy:false,fresh:true};
       render();
     }catch(e){TRKUP=false;render();toast(e.message||"Upload failed")}
   };

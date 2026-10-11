@@ -1,4 +1,4 @@
-/* ── POST CREATOR · v2.2 · 2026-10-09 (v2 2026-09-28; v2.1: your labs first in Share to a lab; v2.2: upload a song from here, and its cover is the post's picture when there are no photos) ────────────────────────────────
+/* ── POST CREATOR · v2.3 · 2026-10-11 (v2.3: your songs first in Add music; v2 2026-09-28; v2.1: your labs first in Share to a lab; v2.2: upload a song from here, and its cover is the post's picture when there are no photos) ────────────────────────────────
    Instagram / Facebook grade, TNL look. One page: the work large at the
    top (swipe it, reorder it, see each upload land), the caption with
    @mentions, then three rows — invite collaborators, add music, share to a
@@ -105,6 +105,7 @@ function pcmusRowsHTML(list,searching){
   if(!list.length)return searching
     ?`<div class="empty">No tracks match that.</div>`
     :`<div class="empty">No tracks in the library yet.<br>Upload yours above.</div>`;
+  if(!searching)list=[...list].sort((a,b)=>(b.by.username===myName())-(a.by.username===myName()));   // your songs first (2026-10-11)
   return list.map(t=>`<div class="pcmus-row" data-pcmuspick="${t.id}"><div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="">`:DI.music}</div><div class="pcmus-meta"><div class="pcmus-t">${esc(t.title)}</div><div class="dim">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}</div></div></div>`).join("");
 }
 
@@ -263,7 +264,7 @@ function wirePCompose(){
     try{
       const t=await uploadTrackFile(file);
       c.musup=false;c.list=null;
-      if(t){c.track=t;if(PCOMPOSE===c)TRKEDIT={id:t.id,title:t.title,artworkUrl:"",busy:false,fresh:true}}
+      if(t){c.track=t;if(PCOMPOSE===c&&!t.existing)TRKEDIT={id:t.id,title:t.title,artworkUrl:"",busy:false,fresh:true}}
       render();
     }catch(e){c.musup=false;render();toast(e.message||"Upload failed")}
   };
