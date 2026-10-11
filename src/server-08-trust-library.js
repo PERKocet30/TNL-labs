@@ -367,6 +367,8 @@ app.post("/api/tracks", auth, verified, rateLimit({ max: 12, windowMs: 3600000, 
   if (!t) return res.status(400).json({ error: "give it a name" });
   if (typeof url !== "string" || !url.startsWith("/uploads/")) return res.status(400).json({ error: "upload the audio first" });
   const art = typeof artworkUrl === "string" && artworkUrl.startsWith("/uploads/") ? artworkUrl : "";
+  const dup = sameSongAs(req.user.id, url);   // the same file again: the track you have (server-12-video)
+  if (dup) return res.json({ track: shapeTrack(trackRow(dup)), existing: true });
 
   const info = db.prepare(`
     INSERT INTO tracks (user_id, title, url, artwork_url, description, duration_ms, bytes, created_at)

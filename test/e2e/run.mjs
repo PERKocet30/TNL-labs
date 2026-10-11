@@ -648,7 +648,7 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { TAB = "showroom"; MKTVIEW = "browse"; render(); });
   });
   /* "You should be able to upload music with the post composer too" (2026-10-09). */
-  await step(d, "upload a song from the post creator: name it, add a cover — with no photos the cover is the post's picture", async () => {
+  await step(d, "upload a song from the post creator: name it, add a cover — with no photos the cover is the post's picture; your songs come first, and the same file again is the song you have", async () => {
     await openCreator();
     await p.locator("[data-pcmusadd]").tap();
     await p.locator("#pcmusfile").setInputFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) });
@@ -665,6 +665,19 @@ console.log("\nMEMBER · PHONE");
     const np = (await myPosts())[0];
     ok(np.audioTrack && np.audioTrack.title === "Composer Song" && np.imageUrl && np.imageUrl === np.audioTrack.artworkUrl && np.mediaW > 0,
       "post: " + JSON.stringify({ t: np.audioTrack, img: np.imageUrl, w: np.mediaW }));
+    /* The same song twice (2026-10-11): your songs come first in Add music, and the same file again is the song you have. */
+    await openCreator();
+    await p.locator("[data-pcmusadd]").tap();
+    await p.waitForSelector(".pcmus-row", { timeout: 8000 });
+    ok(/Composer Song/.test(await p.locator(".pcmus-row").first().innerText()), "your own song isn't first in Add music: " + await p.locator(".pcmus-row").first().innerText());
+    await p.locator("#pcmusfile").setInputFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) });
+    await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.track && !PCOMPOSE.musup, null, { timeout: 10000 });
+    await p.waitForTimeout(300);
+    ok(await p.evaluate((id) => PCOMPOSE.track.id === id && PCOMPOSE.track.title === "Composer Song", np.audioTrack.id), "the same file made a second song: " + JSON.stringify(await p.evaluate(() => PCOMPOSE.track)));
+    ok(await p.locator("#trkeov").count() === 0, "it asked to name a song you already named");
+    const mine = (await api("/api/tracks?mine=1", token)).tracks.filter((x) => x.title === "Composer Song");
+    ok(mine.length === 1, "two copies in the library: " + mine.length);
+    await p.evaluate(() => { PCOMPOSE = null; render(); });
     // out of the library again, so the Music steps below play the seeded songs they expect
     await fetch(B + "/api/tracks/" + np.audioTrack.id, { method: "DELETE", headers: { authorization: "Bearer " + token } });
     await p.evaluate(() => { TRACKS = null; });   // the save above loaded the library list; let it load fresh

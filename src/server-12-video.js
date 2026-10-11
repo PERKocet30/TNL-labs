@@ -148,3 +148,22 @@ async function feedNext() {
   FEED_BUSY = false;
   setTimeout(feedNext, 2000).unref();
 }
+
+/* ── The same song twice (2026-10-11) ───────────────────────────────
+   A member added a song from the library, then added it again from the
+   post maker — two identical tracks. Adding a file you've already added
+   now hands back the track you have. Only your own tracks, and only the
+   exact same file (same size, then same SHA-1 — never the name). */
+const fileSha = (p) => { try { return createHash("sha1").update(readFileSync(p)).digest("hex"); } catch { return null; } };
+function sameSongAs(userId, url) {
+  const name = String(url || "").slice("/uploads/".length);
+  if (!/^[A-Za-z0-9._-]+$/.test(name)) return null;
+  let size = 0; try { size = statSync(join(UPLOAD_DIR, name)).size; } catch { return null; }
+  const cands = db.prepare(`SELECT id, url FROM tracks WHERE user_id = ? AND bytes = ? AND url != ?`).all(userId, size, url)
+    .filter((c) => /^\/uploads\/[A-Za-z0-9._-]+$/.test(c.url));
+  if (!cands.length) return null;
+  const h = fileSha(join(UPLOAD_DIR, name));
+  return (h && cands.find((c) => fileSha(join(UPLOAD_DIR, c.url.slice(9))) === h) || {}).id || null;
+}
+const trackRow = (id) => db.prepare(`SELECT t.*, u.username, u.display_name, u.avatar_url, u.rep FROM tracks t JOIN users u ON u.id = t.user_id WHERE t.id = ?`).get(id);
+
