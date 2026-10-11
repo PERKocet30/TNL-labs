@@ -1,4 +1,4 @@
-/* TNL LABS admin v2.2 — 2026-10-09. Core: state, API, helpers, charts, shell.
+/* TNL LABS admin v2.3 — 2026-10-11 (signed out: Log in comes straight back here). Core: state, API, helpers, charts, shell.
    Today (what needs you, the tournament, how people take part), People,
    Labs (every post by lab and #tag), Tournament, Market, System. Every number here comes from an admin-only endpoint; the
    server checks, not this page. */
@@ -94,8 +94,13 @@ const delta = (now, before, fmt = num) => `<span class="d">${deltaText(now, befo
 /* ---- shell ---- */
 function paint() {
   const app = $("#app");
-  if (!ME) { app.innerHTML = `<div class="gate"><div><div class="brand">TNL LABS <i>//</i> Admin</div>
-    <h1>Admins only</h1><p>Sign in to the app with an admin account, then come back here.</p><a class="btn" href="/">Open the app</a></div></div>`; return; }
+  /* Signed out. An email's Open Admin lands in the phone's browser, which
+     doesn't share the home-screen app's sign-in (iOS keeps them apart) —
+     so Log in opens the app's log-in straight away and comes back here. */
+  if (!ME) { const back = "/?login=1&next=" + encodeURIComponent("/admin" + location.hash);
+    app.innerHTML = `<div class="gate"><div><div class="brand">TNL LABS <i>//</i> Admin</div>
+    <h1>Admins only</h1><p>${TOKEN ? "This account isn't an admin. Log in with one and you'll come straight back here."
+      : "This browser isn't signed in — LABS on your home screen keeps its own sign-in, so email links open here signed out. Log in once and it'll remember you."}</p><a class="btn" id="adminlogin" href="${esc(back)}">Log in</a></div></div>`; return; }
   const badge = (k) => k === "today" && D.pulse && D.pulse.inbox.length ? `<b>${D.pulse.inbox.length}</b>` : k === "content" && D.pulse ? ((D.pulse.inbox.find((i) => i.kind === "reports") || {}).n ? `<b>${D.pulse.inbox.find((i) => i.kind === "reports").n}</b>` : "") : "";
   app.innerHTML = `<header class="top"><div class="bar1"><div class="brand">TNL LABS <i>//</i> Admin</div>
       <button class="ib" id="theme" aria-label="Switch theme">${document.documentElement.dataset.theme === "dark" ? I.sun : I.moon}</button>

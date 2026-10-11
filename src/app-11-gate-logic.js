@@ -29,7 +29,9 @@ function wireGate(){
     if(!f.username.trim()||!f.password){G.err="Enter your username or email and your password.";return render()}
     G.busy=true;G.err="";render();
     try{const d=await api.login({identifier:f.username.trim(),username:f.username.trim().toLowerCase(),password:f.password});
-      TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;gateClose();
+      TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;
+      if(GNEXT){location.replace(GNEXT);return}   // sent here to log in (Admin's Log in): straight back
+      gateClose();
       applyAccent(ME.accentHex);startStream();refreshBadges();loadUnreads();render()}
     catch(e){G.busy=false;G.err=e.message||"Couldn't log in. Try again.";render()}});
 
@@ -139,3 +141,8 @@ async function gxAfterPhoto(){
   if(G.people===null&&G.peopleP){try{await G.peopleP}catch(e){}}
   G.step=(G.people&&G.people.length)?"follow":"welcome";render();
 }
+/* Sent here just to log in (2026-10-11): /?login=1&next=/admin#system from
+   Admin's "Log in". No door, the log-in form at once, and back to next after.
+   Only a path on this site — never "//elsewhere" or a full address. */
+let GNEXT=null;
+const gxNext=n=>typeof n==="string"&&/^\/(?![\/\\])[\w\-./#?=&%]*$/.test(n)?n:null;

@@ -301,6 +301,10 @@ function paintVerifyBar(){
     if(p.get("checkout")==="failed"){toast("Payment didn't go through");history.replaceState({},"","/")}
     if(p.get("dm")){const who=p.get("dm");history.replaceState({},"","/");openDM(who)}   // admin Nudge lands here
   }
+  {const lq=new URLSearchParams(location.search);   // Admin's Log in (app-11-gate-logic)
+   if(lq.get("login")==="1"){const nx=gxNext(lq.get("next"));history.replaceState({},"","/");
+     if(ME&&nx&&(ME.isAdmin||!nx.startsWith("/admin")))return location.replace(nx);
+     if(!ME||nx){GNEXT=nx;ENTER=false;GATE="login";GATEWHY=nx&&nx.startsWith("/admin")?"Log in to open Admin.":""}}}
   try{MKTMETA=await api.mktMeta()}catch(e){}   // public — guests see the Market too
   // deep links — a shared /u/ or /m/ URL should land where it says
   let path=location.pathname;try{path=decodeURIComponent(path)}catch(e){}   // /u/xstart%2E → /u/xstart.

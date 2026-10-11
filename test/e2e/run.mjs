@@ -67,6 +67,7 @@ const friend = Number(ins.run("friend","Friend","friend@example.com","Graphic De
 const post = db.prepare("INSERT INTO posts (author_id,channel,body,image_url,thumb_url,media_w,media_h,is_work,created_at) VALUES (?,?,?,?,?,?,?,1,?)");
 // friend's session, so the poll step needn't sign in again (logins are rate-limited)
 db.prepare("INSERT INTO sessions (token,user_id,created_at) VALUES (?,?,?)").run("e2e-friend-session", friend, now);
+db.prepare("INSERT INTO sessions (token,user_id,created_at) VALUES (?,?,?)").run("e2e-tester-session", me, now);   // the admin-link step's log-in
 for (let i = 0; i < 6; i++) post.run(friend, "graphic-design", "Piece " + (i + 1), "/uploads/e2e-p" + i + ".png", "/uploads/e2e-p" + i + ".png", 800, 1000, now - i * 60000);
 // Piece 1 is a six-frame series (a carousel)
 db.prepare("UPDATE posts SET images = ? WHERE body = 'Piece 1'").run(JSON.stringify([0, 1, 2, 3, 4, 5].map((i) => ({ url: "/uploads/e2e-p" + i + ".png", thumb: "/uploads/e2e-p" + i + ".png", w: 800, h: 1000 }))));
@@ -1071,6 +1072,36 @@ console.log("\nMEMBER · COMPUTER");
   await step(d, "resizing to phone width switches to the phone frame", async () => {
     await p.setViewportSize({ width: 700, height: 900 }); await p.waitForTimeout(300);
     ok(await p.locator(".side").count() === 0 && (await p.locator(".app > .nav").count()) === 1, "didn't switch to the phone frame");
+  });
+  await d.ctx.close();
+}
+
+/* ================= An email's Open Admin, in a browser that isn't signed in (2026-10-11) ================= */
+console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
+{
+  const d = await device("admin-link", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const p = d.page;
+  await step(d, "Admin signed out: Log in opens the log-in at once (no door) and lands back on Admin's System tab", async () => {
+    await p.goto(B + "/admin#system");
+    const btn = p.locator("#adminlogin");
+    await btn.waitFor({ timeout: 8000 });
+    ok(/This browser isn't signed in/.test(await p.locator(".gate").innerText()), "the Admins-only page doesn't say why");
+    await btn.tap();
+    await p.waitForSelector("#u", { timeout: 8000 });
+    ok(await p.locator("#enterOv").count() === 0, "the Enter the lab door stood in the way");
+    ok(/Log in to open Admin/.test(await p.locator(".gx-why").innerText()), "the log-in doesn't say it's for Admin");
+    ok(await p.evaluate(() => location.search === ""), "the login link stayed in the address bar");
+    /* logins are rate-limited by now: the log-in answers with a seeded session, the rest is real */
+    const user = (await api("/api/me", "e2e-tester-session")).user;
+    await p.route("**/api/auth/login", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ token: "e2e-tester-session", user }) }));
+    await p.locator("#u").fill("tester"); await p.locator("#p").fill(PASS); await p.locator("#go").tap();
+    await p.waitForURL(/\/admin#system$/, { timeout: 8000 });
+    await p.locator("h2.sec", { hasText: "Glitches" }).first().waitFor({ timeout: 8000 });
+  });
+  await step(d, "only this site's own pages can be the way back", async () => {
+    await p.goto(B + "/"); await p.waitForFunction(() => typeof gxNext === "function");
+    const r = await p.evaluate(() => ["/admin#system", "//evil.example", "https://evil.example", "/\\evil.example", "javascript:alert(1)", "/admin\"x"].map((n) => gxNext(n)));
+    ok(JSON.stringify(r) === JSON.stringify(["/admin#system", null, null, null, null, null]), "gxNext let something through: " + JSON.stringify(r));
   });
   await d.ctx.close();
 }
