@@ -121,8 +121,9 @@ public/door.js        the door (vial loader)
 
 Also in public/: `sw.js`, `manifest.webmanifest`, `icon-512.png` (PWA).
 
-A second service, **Scientist**, runs `scripts/scientist.mjs` daily at 18:45
-UTC — read-only checks against the live site.
+The daily read-only checks (`scripts/scientist.mjs`) now run on GitHub
+(`.github/workflows/after-deploy.yml`, 18:45 UTC), where a failure sends an
+email. The old **Scientist** service here can be deleted.
 
 ## The whole list, to paste in
 

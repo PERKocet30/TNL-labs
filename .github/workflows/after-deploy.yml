@@ -2,13 +2,18 @@
 # (/api/health reports it), then run the scientist's read-only checks against
 # the live site. A red run means the deploy didn't land or something public
 # broke — GitHub emails whoever merged. Also runnable by hand (Actions → Run).
+# And once a day (2026-10-11), because volumes, certificates and Railway can
+# break without anyone merging. GitHub emails a red scheduled run to whoever
+# last changed the cron line below — keep that Jorge.
 name: After deploy
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "45 18 * * *"
   workflow_dispatch:
 concurrency:
-  group: after-deploy
+  group: after-deploy-${{ github.event_name }}
   cancel-in-progress: true   # a newer merge supersedes: Railway skips the older deploy too
 jobs:
   live:
@@ -22,6 +27,7 @@ jobs:
         with:
           node-version: 22
       - name: Wait for this version to be live
+        if: github.event_name == 'push'
         run: |
           want="${GITHUB_SHA::7}"
           for i in $(seq 1 60); do

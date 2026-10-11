@@ -3,6 +3,7 @@
    v1.1 — 2026-10-09: a profile carries the music its member uploaded
    (tracks, newest first, with their covers) — its own Music tab.
    v1.2 — 2026-10-10: and which song they pinned to the top.
+   v1.3 — 2026-10-11: /api/health reports db, members, volume, uploads, backup.
 ================================================================ */
 app.post("/api/users/:username/follow", auth, (req, res) => {
   const target = q.userByName.get(req.params.username);
@@ -117,8 +118,20 @@ app.get("/api/levels", (_req, res) => res.json({
   },
 }));
 /* commit: which version is live (Railway sets this for GitHub deploys), so the
-   after-deploy check knows when the new code is actually serving. */
-app.get("/api/health", (_req, res) => res.json({ ok: true, time: Date.now(), commit: (process.env.RAILWAY_GIT_COMMIT_SHA || "").slice(0, 7) }));
+   after-deploy check knows when the new code is actually serving.
+   checks (v1.3 — 2026-10-11): what the scientist needs to tell "up" from
+   "working". True/false only — no counts, no paths — because this is public.
+   Always 200: tests and the after-deploy wait use it as "has it booted". */
+app.get("/api/health", (_req, res) => {
+  const checks = { db: false, members: false, volume: !!process.env.TNL_DATA, uploads: existsSync(UPLOAD_DIR), backup: false };
+  try { db.prepare("SELECT 1").get(); checks.db = true; } catch {}
+  // An empty users table on a live site means the volume isn't the one with the members on it.
+  try { checks.members = !!db.prepare("SELECT 1 FROM users LIMIT 1").get(); } catch {}
+  // Backups run daily (server-05); allow a day and a half before calling one missed.
+  try { checks.backup = readdirSync(join(DATA_DIR, "backups")).some((f) => f.endsWith(".db")
+    && Date.now() - statSync(join(DATA_DIR, "backups", f)).mtimeMs < 36 * 3600 * 1000); } catch {}
+  res.json({ ok: true, time: Date.now(), commit: (process.env.RAILWAY_GIT_COMMIT_SHA || "").slice(0, 7), checks });
+});
 
 const PORT = process.env.PORT || 8787;
 /* Anything that escapes a route lands here. Previously it 500'd silently
