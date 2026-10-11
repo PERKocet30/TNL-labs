@@ -1,13 +1,13 @@
 
 /* ================================================================
-   MUSIC · THE ARTIST PAGE v1.0 — 2026-10-10
+   MUSIC · THE ARTIST PAGE v1.1 — 2026-10-11 (+ the Music lab's cover); v1.0 2026-10-10
    What Spotify gives an artist that a profile's Music tab didn't have:
      - a pinned song, at the top of the list (POST /api/me/pinned-track)
      - a song link that looks right in an Instagram DM: /s/:id is a public
        page with the cover, the title and who made it, a player, and
        "Open in the app" → /?u=<artist>&s=<id>, which lands on their
        Music tab with that song picked out.
-   Merch under the music is the app's own Market (app-15-profile.js).
+   The Music lab's cover (2026-10-11): the song played most this week, below.
 ================================================================ */
 app.post("/api/me/pinned-track", auth, (req, res) => {
   const raw = req.body?.trackId;
@@ -61,3 +61,29 @@ ${t.artworkUrl ? `<img class="media" src="${e(t.artworkUrl)}" alt="${e(t.title)}
 <p class="cap" style="margin-top:14px;text-align:center"><a href="/">See what else is being made</a></p>`,
   }));
 });
+
+/* ── The Music lab's cover · 2026-10-11 ─────────────────────────────
+   "The music lab cover should become whatever song cover is being played
+   the most in the app." Every press of play is logged (track_plays), and
+   the Music lab's card in the labs list wears the cover of the song with
+   the most listeners this week — each person counted once a day, and
+   never the artist playing their own song (the same rule as rep). No plays
+   this week: the most-played song of all time. Songs without a cover, or
+   by a suspended account, are skipped. */
+db.exec(`CREATE TABLE IF NOT EXISTS track_plays (track_id INTEGER NOT NULL, user_id INTEGER, at INTEGER NOT NULL)`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_track_plays_at ON track_plays(at)`);
+function logTrackPlay(trackId, userId, now = Date.now()) {
+  db.prepare(`INSERT INTO track_plays (track_id, user_id, at) VALUES (?, ?, ?)`).run(trackId, userId || null, now);
+  if (Math.random() < 0.01) db.prepare(`DELETE FROM track_plays WHERE at < ?`).run(now - 60 * 86400000);   // a week is all it reads
+}
+function musicLabCover(now = Date.now()) {
+  const cols = `t.id, t.title, t.artwork_url, u.username, u.display_name`;
+  const ok = `t.artwork_url LIKE '/uploads/%' AND COALESCE(u.suspended, 0) = 0`;
+  const r = db.prepare(`SELECT ${cols}, COUNT(DISTINCT p.user_id || ':' || (p.at / 86400000)) n FROM track_plays p
+      JOIN tracks t ON t.id = p.track_id JOIN users u ON u.id = t.user_id
+      WHERE p.at >= ? AND p.user_id IS NOT NULL AND p.user_id != t.user_id AND ${ok}
+      GROUP BY t.id ORDER BY n DESC, MAX(p.at) DESC LIMIT 1`).get(now - 7 * 86400000)
+    || db.prepare(`SELECT ${cols}, t.plays n FROM tracks t JOIN users u ON u.id = t.user_id
+      WHERE t.plays > 0 AND ${ok} ORDER BY t.plays DESC, t.created_at DESC LIMIT 1`).get();
+  return r ? { url: r.artwork_url, title: r.title, by: r.display_name || r.username, username: r.username, trackId: r.id, at: now } : null;
+}

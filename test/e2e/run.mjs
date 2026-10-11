@@ -993,6 +993,9 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => LAB && LAB.id === "culture"), "coming back to Labs should keep the lab you were in");
     await p.locator('.nav [data-tab="labs"]').tap(); await p.waitForSelector("#lxlist .lx-tag");
     ok(await p.locator("#lxlist .lx").count() === 7 && await p.locator(".lx-rings").count() === 0, "one list of the 7 genres, not two menus");
+    // 2026-10-11: Music wears the cover of the song played most this week (Night Drive, played in the Music step)
+    await p.waitForFunction(() => { const i = document.querySelector('#lxlist .lx[data-lab="culture"] .lx-media img'); return i && /e2e-p1\.png$/.test(i.getAttribute("src")); }, null, { timeout: 6000 })
+      .catch(async () => { throw new Error("the Music card isn't the most-played cover: " + await p.evaluate(() => document.querySelector('#lxlist .lx[data-lab="culture"] .lx-media')?.innerHTML.slice(0, 120))); });
     await p.locator('#lxlist .lx-tag[data-labtag="pharmacy"][data-t="graphicdesign"]').tap();
     await p.waitForFunction(() => LAB && LAB.id === "pharmacy" && LABVIEW === "work" && LABTAG === "graphicdesign" && (PLACE.pharmacy || {})["work:graphicdesign"], null, { timeout: 5000 });
     ok(await p.locator(".pl-tabs [data-pltab]").count() === 2, "just Work and Talk");

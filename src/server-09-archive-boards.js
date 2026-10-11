@@ -64,7 +64,9 @@ app.get("/api/labs", auth, (req, res) => {
     WHERE p.author_id != ? AND p.created_at > COALESCE(cr.last_read_at, 0)
     GROUP BY p.channel`).all(req.user.id, req.user.id)) unread[r.channel] = r.n;
 
-  res.json({ byChannel, art, people, unread });
+  // the Music lab wears the cover of the song played most this week (server-12-music)
+  const music = musicLabCover();
+  res.json({ byChannel, art, people, unread, labArt: music ? { culture: music } : {} });
 });
 
 /* ================================================================

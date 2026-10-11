@@ -397,6 +397,7 @@ app.post("/api/tracks/:id/play", auth, rateLimit({ max: 300, windowMs: 3600000, 
   const t = db.prepare(`SELECT id FROM tracks WHERE id = ?`).get(Number(req.params.id));
   if (!t) return res.status(404).json({ error: "no such track" });
   db.prepare(`UPDATE tracks SET plays = plays + 1 WHERE id = ?`).run(t.id);
+  logTrackPlay(t.id, req.user.id);   // when, for the Music lab's cover (server-12-music)
   res.json({ ok: true });
 });
 

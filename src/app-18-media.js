@@ -418,7 +418,9 @@ function wireTrkEdit(){
     try{
       await api.updateTrack(TRKEDIT.id,{title:TRKEDIT.title.trim(),artworkUrl:TRKEDIT.artworkUrl});
       const pc=PCOMPOSE;if(pc&&pc.track&&pc.track.id===TRKEDIT.id)pc.track={...pc.track,title:TRKEDIT.title.trim(),artworkUrl:TRKEDIT.artworkUrl};   // the post creator's song too
-      TRKEDIT=null;await loadTracks();toast("Saved.");render();
+      /* show it now; the library list catches up after (it used to wait for the
+         list first, so the creator sat without its new cover for a beat) */
+      TRKEDIT=null;toast("Saved.");render();await loadTracks();render();
     }catch(err){TRKEDIT.busy=false;render();toast(err.message||"Save failed")}
   };
 }
