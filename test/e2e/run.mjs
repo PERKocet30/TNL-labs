@@ -903,6 +903,7 @@ console.log("\nMEMBER · PHONE");
     await p.locator('[data-ptab="music"]').tap();
     ok(await p.locator('.pmus-row .pmus-art img[src="/uploads/e2e-p1.png"]').count() === 1, "Night Drive's cover isn't on its row");
     ok(await p.locator(".pmus-row", { hasText: "Reagent" }).count() === 1 && await p.locator(".pmus-row").count() === 3, "the songs aren't all listed");
+    ok(await p.locator(".pmus .mcard, .pmus-merch").count() === 0, "merch shows under the songs (taken out 2026-10-11)");
     await p.locator(".pmus-row", { hasText: "Night Drive" }).tap();
     await p.waitForFunction(() => String(MUSAUTOID).startsWith("trk") && NOWPLAYING && NOWPLAYING.title === "Night Drive", null, { timeout: 4000 });
     ok(await p.evaluate(() => nextProfileTrack() && nextProfileTrack().title === "Reagent"), "the next song isn't queued");
