@@ -24,7 +24,8 @@ const SC = { w: 1080, h: 1920, pad: 72, top: 250, by: 420, bh: 1000 };
    on their colour; a profile, its four pieces over the first one, blurred. */
 const SCK = { ink: ffc(PALETTE.dark.tx), ink2: ffc(PALETTE.dark.dim), shade: ffc(PALETTE.dark.bg) };
 
-/* c: { prefix, head, sub, art?, bg?, avatar?, tiles?, quote?, cover?, lead?, music?, count?, tag, handle, url, accent } */
+/* c: { prefix, head, sub, art?, bg?, avatar?, tiles?, quote?, cover?, lead?, music?, count?, tag, handle, cta?, url, accent }
+   The tournament's entry Story is one of these too (server-10-events-4-cards). */
 function storyCard(c) {
   const hash = createHash("sha1").update(JSON.stringify([7, c])).digest("hex").slice(0, 12);
   const make = (out, dir) => {
@@ -78,6 +79,7 @@ function storyCard(c) {
     g.box(onCol ? SCK.shade : acc, tw, 84, P, ty);
     t.at(c.tag, P + tw / 2, ty + 42, 38, true, onCol ? SCK.ink : onAcc, 5);
     if (c.handle) t.at(c.handle, W - P, ty + 42, 40, true, ink, 6);
+    if (c.cta) t.at(c.cta, P, ty + 124, 36, false, ink);
     /* the mark — white on the work, its own black where that reads better */
     if (existsSync(CARD_MARK)) {
       const m = g.input(CARD_MARK), white = ink === SCK.ink;

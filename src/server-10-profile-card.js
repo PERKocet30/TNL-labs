@@ -1,6 +1,6 @@
 
 /* ================================================================
-   PROFILE CARD v3.0 — 2026-09-29. The link preview for a shared
+   PROFILE CARD v3.1 — 2026-10-11 (the Story cards' look). v3.0 2026-09-29. The link preview for a shared
    profile, laid out like Instagram's: who they are on the left —
    profile picture, name, @username, bio, how much they've made — and
    their latest work as a grid on the right. The TNL mark and LABS ®
@@ -20,7 +20,10 @@
 ================================================================ */
 const ffc = (hex) => "0x" + hex.replace("#", "").toUpperCase();   // #RRGGBB → ffmpeg colour
 const CARD = { w: 1200, h: 630, gap: 6, bg: ffc(PALETTE.light.bg), el: ffc(PALETTE.light.el), ink: ffc(PALETTE.light.tx), ink2: ffc(PALETTE.light.dim),
-  version: 5, panel: 440, pad: 48, avatar: 128, mark: 40 };
+  version: 6, panel: 440, pad: 48, avatar: 128, mark: 40 };
+/* v6 (2026-10-11): one look with the Story cards — their first piece, blurred
+   behind the panel, white type, the mark in white. */
+const CARDW = { ink: ffc(PALETTE.dark.tx), shade: ffc(PALETTE.dark.bg), el: ffc(PALETTE.dark.el) };
 const CARD_DIR = join(DATA_DIR, "og");
 const CARD_FONT = { bold: join(__dirname, "..", "assets", "fonts", "Archivo-Bold.ttf"), reg: join(__dirname, "..", "assets", "fonts", "Archivo-Regular.ttf") };
 const CARD_MARK = join(__dirname, "..", "public", "icon-white-512.png");
@@ -104,9 +107,16 @@ const fpath = (p) => p.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/'/g, "\
 function profileCardArgs(card, out, textDir) {
   const { w, h, gap, panel, pad, avatar: A, mark: M } = CARD;
   const args = ["-nostdin", "-y", "-loglevel", "error"];
-  const f = [`color=c=${CARD.bg}:s=${w}x${h}:d=1[c0]`];
+  const f = [`color=c=${CARDW.shade}:s=${w}x${h}:d=1[c0]`];
   let last = "c0", k = 0, n = 0;
   const lay = (label, x, y) => { f.push(`[${last}][${label}]overlay=${x}:${y}[s${++n}]`); last = `s${n}`; };
+  // the ground: their first piece, blurred edge to edge and dimmed — as on their Story card
+  if (textDir && card.shape) {
+    const g0 = card.tiles[0];
+    args.push(...(g0.video ? ["-ss", "1"] : []), "-i", g0.file);
+    f.push(`[${k++}:v]scale=${w / 4}:${Math.round(h / 4)}:force_original_aspect_ratio=increase,crop=${w / 4}:${Math.round(h / 4)},boxblur=14:3,scale=${w}:${h},eq=brightness=-0.3:saturation=1.25,vignette=PI/4,setsar=1,format=rgb24[gnd]`);
+    lay("gnd", 0, 0);
+  }
 
   // the grid, right of the panel
   const gx = textDir ? panel : 0, gw = w - gx;
@@ -119,14 +129,15 @@ function profileCardArgs(card, out, textDir) {
       lay(`t${i}`, gx + (i % cols) * (cw + gap), Math.floor(i / cols) * (ch + gap)); k++;
     });
   } else {
-    f.push(`color=c=${CARD.el}:s=${gw}x${h}:d=1[g]`); lay("g", gx, 0);
+    f.push(`color=c=${CARDW.el}:s=${gw}x${h}:d=1[g]`); lay("g", gx, 0);
   }
   // the mark, bottom-left (and big in the middle of an empty grid)
   const hasMark = existsSync(CARD_MARK);
   if (hasMark) {
     args.push("-i", CARD_MARK); const mi = k++;
     // the mark is black on solid white: key the white out so it sits on the card, not in a box
-    f.push(`[${mi}:v]split=2[m0][m1]`, `[m0]scale=${M}:${M},format=rgba,colorkey=0xFFFFFF:0.3:0.2[m]`, `[m1]scale=160:160,format=rgba,colorkey=0xFFFFFF:0.3:0.2[mb]`);
+    // black on white: turned white and the black keyed out, so it sits on the work in white
+    f.push(`[${mi}:v]negate,split=2[m0][m1]`, `[m0]scale=${M}:${M},format=rgba,colorkey=0x000000:0.3:0.2[m]`, `[m1]scale=160:160,format=rgba,colorkey=0x000000:0.3:0.2[mb]`);
     lay("m", pad, h - pad - M);
     if (!card.shape) lay("mb", gx + Math.round((gw - 160) / 2), Math.round((h - 160) / 2));
     else f.push(`[mb]nullsink`);
@@ -137,9 +148,9 @@ function profileCardArgs(card, out, textDir) {
     // their accent as a ring, a white gap, then the picture — as on their profile
     const disc = (color, size, label) => { const r = size; f.push(`color=c=${color}:s=${r * 2}x${r * 2}:d=1,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lte(hypot(X-${r - 0.5},Y-${r - 0.5}),${r}),255,0)',scale=${r}:${r}[${label}]`); };
     disc(card.accent || ffc(PALETTE.accent), A + 12, "ring"); lay("ring", pad - 6, 50);
-    disc(CARD.bg, A + 4, "gap"); lay("gap", pad - 2, 54);
+    disc(CARDW.shade, A + 4, "gap"); lay("gap", pad - 2, 54);
     if (card.avatar) { args.push("-i", card.avatar); f.push(`[${k++}:v]scale=${A * 2}:${A * 2}:force_original_aspect_ratio=increase,crop=${A * 2}:${A * 2},${circle}[av]`); }
-    else f.push(`color=c=${CARD.el}:s=${A * 2}x${A * 2}:d=1,${circle}[av]`);
+    else f.push(`color=c=${CARDW.el}:s=${A * 2}x${A * 2}:d=1,${circle}[av]`);
     lay("av", pad, 56);
 
     /* Text is one subtitle script rendered by libass, from the Archivo files
@@ -148,15 +159,15 @@ function profileCardArgs(card, out, textDir) {
     const T = card.text, lines = [];
     const at = (s, x, y, size, bold, color, an = 7) =>
       lines.push(`Dialogue: 0,0:00:00.00,0:00:10.00,Card,,0,0,0,,{\\an${an}\\pos(${x},${y})\\fs${size}\\b${bold ? 1 : 0}\\c${assColor(color)}}${assText(s)}`);
-    if (!card.avatar) at(T.initials, pad + A / 2, 56 + A / 2, 56, true, CARD.ink2, 5);
+    if (!card.avatar) at(T.initials, pad + A / 2, 56 + A / 2, 56, true, CARDW.ink, 5);
     const nameSize = T.name.length <= 14 ? 54 : T.name.length <= 18 ? 43 : 36;
     let y = 56 + A + 24;
-    at(T.name, pad, y, nameSize, true, CARD.ink); y += Math.round(nameSize * 1.05) + 6;
-    at(T.handle, pad, y, 29, false, CARD.ink2); y += 29 + 20;
-    T.bio.forEach((line) => { at(line, pad, y, 30, false, CARD.ink); y += 35; });
+    at(T.name, pad, y, nameSize, true, CARDW.ink); y += Math.round(nameSize * 1.05) + 6;
+    at(T.handle, pad, y, 29, false, CARDW.ink); y += 29 + 20;
+    T.bio.forEach((line) => { at(line, pad, y, 30, false, CARDW.ink); y += 35; });
     if (T.bio.length) y += 12;
-    at(T.stats, pad, y, 27, true, CARD.ink2);
-    if (hasMark) at("LABS ®", pad + M + 12, h - pad - M / 2, 30, true, CARD.ink, 4);
+    at(T.stats, pad, y, 27, true, CARDW.ink);
+    if (hasMark) at("LABS ®", pad + M + 12, h - pad - M / 2, 30, true, CARDW.ink, 4);
     const script = join(textDir, "card.ass");
     writeFileSync(script, [
       "[Script Info]", "ScriptType: v4.00+", `PlayResX: ${w}`, `PlayResY: ${h}`, "WrapStyle: 2", "ScaledBorderAndShadow: yes", "",

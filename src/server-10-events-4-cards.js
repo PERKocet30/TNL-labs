@@ -1,6 +1,6 @@
 
 /* ================================================================
-   EVENT CARDS v1.0 — 2026-10-07. The pictures that take the tournament
+   EVENT CARDS v1.1 — 2026-10-11 (one look with every Story card). v1.0 2026-10-07. The pictures that take the tournament
    to Instagram and bring people back to vote here.
 
      /e/:slug/:entry/story.jpg   an entrant's Story: their piece, "Vote for
@@ -15,7 +15,7 @@
    drawn — a new rank is a new file. Instagram covers the top ~250px and
    bottom ~250px of a Story, so nothing that matters goes there.
 ================================================================ */
-const EVC = { version: 2, w: 1080, pad: 72 };
+const EVC = { version: 3, w: 1080, pad: 72 };   // 3: the Story cards' look — the work blurred behind white type (2026-10-11)
 
 /* An ASS script of positioned lines. at(text, x, y, size, bold, colour, align) */
 function evAss(dir, w, h) {
@@ -48,12 +48,10 @@ function evGraph(w, h) {
   };
   return g;
 }
-/* The TNL mark and "LABS ®", bottom-left. */
-function evMark(g, t, x, y) {
-  if (!existsSync(CARD_MARK)) return;
-  /* The mark file is black on solid white; key the white out so it sits on the card, not in a box. */
-  const i = g.input(CARD_MARK); g.f.push(`[${i}:v]scale=56:56,format=rgba,colorkey=0xFFFFFF:0.3:0.2[mk]`); g.lay("mk", x, y);
-  t.at("LABS ®", x + 70, y + 28, 34, true, CARD.ink, 4);
+/* The same, in white — for the cards on a dark or coloured ground. */
+function evMarkWhite(g, t, x, y) {
+  if (existsSync(CARD_MARK)) { const i = g.input(CARD_MARK); g.f.push(`[${i}:v]scale=56:56,negate,format=rgba,colorkey=0x000000:0.3:0.2[mkw]`); g.lay("mkw", x, y); }
+  t.at("LABS ®", x + 70, y + 28, 34, true, SCK.ink, 4);
 }
 const evUpper = (s, max) => { const c = cardClean(s).toUpperCase(); return c.length > max ? c.slice(0, max - 1) + "…" : c; };
 const evHost = (base) => base.replace(/^https?:\/\//, "");
@@ -105,31 +103,9 @@ function evEntryStory(ev, e, base) {
   const art = cardFile(p?.image_url) || cardFile(p?.thumb_url);
   if (!u || !art) return null;
   const s = evStanding(ev, e), accent = accentHex(u.accent);
-  const text = { eye: evUpper(ev.title, 34), head: s.head, handle: "@" + u.username, tag: s.tag,
-    cta: s.voting ? "Tap the link to vote" : "", url: `${evHost(base)}/e/${ev.slug}/${e.id}` };
-  const hash = createHash("sha1").update(JSON.stringify([EVC.version, art, text, accent])).digest("hex").slice(0, 12);
-  const make = (out, dir) => {
-    const W = EVC.w, H = 1920, P = EVC.pad, g = evGraph(W, H), t = evAss(dir, W, H);
-    t.at(text.eye, P, 250, 34, true, CARD.ink2);
-    t.at(text.head, P, 296, 84, true, CARD.ink);
-    // the piece, whole, on a grey ground
-    const bw = W - 2 * P, bh = 940, by = 420;
-    g.box(CARD.el, bw, bh, P, by);
-    const i = g.input(art);
-    g.f.push(`[${i}:v]scale=${bw}:${bh}:force_original_aspect_ratio=decrease,setsar=1,format=rgb24[art]`);
-    g.lay("art", `${P}+(${bw}-w)/2`, `${by}+(${bh}-h)/2`);
-    t.at(text.handle, P, by + bh + 36, 56, true, CARD.ink);
-    // where they stand, in their colour
-    const tw = Math.round(text.tag.length * 23 + 64), ty = by + bh + 124;
-    g.box(ffc(accent), Math.min(bw, tw), 76, P, ty);
-    t.at(text.tag, P + Math.min(bw, tw) / 2, ty + 38, 36, true, ffc(onAccent(accent)), 5);
-    if (text.cta) t.at(text.cta, P, ty + 116, 38, false, CARD.ink2);
-    evMark(g, t, P, H - 200);
-    t.at(text.url, W - P, H - 172, 28, false, CARD.ink2, 6);
-    g.filter(t.write());
-    return g.out(out);
-  };
-  return { hash, prefix: `ev${ev.id}-e${e.id}`, make };
+  /* the same card as every other Story (server-12-story): the piece over itself, blurred, in white */
+  return storyCard({ prefix: `ev${ev.id}-e${e.id}`, head: evUpper(s.head, 22), sub: evUpper(ev.title, 34), art, avatar: cardFile(u.avatar_url),
+    tag: s.tag, handle: "@" + u.username, cta: s.voting ? "Tap the link to vote" : "", url: `${evHost(base)}/e/${ev.slug}/${e.id}`, accent });
 }
 
 /* TNL's scoreboard: the top five, how many votes, who's moving. */
@@ -152,21 +128,30 @@ function evBoardCard(ev, size, base) {
   const make = (out, dir) => {
     const W = EVC.w, H = story ? 1920 : 1350, P = EVC.pad, g = evGraph(W, H), t = evAss(dir, W, H);
     const top = story ? 250 : 72, y0 = story ? 560 : 360, step = story ? 200 : 172, th = story ? 168 : 148;
-    t.at(text.eye, P, top, 34, true, CARD.ink2);
-    t.at(text.head, P, top + 46, 96, true, CARD.ink);
-    t.at(text.sub, P, top + 170, 30, false, CARD.ink2);
+    const ink = SCK.ink, up = ffc(accentHex("lab"));
+    /* the leader's piece, blurred edge to edge — the Story cards' ground */
+    const lead = rows.find((r) => r.file);
+    if (lead) { const i = g.input(lead.file);
+      g.f.push(`[${i}:v]scale=${W / 4}:${H / 4}:force_original_aspect_ratio=increase,crop=${W / 4}:${H / 4},boxblur=18:3,scale=${W}:${H},eq=brightness=-0.3:saturation=1.25,vignette=PI/4,setsar=1,format=rgb24[gnd]`);
+      g.lay("gnd", 0, 0); } else g.box(SCK.shade, W, H, 0, 0);
+    t.at(text.eye, P, top, 34, true, ink);
+    t.at(text.head, P, top + 46, 96, true, ink);
+    t.at(text.sub, P, top + 170, 30, false, ink);
     rows.forEach((r, i) => {
       const y = y0 + i * step;
-      t.at(r.rank, P, y + th / 2, 56, true, CARD.ink, 4);
+      t.at(r.rank, P, y + th / 2, 56, true, ink, 4);
       const x = P + 120;
       if (r.file) { const k = g.input(r.file); g.f.push(`[${k}:v]scale=${th}:${th}:force_original_aspect_ratio=increase,crop=${th}:${th},setsar=1,format=rgb24[t${i}]`); g.lay(`t${i}`, x, y); }
-      else g.box(CARD.el, th, th, x, y);
-      t.at(r.handle, x + th + 32, y + th / 2 - 6, 44, true, CARD.ink, 1);
-      t.at(r.votes, x + th + 32, y + th / 2 + 4, 32, false, CARD.ink2, 7);
-      if (r.move) t.at(r.move, W - P, y + th / 2, 32, true, r.move.startsWith("up") ? CARD.ink : CARD.ink2, 6);
+      else g.box(`${SCK.shade}@0.4`, th, th, x, y);
+      t.at(r.handle, x + th + 32, y + th / 2 - 6, 44, true, ink, 1);
+      t.at(r.votes, x + th + 32, y + th / 2 + 4, 32, false, ink, 7);
+      if (r.move) t.at(r.move, W - P, y + th / 2, 32, true, r.move.startsWith("up") ? up : ink, 6);
     });
-    t.at(text.cta, P, H - (story ? 330 : 190), 38, true, CARD.ink);
-    evMark(g, t, P, H - (story ? 200 : 120));
+    /* the call in Lab green, as a tag — like every card's */
+    const cy = H - (story ? 360 : 220), cw = Math.min(W - 2 * P, Math.round(text.cta.length * 21 + 72));
+    g.box(up, cw, 84, P, cy);
+    t.at(text.cta, P + cw / 2, cy + 42, 34, true, ffc(onAccent(accentHex("lab"))), 5);
+    evMarkWhite(g, t, P, H - (story ? 200 : 120));
     g.filter(t.write());
     return g.out(out);
   };

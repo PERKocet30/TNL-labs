@@ -197,7 +197,12 @@ try {
   t("a piece that isn't in the event is a 404", (await call(null, "GET", "/e/art/99999")).s === 404 && (await call(null, "GET", `/e/poster/${pu.h}`)).s === 404);
   const jpeg = async (path) => { const res = await fetch(`http://127.0.0.1:${PORT}` + path, { redirect: "manual" }); const b = Buffer.from(await res.arrayBuffer());
     let w = 0, h = 0; for (let i = 2; i < b.length - 9; i++) if (b[i] === 0xFF && b[i + 1] >= 0xC0 && b[i + 1] <= 0xC2) { h = b.readUInt16BE(i + 5); w = b.readUInt16BE(i + 7); break; }
-    return { s: res.status, jpg: b[0] === 0xFF && b[1] === 0xD8, w, h }; };
+    if (res.status === 200) writeFileSync(join(DATA, path.replace(/\W+/g, "_") + ".jpg"), b);   // kept to look at
+    return { s: res.status, jpg: b[0] === 0xFF && b[1] === 0xD8, w, h, b }; };
+  /* one look with every Story card (2026-10-11): no white sheet — a corner of the card isn't white */
+  const notWhite = (b) => { const f = join(DATA, "px.jpg"); writeFileSync(f, b);
+    const px = [...execFileSync(FF, ["-loglevel", "error", "-i", f, "-vf", "crop=2:2:20:20", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], { stdio: ["ignore", "pipe", "pipe"] })];
+    return px.length >= 3 && !(px[0] > 235 && px[1] > 235 && px[2] > 235); };
   if (FF) {
     let j = await jpeg(`/e/art/${pu.h}/story.jpg`);
     t("an entrant's Instagram Story card: a real 1080×1920 picture", j.s === 200 && j.jpg && j.w === 1080 && j.h === 1920);
@@ -205,6 +210,7 @@ try {
     t("TNL's scoreboard post: 1080×1350", j.s === 200 && j.jpg && j.w === 1080 && j.h === 1350);
     j = await jpeg("/e/art/board.jpg?size=story");
     t("…and as a Story: 1080×1920", j.s === 200 && j.jpg && j.w === 1080 && j.h === 1920);
+    t("the scoreboard and the entrant's Story wear the Story cards' look, not a white sheet", notWhite(j.b) && notWhite((await jpeg(`/e/art/${pu.h}/story.jpg`)).b));
     t("no card has an empty spot where text failed", !/event card/.test(log));
   } else {
     const j = await jpeg(`/e/art/${pu.h}/story.jpg`);
