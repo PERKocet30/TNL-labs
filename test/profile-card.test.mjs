@@ -87,8 +87,10 @@ t("text goes in a file, never into the filter string", !graph.includes("Tailor")
 const tricky = C.profileCardArgs({ ...card, text: { ...card.text, bio: ["{\\\\b1\\\\fs90}big \\\\N break"] } }, "/tmp/out.jpg", dir);
 const trickyAss = readFileSync(join(dir, "card.ass"), "utf8").split("\n").find((l) => l.includes("big"));
 t("a bio can't restyle the card (no { } or \\ reach libass)", trickyAss && !/\}big|\{\\\\b1\\\\fs90|\\\\N break/.test(trickyAss.slice(trickyAss.indexOf("}") + 1)));
-t("ASS colours are BGR (#5E5856 → &H56585E&)", C.assColor("0x5E5856") === "&H56585E&" && ass.includes("\\c&H5C5C5C&"));
-t("white ground, neutral greys", graph.startsWith("color=c=0xFFFFFF:s=1200x630") && C.CARD.ink2 === "0x5C5C5C");
+t("ASS colours are BGR (#5E5856 → &H56585E&)", C.assColor("0x5E5856") === "&H56585E&" && ass.includes("\\c&HFFFFFF&"));
+/* v6 (2026-10-11): the Story cards' look — their first piece, blurred and dimmed, behind white type */
+t("the ground is their first piece, blurred edge to edge (not a white sheet)", graph.startsWith("color=c=0x000000:s=1200x630") && /boxblur=[^\[]*\[gnd\];\[c0\]\[gnd\]overlay=0:0/.test(graph));
+t("white type, the mark in white", !ass.includes("\\c&H000000&") && /negate,split=2/.test(graph));
 t("their accent rings the picture (Lab green by default)", /color=c=0x98FC68:s=280x280/.test(graph) && /\[ring\]overlay=42:50/.test(graph));
 db.prepare(`UPDATE users SET accent = 'heat' WHERE id = ?`).run(uid);
 const heat = C.profileCardTiles(U());

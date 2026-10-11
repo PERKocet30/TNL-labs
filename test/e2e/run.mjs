@@ -255,6 +255,28 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#igsx").tap();
     ok(await p.locator("#igsbg").count() === 0, "the Story sheet didn't close");
   });
+  /* "Is there any way the music from a post plays in the share cards on Instagram?" (2026-10-11) */
+  await step(d, "Instagram Story with a song: the 15-second video is what's shared; if it can't be made, the picture goes", async () => {
+    const pid = await p.evaluate(() => (SRPOSTS.find((x) => x.imageUrl && x.isWork) || {}).id);
+    /* the video answered in the page (the service worker fetches /p/… itself, past Playwright's routes) */
+    await p.evaluate(() => { window.__mp4 = 200; const f = window.fetch; window.__fetch = f;
+      window.fetch = (u, o) => /story\.mp4$/.test(String(u)) ? Promise.resolve(new Response(window.__mp4 === 200 ? new Uint8Array(4096) : "", { status: window.__mp4, headers: { "content-type": "video/mp4" } })) : f(u, o); });
+    const open = () => p.evaluate((pid) => { window.__igs = []; igStoryOpen(`/p/${pid}/story.jpg`, location.origin + "/p/" + pid, `/p/${pid}/story.mp4`); }, pid);
+    try {
+      await open();
+      await p.waitForFunction(() => { const b = document.querySelector("#igsgo"); return b && !b.disabled; }, null, { timeout: 15000 });
+      ok(/With the song/.test(await p.locator(".igs-song").innerText({ timeout: 3000 })), "the sheet doesn't say the song comes with it");
+      await p.locator("#igsgo").tap(); await p.waitForTimeout(300);
+      let r = await p.evaluate(() => __igs[0] && __igs[0].files[0].type);
+      ok(r === "video/mp4", "the share sheet didn't get the video: " + r);
+      await p.locator("#igsx").tap();
+      await p.evaluate(() => { window.__mp4 = 503; }); await open();
+      await p.waitForFunction(() => { const b = document.querySelector("#igsgo"); return b && !b.disabled; }, null, { timeout: 15000 });
+      await p.locator("#igsgo").tap(); await p.waitForTimeout(300);
+      r = await p.evaluate(() => __igs[0] && __igs[0].files[0].type);
+      ok(r === "image/jpeg", "no video, and the picture didn't go either: " + r);
+    } finally { await p.evaluate(() => { window.fetch = window.__fetch; IGS = null; igsPaint(); }); }
+  });
   await step(d, "carousel: starts on 1, counter follows the swipe, a refresh keeps your slide", async () => {
     await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
     const sel = "#sr-grid [data-caro] .caro-t";
