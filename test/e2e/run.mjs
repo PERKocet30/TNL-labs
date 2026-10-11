@@ -1007,6 +1007,20 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#labback").tap(); await p.waitForSelector(".lx-list");
     await p.evaluate(() => { TAB = "showroom"; render(); });
   });
+  /* "I want to simplify. Let's just remove moodboards for now" (2026-10-11) */
+  await step(d, "Visual's archive is a plain search now: no moodboards, no paste-a-link; searching and opening a picture still work", async () => {
+    await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#plarchive");
+    ok((await p.locator("#plarchive").innerText()).trim() === "Search the archive", "the link still mentions boards");
+    await p.locator("#plarchive").tap(); await p.waitForSelector("#archq");
+    ok(await p.locator("#myboards, #pastein, #pastego, [data-asave], [data-asrc]").count() === 0, "moodboard controls are still on the archive");
+    await p.waitForSelector(".archgrid .archcard", { timeout: 6000 });
+    await p.locator(".archgrid .archcard").first().tap(); await p.waitForSelector("#lb");
+    await p.locator("#lb").tap(); await p.waitForTimeout(200);
+    await p.locator("#archq").fill("zzznothing"); await p.waitForSelector(".empty", { timeout: 5000 });
+    ok(/Nothing matches/.test(await p.locator("#archscroll .empty").innerText()), "search didn't run");
+    await p.locator("#archclear").tap(); await p.waitForSelector(".archgrid .archcard", { timeout: 5000 });
+    await p.evaluate(() => { LAB = null; ROOMOPEN = false; LIGHTBOX = null; TAB = "showroom"; render(); });
+  });
   // 2026-10-09: the labs that match what you make come first
   await step(d, "your labs first: a stylist who shoots sees Fashion, then Visual, under For you", async () => {
     const was = await p.evaluate(() => ME.roles);

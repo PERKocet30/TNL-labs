@@ -71,7 +71,7 @@ const placeKey=()=>LABVIEW+(LABVIEW==="work"?":"+(LABTAG||""):"");
 async function loadPlace(){
   if(!LAB)return;const lab=LAB.id,v=LABVIEW,key=placeKey();
   if(v==="talk")return loadFeed(true);
-  if(v==="archive"){loadArchive();if(!BOARDS)loadBoards();return}
+  if(v==="archive")return loadArchive();
   if(v==="work"&&CH&&CH.library)return;   // the tracks library loads itself
   const P=PLACE[lab]||(PLACE[lab]={});
   try{const d=await papi.work(lab,LABTAG);
@@ -119,7 +119,7 @@ function plInnerHTML(){
     if(LABTAG&&!chips.includes(LABTAG))chips.unshift(LABTAG);
     return `<p class="pl-for">${esc((LAB_ID[LAB.id]||{}).for||"")}</p>
       ${chips.length?`<div class="pl-tags">${plChip("",!LABTAG)}${chips.map(t=>plChip(t,LABTAG===t)).join("")}</div>`:""}
-      ${LAB.channels.some(c=>c.archive)?`<button class="pl-link" id="plarchive">Search the archive and your boards</button>`:""}
+      ${LAB.channels.some(c=>c.archive)?`<button class="pl-link" id="plarchive">Search the archive</button>`:""}
       ${!d?`<div class="pl-grid">${Array.from({length:9},()=>`<i class="pl-tile sk-img"></i>`).join("")}</div>`
         :d.error?plErr(d):d.posts.length?plGridHTML(d.posts)
         :LABTAG?plEmpty("Nothing tagged #"+LABTAG+" here yet.","Tag your work with #"+LABTAG+" when you post it.")

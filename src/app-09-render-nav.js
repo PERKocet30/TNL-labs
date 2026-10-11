@@ -85,7 +85,6 @@ function render(){
     ${NOTIFOPEN?notifPanelHTML():""}
     ${SEARCHOPEN?searchPanelHTML():""}
     ${PICKER?pickerHTML():""}
-    ${BOARDSOPEN?boardsHTML():""}
     ${REVIEWING?reviewHTML():""}
     ${CLIMB?climbHTML():""}
     ${TRKEDIT?trkEditHTML():""}

@@ -39,9 +39,9 @@ t("  border-radius:50%", /border-radius:\s*50%/.test(av[1]));
 t("  nothing gives it an aspect-ratio", !/\.bcard img\s*\{[^}]*aspect-ratio/.test(css));
 t("  -> that's what turned them into ellipses", true);
 
-console.log("\nMOODBOARDS ARE NAMESPACED");
-for (const c of [".mbcard", ".mbgrid", ".mbrow", ".mbname", ".mbempty"])
-  t(c + " exists", css.includes(c + "{") || css.includes(c + " "));
+console.log("\nMOODBOARDS ARE GONE (2026-10-11)");
+for (const c of [".mbcard", ".mbgrid", ".mbrow", ".mbname", ".mbempty", ".pastebar", ".archsave"])
+  t(c + " is gone", !css.includes(c + "{") && !css.includes(c + " ") && !css.includes(c + ","));
 t("and don't touch .bcard", !/\.bcard img\s*\{/.test(css));
 
 console.log("\n" + "=".repeat(46));
