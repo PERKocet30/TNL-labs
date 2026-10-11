@@ -1,5 +1,5 @@
 /* ================================================================
-   WATCH v1.0 — 2026-09-29
+   WATCH v1.1 — 2026-10-11 (Open Admin signs you in: server-10-watch-pass)
    Emails the admin (ADMIN_EMAIL) when something spikes, before members
    have to say so, and once a morning with yesterday in five lines.
    Reads error_log and glitch_events (server-10-glitch.js). Each rule mails
@@ -19,7 +19,6 @@ const WATCH_RULES = [
 const GLITCH_OF = { failed_saves: "action_failed", rage_taps: "rage_tap", screen_jumps: "layout_jump", slow_screens: "slow_screen" };
 const lastSent = db.prepare(`SELECT last_at FROM alert_log WHERE rule = ?`);
 const markSent = db.prepare(`INSERT INTO alert_log (rule, last_at) VALUES (?, ?) ON CONFLICT(rule) DO UPDATE SET last_at = excluded.last_at`);
-const adminLink = () => (process.env.PUBLIC_URL || "https://labs.tnllabs.com").trim().replace(/\/+$/, "") + "/admin#system";   // trimmed: a stray newline in the variable broke the alert's button
 
 /* One pass. Returns what it sent, so tests can call it with their own clock
    and mailer: send(subject, heading, lines) → promise. */
@@ -72,7 +71,7 @@ async function watchTick(now, send) {
 }
 const watchTo = (process.env.ADMIN_EMAIL || "").trim();
 if (watchTo && !process.env.TNL_NO_WATCH) {
-  const mail = (subject, heading, lines) => sendAlertEmail(watchTo, subject, heading, lines, adminLink())
+  const mail = (subject, heading, lines) => sendAlertEmail(watchTo, subject, heading, lines, adminPassLink(watchTo))   // one-time pass (server-10-watch-pass)
     .then((r) => { if (!r.sent && r.reason !== "no_key") logError("mail", "alert not sent: " + (r.error || "?"), subject, "watch", ""); });
   const tick = () => watchTick(Date.now(), mail).catch((e) => console.error("[watch]", e.message));
   setTimeout(tick, 60000).unref?.();

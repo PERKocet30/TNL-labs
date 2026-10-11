@@ -68,6 +68,9 @@ const post = db.prepare("INSERT INTO posts (author_id,channel,body,image_url,thu
 // friend's session, so the poll step needn't sign in again (logins are rate-limited)
 db.prepare("INSERT INTO sessions (token,user_id,created_at) VALUES (?,?,?)").run("e2e-friend-session", friend, now);
 db.prepare("INSERT INTO sessions (token,user_id,created_at) VALUES (?,?,?)").run("e2e-tester-session", me, now);   // the admin-link step's log-in
+// the watch email's one-time pass (server-10-watch-pass makes this table at boot; the seed runs first)
+db.exec("CREATE TABLE IF NOT EXISTS admin_passes (hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL, created_at INTEGER NOT NULL)");
+db.prepare("INSERT INTO admin_passes (hash,user_id,expires_at,created_at) VALUES (?,?,?,?)").run((await import("node:crypto")).createHash("sha256").update("e2e-admin-pass").digest("hex"), me, now + 86400000, now);
 for (let i = 0; i < 6; i++) post.run(friend, "graphic-design", "Piece " + (i + 1), "/uploads/e2e-p" + i + ".png", "/uploads/e2e-p" + i + ".png", 800, 1000, now - i * 60000);
 // Piece 1 is a six-frame series (a carousel)
 db.prepare("UPDATE posts SET images = ? WHERE body = 'Piece 1'").run(JSON.stringify([0, 1, 2, 3, 4, 5].map((i) => ({ url: "/uploads/e2e-p" + i + ".png", thumb: "/uploads/e2e-p" + i + ".png", w: 800, h: 1000 }))));
@@ -1097,6 +1100,21 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.locator("#u").fill("tester"); await p.locator("#p").fill(PASS); await p.locator("#go").tap();
     await p.waitForURL(/\/admin#system$/, { timeout: 8000 });
     await p.locator("h2.sec", { hasText: "Glitches" }).first().waitFor({ timeout: 8000 });
+  });
+  await step(d, "the email's Open Admin signs you in by itself: a new browser lands on Admin, no password; used twice, it still opens Admin there", async () => {
+    const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const q = await c2.newPage();
+    await q.goto(B + "/admin/pass?t=e2e-admin-pass#system");
+    await q.waitForURL(/\/admin#system$/, { timeout: 8000 });
+    await q.locator("h2.sec", { hasText: "Glitches" }).first().waitFor({ timeout: 8000 });
+    await q.goto(B + "/admin/pass?t=e2e-admin-pass#system");   // the same email, tapped again: the pass is spent, the browser is signed in
+    await q.waitForURL(/\/admin#system$/, { timeout: 8000 });
+    await q.locator("h2.sec", { hasText: "Glitches" }).first().waitFor({ timeout: 8000 });
+    const c3 = await browser.newContext(); const r = await c3.newPage();   // …and in a browser that isn't: Log in, not a dead end
+    await r.goto(B + "/admin/pass?t=e2e-admin-pass#system");
+    await r.locator("#in:not([hidden])").waitFor({ timeout: 8000 });
+    ok(/has been used/.test(await r.locator("#m").innerText()), "a used pass doesn't say so");
+    await c2.close(); await c3.close();
   });
   await step(d, "only this site's own pages can be the way back", async () => {
     await p.goto(B + "/"); await p.waitForFunction(() => typeof gxNext === "function");
