@@ -13,7 +13,7 @@
 
    What it exists to catch: the class of bug that unit tests structurally
    cannot see — a wrong status code, a wrong Content-Type, a shell that
-   stops loading, an edge/proxy layer that starts mangling responses, a
+   stops loading, Railway's edge or a proxy starting to mangle responses, a
    volume that came up empty. Patch 051 shipped because /api/auth/verify
    was answering with application/octet-stream and Safari was saving it as
    a file. A single assertion here would have caught that the day it landed.
@@ -62,7 +62,7 @@ async function get(path, headers = {}) {
 /* Enough of what came back to see why, without opening a browser. */
 const why = (r) => `${r.url} → ${r.status} ${r.ct.split(";")[0] || "-"}` +
   ` "${r.buf.toString("utf8", 0, 160).replace(/\s+/g, " ")}"` +
-  (r.h("cf-ray") ? ` cf-ray=${r.h("cf-ray")}` : "");
+  (r.h("x-railway-request-id") ? ` railway-request=${r.h("x-railway-request-id")}` : "");
 
 /* A check is: fetch a public GET, assert status and content-type (checked on
    purpose and everywhere — it is the exact thing that broke, and invisible
@@ -133,11 +133,12 @@ await check("health responds", "/api/health", { status: 200, type: "json", test:
   if (bad.length) return bad.join("; ");
 }});
 
-/* 4. /api never cached, and the session never leaks. If an edge cache ever
-      stored /api/me, one person's account would be served to the next. */
+/* 4. /api never cached, and the session never leaks. If any cache in front
+      of the app ever stored /api/me, one person's account would be served
+      to the next. An Age header means a cache answered, not the app. */
 await check("signed out, /api/me says no", "/api/me", { status: 401, type: "json", test: (r) => {
   if (!r.h("cache-control").includes("no-store")) return `cache-control "${r.h("cache-control")}" — /api must be no-store`;
-  if (r.h("cf-cache-status") === "hit") return "Cloudflare served /api/me from its cache";
+  if (r.h("age")) return `a cache in front of the app answered /api/me (age ${r.h("age")})`;
 }});
 for (const p of ["/api/admin/overview", "/api/admin/members", "/api/admin/backups"])
   await check(`admin stays locked: ${p}`, p, { status: [401, 403], type: "json" });
