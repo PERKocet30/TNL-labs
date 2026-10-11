@@ -173,7 +173,8 @@ app.use((req, res, next) => {
   res.set("Content-Type", GZ_TYPES[ext]);
   res.set("Content-Encoding", "gzip");
   res.set("Vary", "Accept-Encoding");
-  res.set("Cache-Control", ext === ".html" ? "public, max-age=0, must-revalidate" : "public, max-age=86400");
+  // sw.js too (2026-10-11, caught by the scientist): a day-old worker at the edge keeps people on an old app
+  res.set("Cache-Control", ext === ".html" || p === "/sw.js" ? "public, max-age=0, must-revalidate" : "public, max-age=86400");
   res.sendFile(gz);
 });
 
