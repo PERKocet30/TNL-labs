@@ -45,7 +45,7 @@ public/studio.js                the Studio (beat maker; off by default, loads on
 public/admin.html               the admin dashboard (shell; app in public/admin-app/)
 public/door.js                  the door's vial loader and mark
 public/sw.js                    service worker (installable app, offline shell)
-scripts/scientist.mjs           daily read-only checks against the live site
+scripts/scientist.mjs           read-only checks against the live site (after each merge + daily)
 test/                           51 test suites — run with npm test
 ```
 
@@ -221,7 +221,7 @@ Three layers: stop glitches before they ship, notice the ones that get through, 
 
 **Once it's live**
 - **After every merge** (`.github/workflows/after-deploy.yml`): it waits until `/api/health` reports the new commit, then runs the scientist against the live site. A failure (or a deploy that never lands) turns the run red, and GitHub emails whoever merged.
-- **Scientist**, a second Railway service, also runs `scripts/scientist.mjs` every day at 18:45 UTC: 8 read-only checks covering the app shell, health, Showroom, levels, Market, builders, the 404 path and the verify page.
+- **Daily at 18:45 UTC**, the same workflow runs the scientist again (GitHub emails a red run to whoever last edited its cron line). About 27 read-only checks: the shell loads and its scripts compile; `/api/health` reports the database answering, members present (not a fresh empty volume), `TNL_DATA` set, uploads there and a backup in the last 36 hours (yes/no only); `/api/me` and `/api/admin/*` refuse a stranger and `/api` is never cached; the Showroom has work in it; a real profile and post preview with their images, and the profile card renders; missing things 404; the service worker, manifest, palette, door script and icon; each answer under 8s; the certificate has 14+ days left. `test/scientist.test.mjs` runs it against a local copy, full (green) and empty (red).
 - **Sentry** receives server and browser errors. The alert *New or returning error in TNL LABS* emails on any first-seen, regressed or reappearing issue, at most every 30 minutes.
 - **Glitch signals** (`src/app-19-glitch.js` → `src/server-10-glitch.js`): members' own screens report rage taps, screen jumps, slow screens (over 3s) and failed saves. Admin → System shows the 24-hour count and the week's hotspots.
 - **Watch emails** (`src/server-10-watch.js`, to `ADMIN_EMAIL` via Resend): an email when something spikes within an hour (3 server errors, 10 app crashes, 3 failed saves, or 8 rage taps / screen jumps / slow screens), at most once per rule per 6 hours. There's also a morning digest at 13:00 UTC with yesterday's members, posts, errors, glitches and worst spots.
