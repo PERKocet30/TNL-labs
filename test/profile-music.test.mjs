@@ -78,7 +78,7 @@ try {
   t("…and when one ends, the next one down plays", app.includes("const n=nextProfileTrack();if(n){MUSAUTOID=\"trk\"+n.id;playTrack(n,true)"));
   t("the pinned song shows first, marked Pinned (v1.2)", app.includes("return p?[p,...T.filter(t=>t!==p)]:T;") && app.includes('${pinned?"Pinned · ":""}'));
   t("⋯ on a song: Share song (its /s/ link), and Pin to top on your own", app.includes('const songLink=t=>location.origin+"/s/"+t.id;') && app.includes('label:pinned?"Unpin":"Pin to top"'));
-  t("their merch from the Market under the music, See all → Shop", app.includes('<div class="pmus-merch"><div class="pmus-h"><b>Merch</b><button data-ptab="shop">See all</button>'));
+  t("no merch under the songs (2026-10-11 — the Shop tab has it)", !app.includes("pmus-merch") && !app.includes("PROFMERCHLOAD"));
   t("a song link lands on their Music tab with the song picked out", app.includes('openProfile(mu?mu[1]:qu);if(qsong){PTAB="music";PFSONG=qsong}') && app.includes('${PFSONG===t.id?" hl":""}'));
 } catch (e) {
   fail++; console.log("  ✗  threw: " + e.message); console.log(log.slice(-1500));

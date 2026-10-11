@@ -1,6 +1,6 @@
-/* MUSIC TAB v1.1 — 2026-10-10 (v1.0 2026-10-09, in app-03). A profile's
-   songs as a list, like an artist page: Play, a pinned song, the songs,
-   then the artist's merch from the Market. Logic: app-15-profile.js. */
+/* MUSIC TAB v1.2 — 2026-10-11 (no merch under the songs; v1.0 2026-10-09, in app-03). A profile's
+   songs as a list, like an artist page: Play, a pinned song, the songs;
+   their Shop tab has the merch. Logic: app-15-profile.js. */
 .pmus{padding:14px 0 30px}
 .pmus-top{display:flex;align-items:center;gap:14px;margin-bottom:10px}
 .pmus-play{width:52px;height:52px;border-radius:50%;border:0;background:var(--accent-fill);color:var(--on-accent);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
@@ -24,10 +24,3 @@
 .pmus-more{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:0;color:var(--dim);cursor:pointer;padding:0}
 .pmus-more svg{width:18px;height:18px}
 /* merch under the music */
-.pmus-merch{margin-top:22px}
-.pmus-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
-.pmus-h b{font-size:17px;line-height:22px}
-.pmus-h button{background:none;border:0;padding:0;font:inherit;font-size:13px;font-weight:700;color:var(--tx);cursor:pointer;text-decoration:underline}
-.pmus-mrow{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(150px,42%);gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
-.pmus-mrow::-webkit-scrollbar{display:none}
-@media(min-width:720px){.pmus-mrow{grid-auto-columns:minmax(170px,24%)}}

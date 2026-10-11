@@ -29,7 +29,7 @@ function workCardHTML(p, collab, K, pinned) {
    plays and length. v2.3 adds what an artist page has:
      - a pinned song at the top (⋯ → Pin to top, on your own page)
      - ⋯ → Share song: a /s/:id link that previews right in an Instagram DM
-     - Merch: the artist's Market listings under their music
+     (Merch under the music came out 2026-10-11 — their Shop tab has it.)
    Tap a song to play it, again to pause; when one ends the next one down
    plays. It's a post's kind of sound (MUSAUTOID = "trk<id>"): it plays
    while the list is on screen and stops when you leave it.
@@ -46,7 +46,7 @@ function profileSongs(){
 function musicTabHTML(mine){
   const T=profileSongs(), pin=PROFILE.pinnedTrack;
   if(!T.length)return `<div class="empty">${mine?"Your music lives here. Upload a song from + Post → Add music, or in // Music.":"No music yet."}</div>`;
-  const plays=T.reduce((n,t)=>n+(t.plays||0),0), cur=T.find(trkOn), L=(PROFLISTINGS||[]).filter(l=>l.status!=="sold").slice(0,8);
+  const plays=T.reduce((n,t)=>n+(t.plays||0),0), cur=T.find(trkOn);
   return `<div class="pmus">
     <div class="pmus-top"><button class="pmus-play" data-pftrk="${(cur||T[0]).id}" aria-label="${cur?"Pause":"Play"}">${cur?DI.pause:DI.play}</button>
       <span class="pmus-sum"><b>${T.length} song${T.length===1?"":"s"}</b><span>${plays.toLocaleString()} play${plays===1?"":"s"}</span></span></div>
@@ -57,8 +57,6 @@ function musicTabHTML(mine){
         <span class="pmus-t"><b>${esc(t.title)}</b><span>${pinned?"Pinned · ":""}${(t.plays||0).toLocaleString()} play${t.plays===1?"":"s"}</span></span>
         <span class="pmus-d">${mmss(t.durationMs)}</span>
         <button class="pmus-more" data-pftrkmore="${t.id}" aria-label="More for ${esc(t.title)}">${DI.more}</button></div>`}).join("")}</div>
-    ${L.length?`<div class="pmus-merch"><div class="pmus-h"><b>Merch</b><button data-ptab="shop">See all</button></div>
-      <div class="pmus-mrow">${L.map(mktCardHTML).join("")}</div></div>`:""}
   </div>`;
 }
 /* After a song ends on a profile: the next one down, if there is one. */
