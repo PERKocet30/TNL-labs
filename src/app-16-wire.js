@@ -25,43 +25,7 @@ function wire(){
     if(guest())return needAccount("Join to post — it lands on your profile and the Showroom.");
     PCOMPOSE={body:"",imgs:[],vid:null,busy:false,ch:pcLabNow()};pushView("compose");render();
   };
-  /* ---- the archive + moodboards ---- */
-  const pgo=$("#pastego"), pin_=$("#pastein");
-  const doPaste=async()=>{
-    const url=(pin_?.value||"").trim();
-    if(!url)return;
-    PASTING=true;PASTEERR=null;PASTED=null;render();
-    try{
-      PASTED=await api.unfurl(url);
-      /* Keep the link. The image is theirs and lives at their URL — we're
-         a moodboard, not a mirror. */
-      PASTED.url=url;
-    }catch(e){
-      let detail="";
-      try{const j=JSON.parse(e.detail||"{}");detail=j.detail||""}catch(x){}
-      PASTEERR={error:e.message, detail:/instagram/i.test(e.message)
-        ? "Their image URLs are signed and expire, and they serve crawlers a login wall. Screenshot it and upload instead — or use the are.na/Pinterest source if there is one."
-        : detail};
-    }
-    PASTING=false;render();
-  };
-  if(pgo)pgo.onclick=doPaste;
-  if(pin_)pin_.onkeydown=e=>{if(e.key==="Enter")doPaste()};
-  const px=$("#pastex");if(px)px.onclick=()=>{PASTED=null;PASTEERR=null;render()};
-  const psave=$("#pastesave");if(psave)psave.onclick=async()=>{
-    if(!BOARDS)await loadBoards();
-    if(!BOARDS.length){BOARDSOPEN=true;render();return toast("Make a moodboard first")}
-    openPicker({eyebrow:"PULL INTO",title:"Which moodboard?",
-      note:"The link and the source are kept. We never rehost the file.",
-      items:BOARDS.map(b=>({label:b.name,sub:b.count+(b.count===1?" image":" images"),icon:DI.board,bid:b.id})),
-      onPick:async(it)=>{
-        try{
-          await api.pin(it.bid,{srcUrl:PASTED.url,imgUrl:PASTED.image,note:PASTED.title||""});
-          PASTED=null;if(pin_)pin_.value="";BOARDS=null;
-          toast("Pulled into "+it.label);render();
-        }catch(e){toast(e.message)}}});
-  };
-
+  /* ---- the archive (moodboards came out 2026-10-11) ---- */
   const arq=$("#archq");
   if(arq)arq.oninput=()=>{
     /* Debounced by hand — the app has no debounce helper, and inventing one
@@ -69,62 +33,12 @@ function wire(){
     clearTimeout(ARCHT);
     ARCHT=setTimeout(()=>{ARCHFILT.q=arq.value.trim()||undefined;loadArchive()},260);
   };
-  document.querySelectorAll("[data-asrc]").forEach(b=>b.onclick=()=>{
-    ARCHSRC=b.dataset.asrc;render();
-    /* Pinterest's widget script only runs once per load. Re-inject it when
-       the tab opens or the board renders as a dead link. */
-    if(ARCHSRC==="pin"){
-      const old=document.getElementById("pinjs"); if(old)old.remove();
-      const sc=document.createElement("script");
-      sc.id="pinjs"; sc.async=true; sc.defer=true; sc.src="https://assets.pinterest.com/js/pinit.js";
-      document.body.appendChild(sc);
-    }
-  });
   document.querySelectorAll("[data-asort]").forEach(b=>b.onclick=()=>{ARCHFILT.sort=b.dataset.asort||undefined;loadArchive()});
-  document.querySelectorAll("[data-ach]").forEach(b=>b.onclick=()=>{
-    ARCHFILT.channel=ARCHFILT.channel===b.dataset.ach?undefined:b.dataset.ach;loadArchive()});
   const ac=$("#archclear");if(ac)ac.onclick=()=>{ARCHFILT={};loadArchive()};
   document.querySelectorAll("[data-aopen]").forEach(b=>b.onclick=(e)=>{
-    if(e.target.closest("[data-asave]"))return;   // the ＋ is its own button
     const x=(ARCHIVE?.images||[]).find(i=>String(i.id)===b.dataset.aopen);
     if(x)LIGHTBOX=x.full||x.url; render();
   });
-  document.querySelectorAll("[data-asave]").forEach(b=>b.onclick=async(e)=>{
-    e.stopPropagation();
-    if(guest())return needAccount("Join to pull reference into a moodboard.");
-    const id=+b.dataset.asave;
-    if(!BOARDS)await loadBoards();
-    if(!BOARDS.length){BOARDSOPEN=true;render();return toast("Make a moodboard first")}
-    openPicker({eyebrow:"PULL INTO",title:"Which moodboard?",
-      note:"Whoever made this gets told you took it.",
-      items:BOARDS.map(b2=>({label:b2.name,sub:b2.count+(b2.count===1?" image":" images"),icon:DI.board,bid:b2.id})),
-      onPick:async(it)=>{
-        try{await api.pin(it.bid,{postId:id});
-          const x=(ARCHIVE?.images||[]).find(i=>i.id===id);
-          if(x){x.savedByMe=true;x.saves=(x.saves||0)+1}
-          BOARDS=null;toast("Pulled into "+it.label);render();
-        }catch(e2){toast(e2.message)}}});
-  });
-  const mb=$("#myboards");if(mb)mb.onclick=async()=>{
-    if(guest())return needAccount("Join to keep moodboards.");
-    BOARDSOPEN=true;BOARDONE=null;render();if(!BOARDS)await loadBoards();
-  };
-  const bx=$("#bx");if(bx)bx.onclick=()=>{BOARDSOPEN=false;BOARDONE=null;render()};
-  const bbg=$("#bbg");if(bbg)bbg.onclick=e=>{if(e.target===bbg){BOARDSOPEN=false;BOARDONE=null;render()}};
-  const bback=$("#bback");if(bback)bback.onclick=()=>{BOARDONE=null;render()};
-  const bmake=$("#bmake");if(bmake)bmake.onclick=async()=>{
-    const name=$("#bnew")?.value.trim();
-    if(!name)return toast("Name it");
-    try{await api.newBoard({name});BOARDS=null;await loadBoards();toast("Made")}catch(e){toast(e.message)}};
-  document.querySelectorAll("[data-bopen]").forEach(b=>b.onclick=async()=>{
-    try{BOARDONE=await api.board(b.dataset.bopen);render()}catch(e){toast(e.message)}});
-  document.querySelectorAll("[data-unpin]").forEach(b=>b.onclick=async()=>{
-    try{await api.unpin(b.dataset.unpin);BOARDONE=await api.board(BOARDONE.board.id);BOARDS=null;render()}
-    catch(e){toast(e.message)}});
-  const bdel=$("#bdel");if(bdel)bdel.onclick=async()=>{
-    if(!(await uiConfirm("Delete \""+BOARDONE.board.name+"\"?","The images stay in the archive — only your moodboard goes.",{okLabel:"Delete",danger:true})))return;
-    try{await api.delBoard(BOARDONE.board.id);BOARDONE=null;BOARDS=null;await loadBoards();toast("Deleted")}
-    catch(e){toast(e.message)}};
 
   const nb=$("#notifBtn");if(nb)nb.onclick=async()=>{
     NOTIFOPEN=true;NOTIFS=null;render();

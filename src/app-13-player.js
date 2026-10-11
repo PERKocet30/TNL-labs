@@ -45,10 +45,10 @@ function prevTrack(){
 }
 
 /* Where the lab player may play: the labs, with nothing laid over them. */
-function musicHere(){return TAB==="labs"&&!PROFILE&&!GATE&&!PCOMPOSE&&!DMOPENPANEL&&!NOTIFOPEN&&!SEARCHOPEN&&!BOARDSOPEN&&!REVIEWING}
+function musicHere(){return TAB==="labs"&&!PROFILE&&!GATE&&!PCOMPOSE&&!DMOPENPANEL&&!NOTIFOPEN&&!SEARCHOPEN&&!REVIEWING}
 /* Where a post's sound may play: any screen where you can see the post —
    not under a chat, a drawer, the door or an editor. */
-function postSoundHere(){return !GATE&&!PCOMPOSE&&!TRKEDIT&&!DMOPENPANEL&&!NOTIFOPEN&&!BOARDSOPEN&&!REVIEWING}
+function postSoundHere(){return !GATE&&!PCOMPOSE&&!TRKEDIT&&!DMOPENPANEL&&!NOTIFOPEN&&!REVIEWING}
 /* Runs on every paint (wire(), the chat layer, play/pause events), so no
    route can skip it — the lock screen and headphone buttons included: a play
    from there lands here and is paused again. The silent unlock (a data: URI,
@@ -70,7 +70,7 @@ function musicScope(){
 function barVisible(){return !!NOWPLAYING&&MUSAUTOID==null&&musicHere()&&!TRKEDIT}
 /* Over a chat or a drawer there's no nav underneath, so the bar docks to the
    bottom edge and the screen above makes room for it. */
-function barDocked(){return !!(DMOPENPANEL||NOTIFOPEN||SEARCHOPEN||BOARDSOPEN||REVIEWING||(PROFILE&&!MYPAGE()))}
+function barDocked(){return !!(DMOPENPANEL||NOTIFOPEN||SEARCHOPEN||REVIEWING||(PROFILE&&!MYPAGE()))}
 
 const nowClock=s=>{s=Math.max(0,Math.floor(s||0));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
 

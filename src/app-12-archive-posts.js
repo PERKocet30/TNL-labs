@@ -4,107 +4,28 @@
    the one thing a group chat physically cannot do.
 ─────────────────────────────────────────────────────────────────────── */
 function archiveHTML(){
+  /* Moodboards came out 2026-10-11 ("simplify"): no boards button, no
+     paste-a-link, no Pinterest, no + on the images. The boards and what's
+     on them are kept in the database, untouched. */
   const A=ARCHIVE;
-  const pinBoard=SITE.pinterestBoard;
   return `<div class="scroll" id="archscroll">
-    <div class="archbar">
-      <input class="in archq" id="archq" placeholder="Search the archive…" value="${esc(ARCHFILT.q||"")}">
-      <button class="btn ghost sm" id="myboards">${DI.board.replace(/width="18" height="18"/,'width="14" height="14"')} Moodboards${BOARDS?" "+BOARDS.length:""}</button>
+    <div class="archbar"><input class="in archq" id="archq" placeholder="Search the archive…" value="${esc(ARCHFILT.q||"")}"></div>
+    <div class="fchips archchips">
+      ${[["","Everything"],["saved","Most saved"],["liked","Most liked"]].map(([v,l])=>
+        `<button class="chip sm ${(ARCHFILT.sort||"")===v?"on":""}" data-asort="${v}">${l}</button>`).join("")}
+      ${(ARCHFILT.q||ARCHFILT.sort)?`<button class="clearf mono" id="archclear">${DI.x} Clear</button>`:""}
     </div>
-
-    <div class="pastebar">
-      <input class="in" id="pastein" placeholder="Paste a Pinterest / are.na / any link…">
-      <button class="btn sm ${PASTING?"":"green"}" id="pastego" ${PASTING?"disabled":""}>${PASTING?"…":"Pull"}</button>
-    </div>
-    ${PASTED?`<div class="pasted">
-      <img src="${esc(PASTED.image)}" alt="">
-      <div class="pasted-i">
-        <div class="pasted-t">${esc(PASTED.title||"Untitled")}</div>
-        <div class="mono dim">${DI.out} ${esc(PASTED.site||"")}${PASTED.licence?" · "+esc(PASTED.licence):""}</div>
-      </div>
-      <button class="btn green sm" id="pastesave">Pull in</button>
-      <button class="x" id="pastex" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-    </div>`:""}
-    ${PASTEERR?`<div class="pasteerr mono"><b>${esc(PASTEERR.error)}</b>${PASTEERR.detail?`<br>${esc(PASTEERR.detail)}`:""}</div>`:""}
-
-    ${pinBoard?`<div class="fchips archchips">
-      <button class="chip sm ${ARCHSRC==="tnl"?"on":""}" data-asrc="tnl">The archive</button>
-      <button class="chip sm ${ARCHSRC==="pin"?"on":""}" data-asrc="pin">📌 Pinterest</button>
-    </div>`:""}
-
-    ${(ARCHSRC==="pin"&&pinBoard)?`
-      <div class="pinembed">
-        <a data-pin-do="embedBoard" data-pin-board-width="400" data-pin-scale-height="1200" data-pin-scale-width="80"
-           href="${esc(pinBoard)}"></a>
-        <div class="mono dim pinnote">Pinterest's own embed. Open a pin there, copy the link, paste it above to pull it in.</div>
+    ${!A?`${skel()}`
+      :!A.images.length?`<div class="empty">
+        ${ARCHFILT.q?`Nothing matches "${esc(ARCHFILT.q)}".`
+          :`The archive is empty.<br><br>Every image published to a lab lands here — searchable, forever.`}
       </div>`
-    :`
-      <div class="fchips archchips">
-        ${[["","Everything"],["saved","Most saved"],["liked","Most liked"]].map(([v,l])=>
-          `<button class="chip sm ${(ARCHFILT.sort||"")===v?"on":""}" data-asort="${v}">${l}</button>`).join("")}
-        ${((A&&A.channels)||[]).map(c=>`<button class="chip sm ${ARCHFILT.channel===c?"on":""}" data-ach="${esc(c)}">#${esc(c)}</button>`).join("")}
-        ${(ARCHFILT.q||ARCHFILT.channel||ARCHFILT.sort)?`<button class="clearf mono" id="archclear">${DI.x} Clear</button>`:""}
-      </div>
-      ${!A?`${skel()}`
-        :!A.images.length?`<div class="empty">
-          ${ARCHFILT.q?`Nothing matches "${esc(ARCHFILT.q)}".`
-            :`The archive is empty.<br><br>Every image published to a lab lands here — searchable, forever.`}
-        </div>`
-        :`<div class="archgrid">${A.images.map(x=>`
-          <button class="archcard" data-aopen="${x.id}" style="${(x.w&&x.h)?`grid-row-end:span ${Math.max(12,Math.min(34,Math.round((x.h/x.w)*20)))}`:""}">
-            <img src="${esc(x.url)}" alt="" loading="lazy">
-            <div class="archover">
-              <span class="archby mono">${esc(x.by.displayName)}</span>
-              <span class="archsave ${x.savedByMe?"on":""}" data-asave="${x.id}">${x.savedByMe?DI.check:DI.plus}</span>
-            </div>
-            ${x.saves?`<span class="archn mono">${x.saves}</span>`:""}
-          </button>`).join("")}</div>`}
-    `}
+      :`<div class="archgrid">${A.images.map(x=>`
+        <button class="archcard" data-aopen="${x.id}" style="${(x.w&&x.h)?`grid-row-end:span ${Math.max(12,Math.min(34,Math.round((x.h/x.w)*20)))}`:""}">
+          <img src="${esc(x.url)}" alt="" loading="lazy">
+          <div class="archover"><span class="archby mono">${esc(x.by.displayName)}</span></div>
+        </button>`).join("")}</div>`}
   </div>`;
-}
-
-/* Moodboards. The Pinterest mechanic — except saving someone's image TELLS
-   them and credits them. Pinterest can't do that; it doesn't know who
-   anyone is. */
-function boardsHTML(){
-  if(BOARDONE)return boardOneHTML();
-  return `<div class="sheet" id="bbg"><div class="sheetc">
-    <div class="sheeth"><div><h2>What you're pulling</h2></div>
-      <button class="x" id="bx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <p class="mono dim" style="line-height:1.7;margin-bottom:14px">Pulled from the archive. The maker gets the credit.</p>
-    <div class="mbrow">
-      <input class="in" id="bnew" placeholder="New moodboard — 'Y2K refs', 'FW25'…" maxlength="60">
-      <button class="btn green sm" id="bmake" aria-label="New moodboard">${DI.plus}</button>
-    </div>
-    ${!BOARDS?`${skel()}`
-      :!BOARDS.length?`<div class="empty">No moodboards yet.<br><br>Make one, then pull anything out of the archive into it.</div>`
-      :`<div class="mbgrid">${BOARDS.map(b=>`<button class="mbcard" data-bopen="${b.id}">
-        ${b.cover?`<img src="${esc(b.cover)}" alt="" loading="lazy">`:`<div class="mbempty">${DI.board}</div>`}
-        <div class="mbname">${esc(b.name)}</div>
-        <div class="mono dim">${b.count} ${b.count===1?"image":"images"}${b.isPublic?"":" · private"}</div>
-      </button>`).join("")}</div>`}
-  </div></div>`;
-}
-
-function boardOneHTML(){
-  const b=BOARDONE;
-  return `<div class="sheet" id="bbg"><div class="sheetc">
-    <div class="sheeth"><div>
-      <button class="backb2" id="bback">${DI.back} Moodboards</button>
-      <h2 style="margin-top:6px">${esc(b.board.name)}</h2>
-      <div class="mono dim">${b.pins.length} ${b.pins.length===1?"image":"images"} · by ${esc(b.board.by.displayName)}</div>
-    </div><button class="x" id="bx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    ${!b.pins.length?`<div class="empty">Nothing pulled yet.<br><br>Go to the archive and tap + on anything.</div>`
-      :`<div class="archgrid">${b.pins.map(p=>`<div class="archcard">
-        <img src="${esc(p.url||"")}" alt="" loading="lazy">
-        <div class="archover">
-          <span class="archby mono">${p.by?esc(p.by.displayName):esc(p.srcSite||"link")}</span>
-          ${b.board.mine?`<span class="archsave" data-unpin="${p.id}">${DI.x}</span>`:""}
-        </div>
-        ${p.srcUrl?`<a class="archsrc mono" href="${esc(p.srcUrl)}" target="_blank" rel="noopener">${DI.out} ${esc(p.srcSite||"source")}</a>`:""}
-      </div>`).join("")}</div>`}
-    ${b.board.mine?`<button class="btn ghost wide" id="bdel" style="margin-top:14px">Delete this moodboard</button>`:""}
-  </div></div>`;
 }
 
 async function loadArchive(){
@@ -114,12 +35,6 @@ async function loadArchive(){
   try{ARCHIVE=await api.archive(p.toString())}catch(e){ARCHIVE={images:[],channels:[]}}
   render();
 }
-async function loadBoards(){
-  if(!ME)return;
-  try{BOARDS=(await api.boards()).boards}catch(e){BOARDS=[]}
-  render();
-}
-
 function labsHTML(){
   if(guest())return `<div class="scroll"><div class="wall">
     <div class="wall-mark">//</div>

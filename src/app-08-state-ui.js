@@ -112,8 +112,7 @@ let SEARCHING=false, UNREADS={}, PICKER=null, MENTIONS=null, MENTIONQ="";
 let LABACT=null;   // per-lab life: what got made, who was in, what's unread
 /* The archive. 226 people have been posting reference into the PHARMACY
    for months and none of it can be found again — this is the fix. */
-let ARCHIVE=null, ARCHFILT={}, BOARDS=null, BOARDONE=null, BOARDSOPEN=false, ARCHT=null;
-let PASTING=false, PASTED=null, PASTEERR=null, ARCHSRC="tnl";
+let ARCHIVE=null, ARCHFILT={}, ARCHT=null;
 /* Guest mode: you can see the Showroom, the Market and anyone's portfolio
    without an account. The labs are members-only — that's where people
    actually talk, and it isn't a marketing surface. */

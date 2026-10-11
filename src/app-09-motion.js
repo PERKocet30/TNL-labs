@@ -66,7 +66,7 @@ function mvAfter(b){
   /* overlays: animate in only on the repaint that opened them */
   const O=[
     [".sheet:not(.astab)",PROFILE&&!MYPAGE()?"p":""],["#npbg",NOTIFOPEN?"n":""],["#sbg",SEARCHOPEN?"s":""],
-    ["#bbg",BOARDSOPEN?"b":""],["#revbg",REVIEWING?"r":""],[".pick",PICKER?"k:"+(PICKER.title||""):""],
+    ["#revbg",REVIEWING?"r":""],[".pick",PICKER?"k:"+(PICKER.title||""):""],
     [".po-ov",POSTOPEN?"o:"+POSTOPEN.id:""],[".lightbox",LIGHTBOX||""],["#trkeov",TRKEDIT?"t":""],
     [".climb",CLIMB?"c":""]];   // the toast animates itself (toast())
   for(const [sel,k] of O){
