@@ -1,7 +1,7 @@
 // Story cards v2 (2026-10-11, "this is pretty bland"): the work's own colours
 // fill the Story edge to edge — no white sheet — with the piece on top, the
 // song credited, and a text post on the maker's colour.
-import { spawn, execFileSync } from "node:child_process";
+import { spawn, spawnSync, execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { rmSync, mkdirSync, writeFileSync } from "node:fs";
@@ -18,16 +18,20 @@ execFileSync(FF, ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=0xD0
   "-filter_complex", "[0][1]vstack", "-frames:v", "1", join(DATA, "uploads", "piece.jpg")]);
 // …and a placeholder profile picture: flat yellow
 execFileSync(FF, ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=0xF0D020:s=300x300:d=1", "-frames:v", "1", join(DATA, "uploads", "face.jpg")]);
+// …and two placeholder songs: a 20-second tone and a 6-second one
+for (const [n, secs] of [["song", 20], ["short", 6]])
+  execFileSync(FF, ["-loglevel", "error", "-y", "-f", "lavfi", "-i", `sine=frequency=330:duration=${secs}`, "-ac", "2", join(DATA, "uploads", n + ".wav")]);
 process.env.TNL_DATA = DATA;
 const { db } = await import(join(ROOT, "src/db.js"));
 const now = Date.now();
 const uid = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, role, accent) VALUES (?,?,?,?,?,1,?,?)`)
   .run("maker", "Maker", "m@x.com", "h", now, "Producer", "lab").lastInsertRowid);
 db.prepare(`UPDATE users SET avatar_url = '/uploads/face.jpg' WHERE id = ?`).run(uid);
-const tr = Number(db.prepare(`INSERT INTO tracks (user_id, title, url, created_at) VALUES (?, 'Night Song', '/uploads/none.wav', ?)`).run(uid, now).lastInsertRowid);
+const T = (title, url, ms) => Number(db.prepare(`INSERT INTO tracks (user_id, title, url, duration_ms, created_at) VALUES (?, ?, ?, ?, ?)`).run(uid, title, url, ms, now).lastInsertRowid);
+const tr = T("Night Song", "/uploads/song.wav", 20000), short = T("Short Song", "/uploads/short.wav", 6000);
 const P = (body, img, track) => Number(db.prepare(`INSERT INTO posts (author_id, channel, body, image_url, media_w, media_h, is_work, audio_track_id, created_at) VALUES (?,?,?,?,800,1000,1,?,?)`)
   .run(uid, "graphic-design", body, img, track, now).lastInsertRowid);
-const art = P("A piece", "/uploads/piece.jpg", tr), words = P("Every piece started as a voice memo at 3am.", null, null);
+const art = P("A piece", "/uploads/piece.jpg", tr), words = P("Every piece started as a voice memo at 3am.", null, null), brief = P("Short", "/uploads/piece.jpg", short);
 
 const PORT = 8870, B = `http://localhost:${PORT}`;
 const srv = spawn(process.execPath, ["--experimental-sqlite", "--no-warnings", "src/server.runtime.js"], {
@@ -55,6 +59,20 @@ try {
   console.log("\nTHE SONG");
   const src = (await import("node:fs")).readFileSync(join(ROOT, "src/server-12-story.js"), "utf8");
   t("a post with a song credits it on the card", src.includes("music: tr ?") && src.includes('t.at("MUSIC"'));
+  console.log("\nA STORY WITH THE SONG");
+  const probe2 = (file) => { try { execFileSync(FF, ["-i", file], { stdio: ["ignore", "pipe", "pipe"] }); } catch (e) { return String(e.stderr); } return ""; };
+  let t0 = Date.now(); const v = await fetch(`${B}/p/${art}/story.mp4`); const vb = Buffer.from(await v.arrayBuffer()); const took = Date.now() - t0;
+  const vf = join(DATA, "story.mp4"); writeFileSync(vf, vb); const vp = probe2(vf);
+  t("a post with a song has a Story video", v.status === 200 && /video\/mp4/.test(v.headers.get("content-type") || ""));
+  t("…1080×1920 H.264, the song in AAC, 15 seconds", /Video: h264[^\n]*1080x1920/.test(vp) && /Audio: aac/.test(vp) && /Duration: 00:00:15\.0/.test(vp));
+  const vol = String(spawnSync(FF, ["-i", vf, "-af", "volumedetect", "-f", "null", "-"]).stderr);
+  const mean = Number((/mean_volume: (-?[\d.]+) dB/.exec(vol) || [])[1]);
+  t("…and you can hear it", mean > -40);
+  t0 = Date.now(); const again = Buffer.from(await (await fetch(`${B}/p/${art}/story.mp4`)).arrayBuffer());
+  t("asking again is instant: it was kept", again.equals(vb) && Date.now() - t0 < Math.max(500, took / 3));
+  const b6 = join(DATA, "short.mp4"); writeFileSync(b6, Buffer.from(await (await fetch(`${B}/p/${brief}/story.mp4`)).arrayBuffer()));
+  t("a song shorter than 15 seconds sets the length", /Duration: 00:00:0[56]\./.test(probe2(b6)));
+  t("a post with no song has no video (the picture is its Story)", (await fetch(`${B}/p/${words}/story.mp4`)).status === 404);
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

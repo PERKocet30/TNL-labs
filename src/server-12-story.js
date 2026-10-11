@@ -160,3 +160,63 @@ app.get("/m/:id/story.jpg", storyLimit, (req, res) => {
 app.get("/tr/:id/story.jpg", storyLimit, (req, res) => {
   evSendCard(res, trackStory(db.prepare(`SELECT * FROM tracks WHERE id = ?`).get(Number(req.params.id) || 0), baseUrl(req)), null);
 });
+
+/* ── A Story with the song · 2026-10-11 ─────────────────────────────
+   "Is there any way the music from a post plays in the share cards on
+   Instagram?" Instagram's music sticker only takes its own library, but a
+   Story can be a video with its own sound — Spotify's Story shares work
+   that way. A post with a song gets /p/:id/story.mp4: its Story card,
+   pushed in slowly over 15 seconds (or the song, if shorter), with the
+   first 15 seconds of the song under it — faded in and out. Made once,
+   kept next to the picture under og/, one build at a time. */
+const SV = { version: 1, secs: 15, fps: 30 };
+const SV_BUILDS = new Map();
+function storyVideoArgs(still, audio, secs, out) {
+  const n = Math.round(secs * SV.fps), fadeAt = Math.max(0, secs - 1.5).toFixed(2);
+  return ["-nostdin", "-y", "-loglevel", "error",
+    "-loop", "1", "-framerate", String(SV.fps), "-t", String(secs), "-i", still,
+    "-t", String(secs), "-i", audio,
+    "-filter_complex", `[0:v]scale=1188:2112,zoompan=z='1+0.05*on/${n}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=${SV.fps},format=yuv420p[v];` +
+      `[1:a]aresample=44100,afade=t=in:d=0.3,afade=t=out:st=${fadeAt}:d=1.5[a]`,
+    "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-profile:v", "high", "-level", "4.0",
+    "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-t", String(secs), "-movflags", "+faststart", out];
+}
+async function storyVideo(p, base) {
+  const card = postStory(p, base);
+  const tr = card && p.audio_track_id && db.prepare(`SELECT url, duration_ms FROM tracks WHERE id = ?`).get(p.audio_track_id);
+  const audio = tr && (cardFile(audioPlayUrl(tr.url)) || cardFile(tr.url));
+  if (!audio) return null;
+  const secs = Math.max(3, Math.min(SV.secs, tr.duration_ms ? tr.duration_ms / 1000 : SV.secs));
+  const still = await evCardBuild(card.prefix, card.hash, card.make);
+  const prefix = `p${p.id}-storyv`, hash = createHash("sha1").update(JSON.stringify([SV.version, card.hash, audio, secs])).digest("hex").slice(0, 12);
+  const name = `${prefix}-${hash}.mp4`, out = join(CARD_DIR, name);
+  if (existsSync(out)) return out;
+  if (SV_BUILDS.has(out)) return SV_BUILDS.get(out);
+  const job = (CARD_CHAIN = CARD_CHAIN.catch(() => {}).then(async () => {
+    const tmp = join(CARD_DIR, `tmp-${name}`);
+    try {
+      await new Promise((ok, no) => execFile(FFMPEG, storyVideoArgs(still, audio, secs, tmp), { timeout: 120000, maxBuffer: 1024 * 1024 },
+        (err, _o, se) => (err ? no(new Error(String(se || err).slice(0, 300))) : ok())));
+      await new Promise((ok, no) => rename(tmp, out, (e) => (e ? no(e) : ok())));
+      await Promise.all(readdirSync(CARD_DIR).filter((f) => f.startsWith(prefix + "-") && f !== name).map(cardRm));   // the old song or card
+      return out;
+    } finally { rmSync(tmp, { force: true }); }
+  }));
+  SV_BUILDS.set(out, job);
+  job.finally(() => SV_BUILDS.delete(out)).catch(() => {});
+  return job;
+}
+app.get("/p/:id/story.mp4", storyLimit, async (req, res) => {
+  const p = q.postById.get(Number(req.params.id) || 0);
+  if (!p || !p.is_work || !p.audio_track_id) return res.status(404).end();
+  if (!FFMPEG || !existsSync(CARD_FONT.bold)) return res.status(503).end();
+  try {
+    const file = await storyVideo(p, baseUrl(req));
+    if (!file) return res.status(404).end();
+    res.set("Cache-Control", "public, max-age=300");
+    res.type("mp4").sendFile(file);
+  } catch (e) {
+    logError("card", "story video: " + (e.message || "failed"), "", req.path, "");
+    res.status(503).end();
+  }
+});
