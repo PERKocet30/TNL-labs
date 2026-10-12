@@ -1195,6 +1195,22 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#evback").tap();
     await p.waitForFunction(() => TAB === "showroom" && location.pathname === "/", null, { timeout: 4000 });
   });
+  /* "Make it so the art event gets posted in visuals so you don't need a specific
+     hashtag" (2026-10-12): the tournament page leads to its lab, where a
+     Tournament chip holds every entry and each one is marked. */
+  await step(d, "event: \"Every entry is in // Visual\" opens Visual on its Tournament chip, entries marked; back returns to the tournament", async () => {
+    await p.evaluate(() => openEvent("e2e-art")); await p.waitForSelector(".ev-h", { timeout: 5000 });
+    await p.locator("[data-evlab]").tap();
+    await p.waitForFunction(() => LAB && LAB.id === "pharmacy" && LABTAG === "event:e2e-art" && (PLACE.pharmacy || {})["work:event:e2e-art"], null, { timeout: 5000 });
+    ok(await p.locator(".pl-chip.ev.on").count() === 1, "the Tournament chip isn't on");
+    ok(await p.locator("#plbody .pl-tile").count() === 2 && await p.locator("#plbody .pl-entry").count() === 2, "the two entries, each marked, should be all that shows");
+    await p.locator(".pl-tags [data-pltag='']").tap();
+    await p.waitForFunction(() => LABTAG === null && (PLACE.pharmacy || {})["work:"], null, { timeout: 5000 });
+    ok(await p.locator("#plbody .pl-entry").count() >= 2, "the entries should be in All too, marked");
+    await p.evaluate(() => history.back());
+    await p.waitForFunction(() => TAB === "event" && EVSLUG === "e2e-art", null, { timeout: 4000 });
+    await p.evaluate(() => { LAB = null; ROOMOPEN = false; TAB = "showroom"; render(); });
+  });
   await step(d, "normal use records no glitches", async () => {
     const g = await glitches();
     ok(!g.recent.length, "recorded: " + g.recent.map((x) => x.kind + " @ " + x.place + " " + x.detail).join(" | "));

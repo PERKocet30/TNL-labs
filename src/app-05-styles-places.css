@@ -1,4 +1,4 @@
-/* PLACES v1.2 — 2026-10-09 (v1.2: "For you" / "More labs" on the index). Labs as places: the index (one list, each
+/* PLACES v1.3 — 2026-10-12 (v1.3: the Tournament chip and Entry marks, at the end). v1.2 — 2026-10-09 ("For you" / "More labs" on the index). Labs as places: the index (one list, each
    genre with its #tags), a lab's Work · Talk tabs, the #tag page, and #tags
    in text. Familiar like Instagram — square grid, underline tabs, pills —
    in TNL's white, black and green. Logic: app-11-places.js. */
@@ -53,3 +53,10 @@
 /* #tags in any text, and in the caption's suggestions */
 .htag{font-weight:700;color:var(--tx);cursor:pointer}
 .pc-trow .pc-hash{flex:none;width:32px;height:32px;border-radius:50%;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* 2026-10-12: the tournament in its lab — a chip with every entry, and each entry marked. */
+.pl-chip.ev::before{content:"";width:8px;height:8px;background:var(--accent-fill)}
+.pl-chip.ev.on{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
+.pl-chip.ev.on::before{background:var(--on-accent)}
+.pl-chip.ev.on span{color:var(--on-accent)}
+.pl-entry{position:absolute;left:6px;bottom:6px;padding:3px 7px;border-radius:999px;background:var(--accent-fill);color:var(--on-accent);font-size:10px;line-height:12px;font-weight:700;font-style:normal;letter-spacing:.05em;text-transform:uppercase}

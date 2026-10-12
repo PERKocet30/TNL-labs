@@ -3,6 +3,8 @@
    bar at the top that stays put as you scroll ("make sure the tournament
    is easily navigable because I had problems going back" — the home-screen
    app and Instagram's browser have no back button of their own).
+   v1.2 also: "Every entry is in // Visual" — the lab its entries post into,
+   opened on its Tournament chip (app-11-places.js).
    v1.1 — 2026-10-07. The tournament
    lives here: the brief, entering, the gallery, the vote, the bracket,
    the final and the results. The server decides everything; this only
@@ -75,6 +77,7 @@ function evHeadHTML(){
       <span>${e.format==="bracket"?"Bracket":e.format==="poll"?`Open vote · live scoreboard · ${e.picks===1?"1 vote":e.picks+" votes"} a day`:"Open vote"} · final ${e.judgeWeight?`${e.judgeWeight}% judges, ${100-e.judgeWeight}% votes`:"most votes wins"}</span>
       ${J.length?`<span>Judges: ${J.map(j=>`<a data-u="${esc(j.username)}">@${esc(j.username)}</a>`).join(", ")}</span>`:""}
       <a href="/e/${esc(e.slug)}/rules" target="_blank" rel="noopener">Official rules</a>
+      ${evLab(e)?`<a href="#" data-evlab="${evLab(e).id}">Every entry is in ${esc(labMark(evLab(e).name))}</a>`:""}
     </div>
     ${evStepsHTML()}
   </div>`;
@@ -142,6 +145,8 @@ function evResultsHTML(){
     ${evBracketHTML()}`;
 }
 
+/* The lab an event's entries post into (Visual, for the art tournament). */
+const evLab=e=>LABS.find(l=>l.channels.some(c=>c.id===e.channel))||null;
 /* The ‹ bar: walks back the same trail as the phone's back (app-09-nav.js). */
 const evTopHTML=()=>`<div class="ev-top"><button class="ev-back" id="evback" aria-label="Back">${di('<path d="M15 5l-7 7 7 7"/>',22)}</button><span class="ev-toptitle">Tournament</span></div>`;
 function eventHTML(){

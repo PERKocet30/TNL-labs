@@ -1,4 +1,4 @@
-// Places v1.2 (2026-10-09; v1.2: your labs first, from the roles you picked): labs are places — one per genre — with Work
+// Places v1.4 (2026-10-12; v1.4: the tournament in its lab, no tag needed; v1.2: your labs first, from the roles you picked): labs are places — one per genre — with Work
 // and Talk, and #hashtags instead of sub-channels; each genre is explained
 // on the labs list by its #tags. Runs the real
 // server. Old posts keep their channel as a tag; nothing is rewritten.
@@ -24,6 +24,7 @@ const now = Date.now(), D = 86400000, H = 3600000;
 const mk = (u) => { const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified) VALUES (?,?,?,?,?,1)`).run(u, u.toUpperCase(), u + "@x.test", "x", now - 60 * D).lastInsertRowid);
   db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?,?,?)`).run("tok-" + u, id, now); return id; };
 const ana = mk("ana"), ben = mk("ben"), cam = mk("cam"); mk("dee");
+db.prepare(`UPDATE users SET is_admin = 1 WHERE id = ?`).run(mk("boss"));
 const post = (author, channel, body, { work = 0, ago = 0, img = null } = {}) => Number(db.prepare(
   `INSERT INTO posts (author_id, channel, body, is_work, image_url, created_at) VALUES (?,?,?,?,?,?)`).run(author, channel, body, work, img, now - ago).lastInsertRowid);
 writeFileSync(join(DATA, "uploads", "a.jpg"), "x");
@@ -124,6 +125,31 @@ try {
   t("a bad tag is refused", (await call("dee", "GET", "/api/tags/%23")).s === 400);
   r = await call("dee", "GET", "/api/tags?lab=pharmacy&q=po");
   t("suggestions while typing: #po → #poster", r.j.tags[0].tag === "poster");
+
+  // "make it so the art event gets posted in visuals so you don't need a specific hashtag" (2026-10-12)
+  console.log("\nTHE TOURNAMENT LIVES IN ITS LAB — NO #TAG NEEDED (v1.4)");
+  let w = await call("dee", "GET", "/api/labs/pharmacy/work");
+  t("no tournament: no Tournament chip", w.j.event === null);
+  const ev = (await call("boss", "POST", "/api/admin/events", { slug: "art", title: "LABS ART TOURNAMENT", format: "poll", published: true, opensAt: now - 1000, submitDays: 14, channel: "graphic-design" })).j;
+  t("open, but nobody has entered yet: still no chip", (await call("dee", "GET", "/api/labs/pharmacy/work")).j.event === null);
+  const e1 = (await call("ana", "POST", "/api/events/art/enter", { imageUrl: "/uploads/a.jpg", agree: true, caption: "oil on canvas" })).j.me.entry;
+  await call("ben", "POST", "/api/events/art/enter", { imageUrl: "/uploads/a.jpg", agree: true });
+  w = await call("dee", "GET", "/api/labs/pharmacy/work");
+  t("two entries: Visual's Work offers the Tournament, with how many", w.j.event && w.j.event.slug === "art" && w.j.event.n === 2 && w.j.eventOn === null);
+  const marked = w.j.posts.filter((p) => p.entry);
+  t("the entries are in Visual's Work without any #tag, each marked as an entry", marked.length === 2 && marked.every((p) => p.entry.slug === "art" && !(p.tags || []).length));
+  t("other work isn't marked", w.j.posts.some((p) => p.id === oldGd && !p.entry));
+  let we = await call("dee", "GET", "/api/labs/pharmacy/work?event=art");
+  t("the Tournament chip: just the entries, newest first", we.j.eventOn === "art" && we.j.posts.length === 2 && we.j.posts.every((p) => p.entry) && we.j.posts[1].body === "oil on canvas");
+  t("…and not in another lab", (await call("dee", "GET", "/api/labs/fashion/work")).j.event === null && (await call("dee", "GET", "/api/labs/fashion/work?event=art")).j.eventOn === null);
+  await call("boss", "POST", `/api/admin/events/${ev.event.id}/entries/${e1.id}/dq`, { reason: "Not original." });
+  we = await call("dee", "GET", "/api/labs/pharmacy/work?event=art");
+  t("disqualified: out of the Tournament chip, and just a post again", we.j.event.n === 1 && we.j.posts.length === 1
+    && !(await call("dee", "GET", "/api/labs/pharmacy/work")).j.posts.find((p) => p.id === e1.postId)?.entry);
+  await call("boss", "PATCH", `/api/admin/events/${ev.event.id}`, { published: false });
+  t("unpublished: no chip, no marks", (await call("dee", "GET", "/api/labs/pharmacy/work")).j.event === null && !(await call("dee", "GET", "/api/labs/pharmacy/work")).j.posts.some((p) => p.entry));
+  t("the app draws the chip and the mark, and the tournament page links to its lab", appPlaces.includes('data-pltag="event:${esc(ev.slug)}"') && appPlaces.includes('<i class="pl-entry"')
+    && readFileSync(join(ROOT, "src/app-17-event-1.js"), "utf8").includes("Every entry is in ${esc(labMark(evLab(e).name))}"));
 } catch (e) {
   fail++; console.log("  ✗  threw: " + e.message); console.log(log.slice(-1500));
 } finally { srv.kill(); }
