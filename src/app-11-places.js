@@ -1,5 +1,7 @@
 /* ================================================================
-   PLACES v1.4 — 2026-10-12 (v1.4: painters, muralists, printmakers and
+   PLACES v1.5 — 2026-10-12 (v1.5: the tournament running in a lab is a
+   chip in its Work — every entry, no #tag needed — and entries are marked).
+   v1.4 — 2026-10-12 (painters, muralists, printmakers and
    mixed-media artists lead to Visual; v1.3: ‹ on a #tag walks the back trail). A lab is a place — a genre — not a Discord
    server full of channels. Familiar like Instagram, ours in the details.
    v1.1, simpler: one list of genres, each explained by its #hashtags,
@@ -48,7 +50,7 @@ let LABVIEW="work", LABTAG=null, PLACE={}, TAGVIEW=null, LABTAGS=null;
 const PLV=[["work","Work"],["talk","Talk"]];
 const papi={
   feed:l=>req("/api/labs/"+l+"/feed"),
-  work:(l,t)=>req("/api/labs/"+l+"/work"+(t?"?tag="+encodeURIComponent(t):"")),
+  work:(l,t)=>req("/api/labs/"+l+"/work"+(!t?"":/^event:/.test(t)?"?event="+encodeURIComponent(t.slice(6)):"?tag="+encodeURIComponent(t))),
   labTags:()=>req("/api/labs/tags"),
   tag:t=>req("/api/tags/"+encodeURIComponent(t)),
   tags:(lab,q)=>req("/api/tags?lab="+encodeURIComponent(lab||"")+"&q="+encodeURIComponent(q||"")),
@@ -91,8 +93,10 @@ const plThumb=p=>{const im=(p.images&&p.images[0])||null;return p.thumbUrl||(im&
 function plTileHTML(p){const src=plThumb(p);
   return `<button class="pl-tile" data-plpost="${p.id}" aria-label="Open">${src?`<img src="${esc(src)}" alt="" loading="lazy" decoding="async">`
     :`<span class="pl-txt">${esc((p.body||"").slice(0,90))}</span>`}
-    ${p.images&&p.images.length>1?`<i class="pl-multi" aria-hidden="true"></i>`:""}${p.videoUrl?`<i class="pl-vid" aria-hidden="true">${DI.play}</i>`:""}</button>`}
+    ${p.images&&p.images.length>1?`<i class="pl-multi" aria-hidden="true"></i>`:""}${p.videoUrl?`<i class="pl-vid" aria-hidden="true">${DI.play}</i>`:""}${p.entry?`<i class="pl-entry" title="${esc(p.entry.title)}">Entry</i>`:""}</button>`}
 const plGridHTML=list=>`<div class="pl-grid">${list.map(plTileHTML).join("")}</div>`;
+/* LABTAG "event:<slug>" = the tournament running here (every entry, no #tag). */
+const plEvChip=(ev,on)=>`<button class="pl-chip ev ${on?"on":""}" data-pltag="event:${esc(ev.slug)}" aria-label="${esc(ev.title)}">Tournament<span>${ev.n}</span></button>`;
 const plChip=(t,on,n)=>`<button class="pl-chip ${on?"on":""}" data-pltag="${esc(t)}">${t?"#"+esc(t):"All"}${n?`<span>${n}</span>`:""}</button>`;
 const plEmpty=(h,p)=>`<div class="empty estate"><div class="eh">${esc(h)}</div><div class="ep">${esc(p)}</div></div>`;
 const plErr=d=>d&&d.error?plEmpty("Couldn't load this.",d.error):"";
@@ -100,7 +104,10 @@ const plErr=d=>d&&d.error?plEmpty("Couldn't load this.",d.error):"";
    whatever else people tag their work with here. */
 let LABTAGSBUSY=false;
 async function loadLabTags(){if(LABTAGSBUSY)return;LABTAGSBUSY=true;
-  try{LABTAGS=(await papi.labTags()).tags;if($("#lxlist")&&TAB==="labs"&&!LAB)render()}catch(e){}finally{LABTAGSBUSY=false}}
+  try{LABTAGS=(await papi.labTags()).tags;
+    if(TAB==="labs"&&!LAB&&$("#lxlist"))render();
+    else if(TAB==="labs"&&LAB&&LABVIEW==="work"&&$("#plbody"))paintPlace();   // a lab opened straight from elsewhere gets its chips too
+  }catch(e){}finally{LABTAGSBUSY=false}}
 function labTagList(lab,used){
   const out=[...((LABTAGS&&LABTAGS[lab])||[])];
   for(const t of (used||[]))if(!out.includes(t.tag))out.push(t.tag);
@@ -117,13 +124,15 @@ function placeBodyHTML(){
 function plInnerHTML(){
   const P=PLACE[LAB.id]||{}, d=P[placeKey()];
   if(LABVIEW==="work"){
-    const chips=labTagList(LAB.id,d&&d.tags);
-    if(LABTAG&&!chips.includes(LABTAG))chips.unshift(LABTAG);
+    const chips=labTagList(LAB.id,d&&d.tags),evOn=!!LABTAG&&LABTAG.startsWith("event:");
+    const ev=(d&&d.event)||(P["work:"]||{}).event||null;
+    if(LABTAG&&!evOn&&!chips.includes(LABTAG))chips.unshift(LABTAG);
     return `<p class="pl-for">${esc((LAB_ID[LAB.id]||{}).for||"")}</p>
-      ${chips.length?`<div class="pl-tags">${plChip("",!LABTAG)}${chips.map(t=>plChip(t,LABTAG===t)).join("")}</div>`:""}
+      ${chips.length||ev?`<div class="pl-tags">${plChip("",!LABTAG)}${ev?plEvChip(ev,evOn):""}${chips.map(t=>plChip(t,LABTAG===t)).join("")}</div>`:""}
       ${LAB.channels.some(c=>c.archive)?`<button class="pl-link" id="plarchive">Search the archive</button>`:""}
       ${!d?`<div class="pl-grid">${Array.from({length:9},()=>`<i class="pl-tile sk-img"></i>`).join("")}</div>`
         :d.error?plErr(d):d.posts.length?plGridHTML(d.posts)
+        :evOn?plEmpty("No entries yet.","Enter from the tournament page — your piece shows up here.")
         :LABTAG?plEmpty("Nothing tagged #"+LABTAG+" here yet.","Tag your work with #"+LABTAG+" when you post it.")
         :plEmpty("No work here yet.","Post a piece and share it to "+labMark(LAB.name)+". Tag it so people find it.")}`;
   }

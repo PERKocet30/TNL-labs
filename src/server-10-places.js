@@ -1,6 +1,10 @@
 
 /* ================================================================
-   PLACES v1.3 — 2026-10-12 (v1.3: Visual's #tags cover every visual art —
+   PLACES v1.4 — 2026-10-12 (v1.4: the tournament lives in its lab — Work
+   gets a Tournament chip with every entry, no #tag needed, and each entry
+   is marked; "make it so the art event gets posted in visuals so you
+   don't need a specific hashtag").
+   v1.3 — 2026-10-12 (Visual's #tags cover every visual art —
    #painting #drawing #illustration #sculpture next to design, photo, film).
    PLACES v1.2 — 2026-10-09. Labs are places, one per genre — not
    Discord servers full of channels. Inside each lab (v1.1: just two):
@@ -82,7 +86,26 @@ function placePosts(ids, req) {
   const rows = feedRows({ ids, viewerId: req.user?.id, limit: ids.length }).filter((r) => !hidden.has(r.author_username));
   const byId = new Map(rows.map((r) => [r.id, r]));
   const at = new Map(ids.map((id, i) => [Number(id), i]));   // keep the order asked for (rising is by score)
-  return shapePosts(rows).map((p) => ({ ...p, tags: rowTags(byId.get(p.id) || p) })).sort((a, b) => at.get(a.id) - at.get(b.id));
+  // tournament entries say so (a published event; a disqualified entry is just a post again)
+  const ent = new Map(db.prepare(`SELECT e.post_id, v.slug, v.title FROM event_entries e JOIN events v ON v.id = e.event_id
+    WHERE v.published = 1 AND e.dq_reason IS NULL AND e.post_id IN (${ids.map(Number).filter(Number.isFinite).join(",")})`).all()
+    .map((r) => [r.post_id, { slug: r.slug, title: r.title }]));
+  return shapePosts(rows).map((p) => ({ ...p, tags: rowTags(byId.get(p.id) || p), ...(ent.has(p.id) ? { entry: ent.get(p.id) } : {}) }))
+    .sort((a, b) => at.get(a.id) - at.get(b.id));
+}
+
+/* The tournament running in this lab: published, open (or finished in the
+   last two weeks), posting into one of the lab's channels, with entries. */
+function labEvent(P) {
+  for (const ev of db.prepare(`SELECT * FROM events WHERE published = 1 AND channel IN (${inList(P.channels)}) ORDER BY id DESC`).all()) {
+    tickEvent(ev);
+    const ph = phaseAt(evJSON(ev.schedule, []));
+    if (ph.phase === "upcoming" || evJSON(ev.state, {}).void) continue;
+    if (ph.phase === "results" && Date.now() - (ph.start || 0) > 14 * 86400000) continue;
+    const n = db.prepare(`SELECT COUNT(*) n FROM event_entries WHERE event_id = ? AND dq_reason IS NULL`).get(ev.id).n;
+    if (n) return { slug: ev.slug, title: ev.title, n, id: ev.id };
+  }
+  return null;
 }
 
 /* The most used tags among some posts. */
@@ -110,11 +133,15 @@ app.get("/api/labs/:lab/feed", auth, (req, res) => {
 app.get("/api/labs/:lab/work", auth, (req, res) => {
   const P = placeOr404(req, res); if (!P) return;
   const tag = cleanTag(req.query.tag);
-  const ids = tag
+  const lev = labEvent(P), evOn = !!lev && req.query.event === lev.slug;
+  const ids = evOn
+    ? db.prepare(`SELECT post_id id FROM event_entries WHERE event_id = ? AND dq_reason IS NULL ORDER BY created_at DESC LIMIT 120`).all(lev.id).map((r) => r.id)
+    : tag
     ? tagCandidates(tag, P.channels, { workOnly: true, limit: 120 }).map((r) => r.id)
     : db.prepare(`SELECT id FROM posts WHERE channel IN (${inList(P.channels)}) AND is_work = 1 ORDER BY created_at DESC LIMIT 120`).all().map((r) => r.id);
   const recent = db.prepare(`SELECT body, channel, created_at FROM posts WHERE channel IN (${inList(P.channels)}) ORDER BY created_at DESC LIMIT 400`).all();
-  res.json({ lab: req.params.lab, tag: tag || null, posts: placePosts(ids, req), tags: topTags(recent, 16).filter((t) => !PLAIN_TAGS.has(t.tag)) });
+  res.json({ lab: req.params.lab, tag: evOn ? null : tag || null, posts: placePosts(ids, req), tags: topTags(recent, 16).filter((t) => !PLAIN_TAGS.has(t.tag)),
+    event: lev ? { slug: lev.slug, title: lev.title, n: lev.n } : null, eventOn: evOn ? lev.slug : null });
 });
 
 /* The labs list: each genre explained by its #tags — its own first (so a
