@@ -278,17 +278,25 @@ app.delete("/api/comments/:id", auth, (req, res) => {
    NOTIFICATIONS
 ================================================================ */
 app.get("/api/notifications", auth, (req, res) => {
+  /* Instagram's shape (2026-10-12): each row carries the picture of what it's
+     about (the post, or the listing's first photo), the listing it points
+     at, and whether you follow the person back. */
   const rows = db.prepare(`
-    SELECT n.id, n.kind, n.body, n.post_id, n.read_at, n.created_at,
-           u.username, u.display_name, u.avatar_url
+    SELECT n.id, n.kind, n.body, n.post_id, n.listing_id, n.read_at, n.created_at,
+           u.username, u.display_name, u.avatar_url, u.id AS actor_id,
+           COALESCE(p.thumb_url, p.image_url) AS post_thumb, l.images AS listing_images,
+           (SELECT 1 FROM follows f WHERE f.follower_id = n.user_id AND f.followee_id = n.actor_id) AS you_follow
     FROM notifications n LEFT JOIN users u ON u.id = n.actor_id
-    WHERE n.user_id = ? ORDER BY n.created_at DESC LIMIT 60`).all(req.user.id);
+    LEFT JOIN posts p ON p.id = n.post_id LEFT JOIN listings l ON l.id = n.listing_id
+    WHERE n.user_id = ? ORDER BY n.created_at DESC LIMIT 80`).all(req.user.id);
   const unread = db.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND read_at IS NULL`).get(req.user.id).n;
+  const first = (j) => { try { const a = JSON.parse(j || "[]"); return a[0] || null; } catch { return null; } };
   res.json({
     unread,
     notifications: rows.map((r) => ({
-      id: r.id, kind: r.kind, body: r.body, postId: r.post_id, read: !!r.read_at, createdAt: r.created_at,
-      actor: r.username ? { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "" } : null,
+      id: r.id, kind: r.kind, body: r.body, postId: r.post_id, listingId: r.listing_id || null, read: !!r.read_at, createdAt: r.created_at,
+      thumb: r.post_thumb || first(r.listing_images) || null,
+      actor: r.username ? { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", youFollow: !!r.you_follow } : null,
     })),
   });
 });

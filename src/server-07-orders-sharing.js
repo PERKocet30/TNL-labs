@@ -68,7 +68,7 @@ app.post("/api/market/:id/buy", auth, verified, rateLimit({ max: 20, windowMs: 3
   // evidence, and in arrange mode there is none. Once Stripe is on, a sale
   // costs real money to fake, so it earns rep.
   takeStock(l.id, v?.id);
-  notify(l.seller_id, req.user.id, "sale", null, `bought "${l.title}"${vLabel ? ` (${vLabel})` : ""} — arrange payment & shipping`);
+  notify(l.seller_id, req.user.id, "sale", null, `bought "${l.title}"${vLabel ? ` (${vLabel})` : ""} — arrange payment & shipping`, l.id);
   res.json({ orderId, arrange: true });
 });
 
@@ -116,7 +116,7 @@ function settlePaidOrder(order, out) {
     `OVERSOLD: "${l.title}"${vl} was already sold out when this payment landed — refund it from your Stripe dashboard`);
   // A sale is validation with money behind it — the hardest signal to fake.
   awardRep(order.seller_id, "sale_made", order.id);
-  notify(order.seller_id, order.buyer_id, "sale", null, `paid for "${l?.title || "your listing"}"${vl} — ship it`);
+  notify(order.seller_id, order.buyer_id, "sale", null, `paid for "${l?.title || "your listing"}"${vl} — ship it`, l?.id);
 }
 
 /* The redirect was the ONLY confirmation path. A buyer who pays and
