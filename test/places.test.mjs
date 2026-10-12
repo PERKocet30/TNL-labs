@@ -68,6 +68,7 @@ try {
   t("the first role you picked counts most (Rapper, then Graphic Designer → Music, Visual)", mineOf({ roles: ["Rapper", "Graphic Designer"] }) === "culture,pharmacy");
   t("…but two visual roles outweigh one music role", mineOf({ roles: ["Rapper", "Graphic Designer", "Illustrator"] }) === "pharmacy,culture,akatsuki");
   t("an old account with just one role still works", mineOf({ roles: [], role: "Manga Artist" }) === "akatsuki,pharmacy");
+  t("painters and every other visual artist land in Visual first (2026-10-12)", ["Painter", "Artist", "Muralist", "Printmaker", "Mixed Media Artist", "Sculptor"].every((r) => mineOf({ roles: [r] }) === "pharmacy"));
   t("a role we don't know changes nothing", mineOf({ roles: ["Astronaut"] }) === "");
 
   console.log("\nNEW POSTS GO HOME, AND #TAG THEMSELVES");
@@ -106,7 +107,9 @@ try {
   await call("ben", "POST", "/api/posts", { channel: "general", body: "anyone want to make a zine? #zine", isWork: false });
   r = await call("dee", "GET", "/api/labs/tags");
   t("every lab has tags for the labs list", r.s === 200 && LABS.every((l) => Array.isArray(r.j.tags[l.id]) && r.j.tags[l.id].length >= 3));
-  t("a genre's own tags come first (Visual: #graphicdesign #photography #film)", JSON.stringify(r.j.tags.pharmacy.slice(0, 3)) === JSON.stringify(["graphicdesign", "photography", "film"]));
+  t("a genre's own tags come first (Visual: #painting #graphicdesign #photography)", JSON.stringify(r.j.tags.pharmacy.slice(0, 3)) === JSON.stringify(["painting", "graphicdesign", "photography"]));
+  // "make the visual lab broader to include all visual arts like paintings" (2026-10-12)
+  t("Visual is every visual art: painting, drawing, illustration, sculpture, digital art, design, photo, film", ["painting", "drawing", "illustration", "sculpture", "digitalart", "graphicdesign", "photography", "film"].every((x) => r.j.tags.pharmacy.includes(x)));
   t("then what people actually use there (#poster in Visual, #zine in General)", r.j.tags.pharmacy.includes("poster") && r.j.tags.hq.includes("zine"));
   t("old room names that say nothing (#creators, #chat) aren't shown as a genre's tags", !r.j.tags.pharmacy.includes("creators") && !r.j.tags.culture.includes("chat"));
   t("an empty lab still says what it's for (Fashion)", JSON.stringify(r.j.tags.fashion.slice(0, 3)) === JSON.stringify(["streetwear", "clothingdesign", "drops"]));

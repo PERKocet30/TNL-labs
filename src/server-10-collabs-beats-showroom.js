@@ -33,7 +33,7 @@ app.post("/api/posts/:id/collab/accept", auth, verified, (req, res) => {
    language of the trade rather than a generic "WORK". Kept in step with
    KINDS/ROLE_KIND in public/index.html. */
 const KINDS = {
-  visual:   { tag: "VISUAL",  work: "WORK",     blurb: "Visual work — posters, graphics, and the archive behind them." },
+  visual:   { tag: "VISUAL",  work: "WORK",     blurb: "Visual art — paintings, drawings, design, photo and film." },
   lens:     { tag: "LENS",    work: "SHOTS",    blurb: "Photography and film." },
   fashion:  { tag: "FASHION", work: "PIECES",   blurb: "Garments, styling, and the material end of the network." },
   music:    { tag: "SOUND",   work: "TRACKS",   blurb: "Beats, records, and the people on them." },
@@ -45,6 +45,7 @@ const KINDS = {
 const ROLE_KIND = {
   "Graphic Designer": "visual", "Illustrator": "visual", "3D Artist": "visual", "Motion Designer": "visual",
   "Animator": "visual", "Art Director": "visual", "Painter": "visual", "Sculptor": "visual",
+  "Artist": "visual", "Muralist": "visual", "Printmaker": "visual", "Mixed Media Artist": "visual",
   "Tattoo Artist": "visual", "Curator": "visual", "Manga Artist": "visual", "Character Designer": "visual",
   "Manga Artist": "anime", "Cosplayer": "anime", "AMV Editor": "anime",
   "Photographer": "lens", "Videographer": "lens", "Video Editor": "lens", "Cinematographer": "lens", "AMV Editor": "lens",
