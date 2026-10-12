@@ -1,5 +1,5 @@
 /* ================================================================
-   PLACES v1.2 — 2026-10-09. A lab is a place — a genre — not a Discord
+   PLACES v1.3 — 2026-10-12 (‹ on a #tag walks the back trail). A lab is a place — a genre — not a Discord
    server full of channels. Familiar like Instagram, ours in the details.
    v1.1, simpler: one list of genres, each explained by its #hashtags,
    and inside a lab just two tabs —
@@ -139,7 +139,7 @@ function wirePlace(){
     const p=all().find(x=>x.id===id)||(TAGVIEW&&TAGVIEW.d&&TAGVIEW.d.posts.find(x=>x.id===id));if(p)openPost(p)});
   on("#plarchive",()=>setLabView("archive"));
   on("#plwork",()=>setLabView("work"));
-  if(TAGVIEW){on("#tagback",()=>history.back());
+  if(TAGVIEW){on("#tagback",()=>navBack(closeTag));
     document.querySelectorAll("[data-taglab]").forEach(b=>b.onclick=()=>openLab(b.dataset.taglab,"work",TAGVIEW.tag))}
 }
 

@@ -1,57 +1,4 @@
-/* ================================================================
-   HISTORY
-   Everything lived in memory, so the back button (and iOS swipe-back)
-   exited the whole app instead of closing a sheet. That's the single most
-   jarring thing about using this on a phone.
-   Anything that feels like "a screen" pushes state; back pops it.
-================================================================ */
-let HISTINIT=false, POPPING=false;
-function pushView(kind, val){
-  if(POPPING)return;
-  const st={kind,val,tab:TAB};
-  try{history.pushState(st,"", kind==="profile"?("/u/"+val):kind==="listing"?("/m/"+val):location.pathname);}
-  catch(e){/* some in-app browsers block this */}
-}
-function initHistory(){
-  if(HISTINIT)return; HISTINIT=true;
-  try{history.replaceState({kind:"root",tab:TAB},"",location.pathname)}catch(e){}
-  window.addEventListener("popstate",async()=>{
-    if(chatPopstate())return;   // messages, menus and chat sheets handle their own back
-    POPPING=true;
-    // close whatever's on top, innermost first — same order a person expects
-    if(LIGHTBOX){LIGHTBOX=null}
-    else if(PICKER){PICKER=null}
-    else if(GATE){if(!gateBack())gateClose()}
-    else if(EDITING){if(EDITPF&&EDITPF.sub){EDITPF.sub=null;POPPING=false;pushView("profile");render();return}EDITING=false;EDITPF=null;if(ME)applyAccent(ME.accentHex)}
-    else if(PCOMPOSE){
-      /* Back can't be cancelled once it has fired, so a dirty draft puts its
-         history entry back and then asks. "Keep writing" leaves you exactly
-         where you were. Discarding costs one redundant entry — a far cheaper
-         bug than losing what someone typed. */
-      if(pcDirty()||PCOMPOSE.busy){
-        POPPING=false; pushView("compose");
-        if(await pcLeave())render();
-        return;
-      }
-      PCOMPOSE=null;
-    }
-    else if(PROFILE){PROFILE=null}
-    else if(NOTIFOPEN){NOTIFOPEN=false}
-    else if(SEARCHOPEN){SEARCHOPEN=false}
-    else if(OPENCOMMENTS){OPENCOMMENTS=null}
-    else if(EVENTER){EVENTER=null}
-    else if(EVSHARE){EVSHARE=null}
-    else if(TAB==="market"&&MKTVIEW==="edit"){MKTEDIT=null;SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME="";MKTVIEW="detail"}
-    else if(TAB==="market"&&MKTVIEW!=="browse"){MKTVIEW="browse";MKTONE=null}
-    else if(TAB==="labs"&&TAGVIEW){closeTag()}
-    else if(TAB==="labs"&&(LAB||ROOMOPEN)){ROOMOPEN=false;LAB=null;LABVIEW="work";LABTAG=null;loadLabs()}
-    else if(TAB!=="showroom"){TAB="showroom"}
-    else{POPPING=false;return}   // at the root — let the browser leave
-    render();
-    POPPING=false;
-  });
-}
-
+/* HISTORY → app-09-nav.js (one trail of screens, 2026-10-12) */
 /* COMPUTER LAYOUT v1.0 — 2026-09-29. From 1024px wide the top bar and the
    bottom nav move into one left sidebar (styles: app-05-styles-wide.css).
    Phones get exactly the markup they always had. Crossing the line (a window
@@ -60,6 +7,7 @@ const WIDEQ=typeof window!=="undefined"&&window.matchMedia?window.matchMedia("(m
 const isWide=()=>!!(WIDEQ&&WIDEQ.matches);
 if(WIDEQ&&WIDEQ.addEventListener)WIDEQ.addEventListener("change",()=>{render();paintPlayer()});
 function render(){
+  navTrack();   // every screen change joins the back trail (app-09-nav.js)
   const app=$("#app");
   // Guests see the app. Only the explicit door shows the sign-up form.
   if(GATE){app.innerHTML=gateHTML();wireGate();return}
@@ -88,7 +36,7 @@ function render(){
     ${REVIEWING?reviewHTML():""}
     ${CLIMB?climbHTML():""}
     ${TRKEDIT?trkEditHTML():""}
-    ${POSTOPEN?postOpenHTML():""}
+    ${POSTOPEN&&!(PFTOP&&PROFILE)?postOpenHTML():""}
     ${LIGHTBOX?`<div class="lightbox" id="lb"><img src="${esc(LIGHTBOX)}" alt="full size"></div>`:""}
     ${installCardHTML()}
     ${ENTER?enterHTML():""}`;

@@ -1,4 +1,4 @@
-/* ── NOTIFICATIONS v2 · 2026-10-12 ─────────────────────────────────────
+/* ── NOTIFICATIONS v2.1 · 2026-10-12 (back from a post lands here again) ─────────────────────────────────────
    "Notifications should work like Instagram." Sections — New, Today, This
    week, This month, Earlier. A row is the person's picture, one line
    ("**name** liked your post. 3h") and, on the right, the post or the
@@ -66,7 +66,7 @@ async function nfOpen(n){
   NOTIFOPEN=false;
   if(n.kind==="event"&&!n.postId)return render();   // the [data-nev] listener opens the event
   if(n.kind==="dm"&&n.actor){render();return openDM(n.actor.username)}
-  if(n.postId){render();return openPostById(n.postId)}
+  if(n.postId)return openPostById(n.postId);   // one paint: back from the post lands on these notifications again
   if(n.listingId)return pxOpenListing(n.listingId);
   if(NF_ORDERS[n.kind]||n.kind==="offer"){
     PROFILE=null;POSTOPEN=null;TAB="market";MKTVIEW="orders";ORDTAB=NF_ORDERS[n.kind]||"selling";render();

@@ -58,6 +58,7 @@ test/                           51 test suites — run with npm test
 | `app-07-theme-labs-api` | theme, labs and channels, API client |
 | `app-08-images` | image quality (posts and tournament entries): the original kept up to 3000px (hidden data stripped), 1440px feed and 480px grid copies, `srcset` so screens get the sharp one |
 | `app-08-state-ui` · `app-09-render-nav` | app state, toasts/modals, routing, top bar; `render()` picks the phone or computer frame and keeps your scroll place across repaints |
+| `app-09-nav` | back: one trail of screens (Instagram's way) — every screen change joins it, and the phone's back, swipe-back, ‹ and ✕ all walk it |
 | `app-08-upload` | uploads: the streaming upload, retried twice when the connection drops or the server is restarting (502–504), failures reported to Glitches with size, time and reason |
 | `app-10-chat-1…6` | Messages v2 (2026-09-29): chat kit, inbox + chat screen, composer/voice notes, sheets (new chat, group, forward, mute), the signed-in live stream, lab rooms as chat |
 | `app-10-dm-search` | search, the door |
