@@ -1,4 +1,6 @@
-/* TNL LABS admin — Events v1.2, 2026-10-09 (the Tournament tab; v1.2: named for it).
+/* TNL LABS admin — Events v1.3, 2026-10-12 (the Tournament tab; v1.2: named for it;
+   v1.3: the "entries are open" email to every member — its switch, a
+   preview to yourself, and how far the sending has got).
    Events v1.1, 2026-10-07. Set up and run events (the
    tournament): dates, format, judges, the live tallies members never see,
    disqualifying, and "End this phase now". The server enforces all of it.
@@ -61,7 +63,8 @@ function evFormHTML() {
     ${field("voteDays", "Vote, days", p.voteDays ?? 3, 'type="number" step="0.5" min="0.5"')}
     ${field("roundDays", "Each bracket round, days", p.roundDays ?? 2, 'type="number" step="0.5" min="0.5"')}
     ${field("finalDays", "Final, days", p.finalDays ?? 3, 'type="number" step="0.5" min="0.5"')}
-  </div></div>
+  </div>
+    <label class="row" style="margin-top:12px;font-size:14px"><input type="checkbox" data-f="mailOnOpen" ${p.mailOnOpen !== false ? "checked" : ""}> Email every member when entries open</label></div>
   <h2 class="sec">Rules</h2>
   <div class="panel evf"><label class="fld"><span>Leave empty to use the draft rules, which fill in your dates, format and prize. Have a lawyer read what goes live.</span>
     <textarea class="in" data-f="rules" rows="6">${esc(f.rules || "")}</textarea></label>
@@ -88,6 +91,7 @@ function evDetailHTML(d) {
     <a class="btn ghost sm" href="/e/${esc(e.slug)}/board.jpg?size=story&t=${Date.now()}" target="_blank">Scoreboard Story (1080×1920)</a>
     <button class="btn ghost sm" data-evcopy="${esc(location.origin + "/e/" + e.slug)}">Copy event link</button></div>
     <p class="dim" style="font-size:12px;margin-top:10px">Post the scoreboard daily with a link sticker to the event. Entrants get their own Story card and vote link in the app (Share to Instagram); theirs are below too.</p></div>` : ""}
+  ${evMailHTML(d.mail, e)}
   ${st.void ? `<div class="panel" style="margin-top:12px">Called off: fewer than two entries when entries closed.</div>` : ""}
 
   <h2 class="sec">Now: ${phName(e.phase)} <span class="mono">${e.phase.end ? "until " + when(e.phase.end) : ""}</span></h2>
@@ -116,10 +120,30 @@ function evDetailHTML(d) {
   <div style="height:40px"></div>`;
 }
 
+/* The "entries are open" email: what will happen, or how far it's got. */
+function evMailHTML(m, e) {
+  if (!m) return "";
+  const opens = e.schedule.find((p) => p.phase === "submit")?.start, n = (x) => x.toLocaleString();
+  const days = Math.ceil(m.audience / m.perDay);
+  const line = !m.on ? "Off. Members won't get an email when entries open."
+    : m.doneAt ? `Sent to ${n(m.sent)} member${m.sent === 1 ? "" : "s"} · ${when(m.doneAt)}${m.failed ? ` · ${n(m.failed)} didn't go through` : ""}.`
+    : m.startedAt ? `Sending: ${n(m.sent)} sent, ${n(m.left)} to go${m.left > m.perDay ? ` — up to ${m.perDay} a day, so it finishes in about ${Math.ceil(m.left / m.perDay)} days` : ""}.${m.failed ? ` ${n(m.failed)} didn't go through.` : ""}`
+    : e.phase.phase === "upcoming" ? `Goes to ${n(m.audience)} member${m.audience === 1 ? "" : "s"} when entries open (${when(opens)}).${days > 1 ? ` That's more than ${m.perDay} a day, so it goes out over ${days} days.` : ""}`
+    : e.phase.phase === "submit" ? (e.published ? "Starting within a minute." : "Goes out when you publish it, while entries are open.")
+    : "Entries have closed, so it won't go out.";
+  const warn = !m.on ? "" : !m.mailOn ? "Email isn't set up (RESEND_API_KEY in Railway → Variables), so nothing will go out."
+    : m.testSender ? "MAIL_FROM is Resend's test sender, which only reaches your own inbox, so it won't go to members." : "";
+  return `<h2 class="sec">Email <span class="mono">members with a confirmed email · each one can unsubscribe</span></h2>
+  <div class="panel"><p style="font-size:14px">${esc(line)}</p>
+    ${warn ? `<p style="font-size:13px;margin-top:8px"><span class="tag warn">check</span> ${esc(warn)}</p>` : ""}
+    ${m.lastError && !m.doneAt ? `<p class="dim" style="font-size:12px;margin-top:8px">Last problem: ${esc(m.lastError)}</p>` : ""}
+    <div class="row wrapx" style="gap:6px;margin-top:12px"><button class="btn ghost sm" id="evmprev">Send me a preview</button></div></div>`;
+}
+
 WIRES.events = () => {
   const reload = async () => { await LOADERS.events(); paint(); };
   const on = (s, fn) => { const el = $(s); if (el) el.onclick = fn; };
-  on("#evnew", () => { EVFORM = { format: "poll", bracketSize: 16, finalists: 5, picks: 1, judgeWeight: 0, minAccountDays: 0, freezeHours: 24, requireVerified: true, published: false, plan: { opensAt: Date.now() + 14 * 864e5, submitDays: 14, voteDays: 7, roundDays: 2, finalDays: 3 } }; paint(); });
+  on("#evnew", () => { EVFORM = { format: "poll", bracketSize: 16, finalists: 5, picks: 1, judgeWeight: 0, minAccountDays: 0, freezeHours: 24, requireVerified: true, published: false, plan: { opensAt: Date.now() + 14 * 864e5, submitDays: 14, voteDays: 7, roundDays: 2, finalDays: 3, mailOnOpen: true } }; paint(); });
   $$("[data-evcopy]").forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.evcopy); toast("Link copied"); } catch { toast("Couldn't copy"); } });
   $$("[data-ev]").forEach((b) => b.onclick = async () => { EVID = +b.dataset.ev; D.event = null; paint(); await reload(); });
   on("#evback", () => { EVID = null; D.event = null; paint(); });
@@ -133,6 +157,7 @@ WIRES.events = () => {
     const r = await act(() => (f.id ? req("/api/admin/events/" + f.id, { method: "PATCH", body: b }) : req("/api/admin/events", { method: "POST", body: b })), "Saved");
     if (r) { EVFORM = null; EVID = r.event.id; D.event = r; await reload(); }
   });
+  on("#evmprev", () => act(() => req(`/api/admin/events/${EVID}/mail-preview`, { method: "POST" }), (r) => "Preview sent to " + r.to));
   on("#evadv", async () => {
     if (!(await confirmIt("End this phase now?", "The next phase starts immediately, and every later date moves earlier by the same amount.", { ok: "End it now", danger: true }))) return;
     const r = await act(() => req(`/api/admin/events/${EVID}/advance`, { method: "POST" }), "Moved on"); if (r) { D.event = r; paint(); }

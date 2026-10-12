@@ -540,6 +540,11 @@ if (!cols.includes("links")) db.exec(`ALTER TABLE users ADD COLUMN links TEXT NO
 if (!cols.includes("pinned")) db.exec(`ALTER TABLE users ADD COLUMN pinned TEXT NOT NULL DEFAULT '[]'`);
 /* Music tab (2026-10-10): one song pinned to the top, like an artist pick. */
 if (!cols.includes("pinned_track")) db.exec(`ALTER TABLE users ADD COLUMN pinned_track INTEGER`);
+/* 2026-10-12: tournament emails. mail_off = they unsubscribed (account
+   emails — verification, password reset — still go). mail_key is the
+   secret in their unsubscribe link, made the first time one is sent. */
+if (!cols.includes("mail_off")) db.exec(`ALTER TABLE users ADD COLUMN mail_off INTEGER NOT NULL DEFAULT 0`);
+if (!cols.includes("mail_key")) db.exec(`ALTER TABLE users ADD COLUMN mail_key TEXT`);
 
 const lcols = db.prepare(`PRAGMA table_info(listings)`).all().map((c) => c.name);
 if (!lcols.includes("sold_at")) db.exec(`ALTER TABLE listings ADD COLUMN sold_at INTEGER`);
