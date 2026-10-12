@@ -1,7 +1,9 @@
 
 /* ================================================================
-   EVENTS v1.1 — 2026-10-07. Running an event (admin only, enforced
+   EVENTS v1.2 — 2026-10-12. Running an event (admin only, enforced
    here) and its public pages: /e/:slug and /e/:slug/rules.
+   v1.2: the "entries are open" email to every member (its switch,
+   its progress; the sending is in server-10-events-6-mail.js).
    Admins see the live tallies members never do, including how many
    votes came from brand-new accounts: the usual sign of someone
    stuffing the box.
@@ -28,6 +30,7 @@ const evPlan = (b, old = {}) => {
   const p = { ...old };
   for (const k of ["submitDays", "voteDays", "roundDays", "finalDays"]) if (b[k] !== undefined) p[k] = Math.min(60, Math.max(0.01, Number(b[k]) || 0));
   if (b.opensAt !== undefined) p.opensAt = Number(new Date(b.opensAt)) || Number(b.opensAt) || p.opensAt || Date.now();
+  if (b.mailOnOpen !== undefined) p.mailOnOpen = !!b.mailOnOpen;
   return p;
 };
 
@@ -56,6 +59,7 @@ function evAdminView(ev) {
     matchups: db.prepare(`SELECT round, slot, a_entry a, b_entry b, winner_entry winner FROM event_matchups WHERE event_id = ? ORDER BY round, slot`).all(ev.id),
     voters: db.prepare(`SELECT COUNT(DISTINCT voter_id) n FROM event_votes WHERE event_id = ?`).get(ev.id).n,
     board: evBoard(ev, EV_STAGE(phaseAt(sched)), phaseAt(sched)),
+    mail: evmStatus(ev),
   };
 }
 
@@ -87,6 +91,7 @@ app.post("/api/admin/events", auth, admin, (req, res) => {
   const info = db.prepare(`INSERT INTO events (slug, title, created_at, updated_at) VALUES (?,?,?,?)`).run(slug, f.title, now, now);
   const row = evRow(Number(info.lastInsertRowid));
   evSave(row, { ...f, plan: JSON.stringify(plan), schedule: JSON.stringify(buildSchedule({ ...row, ...ev }, plan)) });
+  evmSoon(row.id);
   res.json(evAdminView(row));
 });
 
@@ -107,7 +112,9 @@ app.patch("/api/admin/events/:id", auth, admin, (req, res) => {
     fields.plan = JSON.stringify(plan);
     fields.schedule = JSON.stringify(buildSchedule({ ...ev, ...f }, plan));
   }
+  if (b.mailOnOpen !== undefined) fields.plan = JSON.stringify({ ...evJSON(fields.plan ?? ev.plan, {}), mailOnOpen: !!b.mailOnOpen });
   if (Object.keys(fields).length) evSave(ev, fields);
+  evmSoon(ev.id);
   res.json(evAdminView(ev));
 });
 
@@ -115,6 +122,7 @@ app.post("/api/admin/events/:id/advance", auth, admin, (req, res) => {
   const ev = evAdminRow(req, res); if (!ev) return;
   tickEvent(ev);
   evSave(ev, { schedule: JSON.stringify(advanceSchedule(evJSON(ev.schedule, []))) });
+  evmSoon(ev.id);
   res.json(evAdminView(tickEvent(ev)));
 });
 

@@ -1,6 +1,9 @@
 /* ================================================================
-   MAIL v2.0 — 2026-09-29. Verification and password-reset emails,
+   MAIL v2.1 — 2026-10-12. Verification and password-reset emails,
    in the app's design language (see THE LOOK below).
+   v2.1: the "entries are open" email that goes to every member when a
+   tournament opens, with an unsubscribe link (and the one-click
+   List-Unsubscribe headers mail apps show as a button).
 
    Uses Resend's HTTP API (https://resend.com) via plain fetch, so
    there is no SMTP library and nothing to install. Free tier covers
@@ -19,6 +22,8 @@ import { PALETTE, inkFor } from "./palette.js";
 
 const KEY = process.env.RESEND_API_KEY || "";
 const FROM = process.env.MAIL_FROM || "TNL LABS <onboarding@resend.dev>";
+/* Where Resend lives. Only the tests change it, to a stand-in on localhost. */
+const API = (process.env.RESEND_API_BASE || "https://api.resend.com").replace(/\/+$/, "");
 export const MAIL_ENABLED = !!KEY;
 
 /* Resend's test sender delivers ONLY to the address that owns the Resend
@@ -54,7 +59,7 @@ const C = { paper: L.bg, card: L.card, ink: L.tx, ink2: L.dim, line: L.line, mar
 const FONT = `'Helvetica Neue',Helvetica,Archivo,Arial,sans-serif`; // single quotes: it sits inside style="…"
 
 /** One layout for every email. Returns { html, text }. */
-export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader }) {
+export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader, unsub }) {
   const origin = (() => { try { return new URL(url).origin; } catch { return "https://labs.tnllabs.com"; } })();
   const href = escapeHtml(url);
   const body = lines.map((l) => `<p class="t2" style="margin:0 0 12px;color:${C.ink2};font-size:15px;line-height:21px">${escapeHtml(l)}</p>`).join("");
@@ -100,12 +105,12 @@ export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader }
       </div>
     </td></tr>
     <tr><td style="padding:18px 4px 0;font-family:${FONT}">
-      <p class="t2" style="margin:0;color:${C.ink2};font-size:12px;line-height:16px">Social media by creatives, for creatives.<br><a class="t2" href="${origin}" style="color:${C.ink2};text-decoration:none">${escapeHtml(origin.replace(/^https?:\/\//, ""))}</a></p>
+      <p class="t2" style="margin:0;color:${C.ink2};font-size:12px;line-height:16px">Social media by creatives, for creatives.<br><a class="t2" href="${origin}" style="color:${C.ink2};text-decoration:none">${escapeHtml(origin.replace(/^https?:\/\//, ""))}</a>${unsub ? `<br><a class="t2" href="${escapeHtml(unsub)}" style="color:${C.ink2};text-decoration:underline">Unsubscribe from tournament emails</a>` : ""}</p>
     </td></tr>
   </table>
 </td></tr></table>
 </body></html>`;
-  const text = [`LABS ®`, ``, `// ${eyebrow.toUpperCase()}`, title, ``, ...lines, ``, `${cta}: ${url}`, ``, note, ``, `Social media by creatives, for creatives.`, origin].join("\n");
+  const text = [`LABS ®`, ``, `// ${eyebrow.toUpperCase()}`, title, ``, ...lines, ``, `${cta}: ${url}`, ``, note, ``, `Social media by creatives, for creatives.`, origin, ...(unsub ? [``, `Unsubscribe from tournament emails: ${unsub}`] : [])].join("\n");
   return { html, text };
 }
 
@@ -124,6 +129,24 @@ export function resetEmail(name, url) {
     lines: [`${name ? name + ", tap" : "Tap"} below to set a new one.`, "This link works for 1 hour and only once."],
     cta: "Set new password", url, note: "Didn't ask for this? Ignore this email. Nothing changes.",
     preheader: "Set a new password. The link works for 1 hour.",
+  });
+}
+
+/** A tournament has opened for entries. Goes to every member who hasn't
+    unsubscribed; `unsub` is their own one-tap unsubscribe link. */
+export function eventOpenEmail({ name, title, brief, prize, closes, url, unsub }) {
+  return renderEmail({
+    eyebrow: "Tournament", title,
+    lines: [`${name ? name + ", entries" : "Entries"} are open.`, brief, prize ? `Prize: ${prize}` : "", `One piece each. Entries close ${closes}.`].filter(Boolean),
+    cta: "Enter now", url, unsub,
+    note: "You're getting this because you're a member of TNL LABS.",
+    preheader: `Entries are open. One piece each, until ${closes}.`,
+  });
+}
+export const eventOpenSubject = (title) => `${title}: entries are open`;
+export async function sendEventOpenEmail(to, subject, mail, unsub) {
+  return send(to, subject, mail, `${subject} — ${to}`, {
+    "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
   });
 }
 
@@ -154,17 +177,17 @@ export async function sendResetEmail(to, name, url) {
   return send(to, "Reset your password — TNL LABS", resetEmail(name, url), `reset link: ${url}`);
 }
 
-async function send(to, subject, { html, text }, logLine) {
+async function send(to, subject, { html, text }, logLine, headers = null) {
   if (!KEY) {
     console.log(`\n[mail] NOT CONFIGURED — no email sent to ${to}`);
     console.log(`[mail] ${logLine}\n`);
     return { sent: false, error: "mail not configured", reason: "no_key" };
   }
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch(API + "/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: [to], subject, html, text }),
+      body: JSON.stringify({ from: FROM, to: [to], subject, html, text, ...(headers ? { headers } : {}) }),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
