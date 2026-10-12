@@ -1,3 +1,4 @@
+/* MUSIC LAB · TRACKS v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
 const EMPTY={
   "general":["Say what you make.","Post one line about what you're working on. Someone here does the thing you need."],
   "collab-posts":["Looking for someone?","Say what you're building and what you're missing."],
@@ -41,22 +42,30 @@ async function loadTracks(){
 
 const mmss=ms=>{const s=Math.round((ms||0)/1000);return s?Math.floor(s/60)+":"+String(s%60).padStart(2,"0"):""};
 
-function trackRowHTML(t){
-  const on=NOWPLAYING&&NOWPLAYING.id===t.id;
-  return `<div class="trk ${on?"on":""}" data-trk="${t.id}">
-    <button class="trk-play" data-trkplay="${t.id}" aria-label="Play">${on&&AUDIO&&!AUDIO.paused?DI.pause:DI.play}</button>
-    <div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="" loading="lazy">`:DI.music}</div>
+/* A song, Spotify's way (2026-10-12): tap anywhere on the row to play (the
+   artist is in its …); ⊕ puts it in a
+   playlist (✓ once it's in one — in Add songs, in this playlist); … for
+   the rest. ctx: "lib" the library, "pl" a playlist, "add" Add songs. */
+function trackRowHTML(t,ctx){
+  ctx=ctx||"lib";
+  const on=NOWPLAYING&&NOWPLAYING.id===t.id,live=on&&AUDIO&&!AUDIO.paused;
+  const added=ctx==="add"?!!(PLIST&&PLIST.d&&PLIST.d.trackIds.includes(t.id)):inAnyPl(t.id);
+  return `<div class="trk ${on?"on":""}" data-trk="${t.id}" data-trkplay="${t.id}" data-ctx="${ctx}" role="button" tabindex="0" aria-label="${live?"Pause":"Play"} ${esc(t.title)}">
+    <div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="" loading="lazy">`:DI.music}${on?`<span class="trk-now">${live?DI.pause:DI.play}</span>`:""}</div>
     <div class="trk-meta">
       <div class="trk-t">${esc(t.title)}</div>
-      <div class="mono dim trk-by" data-u="${esc(t.by.username)}">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}${t.plays?" · "+t.plays+(t.plays===1?" play":" plays"):""}</div>
+      <div class="mono dim trk-by">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}${ctx==="lib"&&t.plays?" · "+t.plays+(t.plays===1?" play":" plays"):""}</div>
     </div>
-    <button class="trk-more" data-trkmore="${t.id}" aria-label="More">${DI.more}</button>
+    <button class="trk-add${added?" on":""}" data-trkadd="${t.id}" aria-label="${ctx==="add"?(added?"Take out of this playlist":"Add to this playlist"):added?"In a playlist — add to another":"Add to a playlist"}">${added?PL_DONE:PL_ADD}</button>
+    ${ctx==="add"?"":`<button class="trk-more" data-trkmore="${t.id}" aria-label="More">${DI.more}</button>`}
   </div>`;
 }
 
 function tracksHTML(){
+  if(PLIST)return playlistHTML();
   return `<div class="scroll" id="trkscroll">
-    <div class="trk-head">
+    ${musTabsHTML()}
+    ${MUSVIEW==="playlists"?playlistsHTML():`<div class="trk-head">
       <input class="in trk-q" id="trkq" placeholder="Search tracks or artists…" value="${esc(TRKQ)}">
       <button class="trk-up" id="trkupbtn">${TRKUP?"Uploading…":DI.plus+" Upload"}</button>
       <button class="trk-up trk-fromvid" id="trkvidbtn">${TRKEXT?"Extracting…":DI.music+" From video"}</button>
@@ -66,16 +75,20 @@ function tracksHTML(){
     <div class="trk-list">${
       !TRACKS?`${skel()}`
       :!TRACKS.length?`<div class="empty">No tracks yet.<br><br>Upload the first one.</div>`
-      :TRACKS.map(trackRowHTML).join("")}</div>
+      :TRACKS.map(t=>trackRowHTML(t,"lib")).join("")}</div>`}
   </div>`;
 }
 
 /* The player (audio element, now-playing bar, queue) → app-13-player.js */
 
 /* One … menu per track, the same hold menu posts use: no loose Edit / ✕. */
-function trackMenu(t){
-  const acts=[{icon:DI.out,label:"Share",run:()=>shareMenu({title:t.title+" · @"+t.by.username,link:profileLink(t.by.username),story:`/tr/${t.id}/story.jpg`,
-    note:"The link opens @"+t.by.username+"'s page, where the track is."})}];
+function trackMenu(t,ctx){
+  const acts=[{icon:PL_ADD,label:"Add to playlist",run:()=>addToPlaylist(t)}];
+  if(ctx==="pl"&&PLIST&&PLIST.d){const d=PLIST.d;acts.push({icon:DI.x,label:"Take out of this playlist",run:async()=>{
+    try{plKeep((await plapi.rm(d.id,t.id)).playlist);await plRefresh(d.id);if(PLQID===d.id)PLAYQ=PLAYQ.filter(x=>x.id!==t.id||(NOWPLAYING&&x.id===NOWPLAYING.id));render();toast("Taken out of "+d.name)}catch(e){toast(e.message)}}})}
+  acts.push({icon:DI.music,label:"Go to @"+t.by.username,run:()=>openProfile(t.by.username)});
+  acts.push({icon:DI.out,label:"Share",run:()=>shareMenu({title:t.title+" · @"+t.by.username,link:profileLink(t.by.username),story:`/tr/${t.id}/story.jpg`,
+    note:"The link opens @"+t.by.username+"'s page, where the track is."})});
   if(t.by.username!==myName())return openMenu({react:false,preview:(t.title+" · @"+t.by.username).slice(0,120),actions:acts});
   acts.push({icon:DI.edit,label:"Edit title and cover",run:()=>{
     TRKEDIT={id:t.id,title:t.title,artworkUrl:t.artworkUrl||"",busy:false,fresh:false};render()}});
@@ -167,16 +180,25 @@ function wireTracks(){
       render();
     }catch(e){TRKUP=false;render();toast(e.message||"Upload failed")}
   };
+  /* the whole row plays; the list it's in is the queue. Lab playback belongs to no post. */
   document.querySelectorAll("[data-trkplay]").forEach(el=>el.onclick=ev=>{
-    ev.stopPropagation();
-    const t=(TRACKS||[]).find(x=>String(x.id)===el.dataset.trkplay);
-    if(t){MUSAUTOID=null;PLAYQ=(TRACKS||[]).slice();playTrack(t)}   // lab playback belongs to no post; the list is the queue
+    if(ev.target.closest("button,[data-u]"))return;
+    const t=trkFind(el.dataset.trkplay);if(!t)return;
+    MUSAUTOID=null;const ctx=el.dataset.ctx;
+    /* Spotify's way (2026-10-12): the song comes up full screen. Already
+       the one playing? Just bring it up (and carry on if it was paused). */
+    if(NOWPLAYING&&NOWPLAYING.id===t.id){if(ctx!=="add"){if(AUDIO&&AUDIO.paused)AUDIO.play().catch(()=>{});return openNowFull()}return playTrack(t)}
+    PLAYQ=plQueue(ctx);PLQORIG=null;
+    if(PLSHUF){PLQORIG=PLAYQ.slice();PLAYQ=[t,...plShuffle(PLAYQ.filter(x=>x.id!==t.id))]}
+    playTrack(t);
+    if(ctx!=="add")openNowFull();
   });
   document.querySelectorAll("[data-trkmore]").forEach(el=>el.onclick=ev=>{
     ev.stopPropagation();
-    const t=(TRACKS||[]).find(x=>String(x.id)===el.dataset.trkmore);
-    if(t)trackMenu(t);
+    const t=trkFind(el.dataset.trkmore);
+    if(t)trackMenu(t,el.closest("[data-ctx]")?.dataset.ctx);
   });
+  wirePlaylists();   // app-13-playlists.js
 }
 
 function marketHTML(){

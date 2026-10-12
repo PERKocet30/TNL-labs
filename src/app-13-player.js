@@ -1,4 +1,4 @@
-/* THE PLAYER v2.2 — 2026-10-09 (v2.1 — 2026-09-29; v2.2: a profile's Music tab repaints on play / pause, and plays on to the next song)
+/* THE PLAYER v2.3 — 2026-10-12 (v2.3: ⊕ on the bar adds what's playing to a playlist; tap the bar for the full-screen player, repeat; v2.1 — 2026-09-29; v2.2: a profile's Music tab repaints on play / pause, and plays on to the next song)
    One audio element for the whole app, parked outside #app so a repaint
    can't interrupt playback. Built on first use — no element for people who
    never press play, and nothing constructed at parse time.
@@ -22,7 +22,8 @@ function audioEl(){
   const sync=()=>{paintPlayer();if((TAB==="labs"&&CH.library)||String(MUSAUTOID).startsWith("trk"))render()};
   AUDIO.addEventListener("play",sync);
   AUDIO.addEventListener("pause",sync);
-  AUDIO.addEventListener("ended",()=>{if(MUSAUTOID==null&&nextTrack())return;
+  AUDIO.addEventListener("ended",()=>{if(MUSAUTOID==null&&REPEAT==="one"&&NOWPLAYING){AUDIO.currentTime=0;AUDIO.play().catch(()=>{});return}
+    if(MUSAUTOID==null&&nextTrack())return;
     /* a profile's Music tab plays on down the list (2026-10-09) */
     if(String(MUSAUTOID).startsWith("trk")){const n=nextProfileTrack();if(n){MUSAUTOID="trk"+n.id;playTrack(n,true);render();return}}
     sync()});
@@ -34,7 +35,8 @@ function audioEl(){
 function qIndex(){return NOWPLAYING?PLAYQ.findIndex(x=>x.id===NOWPLAYING.id):-1}
 function nextTrack(){
   const i=qIndex();
-  if(i<0||i>=PLAYQ.length-1)return false;
+  if(i<0)return false;
+  if(i>=PLAYQ.length-1){if(REPEAT!=="all"||!PLAYQ.length)return false;playTrack(PLAYQ[0]);return true}   // repeat all: round again
   playTrack(PLAYQ[i+1]);return true;
 }
 /* Like every player: back restarts the song unless you're in its first seconds. */
@@ -67,7 +69,7 @@ function musicScope(){
 }
 /* The bar steps aside for the door and the full-screen editors (post
    composer, track edit), which have their own bottom edge. */
-function barVisible(){return !!NOWPLAYING&&MUSAUTOID==null&&musicHere()&&!TRKEDIT}
+function barVisible(){return !!NOWPLAYING&&MUSAUTOID==null&&musicHere()&&!TRKEDIT&&!NOWFULL}
 /* Over a chat or a drawer there's no nav underneath, so the bar docks to the
    bottom edge and the screen above makes room for it. */
 function barDocked(){return !!(DMOPENPANEL||NOTIFOPEN||SEARCHOPEN||REVIEWING||(PROFILE&&!MYPAGE()))}
@@ -81,6 +83,7 @@ function paintPlayer(){
     document.body.appendChild(PLAYERBAR);
     PLAYERBAR.onclick=e=>{
       const a=audioEl();
+      if(e.target.closest("[data-nowadd]")){if(NOWPLAYING)addToPlaylist(NOWPLAYING);return}   // into a playlist, still playing (2026-10-12)
       if(e.target.closest("[data-nowtoggle]")){a.paused?a.play().catch(()=>{}):a.pause();return}
       if(e.target.closest("[data-nownext]")){nextTrack();return}
       if(e.target.closest("[data-nowprev]")){prevTrack();return}
@@ -89,12 +92,14 @@ function paintPlayer(){
         if(a.duration&&isFinite(a.duration)){const r=seek.getBoundingClientRect();
           a.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*a.duration;paintProgress()}
         return}
-      if(e.target.closest("[data-nowclose]")){a.pause();a.removeAttribute("src");NOWPLAYING=null;PLAYQ=[];paintPlayer();
-        if(TAB==="labs"&&CH.library)render();}
+      if(e.target.closest("[data-nowclose]")){a.pause();a.removeAttribute("src");NOWPLAYING=null;PLAYQ=[];NOWFULL=false;paintPlayer();
+        if(TAB==="labs"&&CH.library)render();return}
+      if(!e.target.closest("button"))openNowFull();   // the rest of the bar opens the song, like Spotify
     };
   }
   musicScope();
   const show=barVisible();
+  paintFull();   // the full-screen player (app-13-nowplaying.js)
   document.body.classList.toggle("has-now",show);
   document.body.classList.toggle("now-dock",show&&barDocked());
   if(!show){PLAYERBAR.style.display="none";return}
@@ -105,9 +110,10 @@ function paintPlayer(){
       <div class="now-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="">`:DI.music}</div>
       <div class="now-meta"><div class="now-t">${esc(t.title)}</div>
         <div class="mono dim now-by">@${esc(t.by.username)} <span class="now-time"></span></div></div>
+      <button class="now-sk now-add${inAnyPl(t.id)?" on":""}" data-nowadd aria-label="Add to a playlist">${inAnyPl(t.id)?PL_DONE:PL_ADD}</button>
       <button class="now-sk" data-nowprev aria-label="Previous">${DI.prev}</button>
       <button class="now-pp" data-nowtoggle aria-label="Play or pause">${(!AUDIO||AUDIO.paused)?DI.play:DI.pause}</button>
-      <button class="now-sk" data-nownext aria-label="Next"${i<0||i>=PLAYQ.length-1?" disabled":""}>${DI.next}</button>
+      <button class="now-sk" data-nownext aria-label="Next"${i<0||(i>=PLAYQ.length-1&&REPEAT!=="all")?" disabled":""}>${DI.next}</button>
       <button class="now-x" data-nowclose aria-label="Close">${DI.x}</button>
     </div>`;
   paintProgress();
@@ -115,6 +121,7 @@ function paintPlayer(){
 }
 /* Runs on every timeupdate, so it only touches the two moving parts. */
 function paintProgress(){
+  npfProgress();
   if(!PLAYERBAR||!AUDIO||PLAYERBAR.style.display==="none")return;
   const d=AUDIO.duration, c=AUDIO.currentTime||0, ok=d&&isFinite(d);
   const f=PLAYERBAR.querySelector(".now-fill");if(f)f.style.width=(ok?Math.min(100,c/d*100):0)+"%";

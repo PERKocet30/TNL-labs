@@ -1,0 +1,45 @@
+/* PLAYLISTS v1.0 — 2026-10-12. The Music lab's library, Spotify's way:
+   Songs | Playlists, a ⊕ on every song, and a playlist page (cover, Play,
+   Shuffle, Add songs). Logic: app-13-playlists.js. */
+.mus-tabs{display:flex;gap:8px;padding:14px 16px 0}
+.trk.on .trk-t{color:var(--green)}
+.trk-now{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);color:#fff}
+.trk-now svg{width:18px;height:18px}
+.trk-add{flex:none;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;background:none;border:0;color:var(--dim);cursor:pointer;padding:0}
+.trk-add.on{color:var(--accent-fill)}
+.trk-add:disabled{opacity:.4}
+/* the bar's ⊕ */
+.now-add.on{color:var(--accent-fill)}
+/* Playlists list */
+.pl-list{padding:12px 16px 96px;display:flex;flex-direction:column}
+.pl-row{display:flex;align-items:center;gap:12px;padding:7px 0;background:none;border:0;color:var(--tx);text-align:left;cursor:pointer;font:inherit}
+.pl-meta{display:flex;flex-direction:column;min-width:0}
+.pl-meta b{font-size:15px;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-meta span{font-size:13px;line-height:17px;color:var(--dim)}
+.pl-cov{flex:none;width:64px;height:64px;background:var(--el);color:var(--dim);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.pl-cov img{width:100%;height:100%;object-fit:cover;display:block}
+.pl-cov.four{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.pl-cov.new{border:2px dashed var(--line2);background:none;color:var(--tx)}
+.pl-cov.big{width:min(62vw,240px);height:min(62vw,240px);box-shadow:0 8px 28px rgba(0,0,0,.28)}
+.pl-cov.big svg{width:48px;height:48px}
+/* A playlist */
+.pl-more{margin-left:auto;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;background:none;border:0;color:var(--tx);cursor:pointer}
+.pl-hero{display:flex;justify-content:center;padding:8px 16px 18px}
+.pl-info{padding:0 16px}
+.pl-name{font-size:24px;line-height:29px;font-weight:700;margin:0;overflow-wrap:anywhere}
+.pl-sub{margin-top:4px;font-size:13px;color:var(--dim)}
+.pl-acts{display:flex;align-items:center;gap:12px;padding:12px 16px 6px}
+.pl-sp{flex:1}
+.pl-pill{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:none;color:var(--tx);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.pl-pill.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.pl-ic{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;background:none;border:0;color:var(--dim);cursor:pointer;position:relative}
+.pl-ic.on{color:var(--accent-fill)}
+.pl-ic.on::after{content:"";position:absolute;bottom:4px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--accent-fill)}
+.pl-play{width:52px;height:52px;border-radius:50%;border:0;background:var(--accent-fill);color:var(--on-accent);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.pl-play svg{width:22px;height:22px}
+.pl-play:disabled{opacity:.4}
+.pl-addbox{margin:8px 16px 4px;padding:12px;background:var(--el)}
+.pl-addbox .trk-q{width:100%}
+.pl-addlist{margin-top:6px;max-height:50vh;overflow-y:auto}
+.pl-none{padding:14px 4px;font-size:13px}
+#plscroll .trk-list{padding:0 12px 96px}

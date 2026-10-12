@@ -64,7 +64,7 @@ test/                           51 test suites — run with npm test
 | `app-10-dm-search` | search, the door |
 | `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
 | `app-11-places` | Labs as places (2026-10-08; v1.1 2026-10-09: one list of genres with their #tags, Work · Talk only): a lab's tabs, its home channel (`LAB_HOME`), the #tag page, tag suggestions; styles in `app-05-styles-places` |
-| `app-11-showroom` · `app-12…13` (`app-12-post-extras`: tags, place, comments off and "Shop this post" on a card) | Showroom, lab index, archive/posts; the Music lab (`app-13-tracks-player`) and the player bar and queue (`app-13-player`) |
+| `app-11-showroom` · `app-12…13` (`app-12-post-extras`: tags, place, comments off and "Shop this post" on a card) | Showroom, lab index, archive/posts; the Music lab (`app-13-tracks-player`), its playlists (`app-13-playlists`, Spotify's way: Songs · Playlists, ⊕ on every song and on the bar), the full-screen song (`app-13-nowplaying`: tap a song or the bar) and the player bar and queue (`app-13-player`) |
 | `app-14-detail-sell` · `app-14-listing` · `app-14-sell-variants` | orders and the listing editor; the listing page (photos, size/colour picker, the pinned Buy bar, the pinch-zoom photo viewer); the editor's sizes & colours |
 | `app-15-profile` · `app-15-profile-edit` · `app-16` | profile v2 (≡ / ⋯ menus, followers/following, pinned, tagged), the Instagram-style edit page, wiring |
 | `app-17-bag` | the bag (one checkout per seller), recently viewed, price-drop tags, listing drafts, Duplicate, your shop's numbers |
@@ -375,6 +375,13 @@ GET    /api/tracks/videos   (auth)
 GET    /api/tracks   (auth)
 POST   /api/tracks   (auth)
 POST   /api/tracks/:id/play   (auth)
+GET    /api/playlists   (auth — yours only, server-12-playlists)
+POST   /api/playlists   (auth)
+GET    /api/playlists/:id   (auth)
+PATCH  /api/playlists/:id   (auth)
+DELETE /api/playlists/:id   (auth)
+POST   /api/playlists/:id/tracks   (auth)
+DELETE /api/playlists/:id/tracks/:tid   (auth)
 PATCH  /api/tracks/:id   (auth)
 DELETE /api/tracks/:id   (auth)
 

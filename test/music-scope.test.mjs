@@ -15,7 +15,7 @@ const grab = (src, name) => { const i = src.indexOf("function " + name + "("); l
   for (let k = j; k < src.length; k++) { if (src[k] === "{") d++; else if (src[k] === "}" && --d === 0) return src.slice(i, k + 1); } };
 
 const S = {};
-const env = `let TAB,PROFILE,GATE,PCOMPOSE,DMOPENPANEL,NOTIFOPEN,SEARCHOPEN,BOARDSOPEN,REVIEWING,TRKEDIT,MUSAUTOID,NOWPLAYING,AUDIO;
+const env = `let TAB,PROFILE,GATE,PCOMPOSE,DMOPENPANEL,NOTIFOPEN,SEARCHOPEN,BOARDSOPEN,REVIEWING,TRKEDIT,MUSAUTOID,NOWPLAYING,AUDIO,NOWFULL=false;
   const navigator={mediaSession:{metadata:"x"}};const esc=s=>String(s);const DI={music:"♪",pause:"❚❚"};
   ${grab(player, "musicHere")}${grab(player, "postSoundHere")}${grab(player, "musicScope")}${grab(player, "barVisible")}${grab(media, "musChipHTML")}
   return {set(o){TAB=o.TAB??"labs";PROFILE=o.PROFILE??null;GATE=null;PCOMPOSE=null;DMOPENPANEL=!!o.DM;NOTIFOPEN=false;SEARCHOPEN=false;BOARDSOPEN=false;REVIEWING=null;TRKEDIT=null;
