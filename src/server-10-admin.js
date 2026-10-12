@@ -151,6 +151,7 @@ app.get("/api/admin/people", auth, admin, (req, res) => {
   const now = Date.now();
   const term = (req.query.q || "").toString().toLowerCase().slice(0, 60);
   const filter = String(req.query.filter || "all");
+  const all = req.query.all === "1";   // the Database view: every member, not the first 300 (2026-10-12)
   const where = [], params = [];
   if (term) { where.push(`(LOWER(u.username) LIKE ? OR LOWER(u.display_name) LIKE ? OR LOWER(u.email) LIKE ?)`); params.push(`%${term}%`, `%${term}%`, `%${term}%`); }
   const F = {
@@ -176,14 +177,14 @@ app.get("/api/admin/people", auth, admin, (req, res) => {
         (SELECT 1 FROM admin_notes n WHERE n.user_id = u.id AND n.body != '') has_note
       FROM users u ${where.length ? "WHERE " + where.join(" AND ") : ""}
     ) u ${F ? "WHERE " + F[0] : ""}
-    ORDER BY ${req.query.sort === "active" ? PEOPLE_SORT.joined : PEOPLE_SORT[req.query.sort] || PEOPLE_SORT.joined} LIMIT 500`).all(...params, ...(F ? F[1] : []));
+    ORDER BY ${req.query.sort === "active" ? PEOPLE_SORT.joined : PEOPLE_SORT[req.query.sort] || PEOPLE_SORT.joined} LIMIT ${all ? 20000 : 500}`).all(...params, ...(F ? F[1] : []));
   // last activity for everyone in one pass, not one scan per person
   const last = new Map(db.prepare(`SELECT u, MAX(t) t FROM (${ACTIVITY}) GROUP BY u`).all().map((r) => [r.u, r.t]));
   for (const r of rows) r.last_active = last.get(r.id) || null;
   let list = rows;
   if (filter === "quiet") list = list.filter((r) => (r.last_active || 0) < now - 14 * ADAY);
   if (req.query.sort === "active") list = [...list].sort((a, b) => (b.last_active || 0) - (a.last_active || 0));
-  res.json({ people: list.slice(0, 300).map((r) => ({
+  res.json({ total: aone(`SELECT COUNT(*) n FROM users`), people: (all ? list : list.slice(0, 300)).map((r) => ({
     username: r.username, displayName: r.display_name, email: r.email, avatarUrl: r.avatar_url || "", role: r.role,
     rep: r.rep, level: levelFor(r.rep).id, levelName: levelFor(r.rep).name,
     verified: !!r.email_verified, isAdmin: !!r.is_admin, suspended: !!r.suspended, payouts: !!r.stripe_ready,
@@ -203,6 +204,9 @@ app.get("/api/admin/people/:username", auth, admin, (req, res) => {
       rep: u.rep, level: levelFor(u.rep).id, levelName: levelFor(u.rep).name, fee: feeForRep(u.rep),
       verified: !!u.email_verified, isAdmin: !!u.is_admin, suspended: !!u.suspended, payouts: !!u.stripe_ready,
       joined: u.created_at, lastSeen: u.last_seen_at || null,
+      /* account information (2026-10-12) — never the password hash, a session token or the Stripe account id */
+      id: u.id, roles: jsonList(u.roles), pronouns: u.pronouns || "", link: u.link || "", links: jsonList(u.links),
+      accent: u.accent || "", stripeConnected: !!u.stripe_account, published: !!u.published,
     },
     stats: {
       posts: aone(`SELECT COUNT(*) n FROM posts WHERE author_id = ?`, id),
