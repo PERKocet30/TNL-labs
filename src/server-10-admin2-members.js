@@ -12,7 +12,8 @@ function csvCell(v) {
   if (v === null || v === undefined) return "";
   let s = String(v);
   if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;   // a name like "=HYPERLINK(…)" stays words
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  /* quoted when it holds a separator — a semicolon too, so a spreadsheet set to split on ";" (outside the US) can't break a bio into a formula cell */
+  return /[",;\t\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 const isoOrBlank = (t) => (t ? new Date(t).toISOString().replace(/\.\d+Z$/, "Z") : "");
 const MEMBER_CSV_COLS = [

