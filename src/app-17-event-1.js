@@ -1,5 +1,9 @@
 /* ================================================================
-   EVENT SCREEN v1.1 — 2026-10-07 (state + what you see). The tournament
+   EVENT SCREEN v1.2 — 2026-10-12 (state + what you see). v1.2: a ‹ back
+   bar at the top that stays put as you scroll ("make sure the tournament
+   is easily navigable because I had problems going back" — the home-screen
+   app and Instagram's browser have no back button of their own).
+   v1.1 — 2026-10-07. The tournament
    lives here: the brief, entering, the gallery, the vote, the bracket,
    the final and the results. The server decides everything; this only
    shows the phase you're in and sends your picks. Wiring:
@@ -138,13 +142,15 @@ function evResultsHTML(){
     ${evBracketHTML()}`;
 }
 
+/* The ‹ bar: walks back the same trail as the phone's back (app-09-nav.js). */
+const evTopHTML=()=>`<div class="ev-top"><button class="ev-back" id="evback" aria-label="Back">${di('<path d="M15 5l-7 7 7 7"/>',22)}</button><span class="ev-toptitle">Tournament</span></div>`;
 function eventHTML(){
-  if(!EV||EV.event.slug!==EVSLUG)return `<div class="scroll ev" id="evscroll">${skel("cards")}</div>`;
+  if(!EV||EV.event.slug!==EVSLUG)return `<div class="scroll ev" id="evscroll">${evTopHTML()}${skel("cards")}</div>`;
   const p=EV.event.phase.phase;
   const body=EV.event.void?`<div class="ev-note">This one was called off — not enough entries came in.</div>`
     :p==="upcoming"?`<div class="ev-note">Entries open ${evDay(EV.event.phase.end)}. Start thinking.</div>`
     :p==="submit"?evSubmitHTML():EV.board&&!(p==="final"&&EV.me.isJudge)?evPollHTML():p==="qualify"?evQualifyHTML():p==="round"?evBracketHTML():p==="final"?evFinalHTML():evResultsHTML();
-  return `<div class="scroll ev" id="evscroll">${evFocusHTML()}${evHeadHTML()}${body}</div>${EVENTER?evEnterHTML():""}${EVSHARE?evShareHTML():""}`;
+  return `<div class="scroll ev" id="evscroll">${evTopHTML()}${evFocusHTML()}${evHeadHTML()}${body}</div>${EVENTER?evEnterHTML():""}${EVSHARE?evShareHTML():""}`;
 }
 
 function evEnterHTML(){

@@ -1171,6 +1171,30 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator("#evshsheet").count() === 0, "the share sheet didn't close");
     await p.evaluate(() => { EVFOCUS = null; TAB = "showroom"; render(); });
   });
+  /* "Make sure the tournament is easily navigable because I had problems going
+     back" (2026-10-12): the home-screen app and Instagram's browser have no back
+     button, so the tournament carries its own ‹ — kept at the top as you scroll. */
+  await step(d, "event: ‹ at the top goes back — from the banner, scrolled down, from a link; an artist opened from it comes back to it", async () => {
+    await p.locator(".ev-banner .ev-go").tap(); await p.waitForSelector(".ev-h", { timeout: 4000 });
+    ok(await p.locator("#evback").isVisible(), "no ‹ on the tournament");
+    await p.locator("#evback").tap();
+    await p.waitForFunction(() => TAB === "showroom" && document.querySelector(".ev-banner"), null, { timeout: 4000 });
+    await p.locator(".ev-banner .ev-go").tap(); await p.waitForSelector(".ev-h", { timeout: 4000 });
+    await p.evaluate(() => { const s = document.querySelector("#evscroll"); s.scrollTop = s.scrollHeight; });
+    await p.waitForTimeout(200);
+    const bb = await p.locator("#evback").boundingBox();
+    ok(bb && bb.y >= 0 && bb.y < 200 && bb.height >= 44, "scrolled down, the ‹ left the screen (or is too small to tap): " + JSON.stringify(bb));
+    await p.evaluate(() => openProfile(ME.username)); await p.waitForFunction(() => PROFILE && PROFILE.user, null, { timeout: 4000 });
+    await p.evaluate(() => history.back());
+    await p.waitForFunction(() => TAB === "event" && !PROFILE, null, { timeout: 4000 });
+    await p.locator("#evback").tap();
+    await p.waitForFunction(() => TAB === "showroom", null, { timeout: 4000 });
+    await settledGoto(p, B + "/?e=e2e-poster");
+    await throughDoor(p);
+    await p.waitForSelector(".ev-h", { timeout: 6000 });
+    await p.locator("#evback").tap();
+    await p.waitForFunction(() => TAB === "showroom" && location.pathname === "/", null, { timeout: 4000 });
+  });
   await step(d, "normal use records no glitches", async () => {
     const g = await glitches();
     ok(!g.recent.length, "recorded: " + g.recent.map((x) => x.kind + " @ " + x.place + " " + x.detail).join(" | "));

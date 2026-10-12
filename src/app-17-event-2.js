@@ -1,5 +1,5 @@
 /* ================================================================
-   EVENT SCREEN v1.1 — 2026-10-07 (wiring). Opening an event, the
+   EVENT SCREEN v1.2 — 2026-10-12 (wiring; v1.2: the ‹ back bar). Opening an event, the
    Showroom banner, picks, judging, entering and withdrawing. Every
    change goes to the server and the screen shows what it says back.
 ================================================================ */
@@ -37,6 +37,8 @@ function wireEvent(){
   }
   if(TAB!=="event")return;
   const on=(sel,fn)=>{const el=$(sel);if(el)el.onclick=fn};
+  // nothing to step back to (the app was opened right here): the Showroom, where the banner is
+  on("#evback",()=>navBack(()=>{TAB="showroom";EVENTER=null;EVSHARE=null;EVFOCUS=null}));
   document.querySelectorAll("#evscroll [data-evzoom], #evscroll .ev-cover").forEach(el=>el.onclick=()=>{LIGHTBOX=el.dataset.evzoom;render()});
   document.querySelectorAll("#evscroll [data-u]").forEach(el=>el.onclick=ev=>{ev.stopPropagation();openProfile(el.dataset.u)});
   document.querySelectorAll("[data-evpick]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();evPick(Number(b.dataset.evpick),b)});
