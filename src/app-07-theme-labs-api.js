@@ -38,6 +38,7 @@ const ROLES = [
   // visual
   "Graphic Designer","Illustrator","3D Artist","Motion Designer","Animator","Art Director",
   "Painter","Sculptor","Tattoo Artist","Curator","Manga Artist","Character Designer",
+  "Artist","Muralist","Printmaker","Mixed Media Artist",
   // lens
   "Photographer","Videographer","Video Editor","Cinematographer","AMV Editor",
   // fashion
@@ -107,6 +108,9 @@ const UI_IC={
   navMarket:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><rect x="4.5" y="9" width="15" height="11"/><path d="M9 9V7a3 3 0 0 1 6 0v2"/></svg>`,
   navProfile:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 6 0 0 1 14 0"/></svg>`};
 /* The labs are genres. Display names only — every lab and channel id below
+   v2.1 · 2026-10-12: Visual is every visual art — painting, drawing,
+   illustration, sculpture and print as well as design, photo and film
+   ("make the visual lab broader to include all visual arts like paintings").
    is what posts are stored under, so ids never change when names do.
    v2 · 2026-09-28: LABS HQ, //.JPEG PHARMACY, AKATSUKI, FASHION LAB, CASINO,
    MUSIC LAB, TNΛ became General, Visual, Anime, Fashion, News, Music, Business. */
@@ -115,7 +119,7 @@ const labMark = n => /^\/\//.test(String(n||"")) ? String(n) : "// " + n;
 const chName = c => { const t=String((c&&c.label)||"").replace(/-/g," "); return t.charAt(0).toUpperCase()+t.slice(1); };
 const LAB_ID = {
   hq:       {for:"Everything starts here.",          ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M10 4L6 20M18 4l-4 16"/></svg>`},
-  pharmacy: {for:"Design, photo and film.",          ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14"/><path d="M3.5 15.5l5-5 4 4 2.5-2.5 5.5 5.5"/><circle cx="15.5" cy="9.5" r="1.25"/></svg>`},
+  pharmacy: {for:"Painting, drawing, design, photo and film.",          ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14"/><path d="M3.5 15.5l5-5 4 4 2.5-2.5 5.5 5.5"/><circle cx="15.5" cy="9.5" r="1.25"/></svg>`},
   culture:  {for:"Upload music, press play, talk about it.", ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M9 17.5V5.5l10-2v12"/><circle cx="6.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="15.5" r="2.5"/></svg>`},
   fashion:  {for:"Garments, styling and drops.",     ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 7.5a2 2 0 1 0-2-2"/><path d="M12 7.5V9L3 16.5h18L12 9"/></svg>`},
   akatsuki: {for:"Anime, manga and ideas.",          ic:`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 3l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg>`},
@@ -127,7 +131,7 @@ const LABS = [
     {id:"general",label:"general",desc:"The main floor."},
     {id:"collab-posts",label:"collab-posts",desc:"Looking for a collaborator? Post here."}]},
   {id:"pharmacy",name:"Visual",channels:[
-    {id:"creators",label:"creators",desc:"Who's here and what they make. Start here."},
+    {id:"creators",label:"creators",desc:"Every visual art — paint, draw, design, shoot, sculpt. Who's here and what they make."},
     {id:"graphic-design",label:"graphic-design",desc:"Graphic work, feedback, process."},
     {id:"photography",label:"photography",desc:"Shots and edits."},
     {id:"cinematography",label:"cinematography",desc:"Moving image. Frames, grades, gear."},

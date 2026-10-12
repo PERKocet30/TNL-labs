@@ -1,5 +1,7 @@
 
 /* ================================================================
+   PLACES v1.3 — 2026-10-12 (v1.3: Visual's #tags cover every visual art —
+   #painting #drawing #illustration #sculpture next to design, photo, film).
    PLACES v1.2 — 2026-10-09. Labs are places, one per genre — not
    Discord servers full of channels. Inside each lab (v1.1: just two):
      Work   everything made here, a grid — filter by #tag
@@ -119,7 +121,7 @@ app.get("/api/labs/:lab/work", auth, (req, res) => {
    new or quiet lab still says what it's for), then what people use most
    there. Generic room names don't count as tags here. (v1.1, 2026-10-09) */
 const GENRE_TAGS = {
-  hq: ["collab", "intro", "wip"], pharmacy: ["graphicdesign", "photography", "film"], culture: ["beats", "feedback", "tracks"],
+  hq: ["collab", "intro", "wip"], pharmacy: ["painting", "graphicdesign", "photography", "illustration", "drawing", "digitalart", "sculpture", "film"], culture: ["beats", "feedback", "tracks"],
   fashion: ["streetwear", "clothingdesign", "drops"], akatsuki: ["manga", "anime", "ideas"], casino: ["news", "magazine", "promos"],
   tna: ["opportunities", "coding", "finance"],
 };
@@ -129,7 +131,7 @@ app.get("/api/labs/tags", auth, (_req, res) => {
   for (const [lab, P] of Object.entries(PLACES)) {
     const rows = db.prepare(`SELECT body, channel, created_at FROM posts WHERE channel IN (${inList(P.channels)}) ORDER BY created_at DESC LIMIT 400`).all();
     const used = topTags(rows, 20).map((t) => t.tag).filter((t) => !PLAIN_TAGS.has(t));
-    tags[lab] = [...new Set([...GENRE_TAGS[lab], ...used])].slice(0, 8);
+    tags[lab] = [...new Set([...GENRE_TAGS[lab], ...used])].slice(0, Math.max(8, GENRE_TAGS[lab].length + 4));   // room for what people use, too
   }
   res.json({ tags });
 });

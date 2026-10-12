@@ -1,5 +1,6 @@
 /* ================================================================
-   PLACES v1.3 — 2026-10-12 (‹ on a #tag walks the back trail). A lab is a place — a genre — not a Discord
+   PLACES v1.4 — 2026-10-12 (v1.4: painters, muralists, printmakers and
+   mixed-media artists lead to Visual; v1.3: ‹ on a #tag walks the back trail). A lab is a place — a genre — not a Discord
    server full of channels. Familiar like Instagram, ours in the details.
    v1.1, simpler: one list of genres, each explained by its #hashtags,
    and inside a lab just two tabs —
@@ -18,6 +19,7 @@
 const ROLE_LABS={
   "Graphic Designer":["pharmacy"],"Illustrator":["pharmacy","akatsuki"],"3D Artist":["pharmacy"],"Motion Designer":["pharmacy"],
   "Animator":["pharmacy","akatsuki"],"Art Director":["pharmacy","fashion"],"Painter":["pharmacy"],"Sculptor":["pharmacy"],
+  "Artist":["pharmacy"],"Muralist":["pharmacy"],"Printmaker":["pharmacy"],"Mixed Media Artist":["pharmacy"],
   "Tattoo Artist":["pharmacy"],"Curator":["pharmacy","casino"],"Manga Artist":["akatsuki","pharmacy"],"Character Designer":["akatsuki","pharmacy"],
   "Photographer":["pharmacy","fashion"],"Videographer":["pharmacy"],"Video Editor":["pharmacy"],"Cinematographer":["pharmacy"],"AMV Editor":["akatsuki","pharmacy"],
   "Fashion Designer":["fashion"],"Stylist":["fashion"],"Model":["fashion"],"Tailor":["fashion"],"Sneaker Customizer":["fashion"],"Cosplayer":["akatsuki","fashion"],
