@@ -119,6 +119,13 @@ async function step(d, title, fn) {
   }
 }
 const ok = (cond, msg) => { if (!cond) throw new Error(msg); };
+/* The app's ✕ and ‹ are a back (app-09-nav): the step lands a moment
+   later. A page load fired in that moment is cut short (net::ERR_ABORTED),
+   so every load here waits for the back to land first. */
+async function settledGoto(p, url) {
+  await p.waitForFunction(() => typeof NAVGO === "undefined" || (!NAVGO && !NAVBUSY), null, { timeout: 3000 }).catch(() => {});
+  return p.goto(url);
+}
 async function throughDoor(p) {
   await p.waitForSelector("#enterOv", { timeout: 8000 }).catch(() => {});
   for (let k = 0; k < 25 && (await p.locator("#enterOv").count()); k++) {
@@ -130,7 +137,7 @@ async function throughDoor(p) {
 async function signedIn(d, user) {
   const { token } = await login(user);
   await d.page.addInitScript((t) => { localStorage.setItem("tnl-token", t); localStorage.setItem("tnl-intro-seen", "1"); }, token);
-  await d.page.goto(B + "/");
+  await settledGoto(d.page, B + "/");
   await throughDoor(d.page);
   await d.page.waitForFunction(() => typeof ME !== "undefined" && ME && SITE && "studioOpen" in SITE, null, { timeout: 8000 });
   return token;
@@ -143,7 +150,7 @@ console.log("\nNEW MEMBER · PHONE");
   const d = await device("phone-new", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const p = d.page;
   await step(d, "the door is white with the black mark, then opens into the Showroom", async () => {
-    await p.goto(B + "/");
+    await settledGoto(p, B + "/");
     await p.waitForSelector("#enterOv .enter-m", { timeout: 8000 });
     const door = await p.evaluate(() => ({ bg: getComputedStyle(document.querySelector("#enterOv")).backgroundColor,
       mark: getComputedStyle(document.querySelector("#enterOv .enter-m")).filter }));
@@ -605,9 +612,17 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#pql [data-pqview]").tap();
     await p.waitForFunction((id) => PROFILE && PROFILE.user && PROFILE.user.username === "tester" && (PROFILE.posts || []).some((x) => x.id === id), np.id, { timeout: 5000 });
     await p.evaluate((id) => openPost(PROFILE.posts.find((x) => x.id === id)), np.id);
-    await p.waitForSelector("#poov .px-with", { timeout: 5000 });
-    ok(/with @friend/.test(await p.locator("#poov .px-with").first().textContent()), "no 'with @friend' on the post");
-    ok(/BROOKLYN/.test(await p.locator("#poov .post-meta").first().textContent()), "no place on the post");
+    /* read like Instagram (2026-10-12): tagged people are the person icon on the picture; the place sits under the name */
+    await p.waitForSelector("#poov .px-tagbtn", { timeout: 5000 });
+    ok(/@friend/.test(await p.locator("#poov .px-tagbtn").first().getAttribute("aria-label")), "the person icon on the picture doesn't hold @friend");
+    await p.locator("#poov .px-tagbtn").first().tap();
+    ok(await p.locator(".pick").getByText("@friend").count() === 1, "tapping the person icon didn't list who's tagged");
+    await p.locator("#pickx").tap();
+    ok(/Brooklyn/.test(await p.locator("#poov .post-h .post-loc").first().textContent()), "no place under the name");
+    /* …and the caption comes after the buttons, "username caption", then the time — Instagram's order */
+    ok(await p.evaluate(() => { const po = document.querySelector("#poov .post"), a = po.querySelector(".post-acts"), c = po.querySelector(".post-cap"), w = po.querySelector(".post-when");
+      return !!(a && c && w) && !!(a.compareDocumentPosition(c) & 4) && !!(c.compareDocumentPosition(w) & 4) && /^tester\s/.test(c.textContent.trim()) && /ago|Just now/.test(w.textContent); }),
+      "the post doesn't read like Instagram: buttons → \"tester caption\" → time");
     ok(await p.locator('#poov .igact[data-comments]').isHidden(), "comment button still showing");
     await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; PROFILE = null; TAB = "showroom"; render(); });
   });
@@ -1137,7 +1152,7 @@ console.log("\nMEMBER · PHONE");
     ok(fid, "friend couldn't enter: " + JSON.stringify(fe).slice(0, 200));
     await api(`/api/admin/events/${mk.event.id}/advance`, token, {});
     // what someone tapping a link sticker on Instagram sees
-    await p.goto(B + "/e/e2e-art/" + fid);
+    await settledGoto(p, B + "/e/e2e-art/" + fid);
     await p.locator("a.btn.block").tap();
     await throughDoor(p);   // the door, as on any fresh load
     await p.waitForSelector(".ev-focus [data-evpick]", { timeout: 6000 });
@@ -1195,16 +1210,16 @@ console.log("\nMEMBER · COMPUTER");
     await p.evaluate(() => { POSTOPEN = null; render(); });
   });
   await step(d, "admin → System shows the Glitches panel with the phone's rage tap", async () => {
-    await p.goto(B + "/admin#system");
+    await settledGoto(p, B + "/admin#system");
     await fast(p, 5000, () => p.locator("h2.sec", { hasText: "Glitches" }).first().waitFor(), "the admin System page");
     ok(await p.getByText(/× rage taps · /).count() > 0, "the rage tap isn't listed");
     ok(await p.getByText(/Glitches, 24h/).count() > 0, "no Glitches KPI");
     await p.screenshot({ path: join(SHOTS, "admin-glitches.png"), fullPage: false });
-    await p.goto(B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
+    await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
   // 2026-10-09: Today runs on the direction — the tournament, the labs and their #tags
   await step(d, "admin → Today leads with the tournament; a lab opens its posts in Labs", async () => {
-    await p.goto(B + "/admin#today");
+    await settledGoto(p, B + "/admin#today");
     await fast(p, 6000, () => p.locator("h2.sec", { hasText: "The tournament" }).first().waitFor(), "the admin Today page");
     ok(await p.locator(".tour [data-ev-open]").count() === 1, "no tournament panel");
     ok(await p.locator("h2.sec", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
@@ -1214,7 +1229,7 @@ console.log("\nMEMBER · COMPUTER");
     // the lab list arrives with the posts — wait for it, not just the empty select
     await fast(p, 5000, () => p.locator("#clab option[value=pharmacy]").waitFor({ state: "attached" }), "the Labs tab");
     ok(await p.locator("#clab").inputValue() === "pharmacy", "the lab filter wasn't set");
-    await p.goto(B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
+    await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
   await step(d, "resizing to phone width switches to the phone frame", async () => {
     await p.setViewportSize({ width: 700, height: 900 }); await p.waitForTimeout(300);
@@ -1229,7 +1244,7 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
   const d = await device("admin-link", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const p = d.page;
   await step(d, "Admin signed out: Log in opens the log-in at once (no door) and lands back on Admin's System tab", async () => {
-    await p.goto(B + "/admin#system");
+    await settledGoto(p, B + "/admin#system");
     const btn = p.locator("#adminlogin");
     await btn.waitFor({ timeout: 8000 });
     ok(/This browser isn't signed in/.test(await p.locator(".gate").innerText()), "the Admins-only page doesn't say why");
@@ -1246,7 +1261,7 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.locator("h2.sec", { hasText: "Glitches" }).first().waitFor({ timeout: 8000 });
   });
   await step(d, "only this site's own pages can be the way back", async () => {
-    await p.goto(B + "/"); await p.waitForFunction(() => typeof gxNext === "function");
+    await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof gxNext === "function");
     const r = await p.evaluate(() => ["/admin#system", "//evil.example", "https://evil.example", "/\\evil.example", "javascript:alert(1)", "/admin\"x"].map((n) => gxNext(n)));
     ok(JSON.stringify(r) === JSON.stringify(["/admin#system", null, null, null, null, null]), "gxNext let something through: " + JSON.stringify(r));
   });
@@ -1260,7 +1275,7 @@ console.log("\nINSIDE INSTAGRAM · PHONE");
     userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22H20 Instagram 350.0.0.0 (iPhone15,2; iOS 18_7; en_US; en; scale=3.00; 1179x2556)" });
   const p = d.page;
   await p.addInitScript(() => localStorage.setItem("tnl-intro-seen", "1"));
-  await p.goto(B + "/"); await throughDoor(p);
+  await settledGoto(p, B + "/"); await throughDoor(p);
   /* Chromium has no x-safari: link (and stops taking taps once asked to open one): record where it went instead */
   await p.evaluate(() => { goOut = (u) => { window.__out = u; }; });
   await step(d, "Join says you're in Instagram's browser; Open in Safari tries Safari, then shows the taps that always work", async () => {
@@ -1286,7 +1301,7 @@ console.log("\nINSIDE INSTAGRAM · PHONE");
   await step(d, "a post's public page: Open in the app lands on that post — quick door, no film — and its Story sheet sits on top", async () => {
     const pid = (await api("/api/users/friend", "e2e-friend-session")).posts.find((x) => x.isWork && x.imageUrl).id;
     await p.evaluate(() => { localStorage.removeItem("tnl-intro-seen"); localStorage.setItem("tnl-token", "e2e-friend-session"); });
-    await p.goto(B + "/p/" + pid);
+    await settledGoto(p, B + "/p/" + pid);
     await p.locator("a.btn.block").tap();
     await p.waitForSelector("#enterOv", { timeout: 8000 });
     ok(await p.locator("#enterVid").count() === 0, "a deep link shouldn't play the intro film");
@@ -1301,14 +1316,14 @@ console.log("\nINSIDE INSTAGRAM · PHONE");
     await p.waitForFunction(() => !NAVGO && !NAVBUSY, null, { timeout: 3000 });   // ✕ is a back: let it land before the next page load
   });
   await step(d, "a profile's public page: Open in the app opens that profile", async () => {
-    await p.goto(B + "/u/friend");
+    await settledGoto(p, B + "/u/friend");
     await p.locator("a.btn.block").tap();
     await throughDoor(p);
     await p.evaluate(() => { goOut = (u) => { window.__out = u; }; });
     await p.waitForFunction(() => PROFILE && PROFILE.user && PROFILE.user.username === "friend", null, { timeout: 6000 });
     // back to how this section started: a visitor, intro seen
     await p.evaluate(() => { localStorage.removeItem("tnl-token"); localStorage.setItem("tnl-intro-seen", "1"); });
-    await p.goto(B + "/"); await throughDoor(p);
+    await settledGoto(p, B + "/"); await throughDoor(p);
     await p.evaluate(() => { goOut = (u) => { window.__out = u; }; });
   });
   await step(d, "keep-it-on-your-phone becomes Open in Safari (no Add to Home Screen steps that can't work here)", async () => {

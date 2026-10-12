@@ -9,15 +9,14 @@ function showroomHTML(){return `<div class="scroll" id="showroom">
 </div>`}
 
 function srCardHTML(p){
-  const accepted=p.collaborators.filter(c=>c.status==="accepted");
   return `<div class="sr-card">
     <div class="sr-head">
       <div class="sr-who" data-u="${esc(p.author.username)}">
         ${avHTML(p.author,"sm")}
-        <div><div class="sr-name">${esc(p.author.displayName)}<span class="lvl">L${p.author.level}</span></div>
-        <div class="dim sr-role">${p.location?esc(p.location):esc(p.author.role.charAt(0).toUpperCase()+p.author.role.slice(1))}</div>${pxWithHTML(p)}${musChipHTML(p)}</div>
+        <div class="post-hw"><div class="post-names sr-name">${pxNames(p)}</div>${pxSub(p)}</div>
       </div>
     </div>
+    <div class="post-media">${pxTagBtn(p)}
     ${(p.images&&p.images.length>1)?`<div class="caro" data-caro="s${p.id}">
       <div class="caro-t">${p.images.map(im=>`<img class="caro-i" ${imgAttrs(im)} data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async" style="aspect-ratio:${im.w&&im.h?im.w+"/"+im.h:"4/5"}">`).join("")}</div>
       <div class="caro-d">${p.images.map((_,i)=>`<span class="${i===0?"on":""}"></span>`).join("")}</div>
@@ -31,17 +30,18 @@ function srCardHTML(p){
       </div>`
       :`<div class="sr-beat"><button class="circle" style="width:34px;height:34px;font-size:12px" data-beatplay='${esc(JSON.stringify(p.beat))}' aria-label="Play">${DI.play}</button>
          <div><div class="sr-beatname">${esc(p.beat?.name||"untitled loop")}</div><div class="mono dim">${p.beat?.bpm||120} BPM${p.beat?.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:" · LOOP"}</div></div>${studioOn()?`<button class="act" data-remix="${p.id}" style="margin-left:auto">${IC_REMIX_SM} Remix</button>`:""}</div>`}
+    </div>
     ${pxShopHTML(p)}
     <div class="sr-meta">
       <div class="sr-acts">
         <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
-        <button class="igact" data-comments="${p.id}" aria-label="Comment"${p.commentsOff?" hidden":""}>${IG_COMMENT}</button>
+        <button class="igact" data-comments="${p.id}" aria-label="Comment"${p.commentsOff?" hidden":""}>${IG_COMMENT}<span class="igact-n">${p.commentCount||""}</span></button>
         <button class="igact" data-share="${p.id}" aria-label="Send">${IG_SEND}<span class="igact-n">${p.shareCount||""}</span></button>
         ${p.author.username===myName()?`<button class="igact" data-collab="${p.id}" aria-label="Invite a collaborator" title="Invite a collaborator">${IG_COLLAB}</button>`:""}
         ${p.collaborators.find(c=>c.username===myName()&&c.status==="pending")?`<button class="igpill" data-accept="${p.id}">Accept collab</button>`:""}
       </div>
-      ${accepted.length?`<div class="sr-collab">${IG_COLLAB_SM} Built with ${accepted.map(c=>esc(c.display_name||c.username)).join(" + ")}</div>`:""}
-      ${p.body?`<div class="sr-body"><b>${esc(p.author.username)}</b> ${rich(p.body)}</div>`:""}
+      ${p.body?`<div class="sr-body"><b data-u="${esc(p.author.username)}">${esc(p.author.username)}</b> ${rich(p.body)}</div>`:""}
+      <div class="post-when">${igAgo(p.createdAt)}${p.editedAt?" · Edited":""}</div>
       <div class="cslot" data-cslot="${p.id}">${cslotHTML(p)}</div>
     </div>
   </div>`}

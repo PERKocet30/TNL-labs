@@ -35,4 +35,6 @@ function focusDraft(){
   if(r.bottom>innerHeight-80||r.top<0)d.scrollIntoView({block:"center",behavior:mvReduced()?"auto":"smooth"});
 }
 /* A post's comment count, on every copy of it (card, opened post, profile). */
-function bumpComments(id,by){for(const p of likeCopies(id))p.commentCount=Math.max(0,(p.commentCount||0)+by)}
+function bumpComments(id,by){let n=0;for(const p of likeCopies(id)){p.commentCount=Math.max(0,(p.commentCount||0)+by);n=p.commentCount}
+  /* the count beside the comment button, like Instagram's (2026-10-12) */
+  document.querySelectorAll(`.igact[data-comments="${id}"] .igact-n`).forEach(el=>el.textContent=n||"")}

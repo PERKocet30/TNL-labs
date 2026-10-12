@@ -161,6 +161,8 @@ function wireFeed(){
     if(OPENCOMMENTS===id){OPENCOMMENTS=null;CEDIT=null;return paintComments()}
     OPENCOMMENTS=id;CEDIT=null;COMMENTS=[];paintComments();   // opens in place (app-12-comments.js)
     try{COMMENTS=(await api.comments(id)).comments;if(OPENCOMMENTS===id){paintComments();setTimeout(focusDraft,60)}}catch(e){toast(e.message)}});
+  /* Instagram's quick emoji over the comment box: a tap adds it */
+  document.querySelectorAll("[data-cq]").forEach(b=>b.onclick=()=>{const d=$("#cdraft");if(!d)return;d.value+=b.dataset.cq;d.focus()});
   const cs=$("#csend");if(cs){const go=async()=>{
     const t=$("#cdraft").value.trim();if(!t)return;
     const id=OPENCOMMENTS, editing=CEDIT;
