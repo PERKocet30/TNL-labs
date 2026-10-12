@@ -1211,6 +1211,25 @@ console.log("\nMEMBER · PHONE");
     await p.waitForFunction(() => TAB === "event" && EVSLUG === "e2e-art", null, { timeout: 4000 });
     await p.evaluate(() => { LAB = null; ROOMOPEN = false; TAB = "showroom"; render(); });
   });
+  /* "There's no link for me to send out to people to join the tournament"
+     (2026-10-12): Invite people on the tournament page, and /tournament. */
+  await step(d, "event: Invite people copies labs…/tournament; that link opens the tournament page, and its button lands in the app on the tournament", async () => {
+    await p.evaluate(() => openEvent("e2e-art")); await p.waitForSelector("#evinvite", { timeout: 5000 });
+    ok(/\/tournament$/.test(await p.locator(".ev-inv-t span").innerText()), "the link shown isn't /tournament");
+    await p.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
+      navigator.clipboard.writeText = async (t) => { window.__copied = t; }; });
+    await p.locator("#evinvite").tap();
+    await p.waitForFunction(() => window.__copied, null, { timeout: 3000 });
+    const link = await p.evaluate(() => window.__copied);
+    ok(link === B + "/tournament", "copied " + link);
+    await settledGoto(p, link);
+    ok(new URL(p.url()).pathname === "/e/e2e-art", "/tournament went to " + p.url());
+    await p.locator("a.btn.block").tap();
+    await throughDoor(p);
+    await p.waitForSelector(".ev-h", { timeout: 6000 });
+    ok(await p.evaluate(() => TAB === "event" && EVSLUG === "e2e-art"), "didn't land on the tournament");
+    await p.evaluate(() => { TAB = "showroom"; render(); });
+  });
   await step(d, "normal use records no glitches", async () => {
     const g = await glitches();
     ok(!g.recent.length, "recorded: " + g.recent.map((x) => x.kind + " @ " + x.place + " " + x.detail).join(" | "));

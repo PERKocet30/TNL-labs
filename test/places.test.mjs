@@ -146,7 +146,17 @@ try {
   we = await call("dee", "GET", "/api/labs/pharmacy/work?event=art");
   t("disqualified: out of the Tournament chip, and just a post again", we.j.event.n === 1 && we.j.posts.length === 1
     && !(await call("dee", "GET", "/api/labs/pharmacy/work")).j.posts.find((p) => p.id === e1.postId)?.entry);
+  // "There's no link for me to send out to people to join the tournament" (2026-10-12)
+  const go = async (path) => { const r = await fetch(`http://127.0.0.1:${PORT}` + path, { redirect: "manual" }); return { s: r.status, to: r.headers.get("location") }; };
+  let g = await go("/tournament");
+  t("labs.tnllabs.com/tournament opens the tournament that's on now (its public page, no account needed)", g.s === 302 && g.to === "/e/art");
+  t("…which is a real page with Enter in the app", (await fetch(`http://127.0.0.1:${PORT}/e/art`)).status === 200);
+  t("the app knows it's the current one (so Invite people sends /tournament)", (await call(null, "GET", "/api/events/art")).j.event.current === true);
   await call("boss", "PATCH", `/api/admin/events/${ev.event.id}`, { published: false });
+  g = await go("/tournament");
+  t("no tournament on: /tournament goes to the app instead of a dead page", g.s === 302 && g.to === "/");
+  t("the tournament page has Invite people (share, or copy where there's no share sheet); admin shows the link to send", readFileSync(join(ROOT, "src/app-17-event-1.js"), "utf8").includes('id="evinvite"')
+    && readFileSync(join(ROOT, "src/app-17-event-2.js"), "utf8").includes('on("#evinvite",()=>{const e=EV.event;shareOut(') && readFileSync(join(ROOT, "public/admin-app/8-events.js"), "utf8").includes("function evLinkHTML(e)"));
   t("unpublished: no chip, no marks", (await call("dee", "GET", "/api/labs/pharmacy/work")).j.event === null && !(await call("dee", "GET", "/api/labs/pharmacy/work")).j.posts.some((p) => p.entry));
   t("the app draws the chip and the mark, and the tournament page links to its lab", appPlaces.includes('data-pltag="event:${esc(ev.slug)}"') && appPlaces.includes('<i class="pl-entry"')
     && readFileSync(join(ROOT, "src/app-17-event-1.js"), "utf8").includes("Every entry is in ${esc(labMark(evLab(e).name))}"));

@@ -1,6 +1,6 @@
 
 /* ================================================================
-   EVENTS v1.2 — 2026-10-12. Running an event (admin only, enforced
+   EVENTS v1.2 — 2026-10-12 (also: `current`, so admin can show the link to send). Running an event (admin only, enforced
    here) and its public pages: /e/:slug and /e/:slug/rules.
    v1.2: the "entries are open" email to every member (its switch,
    its progress; the sending is in server-10-events-6-mail.js).
@@ -51,7 +51,8 @@ function evAdminView(ev) {
   return {
     event: { id: ev.id, slug: ev.slug, title: ev.title, brief: ev.brief, rules: ev.rules, prize: ev.prize, coverUrl: ev.cover_url, channel: ev.channel,
       format: ev.format, bracketSize: ev.bracket_size, finalists: ev.finalists, judgeWeight: ev.judge_weight, picks: ev.picks,
-      minAccountDays: ev.min_account_days, freezeHours: ev.freeze_hours, requireVerified: !!ev.require_verified, published: !!ev.published, plan: evJSON(ev.plan, {}), schedule: sched, phase: phaseAt(sched), state: st },
+      minAccountDays: ev.min_account_days, freezeHours: ev.freeze_hours, requireVerified: !!ev.require_verified, published: !!ev.published, plan: evJSON(ev.plan, {}), schedule: sched, phase: phaseAt(sched), state: st,
+      current: evCurrent()?.id === ev.id },
     judges: evJudges(ev.id).map((j) => ({ username: j.username, displayName: j.display_name })),
     entries: entries.map((e) => ({ ...evEntryShape(e), userId: e.user_id, dqReason: e.dq_reason,
       votes: Object.fromEntries(stages.map((s) => [s, t[s].get(e.id) || { votes: 0, fresh: 0 }])),

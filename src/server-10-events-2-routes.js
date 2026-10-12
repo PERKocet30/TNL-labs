@@ -1,5 +1,7 @@
 
 /* ================================================================
+   EVENTS v1.2 — 2026-10-12 (v1.2: says which event is the current one,
+   the one labs.tnllabs.com/tournament opens).
    EVENTS v1.1 — 2026-10-07. What members see and do: the event page,
    entering, voting, judging, and the public /e/:slug pages.
    Vote counts never leave the server while a stage is open — except in a
@@ -109,6 +111,7 @@ function evPublic(ev, viewer) {
       freezeHours: ev.freeze_hours, requireVerified: !!ev.require_verified,
       bracketSize: ev.bracket_size, finalistsCount: ev.finalists,
       schedule: sched, phase: cur, stage, void: !!st.void, entryCount: [...shaped.values()].filter((e) => !e.dq).length,
+      current: evCurrent()?.id === ev.id,   // the one /tournament opens (2026-10-12)
       judges: judges.map((j) => ({ username: j.username, displayName: j.display_name, avatarUrl: j.avatar_url })) },
     me: { signedIn: !!viewer, isJudge, entry: mine ? shaped.get(mine.id) || null : null, myVotes, myScores,
       voteBlock: stage ? evVoteBlock(ev, viewer, stage, null) : null },

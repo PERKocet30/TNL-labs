@@ -1,4 +1,6 @@
-/* TNL LABS admin — Events v1.3, 2026-10-12 (the Tournament tab; v1.2: named for it;
+/* TNL LABS admin — Events v1.4, 2026-10-12 (v1.4: "Link to send people" up top —
+   labs.tnllabs.com/tournament for the one on now, with Copy).
+   Events v1.3, 2026-10-12 (the Tournament tab; v1.2: named for it;
    v1.3: the "entries are open" email to every member — its switch, a
    preview to yourself, and how far the sending has got).
    Events v1.1, 2026-10-07. Set up and run events (the
@@ -84,6 +86,7 @@ function evDetailHTML(d) {
     <div class="row" style="gap:6px"><a class="btn ghost sm" href="/e/${esc(e.slug)}" target="_blank">Page</a><a class="btn ghost sm" href="/e/${esc(e.slug)}/rules" target="_blank">Rules</a><button class="btn ghost sm" id="evedit">Edit</button></div></div>
   <h1 style="font-size:22px;margin-top:14px">${esc(e.title)} ${e.published ? `<span class="tag on">live</span>` : `<span class="tag">draft</span>`}</h1>
   <p class="dim" style="font-size:13px;margin-top:4px">${e.format === "bracket" ? `Bracket of up to ${e.bracketSize}` : e.format === "poll" ? `Poll · ${e.picks} vote${e.picks === 1 ? "" : "s"} a day · board freezes ${e.freezeHours}h before each close · top ${e.finalists} to the final` : `Simple · top ${e.finalists} to the final`}${e.format === "poll" ? "" : ` · ${e.picks} picks`} · final ${e.judgeWeight ? e.judgeWeight + "% judges" : "votes only"}${e.requireVerified ? " · confirmed emails" : ""}${e.minAccountDays ? ` · voters ${e.minAccountDays}+ days old` : ""} · ${d.voters} people have voted${e.prize ? " · " + esc(e.prize) : ""}</p>
+  ${evLinkHTML(e)}
   ${e.format === "poll" ? `<h2 class="sec">Instagram <span class="mono">every link leads back to the app — only votes there count</span></h2>
   <div class="panel"><div class="row wrapx" style="gap:6px">
     <a class="btn ghost sm" href="/e/${esc(e.slug)}/board" target="_blank">Scoreboard page</a>
@@ -118,6 +121,17 @@ function evDetailHTML(d) {
       <td>${x.scores.map((s) => `${esc(s.judge)}: ${s.score}`).join(", ") || "—"}${x.dqReason ? "" : `<div style="white-space:nowrap;margin-top:4px"><button class="btn ghost sm" data-evcopy="${esc(location.origin + "/e/" + e.slug + "/" + x.id)}">Vote link</button> <a class="btn ghost sm" href="/e/${esc(e.slug)}/${x.id}/story.jpg?t=${Date.now()}" target="_blank">Story</a></div>`}</td>
       <td>${x.dqReason ? `<button class="btn ghost sm" data-undq="${x.id}">Reinstate</button>` : `<button class="btn danger sm" data-dq="${x.id}">Disqualify</button>`}</td></tr>`).join("") || `<tr><td colspan="7" class="dim">No entries yet.</td></tr>`}</table></div>
   <div style="height:40px"></div>`;
+}
+
+/* The link to send people: the tournament page, where Enter / Vote opens the app. */
+function evLinkHTML(e) {
+  const full = location.origin + (e.current ? "/tournament" : "/e/" + e.slug), show = full.replace(/^https?:\/\//, "");
+  return `<h2 class="sec">Link to send people <span class="mono">bio · DMs · stories</span></h2>
+  <div class="panel"><div class="row wrapx" style="gap:10px;align-items:center"><b style="font-size:16px;word-break:break-all">${esc(show)}</b>
+    <button class="btn fill sm" data-evcopy="${esc(full)}">Copy link</button></div>
+    <p class="dim" style="font-size:12px;margin-top:8px">${!e.published ? "It's a draft: publish it first, or the link says it doesn't exist."
+      : e.current ? `It always opens the tournament that's on now, so it can stay in your bio. This one's own page: ${esc(location.host)}/e/${esc(e.slug)}.`
+      : `Once this is the tournament that's on now, ${esc(location.host)}/tournament opens it too.`} People land on the tournament page; Enter and Vote take them into the app.</p></div>`;
 }
 
 /* The "entries are open" email: what will happen, or how far it's got. */
