@@ -1,4 +1,4 @@
-/* THE PLAYER v2.2 — 2026-10-09 (v2.1 — 2026-09-29; v2.2: a profile's Music tab repaints on play / pause, and plays on to the next song)
+/* THE PLAYER v2.3 — 2026-10-12 (v2.3: ⊕ on the bar adds what's playing to a playlist; v2.1 — 2026-09-29; v2.2: a profile's Music tab repaints on play / pause, and plays on to the next song)
    One audio element for the whole app, parked outside #app so a repaint
    can't interrupt playback. Built on first use — no element for people who
    never press play, and nothing constructed at parse time.
@@ -81,6 +81,7 @@ function paintPlayer(){
     document.body.appendChild(PLAYERBAR);
     PLAYERBAR.onclick=e=>{
       const a=audioEl();
+      if(e.target.closest("[data-nowadd]")){if(NOWPLAYING)addToPlaylist(NOWPLAYING);return}   // into a playlist, still playing (2026-10-12)
       if(e.target.closest("[data-nowtoggle]")){a.paused?a.play().catch(()=>{}):a.pause();return}
       if(e.target.closest("[data-nownext]")){nextTrack();return}
       if(e.target.closest("[data-nowprev]")){prevTrack();return}
@@ -105,6 +106,7 @@ function paintPlayer(){
       <div class="now-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="">`:DI.music}</div>
       <div class="now-meta"><div class="now-t">${esc(t.title)}</div>
         <div class="mono dim now-by">@${esc(t.by.username)} <span class="now-time"></span></div></div>
+      <button class="now-sk now-add${inAnyPl(t.id)?" on":""}" data-nowadd aria-label="Add to a playlist">${inAnyPl(t.id)?PL_DONE:PL_ADD}</button>
       <button class="now-sk" data-nowprev aria-label="Previous">${DI.prev}</button>
       <button class="now-pp" data-nowtoggle aria-label="Play or pause">${(!AUDIO||AUDIO.paused)?DI.play:DI.pause}</button>
       <button class="now-sk" data-nownext aria-label="Next"${i<0||i>=PLAYQ.length-1?" disabled":""}>${DI.next}</button>

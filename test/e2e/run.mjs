@@ -884,6 +884,37 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => NOWPLAYING && NOWPLAYING.title) !== s.t, "next didn't move on");
     await p.locator("[data-nowclose]").tap();
   });
+  /* "Make the music lab function more like Spotify — you listen to music and
+     build your own playlist while in the lab" (2026-10-12). */
+  await step(d, "Music like Spotify: ⊕ on the bar makes a playlist from what's playing, ⊕ on a song adds it, the playlist plays as its own list, back walks out", async () => {
+    await p.locator('[data-ctx="lib"] .trk-t').first().tap(); await p.waitForTimeout(700);
+    const first = await p.evaluate(() => NOWPLAYING && NOWPLAYING.id);
+    ok(first, "tapping a song's row didn't play it");
+    await p.locator("[data-nowadd]").tap();
+    await p.locator(".pick").getByText("New playlist", { exact: true }).tap();
+    await p.locator(".ui-ov input").fill("E2E mix");
+    await p.locator(".ui-ov").getByText("Create", { exact: true }).tap();
+    await p.waitForFunction(() => PLISTS && PLISTS.some((x) => x.name === "E2E mix"), null, { timeout: 5000 });
+    await p.waitForTimeout(300);
+    ok(await p.locator(".nowbar .now-add.on").count() === 1, "the bar's ⊕ didn't become ✓ once the song was in a playlist");
+    ok(await p.evaluate((id) => NOWPLAYING && NOWPLAYING.id === id, first), "making a playlist changed the song");
+    const row = p.locator('.trk[data-ctx="lib"]').nth(1);
+    const second = Number(await row.getAttribute("data-trk"));
+    await row.locator("[data-trkadd]").tap();
+    await p.locator(".pickrow", { hasText: "E2E mix" }).tap(); await p.waitForTimeout(500);
+    ok(await row.locator(".trk-add.on").count() === 1, "the song's ⊕ didn't become ✓");
+    await p.locator('[data-musv="playlists"]').tap();
+    await p.locator(".pl-row", { hasText: "E2E mix" }).tap();
+    await p.waitForSelector('#plplay:not([disabled])', { timeout: 5000 });
+    ok(await p.locator('.trk[data-ctx="pl"]').count() === 2, "the playlist doesn't hold both songs");
+    await p.locator("#plplay").tap(); await p.waitForTimeout(500);
+    const q = await p.evaluate(() => PLAYQ.map((t) => t.id).join());
+    ok(q === [first, second].join(), "Play didn't play the playlist as its own list: " + q);
+    await p.goBack(); await p.waitForTimeout(500);
+    ok(await p.evaluate(() => !PLIST && MUSVIEW === "playlists"), "back from the playlist didn't land on Playlists");
+    await p.locator("[data-nowclose]").tap();
+    await p.locator('[data-musv="songs"]').tap();
+  });
   await step(d, "DM: open a chat, send a message, it arrives", async () => {
     await p.evaluate(() => openDM("friend")); await p.waitForSelector("#cxdraft");
     await p.locator("#cxdraft").fill("hey from e2e");
@@ -1258,6 +1289,7 @@ console.log("\nINSIDE INSTAGRAM · PHONE");
     await p.locator(".pick").getByText("Instagram Story", { exact: true }).tap(); await p.waitForTimeout(400);
     ok(await p.evaluate(() => { const r = document.querySelector("#igsx").getBoundingClientRect(); const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return !!(e && e.closest("#igsbg")); }), "the Story sheet is behind the open post");
     await p.locator("#igsx").tap(); await p.locator("#poclose").tap();
+    await p.waitForFunction(() => !NAVGO && !NAVBUSY, null, { timeout: 3000 });   // ✕ is a back: let it land before the next page load
   });
   await step(d, "a profile's public page: Open in the app opens that profile", async () => {
     await p.goto(B + "/u/friend");

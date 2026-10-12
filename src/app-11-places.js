@@ -62,7 +62,7 @@ function openLab(id,view,tag){
   const l=LABS.find(x=>x.id===id);if(!l)return;
   if(guest())return needAccount("Join to step into the labs.");
   pushView("lab",l.id);
-  TAB="labs";LAB=l;LABVIEW=view||"work";LABTAG=tag||null;TAGVIEW=null;ROOMOPEN=true;
+  TAB="labs";LAB=l;LABVIEW=view||"work";LABTAG=tag||null;TAGVIEW=null;ROOMOPEN=true;PLIST=null;PLADD=null;
   PROFILE=null;POSTOPEN=null;OPENCOMMENTS=null;placeCH();
   render();loadPlace();if(!LABTAGS)loadLabTags();
 }
