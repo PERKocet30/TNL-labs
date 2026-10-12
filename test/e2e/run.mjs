@@ -631,6 +631,40 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".nf-row .nf-t", { hasText: "listing_like" }).count() === 0, "a raw code shows in a row");
     await p.locator("#npx").tap();
   });
+  /* "Make sure the app is easily navigable. Back buttons and everything need
+     to easily move through all sections" (2026-10-12). One trail: the
+     phone's back walks it screen by screen, tabs are on it, and ✕ is a back. */
+  await step(d, "back walks the trail: notifications → a post → its artist, then back, back, back; tabs and ✕ on the same trail", async () => {
+    const np = (await myPosts()).find((x) => x.imageUrl);
+    const where = () => p.evaluate(() => ({ post: POSTOPEN && POSTOPEN.id, prof: !!PROFILE, notif: NOTIFOPEN, tab: TAB }));
+    const back = async () => { await p.goBack(); await p.waitForTimeout(450); return where(); };
+    await p.locator("#notifBtn").tap();
+    const row = p.locator(".nf-row", { hasText: "liked your post." }).first();
+    await row.waitFor({ timeout: 6000 });
+    await row.locator("img.nf-th").tap();
+    await p.waitForFunction((id) => POSTOPEN && POSTOPEN.id === id && document.querySelector("#poov"), np.id, { timeout: 6000 });
+    await p.locator("#poov [data-u]").first().tap();
+    await p.waitForFunction(() => PROFILE && PROFILE.user, null, { timeout: 6000 }); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => { const e = document.elementFromPoint(innerWidth / 2, innerHeight / 2); return !!(e && e.closest("#sheetbg") && !e.closest("#poov")); }),
+      "the artist's profile opened behind the post (tapping their name looked like nothing happened)");
+    let w = await back();
+    ok(w.post === np.id && !w.prof, "back from the artist didn't land on the post: " + JSON.stringify(w));
+    w = await back();
+    ok(!w.post && w.notif, "back from the post didn't land on the notifications: " + JSON.stringify(w));
+    w = await back();
+    ok(!w.post && !w.notif && !w.prof && w.tab === "showroom", "back from the notifications didn't land on the Showroom: " + JSON.stringify(w));
+    await p.locator('.nav [data-tab="market"]').first().tap(); await p.waitForTimeout(300);
+    await p.locator('.nav [data-tab="labs"]').first().tap(); await p.waitForTimeout(300);
+    w = await back();
+    ok(w.tab === "market", "back from Labs didn't return to the Market: " + JSON.stringify(w));
+    w = await back();
+    ok(w.tab === "showroom", "back from the Market didn't return to the Showroom: " + JSON.stringify(w));
+    const d0 = await p.evaluate(() => history.state && history.state.nav);
+    await p.evaluate(() => openProfile(SRPOSTS[0].author.username)); await p.waitForSelector("#sheetx");
+    await p.locator("#sheetx").tap(); await p.waitForTimeout(450);
+    const cl = await p.evaluate(() => ({ prof: !!PROFILE, nav: history.state && history.state.nav }));
+    ok(!cl.prof && cl.nav === d0, "closing a profile with ✕ left its back step behind (back would do nothing): " + JSON.stringify(cl) + " vs " + d0);
+  });
   await step(d, "artwork quality: a transparent PNG is kept exactly, an oversized JPEG is capped at 3000px; sharp feed copies; the opened post shows the full size", async () => {
     const make = (w, h, type = "image/png") => p.evaluate(([w, h, type]) => { const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d");
       x.strokeStyle = "#111"; x.lineWidth = 1; for (let i = 0; i < h; i += 6) { x.beginPath(); x.moveTo(0, i); x.lineTo(w, i + 40); x.stroke(); }
