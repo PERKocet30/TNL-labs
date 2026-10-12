@@ -878,11 +878,13 @@ console.log("\nMEMBER · PHONE");
     await p.locator("[data-trkplay]").first().tap(); await p.waitForTimeout(900);
     ok(await p.evaluate(() => !navigator.audioSession || navigator.audioSession.type === "playback"), "music wasn't played as playback — an iPhone's silent switch mutes it");
     const s = await p.evaluate(() => ({ src: AUDIO && AUDIO.src, rs: AUDIO && AUDIO.readyState, err: AUDIO && AUDIO.error && AUDIO.error.code, t: NOWPLAYING && NOWPLAYING.title, playing: !!AUDIO && !AUDIO.paused, at: AUDIO && AUDIO.currentTime,
-      bar: getComputedStyle(document.querySelector(".nowbar")).display }));
-    ok(s.t && s.playing && s.at > 0 && s.bar !== "none", "playback: " + JSON.stringify(s));
-    await p.locator("[data-nownext]").tap(); await p.waitForTimeout(400);
+      full: !!document.querySelector(".npf .npf-pp") }));
+    ok(s.t && s.playing && s.at > 0 && s.full, "playback: " + JSON.stringify(s));
+    await p.locator(".npf [data-nownext]").tap(); await p.waitForTimeout(400);
     ok(await p.evaluate(() => NOWPLAYING && NOWPLAYING.title) !== s.t, "next didn't move on");
-    await p.locator("[data-nowclose]").tap();
+    await p.locator("[data-npfclose]").tap(); await p.waitForTimeout(400);
+    ok(await p.evaluate(() => getComputedStyle(document.querySelector(".nowbar")).display !== "none" && !document.querySelector(".npf")), "closing the song didn't leave the bar playing at the bottom");
+    await p.locator(".nowbar [data-nowclose]").tap();
   });
   /* "Make the music lab function more like Spotify — you listen to music and
      build your own playlist while in the lab" (2026-10-12). */
@@ -890,14 +892,19 @@ console.log("\nMEMBER · PHONE");
     await p.locator('[data-ctx="lib"] .trk-t').first().tap(); await p.waitForTimeout(700);
     const first = await p.evaluate(() => NOWPLAYING && NOWPLAYING.id);
     ok(first, "tapping a song's row didn't play it");
-    await p.locator("[data-nowadd]").tap();
+    /* "when you click a song the whole song menu comes up" — the song, full screen */
+    ok(await p.locator(".npf .npf-pp").count() === 1 && /PLAYING FROM/.test(await p.locator(".npf-from").innerText()), "tapping a song didn't bring it up full screen");
+    await p.locator(".npf [data-nowadd]").tap();
     await p.locator(".pick").getByText("New playlist", { exact: true }).tap();
     await p.locator(".ui-ov input").fill("E2E mix");
     await p.locator(".ui-ov").getByText("Create", { exact: true }).tap();
     await p.waitForFunction(() => PLISTS && PLISTS.some((x) => x.name === "E2E mix"), null, { timeout: 5000 });
     await p.waitForTimeout(300);
-    ok(await p.locator(".nowbar .now-add.on").count() === 1, "the bar's ⊕ didn't become ✓ once the song was in a playlist");
+    ok(await p.locator(".npf .npf-add.on").count() === 1, "the song's ⊕ didn't become ✓ once it was in a playlist");
     ok(await p.evaluate((id) => NOWPLAYING && NOWPLAYING.id === id, first), "making a playlist changed the song");
+    await p.goBack(); await p.waitForTimeout(500);
+    ok(await p.evaluate(() => !NOWFULL && !document.querySelector(".npf")), "back didn't close the full-screen song");
+    ok(await p.locator(".nowbar .now-add.on").count() === 1, "the bar's ⊕ isn't ✓ for a song in a playlist");
     const row = p.locator('.trk[data-ctx="lib"]').nth(1);
     const second = Number(await row.getAttribute("data-trk"));
     await row.locator("[data-trkadd]").tap();
@@ -910,9 +917,11 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#plplay").tap(); await p.waitForTimeout(500);
     const q = await p.evaluate(() => PLAYQ.map((t) => t.id).join());
     ok(q === [first, second].join(), "Play didn't play the playlist as its own list: " + q);
+    ok(/PLAYLIST/.test(await p.locator(".npf-from").innerText()) && await p.locator(".npf-row").count() === 1, "the full-screen song doesn't say it's playing from the playlist, with one song up next");
+    await p.locator("[data-npfclose]").tap(); await p.waitForTimeout(400);
     await p.goBack(); await p.waitForTimeout(500);
     ok(await p.evaluate(() => !PLIST && MUSVIEW === "playlists"), "back from the playlist didn't land on Playlists");
-    await p.locator("[data-nowclose]").tap();
+    await p.locator(".nowbar [data-nowclose]").tap();
     await p.locator('[data-musv="songs"]').tap();
   });
   await step(d, "DM: open a chat, send a message, it arrives", async () => {

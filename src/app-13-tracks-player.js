@@ -184,10 +184,14 @@ function wireTracks(){
   document.querySelectorAll("[data-trkplay]").forEach(el=>el.onclick=ev=>{
     if(ev.target.closest("button,[data-u]"))return;
     const t=trkFind(el.dataset.trkplay);if(!t)return;
-    MUSAUTOID=null;
-    if(!(NOWPLAYING&&NOWPLAYING.id===t.id))PLAYQ=plQueue(el.dataset.ctx);
-    if(PLSHUF&&el.dataset.ctx==="pl")PLAYQ=[t,...PLAYQ.filter(x=>x.id!==t.id)];
+    MUSAUTOID=null;const ctx=el.dataset.ctx;
+    /* Spotify's way (2026-10-12): the song comes up full screen. Already
+       the one playing? Just bring it up (and carry on if it was paused). */
+    if(NOWPLAYING&&NOWPLAYING.id===t.id){if(ctx!=="add"){if(AUDIO&&AUDIO.paused)AUDIO.play().catch(()=>{});return openNowFull()}return playTrack(t)}
+    PLAYQ=plQueue(ctx);PLQORIG=null;
+    if(PLSHUF){PLQORIG=PLAYQ.slice();PLAYQ=[t,...plShuffle(PLAYQ.filter(x=>x.id!==t.id))]}
     playTrack(t);
+    if(ctx!=="add")openNowFull();
   });
   document.querySelectorAll("[data-trkmore]").forEach(el=>el.onclick=ev=>{
     ev.stopPropagation();

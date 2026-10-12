@@ -126,11 +126,11 @@ function plPlay(){
   const d=PLIST&&PLIST.d;if(!d||!d.tracks.length)return;
   if(PLQID===d.id&&NOWPLAYING&&d.trackIds.includes(NOWPLAYING.id)){const a=audioEl();a.paused?a.play().catch(()=>{}):a.pause();return}
   const q=PLSHUF?plShuffle(d.tracks):d.tracks.slice();
-  MUSAUTOID=null;PLAYQ=q;PLQID=d.id;playTrack(q[0]);
+  MUSAUTOID=null;PLQORIG=PLSHUF?d.tracks.slice():null;PLAYQ=q;PLQID=d.id;playTrack(q[0]);openNowFull();
 }
 /* Which list a tap plays through: the library, this playlist, or the search. */
 function plQueue(ctx){
-  if(ctx==="pl"&&PLIST&&PLIST.d){PLQID=PLIST.d.id;return PLSHUF?plShuffle(PLIST.d.tracks):PLIST.d.tracks.slice()}
+  if(ctx==="pl"&&PLIST&&PLIST.d){PLQID=PLIST.d.id;return PLIST.d.tracks.slice()}
   PLQID=null;return ctx==="add"&&PLADD&&PLADD.res?PLADD.res.slice():(TRACKS||[]).slice();
 }
 function trkFind(id){
@@ -145,10 +145,7 @@ function wirePlaylists(){
   document.querySelectorAll("[data-plopen]").forEach(b=>b.onclick=()=>openPlaylist(b.dataset.plopen));
   plOn("#plback",()=>{PLIST=null;PLADD=null;render()});
   plOn("#plplay",plPlay);
-  plOn("#plshuf",()=>{PLSHUF=!PLSHUF;
-    /* playing this one already: what's left plays in the new order */
-    const d=PLIST&&PLIST.d;if(d&&PLQID===d.id&&NOWPLAYING){const rest=d.tracks.filter(t=>t.id!==NOWPLAYING.id);PLAYQ=[NOWPLAYING,...(PLSHUF?plShuffle(rest):rest)]}
-    render();paintPlayer();toast(PLSHUF?"Shuffle on":"Shuffle off")});
+  plOn("#plshuf",npfShuffle);   // one shuffle, the same as the full-screen player's
   plOn("#pladd",()=>{if(PLADD){PLADD=null;render();return}PLADD={q:"",res:TRACKS?TRACKS.slice():null};render();if(!TRACKS)plAddSearch("")});
   const aq=$("#pladdq");if(aq){let t=null;aq.oninput=()=>{PLADD.q=aq.value;clearTimeout(t);t=setTimeout(()=>plAddSearch(PLADD.q),280)}}
   plOn("#plmore",()=>{const d=PLIST&&PLIST.d;if(!d)return;

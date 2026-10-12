@@ -1,5 +1,5 @@
 /* ================================================================
-   BACK · v2.1 — 2026-10-12 (v2.1: a playlist is a screen too) ("make sure the app is easily navigable —
+   BACK · v2.1 — 2026-10-12 (v2.1: a playlist and the full-screen player are screens too) ("make sure the app is easily navigable —
    back buttons and everything need to move through all sections")
    One trail of screens, the way Instagram keeps it. Every screen you open
    — a post, a profile, a lab, a #tag, a listing, your orders, an event,
@@ -20,14 +20,14 @@
 let HISTINIT=false, POPPING=false;
 let NAVS=[], NAVD=0, NAVPREV=null, NAVSWALLOW=0;
 function navSnap(){return {TAB,PROFILE,PTAB,POSTOPEN,NOTIFOPEN,SEARCHOPEN,LAB,ROOMOPEN,LABVIEW,LABTAG,TAGVIEW,
-  MKTVIEW,MKTONE,MKTOFFERS,MKTSELLER,MKTSIMILAR,ORDTAB,EVSLUG,EVENTER,EVSHARE,REVIEWING,PFTOP,MUSVIEW,PLIST,LB:!!LIGHTBOX,PK:!!PICKER}}
+  MKTVIEW,MKTONE,MKTOFFERS,MKTSELLER,MKTSIMILAR,ORDTAB,EVSLUG,EVENTER,EVSHARE,REVIEWING,PFTOP,MUSVIEW,PLIST,NOWFULL,LB:!!LIGHTBOX,PK:!!PICKER}}
 /* What makes one screen a different screen. Switching Work/Talk inside a
    lab, or a listing's details arriving, is the same screen. */
 function navKey(s){return [s.TAB,s.PROFILE&&s.PROFILE.user?s.PROFILE.user.username:"",s.POSTOPEN?s.POSTOPEN.id:"",
   s.NOTIFOPEN?1:"",s.SEARCHOPEN?1:"",
   s.TAB==="labs"?(s.TAGVIEW?"#"+s.TAGVIEW.tag:s.LAB&&s.ROOMOPEN?s.LAB.id+(s.PLIST?":pl"+s.PLIST.id:""):""):"",
   s.TAB==="market"||s.TAB==="buying"?s.MKTVIEW+(s.MKTVIEW==="detail"?":"+(s.MKTONE?s.MKTONE.id:"*"):""):"",
-  s.TAB==="event"?s.EVSLUG:"",s.EVENTER?1:"",s.EVSHARE?1:"",s.REVIEWING?1:"",s.LB?1:"",s.PK?1:""].map(String)}
+  s.TAB==="event"?s.EVSLUG:"",s.EVENTER?1:"",s.EVSHARE?1:"",s.NOWFULL?"np":"",s.REVIEWING?1:"",s.LB?1:"",s.PK?1:""].map(String)}
 /* "detail:*" is a listing still loading — the same screen as the one it becomes. */
 const navSame=(a,b)=>a.every((v,i)=>v===b[i]||(/:\*$/.test(v)||/:\*$/.test(b[i]))&&v.split(":")[0]===b[i].split(":")[0]);
 const navUrl=s=>s.POSTOPEN?"/":s.PROFILE&&s.PROFILE.user?"/u/"+s.PROFILE.user.username
@@ -74,7 +74,7 @@ function navRestore(s){
   TAB=s.TAB;PROFILE=s.PROFILE;PTAB=s.PTAB;POSTOPEN=s.POSTOPEN;OPENCOMMENTS=s.POSTOPEN?s.POSTOPEN.id:null;
   NOTIFOPEN=s.NOTIFOPEN;SEARCHOPEN=s.SEARCHOPEN;LAB=s.LAB;ROOMOPEN=s.ROOMOPEN;LABVIEW=s.LABVIEW;LABTAG=s.LABTAG;TAGVIEW=s.TAGVIEW;
   MKTVIEW=s.MKTVIEW;MKTONE=s.MKTONE;MKTOFFERS=s.MKTOFFERS;MKTSELLER=s.MKTSELLER;MKTSIMILAR=s.MKTSIMILAR;ORDTAB=s.ORDTAB;
-  EVSLUG=s.EVSLUG;PFTOP=!!s.PFTOP;MUSVIEW=s.MUSVIEW||"songs";if((PLIST&&PLIST.id)!==(s.PLIST&&s.PLIST.id))PLADD=null;PLIST=s.PLIST;EVENTER=s.EVENTER;EVSHARE=s.EVSHARE;REVIEWING=s.REVIEWING;LIGHTBOX=null;PICKER=null;EDITING=false;EDITPF=null;
+  EVSLUG=s.EVSLUG;PFTOP=!!s.PFTOP;MUSVIEW=s.MUSVIEW||"songs";if((PLIST&&PLIST.id)!==(s.PLIST&&s.PLIST.id))PLADD=null;PLIST=s.PLIST;NOWFULL=!!s.NOWFULL;EVENTER=s.EVENTER;EVSHARE=s.EVSHARE;REVIEWING=s.REVIEWING;LIGHTBOX=null;PICKER=null;EDITING=false;EDITPF=null;
   if(MKTEDIT&&MKTVIEW!=="edit"){MKTEDIT=null;SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME=""}
   if(wasTab==="studio"&&TAB!=="studio"&&window.TNLStudio)TNLStudio.unmount();
   if(TAB==="labs"&&LAB&&ROOMOPEN&&(wasTab!=="labs"||LAB.id!==wasLab||LABVIEW!==wasView)){placeCH();setTimeout(loadPlace,0)}

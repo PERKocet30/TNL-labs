@@ -16,7 +16,7 @@ function wire(){
     }
     /* Labs again while inside a lab (or a #tag page) → back to the index. */
     if(TAB==="labs"&&b.dataset.tab==="labs"){LAB=null;ROOMOPEN=false;TAGVIEW=null;LABVIEW="work";LABTAG=null}
-    TAB=b.dataset.tab;PROFILE=null;POSTOPEN=null;OPENCOMMENTS=null;NOTIFOPEN=false;SEARCHOPEN=false;LIGHTBOX=null;if(window.TNLStudio)TNLStudio.unmount();if(TAB==="market"){MKTVIEW="browse";loadMarket()}if(TAB==="labs")loadLabs();render()});
+    TAB=b.dataset.tab;PROFILE=null;POSTOPEN=null;OPENCOMMENTS=null;NOTIFOPEN=false;SEARCHOPEN=false;LIGHTBOX=null;NOWFULL=false;if(window.TNLStudio)TNLStudio.unmount();if(TAB==="market"){MKTVIEW="browse";loadMarket()}if(TAB==="labs")loadLabs();render()});
   document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{TAB=b.dataset.goto;PROFILE=null;render()});
   const srp=$("#sr-post");if(srp)srp.onclick=()=>{
     /* Used to route into "the room your trade lives in" — but a lab send
