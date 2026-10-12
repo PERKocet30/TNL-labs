@@ -1,8 +1,10 @@
 # TNL LABS
 
-**v2.1 · 2026-09-29** · live at [labs.tnllabs.com](https://labs.tnllabs.com)
+**v2.2 · 2026-10-12** · live at [labs.tnllabs.com](https://labs.tnllabs.com)
 
-Social media by creatives, for creatives. TNL LABS is the venue: members post work, collaborate across labs, build standing through what other people confirm, and sell in one shared market. TNL NYC is one seller in that market, on the same terms as everyone else.
+Social media by creatives, for creatives. TNL LABS is where creatives post their work, find each other across scenes, make things together and sell what they make. Standing here is earned only from what other people do with your work — likes, shares, collabs both sides confirm, sales — so the people who build the most rise, not the people who post the most.
+
+Labs are places, one per genre, each explained by its #tags. The tournament, the Market and the rep system all run on the same rule: what counts happens inside LABS. Instagram is where people find it; every share card and public page leads back into LABS, where they take part. TNL NYC sells in the Market on the same terms as everyone else.
 
 One Node server, one SQLite database, no framework and no external services required to run it.
 
@@ -12,20 +14,23 @@ One Node server, one SQLite database, no framework and no external services requ
 
 | Area | What it does |
 |---|---|
-| **The door** | "Enter the lab" landing with the vial loader. The first visit plays the intro film; after that it's one tap in. The tap also unlocks audio on iOS. |
-| **Showroom** | The public front page: real work from across every lab, newest first. Anyone can browse; posting needs an account. |
-| **Labs** | Members-only, one per genre: `// General`, `// Visual` (design, photo, film and the searchable Archive), `// Music` (tracks, feedback and chat), `// Fashion`, `// Anime`, `// News` and `// Business`. Inside a lab, channels are pill tabs above the conversation. Names are display-only; lab and channel IDs never change, so renaming never moves a post. |
-| **Posts** | Instagram-style cards: carousels of up to 10 images, video, a sound from the library, likes, comments, shares, send-to-DM, saves and collab invites. The **post creator** shows the work large (swipe, reorder, per-photo upload progress), a caption with @mention suggestions, and three rows: invite collaborators (up to 5, invited as soon as the post exists), add music, and share to a lab (otherwise it goes to your profile only). |
-| **Profiles** | Instagram-style pages: posts / followers / collabs, level badge, roles, bio, link, and tabs for work, shop, collabs and standing. Every profile has a public URL. |
+| **The door** | "Enter the lab" landing with the vial loader. The first visit plays the intro film; after that it's one tap in. The tap also unlocks audio on iOS. A link from outside gets the quick door and lands on the exact thing it pointed at. |
+| **Showroom** | The front page: real work from every lab, ranked by what other people do with it — your own taps never count, and work made together gets a lift. Anyone can browse; posting needs an account. |
+| **Labs** | Places, one per genre: `// General`, `// Visual`, `// Music`, `// Fashion`, `// Anime`, `// News` and `// Business`. Each genre is explained by its #tags. Inside: **Work** (everything made there, narrowed by #tag) and **Talk** (one conversation). Members tag their own work; the labs that match what you make come first. Names are display-only — lab and channel IDs never change. |
+| **Posts** | A post is a piece of work: up to 10 images or a video, a song from the library, credits for collaborators (counted once they accept), feedback, shares and saves. The post creator puts the work first, then the caption with #tags and @mentions, then collaborators, music (pick a song or upload one), the lab, people and products. With no photos, a song's cover becomes the picture. |
+| **Profiles** | A member's body of work, worn in their own colour: level and what they make up top, then **Work**, **Music** (their songs, the pinned one first), **Shop**, **Collabs** and **Tagged**. Every profile, post and song has a public page. |
 | **Collabs** | Two-sided: the author invites, the other person accepts, and only then does it count — for both of them. |
-| **Market** | Depop-style browsing; listing works like a Shopify product form — Media (up to 8, tap to set the cover), Title & description, Pricing (live "you earn"), Inventory, Shipping, Details, and Status when editing. Offers, saves, checkout through Stripe Connect, shipping, delivery confirmation and reviews. Sound listings with downloads are still supported for existing listings. |
-| **Music** | The Music lab is a music player: members upload tracks (or pull the audio from a video they posted), anyone presses play. The player bar has cover, previous / next, tap-to-seek and time, moves on to the next track by itself, and works with lock-screen and headphone controls. It stays in the labs; a post's own sound plays only while you're on that post. The Studio beat maker (`public/studio.js`) is hidden unless Admin → Settings → Studio is on; beats already posted still play. |
-| **Boards & Archive** | Save anyone's work to your own moodboards; browse every image ever posted. |
-| **DMs & notifications** | Direct messages, live notifications and unread badges over a Server-Sent Events stream. |
-| **Phone and computer** | Phones get the app as designed: top bar, bottom nav. From 1024px wide (laptops, monitors) the top bar and nav become one left sidebar with labels and a full-width Post button, pages sit at a reading width beside it, and a mouse gets hover states. Resizing a window switches layouts on the spot. |
+| **Standing** | Rep comes only from what other people do with your work, and every point is logged. Levels (Entry → Leadership) lower your Market fees, and at Core TNL can cover your music's distribution (an admin setting). |
+| **Market** | One shared market for what members make: browse by category, list with photos, pricing (a live "you earn"), sizes and colours, inventory and shipping. Offers, saves, one checkout per seller through Stripe Connect, delivery confirmation and reviews. |
+| **Music** | The `// Music` lab is the network's player: Songs and Playlists, a full-screen song with its queue, repeat and shuffle, a bar that carries on as you move through the lab, and lock-screen controls. Members upload songs from the lab or the post creator, each with its own cover. The lab wears the cover of the week's most-played song. A post's own sound plays only while you're on that post. The Studio beat maker is hidden unless Admin → Settings → Studio is on. |
+| **The tournament** | One prompt, one entry each, fresh votes every day with a live scoreboard that goes dark for the last hours, then a final. Votes only count in the app; entrants share their own Story card and vote link to bring their people in. |
+| **Archive** | Search every image ever posted, in `// Visual`. |
+| **Messages & notifications** | Direct and group messages, live notifications and unread badges over a Server-Sent Events stream. A notification opens the thing it's about. |
+| **Sharing** | Share cards for Stories (a post, a profile, a tournament entry), public pages that preview properly in DMs, and links that open the app on the exact thing. |
+| **Phone and computer** | Phones get the app as designed: top bar, bottom nav. From 1024px wide the top bar and nav become one left sidebar, pages sit at a reading width beside it, and a mouse gets hover states. Resizing a window switches layouts on the spot. |
 | **Admin** | `/admin` — the dashboard (see below). |
 
-Design language: Helvetica, `//` marks the labs, paper (light) by default with a dark mode, reagent green `#98FC68` as the one accent, drawn 2px square-cap icons. See `TNL-Design-Language-v1.0` in the project files.
+Design language: Helvetica, `//` marks the labs, true white by day and black by night, Reagent green `#98FC68` as the one accent, each member in their own colour, drawn 2px square-cap icons. Every screen and rule is in the LABS Blueprint (v1.2, 2026-10-11) in the project files.
 
 ---
 
@@ -58,15 +63,15 @@ test/                           51 test suites — run with npm test
 | `app-07-theme-labs-api` | theme, labs and channels, API client |
 | `app-08-images` | image quality (posts and tournament entries): the original kept up to 3000px (hidden data stripped), 1440px feed and 480px grid copies, `srcset` so screens get the sharp one |
 | `app-08-state-ui` · `app-09-render-nav` | app state, toasts/modals, routing, top bar; `render()` picks the phone or computer frame and keeps your scroll place across repaints |
-| `app-09-nav` | back: one trail of screens (Instagram's way) — every screen change joins it, and the phone's back, swipe-back, ‹ and ✕ all walk it |
+| `app-09-nav` | back: one trail of screens — every screen change joins it, and the phone's back, swipe-back, ‹ and ✕ all walk it |
 | `app-08-upload` | uploads: the streaming upload, retried twice when the connection drops or the server is restarting (502–504), failures reported to Glitches with size, time and reason |
 | `app-10-chat-1…6` | Messages v2 (2026-09-29): chat kit, inbox + chat screen, composer/voice notes, sheets (new chat, group, forward, mute), the signed-in live stream, lab rooms as chat |
 | `app-10-dm-search` | search, the door |
 | `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
 | `app-11-places` | Labs as places (2026-10-08; v1.1 2026-10-09: one list of genres with their #tags, Work · Talk only): a lab's tabs, its home channel (`LAB_HOME`), the #tag page, tag suggestions; styles in `app-05-styles-places` |
-| `app-11-showroom` · `app-12…13` (`app-12-post-extras`: tags, place, comments off and "Shop this post" on a card) | Showroom, lab index, archive/posts; the Music lab (`app-13-tracks-player`), its playlists (`app-13-playlists`, Spotify's way: Songs · Playlists, ⊕ on every song and on the bar), the full-screen song (`app-13-nowplaying`: tap a song or the bar) and the player bar and queue (`app-13-player`) |
+| `app-11-showroom` · `app-12…13` (`app-12-post-extras`: tags, place, comments off and "Shop this post" on a card) | Showroom, lab index, archive/posts; the Music lab (`app-13-tracks-player`), its playlists (`app-13-playlists`: Songs · Playlists, ⊕ on every song and on the bar), the full-screen song (`app-13-nowplaying`: tap a song or the bar) and the player bar and queue (`app-13-player`) |
 | `app-14-detail-sell` · `app-14-listing` · `app-14-sell-variants` | orders and the listing editor; the listing page (photos, size/colour picker, the pinned Buy bar, the pinch-zoom photo viewer); the editor's sizes & colours |
-| `app-15-profile` · `app-15-profile-edit` · `app-16` | profile v2 (≡ / ⋯ menus, followers/following, pinned, tagged), the Instagram-style edit page, wiring |
+| `app-15-profile` · `app-15-profile-edit` · `app-16` | profile v2 (≡ / ⋯ menus, followers/following, pinned, tagged), the edit page (one quiet row per field), wiring |
 | `app-17-bag` | the bag (one checkout per seller), recently viewed, price-drop tags, listing drafts, Duplicate, your shop's numbers |
 | `app-17-event-1` · `app-17-event-2` · `app-17-event-3-poll` | Events (2026-10-06, poll 2026-10-07): the tournament screen — brief, enter sheet, gallery, picks, bracket, judges' scores, results — the Showroom banner, and the poll's scoreboard, Instagram vote-link landing (`EVFOCUS`) and Share to Instagram sheet; styles in `app-05-styles-event` |
 | `app-17-market` · `app-17-panels` | market wiring and the listing editor's logic; panels, DMs, Studio mount |
@@ -170,7 +175,7 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 
 ## Accounts
 
-- **Sign-up** is one question per screen, Instagram-style: email → password → name → username (checked live, with suggestions when taken) → what you make. That creates the account; then profile photo → people to follow → welcome. The phone's back swipe steps back through it.
+- **Sign-up** is one question per screen: email → password → name → username (checked live, with suggestions when taken) → what you make. That creates the account; then profile photo → people to follow → welcome. The phone's back swipe steps back through it.
 - Sign in with **username or email**. Both ignore capital letters, and a leading `@` on a username is fine.
 - A new account has full access straight away. The confirmation email still goes out, but it doesn't block anyone. Admin → Settings → auto-verify controls this.
 - Suspending a member from the dashboard ends their sessions on their next request.
