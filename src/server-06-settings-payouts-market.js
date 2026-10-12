@@ -356,7 +356,7 @@ app.post("/api/market/:id/like", auth, (req, res) => {
   const has = db.prepare(`SELECT 1 FROM listing_likes WHERE listing_id = ? AND user_id = ?`).get(l.id, req.user.id);
   if (has) { db.prepare(`DELETE FROM listing_likes WHERE listing_id = ? AND user_id = ?`).run(l.id, req.user.id); return res.json({ liked: false }); }
   db.prepare(`INSERT INTO listing_likes (listing_id, user_id, created_at) VALUES (?,?,?)`).run(l.id, req.user.id, Date.now());
-  notify(l.seller_id, req.user.id, "listing_like", null, `liked "${l.title}"`);
+  notify(l.seller_id, req.user.id, "listing_like", null, `liked "${l.title}"`, l.id);
   res.json({ liked: true });
 });
 
@@ -373,7 +373,7 @@ app.post("/api/market/:id/offer", auth, verified, rateLimit({ max: 20, windowMs:
   db.prepare(`UPDATE offers SET status='withdrawn' WHERE listing_id=? AND buyer_id=? AND status='pending'`).run(l.id, req.user.id);
   db.prepare(`INSERT INTO offers (listing_id, buyer_id, amount_cents, created_at) VALUES (?,?,?,?)`)
     .run(l.id, req.user.id, cents, Date.now());
-  notify(l.seller_id, req.user.id, "offer", null, `offered $${(cents / 100).toFixed(2)} on "${l.title}"`);
+  notify(l.seller_id, req.user.id, "offer", null, `offered $${(cents / 100).toFixed(2)} on "${l.title}"`, l.id);
   res.json({ ok: true });
 });
 
@@ -390,13 +390,13 @@ app.post("/api/offers/:id/:action", auth, (req, res) => {
   if (l.seller_id !== req.user.id) return res.status(403).json({ error: "not your listing" });
   if (action === "decline") {
     db.prepare(`UPDATE offers SET status='declined' WHERE id=?`).run(o.id);
-    notify(o.buyer_id, req.user.id, "offer_declined", null, `declined your offer on "${l.title}"`);
+    notify(o.buyer_id, req.user.id, "offer_declined", null, `declined your offer on "${l.title}"`, l.id);
     return res.json({ ok: true });
   }
   if (action === "accept") {
     db.prepare(`UPDATE offers SET status='accepted' WHERE id=?`).run(o.id);
     db.prepare(`UPDATE offers SET status='declined' WHERE listing_id=? AND id!=? AND status='pending'`).run(l.id, o.id);
-    notify(o.buyer_id, req.user.id, "offer_accepted", null, `accepted your offer on "${l.title}" — go buy it`);
+    notify(o.buyer_id, req.user.id, "offer_accepted", null, `accepted your offer on "${l.title}" — go buy it`, l.id);
     return res.json({ ok: true });
   }
   res.status(400).json({ error: "unknown action" });

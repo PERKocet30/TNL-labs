@@ -469,6 +469,9 @@ CREATE INDEX IF NOT EXISTS idx_blocks_blocked ON blocks(blocked_id);
 /* Migrations — safe to run on an existing database. SQLite has no
    "ADD COLUMN IF NOT EXISTS", so we check the table info first. */
 const cols = db.prepare(`PRAGMA table_info(users)`).all().map((c) => c.name);
+/* 2026-10-12: a shop notification points at its listing, so tapping it opens the item (like Instagram). */
+if (!db.prepare(`PRAGMA table_info(notifications)`).all().some((c) => c.name === "listing_id"))
+  db.exec(`ALTER TABLE notifications ADD COLUMN listing_id INTEGER`);
 if (!cols.includes("bio")) db.exec(`ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''`);
 if (!cols.includes("link")) db.exec(`ALTER TABLE users ADD COLUMN link TEXT NOT NULL DEFAULT ''`);
 if (!cols.includes("email_verified")) {
@@ -703,15 +706,15 @@ ensureAdmin();
 
 /* ---- notifications ---- */
 const insNotif = db.prepare(
-  `INSERT INTO notifications (user_id, actor_id, kind, post_id, body, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+  `INSERT INTO notifications (user_id, actor_id, kind, post_id, body, created_at, listing_id) VALUES (?, ?, ?, ?, ?, ?, ?)`
 );
 /** Award a notification. Never throws: a notification is a side effect,
  *  and it must never take down the action that triggered it. If a post
  *  is deleted mid-flight the FK fails — that's a log line, not a 500. */
-export function notify(userId, actorId, kind, postId = null, body = "") {
+export function notify(userId, actorId, kind, postId = null, body = "", listingId = null) {
   if (!userId || userId === actorId) return null;
   try {
-    const info = insNotif.run(userId, actorId, kind, postId, body, Date.now());
+    const info = insNotif.run(userId, actorId, kind, postId, body, Date.now(), listingId || null);
     return Number(info.lastInsertRowid);
   } catch (e) {
     console.error("[notify] skipped:", kind, e.message);

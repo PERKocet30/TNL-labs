@@ -611,6 +611,26 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator('#poov .igact[data-comments]').isHidden(), "comment button still showing");
     await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; PROFILE = null; TAB = "showroom"; render(); });
   });
+  /* "When someone likes your work it doesn't take you directly to the post" → "Notifications should work like Instagram" (2026-10-12) */
+  await step(d, "notifications like Instagram: Friend liked your post — its picture on the row, a tap opens that post", async () => {
+    const np = (await myPosts()).find((x) => x.imageUrl);
+    ok(np, "no picture post of yours to like");
+    const fs = { "content-type": "application/json", authorization: "Bearer e2e-friend-session" };
+    await fetch(B + `/api/posts/${np.id}/like`, { method: "POST", headers: fs, body: JSON.stringify({ liked: true }) });
+    await p.evaluate(() => { POSTOPEN = null; PROFILE = null; TAB = "showroom"; render(); });
+    await p.locator("#notifBtn").tap();
+    const row = p.locator(".nf-row", { hasText: "liked your post." }).first();
+    await row.waitFor({ timeout: 6000 });
+    ok(/Friend/.test(await row.innerText()), "the like row doesn't name Friend");
+    ok(await row.locator("img.nf-th").count() === 1, "no picture of the post on the row");
+    ok(await p.locator(".nf-sec").count() >= 1, "no New / Today sections");
+    await row.locator("img.nf-th").tap();
+    await p.waitForFunction((id) => POSTOPEN && POSTOPEN.id === id && document.querySelector("#poov"), np.id, { timeout: 6000 });
+    await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; render(); });
+    await p.locator("#notifBtn").tap(); await p.waitForSelector(".nf-row");
+    ok(await p.locator(".nf-row .nf-t", { hasText: "listing_like" }).count() === 0, "a raw code shows in a row");
+    await p.locator("#npx").tap();
+  });
   await step(d, "artwork quality: a transparent PNG is kept exactly, an oversized JPEG is capped at 3000px; sharp feed copies; the opened post shows the full size", async () => {
     const make = (w, h, type = "image/png") => p.evaluate(([w, h, type]) => { const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d");
       x.strokeStyle = "#111"; x.lineWidth = 1; for (let i = 0; i < h; i += 6) { x.beginPath(); x.moveTo(0, i); x.lineTo(w, i + 40); x.stroke(); }

@@ -16,13 +16,7 @@ function wirePanels(){
   // notifications
   const npb=$("#npbg");if(npb)npb.onclick=e=>{if(e.target===npb){NOTIFOPEN=false;render()}};
   const npx=$("#npx");if(npx)npx.onclick=()=>{NOTIFOPEN=false;render()};
-  document.querySelectorAll("[data-nopen]").forEach(el=>el.onclick=async()=>{
-    NOTIFOPEN=false;const id=+el.dataset.nopen;
-    OPENCOMMENTS=id;try{COMMENTS=(await api.comments(id)).comments}catch(e){}
-    TAB="showroom";render()});
-
-  // dms → the messages layer (app-10-chat-*.js); a DM notification opens the chat
-  document.querySelectorAll("[data-ndm]").forEach(el=>el.onclick=()=>{NOTIFOPEN=false;render();openDM(el.dataset.ndm)});
+  wireNotifs();   // each row lands on what it's about (app-17-notifs.js)
 
   // search
   const sbg=$("#sbg");if(sbg)sbg.onclick=e=>{if(e.target===sbg){SEARCHOPEN=false;render()}};
