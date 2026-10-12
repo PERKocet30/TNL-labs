@@ -125,19 +125,25 @@ const IC_REMIX_SM=`<svg viewBox="0 0 24 24" width="12" height="12" fill="none" s
    minutes drop the header and group, the way every chat client does. */
 /* msgRowHTML → app-10-chat-6-labs.js (messaging v2) */
 
+/* POST v2 — 2026-10-12, read like Instagram: who (and who it's built with),
+   the song or the place; the work; the buttons with their counts; then
+   "username caption", the time, the comments. A post with no picture is its
+   words, so they stay on top. Helpers: app-12-post-extras.js. */
 function postHTML(p){const mine=p.author.username===myName();
   const myPending=p.collaborators.find(c=>c.username===myName()&&c.status==="pending");
+  const media=!!(p.imageUrl||p.videoUrl||(p.images&&p.images.length)||p.beat);
+  const cap=!p.body?"":media?`<div class="post-cap"><b class="post-capu" data-u="${esc(p.author.username)}">${esc(p.author.username)}</b> ${rich(p.body)}</div>`:`<div class="post-body">${rich(p.body)}</div>`;
   return `<div class="post ${p.pending?"pending":""} ${p.failed?"failed":""}">
   ${p.pending?`<div class="mono sending">${UPPROG!==null&&UPPROG<1?`UPLOADING ${Math.round(UPPROG*100)}%`:"SENDING…"}</div>${UPPROG!==null&&UPPROG<1?`<div class="uptrack"><div class="upbar" id="upbar" style="width:${Math.round(UPPROG*100)}%"></div></div>`:""}`:""}
   ${p.failed?`<div class="failbar"><span>Didn't send.</span><button class="retryb" data-retry="${p.id}">Retry</button><button class="retryb ghost" data-discard="${p.id}">Discard</button></div>`:""}
   ${p.sharedFrom?`<div class="shared-tag">${IC_REMIX_SM} Shared</div>`:""}
   <div class="post-h">${avHTML(p.author)}
-    <div><span class="post-by" data-u="${esc(p.author.username)}">${esc(p.author.displayName)}</span><span class="lvl">L${p.author.level}</span>
-    <div class="post-meta">${esc(p.author.role.toUpperCase())} · ${new Date(p.createdAt).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}${p.editedAt?" · EDITED":""}${p.location?" · "+esc(p.location.toUpperCase()):""}</div>${pxWithHTML(p)}${musChipHTML(p)}</div>
+    <div class="post-hw"><div class="post-names">${pxNames(p)}</div>${pxSub(p)}</div>
     ${ME&&!p.pending&&!p.failed?`<div class="post-menu"><button class="pm pmore" data-pmore="${p.id}" aria-label="More">${DI.more}</button></div>`:""}
   </div>
-  ${p.body?`<div class="post-body">${rich(p.body)}</div>`:""}
+  ${media?"":cap}
   ${(!p.imageUrl&&!p.videoUrl&&!p.beat&&firstUrl(p.body))?linkCard(firstUrl(p.body)):""}
+  ${media?`<div class="post-media">`:""}
   ${(p.images&&p.images.length>1)?(p.isWork
     /* A published series is a carousel — you swipe it and see each frame
        whole, the way it was made. Chat is a grid: four refs dropped
@@ -157,17 +163,19 @@ function postHTML(p){const mine=p.author.username===myName();
   ${p.videoUrl?`<div class="vwrap">
     ${pxVideo(p,"post-vid")}
   </div>`:""}
+  ${media?pxTagBtn(p)+`</div>`:""}
   ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}' aria-label="Play">${DI.play}</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM${p.beat.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:""}</div></div>${studioOn()?`<button class="act" data-remix="${p.id}" style="margin-left:auto">${IC_REMIX_SM} Remix</button>`:""}</div>`:""}
   ${pxShopHTML(p)}
-  ${p.collaborators.length?`<div class="collab-row">${p.collaborators.map(c=>`<span class="ctag ${c.status==="accepted"?"acc":""}">${c.status==="accepted"?DI.check:"…"} ${esc(c.display_name||c.username)}</span>`).join("")}</div>`:""}
   <div class="post-acts">
     <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
-    <button class="igact" data-comments="${p.id}" aria-label="Comment"${p.commentsOff?" hidden":""}>${IG_COMMENT}</button>
+    <button class="igact" data-comments="${p.id}" aria-label="Comment"${p.commentsOff?" hidden":""}>${IG_COMMENT}<span class="igact-n">${p.commentCount||""}</span></button>
     <button class="igact" data-share="${p.id}" aria-label="Send">${IG_SEND}<span class="igact-n">${p.shareCount||""}</span></button>
     ${mine?`<button class="igact" data-collab="${p.id}" aria-label="Invite a collaborator" title="Invite a collaborator">${IG_COLLAB}</button>`:""}
     ${myPending?`<button class="igpill" data-accept="${p.id}">Accept collab</button>`:""}
     ${!mine?`<button class="igact igflag" data-report="${p.id}" aria-label="Report" title="Report">${IG_FLAG}</button>`:""}
   </div>
+  ${media?cap:""}
+  ${p.pending||p.failed?"":`<div class="post-when">${igAgo(p.createdAt)}${p.editedAt?" · Edited":""}</div>`}
   <div class="cslot" data-cslot="${p.id}">${cslotHTML(p)}</div>
   </div>`}
 
@@ -185,8 +193,8 @@ function commentsHTML(p){return `<div class="cwrap">
   </div>`).join("")}
   ${guest()
     ?`<button class="cjoin" id="cjoinb">Join to comment</button>`
-    :`<div class="cform">
-      <input class="in" id="cdraft" placeholder="${CEDIT?"Edit comment…":"Add feedback…"}" value="${CEDIT?esc(COMMENTS.find(x=>x.id===CEDIT)?.body||""):""}">
+    :`${CEDIT?"":`<div class="c-quick">${["❤️","🙌","🔥","👏","😢","😍","😮","😂"].map(e=>`<button type="button" data-cq="${e}" aria-label="Add ${e}">${e}</button>`).join("")}</div>`}<div class="cform">
+      <input class="in" id="cdraft" placeholder="${CEDIT?"Edit comment…":"Add a comment…"}" value="${CEDIT?esc(COMMENTS.find(x=>x.id===CEDIT)?.body||""):""}">
       <button class="send" id="csend" aria-label="Send">${CEDIT?DI.check:UI_IC.arrow}</button>
       ${CEDIT?`<button class="send ghostsend" id="ccancel" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:""}
     </div>`}

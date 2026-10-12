@@ -42,7 +42,8 @@ console.log("\nCOPY — COLLAB IS STILL THERE TO USE");
 const app = all.filter(([f]) => f.includes("app-")).map(([, s]) => s).join("\n");
 t("invite a collaborator still exists", app.includes('title:"Invite a collaborator"'));
 t("accept collab still exists", app.includes("Accept collab"));
-t("Built with credit still shows on Showroom posts", app.includes("Built with ${accepted.map("));
+/* 2026-10-12: the credit moved into the name line, Instagram's way — "tnl.labs and xstart22" — on every post and Showroom card. */
+t("Built with credit still shows on Showroom posts", /function pxNames\(p\)\{[\s\S]*?status==="accepted"[\s\S]*?" and "/.test(app) && /srCardHTML[\s\S]*?pxNames\(p\)/.test(app) && app.includes('title:"Built with"'));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

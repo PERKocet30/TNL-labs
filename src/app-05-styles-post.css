@@ -1,0 +1,18 @@
+/* POST v2 — 2026-10-12, read like Instagram (logic: postHTML in
+   app-12-archive-posts.js, srCardHTML in app-11-showroom.js, helpers in
+   app-12-post-extras.js). Name line, then the song or the place; the
+   caption after the buttons; the time; tagged people on the picture. */
+.post-hw{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.post-names{font-size:14px;line-height:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.post-names .post-by{font-size:14px;font-weight:700}
+.post-names .lvl{font-size:10px;margin:0 2px 0 4px;vertical-align:1px}
+.post-loc{font-size:12px;line-height:16px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.post-hw .muschip{font-size:12px;color:var(--tx2)}
+.post-media{position:relative}
+.px-tagbtn{position:absolute;left:10px;bottom:10px;z-index:2;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.72);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.post-cap{font-size:14px;line-height:1.45;color:var(--tx);margin-top:8px;word-break:break-word}
+.post-capu,.sr-body b{font-weight:700;cursor:pointer;margin-right:2px}
+.post-when{font-size:12px;line-height:16px;color:var(--dim);margin-top:6px}
+.post .ig-viewc,.sr-card .ig-viewc{padding-top:4px}
+.c-quick{display:flex;justify-content:space-between;padding:12px 2px 2px}
+.c-quick button{background:none;border:0;font-size:24px;line-height:1;padding:4px;cursor:pointer}

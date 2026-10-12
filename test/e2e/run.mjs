@@ -605,9 +605,17 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#pql [data-pqview]").tap();
     await p.waitForFunction((id) => PROFILE && PROFILE.user && PROFILE.user.username === "tester" && (PROFILE.posts || []).some((x) => x.id === id), np.id, { timeout: 5000 });
     await p.evaluate((id) => openPost(PROFILE.posts.find((x) => x.id === id)), np.id);
-    await p.waitForSelector("#poov .px-with", { timeout: 5000 });
-    ok(/with @friend/.test(await p.locator("#poov .px-with").first().textContent()), "no 'with @friend' on the post");
-    ok(/BROOKLYN/.test(await p.locator("#poov .post-meta").first().textContent()), "no place on the post");
+    /* read like Instagram (2026-10-12): tagged people are the person icon on the picture; the place sits under the name */
+    await p.waitForSelector("#poov .px-tagbtn", { timeout: 5000 });
+    ok(/@friend/.test(await p.locator("#poov .px-tagbtn").first().getAttribute("aria-label")), "the person icon on the picture doesn't hold @friend");
+    await p.locator("#poov .px-tagbtn").first().tap();
+    ok(await p.locator(".pick").getByText("@friend").count() === 1, "tapping the person icon didn't list who's tagged");
+    await p.locator("#pickx").tap();
+    ok(/Brooklyn/.test(await p.locator("#poov .post-h .post-loc").first().textContent()), "no place under the name");
+    /* …and the caption comes after the buttons, "username caption", then the time — Instagram's order */
+    ok(await p.evaluate(() => { const po = document.querySelector("#poov .post"), a = po.querySelector(".post-acts"), c = po.querySelector(".post-cap"), w = po.querySelector(".post-when");
+      return !!(a && c && w) && !!(a.compareDocumentPosition(c) & 4) && !!(c.compareDocumentPosition(w) & 4) && /^tester\s/.test(c.textContent.trim()) && /ago|Just now/.test(w.textContent); }),
+      "the post doesn't read like Instagram: buttons → \"tester caption\" → time");
     ok(await p.locator('#poov .igact[data-comments]').isHidden(), "comment button still showing");
     await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; PROFILE = null; TAB = "showroom"; render(); });
   });
