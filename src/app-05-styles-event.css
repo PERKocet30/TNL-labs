@@ -1,4 +1,4 @@
-/* EVENTS v1.2 — 2026-10-12 (v1.2: the ‹ back bar, held at the top as you scroll).
+/* EVENTS v1.2 — 2026-10-12 (v1.2: the ‹ back bar, held at the top as you scroll; Invite people).
    EVENTS v1.1 — 2026-10-07. The tournament screen, the Showroom banner,
    the poll's scoreboard and the Share to Instagram sheet.
    Paper is square, glass is round: cards and images are square, buttons
@@ -118,3 +118,9 @@
 .ev-link .btn{padding:8px 12px;font-size:13px}
 .ev-link .btn svg{width:14px;height:14px;margin-right:4px}
 .ev-focus .ev-by{display:none}
+
+/* 2026-10-12: Invite people — the link to send, and a button that shares or copies it. */
+.ev-invite{display:flex;align-items:center;gap:12px;margin:16px 0 4px;padding:12px 12px 12px 14px;border:1px solid var(--line)}
+.ev-inv-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:14px;line-height:19px}
+.ev-inv-t span{color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev-inv-b{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:44px}

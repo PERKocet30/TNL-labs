@@ -3,6 +3,8 @@
    bar at the top that stays put as you scroll ("make sure the tournament
    is easily navigable because I had problems going back" — the home-screen
    app and Instagram's browser have no back button of their own).
+   v1.2 also: "Invite people" — the link to send (labs.tnllabs.com/
+   tournament for the current one, else /e/:slug), shared or copied.
    v1.2 also: "Every entry is in // Visual" — the lab its entries post into,
    opened on its Tournament chip (app-11-places.js).
    v1.1 — 2026-10-07. The tournament
@@ -80,8 +82,12 @@ function evHeadHTML(){
       ${evLab(e)?`<a href="#" data-evlab="${evLab(e).id}">Every entry is in ${esc(labMark(evLab(e).name))}</a>`:""}
     </div>
     ${evStepsHTML()}
+    ${e.phase.phase==="results"?"":`<div class="ev-invite"><div class="ev-inv-t"><b>Invite people</b><span>${esc(evLink(e).replace(/^https?:\/\//,""))}</span></div>
+      <button class="btn ghost ev-inv-b" id="evinvite">${DI.out} Share link</button></div>`}
   </div>`;
 }
+/* The link to send people: /tournament while this is the one on now. */
+const evLink=e=>location.origin+(e.current?"/tournament":"/e/"+encodeURIComponent(e.slug));
 /* The road: where we are, what's next, with dates. */
 function evStepsHTML(){
   const s=EV.event.schedule, cur=EV.event.phase;

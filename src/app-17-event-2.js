@@ -38,6 +38,7 @@ function wireEvent(){
   if(TAB!=="event")return;
   const on=(sel,fn)=>{const el=$(sel);if(el)el.onclick=fn};
   // nothing to step back to (the app was opened right here): the Showroom, where the banner is
+  on("#evinvite",()=>{const e=EV.event;shareOut({title:e.title,text:e.title+" — enter and vote on LABS",url:evLink(e)})});
   on("#evback",()=>navBack(()=>{TAB="showroom";EVENTER=null;EVSHARE=null;EVFOCUS=null}));
   // every entry, in the lab it posts into, on its Tournament chip (a step on the back trail)
   on("[data-evlab]",e=>{e.preventDefault();if(!ME)return needAccount("Join to step into the labs.");EVENTER=null;EVSHARE=null;openLab(e.currentTarget.dataset.evlab,"work","event:"+EVSLUG)});

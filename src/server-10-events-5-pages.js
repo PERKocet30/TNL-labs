@@ -1,6 +1,10 @@
 
 /* ================================================================
-   EVENT PAGES v1.0 — 2026-10-07. The two links that go on Instagram.
+   EVENT PAGES v1.1 — 2026-10-12. The links that go on Instagram.
+   v1.1: labs.tnllabs.com/tournament — the one link to send people. It
+   always opens the tournament that's on now (its /e/:slug page), so it
+   can sit in a bio and still be right for Vol. 2. ("There's no link for
+   me to send out to people to join the tournament.")
 
      /e/:slug/board   the scoreboard, for anyone, no account needed
      /e/:slug/:entry  one piece. Its link preview is the piece itself;
@@ -19,6 +23,11 @@ const EV_PAGE_CSS = `<style>.row{display:grid;grid-template-columns:40px 56px 1f
 .row .n{font-weight:700;font-variant-numeric:tabular-nums}.row img,.row .ph{width:56px;height:56px;object-fit:cover;background:var(--el);display:block}
 .row .v{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}.row .mv{display:block;font-size:12px;line-height:16px;font-weight:400;color:var(--dim)}
 .tag{display:inline-block;padding:6px 12px;border-radius:999px;background:var(--fill);color:var(--on-fill);font-size:12px;line-height:16px;font-weight:700;letter-spacing:.06em}</style>`;
+
+app.get("/tournament", (_req, res) => {
+  const ev = evCurrent();
+  res.set("Cache-Control", "no-store").redirect(302, ev ? "/e/" + encodeURIComponent(ev.slug) : "/");
+});
 
 app.get("/e/:slug/board", (req, res) => {
   const ev = evPublished(req.params.slug);
