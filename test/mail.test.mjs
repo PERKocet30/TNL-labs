@@ -1,6 +1,6 @@
-// Mail v1.1 (2026-09-29): every email the app sends is in the design language.
+// Mail v1.2 (2026-10-12; v1.1 2026-09-29): every email the app sends is in the design language.
 // Renders the real templates from src/mail.js — nothing is sent.
-import { verifyEmail, resetEmail, alertEmail, renderEmail } from "../src/mail.js";
+import { verifyEmail, resetEmail, alertEmail, renderEmail, eventOpenEmail } from "../src/mail.js";
 import { readFileSync, readdirSync } from "node:fs";
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
@@ -8,9 +8,10 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "�
 const url = "https://labs.tnllabs.com/api/auth/verify?token=abc123&x=1";
 const v = verifyEmail("Ana Reyes", url), r = resetEmail("Ana Reyes", "https://labs.tnllabs.com/reset?token=def456");
 const w = alertEmail("Yesterday in the lab", ["0 new members · 7 posts.", "Errors: none."], "https://labs.tnllabs.com/admin#system");
+const ev = eventOpenEmail({ name: "Ana", title: "The Art Tournament", brief: "Make something.", prize: "$500", closes: "November 30, 2026", url: "https://labs.tnllabs.com/?e=art", unsub: "https://labs.tnllabs.com/mail/off?k=abc" });
 
 console.log("\nTHE DESIGN LANGUAGE");
-for (const [n, e] of [["verify", v], ["reset", r], ["watch alert", w]]) {
+for (const [n, e] of [["verify", v], ["reset", r], ["watch alert", w], ["tournament open (v2.1)", ev]]) {
   const h = e.html;
   t(`${n}: white by default (#FFFFFF, ink #000)`, /<body[^>]*background:#FFFFFF/.test(h) && /color:#000000/.test(h));
   t(`${n}: dark mode for mail apps that support it`, /prefers-color-scheme: dark/.test(h) && /\.bg \{ background:#000000/.test(h));
@@ -22,6 +23,9 @@ for (const [n, e] of [["verify", v], ["reset", r], ["watch alert", w]]) {
   t(`${n}: style attributes aren't broken by quotes`, !/style="[^"]*font-family:"/.test(h));
   t(`${n}: a plain-text version with the link`, e.text.includes("https://labs.tnllabs.com/") && e.text.includes("LABS ®"));
 }
+
+t("tournament: an unsubscribe link, in the email and the text", ev.html.includes('href="https://labs.tnllabs.com/mail/off?k=abc"') && ev.text.includes("Unsubscribe from tournament emails: https://labs.tnllabs.com/mail/off?k=abc"));
+t("account emails have no unsubscribe (they always go)", !/Unsubscribe/.test(v.html + r.html));
 
 console.log("\nSAFE");
 const x = renderEmail({ eyebrow: "Test", title: "Hi", lines: ['<script>alert(1)</script>'], cta: "Go", url: 'https://x.test/?a="b"&c=1', note: "n" });

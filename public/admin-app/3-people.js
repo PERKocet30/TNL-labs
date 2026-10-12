@@ -1,21 +1,62 @@
-/* TNL LABS admin v2.1 — 2026-10-09. People: find anyone, see their story, act.
-   v2.1: who's in the tournament; posts say which lab they're in. */
-let PQ = "", PFILTER = "all", PSORT = "joined", PERSON = null;
+/* TNL LABS admin v2.2 — 2026-10-12. People: find anyone, see their story, act.
+   v2.1: who's in the tournament; posts say which lab they're in.
+   v2.2: "a database of all members and account information" — List | Database
+   (every member, a column each, tap a heading to sort), Download CSV, and an
+   Account section in each person's drawer. */
+let PQ = "", PFILTER = "all", PSORT = "joined", PERSON = null, PVIEW = "list", PDB = { k: "joined", up: false };
+try { PVIEW = localStorage.getItem("tnl-admin-pview") === "db" ? "db" : "list"; } catch (e) {}
 const PFILTERS = [["all", "Everyone"], ["new", "New this week"], ["silent", "Never posted"], ["quiet", "Gone quiet"],
   ["tournament", "In the tournament"], ["sellers", "Sellers"], ["unverified", "Unverified"], ["suspended", "Suspended"], ["admins", "Admins"]];
 const PSORTS = [["joined", "Newest"], ["active", "Last active"], ["rep", "Rep"], ["posts", "Posts"], ["sales", "Sales"]];
 
 LOADERS.people = async () => {
-  D.people = (await req(`/api/admin/people?q=${encodeURIComponent(PQ)}&filter=${PFILTER}&sort=${PSORT}`)).people;
+  const r = await req(`/api/admin/people?q=${encodeURIComponent(PQ)}&filter=${PFILTER}&sort=${PSORT}${PVIEW === "db" ? "&all=1" : ""}`);
+  D.people = r.people; D.peopleTotal = r.total;
 };
+/* ---- the Database view: one row per member, a column per fact ---- */
+const PCOLS = [
+  ["name", "Member", (u) => u.displayName.toLowerCase()], ["email", "Email", (u) => (u.email || "").toLowerCase()],
+  ["verified", "Email ✓", (u) => +u.verified], ["joined", "Joined", (u) => u.joined], ["active", "Last active", (u) => u.lastActive || 0],
+  ["rep", "Level", (u) => u.rep], ["posts", "Posts", (u) => u.posts], ["followers", "Followers", (u) => u.followers],
+  ["collabs", "Collabs", (u) => u.collabs], ["listings", "Listings", (u) => u.listings], ["gross", "Sold", (u) => u.gross],
+  ["payouts", "Payouts", (u) => +u.payouts], ["status", "Status", (u) => (u.suspended ? 2 : u.isAdmin ? 1 : 0)]];
+const pday = (t) => (t ? new Date(t).toLocaleDateString([], { month: "short", day: "numeric", year: "2-digit" }) : "—");
+function peopleDbHTML() {
+  const col = PCOLS.find(([k]) => k === PDB.k) || PCOLS[3], f = col[2];
+  const rows = [...D.people].sort((a, b) => { const x = f(a), y = f(b); return (x < y ? -1 : x > y ? 1 : 0) * (PDB.up ? 1 : -1); });
+  const cell = {
+    name: (u) => `<td><div class="pdb-name">${av(u)}<span><b>${esc(u.displayName)}</b><span class="dim">@${esc(u.username)}</span></span></div></td>`,
+    email: (u) => `<td class="pdb-mail">${esc(u.email || "")}</td>`, verified: (u) => `<td>${u.verified ? "yes" : `<span class="tag warn">no</span>`}</td>`,
+    joined: (u) => `<td class="num">${pday(u.joined)}</td>`, active: (u) => `<td class="num">${u.lastActive ? ago(u.lastActive) : "—"}</td>`,
+    rep: (u) => `<td>L${u.level} <span class="dim">${u.rep}</span></td>`, posts: (u) => `<td class="num">${u.posts}</td>`, followers: (u) => `<td class="num">${u.followers}</td>`,
+    collabs: (u) => `<td class="num">${u.collabs}</td>`, listings: (u) => `<td class="num">${u.listings}</td>`, gross: (u) => `<td class="num">${u.gross ? money(u.gross) : "—"}</td>`,
+    payouts: (u) => `<td>${u.payouts ? "on" : "—"}</td>`,
+    status: (u) => `<td>${u.suspended ? `<span class="tag warn">suspended</span>` : u.isAdmin ? `<span class="tag on">admin</span>` : "member"}</td>`,
+  };
+  return `<div class="pdb-wrap"><table class="tbl pdb"><thead><tr>${PCOLS.map(([k, l]) => `<th><button class="pdb-h${PDB.k === k ? " on" : ""}" data-pdbk="${k}">${l}${PDB.k === k ? (PDB.up ? " ↑" : " ↓") : ""}</button></th>`).join("")}</tr></thead>
+    <tbody>${rows.map((u) => `<tr class="clk" data-person="${esc(u.username)}">${PCOLS.map(([k]) => cell[k](u)).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+/* The whole database as a spreadsheet. Fetched with your admin sign-in, then saved. */
+async function downloadMembers() {
+  try {
+    const r = await fetch("/api/admin/members.csv", { headers: TOKEN ? { Authorization: "Bearer " + TOKEN } : {} });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Couldn't make the file");
+    const b = await r.blob(), a = document.createElement("a"), name = (/filename="([^"]+)"/.exec(r.headers.get("content-disposition") || "") || [])[1] || "tnl-labs-members.csv";
+    a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast("Downloaded — it has everyone's email, keep it somewhere safe");
+  } catch (e) { toast(e.message); }
+}
 
 VIEWS.people = () => `
-  <div class="row sp wrapx"><h1 style="font-size:22px">People</h1><span class="mono">${D.people ? D.people.length + " shown" : ""}</span></div>
+  <div class="row sp wrapx"><h1 style="font-size:22px">People</h1><span class="mono">${D.people ? D.people.length + " shown" + (D.peopleTotal ? " of " + D.peopleTotal + " members" : "") : ""}</span></div>
+  <div class="row sp wrapx" style="margin-top:10px;gap:8px"><div class="row" style="gap:6px"><button class="pill sm ${PVIEW === "list" ? "on" : ""}" data-pview="list">List</button><button class="pill sm ${PVIEW === "db" ? "on" : ""}" data-pview="db">Database</button></div>
+    <button class="btn ghost sm" id="pcsv">${I.out} Download CSV</button></div>
   <div class="row" style="margin:12px 0 8px;gap:8px"><input class="in" id="pq" placeholder="Search name, username or email" value="${esc(PQ)}" autocomplete="off">
     <select class="sel" id="psort" aria-label="Sort">${PSORTS.map(([k, l]) => `<option value="${k}" ${PSORT === k ? "selected" : ""}>${l}</option>`).join("")}</select></div>
   <div class="filters">${PFILTERS.map(([k, l]) => `<button class="pill sm ${PFILTER === k ? "on" : ""}" data-pf="${k}">${l}</button>`).join("")}</div>
   <div class="list" style="margin-top:10px">${!D.people ? `<div class="empty">Loading…</div>` : !D.people.length ? `<div class="empty">Nobody matches.</div>`
-    : D.people.map((u) => `<button class="li" data-person="${esc(u.username)}">${av(u)}
+    : PVIEW === "db" ? peopleDbHTML() : D.people.map((u) => `<button class="li" data-person="${esc(u.username)}">${av(u)}
       <span class="b"><b>${esc(u.displayName)}${u.isAdmin ? `<span class="tag on">admin</span>` : ""}${u.suspended ? `<span class="tag warn">suspended</span>` : ""}${!u.verified ? `<span class="tag">unverified</span>` : ""}${u.note ? `<span class="tag">note</span>` : ""}</b>
         <span>@${esc(u.username)} · L${u.level} ${esc(u.levelName)} · ${u.posts} post${u.posts === 1 ? "" : "s"}${u.collabs ? ` · ${u.collabs} collab${u.collabs === 1 ? "" : "s"}` : ""}${u.gross ? ` · ${money(u.gross)} sold` : ""}</span></span>
       <span class="r">${u.lastActive ? "active " + ago(u.lastActive) : "joined " + ago(u.joined)}</span></button>`).join("")}</div>
@@ -32,6 +73,9 @@ WIRES.people = () => {
   if (q) { let t; q.oninput = () => { PQ = q.value; clearTimeout(t); t = setTimeout(async () => { await load(); const f = $("#pq"); if (f) { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } }, 250); }; }
   $$("[data-pf]").forEach((b) => b.onclick = () => { PFILTER = b.dataset.pf; D.people = null; paint(); load(); });
   const s = $("#psort"); if (s) s.onchange = () => { PSORT = s.value; load(); };
+  $$("[data-pview]").forEach((b) => b.onclick = () => { PVIEW = b.dataset.pview; try { localStorage.setItem("tnl-admin-pview", PVIEW); } catch (e) {} D.people = null; paint(); load(); });
+  $$("[data-pdbk]").forEach((b) => b.onclick = () => { const k = b.dataset.pdbk; PDB = { k, up: PDB.k === k ? !PDB.up : k === "name" || k === "email" }; paint(); });
+  const cv = $("#pcsv"); if (cv) cv.onclick = downloadMembers;
   const bc = $("#bcsend"); if (bc) bc.onclick = async () => {
     const body = $("#bcbody").value.trim(), target = $("#bcto").value;
     if (!body) return toast("Write something first");
@@ -83,6 +127,22 @@ function personHTML() {
       <button class="btn ghost sm" data-pa="signout">Sign out everywhere</button>
       ${p.isAdmin ? "" : `<button class="btn ${p.suspended ? "ghost" : "danger"} sm" data-pa="suspend">${p.suspended ? "Restore account" : "Suspend"}</button>`}
     </div>
+    <h2 class="sec">Account</h2>
+    <table class="tbl acct"><tbody>
+      <tr><td class="dim">Email</td><td>${esc(p.email || "—")} ${p.email ? `<button class="btn ghost sm" data-copy="${esc(p.email)}">Copy</button>` : ""}</td></tr>
+      <tr><td class="dim">Email confirmed</td><td>${p.verified ? "Yes" : "No"}</td></tr>
+      <tr><td class="dim">Member no.</td><td>#${p.id}</td></tr>
+      <tr><td class="dim">Joined</td><td>${new Date(p.joined).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</td></tr>
+      <tr><td class="dim">Last opened the app</td><td>${p.lastSeen ? new Date(p.lastSeen).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "—"}</td></tr>
+      <tr><td class="dim">Signed in on</td><td>${s.sessions} device${s.sessions === 1 ? "" : "s"}</td></tr>
+      <tr><td class="dim">What they make</td><td>${esc((p.roles && p.roles.length ? p.roles : [p.role]).filter(Boolean).join(" · ") || "—")}</td></tr>
+      <tr><td class="dim">Pronouns</td><td>${esc(p.pronouns || "—")}</td></tr>
+      <tr><td class="dim">Links</td><td>${(p.links && p.links.length ? p.links.map((l) => l.url || l) : p.link ? [p.link] : []).map((u) => /^https?:\/\//i.test(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u.replace(/^https?:\/\//, ""))}</a>` : esc(u)).join("<br>") || "—"}</td></tr>
+      <tr><td class="dim">Bio</td><td>${esc(p.bio || "—")}</td></tr>
+      <tr><td class="dim">Payouts</td><td>${p.payouts ? "On — Stripe is set up" : p.stripeConnected ? "Started, not finished" : "Not set up"}</td></tr>
+      <tr><td class="dim">Commission</td><td>${p.fee}% (L${p.level} ${esc(p.levelName)})</td></tr>
+      <tr><td class="dim">Account</td><td>${p.suspended ? "Suspended" : p.isAdmin ? "Admin" : "Member"}</td></tr>
+    </tbody></table>
     <label class="l" for="pnote">Private note — only admins see this</label>
     <textarea class="in" id="pnote" rows="3" maxlength="2000" placeholder="How you know them, what they make, what they need…">${esc(d.note ? d.note.body : "")}</textarea>
     <div class="row sp" style="margin-top:6px"><span class="mono">${d.note && d.note.at ? "saved " + ago(d.note.at) + " ago" + (d.note.by ? " by @" + esc(d.note.by) : "") : ""}</span><button class="btn sm ghost" data-pa="note">Save note</button></div>
@@ -94,6 +154,7 @@ function personHTML() {
 function wirePerson(el) {
   const u = PERSON && PERSON.username;
   $("[data-close]", el).onclick = closePerson;
+  $$("[data-copy]", el).forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast("Copied"); } catch (e) { toast(b.dataset.copy); } });
   $$("[data-dm]", el).forEach((b) => b.onclick = () => window.open("/?dm=" + encodeURIComponent(b.dataset.dm), "_blank"));
   $$("[data-pa]", el).forEach((b) => b.onclick = async () => {
     const a = b.dataset.pa, base = "/api/admin/members/" + encodeURIComponent(u), p = PERSON.data.person;
