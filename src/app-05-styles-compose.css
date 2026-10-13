@@ -78,3 +78,8 @@
 /* the track's name-and-cover sheet is a page of its own, over everything —
    it used to share the screen with whatever was under it (2026-10-09) */
 #trkeov{position:fixed;inset:0;z-index:150;background:var(--bg);padding-top:env(safe-area-inset-top)}
+
+/* Add music: ▶ listens before you pick (2026-10-13) */
+.pcmus-pp{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--line2);background:none;color:var(--tx);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.pcmus-pp.on{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
+.pcmus-pp svg{width:16px;height:16px}
