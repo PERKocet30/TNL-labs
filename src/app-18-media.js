@@ -19,6 +19,7 @@ function wireCaros(){
   const view=MV.key+"|"+(PROFILE&&!MYPAGE()&&PROFILE.user?PROFILE.user.username:"")+"|"+(POSTOPEN?POSTOPEN.id:"");   // screen (app-09-motion) + any profile/post on top
   if(view!==CAROVIEW){CAROVIEW=view;CAROIDX.clear()}   // a new screen starts every carousel at 1
   document.querySelectorAll("[data-caro]").forEach(c=>{
+    caroPrune(c);if(!c.isConnected)return;   // pictures known not to load leave first (app-18-img-fallback.js)
     const track=c.querySelector(".caro-t");
     const dots=[...c.querySelectorAll(".caro-d span")];
     const num=c.querySelector(".caro-n");
