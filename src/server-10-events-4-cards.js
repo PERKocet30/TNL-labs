@@ -181,7 +181,10 @@ async function evSendCard(res, card, fallback) {
 
 app.get("/e/:slug/board.jpg", rateLimit({ max: 60, windowMs: 60000 }), (req, res) => {
   const ev = evPublished(req.params.slug); if (!ev) return res.status(404).end();
-  evSendCard(res, evBoardCard(ev, req.query.size === "story" ? "story" : "post", baseUrl(req)), null);
+  const card = evBoardCard(ev, req.query.size === "story" ? "story" : "post", baseUrl(req));
+  /* No votes yet (before voting opens): say so, not a blank page (2026-10-13, "make sure all links work"). */
+  if (!card) return res.status(404).send(lookNotFound("The scoreboard picture is made from votes — it's ready once voting opens."));
+  evSendCard(res, card, null);
 });
 app.get("/e/:slug/:entry/story.jpg", rateLimit({ max: 60, windowMs: 60000 }), (req, res) => {
   const ev = evPublished(req.params.slug); if (!ev) return res.status(404).end();
