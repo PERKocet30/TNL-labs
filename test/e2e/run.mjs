@@ -314,6 +314,18 @@ console.log("\nMEMBER · PHONE");
   /* Fluid (app-09-motion.js): places are kept, the tab glides you up,
      double-tap likes, screens move. */
   const srTop = () => p.evaluate(() => document.getElementById("showroom")?.scrollTop ?? -1);
+  /* "Glitches etc" (Jorge's recording, 2026-10-13): a carousel of differently shaped pictures landed
+     half a slide off, the first sat in a grey box, and the feed jumped as slides loaded. */
+  await step(d, "carousel of mixed shapes: the first picture sets the frame, it's sized before anything loads, every slide is exactly the frame", async () => {
+    await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
+    const id = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.images && q.images.length > 2); x.__orig = x.images;
+      x.images = x.images.slice(0, 3).map((im, i) => Object.assign({}, im, [{ w: 1600, h: 900 }, { w: 800, h: 1400 }, { w: 1000, h: 1000 }][i])); render(); return x.id; });
+    const m = await p.evaluate((id) => { const c = document.querySelector(`#sr-grid [data-caro="s${id}"]`), t = c.querySelector(".caro-t"), tw = t.clientWidth, th = t.clientHeight;
+      return { ratio: +(tw / th).toFixed(2), style: t.style.aspectRatio, slides: [...t.querySelectorAll(".caro-i")].map((im) => [Math.round(im.getBoundingClientRect().width - tw), Math.round(im.getBoundingClientRect().height - th)]) }; }, id);
+    ok(Math.abs(m.ratio - 1.78) < 0.03 && m.style, "the frame isn't the first picture's shape, set before loading: " + JSON.stringify(m));
+    ok(m.slides.every(([w, h]) => Math.abs(w) <= 1 && Math.abs(h) <= 1), "slides aren't exactly the frame (they'd land half on): " + JSON.stringify(m.slides));
+    await p.evaluate((id) => { const x = SRPOSTS.find((q) => q.id === id); x.images = x.__orig; delete x.__orig; render(); }, id);
+  });
   /* Fix today's issues (2026-10-13): one July carousel lost 7 of its 8 pictures on the server and the
      Showroom showed swipeable blank slides; browsers asked for /favicon.ico 33 times a day and got nothing. */
   await step(d, "a carousel with pictures missing from the server drops those slides and counts what's left; the site icon loads", async () => {

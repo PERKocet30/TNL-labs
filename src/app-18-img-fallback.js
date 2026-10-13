@@ -7,6 +7,10 @@
    says so quietly, instead of a broken-image icon. Remembered per visit,
    so a repaint doesn't flash it back. */
 const BADIMG=new Set();
+/* A carousel's frame is its first picture's shape, kept between Instagram's
+   limits (4:5 tall to 1.91:1 wide), so it has its size before anything loads. */
+function caroRatio(imgs){const f=(imgs||[]).find(i=>i&&i.w&&i.h);if(!f)return "4/5";
+  const r=Math.min(1.91,Math.max(0.8,f.w/f.h));return r.toFixed(4)+"/1"}
 const imgPath=im=>{try{return new URL(im.currentSrc||im.src,location.href).pathname}catch(e){return ""}};
 /* Take the dead slides out of one carousel; with none left, a quiet box. */
 function caroPrune(c){
