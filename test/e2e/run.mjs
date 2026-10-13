@@ -314,6 +314,23 @@ console.log("\nMEMBER · PHONE");
   /* Fluid (app-09-motion.js): places are kept, the tab glides you up,
      double-tap likes, screens move. */
   const srTop = () => p.evaluate(() => document.getElementById("showroom")?.scrollTop ?? -1);
+  /* Fix today's issues (2026-10-13): one July carousel lost 7 of its 8 pictures on the server and the
+     Showroom showed swipeable blank slides; browsers asked for /favicon.ico 33 times a day and got nothing. */
+  await step(d, "a carousel with pictures missing from the server drops those slides and counts what's left; the site icon loads", async () => {
+    const fav = await fetch(B + "/favicon.ico");
+    ok(fav.status === 200 && /icon|image/.test(fav.headers.get("content-type") || ""), "no /favicon.ico: " + fav.status + " " + fav.headers.get("content-type"));
+    await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
+    const id = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.images && q.images.length > 2); x.__orig = x.images;
+      x.images = [x.images[0], { url: "/uploads/missing-1.jpg", w: 800, h: 1000 }, x.images[1], { url: "/uploads/missing-2.jpg", w: 800, h: 1000 }]; render(); return x.id; });
+    const cnt = (id) => p.evaluate((id) => { const c = document.querySelector(`#sr-grid [data-caro="s${id}"]`); return c ? { slides: c.querySelectorAll(".caro-i").length, dots: c.querySelectorAll(".caro-d span").length, n: c.querySelector(".caro-n") && c.querySelector(".caro-n").textContent } : null; }, id);
+    await p.waitForFunction((id) => { const c = document.querySelector(`#sr-grid [data-caro="s${id}"]`); return c && c.querySelectorAll(".caro-i").length === 2; }, id, { timeout: 6000 }).catch(() => {});
+    let r = await cnt(id);
+    ok(r && r.slides === 2 && r.dots === 2 && r.n === "1/2", "the missing slides are still in the carousel: " + JSON.stringify(r));
+    await p.evaluate(() => render());
+    r = await cnt(id);
+    ok(r && r.slides === 2 && r.n === "1/2", "a repaint brought the missing slides back: " + JSON.stringify(r));
+    await p.evaluate((id) => { const x = SRPOSTS.find((q) => q.id === id); x.images = x.__orig; delete x.__orig; render(); }, id);
+  });
   await step(d, "back from a profile lands where you were in the feed", async () => {
     await p.evaluate(() => { TAB = "showroom"; PROFILE = null; render(); });
     await p.waitForSelector("#sr-grid .sr-card");

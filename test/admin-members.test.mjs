@@ -23,7 +23,7 @@ for (let i = 0; i < 330; i++) many.run("m" + i, "Member " + i, `m${i}@x.com`, "h
 
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
-const PORT = 8872, B = `http://localhost:${PORT}`;
+const PORT = 8875, B = `http://localhost:${PORT}`;
 const srv = spawn(process.execPath, ["--experimental-sqlite", "--no-warnings", "src/server.runtime.js"], {
   cwd: ROOT, env: { ...process.env, TNL_DATA: DATA, PORT: String(PORT), STRIPE_SECRET_KEY: "", TNL_NO_VIDEO_FIX: "1", TNL_NO_WATCH: "1" }, stdio: "ignore" });
 const get = (path, who) => fetch(B + path, { headers: who ? { authorization: "Bearer tok-" + who } : {} });
