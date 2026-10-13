@@ -25,3 +25,5 @@ User-agent: *
 Disallow: /api/
 Disallow: /admin
 Allow: /
+
+Sitemap: https://labs.tnllabs.com/sitemap.xml

@@ -344,7 +344,12 @@ app.get("/p/:id", (req, res) => {
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(desc)}">
 <meta name="twitter:image" content="${esc(img)}">
-<meta name="description" content="${esc(desc)}">`,
+<meta name="description" content="${esc(desc)}">
+${ldJson({ "@context": "https://schema.org", "@type": "SocialMediaPosting", url: canonical, headline: (p.body || title).slice(0, 110), image: img,
+  datePublished: new Date(p.createdAt).toISOString(), ...(p.editedAt ? { dateModified: new Date(p.editedAt).toISOString() } : {}),
+  author: [ldPerson(p.author, baseUrl(req)), ...accepted.map((c) => ldPerson(c, baseUrl(req)))],
+  interactionStatistic: { "@type": "InteractionCounter", interactionType: "https://schema.org/LikeAction", userInteractionCount: p.likeCount || 0 },
+  isPartOf: { "@type": "WebSite", name: "TNL LABS", url: baseUrl(req) } })}`,
     body: `
 <a class="who" href="/u/${esc(p.author.username)}">
   ${p.author.avatarUrl ? `<img class="av ring" src="${esc(abs(p.author.avatarUrl))}" alt="">` : `<div class="av ring">${esc(p.author.displayName.slice(0, 2).toUpperCase())}</div>`}

@@ -204,7 +204,13 @@ app.get("/e/:slug", (req, res) => {
     head: `<meta property="og:type" content="website"><meta property="og:site_name" content="TNL LABS">
 <meta property="og:title" content="${esc(ev.title)}"><meta property="og:description" content="${esc(desc)}">
 <meta property="og:image" content="${esc(abs(img))}"><meta property="og:url" content="${esc(base + "/e/" + ev.slug)}">
-<meta name="twitter:card" content="summary_large_image"><meta name="description" content="${esc(desc)}">`,
+<meta name="twitter:card" content="summary_large_image"><meta name="description" content="${esc(desc)}">
+<link rel="canonical" href="${esc(base + "/e/" + ev.slug)}">
+${ldJson({ "@context": "https://schema.org", "@type": "Event", name: ev.title, url: base + "/e/" + ev.slug, description: (ev.brief || desc).slice(0, 500), image: abs(img),
+  ...(s[0]?.start ? { startDate: new Date(s[0].start).toISOString() } : {}), ...(s.length && s[s.length - 1].start ? { endDate: new Date(s[s.length - 1].start).toISOString() } : {}),
+  eventStatus: "https://schema.org/EventScheduled", eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
+  location: { "@type": "VirtualLocation", url: base + "/e/" + ev.slug }, organizer: { "@type": "Organization", name: "TNL LABS", url: base },
+  ...(ev.prize ? { offers: { "@type": "Offer", price: "0", priceCurrency: "USD", url: base + "/e/" + ev.slug, availability: "https://schema.org/InStock" } } : {}) })}`,
     body: `${lookEyebrow("Event")}<h1>${esc(ev.title)}</h1>
 <p class="cap" style="margin:0 0 16px">${esc(label)}${ev.prize ? " · " + esc(ev.prize) : ""}</p>
 ${ev.cover_url ? `<img class="media" src="${esc(ev.cover_url)}" alt="" style="margin:0 0 16px">` : ""}

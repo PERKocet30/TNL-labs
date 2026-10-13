@@ -47,7 +47,10 @@ app.get("/s/:id", (req, res) => {
 <meta name="twitter:title" content="${e(title)}">
 <meta name="twitter:description" content="${e(desc)}">
 <meta name="twitter:image" content="${e(img)}">
-<meta name="description" content="${e(desc)}">`,
+<meta name="description" content="${e(desc)}">
+${ldJson({ "@context": "https://schema.org", "@type": "MusicRecording", name: t.title, url, image: img, datePublished: new Date(row.created_at).toISOString(),
+  ...(t.durationMs ? { duration: `PT${Math.floor(t.durationMs / 60000)}M${Math.round(t.durationMs / 1000) % 60}S` } : {}),
+  byArtist: { ...ldPerson(row, base), "@type": "MusicGroup" } })}`,
     body: `
 ${t.artworkUrl ? `<img class="media" src="${e(t.artworkUrl)}" alt="${e(t.title)} — cover" style="aspect-ratio:1/1;object-fit:cover;max-height:none">` : ""}
 <h1 style="margin:14px 0 4px;font-size:24px;line-height:28px">${e(t.title)}</h1>
