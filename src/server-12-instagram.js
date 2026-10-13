@@ -42,6 +42,10 @@ function listingPage(req, res) {
 <meta name="twitter:description" content="${e(desc)}">
 <meta name="twitter:image" content="${e(img)}">
 <meta name="description" content="${e(desc)}">
+${ldJson({ "@context": "https://schema.org", "@type": "Product", name: l.title, url, image: img, description: (l.description || desc).slice(0, 500),
+  ...(l.condition ? { itemCondition: /new/i.test(l.condition) && !/like/i.test(l.condition) ? "https://schema.org/NewCondition" : "https://schema.org/UsedCondition" } : {}),
+  offers: { "@type": "Offer", url, price: (l.price_cents / 100).toFixed(2), priceCurrency: l.currency || "USD",
+    availability: l.status === "sold" ? "https://schema.org/SoldOut" : "https://schema.org/InStock", seller: ldPerson(u, base) } })}
 `;
   // the shell's own preview tags out, the listing's in — the app itself is untouched
   const out = html

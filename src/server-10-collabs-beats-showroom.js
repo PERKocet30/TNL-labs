@@ -157,7 +157,10 @@ app.get("/u/:username", (req, res) => {
 <meta name="twitter:description" content="${esc(ogDesc)}">
 <meta name="twitter:image" content="${esc(ogImage)}">
 
-<meta name="description" content="${esc(ogDesc)}">`,
+<meta name="description" content="${esc(ogDesc)}">
+${ldJson({ "@context": "https://schema.org", "@type": "ProfilePage", url: canonical, dateCreated: new Date(u.created_at).toISOString(),
+  mainEntity: { ...ldPerson(u, baseUrl(req)), description: u.bio || undefined, jobTitle: roleLine || undefined, image: abs(u.avatar_url) || undefined,
+    sameAs: profileExtras(u).links.map((l) => l.url).filter((x) => /^https?:/.test(x || "")) } })}`,
     body: `
 ${lookEyebrow(K.tag)}
 <div class="who" style="margin-top:0">

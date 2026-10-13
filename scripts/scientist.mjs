@@ -204,6 +204,7 @@ await check("palette stylesheet", "/palette.css", { status: 200, type: "text/css
 await check("door script", "/door.js", { status: 200, type: "javascript" });
 await check("app icon", "/icon-512.png", { status: 200, type: "image/png" });
 await check("robots.txt", "/robots.txt", { status: 200, type: "text/plain" });
+await check("sitemap for search engines", "/sitemap.xml", { status: 200, type: "application/xml" });
 
 /* 9. The certificate. When it lapses every browser shows a red warning page
       and no check above can say why. Fail with two weeks to spare. */
