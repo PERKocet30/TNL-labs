@@ -1,4 +1,4 @@
-/* TNL LABS admin — Events v1.4, 2026-10-12 (v1.4: "Link to send people" up top —
+/* TNL LABS admin — Events v1.5, 2026-10-13 (v1.5: the scoreboard picture buttons wait for voting instead of opening a dead page; v1.4: "Link to send people" up top —
    labs.tnllabs.com/tournament for the one on now, with Copy).
    Events v1.3, 2026-10-12 (the Tournament tab; v1.2: named for it;
    v1.3: the "entries are open" email to every member — its switch, a
@@ -90,8 +90,9 @@ function evDetailHTML(d) {
   ${e.format === "poll" ? `<h2 class="sec">Instagram <span class="mono">every link leads back to the app — only votes there count</span></h2>
   <div class="panel"><div class="row wrapx" style="gap:6px">
     <a class="btn ghost sm" href="/e/${esc(e.slug)}/board" target="_blank">Scoreboard page</a>
-    <a class="btn ghost sm" href="/e/${esc(e.slug)}/board.jpg?t=${Date.now()}" target="_blank">Scoreboard post (1080×1350)</a>
-    <a class="btn ghost sm" href="/e/${esc(e.slug)}/board.jpg?size=story&t=${Date.now()}" target="_blank">Scoreboard Story (1080×1920)</a>
+    ${stage ? `<a class="btn ghost sm" href="/e/${esc(e.slug)}/board.jpg?t=${Date.now()}" target="_blank">Scoreboard post (1080×1350)</a>
+    <a class="btn ghost sm" href="/e/${esc(e.slug)}/board.jpg?size=story&t=${Date.now()}" target="_blank">Scoreboard Story (1080×1920)</a>`
+    : `<button class="btn ghost sm" disabled title="The scoreboard pictures are made from votes">Scoreboard pictures — ready when voting opens</button>`}
     <button class="btn ghost sm" data-evcopy="${esc(location.origin + "/e/" + e.slug)}">Copy event link</button></div>
     <p class="dim" style="font-size:12px;margin-top:10px">Post the scoreboard daily with a link sticker to the event. Entrants get their own Story card and vote link in the app (Share to Instagram); theirs are below too.</p></div>` : ""}
   ${evMailHTML(d.mail, e)}
