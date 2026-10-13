@@ -773,6 +773,27 @@ console.log("\nMEMBER · PHONE");
     await fetch(B + "/api/tracks/" + np.audioTrack.id, { method: "DELETE", headers: { authorization: "Bearer " + token } });
     await p.evaluate(() => { TRACKS = null; });   // the save above loaded the library list; let it load fresh
   });
+  /* "You should be able to listen to a song before you pick it for a post" (2026-10-13). */
+  await step(d, "Add music: ▶ plays a song without picking it, tap again stops it; the row picks it and it keeps playing; closing the post maker stops it", async () => {
+    await openCreator();
+    await p.locator("[data-pcmusadd]").tap();
+    await p.waitForSelector(".pcmus-row [data-pcprev]", { timeout: 8000 });
+    const row = p.locator(".pcmus-row").first(), id = Number(await row.getAttribute("data-pcmuspick"));
+    await row.locator("[data-pcprev]").tap(); await p.waitForTimeout(900);
+    const s1 = await p.evaluate(() => ({ playing: !!(PCPV && !PCPV.a.paused), at: PCPV && PCPV.a.currentTime, picked: !!PCOMPOSE.track, open: !!PCOMPOSE.pick }));
+    ok(s1.playing && s1.at > 0 && !s1.picked && s1.open, "▶ didn't just play the song: " + JSON.stringify(s1));
+    ok(await row.locator(".pcmus-pp.on").count() === 1, "the ▶ doesn't show it's playing");
+    await row.locator("[data-pcprev]").tap(); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => PCPV && PCPV.a.paused), "tapping again didn't stop it");
+    await row.locator("[data-pcprev]").tap(); await p.waitForTimeout(500);
+    await row.locator(".pcmus-t").tap(); await p.waitForTimeout(400);
+    ok(await p.evaluate((id) => PCOMPOSE.track && PCOMPOSE.track.id === id && PCPV && PCPV.id === id && !PCPV.a.paused, id), "picking the song you were hearing stopped it, or didn't pick it");
+    await p.locator("[data-pcmusplay]").tap(); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => PCPV.a.paused), "the picked song's ▶ didn't pause it");
+    await p.locator("[data-pcmusplay]").tap(); await p.waitForTimeout(300);
+    await p.evaluate(() => { PCOMPOSE = null; render(); }); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => !PCPV), "closing the post maker left the song playing");
+  });
   /* "Update the post maker to simple video editing, cover etc like Instagram" (2026-10-08). */
   await step(d, "video editor: a cover arrives by itself; trim, sound off and 4:5 ride on the post and the feed honours them", async () => {
     await openCreator();

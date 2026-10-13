@@ -1,4 +1,4 @@
-/* ── POST CREATOR · v2.3 · 2026-10-11 (v2.3: your songs first in Add music; v2 2026-09-28; v2.1: your labs first in Share to a lab; v2.2: upload a song from here, and its cover is the post's picture when there are no photos) ────────────────────────────────
+/* ── POST CREATOR · v2.4 · 2026-10-13 (v2.4: ▶ to listen before you pick a song; v2.3: your songs first in Add music; v2 2026-09-28; v2.1: your labs first in Share to a lab; v2.2: upload a song from here, and its cover is the post's picture when there are no photos) ────────────────────────────────
    Instagram / Facebook grade, TNL look. One page: the work large at the
    top (swipe it, reorder it, see each upload land), the caption with
    @mentions, then three rows — invite collaborators, add music, share to a
@@ -67,7 +67,7 @@ function pcomposeHTML(){
           <span class="pc-v">${c.collabs.length?c.collabs.length+" invited":""}</span>${PC_CHEV}</button>
         ${c.collabs.length?`<div class="pc-chips">${c.collabs.map((u,i)=>`<span class="pc-chip">${avHTML(u,"")}@${esc(u.username)}
           <button data-pccrm="${i}" aria-label="Remove">${PC_X}</button></span>`).join("")}</div>`:""}
-        ${c.track?`<div class="pc-opt pc-on"><button class="pc-ic pc-pp" data-pcmusplay aria-label="Play">${UI_IC.music}</button>
+        ${c.track?`<div class="pc-opt pc-on"><button class="pc-ic pc-pp" data-pcmusplay aria-label="${pcPvOn(c.track.id)?"Pause":"Play"}">${pcPvOn(c.track.id)?DI.pause:DI.play}</button>
             <span class="pc-l"><b>${esc(c.track.title)}</b><span class="dim">@${esc(c.track.by.username)}</span></span>
             <button class="pc-x" data-pcmusrm aria-label="Remove music">${PC_X}</button></div>`
           :`<button class="pc-opt" data-pcmusadd><span class="pc-ic">${UI_IC.music}</span><span class="pc-l">Add music</span><span class="pc-v"></span>${PC_CHEV}</button>`}
@@ -106,11 +106,11 @@ function pcmusRowsHTML(list,searching){
     ?`<div class="empty">No tracks match that.</div>`
     :`<div class="empty">No tracks in the library yet.<br>Upload yours above.</div>`;
   if(!searching)list=[...list].sort((a,b)=>(b.by.username===myName())-(a.by.username===myName()));   // your songs first (2026-10-11)
-  return list.map(t=>`<div class="pcmus-row" data-pcmuspick="${t.id}"><div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="">`:DI.music}</div><div class="pcmus-meta"><div class="pcmus-t">${esc(t.title)}</div><div class="dim">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}</div></div></div>`).join("");
+  return list.map(t=>`<div class="pcmus-row" data-pcmuspick="${t.id}"><div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="">`:DI.music}</div><div class="pcmus-meta"><div class="pcmus-t">${esc(t.title)}</div><div class="dim">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}</div></div>${pcPrevBtn(t)}</div>`).join("");   // ▶ listens first (app-18-pc-preview.js)
 }
 
 function wirePCompose(){
-  const ov=$("#pcov");if(!ov){if(PED&&!PCOMPOSE)pedClose();return}const c=PCOMPOSE;
+  const ov=$("#pcov");if(!ov){if(PED&&!PCOMPOSE)pedClose();pcPrevStop();return}const c=PCOMPOSE;
   const syncGo=()=>{const g=$("#pcgo");if(g)g.disabled=!pcCan(c)};
 
   /* ── media ── */
@@ -251,7 +251,9 @@ function wirePCompose(){
   const ma=document.querySelector("[data-pcmusadd]");if(ma)ma.onclick=async()=>{
     c.pick=!c.pick;render();
     if(c.pick&&!c.list){try{c.list=(await api.tracks("")).tracks}catch(e){c.list=[]}render()}};
-  const pickTrack=el=>el.onclick=()=>{c.track=(c.list||[]).find(t=>String(t.id)===el.dataset.pcmuspick)||null;c.pick=false;render()};
+  const pickTrack=el=>el.onclick=()=>{c.track=(c.list||[]).find(t=>String(t.id)===el.dataset.pcmuspick)||null;c.pick=false;
+    if(PCPV&&(!c.track||PCPV.id!==c.track.id))pcPrevStop();   // the one you were hearing carries on if it's the one you picked
+    render()};
   document.querySelectorAll("[data-pcmuspick]").forEach(pickTrack);
   const mq=$("#pcmusq");if(mq){let dq=null;mq.oninput=()=>{c.q=mq.value;clearTimeout(dq);
     dq=setTimeout(async()=>{try{c.list=(await api.tracks(c.q)).tracks}catch(e){c.list=[]}
@@ -268,8 +270,8 @@ function wirePCompose(){
       render();
     }catch(e){c.musup=false;render();toast(e.message||"Upload failed")}
   };
-  const mr=document.querySelector("[data-pcmusrm]");if(mr)mr.onclick=()=>{c.track=null;render()};
-  const mp=document.querySelector("[data-pcmusplay]");if(mp)mp.onclick=()=>{if(c.track)playTrack(c.track)};
+  const mr=document.querySelector("[data-pcmusrm]");if(mr)mr.onclick=()=>{c.track=null;pcPrevStop();render()};
+  const mp=document.querySelector("[data-pcmusplay]");if(mp)mp.onclick=()=>pcPrevToggle(c.track);
 
   /* No scrim dismiss — Cancel is the way out, and it asks before binning a draft. */
   const cc=$("#pccancel");if(cc)cc.onclick=async()=>{if(await pcLeave())render()};
