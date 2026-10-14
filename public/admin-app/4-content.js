@@ -1,4 +1,4 @@
-/* TNL LABS admin v3.0 — 2026-10-09. Labs: reports first, then every post —
+/* TNL LABS admin v3.1 — 2026-10-14 (page header; reports and posts each in a card). Labs: reports first, then every post —
    by lab (genre), #tag, work or talk. Labs are places now; the old channels
    only live on as the #tags their posts carry. */
 let CLAB = "", CTAG = "", CKIND = "", CQ = "";
@@ -13,9 +13,10 @@ LOADERS.content = async () => {
 VIEWS.content = () => {
   const P = D.posts, R = D.reports;
   return `
-  <div class="row sp wrapx"><h1 style="font-size:22px">Labs</h1><span class="mono">every post, by lab and #tag</span></div>
-  ${R && R.length ? `<h2 class="sec">Reports <span class="mono">${R.length} open</span></h2>${R.map(reportHTML).join("")}` : ""}
-  <h2 class="sec">Posts</h2>
+  ${pageHead("Labs", "Every post, by lab and #tag. Reports come first.")}
+  ${R && R.length ? `<h2 class="sec">Reports <span class="mono">${R.length} open</span></h2><div class="panel reps">${R.map(reportHTML).join("")}</div>` : ""}
+  <h2 class="sec">Posts <span class="mono">${P ? P.posts.length + " shown" : ""}</span></h2>
+  <div class="panel">
   <div class="row wrapx" style="gap:8px;margin-bottom:8px"><input class="in" id="cq" placeholder="Search text or @username" value="${esc(CQ)}" autocomplete="off" style="flex:2;min-width:180px">
     <input class="in" id="ctag" placeholder="#tag" value="${CTAG ? "#" + esc(CTAG) : ""}" autocomplete="off" autocapitalize="off" style="flex:1;min-width:110px"></div>
   <div class="row wrapx" style="gap:8px;margin-bottom:12px">
@@ -23,7 +24,7 @@ VIEWS.content = () => {
     <select class="sel" id="clab" aria-label="Lab"><option value="">Every lab and profile</option>${(P ? P.labs : []).map((l) => `<option value="${l.id}" ${CLAB === l.id ? "selected" : ""}>${l.id === "profile" ? "Profiles" : "// " + esc(l.name)} (${l.n})</option>`).join("")}</select>
     ${CTAG ? `<button class="chip tg on" data-ctagx>#${esc(CTAG)} ${I.x}</button>` : ""}
   </div>
-  ${!P ? `<div class="empty">Loading…</div>` : !P.posts.length ? `<div class="empty">No posts match.</div>` : `<div class="posts">${P.posts.map(postCardHTML).join("")}</div>`}`;
+  ${!P ? `<div class="empty">Loading…</div>` : !P.posts.length ? `<div class="empty">No posts match.</div>` : `<div class="posts">${P.posts.map(postCardHTML).join("")}</div>`}</div>`;
 };
 
 const whereLine = (x) => (x.labName && x.labName !== "Profile" ? "// " + x.labName : "Profile") + " · " + (x.isWork ? "work" : "talk");

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- TNL LABS admin v2.3 — 2026-10-14 (People: directory grid + member record). Shell and styles; the app is public/admin-app/*.js; colours from /palette.css -->
+<!-- TNL LABS admin v3.0 — 2026-10-14 (the whole dashboard to "Google standard": side menu, member search, cards, tabs; new styles in admin-app/ui.css). Shell and styles; the app is public/admin-app/*.js; colours from /palette.css -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -180,90 +180,19 @@ details.more summary::-webkit-details-marker{display:none}
 .chip.tg.on{background:var(--tx);border-color:var(--tx);color:var(--bg)}
 .htg{padding:0;font-size:12px;font-weight:700}
 .tbl tr.clk{cursor:pointer}
-/* People v3 (2026-10-14): the directory grid and the member record (3-people.js, 3-person.js) */
-.pg-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.pg-hd h1{font-size:22px}.pg-hd p{font-size:13px;margin-top:3px}
-.tb{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 10px}
-.srch{flex:1 1 240px;display:flex;align-items:center;gap:8px;background:var(--el);border:1px solid var(--line);border-radius:999px;padding:0 14px;color:var(--dim)}
-.srch input{flex:1;min-width:0;background:none;border:0;outline:none;padding:10px 0;font-size:16px;color:var(--tx)}
-.srch:focus-within{border-color:var(--line2)}
-.seg{display:inline-flex;border:1px solid var(--line2);border-radius:999px;padding:2px}
-.seg button{padding:5px 12px;border-radius:999px;font-size:12px;font-weight:600;color:var(--tx2)}.seg button.on{background:var(--tx);color:var(--bg)}
-.btn.ghost.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
-.menu{position:relative}.menu summary{list-style:none}.menu summary::-webkit-details-marker{display:none}
-.menu-b{position:absolute;z-index:15;top:calc(100% + 6px);left:0;background:var(--card);border:1px solid var(--line2);box-shadow:0 8px 24px color-mix(in srgb,var(--tx) 14%,transparent);padding:8px;min-width:200px;display:flex;flex-direction:column}
-.menu-b label{display:flex;align-items:center;gap:8px;padding:7px 6px;font-size:13px;cursor:pointer}.menu-b label:hover{background:var(--el)}
-.menu-b input{accent-color:var(--tx);width:15px;height:15px}.menu-b .btn{margin-top:6px;align-self:flex-start}
-.sum{display:grid;grid-template-columns:repeat(7,minmax(130px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:12px 0;overflow-x:auto;scrollbar-width:none}
-.sum::-webkit-scrollbar{display:none}
-.sum-t{background:var(--card);padding:10px 12px;display:flex;flex-direction:column;min-width:0}
-.sum-t span{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
-.sum-t b{font-size:20px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin-top:2px}
-.sum-t i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap}
-.pdb-wrap{overflow:auto;max-height:70vh;max-height:70dvh;border:1px solid var(--line);-webkit-overflow-scrolling:touch;background:var(--card)}
-.pdb{min-width:max-content}
-.pdb th{position:sticky;top:0;z-index:2;background:var(--card);padding:10px 12px;border-bottom:1px solid var(--line2);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
-.pdb td{padding:10px 12px;white-space:nowrap}
-.pdb th:first-child,.pdb td:first-child{position:sticky;left:0;z-index:1;background:var(--card);box-shadow:1px 0 0 var(--line)}
-.pdb th:first-child{z-index:3}
-.pdb tbody tr:hover td{background:var(--el)}
-.pdb tr.off td{color:var(--dim)}
-.dense .pdb td{padding:5px 12px;font-size:12.5px}.dense .pdb .av{width:24px;height:24px;font-size:9px}.dense .pdb-name .dim{display:none}
-.pdb-h{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;white-space:nowrap;text-transform:inherit;letter-spacing:inherit}
-.pdb-h .arr{display:inline-block;width:12px;margin-left:3px}.pdb-h.on{color:var(--tx)}
-.pdb-name{display:flex;align-items:center;gap:10px}
-.pdb-name>span{display:flex;flex-direction:column;line-height:1.25}
-.pdb-name .dim{font-size:12px}
-.pdb-mail{display:inline-block;max-width:240px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
-.st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;white-space:nowrap}
-.st i{width:8px;height:8px;border-radius:50%;background:var(--line2)}
-.st.ok i{background:var(--fill);box-shadow:0 0 0 1px var(--line2)}.st.bad{color:var(--red)}.st.bad i{background:var(--red)}.st.off{color:var(--dim)}
-.li .r .st{margin-bottom:2px}
-.pager{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;padding:10px 0}
-.pager .sel{padding:4px 8px;margin-left:4px}.pager .ib{width:32px;height:32px;font-size:18px}.pager .ib:disabled{opacity:.35}
-.tbl tr.clk{cursor:pointer}.tbl tr.clk:hover td{background:var(--el)}
-.drawer.rec{max-width:520px;padding-top:0}
-@media(min-width:900px){.drawer.rec{max-width:760px}.rec .fd{grid-template-columns:200px 1fr}.rec .mts{grid-template-columns:repeat(4,minmax(0,1fr))}}
-.rec-bar{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:8px;background:var(--bg);padding:calc(12px + env(safe-area-inset-top)) 0 10px;border-bottom:1px solid var(--line)}
-.rec-bar .mono{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rec-hd{display:flex;align-items:center;gap:14px;margin:18px 0 14px}
-.rec-hd h2{font-size:22px;letter-spacing:-.01em;line-height:1.15}.rec-id{min-width:0}.rec-id>.dim{font-size:13px}
-.rec-tags{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:7px}.rec-tags .tag{margin-left:0}
-.rec-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:16px 0 0;overflow-x:auto;scrollbar-width:none}
-.rec-tabs button{padding:10px 12px;font-size:13px;font-weight:600;color:var(--dim);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
-.rec-tabs button.on{color:var(--tx);border-bottom-color:var(--tx)}
-.rec-body{padding-top:14px;display:flex;flex-direction:column;gap:12px}
-.rc{background:var(--card);border:1px solid var(--line)}
-.rc>header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line)}
-.rc h3{font-size:13px;font-weight:700}
-.rc>.empty,.rc>.thumbs,.rc>.tbl,.rc>p,.rc>textarea,.rc>.row{margin:12px 14px}.rc>.tbl{width:calc(100% - 28px)}
-.fds{margin:0}.fd{display:grid;grid-template-columns:1fr;gap:2px;padding:10px 14px;border-bottom:1px solid var(--line)}.fd:last-child{border-bottom:0}
-.fd dt{font-size:12px;color:var(--dim)}.fd dd{margin:0;word-break:break-word}
-@media(min-width:520px){.fd{grid-template-columns:160px 1fr;gap:12px;align-items:baseline}}
-.mts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:hidden}
-.mt{background:var(--card);box-shadow:1px 0 0 var(--line),0 1px 0 var(--line);padding:11px 14px;display:flex;flex-direction:column;min-width:0}
-.mt span{font-size:12px;color:var(--dim)}.mt b{font-size:19px;font-variant-numeric:tabular-nums;margin-top:2px}.mt i{font-style:normal;font-size:11.5px;color:var(--dim)}
-.flags{list-style:none;padding:4px 14px}.flags li{padding:7px 0 7px 16px;position:relative;font-size:13px;border-bottom:1px solid var(--line)}.flags li:last-child{border-bottom:0}
-.flags li::before{content:"";position:absolute;left:0;top:13px;width:7px;height:7px;border-radius:50%;background:var(--red)}
-.rc.danger{border-color:color-mix(in srgb,var(--red) 40%,var(--line))}
-.dz{display:flex;align-items:center;gap:14px;padding:12px 14px;border-bottom:1px solid var(--line)}.dz:last-child{border-bottom:0}
-.dz>div{flex:1;min-width:0}.dz b{display:block;font-size:13px}.dz span{font-size:12.5px;color:var(--dim)}
-.rec .thumbs a{aspect-ratio:1;background:var(--el);overflow:hidden;font-size:11px;color:var(--dim);padding:6px;text-decoration:none;display:block}
-.rec .thumbs a:has(img){padding:0}
-.step i.mono{font-style:normal;margin-left:3px}
-.loop.part .step{grid-template-columns:172px 1fr 44px}
-@media(max-width:520px){.loop.part .step{grid-template-columns:118px 1fr 36px}}
 </style>
+<link rel="stylesheet" href="/admin-app/ui.css?v=1.0">
 </head>
 <body><div id="app"></div><div id="layer"></div>
-<script src="/admin-app/1-core.js?v=2.3"></script>
-<script src="/admin-app/2-today.js?v=3.0"></script>
+<script src="/admin-app/1-core.js?v=3.0"></script>
+<script src="/admin-app/2-today.js?v=3.1"></script>
 <script src="/admin-app/3-people.js?v=3.0"></script>
 <script src="/admin-app/3-person.js?v=1.0"></script>
-<script src="/admin-app/4-content.js?v=3.0"></script>
-<script src="/admin-app/5-market.js?v=2.0"></script>
-<script src="/admin-app/6-system.js?v=2.1"></script>
-<script src="/admin-app/7-studio.js?v=2.0"></script>
-<script src="/admin-app/8-events.js?v=1.5"></script>
+<script src="/admin-app/4-content.js?v=3.1"></script>
+<script src="/admin-app/5-market.js?v=2.1"></script>
+<script src="/admin-app/6-system.js?v=2.2"></script>
+<script src="/admin-app/7-studio.js?v=2.1"></script>
+<script src="/admin-app/8-events.js?v=1.6"></script>
 <script>boot()</script>
 </body>
 </html>

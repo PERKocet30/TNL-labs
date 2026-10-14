@@ -1,4 +1,4 @@
-/* TNL LABS admin v3.0 — 2026-10-09. Today, for the app's direction: labs
+/* TNL LABS admin v3.1 — 2026-10-14 (page header; the chart's choices sit in its card). Today, for the app's direction: labs
    are places (genres explained by #tags), the tournament is the centre,
    Instagram brings people in and the app is where they take part.
    What needs you → the tournament → how it's going → how people take part
@@ -20,8 +20,8 @@ VIEWS.today = () => {
     ${sub || delta(v, before, fmt)}${spark ? sparkHTML(spark) : ""}</div>`;
   const needs = [...p.inbox, ...d.needs];
   return `
-  <div class="row sp wrapx"><h1 style="font-size:22px">Today</h1>
-    <div class="filters">${[7, 30, 90].map((x) => `<button class="pill sm ${RANGE === x ? "on" : ""}" data-range="${x}">${x} days</button>`).join("")}</div></div>
+  ${pageHead("Today", "What needs you, the tournament, and how the community is doing.",
+    `<div class="seg" role="group" aria-label="Period">${[7, 30, 90].map((x) => `<button class="${RANGE === x ? "on" : ""}" data-range="${x}">${x} days</button>`).join("")}</div>`)}
 
   <h2 class="sec">Needs you</h2>
   <div class="panel needs">${needs.length ? needs.map(needHTML).join("") : `<div class="clear">${I.check} Nothing waiting. Go make something.</div>`}</div>
@@ -45,8 +45,7 @@ VIEWS.today = () => {
   <div class="split">
     <div>
       <h2 class="sec">Every day</h2>
-      <div class="filters" style="margin-bottom:8px">${METRICS.map(([k, l]) => `<button class="pill sm ${METRIC === k ? "on" : ""}" data-metric="${k}">${l}</button>`).join("")}</div>
-      <div class="chart">${barsHTML(s[METRIC] || [], { labels, fmt: METRIC === "gmv" ? money : num })}</div>
+      <div class="chart"><div class="filters" style="margin-bottom:12px">${METRICS.map(([k, l]) => `<button class="pill sm ${METRIC === k ? "on" : ""}" data-metric="${k}">${l}</button>`).join("")}</div>${barsHTML(s[METRIC] || [], { labels, fmt: METRIC === "gmv" ? money : num })}</div>
 
       <h2 class="sec">How people take part <span class="mono">members, all time</span></h2>
       <div class="panel">${partHTML(d.takingPart)}</div>

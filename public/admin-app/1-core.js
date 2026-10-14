@@ -1,4 +1,8 @@
-/* TNL LABS admin v2.3 — 2026-10-11 (signed out: Log in comes straight back here). Core: state, API, helpers, charts, shell.
+/* TNL LABS admin v3.0 — 2026-10-14. Core: state, API, helpers, charts, shell.
+   v3.0: "organize the whole admin dashboard to Google standard" — a side menu
+   on a computer, search any member from the top bar, and shared page pieces
+   (pageHead, card, subTabs) every section is built from.
+   v2.3 — 2026-10-11 (signed out: Log in comes straight back here).
    Today (what needs you, the tournament, how people take part), People,
    Labs (every post by lab and #tag), Tournament, Market, System. Every number here comes from an admin-only endpoint; the
    server checks, not this page. */
@@ -27,6 +31,12 @@ const I = {
   msg: di('<path d="M4 5h16v11H9l-5 4z"/>', 14), pin: di('<path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v7"/>', 14), trash: di('<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>', 14),
   down: di('<path d="M12 4v12M6 11l6 6 6-6M5 20h14"/>', 14), sun: di('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', 16),
   moon: di('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>', 16), chev: di('<path d="M9 5l7 7-7 7"/>', 14),
+};
+/* the side menu's icons, one per section */
+const NAVI = {
+  today: di('<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>', 18), people: di('<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3 2.8 3 6"/>', 18),
+  content: di('<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>', 18), events: di('<path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v3M8 20h8M10 17h4v3h-4z"/>', 18),
+  market: di('<path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2"/>', 18), system: di('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>', 18),
 };
 
 async function req(path, opts = {}) {
@@ -102,16 +112,52 @@ function paint() {
     <h1>Admins only</h1><p>${TOKEN ? "This account isn't an admin. Log in with one and you'll come straight back here."
       : "This browser isn't signed in — LABS on your home screen keeps its own sign-in, so email links open here signed out. Log in once and it'll remember you."}</p><a class="btn" id="adminlogin" href="${esc(back)}">Log in</a></div></div>`; return; }
   const badge = (k) => k === "today" && D.pulse && D.pulse.inbox.length ? `<b>${D.pulse.inbox.length}</b>` : k === "content" && D.pulse ? ((D.pulse.inbox.find((i) => i.kind === "reports") || {}).n ? `<b>${D.pulse.inbox.find((i) => i.kind === "reports").n}</b>` : "") : "";
-  app.innerHTML = `<header class="top"><div class="bar1"><div class="brand">TNL LABS <i>//</i> Admin</div>
-      <button class="ib" id="theme" aria-label="Switch theme">${document.documentElement.dataset.theme === "dark" ? I.sun : I.moon}</button>
-      <a class="btn ghost sm" href="/">App ${I.out}</a></div>
-    <nav class="tabs">${TABS.map(([k, l]) => `<button class="pill ${TAB === k ? "on" : ""}" data-tab="${k}">${l}${badge(k)}</button>`).join("")}</nav></header>
-    <main class="wrap" id="main">${VIEWS[TAB]()}</main>`;
+  /* keep the field you're typing in (and where the cursor is) through a repaint */
+  const fo = document.activeElement && document.activeElement.id && app.contains(document.activeElement) ? document.activeElement : null;
+  const foId = fo && fo.id, foSel = fo && "selectionStart" in fo ? [fo.selectionStart, fo.selectionEnd] : null;
+  const nav = (cls) => TABS.map(([k, l]) => `<button class="${cls} ${TAB === k ? "on" : ""}" data-tab="${k}" ${TAB === k ? 'aria-current="page"' : ""}>${cls === "nv" ? NAVI[k] : ""}<span>${l}</span>${badge(k)}</button>`).join("");
+  const theme = `<button class="ib thm" aria-label="Switch theme">${document.documentElement.dataset.theme === "dark" ? I.sun : I.moon}</button>`;
+  app.innerHTML = `<div class="shell">
+    <aside class="side" aria-label="Admin sections"><div class="brand">TNL LABS <i>//</i> Admin</div><nav class="side-nav">${nav("nv")}</nav>
+      <div class="side-ft"><span class="mono">Signed in as @${esc(ME.username)}</span><div class="row">${theme}<a class="btn ghost sm" href="/">Open the app ${I.out}</a></div></div></aside>
+    <div class="mainc"><header class="top"><div class="bar1"><div class="brand ph">TNL LABS <i>//</i> Admin</div>
+      <div class="gsrch" role="search">${di('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>', 16)}<input id="gq" placeholder="Search members" value="${esc(GQ)}" autocomplete="off" aria-label="Search members"><div class="gres" id="gres" hidden></div></div>
+      <span class="ph">${theme}</span><a class="btn ghost sm ph" href="/">App ${I.out}</a></div>
+      <nav class="tabs" aria-label="Admin sections">${nav("pill")}</nav></header>
+    <main class="wrap" id="main">${VIEWS[TAB]()}</main></div></div>`;
   $$("[data-tab]").forEach((b) => b.onclick = () => go(b.dataset.tab));
-  $("#theme").onclick = () => { const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = t; try { localStorage.setItem("tnl-theme", t); } catch (e) {} paint(); };
-  WIRES[TAB]?.(); wireTips(); wireCommon();
+  $$(".thm").forEach((t) => t.onclick = () => { const th = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = th; try { localStorage.setItem("tnl-theme", th); } catch (e) {} paint(); });
+  WIRES[TAB]?.(); wireTips(); wireCommon(); wireSearch();
+  if (foId) { const f = document.getElementById(foId); if (f) { f.focus(); if (foSel) try { f.setSelectionRange(...foSel); } catch (e) {} } }
 }
+
+/* ---- search any member from any page (the bar at the top) ---- */
+let GQ = "";
+function wireSearch() {
+  const q = $("#gq"), box = $("#gres"); if (!q) return;
+  let t, n = 0;
+  const show = (html) => { box.innerHTML = html; box.hidden = !html; };
+  q.oninput = () => { GQ = q.value; clearTimeout(t); const term = GQ.trim(); if (!term) return show("");
+    t = setTimeout(async () => { const me = ++n;
+      try { const r = await req("/api/admin/people?q=" + encodeURIComponent(term)); if (me !== n) return;
+        show(r.people.length ? r.people.slice(0, 8).map((u) => `<button class="li" data-gp="${esc(u.username)}">${av(u)}<span class="b"><b>${esc(u.displayName)}</b><span>@${esc(u.username)} · #${u.id}${u.email ? " · " + esc(u.email) : ""}</span></span></button>`).join("")
+          + (r.people.length > 8 ? `<button class="gall" data-gall>See all ${r.people.length} in People ${I.chev}</button>` : "") : `<div class="empty">No member matches “${esc(term)}”.</div>`);
+        $$("[data-gp]", box).forEach((b) => b.onmousedown = (e) => { e.preventDefault(); show(""); openPerson(b.dataset.gp); });
+        const all = $("[data-gall]", box); if (all) all.onmousedown = (e) => { e.preventDefault(); seeAll(); };
+      } catch (e) {} }, 180); };
+  const seeAll = () => { PQ = GQ.trim(); GQ = ""; show(""); go("people"); };
+  q.onkeydown = (e) => { if (e.key === "Enter" && GQ.trim()) seeAll(); if (e.key === "Escape") { GQ = ""; q.value = ""; show(""); q.blur(); } };
+  q.onblur = () => setTimeout(() => show(""), 120);
+}
+
+/* ---- the pieces every page is built from ---- */
+/* a page's title, one line on what it's for, and its main actions */
+const pageHead = (title, desc, actions = "") => `<div class="pg-hd"><div><h1>${title}</h1>${desc ? `<p class="dim">${desc}</p>` : ""}</div>${actions ? `<div class="pg-act">${actions}</div>` : ""}</div>`;
+/* a titled card */
+const card = (title, body, sub = "") => `<section class="rc"><header><h3>${title}</h3>${sub ? `<span class="mono">${sub}</span>` : ""}</header>${body}</section>`;
+/* tabs inside a page */
+const subTabs = (list, on, attr) => `<nav class="utabs" role="tablist">${list.map(([k, l]) => `<button role="tab" aria-selected="${on === k}" class="${on === k ? "on" : ""}" ${attr}="${k}">${l}</button>`).join("")}</nav>`;
 function go(tab) { TAB = tab; try { history.replaceState(null, "", "#" + tab); } catch (e) {} paint(); scrollTo(0, 0); load(); }
 /* things any view can carry: open a person, message someone in the app */
 function wireCommon() {

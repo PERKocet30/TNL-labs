@@ -29,7 +29,6 @@ function paintPerson() {
 
 /* a labelled value; "Not provided" rather than a bare dash */
 const fld = (label, value, extra = "") => `<div class="fd"><dt>${label}</dt><dd>${value === "" || value == null ? `<span class="dim">Not provided</span>` : value}${extra}</dd></div>`;
-const card = (title, body, sub = "") => `<section class="rc"><header><h3>${title}</h3>${sub ? `<span class="mono">${sub}</span>` : ""}</header>${body}</section>`;
 const met = (label, v, d = "") => `<div class="mt"><span>${label}</span><b>${v}</b>${d ? `<i>${d}</i>` : ""}</div>`;
 
 function personHTML() {
@@ -50,7 +49,7 @@ function personHTML() {
       <button class="btn ghost sm" data-pa="feature">Feature +40</button>
       ${p.email ? `<button class="btn ghost sm" data-copy="${esc(p.email)}">Copy email</button>` : ""}
     </div>
-    <nav class="rec-tabs" role="tablist">${PTABS.map(([k, l]) => `<button role="tab" aria-selected="${PERSON.tab === k}" class="${PERSON.tab === k ? "on" : ""}" data-ptab="${k}">${l}${k === "notes" && d.note && d.note.body ? " ·" : ""}</button>`).join("")}</nav>`;
+    ${subTabs(PTABS.map(([k, l]) => [k, l + (k === "notes" && d.note && d.note.body ? " ·" : "")]), PERSON.tab, "data-ptab")}`;
   return bar + head + `<div class="rec-body">${({ overview: recOverview, account: recAccount, activity: recActivity, notes: recNotes })[PERSON.tab](d)}</div>`;
 }
 

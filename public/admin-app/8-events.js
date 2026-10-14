@@ -1,4 +1,4 @@
-/* TNL LABS admin — Events v1.5, 2026-10-13 (v1.5: the scoreboard picture buttons wait for voting instead of opening a dead page; v1.4: "Link to send people" up top —
+/* TNL LABS admin — Events v1.6, 2026-10-14 (v1.6: the shared page header, events listed in a card; v1.5: the scoreboard picture buttons wait for voting instead of opening a dead page; v1.4: "Link to send people" up top —
    labs.tnllabs.com/tournament for the one on now, with Copy).
    Events v1.3, 2026-10-12 (the Tournament tab; v1.2: named for it;
    v1.3: the "entries are open" email to every member — its switch, a
@@ -23,8 +23,8 @@ VIEWS.events = () => {
   if (EVID) return D.event ? evDetailHTML(D.event) : `<div class="empty">Loading…</div>`;
   const L = D.events?.events;
   if (!L) return `<div class="empty">Loading…</div>`;
-  return `<div class="row sp"><h1 style="font-size:22px">Tournament</h1><button class="btn fill" id="evnew">New event</button></div>
-    <p class="dim" style="margin:8px 0 14px;font-size:13px">Your tournament lives here. Members see it on the Showroom and at labs.tnllabs.com/e/your-link. Votes only count in the app — Instagram is for reach: each event's Instagram kit has the scoreboard to post and every entry's vote link.</p>
+  return `${pageHead("Tournament", `Your tournament lives here. Members see it on the Showroom and at labs.tnllabs.com/e/your-link. Votes only count in the app — Instagram is for reach: each event's Instagram kit has the scoreboard to post and every entry's vote link.`, `<button class="btn fill" id="evnew">New event</button>`)}
+    <h2 class="sec">Events <span class="mono">${L.length} in all</span></h2>
     <div class="list">${L.length ? L.map((e) => `<button class="li" data-ev="${e.id}"><div class="b"><b>${esc(e.title)}${e.published ? "" : `<span class="tag">draft</span>`}</b>
       <span>/e/${esc(e.slug)} · ${e.format} · ${e.entries} entr${e.entries === 1 ? "y" : "ies"}</span></div><div class="r">${phName(e.phase)}</div>${I.chev}</button>`).join("")
       : `<div class="empty">No events yet.</div>`}</div>`;
@@ -35,8 +35,9 @@ function evFormHTML() {
   const field = (k, label, v, attrs = "") => `<label class="fld"><span>${label}</span><input class="in" data-f="${k}" value="${esc(v ?? "")}" ${attrs}></label>`;
   const sel = (k, label, v, opts) => `<label class="fld"><span>${label}</span><select class="sel" data-f="${k}">${opts.map(([val, t]) => `<option value="${val}" ${String(v) === String(val) ? "selected" : ""}>${t}</option>`).join("")}</select></label>`;
   const locked = f.locked;
-  return `<div class="row sp"><h1 style="font-size:22px">${f.id ? "Edit event" : "New event"}</h1><button class="btn ghost sm" id="evcancel">Cancel</button></div>
-  <div class="panel evf" style="margin-top:14px">
+  return `${pageHead(f.id ? "Edit event" : "New event", "Title, format, dates and rules. Nothing goes live until you publish it.", `<button class="btn ghost sm" id="evcancel">Cancel</button>`)}
+  <h2 class="sec">Basics</h2>
+  <div class="panel evf">
     ${field("title", "Title", f.title, 'placeholder="TNL Poster Tournament"')}
     ${f.id ? "" : field("slug", "Link name", f.slug, 'placeholder="poster-tournament" autocapitalize="none"')}
     <label class="fld"><span>The brief</span><textarea class="in" data-f="brief" rows="4" placeholder="What should people make?">${esc(f.brief || "")}</textarea></label>
@@ -84,7 +85,7 @@ function evDetailHTML(d) {
   const ranking = st.results?.ranking || [];
   return `<div class="row sp wrapx"><button class="btn ghost sm" id="evback">${I.chev} All events</button>
     <div class="row" style="gap:6px"><a class="btn ghost sm" href="/e/${esc(e.slug)}" target="_blank">Page</a><a class="btn ghost sm" href="/e/${esc(e.slug)}/rules" target="_blank">Rules</a><button class="btn ghost sm" id="evedit">Edit</button></div></div>
-  <h1 style="font-size:22px;margin-top:14px">${esc(e.title)} ${e.published ? `<span class="tag on">live</span>` : `<span class="tag">draft</span>`}</h1>
+  <div class="pg-hd" style="margin-top:16px"><div><h1>${esc(e.title)} ${e.published ? `<span class="tag on">live</span>` : `<span class="tag">draft</span>`}</h1></div></div>
   <p class="dim" style="font-size:13px;margin-top:4px">${e.format === "bracket" ? `Bracket of up to ${e.bracketSize}` : e.format === "poll" ? `Poll · ${e.picks} vote${e.picks === 1 ? "" : "s"} a day · board freezes ${e.freezeHours}h before each close · top ${e.finalists} to the final` : `Simple · top ${e.finalists} to the final`}${e.format === "poll" ? "" : ` · ${e.picks} picks`} · final ${e.judgeWeight ? e.judgeWeight + "% judges" : "votes only"}${e.requireVerified ? " · confirmed emails" : ""}${e.minAccountDays ? ` · voters ${e.minAccountDays}+ days old` : ""} · ${d.voters} people have voted${e.prize ? " · " + esc(e.prize) : ""}</p>
   ${evLinkHTML(e)}
   ${e.format === "poll" ? `<h2 class="sec">Instagram <span class="mono">every link leads back to the app — only votes there count</span></h2>

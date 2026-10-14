@@ -1320,7 +1320,10 @@ console.log("\nMEMBER · COMPUTER");
   });
   await step(d, "admin → System shows the Glitches panel with the phone's rage tap", async () => {
     await settledGoto(p, B + "/admin#system");
-    await fast(p, 5000, () => p.locator("h2.sec", { hasText: "Glitches" }).first().waitFor(), "the admin System page");
+    // 2026-10-14: System is in tabs — Glitches live under Health
+    await fast(p, 5000, () => p.locator("[data-systab=health]").waitFor(), "the admin System page");
+    await p.locator("[data-systab=health]").click();
+    await fast(p, 3000, () => p.locator("h2.sec", { hasText: "Glitches" }).first().waitFor(), "System → Health");
     ok(await p.getByText(/× rage taps · /).count() > 0, "the rage tap isn't listed");
     ok(await p.getByText(/Glitches, 24h/).count() > 0, "no Glitches KPI");
     await p.screenshot({ path: join(SHOTS, "admin-glitches.png"), fullPage: false });
@@ -1333,6 +1336,14 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator(".tour [data-ev-open]").count() === 1, "no tournament panel");
     ok(await p.locator("h2.sec", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
     ok(await p.locator("nav.tabs [data-tab=content]", { hasText: "Labs" }).count() === 1, "the Content tab isn't called Labs");
+    // 2026-10-14 "Google standard": on a computer, a side menu; any member is a search away from the top bar
+    ok(await p.locator(".side .nv[data-tab=people]").isVisible() && !(await p.locator("nav.tabs").isVisible()), "no side menu on a computer");
+    await p.locator("#gq").fill("tester");
+    await fast(p, 4000, () => p.locator("#gres [data-gp]").first().waitFor(), "member search results");
+    await p.locator("#gres [data-gp]").first().dispatchEvent("mousedown");
+    await fast(p, 4000, () => p.locator("#person .rec-hd").waitFor(), "the member's record");
+    ok(await p.locator("#person [data-ptab]").count() === 4, "the record has no tabs");
+    await p.keyboard.press("Escape");
     await p.screenshot({ path: join(SHOTS, "admin-today.png"), fullPage: false });
     await p.locator("tr[data-labf=pharmacy]").click();
     // the lab list arrives with the posts — wait for it, not just the empty select
@@ -1367,7 +1378,7 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.route("**/api/auth/login", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ token: "e2e-tester-session", user }) }));
     await p.locator("#u").fill("tester"); await p.locator("#p").fill(PASS); await p.locator("#go").tap();
     await p.waitForURL(/\/admin#system$/, { timeout: 8000 });
-    await p.locator("h2.sec", { hasText: "Glitches" }).first().waitFor({ timeout: 8000 });
+    await p.locator("[data-systab=health]").waitFor({ timeout: 8000 });   // System, signed in (its tabs since 2026-10-14)
   });
   await step(d, "only this site's own pages can be the way back", async () => {
     await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof gxNext === "function");

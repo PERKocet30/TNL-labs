@@ -111,8 +111,7 @@ async function downloadMembers() {
 }
 
 VIEWS.people = () => `
-  <div class="pg-hd"><div><h1>People</h1><p class="dim">Every member's account, activity and standing. Tap a row to open their record.</p></div>
-    <button class="btn ghost sm" id="pcsv">${I.down} Export CSV</button></div>
+  ${pageHead("People", "Every member's account, activity and standing. Tap a row to open their record.", `<button class="btn ghost sm" id="pcsv">${I.down} Export CSV</button>`)}
   <div class="tb">
     <div class="srch">${di('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>', 16)}<input id="pq" placeholder="Search name, username or email" value="${esc(PQ)}" autocomplete="off" aria-label="Search members"></div>
     <div class="seg" role="group" aria-label="View"><button class="${PPREF.view === "table" ? "on" : ""}" data-pview="table">Table</button><button class="${PPREF.view === "cards" ? "on" : ""}" data-pview="cards">Cards</button></div>
