@@ -103,7 +103,7 @@ body.chat-on{overflow:hidden}
 .c-rx{display:flex;flex-wrap:wrap;gap:4px;margin-top:-5px;padding:0 6px;position:relative;z-index:1}
 .c-rxp{display:inline-flex;align-items:center;gap:3px;background:var(--card);border:1px solid var(--line2);border-radius:999px;padding:2px 7px;font-size:13px;line-height:1.3;color:var(--tx);cursor:pointer}
 .c-rxp b{font-size:11px}
-.c-rxp.on{border-color:var(--green);background:color-mix(in srgb,var(--accent-fill) 18%,var(--card))}
+.c-rxp.on{border-color:var(--accent-fill);background:color-mix(in srgb,var(--accent-fill) 18%,var(--card))}
 .c-meta{font-size:11px;color:var(--dim);margin:3px 8px 0}
 .c-retry{background:none;border:0;padding:0;color:var(--tx);text-decoration:underline;font-size:11px}
 .c-m.pending{opacity:.6}.c-m.failed .c-b{outline:1px dashed #E5484D}
@@ -148,7 +148,7 @@ textarea.c-in{resize:none;min-height:42px;max-height:120px;line-height:1.35;font
 .c-mrx{display:flex;justify-content:space-between;gap:4px;padding:2px 2px 12px;border-bottom:1px solid var(--line)}
 .c-mrx button{width:48px;height:48px;border-radius:999px;border:0;background:var(--el);font-size:25px;line-height:1;display:flex;align-items:center;justify-content:center;transition:transform .1s}
 .c-mrx button:active{transform:scale(1.2)}
-.c-mrx button.on{box-shadow:inset 0 0 0 2px var(--green)}
+.c-mrx button.on{box-shadow:inset 0 0 0 2px var(--accent-fill)}
 .c-mlist{padding-top:4px}
 .c-ma{display:flex;align-items:center;gap:14px;width:100%;padding:13px 8px;background:none;border:0;color:var(--tx);font-size:15px;text-align:left}
 .c-ma:active,.cs-a:active,.cx-pick:active{background:var(--el)}

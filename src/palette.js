@@ -54,15 +54,21 @@ export const PALETTE = {
 /* The accents members can pick (Profile → edit). Keys are stored on the
    user row; never rename one. */
 export const ACCENTS = {
+  /* v2 (2026-10-14, "colors aren't matching up — a better selection"): nine
+     colours evenly round the wheel, all as vivid as the flask, in order.
+     Crimson (a second red) and Bone (barely a colour) are kept for the
+     members who chose them, but no longer offered (legacy). */
   lab:    { name: "Lab",    hex: "#98FC68" },   // the flask. the default.
-  heat:   { name: "Heat",   hex: "#FF5A1F" },
-  blood:  { name: "Blood",  hex: "#EF4444" },
-  crimson:{ name: "Crimson",hex: "#DC143C" },
-  bloom:  { name: "Bloom",  hex: "#EC4899" },
-  violet: { name: "Violet", hex: "#A855F7" },
+  mint:   { name: "Mint",   hex: "#2EE6B4" },
   ice:    { name: "Ice",    hex: "#38BDF8" },
+  cobalt: { name: "Cobalt", hex: "#4F63FF" },
+  violet: { name: "Violet", hex: "#A855F7" },
+  bloom:  { name: "Bloom",  hex: "#EC4899" },
+  blood:  { name: "Red",    hex: "#EF4444" },
+  heat:   { name: "Heat",   hex: "#FF5A1F" },
   gold:   { name: "Gold",   hex: "#FBBF24" },
-  bone:   { name: "Bone",   hex: "#E7E1D2" },
+  crimson:{ name: "Crimson",hex: "#DC143C", legacy: true },
+  bone:   { name: "Bone",   hex: "#E7E1D2", legacy: true },
 };
 export const accentHex = (key) => (ACCENTS[key] || ACCENTS.lab).hex;
 
@@ -72,14 +78,26 @@ const lum = (c) => { const v = c.map((x) => { x /= 255; return x <= 0.03928 ? x 
 const hexOf = (c) => "#" + c.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
 const isHex = (h) => /^#[0-9a-f]{6}$/i.test(h || "");
 
-/** An accent as text: darkened until it reads on the day ground, lightened
-    until it reads on black (4.5:1). */
+/** An accent as text: the same colour, only darker (day) or lighter
+    (night) until it reads at 4.5:1 — moved in OKLCH, so lime stays a green
+    and gold stays gold, not olive and mud (v2, 2026-10-14). The app's copy
+    in app-08-state-ui.js is the same maths; test/palette.test.mjs checks. */
 export function inkFor(hex, theme) {
   if (!isHex(hex)) return hex;
-  const base = rgb(hex); let c = base;
-  if (theme === "light") { for (let k = 1; k > 0.05 && 0.86 / (lum(c) + 0.05) < 4.5; k -= 0.02) c = base.map((v) => v * k); }
-  else { for (let k = 0; k <= 1 && (lum(c) + 0.05) / 0.05 < 4.5; k += 0.02) c = base.map((v) => v + (255 - v) * k); }
-  return hexOf(c);
+  const lin = (x) => { x /= 255; return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
+  const gam = (x) => (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055) * 255;
+  const [r, g, b] = rgb(hex).map(lin);
+  const l_ = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b), m_ = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b), s_ = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const L = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_, A = 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_, B = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_;
+  const back = (L2, k) => { const l = (L2 + 0.3963377774 * A * k + 0.2158037573 * B * k) ** 3, m = (L2 - 0.1055613458 * A * k - 0.0638541728 * B * k) ** 3, q = (L2 - 0.0894841775 * A * k - 1.291485548 * B * k) ** 3;
+    return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * q, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * q, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * q]; };
+  const at = (L2) => { let k = 1, c = back(L2, k); while (k > 0 && c.some((v) => v < 0 || v > 1)) { k -= 0.02; c = back(L2, k); } return c.map((v) => Math.min(1, Math.max(0, v))); };
+  const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  const ok = (c) => (theme === "light" ? 0.86 / (Y(c) + 0.05) : (Y(c) + 0.05) / 0.05) >= 4.5;
+  let c = [r, g, b];
+  if (ok(c)) return hex.toUpperCase();
+  for (let L2 = L; L2 > 0 && L2 < 1 && !ok(c); L2 += theme === "light" ? -0.005 : 0.005) c = at(L2);
+  return hexOf(c.map(gam));
 }
 /** The ink for text sitting ON an accent fill. */
 export const onAccent = (hex) => (!isHex(hex) ? PALETTE.onAccent : lum(rgb(hex)) > 0.3 ? PALETTE.onAccent : "#FFFFFF");

@@ -63,17 +63,25 @@ let EDITACCENT=null;
    Defensive on purpose: it runs at boot, at login, on every profile open —
    if it throws, nothing renders at all. */
 let ACCENTHEX = "#98FC68";
+/* The same maths as inkFor() in src/palette.js (v2, 2026-10-14): darker or
+   lighter in OKLCH until it reads, so lime stays green and gold stays gold. */
 function inkFor(hex){
   if(!/^#[0-9a-fA-F]{6}$/.test(hex))return hex;
-  const light = THEME==="light";
-  const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
-  const lum=c=>{const v=c.map(x=>{x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)});
-    return .2126*v[0]+.7152*v[1]+.0722*v[2]};
-  const ok=c=>(light?.86/(lum(c)+.05):(lum(c)+.05)/.05)>=4.5;   // .86 = darkest paper surface, not white
-  const base=p(hex); let c=base;
-  if(light){ for(let k=1;k>.05&&!ok(c);k-=.02) c=base.map(v=>v*k); }
-  else     { for(let k=0;k<=1&&!ok(c);k+=.02) c=base.map(v=>v+(255-v)*k); }
-  return "#"+c.map(v=>Math.round(v).toString(16).padStart(2,"0")).join("");
+  const light=THEME==="light";
+  const lin=x=>{x/=255;return x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4)};
+  const gam=x=>(x<=.0031308?12.92*x:1.055*Math.pow(x,1/2.4)-.055)*255;
+  const [r,g,b]=[1,3,5].map(i=>lin(parseInt(hex.slice(i,i+2),16)));
+  const l_=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m_=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s_=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);
+  const L=.2104542553*l_+.793617785*m_-.0040720468*s_,A=1.9779984951*l_-2.428592205*m_+.4505937099*s_,B=.0259040371*l_+.7827717662*m_-.808675766*s_;
+  const back=(L2,k)=>{const l=(L2+.3963377774*A*k+.2158037573*B*k)**3,m=(L2-.1055613458*A*k-.0638541728*B*k)**3,q=(L2-.0894841775*A*k-1.291485548*B*k)**3;
+    return [4.0767416621*l-3.3077115913*m+.2309699292*q,-1.2684380046*l+2.6097574011*m-.3413193965*q,-.0041960863*l-.7034186147*m+1.707614701*q]};
+  const at=L2=>{let k=1,c=back(L2,k);while(k>0&&c.some(v=>v<0||v>1)){k-=.02;c=back(L2,k)}return c.map(v=>Math.min(1,Math.max(0,v)))};
+  const Y=c=>.2126*c[0]+.7152*c[1]+.0722*c[2];
+  const ok=c=>(light?.86/(Y(c)+.05):(Y(c)+.05)/.05)>=4.5;   // .86 = darkest paper surface, not white
+  let c=[r,g,b];
+  if(ok(c))return hex.toUpperCase();
+  for(let L2=L;L2>0&&L2<1&&!ok(c);L2+=light?-.005:.005)c=at(L2);
+  return "#"+c.map(v=>Math.round(gam(v)).toString(16).padStart(2,"0")).join("").toUpperCase();
 }
 function onAccent(hex){
   /* Text that sits ON an accent fill. Reagent gets its own printed ink. */
