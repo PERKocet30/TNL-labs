@@ -1,4 +1,4 @@
-/* TNL LABS admin ui.css v1.0 — 2026-10-14. The shell and the shared page pieces
+/* TNL LABS admin ui.css v1.1 — 2026-10-14. The shell and the shared page pieces
    ("organize the whole admin dashboard to Google standard"); loaded after
    admin.html's own styles. Colours only from /palette.css variables. */
 /* People v3 (2026-10-14): the directory grid and the member record (3-people.js, 3-person.js) */
@@ -107,3 +107,8 @@ h2.sec + .panel,h2.sec + .chart{border-top:1px solid var(--line)}
 .reps .report{border:0;border-bottom:1px solid var(--line);margin:0;padding:12px 0}.reps .report:first-child{padding-top:0}.reps .report:last-child{border-bottom:0;padding-bottom:0}
 .systab>.split>div>h2.sec:first-child,.systab>h2.sec:first-child{margin-top:18px}
 .pg-hd h1 .tag{vertical-align:4px}
+/* v1.1: People has its own search, so on a computer its top bar would be empty */
+@media(min-width:1024px){.top:not(:has(.gsrch)){display:none}}
+/* labels in a card's name line stay label-sized */
+.li .b span.tag{display:inline-block;width:auto;font-size:10.5px;color:var(--tx2);overflow:visible}
+.li .b span.tag.on{color:var(--on-fill)}.li .b span.tag.warn{color:var(--red)}

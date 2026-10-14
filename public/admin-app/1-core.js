@@ -1,7 +1,8 @@
-/* TNL LABS admin v3.0 — 2026-10-14. Core: state, API, helpers, charts, shell.
+/* TNL LABS admin v3.1 — 2026-10-14. Core: state, API, helpers, charts, shell.
    v3.0: "organize the whole admin dashboard to Google standard" — a side menu
    on a computer, search any member from the top bar, and shared page pieces
-   (pageHead, card, subTabs) every section is built from.
+   (pageHead, card, subTabs) every section is built from. v3.1: no top-bar
+   search on People, which has its own.
    v2.3 — 2026-10-11 (signed out: Log in comes straight back here).
    Today (what needs you, the tournament, how people take part), People,
    Labs (every post by lab and #tag), Tournament, Market, System. Every number here comes from an admin-only endpoint; the
@@ -121,7 +122,7 @@ function paint() {
     <aside class="side" aria-label="Admin sections"><div class="brand">TNL LABS <i>//</i> Admin</div><nav class="side-nav">${nav("nv")}</nav>
       <div class="side-ft"><span class="mono">Signed in as @${esc(ME.username)}</span><div class="row">${theme}<a class="btn ghost sm" href="/">Open the app ${I.out}</a></div></div></aside>
     <div class="mainc"><header class="top"><div class="bar1"><div class="brand ph">TNL LABS <i>//</i> Admin</div>
-      <div class="gsrch" role="search">${di('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>', 16)}<input id="gq" placeholder="Search members" value="${esc(GQ)}" autocomplete="off" aria-label="Search members"><div class="gres" id="gres" hidden></div></div>
+      ${TAB === "people" ? "" : `<div class="gsrch" role="search">${di('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>', 16)}<input id="gq" placeholder="Search members" value="${esc(GQ)}" autocomplete="off" aria-label="Search members"><div class="gres" id="gres" hidden></div></div>`}
       <span class="ph">${theme}</span><a class="btn ghost sm ph" href="/">App ${I.out}</a></div>
       <nav class="tabs" aria-label="Admin sections">${nav("pill")}</nav></header>
     <main class="wrap" id="main">${VIEWS[TAB]()}</main></div></div>`;

@@ -67,7 +67,9 @@ try {
   t("…every row carries its member ID", all.people.every((u) => Number.isInteger(u.id)) && js.includes('["id", "ID"'));
   t("a member's record has tabs — Overview, Account, Activity, Notes — and sign-out / suspend kept apart", ['"overview", "Overview"', '"account", "Account"', '"activity", "Activity"', '"notes", "Notes"'].every((x) => rec.includes(x))
     && rec.includes('class="rc danger"') && rec.includes('data-pa="suspend"'));
-  t("…and /admin loads both", html.includes('src="/admin-app/3-people.js?v=3.0"') && html.includes('src="/admin-app/3-person.js?v=1.0"'));
+  t("a phone starts People in Cards, a computer in Table; People has one search box", js.includes('(pwide() ? "table" : "cards")')
+    && readFileSync(join(ROOT, "public/admin-app/1-core.js"), "utf8").includes('${TAB === "people" ? "" : `<div class="gsrch"'));
+  t("…and /admin loads both", html.includes('src="/admin-app/3-people.js?v=3.1"') && html.includes('src="/admin-app/3-person.js?v=1.0"'));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
