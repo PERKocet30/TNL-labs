@@ -1,4 +1,5 @@
-/* MOTION v1.0 — 2026-09-30
+/* MOTION v1.1 — 2026-10-14 (Messages: fades in on a computer; the conversation column fades).
+   v1.0 — 2026-09-30
    What makes the app feel like it moves instead of flipping between still
    pictures. render() calls mvBefore() / mvAfter() around every repaint; the
    chat layer calls mvLayer(). Styles: app-05-styles-motion.css.
@@ -77,14 +78,17 @@ function mvAfter(b){
 }
 /* The chat layer paints itself (paintLayer); same idea there. */
 function mvLayer(){
-  const dm=DMOPENPANEL?"1":"",th=DMOPENPANEL&&CHAT?"1":"";
-  if(dm&&!MV.layer.dm)MV.layer.at=Date.now(),MV.layer.cls="in";
-  else if(dm&&th!==MV.layer.th)MV.layer.at=Date.now(),MV.layer.cls=th?"tf":"tb";
+  const dm=DMOPENPANEL?"1":"",th=DMOPENPANEL&&CHAT?"1":"",wide=dmTwo();
+  /* Messages is a screen (2026-10-14). On a phone it pushes in from the
+     right; on a computer it fades in beside the side menu, and the
+     conversation column fades as you switch while the chat list stays put. */
+  if(dm&&!MV.layer.dm)MV.layer.at=Date.now(),MV.layer.cls=wide?"fade":"in";
+  else if(dm&&th!==MV.layer.th)MV.layer.at=Date.now(),MV.layer.cls=wide?"pane":th?"tf":"tb";
   const t=Date.now()-(MV.layer.at||0);
   if(dm&&!mvReduced()&&t<MV_MS){   // the chat repaints often (typing, arrivals): carry the move on
-    const cx=document.querySelector("#chatlayer .cx"),inn=cx&&cx.querySelector(".cx-in");
-    const el=MV.layer.cls==="in"?cx:inn;
-    if(el){el.classList.add(MV.layer.cls==="in"?"mv-in":"mv-"+MV.layer.cls);if(t>0)el.style.setProperty("--mvd",(-t)+"ms")}
+    const cx=document.querySelector("#chatlayer .cx"),c=MV.layer.cls;
+    const el=c==="in"||c==="fade"?cx:cx&&cx.querySelector(c==="pane"?".cx-pane":".cx-in");
+    if(el){el.classList.add(c==="in"?"mv-in":c==="pane"?"mv-fade":"mv-"+c);if(t>0)el.style.setProperty("--mvd",(-t)+"ms")}
   }
   MV.layer.dm=dm;MV.layer.th=th;
 }

@@ -1,6 +1,8 @@
 function wire(){
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=async()=>{
     if(PCOMPOSE&&b.dataset.tab!=="post"&&!await pcLeave())return;
+    /* on a computer the side menu stays beside Messages: going anywhere leaves it (2026-10-14) */
+    if(DMOPENPANEL)closeMessages();
     if(b.dataset.tab==="post"){
       if(PCOMPOSE)return;   // already here — tapping ＋ again must not wipe the draft
       /* ＋ means POST, on every tab — the Market included. It used to flip
@@ -18,6 +20,7 @@ function wire(){
     if(TAB==="labs"&&b.dataset.tab==="labs"){LAB=null;ROOMOPEN=false;TAGVIEW=null;LABVIEW="work";LABTAG=null}
     TAB=b.dataset.tab;PROFILE=null;POSTOPEN=null;OPENCOMMENTS=null;NOTIFOPEN=false;SEARCHOPEN=false;LIGHTBOX=null;NOWFULL=false;if(window.TNLStudio)TNLStudio.unmount();if(TAB==="market"){MKTVIEW="browse";loadMarket()}if(TAB==="labs")loadLabs();render()});
   document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{TAB=b.dataset.goto;PROFILE=null;render()});
+  const db_=$("#dmBtn");if(db_)db_.onclick=()=>openMessages();
   const srp=$("#sr-post");if(srp)srp.onclick=()=>{
     /* Used to route into "the room your trade lives in" — but a lab send
        is chat now, so that button led away from the one place a post can
@@ -40,12 +43,11 @@ function wire(){
     if(x)LIGHTBOX=x.full||x.url; render();
   });
 
-  const nb=$("#notifBtn");if(nb)nb.onclick=async()=>{
+  const nb=$("#notifBtn");if(nb)nb.onclick=async()=>{if(DMOPENPANEL)closeMessages();
     NOTIFOPEN=true;NOTIFS=null;render();
     try{const d=await api.notifs();NOTIFS=d.notifications;render();
       if(d.unread){await api.readNotifs();UNREAD=0;render()}}catch(e){toast(e.message)}};
-  const db_=$("#dmBtn");if(db_)db_.onclick=()=>openMessages();
-  const sb_=$("#searchBtn");if(sb_)sb_.onclick=()=>{SEARCHOPEN=true;render();setTimeout(()=>$("#sq")?.focus(),100)};
+  const sb_=$("#searchBtn");if(sb_)sb_.onclick=()=>{if(DMOPENPANEL)closeMessages();SEARCHOPEN=true;render();setTimeout(()=>$("#sq")?.focus(),100)};
   ["#joinBtn","#joinBtn2","#joinBtn3"].forEach(id=>{const b=$(id);if(b)b.onclick=()=>{GATE="join";GATEWHY="";render()}});
   ["#loginBtn","#loginBtn2","#loginBtn3"].forEach(id=>{const b=$(id);if(b)b.onclick=()=>{GATE="login";GATEWHY="";render()}});
   wirePanels();

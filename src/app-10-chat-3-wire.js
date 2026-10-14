@@ -1,4 +1,5 @@
-/* MESSAGES v2.0 — 2026-09-29. What the inbox and chat screen do. */
+/* MESSAGES v2.1 — 2026-10-14 (search your chats; keeps its place in the list).
+   v2.0 — 2026-09-29. What the inbox and chat screen do. */
 const CHATDRAFTS={};
 let CHATSTICK=true;   // reading the newest message? then late-loading media keeps you there
 const isMine=x=>!!(x&&x.from&&ME&&x.from.username===ME.username);
@@ -55,7 +56,7 @@ function leaveChat(){
 }
 function closeMessages(){
   if(RECORD)stopRecord(false);
-  DMOPENPANEL=false;CHAT=null;CHATSHEET=null;CMENU=null;paintLayer();
+  DMOPENPANEL=false;CHAT=null;CHATSHEET=null;CMENU=null;CXQ="";paintLayer();
 }
 /* Back button / swipe-back: innermost first. Returns false when nothing of
    ours was open, so the app's own history handling carries on. */
@@ -68,16 +69,22 @@ function chatPop(){
   return false;
 }
 
+/* searching your chats (2026-10-14): rows hide in place, nothing repaints */
+let CXQ="";
+function filterInbox(){const t=CXQ.trim().toLowerCase();
+  document.querySelectorAll("#chatlayer .cx-row").forEach(r=>{r.hidden=!!t&&!(r.dataset.q||"").includes(t)})}
 /* ---- painting without losing your place ---- */
 function chatKeep(){
-  const f=$("#cxfeed"),d=$("#cxdraft");
+  const f=$("#cxfeed"),d=$("#cxdraft"),l=$("#chatlayer .cx-list"),q=$("#cxq");
   return {f:!!f,top:f?f.scrollTop:0,bottom:f?f.scrollHeight-f.scrollTop-f.clientHeight<80:true,
-    focus:d&&document.activeElement===d,sel:d?d.selectionStart:0};
+    focus:d&&document.activeElement===d,sel:d?d.selectionStart:0,list:l?l.scrollTop:0,qf:!!q&&document.activeElement===q};
 }
 function chatRestore(k){
   const f=$("#cxfeed");
   if(f){if(!k.f||k.bottom||(CHAT&&CHAT.stick)){f.scrollTop=f.scrollHeight;CHATSTICK=true;if(CHAT)CHAT.stick=false}else f.scrollTop=k.top}
   const d=$("#cxdraft");if(d){fitDraft(d);if(k.focus){d.focus();try{d.setSelectionRange(k.sel,k.sel)}catch(e){}}}
+  const l=$("#chatlayer .cx-list");if(l&&k.list)l.scrollTop=k.list;
+  const q=$("#cxq");if(q&&k.qf){q.focus();try{q.setSelectionRange(q.value.length,q.value.length)}catch(e){}}
 }
 function paintFeed(o={}){
   const f=$("#cxfeed");if(!f||!CHAT)return;
@@ -98,7 +105,8 @@ function wireLayer(){
   const L=chatLayer(),on=(id,fn)=>{const el=L.querySelector("#"+id);if(el)el.onclick=fn};
   on("cxclose",()=>closeMessages());
   on("cxback",()=>leaveChat());
-  on("cxnew",()=>openPeopleSheet("new"));on("cxnew2",()=>openPeopleSheet("new"));
+  on("cxnew",()=>openPeopleSheet("new"));on("cxnew2",()=>openPeopleSheet("new"));on("cxnew3",()=>openPeopleSheet("new"));
+  const q=L.querySelector("#cxq");if(q){q.value=CXQ;q.oninput=()=>{CXQ=q.value;filterInbox()};filterInbox()}
   on("cxactive",async()=>{try{const r=await capi.activity(!INBOX.showActive);INBOX.showActive=r.showActive;paintLayer();
     toast(r.showActive?"People you chat with can see when you're active":"Activity status off — you won't see others' either")}catch(e){toast(e.message)}});
   L.querySelectorAll("[data-itab]").forEach(b=>b.onclick=()=>{INBOXTAB=b.dataset.itab;paintLayer()});

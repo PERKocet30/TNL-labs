@@ -1,18 +1,30 @@
-/* MESSAGES v2.0 — 2026-09-29. The inbox and the chat screen (markup). */
+/* MESSAGES v2.1 — 2026-10-14 (a screen of its own: two columns on a computer, full screen on a phone, search your chats).
+   v2.0 — 2026-09-29. The inbox and the chat screen (markup). */
 const chatTitle=c=>c.isGroup?(c.title||c.people.filter(p=>p.username!==myName()).map(p=>(p.displayName||p.username).split(" ")[0]).join(", ")||"Group")
   :((c.other&&(c.other.displayName||c.other.username))||"");
 const groupAvHTML=ps=>`<span class="c-gav">${(ps||[]).slice(0,2).map(p=>avHTML(p,"sm")).join("")}</span>`;
 const chatOther=()=>CHAT&&CHAT.meta&&!CHAT.meta.isGroup?CHAT.meta.people.find(p=>p.username!==myName()):null;
 
-function dmScreenHTML(){return `<div class="cx" id="cx"><div class="cx-in">${CHAT?threadHTML():inboxHTML()}</div></div>`}
+/* Messages is a screen of its own (2026-10-14, "like Instagram, not a layer
+   on top of the app"; the button stays in the top bar). On a computer: the
+   side menu stays, your chats on the left, the open conversation on the
+   right. On a phone: a full screen, the inbox then the conversation. */
+const dmTwo=()=>typeof isWide==="function"&&isWide();
+function dmScreenHTML(){
+  if(dmTwo())return `<div class="cx cx-wide" id="cx"><div class="cx-in cx-2p"><section class="cx-col">${inboxHTML()}</section>
+    <section class="cx-pane">${CHAT?threadHTML():dmEmptyHTML()}</section></div></div>`;
+  return `<div class="cx" id="cx"><div class="cx-in">${CHAT?threadHTML():inboxHTML()}</div></div>`}
+function dmEmptyHTML(){return `<div class="cx-none"><span class="cx-none-ic">${UI_IC.dm}</span><b>Your messages</b>
+  <span>Send a message to someone you want to make something with.</span><button class="btn" id="cxnew3">Send message</button></div>`}
 
 function inboxHTML(){
   const I=INBOX, list=!I?null:INBOXTAB==="requests"?I.requests:I.threads;
-  return `<header class="cx-h">
-      <button class="cx-ib" id="cxclose" aria-label="Close">${CI.back}</button>
+  return `<header class="cx-h cx-ih">
+      <button class="cx-ib" id="cxclose" aria-label="Back">${CI.back}</button>
       <h2>Messages</h2>
       <button class="cx-ib" id="cxnew" aria-label="New message">${CI.compose}</button>
     </header>
+    ${I&&(I.threads.length+I.requests.length)>3?`<label class="cx-q">${UI_IC.search}<input id="cxq" type="search" placeholder="Search" autocomplete="off" aria-label="Search your chats"></label>`:""}
     <div class="cx-tabs" role="tablist">
       <button class="${INBOXTAB==="chats"?"on":""}" data-itab="chats" role="tab">Chats</button>
       <button class="${INBOXTAB==="requests"?"on":""}" data-itab="requests" role="tab">Requests${I&&I.requestCount?`<b>${I.requestCount}</b>`:""}</button>
@@ -28,7 +40,7 @@ function inboxRowHTML(c){
   const L=c.last;
   const line=!L?(c.isGroup?"Group made":""):L.kind==="system"?L.body
     :(L.mine?"You: ":c.isGroup&&L.from?L.from.split(" ")[0]+": ":"")+L.body;
-  return `<button class="cx-row ${c.unread?"unread":""}" data-chat="${c.id}">
+  return `<button class="cx-row ${c.unread?"unread":""} ${CHAT&&CHAT.id===c.id?"sel":""}" data-chat="${c.id}" data-q="${esc((chatTitle(c)+" "+(c.isGroup?c.people.map(p=>p.username).join(" "):c.other?c.other.username:"")).toLowerCase())}">
     <span class="cx-av">${c.isGroup?groupAvHTML(c.people):avHTML(c.other)}${!c.isGroup&&c.other.active?`<i class="cx-on" aria-label="Active now"></i>`:""}</span>
     <span class="cx-rb"><b>${esc(chatTitle(c))}</b><span class="cx-rs"><span>${esc(line)}</span>${L?`<span class="cx-rt">· ${agoShort(L.createdAt)}</span>`:""}</span></span>
     ${c.muted?`<span class="cx-mu" aria-label="Muted">${CI.mute}</span>`:""}${c.unread?`<i class="cx-dot" aria-label="${c.unread} unread"></i>`:""}
