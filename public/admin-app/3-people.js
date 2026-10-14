@@ -1,4 +1,5 @@
-/* TNL LABS admin v3.0 — 2026-10-14. People: the member directory.
+/* TNL LABS admin v3.1 — 2026-10-14. People: the member directory.
+   v3.1: a phone starts in Cards; the top bar's member search steps aside here (this page has its own).
    v2.1: who's in the tournament; posts say which lab they're in.
    v2.2: "a database of all members and account information" — List | Database, Download CSV.
    v3.0: "on par with Microsoft or Google" — one directory, two views of the same
@@ -7,8 +8,12 @@
    and Cards (for a phone). Search filters as you type, without a round trip.
    One person's record is in 3-person.js. */
 let PQ = "", PFILTER = "all", PERSON = null, PPAGE = 0;
-let PPREF = { view: "table", size: 50, dense: false, cols: null, k: "joined", up: false };
+let PPREF = { size: 50, dense: false, cols: null, k: "joined", up: false };
 try { Object.assign(PPREF, JSON.parse(localStorage.getItem("tnl-admin-people") || "{}")); } catch (e) {}
+/* v3.1: Table or Cards is remembered per screen size — a phone starts in Cards
+   (a member's key details without swiping sideways), a computer in Table */
+const pwide = () => matchMedia("(min-width:1024px)").matches;
+const pview = () => PPREF[pwide() ? "viewWide" : "viewPhone"] || (pwide() ? "table" : "cards");
 const psave = () => { try { localStorage.setItem("tnl-admin-people", JSON.stringify(PPREF)); } catch (e) {} };
 const PFILTERS = [["all", "Everyone"], ["new", "New this week"], ["silent", "Never posted"], ["quiet", "Gone quiet"],
   ["tournament", "In the tournament"], ["sellers", "Sellers"], ["unverified", "Unverified"], ["suspended", "Suspended"], ["admins", "Admins"]];
@@ -93,7 +98,7 @@ function presultsHTML() {
   PPAGE = Math.min(PPAGE, pages - 1);
   const from = PPAGE * PPREF.size, page = rows.slice(from, from + PPREF.size);
   return psummaryHTML(rows) + (!rows.length ? `<div class="empty">No one matches${PQ ? ` “${esc(PQ)}”` : ""}.</div>`
-    : (PPREF.view === "table" ? ptableHTML(page) : pcardsHTML(page)) + `<div class="pager"><span class="mono">${num(from + 1)}–${num(from + page.length)} of ${num(rows.length)}</span>
+    : (pview() === "table" ? ptableHTML(page) : pcardsHTML(page)) + `<div class="pager"><span class="mono">${num(from + 1)}–${num(from + page.length)} of ${num(rows.length)}</span>
       <label class="mono">Rows <select class="sel" id="psize">${[25, 50, 100].map((n) => `<option ${PPREF.size === n ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       <button class="ib" data-pg="-1" aria-label="Previous page" ${PPAGE ? "" : "disabled"}>‹</button><span class="mono">Page ${PPAGE + 1} of ${pages}</span><button class="ib" data-pg="1" aria-label="Next page" ${PPAGE < pages - 1 ? "" : "disabled"}>›</button></div>`);
 }
@@ -114,8 +119,8 @@ VIEWS.people = () => `
   ${pageHead("People", "Every member's account, activity and standing. Tap a row to open their record.", `<button class="btn ghost sm" id="pcsv">${I.down} Export CSV</button>`)}
   <div class="tb">
     <div class="srch">${di('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>', 16)}<input id="pq" placeholder="Search name, username or email" value="${esc(PQ)}" autocomplete="off" aria-label="Search members"></div>
-    <div class="seg" role="group" aria-label="View"><button class="${PPREF.view === "table" ? "on" : ""}" data-pview="table">Table</button><button class="${PPREF.view === "cards" ? "on" : ""}" data-pview="cards">Cards</button></div>
-    ${PPREF.view === "table" ? `<details class="menu"><summary class="btn ghost sm">Columns</summary><div class="menu-b">${PCOLS.slice(1).map(([k, l]) =>
+    <div class="seg" role="group" aria-label="View"><button class="${pview() === "table" ? "on" : ""}" data-pview="table">Table</button><button class="${pview() === "cards" ? "on" : ""}" data-pview="cards">Cards</button></div>
+    ${pview() === "table" ? `<details class="menu"><summary class="btn ghost sm">Columns</summary><div class="menu-b">${PCOLS.slice(1).map(([k, l]) =>
       `<label><input type="checkbox" data-pcol="${k}" ${pcolsOn().some((c) => c[0] === k) ? "checked" : ""}> ${l}</label>`).join("")}<button class="btn ghost sm" id="pcolreset">Reset</button></div></details>
       <button class="btn ghost sm${PPREF.dense ? " on" : ""}" id="pdense" aria-pressed="${PPREF.dense}">Compact</button>`
     : `<select class="sel" id="psort" aria-label="Sort">${PCOLS.map(([k, l]) => `<option value="${k}" ${PPREF.k === k ? "selected" : ""}>Sort: ${l}</option>`).join("")}</select>`}
@@ -140,7 +145,7 @@ function wirePeopleResults() {
 WIRES.people = () => {
   const q = $("#pq"); if (q) q.oninput = () => { PQ = q.value; PPAGE = 0; paintPeopleResults(); };
   $$("[data-pf]").forEach((b) => b.onclick = () => { PFILTER = b.dataset.pf; PPAGE = 0; D.people = null; paint(); load(); });
-  $$("[data-pview]").forEach((b) => b.onclick = () => { PPREF.view = b.dataset.pview; psave(); paint(); });
+  $$("[data-pview]").forEach((b) => b.onclick = () => { PPREF[pwide() ? "viewWide" : "viewPhone"] = b.dataset.pview; psave(); paint(); });
   const s = $("#psort"); if (s) s.onchange = () => { PPREF.k = s.value; PPREF.up = ["name", "email", "role"].includes(s.value); PPAGE = 0; psave(); paintPeopleResults(); };
   $$("[data-pcol]").forEach((c) => c.onchange = () => { PPREF.cols = $$("[data-pcol]").filter((x) => x.checked).map((x) => x.dataset.pcol); psave(); paintPeopleResults(); });
   const cr = $("#pcolreset"); if (cr) cr.onclick = () => { PPREF.cols = null; psave(); paint(); };

@@ -1380,6 +1380,15 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.waitForURL(/\/admin#system$/, { timeout: 8000 });
     await p.locator("[data-systab=health]").waitFor({ timeout: 8000 });   // System, signed in (its tabs since 2026-10-14)
   });
+  // 2026-10-14: on a phone, People starts in Cards (no sideways swiping) and has one search box, not two
+  await step(d, "admin → People on a phone: cards, and one search box", async () => {
+    await p.locator("[data-tab=people]:visible").tap();
+    await fast(p, 6000, () => p.locator("#pres .li").first().waitFor(), "People's member cards");
+    ok(await p.locator("#pres .pdb").count() === 0, "a phone opened People as the sideways table");
+    ok(await p.locator("#gq").count() === 0 && await p.locator("#pq").count() === 1, "People shows two search boxes");
+    await p.locator("[data-tab=today]:visible").tap();
+    await fast(p, 4000, () => p.locator("#gq").waitFor(), "the top-bar search on other pages");
+  });
   await step(d, "only this site's own pages can be the way back", async () => {
     await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof gxNext === "function");
     const r = await p.evaluate(() => ["/admin#system", "//evil.example", "https://evil.example", "/\\evil.example", "javascript:alert(1)", "/admin\"x"].map((n) => gxNext(n)));
