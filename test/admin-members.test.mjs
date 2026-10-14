@@ -1,6 +1,7 @@
 // The member database (2026-10-12): "The admin dashboard should include a
 // database of all members and account information." Admins only, every
 // member, account details — and never a password, a session or a Stripe id.
+// v2 (2026-10-14): "on par with Microsoft or Google" — a directory grid and a tabbed record.
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -59,8 +60,14 @@ try {
   t("every download is in the admin log", log && /downloaded the member database \(333 members\)/.test(log.action));
 
   console.log("\nIN /admin");
-  const js = readFileSync(join(ROOT, "public/admin-app/3-people.js"), "utf8");
-  t("People has List | Database, Download CSV, and an Account section", js.includes('data-pview="db"') && js.includes('id="pcsv"') && js.includes('<h2 class="sec">Account</h2>'));
+  const js = readFileSync(join(ROOT, "public/admin-app/3-people.js"), "utf8"), rec = readFileSync(join(ROOT, "public/admin-app/3-person.js"), "utf8");
+  const html = readFileSync(join(ROOT, "public/admin.html"), "utf8");
+  t("People is a directory: Table | Cards, choose columns, pages, summary numbers, Export CSV", js.includes('data-pview="table"') && js.includes('data-pview="cards"')
+    && js.includes("data-pcol=") && js.includes('id="psize"') && js.includes('class="sum"') && js.includes('id="pcsv"'));
+  t("…every row carries its member ID", all.people.every((u) => Number.isInteger(u.id)) && js.includes('["id", "ID"'));
+  t("a member's record has tabs — Overview, Account, Activity, Notes — and sign-out / suspend kept apart", ['"overview", "Overview"', '"account", "Account"', '"activity", "Activity"', '"notes", "Notes"'].every((x) => rec.includes(x))
+    && rec.includes('class="rc danger"') && rec.includes('data-pa="suspend"'));
+  t("…and /admin loads both", html.includes('src="/admin-app/3-people.js?v=3.0"') && html.includes('src="/admin-app/3-person.js?v=1.0"'));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

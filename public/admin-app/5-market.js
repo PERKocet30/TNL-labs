@@ -1,4 +1,4 @@
-/* TNL LABS admin v2.0 — 2026-09-29. Market: is money moving, and is anything stuck. */
+/* TNL LABS admin v2.1 — 2026-10-14 (page header; orders' filters inside their card). Market: is money moving, and is anything stuck. */
 let OSTAT = "all";
 LOADERS.market = async () => {
   const [m, o] = await Promise.all([req("/api/admin/market"), req("/api/admin/orders")]);
@@ -13,7 +13,7 @@ VIEWS.market = () => {
   const rows = (O || []).filter((o) => OSTAT === "all" || o.status === OSTAT);
   const k = (label, v, sub) => `<div class="kpi"><div class="k">${label}</div><div class="v">${v}</div><div class="d">${sub}</div></div>`;
   return `
-  <h1 style="font-size:22px">Market</h1>
+  ${pageHead("Market", "Is money moving, and is anything stuck.")}
   <div class="grid g2 g4" style="margin-top:14px">
     ${k("Sales, all time", money(m.gmv), `${m.orders} order${m.orders === 1 ? "" : "s"} · ${money(m.aov)} average`)}
     ${k("Commission (est.)", money(m.revenue), "tiered by seller level")}
@@ -23,10 +23,10 @@ VIEWS.market = () => {
   <h2 class="sec">Sales per day <span class="mono">last 14 days</span></h2>
   <div class="chart">${barsHTML(m.daily.map((x) => x.gmv), { labels, fmt: money, h: 120 })}</div>
 
-  <h2 class="sec">Orders</h2>
-  <div class="filters" style="margin-bottom:8px">${["all", "paid", "shipped", "complete", "pending", "cancelled"].map((s) =>
+  <h2 class="sec">Orders <span class="mono">${O ? O.length + " all time" : ""}</span></h2>
+  <div class="panel scroll"><div class="filters" style="margin-bottom:8px">${["all", "paid", "shipped", "complete", "pending", "cancelled"].map((s) =>
     `<button class="pill sm ${OSTAT === s ? "on" : ""}" data-os="${s}">${s === "all" ? "All" : STATUS[s]}${s !== "all" ? ` <span class="dim">${(O || []).filter((o) => o.status === s).length}</span>` : ""}</button>`).join("")}</div>
-  <div class="panel scroll">${!O ? `<div class="empty">Loading…</div>` : !rows.length ? `<div class="empty">No orders here.</div>` : `<table class="tbl">
+  ${!O ? `<div class="empty">Loading…</div>` : !rows.length ? `<div class="empty">No orders here.</div>` : `<table class="tbl">
     <thead><tr><th>Item</th><th>Seller</th><th>Buyer</th><th class="num">Total</th><th class="num">Fee</th><th>Status</th><th class="num">When</th></tr></thead>
     <tbody>${rows.map((o) => `<tr><td>${esc(o.title)}</td>
       <td><button data-person="${esc(o.seller)}">@${esc(o.seller)}</button></td><td><button data-person="${esc(o.buyer)}">@${esc(o.buyer)}</button></td>

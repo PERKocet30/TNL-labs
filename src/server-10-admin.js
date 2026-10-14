@@ -1,5 +1,5 @@
 /* ================================================================
-   ADMIN v2.1 — 2026-10-09. What the dashboard runs on.
+   ADMIN v2.2 — 2026-10-14 (People rows carry the member ID). What the dashboard runs on.
    - /api/admin/pulse: the numbers that matter for a date range, each
      against the range before it, plus daily series and "needs you".
      (v2.1: labs, #tags, the tournament and how people take part moved
@@ -185,7 +185,7 @@ app.get("/api/admin/people", auth, admin, (req, res) => {
   if (filter === "quiet") list = list.filter((r) => (r.last_active || 0) < now - 14 * ADAY);
   if (req.query.sort === "active") list = [...list].sort((a, b) => (b.last_active || 0) - (a.last_active || 0));
   res.json({ total: aone(`SELECT COUNT(*) n FROM users`), people: (all ? list : list.slice(0, 300)).map((r) => ({
-    username: r.username, displayName: r.display_name, email: r.email, avatarUrl: r.avatar_url || "", role: r.role,
+    id: r.id, username: r.username, displayName: r.display_name, email: r.email, avatarUrl: r.avatar_url || "", role: r.role,
     rep: r.rep, level: levelFor(r.rep).id, levelName: levelFor(r.rep).name,
     verified: !!r.email_verified, isAdmin: !!r.is_admin, suspended: !!r.suspended, payouts: !!r.stripe_ready,
     joined: r.created_at, lastSeen: r.last_seen_at || null, lastActive: r.last_active || null,

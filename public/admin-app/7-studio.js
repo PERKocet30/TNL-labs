@@ -1,8 +1,8 @@
-/* TNL LABS admin v2.0 — 2026-09-29. Studio stats, carried over from admin v1
+/* TNL LABS admin v2.1 — 2026-10-14 (shared page header; back goes to System, where the Studio switch is). Studio stats, carried over from admin v1
    unchanged in substance: what producers do with the beat maker. Reached from
    Content → Studio stats. */
 LOADERS.studio = async () => { D.studio = await req("/api/admin/studio"); };
-VIEWS.studio = () => `<div class="row sp"><h1 style="font-size:22px">Studio stats</h1><button class="btn ghost sm" data-go="content">Back to content</button></div>
+VIEWS.studio = () => `${pageHead("Studio stats", "What producers do with the beat maker.", `<button class="btn ghost sm" data-go="system">Back to System</button>`)}
   <div class="studio" style="margin-top:12px">${studioHTML()}</div>`;
 function studioHTML(){
   const d=D.studio;
