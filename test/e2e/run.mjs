@@ -1318,6 +1318,23 @@ console.log("\nMEMBER · COMPUTER");
     ok(left >= 200, "the post covers the sidebar");
     await p.evaluate(() => { POSTOPEN = null; render(); });
   });
+  // 2026-10-14 "DMs like Instagram, not a layer on top of the app": Messages is a page beside the side menu
+  await step(d, "Messages is a page beside the side menu: chats on the left, the conversation on the right", async () => {
+    await p.locator("#dmBtn").click();
+    await fast(p, 4000, () => p.locator("#chatlayer .cx-col").waitFor(), "the chat list column");
+    const g = await p.evaluate(() => { const cx = document.querySelector("#chatlayer .cx"), r = cx.getBoundingClientRect();
+      return { left: r.left, side: document.querySelector(".side").getBoundingClientRect().width, bg: getComputedStyle(cx).backgroundColor, body: getComputedStyle(document.body).backgroundColor }; });
+    ok(g.left >= g.side - 1, "Messages covers the side menu");
+    ok(g.bg === g.body, "the app is dimmed behind Messages (a layer, not a page): " + g.bg);
+    ok(await p.locator("#chatlayer .cx-pane .cx-none").isVisible(), "no 'Your messages' column before a chat is picked");
+    await fast(p, 4000, () => p.locator("#chatlayer [data-chat]").first().waitFor(), "a chat in the list");
+    await p.locator("#chatlayer [data-chat]").first().click();
+    await fast(p, 4000, () => p.locator("#chatlayer .cx-pane #cxdraft").waitFor(), "the conversation column");
+    ok(await p.locator("#chatlayer .cx-col [data-chat].sel").count() === 1, "the open chat isn't marked in the list");
+    await p.locator('.side [data-tab="labs"]').click();
+    await fast(p, 3000, () => p.waitForSelector(".lx-list"), "Labs from the side menu");
+    ok(await p.evaluate(() => !DMOPENPANEL && !document.querySelector("#chatlayer .cx")), "Messages stayed open over Labs");
+  });
   await step(d, "admin → System shows the Glitches panel with the phone's rage tap", async () => {
     await settledGoto(p, B + "/admin#system");
     // 2026-10-14: System is in tabs — Glitches live under Health

@@ -1,5 +1,6 @@
 /* ================================================================
-   MESSAGES v2.0 — 2026-09-29. One chat kit for labs and DMs.
+   MESSAGES v2.1 — 2026-10-14 (Messages a screen of its own; repaints when the window changes shape).
+   v2.0 — 2026-09-29. One chat kit for labs and DMs.
    Parts: 1-kit (this: state, API, shared pieces, the hold menu),
    2-dm (inbox + chat screens), 3-wire (DM behaviour, voice notes,
    sheets), 4-live (the private live stream, lab rooms as chat).
@@ -127,12 +128,16 @@ function chatLayer(){
   if(!l){l=document.createElement("div");l.id="chatlayer";document.body.appendChild(l)}
   return l;
 }
+/* phone ↔ computer: the screen's shape changes with the window */
+let CXWIDE=null;if(typeof addEventListener==="function")addEventListener("resize",()=>{const w=typeof isWide==="function"&&isWide();if(CXWIDE!==null&&w!==CXWIDE&&DMOPENPANEL)paintLayer();CXWIDE=w});
 function paintLayer(){
   const l=chatLayer();
   const keep=chatKeep();
   l.innerHTML=(DMOPENPANEL?dmScreenHTML():"")+(CHATSHEET?chatSheetHTML():"")+(CMENU?cmenuHTML():"")
     +(CHATZOOM?`<div class="c-zoom" id="czoom"><img src="${esc(CHATZOOM)}" alt=""></div>`:"");
   document.body.classList.toggle("chat-on",!!DMOPENPANEL);
+  /* the Messages button shows where you are (2026-10-14) */
+  document.querySelectorAll("#dmBtn").forEach(b=>b.classList.toggle("on",!!DMOPENPANEL));
   paintPlayer();   // a chat covers the page: lab music and post sound pause (musicScope)
   wireLayer();
   chatRestore(keep);

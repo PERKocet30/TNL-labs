@@ -38,6 +38,7 @@
   .cx.mv-in .cx-in{animation:mvDrawer .32s var(--mv-ease);animation-delay:var(--mvd,0s)}
   .cx-in.mv-tf>*{animation:mvFwd .26s var(--mv-ease);animation-delay:var(--mvd,0s)}
   .cx-in.mv-tb>*{animation:mvBack .26s var(--mv-ease);animation-delay:var(--mvd,0s)}
+  .cx.mv-fade,.cx-pane.mv-fade{animation:mvFade .2s ease;animation-delay:var(--mvd,0s)}
   /* pictures arrive */
   img[loading="lazy"]{transition:opacity .3s ease}
   /* the double-tap heart */
