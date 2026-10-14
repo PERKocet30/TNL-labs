@@ -24,37 +24,37 @@ video[data-auto]{cursor:pointer}
 .st-sp{width:26px;height:26px;border-radius:50%;border:1px solid var(--line2);background:var(--el);color:var(--green);font-size:11px;padding:0;flex-shrink:0}
 .st-sn2{flex:1;min-width:0;font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .st-use{background:var(--el);border:1px solid var(--line2);color:var(--tx);border-radius:999px;padding:4px 9px;font-family:inherit;font-size:11px;letter-spacing:.02em;white-space:nowrap}
-.st-use:hover{border-color:var(--green);color:var(--green)}
+.st-use:hover{border-color:var(--accent-fill);color:var(--green)}
 .st-custom{font-size:12px;color:var(--green);padding:6px 0}
 .st-stabs{display:flex;gap:6px;margin-bottom:10px}
 .st-lslots{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 6px}
 .st-lmeta{letter-spacing:.02em;margin-bottom:8px}
 .st-share{width:26px;height:26px;border-radius:999px;border:1px solid var(--line2);background:var(--el);color:var(--dim);font-size:11px;padding:0;flex-shrink:0}
-.st-share.on{border-color:var(--green);color:var(--green);background:color-mix(in srgb, var(--green) 14%, transparent)}
+.st-share.on{border-color:var(--accent-fill);color:var(--green);background:color-mix(in srgb, var(--accent-fill) 14%, transparent)}
 .st-privacy{margin-top:8px;font-size:11px;letter-spacing:.02em;line-height:1.7;color:var(--dim);border:1px solid var(--line);border-radius:0;padding:8px 10px}
 .st-link{background:none;border:none;color:var(--dim);text-decoration:underline;font-size:12px;padding:0;font-family:inherit}
 .st-link:hover{color:var(--tx)}
 /* selling a sound */
-.kbtn.on{background:color-mix(in srgb, var(--green) 12%, transparent);border-color:var(--green);color:var(--tx)}
-.audioadd.busy{border-style:solid;border-color:var(--green)}
+.kbtn.on{background:color-mix(in srgb, var(--accent-fill) 12%, transparent);border-color:var(--accent-fill);color:var(--tx)}
+.audioadd.busy{border-style:solid;border-color:var(--accent-fill)}
 /* a loop in the grid */
-.mcard.loop .mloop{position:relative;aspect-ratio:1/1;overflow:hidden;background:linear-gradient(145deg,color-mix(in srgb, var(--green) 18%, transparent),var(--el));display:flex;align-items:center;justify-content:center}
+.mcard.loop .mloop{position:relative;aspect-ratio:1/1;overflow:hidden;background:linear-gradient(145deg,color-mix(in srgb, var(--accent-fill) 18%, transparent),var(--el));display:flex;align-items:center;justify-content:center}
 .mloop-ic{font-size:34px;color:var(--green);opacity:.8}
 .freetag{position:absolute;top:7px;left:7px;background:var(--accent-fill);color:var(--on-accent);font-size:10px;font-weight:600;letter-spacing:.02em;padding:3px 6px;border-radius:999px}
 .bpmtag{position:absolute;bottom:7px;left:7px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;letter-spacing:.02em;padding:3px 6px;border-radius:999px}
 /* loop detail */
 .loopart{position:relative;aspect-ratio:1/1;max-height:300px;border-radius:0;overflow:hidden;background:var(--el);display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
-.loopart.noart{background:linear-gradient(145deg,color-mix(in srgb, var(--green) 20%, transparent),var(--el))}
+.loopart.noart{background:linear-gradient(145deg,color-mix(in srgb, var(--accent-fill) 20%, transparent),var(--el))}
 .loopart img{width:100%;height:100%;object-fit:cover}
 .loopglyph{font-size:64px;color:var(--green);opacity:.5}
 .loopplay{position:absolute;width:62px;height:62px;border-radius:50%;background:var(--accent-fill);color:var(--on-accent);border:none;font-size:20px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
 .loopplay:active{transform:scale(.94)}
 .freebig{color:var(--green);font-size:20px;font-weight:900}
 .simglyph{width:100%;aspect-ratio:1/1;background:var(--el);display:flex;align-items:center;justify-content:center;color:var(--green);font-size:22px}
-.announce{background:color-mix(in srgb, var(--green) 14%, transparent);border-bottom:1px solid color-mix(in srgb, var(--green) 40%, transparent);padding:9px 15px;font-size:12.5px;line-height:1.5;color:var(--tx2);text-align:center}
+.announce{background:color-mix(in srgb, var(--accent-fill) 14%, transparent);border-bottom:1px solid color-mix(in srgb, var(--accent-fill) 40%, transparent);padding:9px 15px;font-size:12.5px;line-height:1.5;color:var(--tx2);text-align:center}
 .closed{border:1px solid var(--line2);border-radius:999px;padding:9px 16px;color:var(--dim);letter-spacing:.02em;font-size:11px;display:inline-block}
 /* held notes + slides */
-.st-c.tail{background:color-mix(in srgb, var(--green) 30%, transparent);border-color:color-mix(in srgb, var(--green) 45%, transparent)}
+.st-c.tail{background:color-mix(in srgb, var(--accent-fill) 30%, transparent);border-color:color-mix(in srgb, var(--accent-fill) 45%, transparent)}
 .st-c.slide{color:#000;font-size:11px;font-weight:900;line-height:1}
 .st-c.on.slide{background:var(--accent-fill);border-color:var(--accent-fill)}
 /* note editor */
@@ -67,9 +67,9 @@ video[data-auto]{cursor:pointer}
 .st-nel{letter-spacing:.02em;margin:14px 0 6px}
 .st-vrow,.st-lpre{display:flex;gap:5px;flex-wrap:wrap}
 .st-lrow{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.st-lrow input{flex:1;accent-color:var(--green)}
+.st-lrow input{flex:1;accent-color:var(--accent-fill)}
 .st-slide{width:100%;display:flex;align-items:center;gap:11px;background:var(--el);border:1px solid var(--line);border-radius:0;padding:11px;text-align:left;color:var(--tx)}
-.st-slide.on{border-color:var(--green);background:color-mix(in srgb, var(--green) 12%, transparent)}
+.st-slide.on{border-color:var(--accent-fill);background:color-mix(in srgb, var(--accent-fill) 12%, transparent)}
 .st-slide b{font-size:13px}
 .st-sglyph{font-size:22px;color:var(--green);width:26px;text-align:center;flex-shrink:0}
 .st-chip.sm{font-size:12px;padding:4px 8px}
@@ -102,7 +102,7 @@ video[data-auto]{cursor:pointer}
   background:rgba(239,68,68,.35);color:#fff;font-size:14px;font-weight:900}
 .qadd{width:52px;height:52px;border-radius:999px;border:1px dashed var(--line2);background:none;
   color:var(--dim);font-size:17px;flex-shrink:0}
-.qadd:hover{border-color:var(--green);color:var(--green)}
+.qadd:hover{border-color:var(--accent-fill);color:var(--green)}
 .attach-bar{align-items:flex-start;flex-wrap:wrap}
 /* several images, one post — most lab chat is exactly this */
 .gal{display:grid;gap:3px;margin-top:8px;border-radius:0;overflow:hidden;border:1px solid var(--line);position:relative}
