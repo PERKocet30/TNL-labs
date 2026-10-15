@@ -25,12 +25,12 @@ One Node server, one SQLite database, no framework and no external services requ
 | **Music** | The `// Music` lab is the network's player: Songs and Playlists, a full-screen song with its queue, repeat and shuffle, a bar that carries on as you move through the lab, and lock-screen controls. Members upload songs from the lab or the post creator, each with its own cover. The lab wears the cover of the week's most-played song. A post's own sound plays only while you're on that post. The Studio beat maker is hidden unless Admin → Settings → Studio is on. |
 | **The tournament** | One prompt, one entry each, fresh votes every day with a live scoreboard that goes dark for the last hours, then a final. Votes only count in the app; entrants share their own Story card and vote link to bring their people in. |
 | **Archive** | Search every image ever posted, in `// Visual`. |
-| **Messages & notifications** | Direct and group messages, live notifications and unread badges over a Server-Sent Events stream. A notification opens the thing it's about. |
+| **Messages & notifications** | Direct and group messages, live notifications and unread badges over a Server-Sent Events stream. A notification opens the thing it's about. Messages is a screen of its own: on a computer your chats sit beside the open conversation, next to the side menu; on a phone it fills the screen. Search your chats once there are more than three. |
 | **Sharing** | Share cards for Stories (a post, a profile, a tournament entry), public pages that preview properly in DMs, and links that open the app on the exact thing. |
 | **Phone and computer** | Phones get the app as designed: top bar, bottom nav. From 1024px wide the top bar and nav become one left sidebar, pages sit at a reading width beside it, and a mouse gets hover states. Resizing a window switches layouts on the spot. |
 | **Admin** | `/admin` — the dashboard (see below). |
 
-Design language: Helvetica, `//` marks the labs, true white by day and black by night, Reagent green `#98FC68` as the one accent, each member in their own colour, drawn 2px square-cap icons. Every screen and rule is in the LABS Blueprint (v1.2, 2026-10-11) in the project files.
+Design language: Helvetica, `//` marks the labs, true white by day and black by night, Reagent green `#98FC68` as the one accent, each member in their own colour (nine to choose from in Edit profile; the ring and highlights are the colour itself, text a deeper shade of it that reads at 4.5:1), drawn 2px square-cap icons. Every screen and rule is in the LABS Blueprint (v1.2, 2026-10-11) in the project files.
 
 ---
 
@@ -66,7 +66,7 @@ test/                           51 test suites — run with npm test
 | `server-12-seo` | search: `/sitemap.xml` (every public page, nothing private) and `ldJson()` — schema.org structured data on the public pages (profile, post, song, listing, event) |
 | `app-09-nav` | back: one trail of screens — every screen change joins it, and the phone's back, swipe-back, ‹ and ✕ all walk it |
 | `app-08-upload` | uploads: the streaming upload, retried twice when the connection drops or the server is restarting (502–504), failures reported to Glitches with size, time and reason |
-| `app-10-chat-1…6` | Messages v2 (2026-09-29): chat kit, inbox + chat screen, composer/voice notes, sheets (new chat, group, forward, mute), the signed-in live stream, lab rooms as chat |
+| `app-10-chat-1…6` | Messages v2.1 (2026-10-14: a screen of its own — two columns on a computer, chat search): chat kit, inbox + chat screen, composer/voice notes, sheets (new chat, group, forward, mute), the signed-in live stream, lab rooms as chat |
 | `app-10-dm-search` | search, the door |
 | `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
 | `app-11-places` | Labs as places (2026-10-08; v1.1 2026-10-09: one list of genres with their #tags, Work · Talk only): a lab's tabs, its home channel (`LAB_HOME`), the #tag page, tag suggestions; styles in `app-05-styles-places` |
@@ -198,16 +198,18 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 
 ---
 
-## Admin dashboard (`/admin`) — v2.2, 2026-10-09
+## Admin dashboard (`/admin`) — v3.1, 2026-10-14
 
-Admin-only; every route checks on the server. `public/admin.html` is the shell and styles, the app is `public/admin-app/1-core.js` … `8-events.js`, and the data comes from `src/server-10-admin.js`, `src/server-10-pulse-labs.js` plus the older admin routes. v2.2 follows the app's direction: labs are places (genres + #tags), the tournament is the centre, Instagram brings people in and the app is where they take part.
+Admin-only; every route checks on the server. `public/admin.html` is the shell and base styles, `public/admin-app/ui.css` the shell, People and card styles, and the app is `public/admin-app/1-core.js` … `8-events.js` (People is `3-people.js`, one member's record `3-person.js`). The data comes from `src/server-10-admin.js`, `src/server-10-admin2-members.js`, `src/server-10-pulse-labs.js` plus the older admin routes. Each file stays under 24KB.
 
-- **Today:** what needs you (reports, orders not shipped after 3 days, backups, errors, stale collab invites, new members to welcome, and the tournament — a draft, entries or voting ending within 48h with a nudge to post on Instagram), the tournament (stage, entries, voters, votes), eight numbers against the previous period (7, 30 or 90 days — work posted and tournament votes among them), a daily chart, how people take part (build, talk, feedback, the tournament, collabs, selling) with who hasn't yet, each lab with its #tags, the #tags people are using, and the most active members. A tournament vote counts as activity.
-- **People:** search, filter (new, never posted, gone quiet, in the tournament, sellers, unverified, suspended, admins) and sort. Each person opens with their stats, recent posts, rep history, a private admin note, and actions: message, confirm email, adjust rep (with a reason), feature, sign out everywhere, suspend. Message a group from the bottom.
-- **Labs** (was Content): open reports first, then every post, filterable by lab, #tag, work or talk, and text; pin, delete. Tap a lab or a #tag on Today to land here filtered.
-- **Tournament** (was Events): set up and run events, with the Instagram kit.
+- **Every page:** on a computer a side menu (Today, People, Labs, Tournament, Market, System; who's signed in, day/night, Open the app); on a phone the tabs along the top. A search bar finds any member by name, @username or email and opens their record (People has its own search instead). Each page starts with its title, one line on what it's for and its main buttons, then its sections as titled cards (`pageHead`, `card`, `subTabs` in `1-core.js`; any `h2.sec` followed by a panel, list or chart is drawn as one card).
+- **Today:** what needs you (reports, orders not shipped after 3 days, backups, errors, stale collab invites, new members to welcome, and the tournament — a draft, entries or voting ending within 48h), the tournament (stage, entries, voters, votes), eight numbers against the previous 7, 30 or 90 days, a daily chart, how people take part, the labs and the #tags people use.
+- **People — the member directory:** summary numbers for whatever is filtered or searched (members, active in 30 days, email confirmed, have posted, selling, sales, suspended); **Table** (choose from 18 columns, Compact rows, sticky header and name column, sort by any heading) or **Cards**, remembered per screen size — a phone starts in Cards, a computer in Table; pages of 25, 50 or 100; search as you type; filters (new, never posted, gone quiet, in the tournament, sellers, unverified, suspended, admins); one status word (Active, New, Inactive, Suspended); **Export CSV** of every member (`/api/admin/members.csv` — never a password, session or Stripe id; formula-safe cells; each download in the admin log). Message a group from the bottom.
+- **A member's record:** name, member number, status and badges, then Message, Confirm email, Adjust rep (with a reason), Feature +40, Copy email; tabs **Overview** (grouped numbers and "Needs a look"), **Account** (Profile, Contact & sign-in, Payments, Access; sign out everywhere and suspend kept apart at the bottom), **Activity** (recent posts, the rep log with dates) and **Notes** (the private admin note).
+- **Labs:** open reports first, then every post, filterable by lab, #tag, work or talk, and text; pin, delete. Tap a lab or a #tag on Today to land here filtered.
+- **Tournament:** set up and run events, with the Instagram kit.
 - **Market:** sales, commission, orders by status, top sellers, stale listings.
-- **System:** switches and landing text (Studio stats sit by the Studio switch when it's on), backups, email test, unused files, errors, and the **admin log** — every change made from the dashboard, with who and when (`admin_log`, written by a hook on `/api/admin` writes).
+- **System,** in tabs: **Settings** (who can get in, what's open, what people see first), **Health** (database, uploads, errors, glitches, server, unused files), **Backups & email**, and the **Admin log** — every change made from the dashboard, with who and when (`admin_log`, written by a hook on `/api/admin` writes).
 
 ---
 
@@ -453,6 +455,7 @@ GET    /api/admin/pulse?days=&tz=   (admin)  Today: numbers, series, needs-you
 GET    /api/admin/direction?days=&tz=   (admin)  Today: labs + #tags, the tournament, taking part, tournament needs
 GET    /api/admin/posts?lab=&tag=&kind=&q=   (admin)  moderation by lab and #tag
 GET    /api/admin/people · /api/admin/people/:username   (admin)
+GET    /api/admin/members.csv   (admin — every member as a spreadsheet; logged)
 POST   /api/admin/people/:username/note · /signout   (admin)
 GET    /api/admin/posts · /api/admin/log   (admin)
 GET    /api/admin/overview   (admin)

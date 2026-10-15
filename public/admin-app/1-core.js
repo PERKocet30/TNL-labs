@@ -1,4 +1,4 @@
-/* TNL LABS admin v3.1 — 2026-10-14. Core: state, API, helpers, charts, shell.
+/* TNL LABS admin v3.2 — 2026-10-15 (an unused helper out). Core: state, API, helpers, charts, shell.
    v3.0: the whole admin dashboard to one standard — a side menu
    on a computer, search any member from the top bar, and shared page pieces
    (pageHead, card, subTabs) every section is built from. v3.1: no top-bar
@@ -21,7 +21,6 @@ const num = (n) => (n || 0).toLocaleString();
 const ago = (t) => { if (!t) return "never"; const s = (Date.now() - t) / 1000;
   if (s < 60) return "now"; if (s < 3600) return Math.floor(s / 60) + "m"; if (s < 86400) return Math.floor(s / 3600) + "h";
   if (s < 86400 * 30) return Math.floor(s / 86400) + "d"; return new Date(t).toLocaleDateString([], { month: "short", day: "numeric" }); };
-const chName = (c) => { const t = String(c || "").replace(/-/g, " "); return t.charAt(0).toUpperCase() + t.slice(1); };
 const av = (u, cls = "") => u && u.avatarUrl ? `<img class="av ${cls}" src="${esc(u.avatarUrl)}" alt="">`
   : `<span class="av ${cls}">${esc(((u && (u.displayName || u.username)) || "?").slice(0, 2).toUpperCase())}</span>`;
 

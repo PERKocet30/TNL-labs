@@ -5,7 +5,7 @@ let TAB="showroom", LAB=null, CH=LABS[0].channels[0], ROOMOPEN=false, POSTS=[], 
    card's share/like can find its post. Without this, a Showroom share falls
    through to the "not published work" branch and hides every share option. */
 let SRPOSTS=[];
-let PTAB="work", EDITING=false, EDITROLE="", PENDIMG=null, LIGHTBOX=null, VERIFYURL=null;
+let PTAB="work", EDITING=false, LIGHTBOX=null, VERIFYURL=null;
 let PROFLISTINGS=null;
 let PCOMPOSE=null;
 let FEEDAT={}, SRAT=0;  // freshness stamps — render() must not hammer the network on every tap
@@ -52,7 +52,6 @@ let QUEUE=[];
      Add to Home Screen, by hand. So on iOS we can only SHOW people how.
    Either way: never nag. Once dismissed, it stays gone. */
 let INSTALLEVT=null, INSTALLCARD=false;
-let OPENTRACK="", PITCHSEL=0, DRAFTS=null;
 /* Overwritten by /api/levels on boot. Declared here with a sane default so
    that a failed call — or an offline start — can't take the app down. */
 let SITE={};   // headline, tagline, announcement, feature switches — set by /api/levels
@@ -97,7 +96,7 @@ function applyAccent(hex){
     document.documentElement.style.setProperty("--on-accent", onAccent(ACCENTHEX));
   }catch(e){/* never worth taking the app down over a colour */}
 }
-let PENDKIND=null, EDITID=null, EDITROLES=[];
+let EDITID=null;
 /* A post is a post because of what it IS, not because someone ticked a
    box before sending it. Media, a beat, a track, or a post sent in from
    outside renders as a card; plain talk renders as a chat line. The lab

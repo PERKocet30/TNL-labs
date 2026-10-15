@@ -46,7 +46,7 @@ function renderSearchOnly(){
   wirePanels();
 }
 /* openDM → app-10-chat-3-wire.js (messaging v2) */
-let PENDPREP=null, UPPROG=null, UPLOADXHR=null;
+let UPPROG=null, UPLOADXHR=null;
 
 /* The Studio is 80KB+ and most visits never open it, so it no longer blocks
    the first paint: it loads in the background after boot, or on first use. */
