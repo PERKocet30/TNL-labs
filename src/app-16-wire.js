@@ -59,6 +59,7 @@ function wire(){
     }catch(e){toast(e.message)}};
   /* Labs are places (app-11-places.js): a lab opens on its Work tab. */
   document.querySelectorAll("[data-lab]").forEach(b=>b.onclick=()=>openLab(b.dataset.lab));
+  const lsh=$("#labshare");if(lsh)lsh.onclick=()=>shareLab(LAB);   // 2026-10-15: every lab can be shared
   const lbk=$("#labback");if(lbk)lbk.onclick=()=>{
     LAB=null; ROOMOPEN=false; LABVIEW="work"; LABTAG=null;
     render(); loadLabs();

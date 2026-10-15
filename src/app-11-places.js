@@ -1,5 +1,7 @@
 /* ================================================================
-   PLACES v1.5 — 2026-10-12 (v1.5: the tournament running in a lab is a
+   PLACES v1.6 — 2026-10-15 (v1.6: each lab says what to do there, and has
+   a Share — LAB_PITCH, shareLab; a shared /l/ link lands in the lab).
+   v1.5 — 2026-10-12 (v1.5: the tournament running in a lab is a
    chip in its Work — every entry, no #tag needed — and entries are marked).
    v1.4 — 2026-10-12 (painters, muralists, printmakers and
    mixed-media artists lead to Visual; v1.3: ‹ on a #tag walks the back trail). A lab is a place — a genre — not a
@@ -42,6 +44,33 @@ function labsForMe(){
   return {mine,rest:LABS.filter(l=>!score[l.id])};
 }
 const labsOrdered=()=>{const o=labsForMe();return [...o.mine,...o.rest]};
+/* What to do in each lab, in a line (2026-10-15: "every lab to have a share
+   button with captions that describe what to do inside each lab… a brief
+   explanation I can send to people"). It heads the lab's Work and goes out
+   with its Share. The same lines are on /l/:id (LAB_PITCH in
+   server-12-lab-pages.js; test/lab-share.test.mjs checks they match). */
+const LAB_PITCH={
+  hq:"The main floor. Say hi, show what you're working on and find people to make things with.",
+  pharmacy:"Upload your art: painting, drawing, design, photography, film and edits. Get seen and get feedback.",
+  culture:"Upload your songs and beats, build playlists, and get ears on your works in progress.",
+  fashion:"Post your designs and drops: concepts, finished pieces and what's releasing next.",
+  akatsuki:"Share your anime and manga art, panels and ideas, and talk about what you're watching.",
+  casino:"Post what's happening in the scene: news, features, and promos for your next release.",
+  tna:"Find gigs and open calls, talk rates and money, and build the sites and apps the culture runs on."};
+/* Share a lab: its name, what to do there, and a link that opens it
+   (/l/:id — a page with a Join button for people who aren't members yet).
+   No share sheet (Instagram's in-app browser, most computers): the whole
+   message is copied, ready to paste. */
+async function shareLab(l){
+  if(!l)return;
+  const url=location.origin+"/l/"+l.id,title="// "+l.name+" on TNL LABS",text=title+"\n"+(LAB_PITCH[l.id]||"");
+  if(navigator.share){try{await navigator.share({title,text,url});return}catch(e){if(e&&e.name==="AbortError")return}}
+  const all=text+"\n"+url;
+  try{await navigator.clipboard.writeText(all);toast("Copied: the caption and the link. Paste it anywhere.");return}catch(e){}
+  await uiPrompt("Copy and send this",{value:all,okLabel:"Done"});
+}
+let LABNEXT=null;   // a shared /l/ link opened before joining: step into that lab once you're in
+function labNext(){if(!LABNEXT||!ME)return false;const id=LABNEXT;LABNEXT=null;openLab(id);return true}
 const LAB_HOME={hq:"general",pharmacy:"creators",culture:"music-chat",fashion:"clothing-design",akatsuki:"anime-chat",casino:"news",tna:"opportunities"};
 const labHome=l=>l?(l.channels.find(c=>c.id===LAB_HOME[l.id])||l.channels[0]):null;
 const labOfCh=id=>LABS.find(l=>l.channels.some(c=>c.id===id))||null;
@@ -127,7 +156,7 @@ function plInnerHTML(){
     const chips=labTagList(LAB.id,d&&d.tags),evOn=!!LABTAG&&LABTAG.startsWith("event:");
     const ev=(d&&d.event)||(P["work:"]||{}).event||null;
     if(LABTAG&&!evOn&&!chips.includes(LABTAG))chips.unshift(LABTAG);
-    return `<p class="pl-for">${esc((LAB_ID[LAB.id]||{}).for||"")}</p>
+    return `<p class="pl-for">${esc(LAB_PITCH[LAB.id]||(LAB_ID[LAB.id]||{}).for||"")}</p>
       ${chips.length||ev?`<div class="pl-tags">${plChip("",!LABTAG)}${ev?plEvChip(ev,evOn):""}${chips.map(t=>plChip(t,LABTAG===t)).join("")}</div>`:""}
       ${LAB.channels.some(c=>c.archive)?`<button class="pl-link" id="plarchive">Search the archive</button>`:""}
       ${!d?`<div class="pl-grid">${Array.from({length:9},()=>`<i class="pl-tile sk-img"></i>`).join("")}</div>`

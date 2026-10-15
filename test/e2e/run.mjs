@@ -1200,6 +1200,24 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#labback").tap(); await p.waitForSelector(".lx-list");
     await p.evaluate(() => { TAB = "showroom"; render(); });
   });
+  /* "Every lab to have a share button with captions that describe what to do inside each lab" (2026-10-15) */
+  await step(d, "every lab says what to do there and has a Share that sends that line and a link to the lab", async () => {
+    await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#labshare");
+    ok(/^Upload your art/.test(await p.locator(".pl-for").innerText()), "Visual doesn't say what to do there");
+    await p.evaluate(() => { window.__shared = null; navigator.share = async (x) => { window.__shared = x; }; });
+    await p.locator("#labshare").tap();
+    await p.waitForFunction(() => window.__shared, null, { timeout: 3000 });
+    const sh = await p.evaluate(() => window.__shared);
+    ok(/\/l\/pharmacy$/.test(sh.url) && /^\/\/ Visual on TNL LABS\nUpload your art/.test(sh.text), "the share isn't the caption and the lab's link: " + JSON.stringify(sh));
+    await p.evaluate(() => openLab("culture")); await p.waitForSelector("#labshare");
+    await p.locator("#labshare").tap(); await p.waitForFunction(() => window.__shared && /culture$/.test(window.__shared.url), null, { timeout: 3000 });
+    ok(/Upload your songs/.test(await p.evaluate(() => window.__shared.text)), "Music's share doesn't say upload your songs");
+    await p.evaluate(() => { LAB = null; ROOMOPEN = false; TAB = "showroom"; render(); });
+    await settledGoto(p, B + "/?l=fashion"); await throughDoor(p);
+    await p.waitForFunction(() => typeof LAB !== "undefined" && LAB && LAB.id === "fashion", null, { timeout: 8000 });
+    ok(await p.evaluate(() => location.search === ""), "the ?l= stayed in the address bar");
+    await p.evaluate(() => { LAB = null; ROOMOPEN = false; TAB = "showroom"; render(); });
+  });
   /* "I want to simplify. Let's just remove moodboards for now" (2026-10-11) */
   await step(d, "Visual's archive is a plain search now: no moodboards, no paste-a-link; searching and opening a picture still work", async () => {
     await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#plarchive");
@@ -1436,6 +1454,13 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     ok(await p.locator("#gq").count() === 0 && await p.locator("#pq").count() === 1, "People shows two search boxes");
     await p.locator("[data-tab=today]:visible").tap();
     await fast(p, 4000, () => p.locator("#gq").waitFor(), "the top-bar search on other pages");
+  });
+  await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {
+    await p.evaluate(() => localStorage.removeItem("tnl-token"));   // signed out (the step before signed this phone in)
+    await settledGoto(p, B + "/?l=pharmacy"); await throughDoor(p);
+    await p.waitForFunction(() => typeof GATE !== "undefined" && GATE === "join", null, { timeout: 8000 });
+    ok(await p.evaluate(() => LABNEXT === "pharmacy" && /\/\/ Visual/.test(GATEWHY)), "the join screen doesn't know which lab you came for");
+    await p.evaluate(() => { GATE = null; LABNEXT = null; render(); });
   });
   await step(d, "only this site's own pages can be the way back", async () => {
     await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof gxNext === "function");

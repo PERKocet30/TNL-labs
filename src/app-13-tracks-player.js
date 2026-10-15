@@ -1,4 +1,4 @@
-/* MUSIC LAB · TRACKS v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
+/* MUSIC LAB · TRACKS v1.2 — 2026-10-15 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
 const EMPTY={
   "general":["Say what you make.","Post one line about what you're working on. Someone here does the thing you need."],
   "collab-posts":["Looking for someone?","Say what you're building and what you're missing."],
@@ -64,6 +64,7 @@ function trackRowHTML(t,ctx){
 function tracksHTML(){
   if(PLIST)return playlistHTML();
   return `<div class="scroll" id="trkscroll">
+    ${LAB&&LAB_PITCH[LAB.id]?`<p class="pl-for">${esc(LAB_PITCH[LAB.id])}</p>`:""}
     ${musTabsHTML()}
     ${MUSVIEW==="playlists"?playlistsHTML():`<div class="trk-head">
       <input class="in trk-q" id="trkq" placeholder="Search tracks or artists…" value="${esc(TRKQ)}">
