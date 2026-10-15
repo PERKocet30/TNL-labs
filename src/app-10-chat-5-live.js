@@ -19,7 +19,7 @@ async function startStream(){
   on("like",d=>{if(d&&d.postId!=null&&!LIKING[String(d.postId)]&&typeof d.likeCount==="number")setLike(String(d.postId),null,d.likeCount)});
   ["collab-invite","collab-accepted"].forEach(t=>on(t,refresh));
   on("post",p=>{if(TAB==="labs"&&LAB&&labOfCh(p.channel)===LAB){if(LABVIEW==="talk"){clearTyping("lab:"+CH.id,p.author&&p.author.username);loadFeed(true)}}
-    else if(TAB==="showroom")loadShowroom(true);
+    else if(TAB==="showroom"&&p.isWork&&!p.sharedFrom)srSoon();
     if(p.author&&p.author.username!==myName())loadUnreads()});
   on("post-edit",p=>{const i=(POSTS||[]).findIndex(x=>x.id===p.id);if(i>=0){POSTS[i]=p;renderRoomFeed()}else refresh()});
   on("post-delete",d=>{if((POSTS||[]).some(x=>x.id===d.id)){POSTS=POSTS.filter(x=>x.id!==d.id);LABPINS=LABPINS.filter(x=>x.id!==d.id);renderRoomFeed()}});
@@ -38,6 +38,13 @@ async function startStream(){
       else paintLayer()}
   });
 }
+/* SHOWROOM REFRESH v1.0 — 2026-10-14. A Talk message or a share can never
+   appear on the Showroom, so only new finished work refreshes it, and each
+   phone waits a random 0.5–2.5s so a busy moment doesn't have every open
+   Showroom asking at the same instant. Several posts in that window are one
+   refresh. The "New work" pill does the rest. */
+let SRSOON=null;
+function srSoon(){if(SRSOON)return;SRSOON=setTimeout(()=>{SRSOON=null;if(TAB==="showroom")loadShowroom(true)},500+Math.random()*2000)}
 function retryStream(){
   clearTimeout(ESTIMER);if(!ME)return;
   const wait=Math.min(30000,1000*Math.pow(2,ESTRY++))+Math.random()*500;

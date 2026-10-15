@@ -415,6 +415,37 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => document.querySelectorAll('#sr-grid .sr-card:not([data-mark="keep"])').length) === 0, "the grid was rebuilt");
     ok(await p.locator("#sr-new").isHidden(), "a reorder alone shouldn't offer new work");
   });
+  /* 2026-10-14: every post anywhere — a Talk message, a share — made every open
+     Showroom re-rank. Only new finished work refreshes it now, once, after a
+     short random wait. */
+  await step(d, "a Talk message or a share doesn't refresh the Showroom; new work refreshes it once", async () => {
+    await p.evaluate(() => { TAB = "showroom"; PROFILE = null; POSTOPEN = null; OPENCOMMENTS = null; render(); });
+    await p.waitForSelector("#sr-grid .sr-card");
+    await p.waitForFunction(() => typeof es !== "undefined" && es && es.readyState === 1, null, { timeout: 8000 });
+    await p.evaluate(() => { window.__srCalls = 0; window.__srReal = api.showroom; api.showroom = (...a) => { window.__srCalls++; return window.__srReal(...a); }; });
+    const ft = "e2e-friend-session";
+    await api("/api/posts", ft, { channel: "graphic-design", body: "just talking in the lab" });
+    const someWork = (await api("/api/users/friend", ft)).posts.find((x) => x.isWork);
+    await api("/api/posts/" + someWork.id + "/share", ft, { channel: "graphic-design" });
+    await p.waitForTimeout(3200);
+    const quiet = await p.evaluate(() => window.__srCalls);
+    ok(quiet === 0, `a Talk message and a share refreshed the Showroom ${quiet} time(s)`);
+    const a = await api("/api/posts", ft, { channel: "graphic-design", body: "Work A", imageUrl: "/uploads/e2e-p4.png", thumbUrl: "/uploads/e2e-p4.png", mediaW: 800, mediaH: 1000, isWork: true });
+    const b = await api("/api/posts", ft, { channel: "graphic-design", body: "Work B", imageUrl: "/uploads/e2e-p5.png", thumbUrl: "/uploads/e2e-p5.png", mediaW: 800, mediaH: 1000, isWork: true });
+    await p.waitForTimeout(3200);
+    const calls = await p.evaluate(() => window.__srCalls);
+    await p.evaluate(() => { api.showroom = window.__srReal; });
+    for (const x of [a, b]) await fetch(B + "/api/posts/" + (x.post || x).id, { method: "DELETE", headers: { authorization: "Bearer " + ft } });
+    await p.waitForTimeout(300);
+    await p.evaluate(() => { SRNEW = null; const b = $("#sr-new"); if (b) b.hidden = true; });   // the two pieces are gone again
+    ok(calls === 1, `two new pieces should refresh the Showroom once, not ${calls} time(s)`);
+  });
+  await step(d, "the first Showroom picture loads right away; the rest wait", async () => {
+    const at = await p.evaluate(() => [...document.querySelectorAll("#sr-grid .sr-card")].slice(0, 2).map((c) => {
+      const i = c.querySelector("img.sr-img, img.caro-i"); return i ? i.getAttribute("loading") + "/" + (i.getAttribute("fetchpriority") || "") : "none"; }));
+    ok(at[0] === "eager/high", "first picture: " + at[0]);
+    ok(at[1] === "lazy/" || at[1] === "none", "second picture: " + at[1]);
+  });
   await step(d, "new work waits behind New work; tapping it shows it at the top", async () => {
     const { token: ft } = await login("friend");
     const made = await api("/api/posts", ft, { channel: "graphic-design", body: "Fresh one", imageUrl: "/uploads/e2e-p2.png", thumbUrl: "/uploads/e2e-p2.png", mediaW: 800, mediaH: 1000, isWork: true });

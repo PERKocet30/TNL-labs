@@ -1,4 +1,4 @@
-/* MOTION v1.1 — 2026-10-14 (Messages: fades in on a computer; the conversation column fades).
+/* MOTION v1.2 — 2026-10-14 (the first Showroom picture fades in too). v1.1 (Messages: fades in on a computer; the conversation column fades).
    v1.0 — 2026-09-30
    What makes the app feel like it moves instead of flipping between still
    pictures. render() calls mvBefore() / mvAfter() around every repaint; the
@@ -148,7 +148,7 @@ function mvHeart(over){
    loading: a cached picture on a repaint is already there and must not
    flicker. Watches the whole page, so every feed, grid and chat gets it. */
 function mvImgs(root){
-  (root.querySelectorAll?root.querySelectorAll('img[loading="lazy"]'):[]).forEach(img=>{
+  (root.querySelectorAll?root.querySelectorAll('img[loading]'):[]).forEach(img=>{
     if(img.complete||img.classList.contains("mv-img"))return;
     img.classList.add("mv-img");
     const done=()=>img.classList.remove("mv-img");

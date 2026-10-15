@@ -8,7 +8,10 @@ function showroomHTML(){return `<div class="scroll" id="showroom">
   <div class="sr-grid" id="sr-grid">${SRPOSTS.length?SRPOSTS.map(srCardHTML).join(""):skel("cards")}</div>
 </div>`}
 
-function srCardHTML(p){
+/* SHOWROOM CARD v1.1 — 2026-10-14: the first card's picture loads right away
+   (it's the first thing anyone sees); every other picture waits until it's near. */
+function srCardHTML(p,i){
+  const ld=i===0?'loading="eager" fetchpriority="high"':'loading="lazy"';
   return `<div class="sr-card">
     <div class="sr-head">
       <div class="sr-who" data-u="${esc(p.author.username)}">
@@ -18,11 +21,11 @@ function srCardHTML(p){
     </div>
     <div class="post-media">${pxTagBtn(p)}
     ${(p.images&&p.images.length>1)?`<div class="caro" data-caro="s${p.id}">
-      <div class="caro-t" style="aspect-ratio:${caroRatio(p.images)}">${p.images.map(im=>`<img class="caro-i" ${imgAttrs(im)} data-u="${esc(p.author.username)}" alt="" loading="lazy" decoding="async">`).join("")}</div>
+      <div class="caro-t" style="aspect-ratio:${caroRatio(p.images)}">${p.images.map((im,k)=>`<img class="caro-i" ${imgAttrs(im)} data-u="${esc(p.author.username)}" alt="" ${k===0?ld:'loading="lazy"'} decoding="async">`).join("")}</div>
       <div class="caro-d">${p.images.map((_,i)=>`<span class="${i===0?"on":""}"></span>`).join("")}</div>
       <span class="caro-n mono">1/${p.images.length}</span>
     </div>`
-    :p.imageUrl?`<img class="sr-img" ${imgAttrs(pxImgs(p)[0])} alt="work by ${esc(p.author.displayName)}" loading="lazy" decoding="async"
+    :p.imageUrl?`<img class="sr-img" ${imgAttrs(pxImgs(p)[0])} alt="work by ${esc(p.author.displayName)}" ${ld} decoding="async"
       ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
       data-u="${esc(p.author.username)}">`
       :p.videoUrl?`<div class="vwrap">
