@@ -128,7 +128,7 @@ const LAB_ID = {
 };
 const LABS = [
   {id:"hq",name:"General",channels:[
-    {id:"general",label:"general",desc:"The main floor."},
+    {id:"general",label:"general",desc:"Say hi and show what you're working on."},
     {id:"collab-posts",label:"collab-posts",desc:"Looking for a collaborator? Post here."}]},
   {id:"pharmacy",name:"Visual",channels:[
     {id:"creators",label:"creators",desc:"Every visual art — paint, draw, design, shoot, sculpt. Who's here and what they make."},
@@ -136,27 +136,27 @@ const LABS = [
     {id:"photography",label:"photography",desc:"Shots and edits."},
     {id:"cinematography",label:"cinematography",desc:"Moving image. Frames, grades, gear."},
     {id:"video-editing",label:"video-editing",desc:"Cuts, transitions, the work after the shoot."},
-    {id:"archive",label:"archive",desc:"Every image ever posted. Searchable. Collectable.",archive:true}]},
+    {id:"archive",label:"archive",desc:"Every picture posted here, searchable.",archive:true}]},
   {id:"culture",name:"Music",channels:[
     {id:"tracks",label:"tracks",desc:"Upload your music. Press play on everyone's.",library:true},
     {id:"feedback",label:"feedback",desc:"Post your work in progress, get ears. Help someone finish."},
     {id:"music-chat",label:"chat",desc:"Talk music. Releases, gear, who's working on what."},
-    {id:"beats",label:"beats",desc:"The Beat Lab. Loops, beats, works in progress.",beatlab:true}]},
+    {id:"beats",label:"beats",desc:"Loops, beats and works in progress.",beatlab:true}]},
   {id:"fashion",name:"Fashion",channels:[
     {id:"clothing-design",label:"clothing-design",desc:"Design work and concepts."},
     {id:"clothing-drops",label:"clothing-drops",desc:"What's releasing."}]},
   {id:"akatsuki",name:"Anime",channels:[
-    {id:"anime-chat",label:"anime-chat",desc:"Anime discourse that feeds the design language."},
+    {id:"anime-chat",label:"anime-chat",desc:"Talk anime and what it inspires."},
     {id:"manga",label:"manga",desc:"Panels, arcs, and the art of the page."},
     {id:"anime-news",label:"anime-news",desc:"Seasons, releases, and what's worth your time."},
     {id:"anime-ideas",label:"ideas",desc:"Half-formed concepts welcome."}]},
   {id:"casino",name:"News",channels:[
-    {id:"magazine",label:"magazine",desc:"Longer reads, features, and coverage of the scene."},
-    {id:"news",label:"news",desc:"What's happening in and around the network."},
+    {id:"magazine",label:"magazine",desc:"Longer reads, features and reviews."},
+    {id:"news",label:"news",desc:"What's happening, and what's coming."},
     {id:"promos",label:"promos",desc:"Drops, releases, and rollouts — promote what's coming."}]},
   {id:"tna",name:"Business",channels:[
-    {id:"opportunities",label:"opportunities",desc:"Gigs, briefs, and open calls inside the network."},
-    {id:"coding",label:"coding",desc:"Sites, apps, and the interfaces the culture runs on."},
+    {id:"opportunities",label:"opportunities",desc:"Gigs, briefs and open calls from members."},
+    {id:"coding",label:"coding",desc:"Sites, apps and tools members build."},
     {id:"finance",label:"finance",desc:"Money, rates, and not getting taken advantage of."}]},
 ];
 const levelFor=r=>LEVELS.reduce((a,l)=>r>=l.at?l:a,LEVELS[0]);

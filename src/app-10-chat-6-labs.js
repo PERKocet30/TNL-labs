@@ -92,7 +92,7 @@ function paintLabBar(){
   const x=$("#lrbarx");if(x)x.onclick=()=>{LABREPLY=null;paintLabBar()};
 }
 function paintLabBell(){const b=$("#lrbell");if(!b||!CH)return;const m=LABMUTED.has("lab:"+CH.id);
-  b.classList.toggle("on",m);b.innerHTML=m?CI.mute.replace(/width="14" height="14"/,'width="18" height="18"'):UI_IC.bell;b.setAttribute("aria-label",m?"Muted — change":"Mute this channel")}
+  b.classList.toggle("on",m);b.innerHTML=m?CI.mute.replace(/width="14" height="14"/,'width="18" height="18"'):UI_IC.bell;b.setAttribute("aria-label",m?"Muted — change":"Mute this lab")}
 
 /* Pinned: the newest pin shows; tap to go to it, tap again for the next. */
 function paintPins(){
@@ -117,7 +117,7 @@ function labMenu(id){
   acts.push({icon:CI.open,label:"Open with comments",run:()=>openPost(p)});
   if(mine)acts.push({icon:CI.edit,label:"Edit",run:()=>{EDITID=p.id;LABREPLY=null;render();const d=$("#draft");if(d){d.value=p.body||"";d.focus()}}});
   if(admin)acts.push({icon:CI.pin,label:pinned?"Unpin":"Pin",run:async()=>{
-    try{const r=await capi.pin(p.id,!pinned);LABPINS=r.pins;PINIDX=0;paintPins();toast(pinned?"Unpinned":"Pinned for everyone in "+chName(CH))}catch(e){toast(e.message)}}});
+    try{const r=await capi.pin(p.id,!pinned);LABPINS=r.pins;PINIDX=0;paintPins();toast(pinned?"Unpinned":"Pinned for everyone in "+(LAB?labMark(LAB.name):"this lab"))}catch(e){toast(e.message)}}});
   if(mine||admin)acts.push({icon:CI.trash,label:"Delete",danger:true,run:async()=>{
     if(!(await uiConfirm("Delete this message?",mine?"":"You're removing someone else's message as an admin.",{okLabel:"Delete",danger:true})))return;
     try{mine?await api.delPost(p.id):await req("/api/admin/posts/"+p.id,{method:"DELETE"});POSTS=POSTS.filter(x=>x.id!==p.id);renderRoomFeed()}catch(e){toast(e.message)}}});

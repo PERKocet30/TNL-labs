@@ -36,7 +36,7 @@ function timeAgo(t){const s=(Date.now()-t)/1000;
 function searchPanelHTML(){return `<div class="sheet" id="sbg"><div class="sheetc">
   <div class="sheeth"><div><h2>Search</h2></div><button class="x" id="sx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <input class="in" id="sq" placeholder="Name, username, or bio" value="${esc(SEARCHQ)}">
-  <div class="mono lbl">FILTER BY ROLE</div>
+  <div class="mono lbl">FILTER BY WHAT THEY MAKE</div>
   <div class="roles">${ROLES.slice(0,12).map(r=>`<button class="chip ${SEARCHROLE===r?"on":""}" data-sr="${esc(r)}">${esc(r)}</button>`).join("")}</div>
   ${SEARCHING?`<div class="empty">Searching…</div>`:SEARCHRES?`
     ${SEARCHRES.people.length?`<div class="mono dim" style="margin:16px 0 8px">PEOPLE</div>
@@ -47,7 +47,7 @@ function searchPanelHTML(){return `<div class="sheet" id="sbg"><div class="sheet
     ${SEARCHRES.posts.length?`<div class="mono dim" style="margin:16px 0 8px">POSTS</div>
       <div class="worklist">${SEARCHRES.posts.map(p=>workCardHTML(p,false)).join("")}</div>`:""}
     ${!SEARCHRES.people.length&&!SEARCHRES.posts.length?`<div class="empty">Nothing found.</div>`:""}
-  `:`<div class="empty">Search for people to build with.</div>`}
+  `:`<div class="empty">Search for people to make things with.</div>`}
 </div></div>`}
 /* Missing video, blocked playback, a stalled network — every one of those
    ends in done(), never in a locked screen. The 20s timer is the last resort. */

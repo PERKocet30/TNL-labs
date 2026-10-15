@@ -7,7 +7,7 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "�
 
 const url = "https://labs.tnllabs.com/api/auth/verify?token=abc123&x=1";
 const v = verifyEmail("Ana Reyes", url), r = resetEmail("Ana Reyes", "https://labs.tnllabs.com/reset?token=def456");
-const w = alertEmail("Yesterday in the lab", ["0 new members · 7 posts.", "Errors: none."], "https://labs.tnllabs.com/admin#system");
+const w = alertEmail("Yesterday on TNL LABS", ["0 new members · 7 posts.", "Errors: none."], "https://labs.tnllabs.com/admin#system");
 const ev = eventOpenEmail({ name: "Ana", title: "The Art Tournament", brief: "Make something.", prize: "$500", closes: "November 30, 2026", url: "https://labs.tnllabs.com/?e=art", unsub: "https://labs.tnllabs.com/mail/off?k=abc" });
 
 console.log("\nTHE DESIGN LANGUAGE");

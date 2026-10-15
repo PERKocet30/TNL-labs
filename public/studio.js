@@ -1217,7 +1217,7 @@
                 <div class="mono dim">${esc(slotLabel(s2.slot))}${s2.uses ? " · " + s2.uses + " building with it" : ""}</div>
               </div>
               <button class="st-share ${s2.shared ? "on" : ""}" data-sshare="${s2.id}"
-                title="${s2.shared ? "In the library" : "Give it to the network"}">◈</button>
+                title="${s2.shared ? "In the library" : "Share it to the library"}">◈</button>
               <button class="st-use" data-suse="${s2.id}">→ ${esc(t ? t.name : "TRACK")}</button>
               <button class="st-ic" data-sdel="${s2.id}" title="Delete">✕</button>
             </div>`).join("")}
@@ -1415,7 +1415,7 @@
       const id = +e.currentTarget.dataset.sshare;
       const s2 = (S.sounds || []).find((x) => x.id === id);
       if (!s2) return;
-      if (!s2.shared && !(await uiConfirm('Give "' + s2.name + '" to the library?', "Anyone in TNL can build with it — you're credited every time. Take it back whenever.", { okLabel: "Share it" }))) return;
+      if (!s2.shared && !(await uiConfirm('Give "' + s2.name + '" to the library?', "Anyone on TNL can use it — you're credited every time. Take it back whenever.", { okLabel: "Share it" }))) return;
       shareSound(id, !s2.shared);
     });
     on("[data-luse]", "click", (e) => {

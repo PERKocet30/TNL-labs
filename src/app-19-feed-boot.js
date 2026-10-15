@@ -45,7 +45,7 @@ function wireFeed(){
     LIKING[id].want=now;sendLike(id);
   });
   document.querySelectorAll("[data-share]").forEach(b=>b.onclick=()=>{
-    if(guest())return needAccount("Join to carry work across the labs.");
+    if(guest())return needAccount("Join to share work to a lab.");
     const id=b.dataset.share;
     // findAnyPost also covers an opened post, which this list used to miss
     const post=findAnyPost(id);
@@ -65,20 +65,20 @@ function wireFeed(){
        sheet, so copy-link IS the off-app share. Exactly one of each. */
     const canNative = shareable && typeof navigator!=="undefined" && !!navigator.share;
     const items=shareable?[
-      {label:"Into a lab",sub:"Share it in a room.",icon:"//",act:"lab"},
+      {label:"Into a lab",sub:"Send it to a lab's Talk.",icon:"//",act:"lab"},
       ...(post&&(post.imageUrl||post.thumbUrl||(post.body||"").trim())?[{label:"Instagram Story",sub:post.audioTrack?"A 15-second video of it with its song, and the link to paste":"A picture of it for your Story, with the link to paste",icon:DI.out,act:"story"}]:[]),
       ...(canNative?[{label:"Send off the app",sub:"Messages, WhatsApp, AirDrop — anywhere on your phone",icon:DI.out,act:"native"}]:[]),
       {label:"Send inside TNL",sub:"Lands in their DMs here",icon:DI.mail,act:"dm"},
       {label:canNative?"Copy link":"Copy link to share",sub:link.replace(/^https?:\/\//,""),icon:DI.copy,act:"copy"},
     ]:[
       {label:"Send inside TNL",sub:"Lands in their DMs here",icon:DI.mail,act:"dm"},
-      {label:"Into a lab",sub:"Carry it across",icon:"//",act:"lab"},
+      {label:"Into a lab",sub:"Send it to a lab's Talk",icon:"//",act:"lab"},
     ];
 
     openPicker({eyebrow:shareable?"PUBLISHED WORK":"CHAT",title:"Where to?",
       note:shareable
         ?"This one has a public page — anyone can open it, no account."
-        :"This is a lab message, not published work. No public link, by design.",
+        :"This is a Talk message, not published work, so it has no public link.",
       items,
       onPick:async(it)=>{
         if(it.act==="dm")return sendPostSheet(id);   // pick one or several people and chats
@@ -93,7 +93,7 @@ function wireFeed(){
         if(it.act==="story")return igStoryOpen(`/p/${pubId}/story.jpg`,link,post&&post.audioTrack?`/p/${pubId}/story.mp4`:null);   // with its song (2026-10-11)
         if(it.act==="native"){
           const data={title:post.author.displayName+" on TNL LABS",
-            text:post.body?post.body.slice(0,140):"Made in the labs.",url:link};
+            text:post.body?post.body.slice(0,140):"Made on TNL LABS.",url:link};
           return shareOut(data);
         }
         if(it.act==="copy"){

@@ -35,12 +35,12 @@ app.post("/api/posts/:id/collab/accept", auth, verified, (req, res) => {
 const KINDS = {
   visual:   { tag: "VISUAL",  work: "WORK",     blurb: "Visual art — paintings, drawings, design, photo and film." },
   lens:     { tag: "LENS",    work: "SHOTS",    blurb: "Photography and film." },
-  fashion:  { tag: "FASHION", work: "PIECES",   blurb: "Garments, styling, and the material end of the network." },
+  fashion:  { tag: "FASHION", work: "PIECES",   blurb: "Garments, styling and drops." },
   music:    { tag: "SOUND",   work: "TRACKS",   blurb: "Beats, records, and the people on them." },
-  word:     { tag: "WORD",    work: "WRITING",  blurb: "Words, stories, and coverage of the scene." },
-  build:    { tag: "BUILD",   work: "PROJECTS", blurb: "Sites, apps, and the interfaces the culture runs on." },
-  business: { tag: "BUILDER", work: "VENTURES", blurb: "Building the thing behind the thing." },
-  anime:    { tag: "ANIME",    work: "PANELS",   blurb: "Anime, manga, and the visual language it hands the rest of the network." },
+  word:     { tag: "WORD",    work: "WRITING",  blurb: "Words, stories and features." },
+  build:    { tag: "BUILD",   work: "PROJECTS", blurb: "Sites, apps and tools." },
+  business: { tag: "BUILDER", work: "VENTURES", blurb: "Brands, businesses and the work behind them." },
+  anime:    { tag: "ANIME",    work: "PANELS",   blurb: "Anime and manga art, panels and ideas." },
 };
 const ROLE_KIND = {
   "Graphic Designer": "visual", "Illustrator": "visual", "3D Artist": "visual", "Motion Designer": "visual",

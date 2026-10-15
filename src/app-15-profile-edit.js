@@ -41,7 +41,7 @@ function editProfileHTML(){
     <div class="pe-rows">
       <label class="pe-row"><span>Name</span><input class="pe-in" id="ed-name" value="${esc(f.name)}" maxlength="40"></label>
       <label class="pe-row"><span>Pronouns</span><input class="pe-in" id="ed-pro" value="${esc(f.pronouns)}" maxlength="30" placeholder="Add pronouns"></label>
-      <label class="pe-row pe-tall"><span>Bio</span><textarea class="pe-in" id="ed-bio" rows="3" maxlength="300" placeholder="What you make, who you build with, what you're after.">${esc(f.bio)}</textarea><i class="pe-cnt" id="ed-cnt">${f.bio.length}/300</i></label>
+      <label class="pe-row pe-tall"><span>Bio</span><textarea class="pe-in" id="ed-bio" rows="3" maxlength="300" placeholder="What you make, who you make it with, what you're after.">${esc(f.bio)}</textarea><i class="pe-cnt" id="ed-cnt">${f.bio.length}/300</i></label>
       <button class="pe-row" id="ed-links"><span>Links</span><em>${f.links.filter(x=>x.url).length?f.links.filter(x=>x.url).length+" link"+(f.links.filter(x=>x.url).length>1?"s":""):"Add links"}</em>${PF_CHEV}</button>
       <button class="pe-row" id="ed-roles"><span>What you make</span><em>${esc(f.roles.join(", ")||"Add")}</em>${PF_CHEV}</button>
       <div class="pe-row pe-col"><span>Colour</span><div class="pe-sw">${Object.entries(ACCENTS).filter(([k,a])=>!a.legacy||f.accent===k).map(([k,a])=>`<button class="pe-dot ${f.accent===k?"on":""}" data-accent="${esc(k)}" title="${esc(a.name)}" aria-label="${esc(a.name)}"><span style="background:${esc(a.hex)}"></span></button>`).join("")}</div></div>
