@@ -7,10 +7,11 @@
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { rmSync, mkdirSync, readFileSync } from "node:fs";
+import { rmSync, mkdirSync, readFileSync, copyFileSync } from "node:fs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "test/.tmp/lab-share");
-rmSync(DATA, { recursive: true, force: true }); mkdirSync(DATA, { recursive: true });
+rmSync(DATA, { recursive: true, force: true }); mkdirSync(join(DATA, "uploads"), { recursive: true });
+for (const f of ["art.jpg", "new.jpg"]) copyFileSync(join(ROOT, "public/icon-512.png"), join(DATA, "uploads", f));   // placeholder pictures the cards can draw
 process.env.TNL_DATA = DATA;
 const { db } = await import(join(ROOT, "src/db.js"));
 const now = Date.now();
@@ -52,6 +53,20 @@ try {
   t("…one button into the lab", h.includes(`href="/?l=visual"`) && /Join and step into \/\/ Visual/.test(h));
   t("Music's page says upload your songs", (await (await fetch(B + "/l/music")).text()).includes("Upload your songs"));
   t("a lab that doesn't exist is a 404", (await fetch(B + "/l/nope")).status === 404);
+
+  console.log("\nTHE PICTURE A SHARED LAB LINK SHOWS");
+  const ogImg = (/property="og:image" content="([^"]+)"/.exec(h) || [])[1] || "";
+  t("each lab's link shows its own square card, not a member's picture or the site's", /\/l\/visual\/card\.jpg\?v=[0-9a-f]{8}$/.test(ogImg) && h.includes('og:image:width" content="1080"'));
+  let cards = 0;
+  for (const n of ["general", "visual", "music", "fashion", "anime", "news", "business"]) {
+    const c = await fetch(B + `/l/${n}/card.jpg`), b = Buffer.from(await c.arrayBuffer());
+    if (c.status === 200 && /jpeg/.test(c.headers.get("content-type")) && b[0] === 0xff && b[1] === 0xd8) cards++;
+  }
+  t("every lab's card is drawn (7 of 7)", cards === 7);
+  t("no card for a lab that doesn't exist", (await fetch(B + "/l/nope/card.jpg")).status === 404);
+  db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, image_url, created_at) VALUES (?,?,?,1,?,?)`).run(ana, "photography", "new", "/uploads/new.jpg", now + 1000);
+  const after = (/property="og:image" content="([^"]+)"/.exec(await (await fetch(B + "/l/visual")).text()) || [])[1] || "";
+  t("new work in the lab: a new card link, so previews refresh", /card\.jpg\?v=/.test(after) && after !== ogImg);
   const xml = await (await fetch(B + "/sitemap.xml")).text();
   t("every lab's page is in the sitemap, by name", ["general", "visual", "music", "fashion", "anime", "news", "business"].every((n) => xml.includes(`<loc>${B}/l/${n}</loc>`)) && !xml.includes(`/l/pharmacy`));
 

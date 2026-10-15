@@ -1,5 +1,5 @@
 /* ================================================================
-   LAB PAGES v1.1 — 2026-10-15 (links name the lab: /l/visual, /l/music; old /l/<id> links forward).
+   LAB PAGES v1.2 — 2026-10-15 (v1.2: each lab's link shows its own card, /l/:slug/card.jpg). v1.1 (links name the lab: /l/visual, /l/music; old /l/<id> links forward).
    v1.0 — 2026-10-15. "Every lab to have a share button with
    captions that describe what to do inside each lab… a brief explanation
    I can send to people."
@@ -40,7 +40,8 @@ app.get("/l/:slug", (req, res) => {
     WHERE p.channel IN (${inList(P.channels)}) AND p.is_work = 1 AND COALESCE(u.suspended, 0) = 0 AND COALESCE(p.thumb_url, p.image_url) IS NOT NULL
     ORDER BY p.created_at DESC LIMIT 6`).all();
   const title = `// ${name} on TNL LABS`, desc = LAB_PITCH[id];
-  const img = abs(work[0] && work[0].img) || `${base}/og-cover-v3-2026-09-23.jpg`;
+  /* the preview: this lab's own card (v1.2), new whenever its words or latest work change */
+  const img = `${base}/l/${slug}/card.jpg?v=${labCard(id, base).hash.slice(0, 8)}`;
   res.set("Cache-Control", "public, max-age=300");
   res.send(lookPage({
     title: e(title),
@@ -52,6 +53,8 @@ app.get("/l/:slug", (req, res) => {
 <meta property="og:description" content="${e(desc)}">
 <meta property="og:image" content="${e(img)}">
 <meta property="og:image:secure_url" content="${e(img)}">
+<meta property="og:image:width" content="1080">
+<meta property="og:image:height" content="1080">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${e(title)}">
 <meta name="twitter:description" content="${e(desc)}">
@@ -66,4 +69,51 @@ ${work.length ? `<div style="display:grid;grid-template-columns:repeat(3,minmax(
 <a class="btn block acc" href="/?l=${e(slug)}">Join and step into // ${e(name)}</a>
 <p class="cap" style="margin-top:12px">Already a member? The same button opens the lab.</p>`,
   }));
+});
+
+/* A lab's link card (v1.2, 2026-10-15: "automatic covers for all lab share
+   links too"). Square like the tournament's (Instagram's previews crop to
+   a square): // VISUAL, what to do there, its #tags and "Join at
+   …/l/visual", over the lab's latest work blurred (or TNL black). Built
+   once per wording and picture and kept, with the event cards' kit
+   (server-10-events-4-cards.js). */
+function labCard(id, base) {
+  const slug = LAB_SLUG[id], W = 1080, H = 1080, P = 80;
+  const last = db.prepare(`SELECT p.image_url, p.thumb_url FROM posts p JOIN users u ON u.id = p.author_id
+    WHERE p.channel IN (${inList(PLACES[id].channels)}) AND p.is_work = 1 AND COALESCE(u.suspended, 0) = 0 AND COALESCE(p.image_url, p.thumb_url) IS NOT NULL
+    ORDER BY p.created_at DESC LIMIT 1`).get();
+  let ground = last ? cardFile(last.image_url) || cardFile(last.thumb_url) : null;
+  if (!ground && id === "culture") {   // Music's work is its songs: the newest cover
+    const tr = db.prepare(`SELECT t.artwork_url FROM tracks t JOIN users u ON u.id = t.user_id WHERE COALESCE(u.suspended, 0) = 0 AND t.artwork_url IS NOT NULL ORDER BY t.id DESC LIMIT 1`).get();
+    ground = tr ? cardFile(tr.artwork_url) : null;
+  }
+  /* what to do here, broken between words into lines of up to 30 characters */
+  const lines = [];
+  for (const w of cardClean(LAB_PITCH[id]).split(" ")) { const l = lines.length - 1;
+    if (l >= 0 && (lines[l] + " " + w).length <= 30) lines[l] += " " + w; else lines.push(w); }
+  const text = { name: "// " + LAB_NAME[id].toUpperCase(), lines: lines.slice(0, 6), tags: GENRE_TAGS[id].slice(0, 4).map((t) => "#" + t).join("  "),
+    cta: `Join at ${evHost(base)}/l/${slug}` };
+  const hash = createHash("sha1").update(JSON.stringify([EVC.version, "lab1", text, ground])).digest("hex").slice(0, 12);
+  const make = (out, dir) => {
+    const g = evGraph(W, H), t = evAss(dir, W, H), ink = SCK.ink, up = ffc(accentHex("lab"));
+    if (ground) { const i = g.input(ground);
+      g.f.push(`[${i}:v]scale=${W / 4}:${H / 4}:force_original_aspect_ratio=increase,crop=${W / 4}:${H / 4},boxblur=14:3,scale=${W}:${H},eq=brightness=-0.4:saturation=1.2,vignette=PI/4,setsar=1,format=rgb24[gnd]`);
+      g.lay("gnd", 0, 0); } else g.box(SCK.shade, W, H, 0, 0);
+    t.at("TNL LABS", P, 120, 34, true, up);
+    t.at(text.name, P, 176, 128, true, ink);
+    text.lines.forEach((l, i) => t.at(l, P, 360 + i * 58, 44, false, ink));
+    t.at(text.tags, P, 380 + text.lines.length * 58, 34, true, up);
+    const cw = Math.min(W - 2 * P, Math.round(text.cta.length * 20 + 64));
+    g.box(up, cw, 84, P, H - 290);
+    t.at(text.cta, P + cw / 2, H - 248, 33, true, ffc(onAccent(accentHex("lab"))), 5);
+    evMarkWhite(g, t, P, H - 150);
+    g.filter(t.write());
+    return g.out(out);
+  };
+  return { hash, prefix: `lab-${id}`, make };
+}
+app.get("/l/:slug/card.jpg", rateLimit({ max: 120, windowMs: 60000 }), (req, res) => {
+  const id = LAB_BY_SLUG[String(req.params.slug || "").toLowerCase()];
+  if (!id) return res.status(404).end();
+  evSendCard(res, labCard(id, baseUrl(req)), "/og-cover-v3-2026-09-23.jpg");
 });
