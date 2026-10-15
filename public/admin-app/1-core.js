@@ -1,5 +1,5 @@
 /* TNL LABS admin v3.1 — 2026-10-14. Core: state, API, helpers, charts, shell.
-   v3.0: "organize the whole admin dashboard to Google standard" — a side menu
+   v3.0: the whole admin dashboard to one standard — a side menu
    on a computer, search any member from the top bar, and shared page pieces
    (pageHead, card, subTabs) every section is built from. v3.1: no top-bar
    search on People, which has its own.

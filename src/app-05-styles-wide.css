@@ -1,4 +1,4 @@
-/* ── COMPUTER LAYOUT v1.0 · 2026-09-29 ─────────────────────────────────
+/* ── COMPUTER LAYOUT v1.1 · 2026-10-14 (unused selectors out); v1.0 · 2026-09-29 ─────────────────────────────────
    Phones keep the app as it is. From 1024px the top bar and bottom nav
    become one left sidebar (render() builds .side only when wide), content
    sits at a reading width beside it, and a mouse gets hover states. Same
@@ -49,8 +49,8 @@
   .side .navb:not([data-tab="post"]):hover{background:var(--el)}
   .side .navb[data-tab="post"]:hover{filter:brightness(.96)}
   .lx:hover,.trk:hover{background:var(--el)}
-  .lr-tab:not(.on):hover,.chip:not(.on):hover,.btn.ghost:hover,.lr-tool:hover{border-color:var(--tx);color:var(--tx)}
-  .btn:not(.ghost):not(:disabled):hover,.trk-up:hover,.now-pp:hover,.trk-play:hover,.circle:hover{opacity:.88}
+  .chip:not(.on):hover,.btn.ghost:hover,.lr-tool:hover{border-color:var(--tx);color:var(--tx)}
+  .btn:not(.ghost):not(:disabled):hover,.trk-up:hover,.now-pp:hover,.circle:hover{opacity:.88}
   .now-sk:not(:disabled):hover,.now-x:hover,.trk-more:hover,.po-x:hover,.pcmp-x:hover{color:var(--tx);opacity:1}
   .sr-card img,.lx-media img{transition:opacity .15s}
   .sr-card:hover img{opacity:.92}

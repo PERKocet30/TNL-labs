@@ -1,4 +1,5 @@
-/* TNL LABS admin v2.2 — 2026-10-14. System, in tabs: Settings · Health · Backups & email · Admin log.
+/* TNL LABS admin v2.3 — 2026-10-14. v2.3: the unused archive-board field is gone.
+   v2.2 — 2026-10-14. System, in tabs: Settings · Health · Backups & email · Admin log.
    v2.1 — 2026-10-09. System: switches, safety nets, and the log of who changed what.
    v2.1: Studio stats live here, by the Studio switch (they were under Content). */
 let MAILRESULT = null, SYSTAB = "settings";
@@ -42,7 +43,6 @@ VIEWS.system = () => {
     <label class="l" for="announce" style="margin-top:0">Banner across the app — blank hides it</label><input class="in" id="announce" maxlength="200" value="${esc(g.announcement)}" placeholder="e.g. Drop this Friday.">
     <label class="l" for="headline">Landing headline</label><input class="in" id="headline" maxlength="60" value="${esc(g.headline)}">
     <label class="l" for="tagline">Landing tagline</label><textarea class="in" id="tagline" rows="2" maxlength="300">${esc(g.tagline)}</textarea>
-    <label class="l" for="pinboard">Pinterest board in the archive — blank hides it</label><input class="in" id="pinboard" value="${esc(g.pinterestBoard || "")}" placeholder="https://www.pinterest.com/…">
     <button class="btn" id="savetext" style="margin-top:12px">Save</button></div></div></div>`,
     health: () => `<div class="grid g2 g4">
     <div class="kpi"><div class="k">Database</div><div class="v">${mb(h.dbBytes)}</div><div class="d">${h.sessions} signed-in sessions</div></div>
@@ -96,7 +96,7 @@ WIRES.system = () => {
   const mr = $("#minrep"); if (mr) mr.onchange = () => save({ minRepToSell: mr.value });
   const dl = $("#distrolvl"); if (dl) dl.onchange = () => save({ distroLevel: dl.value });
   const db_ = $("#distroblurb"); if (db_) db_.onchange = () => save({ distroBlurb: db_.value });
-  const st = $("#savetext"); if (st) st.onclick = () => save({ announcement: $("#announce").value, headline: $("#headline").value, tagline: $("#tagline").value, pinterestBoard: $("#pinboard").value.trim() });
+  const st = $("#savetext"); if (st) st.onclick = () => save({ announcement: $("#announce").value, headline: $("#headline").value, tagline: $("#tagline").value });
   const bk = $("#backup"); if (bk) bk.onclick = async () => { bk.disabled = true; await act(() => req("/api/admin/backups", { method: "POST" }), (d) => "Backed up — " + (d.bytes / 1024).toFixed(0) + " KB"); load(); };
   $$("[data-dl]").forEach((b) => b.onclick = () => download("/api/admin/backups/" + encodeURIComponent(b.dataset.dl), b.dataset.dl));
   const src = $("#dlsource"); if (src) src.onclick = () => download("/api/admin/source", "TNL-LABS.zip");

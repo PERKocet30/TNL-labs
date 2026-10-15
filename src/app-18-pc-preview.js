@@ -1,6 +1,6 @@
 /* ── LISTEN BEFORE YOU PICK · v1.0 · 2026-10-13 ─────────────────────────
    "You should be able to listen to a song before you pick it for a post."
-   Add music, Instagram's way: ▶ on a song plays it (tap again to stop);
+   Add music: ▶ on a song plays it (tap again to stop);
    the row picks it. The picked song's ▶ plays and pauses too. Its own
    audio element — the lab player is paused while you're posting
    (musicScope), and this mustn't fight it. Stops when you pick another

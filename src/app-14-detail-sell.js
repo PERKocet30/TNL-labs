@@ -57,7 +57,7 @@ function payoutBannerHTML(){
     <button class="btn sm green" id="payconnect">${ME.hasStripe?"Finish setup":"Connect Stripe"}</button></div>`}
 
 /* ── LISTING EDITOR · v2 · 2026-09-28 ──────────────────────────────
-   Shaped like a Shopify product form: Media, Title & description, Pricing,
+   A plain product form: Media, Title & description, Pricing,
    Inventory, Shipping, Details — each a plain card — and one sticky
    Publish. No banners, no pitch: the fee shows up as the money you keep. */
 function sellEarnHTML(){
@@ -221,7 +221,7 @@ function studioHTML(){
     if(!d)return "";
     if(guest())return `<div class="distro">
       <div class="distro-h"><span class="distro-ic">${DI.out}</span>
-        <b>Reach ${esc(d.levelName)} and we put your music on Spotify.</b></div>
+        <b>Reach ${esc(d.levelName)} and we put your music on the streaming services.</b></div>
       <p>${esc(d.blurb)} You get there by making things people back — not by paying, not by knowing anyone.</p>
     </div>`;
     const me=levelFor(myRep());
@@ -231,7 +231,7 @@ function studioHTML(){
       <div class="distro-h"><span class="distro-ic">${done?DI.check:DI.out}</span>
         <b>${done
           ? "You're "+esc(d.levelName)+". Your music gets distributed."
-          : "At "+esc(d.levelName)+", TNL puts your music on Spotify, Apple Music and the rest."}</b></div>
+          : "At "+esc(d.levelName)+", TNL puts your music on the streaming services."}</b></div>
       <p>${esc(d.blurb)}</p>
       ${done
         ? `<div class="mono distro-go">${DI.out} MESSAGE @TNLLABS WITH A FINISHED TRACK AND IT GOES OUT</div>`

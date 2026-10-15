@@ -80,7 +80,7 @@ function videoPlayUrl(src) { return (src && VIDEO_FEED && VIDEO_FEED.get(src)) |
    Same story for sound: tracks were uploaded as WAV — "power|poker" is
    55MB for 2½ minutes (~3 Mbps), and on a phone signal post music
    stuttered or never started. Players get a 128 kbps AAC copy (~2MB,
-   index first), the way Apple Music streams; the WAV stays the track's
+   index first); the WAV stays the track's
    file. An MP3/AAC that's already light plays as it is. */
 db.exec(`CREATE TABLE IF NOT EXISTS audio_play (src TEXT PRIMARY KEY, play TEXT NOT NULL, created_at INTEGER NOT NULL)`);
 var AUDIO_PLAY = new Map(db.prepare(`SELECT src, play FROM audio_play`).all().map((r) => [r.src, r.play]));

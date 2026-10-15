@@ -1,4 +1,4 @@
-// Profile card v2.0 (2026-09-29): a shared profile previews like Instagram's —
+// Profile card v2.0 (2026-09-29): a shared profile previews as a card —
 // picture, name, bio and the work.
 // Runs the real code from src/server-10-profile-card.js against a throwaway
 // database and upload folder. Builds a real card when an ffmpeg is around —
@@ -41,7 +41,7 @@ const piece = (opts = {}) => {
     .run(uid, "general", "w", opts.work ?? 1, opts.url ?? "/uploads/" + name, opts.shared ?? null, now + n).lastInsertRowid);
 };
 
-console.log("\nWHO THEY ARE, LIKE INSTAGRAM");
+console.log("\nWHO THEY ARE");
 let card = C.profileCardTiles(U());
 t("name, @username and bio are on the card", card.text.name === "Maker Name" && card.text.handle === "@maker" && card.text.bio.length > 0);
 t("emoji are taken out (the font has none — they'd be boxes)", !/🎧/.test(card.text.name + card.text.bio.join(" ")));

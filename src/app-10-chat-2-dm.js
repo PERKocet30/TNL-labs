@@ -5,8 +5,8 @@ const chatTitle=c=>c.isGroup?(c.title||c.people.filter(p=>p.username!==myName())
 const groupAvHTML=ps=>`<span class="c-gav">${(ps||[]).slice(0,2).map(p=>avHTML(p,"sm")).join("")}</span>`;
 const chatOther=()=>CHAT&&CHAT.meta&&!CHAT.meta.isGroup?CHAT.meta.people.find(p=>p.username!==myName()):null;
 
-/* Messages is a screen of its own (2026-10-14, "like Instagram, not a layer
-   on top of the app"; the button stays in the top bar). On a computer: the
+/* Messages is a screen of its own (2026-10-14, "not a layer on top of
+   the app"; the button stays in the top bar). On a computer: the
    side menu stays, your chats on the left, the open conversation on the
    right. On a phone: a full screen, the inbox then the conversation. */
 const dmTwo=()=>typeof isWide==="function"&&isWide();

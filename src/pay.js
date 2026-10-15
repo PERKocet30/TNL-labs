@@ -143,7 +143,7 @@ export async function createCheckout({
       customer_email: buyerEmail || undefined,
       metadata: { order_id: String(orderId) },
       line_items,
-      // Depop-style: let Stripe collect + validate the shipping address on its
+      // Let Stripe collect + validate the shipping address on its
       // hosted page. No more prompt() dialogs. Digital loops skip this.
       ...(collectShipping ? { shipping_address_collection: { allowed_countries: ["US","CA","GB","NL","DE","FR","IE","ES","IT","PT","BE","AU","NZ"] } } : {}),
       // commission on the item only — we don't skim postage

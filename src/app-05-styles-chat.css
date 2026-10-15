@@ -196,7 +196,7 @@ textarea.c-in{resize:none;min-height:42px;max-height:120px;line-height:1.35;font
 .msg-c .c-lp .c-lpt{padding:8px 10px 10px}
 .msg-c .c-meta{margin:2px 0 0}
 @media (hover:none){.c-m,.c-row{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}}
-/* MESSAGES v2.1 — 2026-10-14: a screen of its own ("like Instagram, not a layer on top of the app").
+/* MESSAGES v2.1 — 2026-10-14: a screen of its own ("not a layer on top of the app").
    A phone: full screen, nothing dimmed behind. A computer: beside the side menu, your chats
    on the left and the conversation on the right. Searching your chats; the button shows where you are. */
 .cx{background:var(--bg)}

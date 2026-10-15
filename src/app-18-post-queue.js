@@ -1,5 +1,5 @@
 /* ── POSTING IN THE BACKGROUND + DRAFTS · 2026-09-30 (2026-10-09: a song's cover goes up as the picture when there are no photos) ───────────────────
-   Share closes the creator straight away, like Instagram: a strip at the
+   Share closes the creator straight away: a strip at the
    top says Posting… (it waits for any photos still uploading), then
    Posted · View. If it fails nothing is lost — it's kept as a draft.
    Cancel asks Save draft / Discard / Keep editing; drafts live on this

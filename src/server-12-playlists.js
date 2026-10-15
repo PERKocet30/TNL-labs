@@ -1,7 +1,6 @@
 /* ================================================================
-   PLAYLISTS v1.0 — 2026-10-12 ("make the music lab function more like
-   Spotify — you listen to music and build your own playlist while in the
-   lab"). Your playlists are yours: only you see them, only you change
+   PLAYLISTS v1.0 — 2026-10-12 ("you listen to music and build your own
+   playlist while in the lab"). Your playlists are yours: only you see them, only you change
    them. A playlist holds songs from the Music lab's library, in the order
    you added them; a song that's deleted, or whose artist is suspended,
    drops out of it.
@@ -40,7 +39,7 @@ function shapePlaylist(p, withSongs) {
   const out = {
     id: p.id, name: p.name, createdAt: p.created_at, updatedAt: p.updated_at,
     count: songs.length, durationMs: songs.reduce((n, s) => n + (s.duration_ms || 0), 0),
-    /* up to four covers, for the 2×2 the way Spotify makes one */
+    /* up to four covers, for a 2×2 */
     covers: [...new Set(songs.map((s) => s.artwork_url).filter(Boolean))].slice(0, 4),
     trackIds: songs.map((s) => s.id),
   };

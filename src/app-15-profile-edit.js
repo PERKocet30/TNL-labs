@@ -1,5 +1,5 @@
 /* ── EDIT PROFILE v2 · 2026-10-07 ──────────────────────────────────────
-   Instagram's edit page, TNL's look: Cancel · Edit profile · Done, your
+   Cancel · Edit profile · Done, your
    photo in the middle, then quiet rows — name, pronouns, bio, links, what
    you make, your colour. Links and roles open their own small screens
    instead of a wall of fields. Theme, levels, admin and log out live in ≡.

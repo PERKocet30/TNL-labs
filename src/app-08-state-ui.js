@@ -43,7 +43,7 @@ window.addEventListener("error",e=>{if(e.target&&e.target!==window)return;   // 
   sentryClient(e.message,e.error&&e.error.stack,"error")});
 window.addEventListener("unhandledrejection",e=>{const r=e.reason||{};sentryClient(r.message||String(r),r.stack,"promise")});      // profile-first composer: {body,imgs:[{url,thumb,w,h}],busy}   // a profile's active market listings (lazy-loaded when the SHOP tab opens)
 let CLIMB=false, CLIMBOPENRUNG=0; // THE CLIMB — the one screen where the whole progression system is legible
-/* Discord-style: several files at once. Each posts separately. */
+/* Several files at once. Each posts separately. */
 let QUEUE=[];
 /* Add-to-home-screen. Two completely different worlds:
    - Android/Chrome fires `beforeinstallprompt` and lets us trigger a real
@@ -52,12 +52,11 @@ let QUEUE=[];
      Add to Home Screen, by hand. So on iOS we can only SHOW people how.
    Either way: never nag. Once dismissed, it stays gone. */
 let INSTALLEVT=null, INSTALLCARD=false;
-let EBAR=0, OPENTRACK="", PITCHSEL=0, DRAFTS=null;
+let OPENTRACK="", PITCHSEL=0, DRAFTS=null;
 /* Overwritten by /api/levels on boot. Declared here with a sane default so
    that a failed call — or an offline start — can't take the app down. */
 let SITE={};   // headline, tagline, announcement, feature switches — set by /api/levels
 let ACCENTS={lab:{name:"Lab",hex:"#98FC68"}};
-let EDITACCENT=null;
 /* Repaints the app in someone's colour. Every green thing in the CSS reads
    var(--green), so this one line is the whole theme.
    Defensive on purpose: it runs at boot, at login, on every profile open —
@@ -98,7 +97,7 @@ function applyAccent(hex){
     document.documentElement.style.setProperty("--on-accent", onAccent(ACCENTHEX));
   }catch(e){/* never worth taking the app down over a colour */}
 }
-let PENDVID=null, PENDKIND=null, EDITID=null, EDITROLES=[];
+let PENDKIND=null, EDITID=null, EDITROLES=[];
 /* A post is a post because of what it IS, not because someone ticked a
    box before sending it. Media, a beat, a track, or a post sent in from
    outside renders as a card; plain talk renders as a chat line. The lab

@@ -1,5 +1,5 @@
 /* TNL LABS admin ui.css v1.1 — 2026-10-14. The shell and the shared page pieces
-   ("organize the whole admin dashboard to Google standard"); loaded after
+   (the whole admin dashboard to one standard); loaded after
    admin.html's own styles. Colours only from /palette.css variables. */
 /* People v3 (2026-10-14): the directory grid and the member record (3-people.js, 3-person.js) */
 .pg-hd{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px}.pg-hd h1{font-size:24px;letter-spacing:-.01em}.pg-hd p{font-size:13px;margin-top:3px;max-width:620px}
@@ -74,7 +74,7 @@
 .step i.mono{font-style:normal;margin-left:3px}
 .loop.part .step{grid-template-columns:172px 1fr 44px}
 @media(max-width:520px){.loop.part .step{grid-template-columns:118px 1fr 36px}}
-/* Shell v3 (2026-10-14, "Google standard"): a side menu from 1024px, search any member from the top bar,
+/* Shell v3 (2026-10-14): a side menu from 1024px, search any member from the top bar,
    and every "h2.sec + panel/list/chart" drawn as one titled card. */
 .ph{display:contents}
 .gsrch{position:relative;flex:1;max-width:560px;display:flex;align-items:center;gap:8px;background:var(--el);border:1px solid var(--line);border-radius:999px;padding:0 14px;color:var(--dim);min-width:0}

@@ -35,8 +35,7 @@ video[data-auto]{cursor:pointer}
 .st-link{background:none;border:none;color:var(--dim);text-decoration:underline;font-size:12px;padding:0;font-family:inherit}
 .st-link:hover{color:var(--tx)}
 /* selling a sound */
-.kbtn.on{background:color-mix(in srgb, var(--accent-fill) 12%, transparent);border-color:var(--accent-fill);color:var(--tx)}
-.audioadd.busy{border-style:solid;border-color:var(--accent-fill)}
+
 /* a loop in the grid */
 .mcard.loop .mloop{position:relative;aspect-ratio:1/1;overflow:hidden;background:linear-gradient(145deg,color-mix(in srgb, var(--accent-fill) 18%, transparent),var(--el));display:flex;align-items:center;justify-content:center}
 .mloop-ic{font-size:34px;color:var(--green);opacity:.8}
@@ -84,8 +83,8 @@ video[data-auto]{cursor:pointer}
 .archover{position:absolute;inset:auto 0 0 0;display:flex;justify-content:space-between;align-items:center;gap:6px;
   padding:16px 7px 6px;background:linear-gradient(transparent,rgba(0,0,0,.85))}
 .archby{font-size:10px;color:#fff;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.archn{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;padding:2px 5px;border-radius:999px;backdrop-filter:blur(3px)}
-/* discord-style attach grid */
+
+/* attach grid */
 .qgrid{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1;min-width:0}
 .qcard{position:relative;width:52px;height:52px;border-radius:0;overflow:hidden;
   background:var(--el);border:1px solid var(--line2);flex-shrink:0}
@@ -118,7 +117,7 @@ video[data-auto]{cursor:pointer}
 .caro-t{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .caro-t::-webkit-scrollbar{display:none}
 /* Carousel v2 (2026-10-13, Jorge's recording: slides landing half on, a grey box round the first, the
-   feed jumping as slides loaded): Instagram's rule — the first picture sets the frame (caroRatio(),
+   feed jumping as slides loaded): the first picture sets the frame (caroRatio(),
    between 4:5 and 1.91:1), it's that size before anything loads, and every slide is exactly the frame. */
 .caro-t{width:100%;max-height:min(80vh,680px)}
 .caro-i{flex:0 0 100%;width:100%;min-width:100%;height:100%;object-fit:contain;scroll-snap-align:start;scroll-snap-stop:always;display:block;background:var(--el);cursor:zoom-in}
@@ -153,7 +152,7 @@ video[data-auto]{cursor:pointer}
    trade worth making. ── */
 input, textarea, select, .in, .search { font-size: 16px !important; }
 .cform .in { font-size: 16px !important; }
-.st-bar2 select, .knob select, .sel { font-size: 16px !important; }
+.st-bar2 select, .sel { font-size: 16px !important; }
 /* keep them from looking oversized now they're bigger */
 .in { padding: 11px 13px; }
 .cform .in { padding: 9px 12px; }
@@ -173,12 +172,7 @@ input, textarea, select, .in, .search { font-size: 16px !important; }
 .pig .pbio{font-size:14px;line-height:1.45;color:var(--tx);margin:4px 0 4px}
 .pig .plink{display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:600;margin:2px 0 12px}
 .pig .pactions{margin:0 0 12px}
-.pig .plvl{display:block;width:100%;text-align:left;background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:12px 0;margin:0;color:var(--tx);font-family:inherit;cursor:pointer}
-.pig .plr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.pig .plname{font-weight:700;font-size:14px}
-.pig .plmeta{color:var(--dim);font-size:13px;margin-left:auto}
-.pig .modrow{margin:0 0 10px}
-.pig .modlink{font-family:inherit;font-size:12px}
+
 .pig .ptabs{gap:0;margin:0;border-top:1px solid var(--line)}
 .pig .ptab{background:none;border:0;border-top:1px solid transparent;margin-top:-1px;border-radius:0;padding:12px 0;color:var(--dim);display:flex;justify-content:center}
 .pig .ptab.on{background:none;color:var(--tx);border-top-color:var(--tx)}
@@ -245,7 +239,7 @@ input, textarea, select, .in, .search { font-size: 16px !important; }
 .gx-person-b span{font-size:13px;color:var(--dim)}
 .gx-fbtn{border:1px solid var(--tx);border-radius:999px;background:var(--tx);color:var(--bg);font:inherit;font-size:14px;font-weight:700;padding:7px 18px;cursor:pointer;flex-shrink:0}
 .gx-fbtn.on{background:none;color:var(--tx);border-color:var(--line2)}
-/* A video framed to a shape in the editor fills it, like Instagram. */
+/* A video framed to a shape in the editor fills it. */
 video.vfill{object-fit:cover}
 /* Story sheets above an opened post (.po-ov is 130): sharing a post you'd
    opened put the sheet behind it (2026-10-09). */

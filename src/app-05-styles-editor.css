@@ -1,4 +1,4 @@
-/* ── POST CREATOR v3 · 2026-09-30 ── photo editor, drafts, the posting strip,
+/* ── POST CREATOR v3.1 · 2026-10-14 (unused rules out); v3 · 2026-09-30 ── photo editor, drafts, the posting strip,
    tags / location on cards (app-18-photo-edit.js, app-18-post-queue.js) */
 
 /* the photo editor: full screen, its own layer */
@@ -36,9 +36,7 @@ body.ped-on{overflow:hidden}
 .pc-thb img{-webkit-user-drag:none;user-select:none;-webkit-touch-callout:none}
 .pc-drafts{align-self:flex-end;margin:12px 16px 0;display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--line2);border-radius:999px;color:var(--tx);font:inherit;font-size:13px;font-weight:700;padding:6px 12px;cursor:pointer}
 .pc-drafts span{background:var(--tx);color:var(--bg);border-radius:999px;font-size:11px;padding:1px 7px}
-.pc-cover{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line)}
-.pc-cover input{flex:1;accent-color:var(--tx)}
-.pc-cover .pc-share{padding:7px 14px;font-size:13px}
+
 .pc-covth{width:24px;height:24px;object-fit:cover;display:block}
 .pc-sw-row{cursor:pointer}
 .pc-sw-row .pf-sw{margin-left:auto}
@@ -62,8 +60,7 @@ body.ped-on{overflow:hidden}
 @media (prefers-reduced-motion:reduce){.pq{animation:none}.pq-m u{transition:none}}
 
 /* on the card */
-.px-with{font-size:12px;color:var(--tx2);margin-top:1px}
-.px-u{font-weight:700;color:var(--tx);cursor:pointer}
+
 .px-off{font-size:13px;padding:2px 0 6px}
 .igact[hidden]{display:none}
 

@@ -287,18 +287,14 @@ app.get("/api/admin/source", auth, admin, (req, res) => {
   const name = `TNL-LABS-${stamp}.zip`;
 
   // the files that ARE the app — skip node_modules, db, uploads, git
-  /* The patch system moved the truth and this list never followed. src/server.js
-     is the PRISTINE monolith; what actually serves requests is server.runtime.js,
-     built at boot by build.mjs from server.js + src/patches/*.mjs. Exporting
-     server.js alone handed back a file ~10KB short of the running server, with
-     none of the applied hunks in it, under a comment promising the live app.
-     Ship the builder, the built runtime, and every patch, so a download can be
-     REBUILT and byte-checked instead of trusted. */
+  /* What serves requests is server.runtime.js, built at boot by assemble.mjs
+     from the numbered parts. Ship the builder, every part and the built
+     runtime, so a download can be REBUILT and byte-checked instead of trusted. */
   const parts = readdirSync(join(root, "src")).filter((f) => /^(app|server)-\d{2}-/.test(f)).sort()
     .map((f) => "src/" + f);
   const include = [
     "src/server.js", "src/assemble.mjs", ...parts, "src/server.runtime.js",
-    "src/db.js", "src/pay.js", "src/mail.js",
+    "src/db.js", "src/pay.js", "src/mail.js", "src/palette.js",
     "public/index.html", "public/studio.js", "public/admin.html", "public/door.js", "public/sw.js",
     ...(existsSync(join(root, "public/admin-app")) ? readdirSync(join(root, "public/admin-app")).sort().map((f) => "public/admin-app/" + f) : []),
     "public/manifest.webmanifest",

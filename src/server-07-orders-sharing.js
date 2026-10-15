@@ -10,7 +10,7 @@ app.post("/api/market/:id/buy", auth, verified, rateLimit({ max: 20, windowMs: 3
   if (v?.error) return res.status(400).json({ error: v.error });
   const vLabel = variantLabel(v);
   // Shipping addresses for physical items are collected by Stripe Checkout now
-  // (Depop-style) and saved back on payment — so we don't demand them up front.
+  // and saved back on payment — so we don't demand them up front.
   // Loops ship nowhere.
 
   // an accepted offer beats the sticker price

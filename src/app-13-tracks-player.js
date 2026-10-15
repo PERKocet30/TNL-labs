@@ -42,7 +42,7 @@ async function loadTracks(){
 
 const mmss=ms=>{const s=Math.round((ms||0)/1000);return s?Math.floor(s/60)+":"+String(s%60).padStart(2,"0"):""};
 
-/* A song, Spotify's way (2026-10-12): tap anywhere on the row to play (the
+/* A song (2026-10-12): tap anywhere on the row to play (the
    artist is in its …); ⊕ puts it in a
    playlist (✓ once it's in one — in Add songs, in this playlist); … for
    the rest. ctx: "lib" the library, "pl" a playlist, "add" Add songs. */
@@ -185,7 +185,7 @@ function wireTracks(){
     if(ev.target.closest("button,[data-u]"))return;
     const t=trkFind(el.dataset.trkplay);if(!t)return;
     MUSAUTOID=null;const ctx=el.dataset.ctx;
-    /* Spotify's way (2026-10-12): the song comes up full screen. Already
+    /* 2026-10-12: the song comes up full screen. Already
        the one playing? Just bring it up (and carry on if it was paused). */
     if(NOWPLAYING&&NOWPLAYING.id===t.id){if(ctx!=="add"){if(AUDIO&&AUDIO.paused)AUDIO.play().catch(()=>{});return openNowFull()}return playTrack(t)}
     PLAYQ=plQueue(ctx);PLQORIG=null;

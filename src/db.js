@@ -245,8 +245,8 @@ CREATE TABLE IF NOT EXISTS channel_reads (
   PRIMARY KEY (user_id, channel)
 );
 
-/* A marketplace without reviews is a leap of faith. Depop and eBay both
-   live on this: it's the only reason a stranger buys from a stranger.
+/* A marketplace without reviews is a leap of faith. Reviews are the
+   reason a stranger buys from a stranger.
    One review per order, only after delivery is confirmed, so it can't be
    faked without a real paid transaction behind it. */
 CREATE TABLE IF NOT EXISTS reviews (
@@ -414,7 +414,7 @@ CREATE INDEX IF NOT EXISTS idx_shape_slot ON sample_shape(slot);
 
    A board is a named collection. Two kinds of pin:
      • TNL work — the real value. Saving someone's image TELLS them and
-       credits them. That's the loop a Pinterest board can't have.
+       credits them. That's the loop that makes saving worth something.
      • an external link — stored as a URL with attribution, NEVER rehosted.
        You get curation without becoming a piracy host.
 ================================================================ */
@@ -469,7 +469,7 @@ CREATE INDEX IF NOT EXISTS idx_blocks_blocked ON blocks(blocked_id);
 /* Migrations — safe to run on an existing database. SQLite has no
    "ADD COLUMN IF NOT EXISTS", so we check the table info first. */
 const cols = db.prepare(`PRAGMA table_info(users)`).all().map((c) => c.name);
-/* 2026-10-12: a shop notification points at its listing, so tapping it opens the item (like Instagram). */
+/* 2026-10-12: a shop notification points at its listing, so tapping it opens the item. */
 if (!db.prepare(`PRAGMA table_info(notifications)`).all().some((c) => c.name === "listing_id"))
   db.exec(`ALTER TABLE notifications ADD COLUMN listing_id INTEGER`);
 if (!cols.includes("bio")) db.exec(`ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''`);
@@ -643,11 +643,6 @@ export const SETTING_DEFAULTS = {
   autoVerify:     "0",     // "1" skips email verification — use if mail breaks
   announcement:   "",      // a banner across the top of the app
 
-  /* A Pinterest board embedded in the PHARMACY. Their widget, their
-     content, their liability — we render an iframe and nothing else.
-     There is no way to SEARCH Pinterest (they killed that API years ago),
-     but you can bring a board in whole. */
-  pinterestBoard: "",      // e.g. https://www.pinterest.com/tnl/refs/
 
   /* Distribution. A real promise with a real cost, so it's a setting: you
      can move the bar or turn it off without asking anyone.
@@ -786,7 +781,7 @@ export function levelFor(rep) {
   return LEVELS.reduce((a, l) => (rep >= l.at ? l : a), LEVELS[0]);
 }
 
-/* Commission by level. Depop is ~10% flat forever. Here it falls as the
+/* Commission by level. It starts at 10% and falls as the
    community vouches for you — the loyalty system paying out in money
    rather than badges.
 

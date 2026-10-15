@@ -12,7 +12,7 @@ const app = readFileSync(join(ROOT, "public/index.html"), "utf8");
 const server = readFileSync(join(ROOT, "src/server.runtime.js"), "utf8");
 console.log("\nNO MOODBOARDS IN THE APP");
 t("no Moodboards button, drawer or board page", !/New moodboard|Which moodboard|> Moodboards/.test(app) && !app.includes("boardsHTML") && !app.includes('id="myboards"') && !app.includes('id="bbg"'));
-t("no paste-a-link Pull, no Pinterest, no + on archive images", !app.includes('id="pastego"') && !app.includes("pinit.js") && !app.includes("📌") && !app.includes("data-asave"));
+t("no paste-a-link Pull, no embedded boards, no + on archive images", !app.includes('id="pastego"') && !app.includes("pinit.js") && !app.includes("📌") && !app.includes("data-asave"));
 t("the archive is still there: search, sorts and the grid", app.includes('id="archq"') && app.includes("data-asort") && app.includes('class="archgrid"'));
 t("the Visual lab's link just says the archive", app.includes(">Search the archive</button>") && !app.includes("your boards"));
 console.log("\nNOTHING DELETED");

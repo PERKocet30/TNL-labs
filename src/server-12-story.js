@@ -164,8 +164,7 @@ app.get("/tr/:id/story.jpg", storyLimit, (req, res) => {
 /* ── A Story with the song · 2026-10-11 ─────────────────────────────
    "Is there any way the music from a post plays in the share cards on
    Instagram?" Instagram's music sticker only takes its own library, but a
-   Story can be a video with its own sound — Spotify's Story shares work
-   that way. A post with a song gets /p/:id/story.mp4: its Story card,
+   Story can be a video with its own sound. A post with a song gets /p/:id/story.mp4: its Story card,
    pushed in slowly over 15 seconds (or the song, if shorter), with the
    first 15 seconds of the song under it — faded in and out. Made once,
    kept next to the picture under og/, one build at a time. */

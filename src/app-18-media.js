@@ -83,8 +83,8 @@ function vRestore(root,m){
 const VDWELL=220;
 let VFAR=null;
 /* Sound stays on (2026-10-08). A phone's volume buttons never reach a web
-   page, so "raise the volume to unmute" can't be done here; this is the
-   rest of Instagram's behaviour: unmute one video and every video after it
+   page, so "raise the volume to unmute" can't be done here; instead,
+   unmute one video and every video after it
    plays with sound as you scroll, until you mute one. A video and post
    music never play over each other. Kept for this visit (sessionStorage). */
 /* Data saver (2026-10-08) — for a phone short on storage, battery or

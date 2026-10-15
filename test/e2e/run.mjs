@@ -641,22 +641,22 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#pql [data-pqview]").tap();
     await p.waitForFunction((id) => PROFILE && PROFILE.user && PROFILE.user.username === "tester" && (PROFILE.posts || []).some((x) => x.id === id), np.id, { timeout: 5000 });
     await p.evaluate((id) => openPost(PROFILE.posts.find((x) => x.id === id)), np.id);
-    /* read like Instagram (2026-10-12): tagged people are the person icon on the picture; the place sits under the name */
+    /* 2026-10-12: tagged people are the person icon on the picture; the place sits under the name */
     await p.waitForSelector("#poov .px-tagbtn", { timeout: 5000 });
     ok(/@friend/.test(await p.locator("#poov .px-tagbtn").first().getAttribute("aria-label")), "the person icon on the picture doesn't hold @friend");
     await p.locator("#poov .px-tagbtn").first().tap();
     ok(await p.locator(".pick").getByText("@friend").count() === 1, "tapping the person icon didn't list who's tagged");
     await p.locator("#pickx").tap();
     ok(/Brooklyn/.test(await p.locator("#poov .post-h .post-loc").first().textContent()), "no place under the name");
-    /* …and the caption comes after the buttons, "username caption", then the time — Instagram's order */
+    /* …and the caption comes after the buttons, "username caption", then the time */
     ok(await p.evaluate(() => { const po = document.querySelector("#poov .post"), a = po.querySelector(".post-acts"), c = po.querySelector(".post-cap"), w = po.querySelector(".post-when");
       return !!(a && c && w) && !!(a.compareDocumentPosition(c) & 4) && !!(c.compareDocumentPosition(w) & 4) && /^tester\s/.test(c.textContent.trim()) && /ago|Just now/.test(w.textContent); }),
-      "the post doesn't read like Instagram: buttons → \"tester caption\" → time");
+      "the post is in the wrong order: buttons → \"tester caption\" → time");
     ok(await p.locator('#poov .igact[data-comments]').isHidden(), "comment button still showing");
     await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; PROFILE = null; TAB = "showroom"; render(); });
   });
-  /* "When someone likes your work it doesn't take you directly to the post" → "Notifications should work like Instagram" (2026-10-12) */
-  await step(d, "notifications like Instagram: Friend liked your post — its picture on the row, a tap opens that post", async () => {
+  /* "When someone likes your work it doesn't take you directly to the post" (2026-10-12) */
+  await step(d, "notifications: Friend liked your post — its picture on the row, a tap opens that post", async () => {
     const np = (await myPosts()).find((x) => x.imageUrl);
     ok(np, "no picture post of yours to like");
     const fs = { "content-type": "application/json", authorization: "Bearer e2e-friend-session" };
@@ -823,7 +823,7 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { PCOMPOSE = null; render(); }); await p.waitForTimeout(300);
     ok(await p.evaluate(() => !PCPV), "closing the post maker left the song playing");
   });
-  /* "Update the post maker to simple video editing, cover etc like Instagram" (2026-10-08). */
+  /* "Update the post maker to simple video editing, cover etc" (2026-10-08). */
   await step(d, "video editor: a cover arrives by itself; trim, sound off and 4:5 ride on the post and the feed honours them", async () => {
     await openCreator();
     await p.locator("#pcfile").setInputFiles(UPLOAD_WEBM);
@@ -951,9 +951,9 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => getComputedStyle(document.querySelector(".nowbar")).display !== "none" && !document.querySelector(".npf")), "closing the song didn't leave the bar playing at the bottom");
     await p.locator(".nowbar [data-nowclose]").tap();
   });
-  /* "Make the music lab function more like Spotify — you listen to music and
+  /* "You listen to music and
      build your own playlist while in the lab" (2026-10-12). */
-  await step(d, "Music like Spotify: ⊕ on the bar makes a playlist from what's playing, ⊕ on a song adds it, the playlist plays as its own list, back walks out", async () => {
+  await step(d, "Music: ⊕ on the bar makes a playlist from what's playing, ⊕ on a song adds it, the playlist plays as its own list, back walks out", async () => {
     await p.locator('[data-ctx="lib"] .trk-t').first().tap(); await p.waitForTimeout(700);
     const first = await p.evaluate(() => NOWPLAYING && NOWPLAYING.id);
     ok(first, "tapping a song's row didn't play it");
@@ -1007,7 +1007,7 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => document.documentElement.dataset.theme) === "light", "day didn't come back");
   });
   /* ---- profile v2 (2026-10-07) ---- */
-  await step(d, "edit profile: Instagram-style rows; a half-typed bio survives the Links screen; Done saves pronouns, bio, links", async () => {
+  await step(d, "edit profile: plain rows; a half-typed bio survives the Links screen; Done saves pronouns, bio, links", async () => {
     await p.evaluate(() => { DMOPENPANEL = false; CHAT = null; paintLayer(); });
     await p.locator('.nav [data-tab="profile"]').tap();
     await p.locator("#editb").tap();
@@ -1318,7 +1318,7 @@ console.log("\nMEMBER · COMPUTER");
     ok(left >= 200, "the post covers the sidebar");
     await p.evaluate(() => { POSTOPEN = null; render(); });
   });
-  // 2026-10-14 "DMs like Instagram, not a layer on top of the app": Messages is a page beside the side menu
+  // 2026-10-14 "DMs not a layer on top of the app": Messages is a page beside the side menu
   await step(d, "Messages is a page beside the side menu: chats on the left, the conversation on the right", async () => {
     await p.locator("#dmBtn").click();
     await fast(p, 4000, () => p.locator("#chatlayer .cx-col").waitFor(), "the chat list column");
@@ -1353,7 +1353,7 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator(".tour [data-ev-open]").count() === 1, "no tournament panel");
     ok(await p.locator("h2.sec", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
     ok(await p.locator("nav.tabs [data-tab=content]", { hasText: "Labs" }).count() === 1, "the Content tab isn't called Labs");
-    // 2026-10-14 "Google standard": on a computer, a side menu; any member is a search away from the top bar
+    // 2026-10-14: on a computer, a side menu; any member is a search away from the top bar
     ok(await p.locator(".side .nv[data-tab=people]").isVisible() && !(await p.locator("nav.tabs").isVisible()), "no side menu on a computer");
     await p.locator("#gq").fill("tester");
     await fast(p, 4000, () => p.locator("#gres [data-gp]").first().waitFor(), "member search results");

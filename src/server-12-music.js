@@ -1,7 +1,7 @@
 
 /* ================================================================
    MUSIC · THE ARTIST PAGE v1.1 — 2026-10-11 (+ the Music lab's cover); v1.0 2026-10-10
-   What Spotify gives an artist that a profile's Music tab didn't have:
+   What an artist page needs that a profile's Music tab didn't have:
      - a pinned song, at the top of the list (POST /api/me/pinned-track)
      - a song link that looks right in an Instagram DM: /s/:id is a public
        page with the cover, the title and who made it, a player, and

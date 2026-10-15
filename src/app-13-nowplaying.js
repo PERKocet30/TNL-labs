@@ -1,6 +1,6 @@
 /* ================================================================
-   NOW PLAYING · v1.0 — 2026-10-12. "The interface needs to function like
-   Spotify — when you click a song the whole song menu comes up."
+   NOW PLAYING · v1.0 — 2026-10-12. "When you click a song the whole song
+   menu comes up."
    Tap a song (in the library or a playlist), or the bar at the bottom, and
    the song fills the screen: its cover over its own colours, the title and
    artist, ⊕ to a playlist, a scrubber, shuffle · back · play · next ·
@@ -109,7 +109,7 @@ function npfWire(el){
   el.addEventListener("pointerdown",e=>{if(e.target.closest("[data-npfseek]")){drag=true;seekTo(e.clientX);e.preventDefault()}});
   el.addEventListener("pointermove",e=>{if(drag)seekTo(e.clientX)});
   window.addEventListener("pointerup",()=>{drag=false});
-  /* swipe down on the cover or the top to close, like Spotify */
+  /* swipe down on the cover or the top to close */
   let y0=null,dy=0;
   el.addEventListener("touchstart",e=>{if(!e.target.closest("[data-npfdrag]")||e.target.closest("button"))return;y0=e.touches[0].clientY;dy=0},{passive:true});
   el.addEventListener("touchmove",e=>{if(y0==null)return;dy=Math.max(0,e.touches[0].clientY-y0);el.style.transform=`translateY(${dy}px)`},{passive:true});

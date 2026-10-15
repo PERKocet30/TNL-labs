@@ -2,8 +2,8 @@
    PLACES v1.5 — 2026-10-12 (v1.5: the tournament running in a lab is a
    chip in its Work — every entry, no #tag needed — and entries are marked).
    v1.4 — 2026-10-12 (painters, muralists, printmakers and
-   mixed-media artists lead to Visual; v1.3: ‹ on a #tag walks the back trail). A lab is a place — a genre — not a Discord
-   server full of channels. Familiar like Instagram, ours in the details.
+   mixed-media artists lead to Visual; v1.3: ‹ on a #tag walks the back trail). A lab is a place — a genre — not a
+   server full of channels.
    v1.1, simpler: one list of genres, each explained by its #hashtags,
    and inside a lab just two tabs —
      Work   everything made here, a grid; tap a #tag to narrow it

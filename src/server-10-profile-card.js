@@ -1,7 +1,7 @@
 
 /* ================================================================
    PROFILE CARD v3.1 — 2026-10-11 (the Story cards' look). v3.0 2026-09-29. The link preview for a shared
-   profile, laid out like Instagram's: who they are on the left —
+   profile: who they are on the left —
    profile picture, name, @username, bio, how much they've made — and
    their latest work as a grid on the right. The TNL mark and LABS ®
    sit bottom-left, their accent rings the picture. 1200×630, colours from

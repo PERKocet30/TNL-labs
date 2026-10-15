@@ -48,7 +48,7 @@ h1,h2,h3{letter-spacing:-.02em}
 .content{flex:1;overflow:hidden;display:flex;flex-direction:column}
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 /* landing */
-.hero .eyebrow{color:var(--green);letter-spacing:.02em;margin-bottom:16px}
+
 .foot .big{font-weight:900;font-size:clamp(15px,4vw,20px);text-transform:uppercase;margin-bottom:6px}
 /* ── LABS · v2 · 2026-09-28 ──────────────────────────────────────────
    An index, then a room. Paper cards, 1px rules, square media, pill tabs;
@@ -68,19 +68,12 @@ h1,h2,h3{letter-spacing:-.02em}
 .lx-media img{width:100%;height:100%;object-fit:cover}
 .lx-ic{display:flex;color:var(--tx2)}
 .lx-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.lx-top{display:flex;align-items:center;gap:8px;min-height:18px}
-.lx-no{font-size:11px;color:var(--dim);letter-spacing:.08em;font-variant-numeric:tabular-nums}
+
 .lx-new{font-size:11px;font-weight:700;background:var(--accent-fill);color:var(--on-accent);border-radius:999px;padding:2px 8px}
-.lx-live{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--dim)}
-.lx-live i{width:6px;height:6px;border-radius:50%;background:var(--accent-fill)}
+
 .lx-name{font-size:18px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
 .lx-for{font-size:13px;color:var(--dim);line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lx-foot{display:flex;align-items:center;gap:8px;margin-top:5px}
-.lx-ppl{display:flex}
-.lx-ppl img,.lx-ppl span{width:18px;height:18px;border-radius:50%;object-fit:cover;border:1.5px solid var(--card);
-  margin-left:-5px;background:var(--el);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--tx2)}
-.lx-ppl>:first-child{margin-left:0}
-.lx-meta{font-size:12px;color:var(--dim)}
+
 .lx-go{color:var(--dim);display:flex;flex-shrink:0}
 /* inside a lab */
 .labs-wrap{flex:1;display:flex;overflow:hidden}
@@ -91,14 +84,9 @@ h1,h2,h3{letter-spacing:-.02em}
 .lr-tool{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--line2);border-radius:999px;
   color:var(--tx);padding:6px 13px 6px 10px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 .lr-tool svg{width:16px;height:16px}
-.lr-tabs{display:flex;gap:6px;overflow-x:auto;padding:2px 16px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.lr-tabs::-webkit-scrollbar{display:none}
-.lr-tab{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;background:none;border:1px solid var(--line2);border-radius:999px;
-  color:var(--tx2);padding:7px 13px;font:inherit;font-size:13px;white-space:nowrap;cursor:pointer}
-.lr-tab.on{background:var(--tx);border-color:var(--tx);color:var(--bg);font-weight:600}
-.lr-tab svg{width:12px;height:12px}
+
 .lr-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-fill);display:inline-block}
-.lr-desc{padding:0 16px 10px;font-size:12px;color:var(--dim);border-bottom:1px solid var(--line)}
+
 @media(min-width:900px){
   .lx-head,.lx-list{max-width:1040px;margin-left:auto;margin-right:auto;width:100%;box-sizing:border-box}
   .labs-wrap{justify-content:center}
@@ -110,7 +98,7 @@ h1,h2,h3{letter-spacing:-.02em}
    work gets the full card. Prefixed msg-* so nothing collides with .post. */
 .msg{position:relative;display:flex;gap:10px;padding:7px 34px 7px 0}
 .msg-g{padding-top:1px}
-.msg-g .msg-open{top:0}
+
 .msg-a{flex:0 0 32px;width:32px}
 .msg-a .av{width:32px;height:32px;font-size:11px}
 .msg-c{flex:1;min-width:0}
@@ -123,8 +111,7 @@ h1,h2,h3{letter-spacing:-.02em}
 .msg-i{width:min(260px,100%);aspect-ratio:1;border-radius:0;border:1px solid var(--line);object-fit:cover;cursor:zoom-in}
 .msg-m.n2 .msg-i,.msg-m.n3 .msg-i,.msg-m.n4 .msg-i{width:100%}
 .msg-v{max-height:320px;max-width:100%;border-radius:0;border:1px solid var(--line);background:#000}
-.msg-open{position:absolute;right:0;top:6px;background:none;border:0;color:var(--dim);padding:4px;display:flex;cursor:pointer}
-.msg-open:active{opacity:.55}
+
 .msg.pending{opacity:.55}
 .post{background:var(--card);border:1px solid var(--line);border-radius:0;padding:12px 13px}
 .post-h{display:flex;align-items:center;gap:9px}
@@ -132,7 +119,7 @@ h1,h2,h3{letter-spacing:-.02em}
 .post-by{font-weight:700;font-size:13px;cursor:pointer}
 .post-by:hover{color:var(--green)}
 .lvl{background:var(--accent-fill);color:var(--on-accent);font-family:inherit;font-size:11px;padding:1px 5px;border-radius:999px;margin-left:5px}
-.post-meta{font-family:inherit;font-size:11px;color:var(--dim);letter-spacing:.02em}
+
 .post-body{font-size:14px;line-height:1.55;color:var(--tx2);margin:8px 0 2px;word-break:break-word}
 .shared-tag{display:inline-flex;align-items:center;gap:4px;font-family:inherit;font-size:12px;font-weight:600;color:var(--green);letter-spacing:0;margin-bottom:6px}
 .post-acts{display:flex;align-items:center;gap:18px;margin-top:11px}
@@ -197,15 +184,11 @@ h1,h2,h3{letter-spacing:-.02em}
 .muschip:active{opacity:.55}
 .muschip-t{font-weight:600;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px}
 .pcmp-note{font-size:11px;color:var(--dim);line-height:1.5;border-top:1px solid var(--line);padding-top:12px}
-.onb-dots{display:flex;gap:6px;justify-content:center;margin-top:16px}
-.onb-dots span{width:6px;height:6px;border-radius:50%;background:var(--el);border:1px solid var(--line2)}
-.onb-dots span.on{background:var(--accent-fill);border-color:var(--accent-fill)}
+
 .act{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid var(--line2);color:var(--tx);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600;font-family:inherit}
 .act:hover{border-color:var(--tx)}
 .act.on{border-color:var(--accent-fill);color:var(--on-accent);background:var(--accent-fill)}
-.collab-row{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
-.ctag{font-family:inherit;font-size:11px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--dim)}
-.ctag.acc{border-color:var(--accent-fill);color:var(--green)}
+
 .composer{display:flex;gap:8px;padding:11px 15px 13px;border-top:1px solid var(--line)}
 .composer .in{flex:1}
 .send{width:44px;display:flex;align-items:center;justify-content:center;background:var(--tx);color:var(--bg);border:none;border-radius:999px;font-weight:900}
@@ -221,7 +204,7 @@ h1,h2,h3{letter-spacing:-.02em}
 .cell.bar{border-color:var(--line2)}
 .cell.on{background:var(--tx);border-color:var(--tx)}
 .cell.now{outline:2px solid var(--accent-fill);outline-offset:-1px}
-.beat-pub .in{flex:1}
+
 .beatmsg{display:flex;align-items:center;gap:10px;background:var(--el);border:1px solid var(--line);border-radius:0;padding:8px 10px;margin-top:8px}
 .beatmsg .nm{font-weight:700;font-size:12px}
 /* market */

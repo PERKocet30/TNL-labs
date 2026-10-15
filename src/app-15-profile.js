@@ -24,8 +24,8 @@ function workCardHTML(p, collab, K, pinned) {
 }
 
 /* ── Music on the profile (v2.3 · 2026-10-10) ─────────────────────────
-   Songs aren't pictures, so they have their own Music tab (v2.2), like an
-   artist page on Spotify — Play, then the songs, each with its cover,
+   Songs aren't pictures, so they have their own Music tab (v2.2), an
+   artist page — Play, then the songs, each with its cover,
    plays and length. v2.3 adds what an artist page has:
      - a pinned song at the top (⋯ → Pin to top, on your own page)
      - ⋯ → Share song: a /s/:id link that previews right in an Instagram DM
@@ -91,7 +91,7 @@ function songMenu(t){
 })();
 
 /* ── PROFILE v2 · 2026-10-07 ───────────────────────────────────────────
-   Instagram's shape, TNL's look. Username up top with ＋ and ≡ (yours) or
+   Username up top with ＋ and ≡ (yours) or
    ⋯ (theirs); photo and three numbers you can open (posts, followers,
    following); name, pronouns and level as a quiet pill; what you make; bio
    with @mentions; links; "Followed by …"; two buttons; four tabs — work,

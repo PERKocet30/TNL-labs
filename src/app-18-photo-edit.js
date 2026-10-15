@@ -1,5 +1,5 @@
 /* ── PHOTO EDITOR · 2026-09-30 ─────────────────────────────────────────
-   Instagram's edit step, on the phone, nothing new on the server: crop
+   The edit step, on the phone, nothing new on the server: crop
    (original, square, 4:5, 16:9 — drag to position, zoom), filters, and
    brightness / contrast / saturation / warmth. It always works from the
    original upload, so edits can be changed or undone later. Lives on its

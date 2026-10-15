@@ -124,7 +124,7 @@ function wireEnter(){
 }
 
 function navHTML(){
-  /* Instagram's frame: identity gets the nav slot. The studio lives inside
+  /* Identity gets the nav slot. The studio lives inside
      the music lab now (and every ↻ Remix still jumps straight into it). */
   /* The nav speaks the same language as the lab list: geometric marks, not
      outline icons. LAB_ID already uses ◉ ⌗ ▣ ♠ Λ, so the bottom bar matching them
