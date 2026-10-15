@@ -1,12 +1,13 @@
 
 /* ================================================================
-   EVENT CARDS v1.1 — 2026-10-11 (one look with every Story card). v1.0 2026-10-07. The pictures that take the tournament
+   EVENT CARDS v1.2 — 2026-10-15 (/e/:slug/card.jpg, the link preview card). v1.1 — 2026-10-11 (one look with every Story card). v1.0 2026-10-07. The pictures that take the tournament
    to Instagram and bring people back to vote here.
 
      /e/:slug/:entry/story.jpg   an entrant's Story: their piece, "Vote for
                                  my piece", where they stand on the board
                                  and their vote link. 1080×1920.
      /e/:slug/board.jpg          TNL's scoreboard post, top 5.
+     /e/:slug/card.jpg           the link preview: name, prize, where it stands. 1080×1080.
                                  ?size=story → 1080×1920, else 1080×1350.
 
    Same kit as the profile card (server-10-profile-card.js): ffmpeg-static,
@@ -164,6 +165,58 @@ function evBoardCard(ev, size, base) {
   };
   return { hash, prefix: `ev${ev.id}-b${story ? "s" : "p"}`, make };
 }
+
+/* The link card (v1.2, 2026-10-15): what a shared tournament link shows
+   in Instagram DMs, broadcast channels and texts when no cover picture was
+   chosen — the name, the prize and where it stands, over the latest
+   entry blurred (or TNL black before there are any). 1080×1080. Its words follow the stage, so a new stage is a new
+   picture (and a new ?v= on the page's og:image). Square, because
+   Instagram's DM and channel previews crop to a square. */
+function evStageLine(ev) {
+  tickEvent(ev);
+  const sched = evJSON(ev.schedule, []), p = phaseAt(sched);
+  const day = (t) => (t ? new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" }).toUpperCase() : "");
+  const q0 = sched.find((x) => x.phase === "qualify");
+  if (p.phase === "upcoming") return { line: sched[0]?.start ? `ENTRIES OPEN ${day(sched[0].start)}` : "COMING SOON", cta: "See it at", p };
+  if (p.phase === "submit") return { line: `ENTRIES CLOSE ${day(p.end)}${q0 ? ` · VOTING OPENS ${day(q0.start)}` : ""}`, cta: "Enter at", p };
+  if (p.phase === "results") return { line: "THE RESULTS ARE IN", cta: "See the winner at", p };
+  return { line: `${p.phase === "final" ? "THE FINAL" : p.phase === "round" ? "ROUND " + p.round : "VOTING IS OPEN"}${p.end ? " · ENDS " + day(p.end) : ""}`, cta: "Vote at", p };
+}
+function evLinkCard(ev, base) {
+  const st = evStageLine(ev), W = 1080, H = 1080, P = 80;
+  const last = db.prepare(`SELECT p.image_url, p.thumb_url FROM event_entries e JOIN posts p ON p.id = e.post_id WHERE e.event_id = ? AND e.dq_reason IS NULL ORDER BY e.id DESC LIMIT 1`).get(ev.id);
+  const ground = last ? cardFile(last.image_url) || cardFile(last.thumb_url) : null;
+  /* the name on up to three lines of 14 characters, broken between words */
+  const lines = [];
+  for (const w of evUpper(ev.title, 42).split(" ")) { const l = lines.length - 1;
+    if (l >= 0 && (lines[l] + " " + w).length <= 14) lines[l] += " " + w; else lines.push(w); }
+  const text = { eye: "// TOURNAMENT", title: lines.slice(0, 3), prize: ev.prize ? evUpper(ev.prize + " prize", 26) : "", line: st.line,
+    cta: `${st.cta} ${evHost(base)}/tournament` };
+  const hash = createHash("sha1").update(JSON.stringify([EVC.version, "link2", text, ground])).digest("hex").slice(0, 12);
+  const make = (out, dir) => {
+    const g = evGraph(W, H), t = evAss(dir, W, H), ink = SCK.ink, up = ffc(accentHex("lab"));
+    if (ground) { const i = g.input(ground);
+      g.f.push(`[${i}:v]scale=${W / 4}:${H / 4}:force_original_aspect_ratio=increase,crop=${W / 4}:${H / 4},boxblur=14:3,scale=${W}:${H},eq=brightness=-0.35:saturation=1.2,vignette=PI/4,setsar=1,format=rgb24[gnd]`);
+      g.lay("gnd", 0, 0); } else g.box(SCK.shade, W, H, 0, 0);
+    t.at(text.eye, P, 120, 34, true, up);
+    text.title.forEach((l, i) => t.at(l, P, 180 + i * 118, 112, true, ink));
+    let y = 180 + text.title.length * 118 + 40;
+    if (text.prize) { t.at(text.prize, P, y, 56, true, ink); y += 84; }
+    /* the stage, on two lines if it has a second part */
+    st.line.split(" · ").forEach((l, i) => t.at(l, P, y + i * 46, 36, false, ink));
+    const cw = Math.min(W - 2 * P, Math.round(text.cta.length * 20 + 64));
+    g.box(up, cw, 84, P, H - 290);
+    t.at(text.cta, P + cw / 2, H - 248, 33, true, ffc(onAccent(accentHex("lab"))), 5);
+    evMarkWhite(g, t, P, H - 150);
+    g.filter(t.write());
+    return g.out(out);
+  };
+  return { hash, prefix: `ev${ev.id}-link`, make, v: hash.slice(0, 8) };
+}
+app.get("/e/:slug/card.jpg", rateLimit({ max: 120, windowMs: 60000 }), (req, res) => {
+  const ev = evPublished(req.params.slug); if (!ev) return res.status(404).end();
+  evSendCard(res, evLinkCard(ev, baseUrl(req)), "/icon-512.png");
+});
 
 const evPublished = (slug) => { const ev = evRow(slug); return ev && ev.published ? ev : null; };
 async function evSendCard(res, card, fallback) {

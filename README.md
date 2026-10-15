@@ -195,6 +195,7 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 | `/l/:slug` | a lab, by name — `/l/general`, `/l/visual`, `/l/music`, `/l/fashion`, `/l/anime`, `/l/news`, `/l/business` (`LAB_SLUG`; an old `/l/<id>` link forwards): its name, what to do there (`LAB_PITCH`), its #tags, recent work and "Join and step in" → `/?l=slug` (members land in the lab; everyone else joins first, then lands in it). What a lab's **Share** sends (`server-12-labs.js`) |
 | `/e/:slug` · `/e/:slug/rules` | an event and its official rules (draft rules are generated until an admin writes their own) |
 | `/e/:slug/board` · `/e/:slug/:entry` | a poll's public scoreboard, and one entry's vote link (its preview is the piece; Vote opens `/?e=slug&v=entry` in the app) |
+| `/e/:slug/card.jpg` | the tournament's link preview (1080×1080, square for Instagram's previews): its name, prize and stage over the latest entry, redrawn as the stage changes. `/e/:slug` uses it unless an admin chose a **Cover picture** in Admin → Tournament |
 | `/e/:slug/board.jpg` · `/e/:slug/:entry/story.jpg` | Instagram pictures: the scoreboard (1080×1350, `?size=story` 1080×1920) and an entrant's "Vote for my piece" Story |
 | `/` | the app; its link preview uses `og-cover-v3-2026-09-23.jpg` |
 

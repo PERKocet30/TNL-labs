@@ -194,14 +194,15 @@ app.get("/e/:slug", (req, res) => {
   const esc = lookEsc, base = baseUrl(req);
   const label = { upcoming: `Entries open ${evDate(s[0]?.start)}`, submit: `Entries close ${evDate(p.end)}`, qualify: "Voting is open", round: `Round ${p.round} is on`, final: "The final is on", results: "Results are in" }[p.phase];
   const winner = st.results?.winner ? db.prepare(`SELECT p.image_url FROM event_entries e JOIN posts p ON p.id = e.post_id WHERE e.id = ?`).get(st.results.winner) : null;
-  const img = winner?.image_url || ev.cover_url || "/icon-512.png";
+  /* the picture a shared link shows: the cover you chose, else the winner, else the card drawn for it (2026-10-15) */
+  const img = ev.cover_url || winner?.image_url || `/e/${ev.slug}/card.jpg?v=${evLinkCard(ev, base).v}`;
   const abs = (u) => (/^https?:/.test(u) ? u : base + u);
   const desc = [label, ev.prize, ev.brief.slice(0, 140)].filter(Boolean).join(" · ");
   res.send(lookPage({
     title: `${esc(ev.title)} — TNL LABS`,
     head: `<meta property="og:type" content="website"><meta property="og:site_name" content="TNL LABS">
 <meta property="og:title" content="${esc(ev.title)}"><meta property="og:description" content="${esc(desc)}">
-<meta property="og:image" content="${esc(abs(img))}"><meta property="og:url" content="${esc(base + "/e/" + ev.slug)}">
+<meta property="og:image" content="${esc(abs(img))}">${ev.cover_url || winner?.image_url ? "" : `<meta property="og:image:width" content="1080"><meta property="og:image:height" content="1080">`}<meta property="og:url" content="${esc(base + "/e/" + ev.slug)}">
 <meta name="twitter:card" content="summary_large_image"><meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${esc(base + "/e/" + ev.slug)}">
 ${ldJson({ "@context": "https://schema.org", "@type": "Event", name: ev.title, url: base + "/e/" + ev.slug, description: (ev.brief || desc).slice(0, 500), image: abs(img),
