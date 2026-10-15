@@ -50,7 +50,7 @@ app.get("/e/:slug/board", (req, res) => {
   res.set("Cache-Control", "no-store");
   res.send(lookPage({
     title: `Scoreboard — ${esc(ev.title)} — TNL LABS`,
-    head: evOg(base, { title: `${ev.title} — scoreboard`, desc: note, img: ev.cover_url || "/icon-512.png", url: `/e/${ev.slug}/board` }) + EV_PAGE_CSS,
+    head: evOg(base, { title: `${ev.title} — scoreboard`, desc: note, img: ev.cover_url || `/e/${ev.slug}/card.jpg?v=${evLinkCard(ev, base).v}`, url: `/e/${ev.slug}/board` }) + EV_PAGE_CSS,
     body: `${lookEyebrow(ev.title)}<h1>${stage === "final" ? "The final" : "Scoreboard"}</h1>
 <p class="cap" style="margin:0 0 12px">${esc(note)}</p>${rows}
 <a class="btn block acc" href="/?e=${encodeURIComponent(ev.slug)}">Vote in the app</a>
