@@ -1,5 +1,5 @@
 /* TNL LABS admin v1.0 — 2026-10-14. One member's record (split from 3-people.js v2.2).
-   "On par with Microsoft or Google": a header that says who and where they
+   A header that says who and where they
    stand, the everyday actions in one bar, and the rest in tabs —
    Overview (the numbers, grouped, and anything that needs a look),
    Account (every field, grouped into cards; sign-out and suspend kept

@@ -1,4 +1,4 @@
-/* ── MOTION v1.0 · 2026-09-30 (app-09-motion.js) ────────────────────────
+/* ── MOTION v1.1 · 2026-10-14 (unused selectors out); v1.0 · 2026-09-30 (app-09-motion.js) ────────────────────────
    Transform and opacity only — nothing here moves the layout. One curve
    for everything that arrives (fast out, soft landing), short durations,
    and none of it when the phone asks for reduced motion. */
@@ -51,11 +51,11 @@ img.mv-img{opacity:0}
 .mv-heart{position:fixed;z-index:1100;pointer-events:none;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 18px rgba(0,0,0,.35))}
 
 /* Every tap answers: a small press, like a real button. No grey flash. */
-button,a,[role=button],.lx,.trk,.sr-card,.lr-tab,.chip{-webkit-tap-highlight-color:transparent}
-.btn,.igact,.chip,.lr-tab,.lr-tool,.circle,.trk-play,.trk-up,.now-pp,.now-sk,.ib,.pig-th,.gx-btn,.pc-share,.pcmp-share,
+button,a,[role=button],.lx,.trk,.sr-card,.chip{-webkit-tap-highlight-color:transparent}
+.btn,.igact,.chip,.lr-tool,.circle,.trk-up,.now-pp,.now-sk,.ib,.gx-btn,.pc-share,.pcmp-share,
 .send,.attach,.vb-btn,.pm,.navb .ic,.cx-ib,.vmute{transition:transform .14s var(--mv-ease)}
-.btn:active,.igact:active,.chip:active,.lr-tab:active,.lr-tool:active,.circle:active,.trk-play:active,.trk-up:active,
-.now-pp:active,.now-sk:active,.ib:active,.pig-th:active,.pc-share:active,.pcmp-share:active,.send:active,.attach:active,
+.btn:active,.igact:active,.chip:active,.lr-tool:active,.circle:active,.trk-up:active,
+.now-pp:active,.now-sk:active,.ib:active,.pc-share:active,.pcmp-share:active,.send:active,.attach:active,
 .vb-btn:active,.pm:active,.navb:active .ic,.cx-ib:active,.vmute:active{transform:scale(.92)}
 .gx-btn:active,.btn.wide:active{transform:scale(.97)}
 .lx:active,.trk:active,.sr-who:active{opacity:.72}

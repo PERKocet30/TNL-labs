@@ -7,7 +7,7 @@
    v1.3 — 2026-10-12 (Visual's #tags cover every visual art —
    #painting #drawing #illustration #sculpture next to design, photo, film).
    PLACES v1.2 — 2026-10-09. Labs are places, one per genre — not
-   Discord servers full of channels. Inside each lab (v1.1: just two):
+   servers full of channels. Inside each lab (v1.1: just two):
      Work   everything made here, a grid — filter by #tag
      Talk   one conversation (the lab's home channel; the old channels'
             history is merged in)

@@ -120,7 +120,7 @@ function wireMarket(){
     }
     SELLUP=false;render();
   };
-  /* Tap a photo to make it the cover (Shopify's drag-to-first, one tap). */
+  /* Tap a photo to make it the cover (one tap, no dragging). */
   /* Save as you type, so a background render (SSE, badges) can't wipe the form. */
   document.querySelectorAll(".pf input:not([type=file]),.pf textarea,.pf select").forEach(el=>{
     el.addEventListener("input",stashSell);el.addEventListener("change",stashSell)});

@@ -7,17 +7,12 @@
 .x{background:none;border:none;color:var(--tx);opacity:.6;font-size:18px}
 .pav{width:50px;height:50px;border-radius:50%;background:var(--el);border:2px solid var(--accent-fill);display:flex;align-items:center;justify-content:center;font-family:inherit;font-size:14px}
 .pname{font-weight:900;font-size:16px}
-.plvl{background:var(--el);border-radius:999px;padding:13px;margin-bottom:16px}
-.plr{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+
 .pbadge{background:var(--accent-fill);color:var(--on-accent);font-family:inherit;font-size:12px;padding:4px 8px;border-radius:999px}
 .ptrack{height:6px;border-radius:999px;background:rgba(var(--fg-rgb),.1);overflow:hidden}
 .pfill{height:100%;background:var(--accent-fill);transition:width .3s}
 .ladder{display:flex;flex-direction:column;gap:4px;margin:14px 0}
-.lstep{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 2px;opacity:.4}
-.lstep.done{opacity:1}
-.ldot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
-.lstep.done .ldot{background:var(--accent-fill)}
-.lstep span:nth-child(3){flex:1}
+
 /* portfolio */
 .pbio{font-size:13.5px;line-height:1.6;color:var(--tx2);margin:2px 0 8px;white-space:pre-wrap}
 .plink{display:inline-block;color:var(--green);text-decoration:none;margin-bottom:12px;letter-spacing:.02em}
@@ -30,8 +25,7 @@
 .pig-name{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .pig-lvl{color:var(--green);letter-spacing:.02em}
 .pig-theme{display:flex;gap:8px;margin:2px 0 14px}
-.pig-th{flex:1;padding:11px 0;border:1px solid var(--line2);border-radius:0;background:transparent;color:var(--dim);font-family:inherit;font-size:12px;letter-spacing:.02em;cursor:pointer}
-.pig-th.on{border-color:var(--accent-fill);color:var(--green)}
+
 .pstat{flex:1;display:flex;flex-direction:column;gap:3px}
 .pstat b{font-size:17px;font-weight:900}
 .pactions{display:flex;gap:8px;margin-bottom:14px}
@@ -103,16 +97,14 @@ textarea.in{resize:vertical;line-height:1.5}
 /* what this is — four lines, guests only */
 .whatis{padding:18px 20px 20px;border-bottom:1px solid var(--line)}
 .wi-tag{margin:0;font-size:28px;line-height:1.1;font-weight:700;letter-spacing:-.02em;max-width:14ch}
-.sr-role{font-size:13px}
-@media(max-width:520px){.wi{flex-direction:column;gap:2px}}
+
 .sr-builders{padding:0 20px}
 .brow{display:flex;gap:9px;overflow-x:auto;padding-bottom:8px}
 .bcard{flex-shrink:0;width:112px;background:var(--card);border:1px solid var(--line);border-radius:0;padding:12px 10px;text-align:center;color:var(--tx)}
 .bcard:hover{border-color:var(--accent-fill)}
 .bcard .av{margin:0 auto 8px}
 .bname{font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bstat{display:flex;align-items:center;gap:10px;color:var(--green);margin-top:5px;font-size:12px;font-weight:600}
-.bstat span{display:inline-flex;align-items:center;gap:3px}
+
 .sr-grid{columns:2;column-gap:11px;padding:0 20px 30px}
 /* "New work" waits here: a zero-height sticky rail, so showing it can't push the feed */
 .sr-newwrap{position:sticky;top:0;height:0;z-index:6}
@@ -130,7 +122,7 @@ textarea.in{resize:vertical;line-height:1.5}
 .sr-meta{padding:9px 11px 11px}
 .sr-who{display:flex;align-items:center;gap:8px;cursor:pointer}
 .sr-name{font-size:12.5px;font-weight:900}
-.sr-collab{display:flex;align-items:center;gap:6px;color:var(--green);font-size:13px;font-weight:600;letter-spacing:0;margin-top:8px}
+
 .sr-body{font-size:14px;line-height:1.45;color:var(--tx);margin-top:6px}
 .sr-body b{font-weight:700}
 /* Phones: the Showroom is a feed, so it reads like one -- edge to edge,
@@ -142,11 +134,10 @@ textarea.in{resize:vertical;line-height:1.5}
 }
 .sr-acts{display:flex;align-items:center;gap:18px;margin-top:10px}
 /* beat maker */
-.knob.wide input[type=range]{width:100%;flex:1}
+
 .sel{background:var(--el);border:1px solid var(--line);color:var(--tx);border-radius:999px;padding:5px 7px;font-family:inherit;font-size:12px}
 .bars{display:flex;gap:4px}
-.barb.active{color:var(--tx)}
-.barb.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+
 .grow.muted{opacity:.32}
 .tb.on{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill)}
 .cell{position:relative;aspect-ratio:1/1;border-radius:0;border:1px solid var(--line);background:var(--el);padding:0;touch-action:manipulation}
@@ -158,26 +149,20 @@ textarea.in{resize:vertical;line-height:1.5}
 .cell i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-family:inherit;font-size:6px;color:#000;font-weight:600}
 .variants{display:flex;flex-wrap:wrap;gap:6px}
 .variants .chip{padding:5px 10px;font-size:11px}
-.beat-pub .btn{flex:1;justify-content:center;white-space:nowrap}
+
 .drafts{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
 .draft{display:flex;align-items:center;gap:8px;padding:6px 0}
 .sq.sm{width:24px;height:24px;font-size:12px}
 /* avatars / video / roles / editing */
 img.av{object-fit:cover}
 .pav{object-fit:cover}
-.avedit{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+
 /* the logo mark */
 .brand{display:flex;align-items:center;gap:7px}
 .mark{height:19px;width:auto;flex-shrink:0}
 .bt{font-weight:900;font-size:14px;letter-spacing:.03em}
 /* accent swatches */
-.swatches{display:flex;flex-wrap:wrap;gap:8px}
-.swatch{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:none;padding:2px;opacity:.5}
-.swatch.on{opacity:1}
-.swatch span{width:30px;height:30px;border-radius:50%;border:2px solid transparent;display:block}
-.swatch.on span{border-color:var(--tx);box-shadow:0 0 0 2px #000 inset}
-.swatch i{font-style:normal;font-size:11px;letter-spacing:.02em;color:var(--dim)}
-.swatch.on i{color:var(--tx)}
+
 .post-vid,.sr-img video{width:100%;border-radius:0;margin-top:8px;background:#000;display:block}
 video.sr-img{margin-top:0;border-radius:0}
 video.work-img{width:100%;max-height:180px;border-radius:0;background:var(--el)}
@@ -200,8 +185,7 @@ video.work-img{width:100%;max-height:180px;border-radius:0;background:var(--el)}
 .nbody{flex:1;min-width:0;font-size:13px;line-height:1.4}
 .nbody b{font-weight:900}
 .nsnip{color:var(--dim);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
-.ndot{width:7px;height:7px;border-radius:50%;background:var(--accent-fill);flex-shrink:0}
-.dmt{font-size:11px;margin-top:3px;opacity:.7}
+
 .cwrap{border-top:1px solid var(--line);margin-top:10px;padding-top:9px}
 .crow{display:flex;gap:8px;padding:6px 0}
 .cbody{flex:1;min-width:0}
@@ -213,10 +197,7 @@ video.work-img{width:100%;max-height:180px;border-radius:0;background:var(--el)}
 .cjoin:hover{border-color:var(--accent-fill);color:var(--green)}
 .cform .in{flex:1;padding:8px 11px;font-size:13px}
 .cform .send{width:36px}
-.modrow{display:flex;gap:12px;margin:-6px 0 14px}
-.modlink{background:none;border:none;color:var(--dim);font-size:11px;text-decoration:underline;padding:0;font-family:'Archivo'}
-.modlink:hover{color:#F87171}
-@media(max-width:520px){.hidesm{display:none}}
+
 /* market */
 .trk-head{display:flex;gap:8px;padding:14px 16px}
 .trk-vids{display:flex;gap:10px;overflow-x:auto;padding:0 16px 12px}

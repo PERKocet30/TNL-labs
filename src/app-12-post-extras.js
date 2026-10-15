@@ -1,10 +1,5 @@
 /* ── POST EXTRAS on the card · 2026-09-30 ── people tagged ("with …"), the
    video's chosen cover, comments switched off. */
-function pxWithHTML(p){
-  const t=p.tags||[];if(!t.length)return "";
-  const who=u=>`<b class="px-u" data-u="${esc(u)}">@${esc(u)}</b>`;
-  return `<div class="px-with">with ${t.length<=2?t.map(who).join(" and "):who(t[0])+` and <b class="px-u" data-pxtags="${p.id}">${t.length-1} others</b>`}</div>`;
-}
 /* Shoppable posts: the pieces in the work, under it — tap to buy. */
 function pxShopHTML(p){
   const ps=p.products||[];if(!ps.length)return "";
@@ -15,7 +10,7 @@ function pxShopHTML(p){
 /* A video shows its cover until it plays — never a black box. */
 const pxPoster=p=>p.videoUrl&&p.thumbUrl&&p.thumbUrl!==p.imageUrl?` poster="${esc(p.thumbUrl)}"`:"";
 /* A posted video as its author edited it (2026-10-08): the frame shape
-   (filled, like Instagram), the trim (wireVideos loops inside it) and the
+   (filled), the trim (wireVideos loops inside it) and the
    original sound off — no sound button then. One template for every feed. */
 const VRATIO={"1:1":"1/1","4:5":"4/5","9:16":"9/16","16:9":"16/9"};
 function pxVideo(p,cls){
@@ -41,13 +36,12 @@ document.addEventListener("click",e=>{
   e.stopPropagation();const p=findAnyPost(+b.dataset.pxtags);if(!p)return;
   openPicker({title:"Tagged",items:p.tags.map(u=>({label:"@"+u,username:u})),onPick:it=>openProfile(it.username)});
 },true);
-/* ── POSTS READ LIKE INSTAGRAM · 2026-10-12 ─────────────────────────────
-   "Can we make our post read more like Instagram" (Jorge's recording, side
-   by side with Instagram's post). The header is who made it — "tnl.labs
+/* ── HOW A POST READS · 2026-10-12 ──────────────────────────────────────
+   The header is who made it — "tnl.labs
    and xstart22" when it's a collab — and under the name the song, or the
    place. The caption moves under the buttons, after the name in bold; the
    time ("6 days ago") goes under that. People tagged are a person icon on
-   the picture, the way Instagram shows them. */
+   the picture. */
 function pxNames(p){
   const acc=(p.collaborators||[]).filter(c=>c.status==="accepted");
   const one=(u,n)=>`<b class="post-by" data-u="${esc(u)}">${esc(n)}</b>`;
@@ -59,7 +53,7 @@ function pxNames(p){
 const pxSub=p=>musChipHTML(p)||(p.location?`<div class="post-loc">${esc(p.location)}</div>`:"");
 const PX_PERSON=`<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z"/></svg>`;
 const pxTagBtn=p=>(p.tags&&p.tags.length)?`<button class="px-tagbtn" data-pxtags="${p.id}" aria-label="Tagged: ${esc(p.tags.map(u=>"@"+u).join(", "))}">${PX_PERSON}</button>`:"";
-/* Instagram's time under a post: "Just now", "5 minutes ago", "6 days ago", "October 3". */
+/* The time under a post: "Just now", "5 minutes ago", "6 days ago", "October 3". */
 function igAgo(t){
   const s=Math.max(0,(Date.now()-t)/1000),n=(v,w)=>v+" "+w+(v===1?"":"s")+" ago";
   if(s<60)return "Just now";if(s<3600)return n(Math.floor(s/60),"minute");if(s<86400)return n(Math.floor(s/3600),"hour");

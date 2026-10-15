@@ -35,7 +35,7 @@ t("collab pays BOTH +20", db.prepare(`SELECT rep FROM users WHERE id=?`).get(ecl
 t("listing earns nothing", REP.listing===undefined);
 
 console.log("\nTIERED COMMISSION");
-t("entry matches Depop (10%)", feeForRep(0)===10);
+t("entry level is 10%", feeForRep(0)===10);
 t("leadership 2%", feeForRep(560)===2);
 t("$50 sale at entry = $5", platformFee(5000,feeForRep(0))===500);
 t("$50 sale at leadership = $1", platformFee(5000,feeForRep(560))===100);

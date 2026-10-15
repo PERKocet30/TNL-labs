@@ -1,5 +1,5 @@
 /* ================================================================
-   MESSAGES v2.1 — 2026-10-14 (Messages a screen of its own; repaints when the window changes shape).
+   MESSAGES v2.2 — 2026-10-14 (an unused day-divider helper out). v2.1 (Messages a screen of its own; repaints when the window changes shape).
    v2.0 — 2026-09-29. One chat kit for labs and DMs.
    Parts: 1-kit (this: state, API, shared pieces, the hold menu),
    2-dm (inbox + chat screens), 3-wire (DM behaviour, voice notes,
@@ -64,7 +64,6 @@ function dayLabel(t){
   return d.toLocaleDateString([],{day:"numeric",month:"short",year:d.getFullYear()===n.getFullYear()?undefined:"numeric"});
 }
 const newDay=(a,b)=>!a||new Date(a.createdAt).toDateString()!==new Date(b.createdAt).toDateString();
-const dayHTML=t=>`<div class="c-day"><span>${esc(dayLabel(t))}</span></div>`;
 function agoShort(t){const s=(Date.now()-t)/1000;
   if(s<60)return "now";if(s<3600)return Math.floor(s/60)+"m";if(s<86400)return Math.floor(s/3600)+"h";
   if(s<604800)return Math.floor(s/86400)+"d";return Math.floor(s/604800)+"w"}

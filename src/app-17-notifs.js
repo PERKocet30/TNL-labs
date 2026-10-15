@@ -1,5 +1,5 @@
 /* ── NOTIFICATIONS v2.1 · 2026-10-12 (back from a post lands here again) ─────────────────────────────────────
-   "Notifications should work like Instagram." Sections — New, Today, This
+   Sections — New, Today, This
    week, This month, Earlier. A row is the person's picture, one line
    ("**name** liked your post. 3h") and, on the right, the post or the
    item it's about — or Follow back for a new follower. Likes on one post

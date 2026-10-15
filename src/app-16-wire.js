@@ -75,7 +75,7 @@ function wire(){
     }
     if(!t&&!QUEUE.length)return;
 
-    /* Discord sends one message with N attachments. We send N posts — in a
+    /* N files become N posts, not one message with N attachments — in a
        portfolio each piece needs its own likes and its own collab credits,
        and you can't credit a collaborator on "attachment 3 of 5".
        The text rides on the first one. */
@@ -197,7 +197,7 @@ function wire(){
 
   if(TAB==="labs"&&CH.library)wireTracks();
   const ab=$("#attachb");if(ab)ab.onclick=()=>$("#filein").click();
-  /* Discord's flow: pick several, see them all, drop any, send once.
+  /* Pick several, see them all, drop any, send once.
      Each still becomes its own post — in a portfolio a piece needs its own
      likes and its own collab credits, which a grouped attachment can't have. */
   const fi=$("#filein");if(fi)fi.onchange=async()=>{

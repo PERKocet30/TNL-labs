@@ -1,9 +1,9 @@
 /* ================================================================
-   DRAWN ICONS v1.0 — 2026-09-29. Sizing and alignment for DI.* icons
+   DRAWN ICONS v1.1 — 2026-10-14 (unused rules out). v1.0 — 2026-09-29. Sizing and alignment for DI.* icons
    that replaced emoji and glyphs (✎ 🗑 🔇 ▶︎ ♫ ★ ↗ ✓ ＋ …).
 ================================================================ */
 svg.di{display:inline-block;vertical-align:-.16em;flex-shrink:0}
-.circle,.trk-play,.now-pp,.loopplay,.vplay,.vthumb,.qadd,.crung-n,.vmute,.lcard-play{display:inline-flex;align-items:center;justify-content:center}
+.circle,.now-pp,.loopplay,.vplay,.vthumb,.qadd,.vmute,.lcard-play{display:inline-flex;align-items:center;justify-content:center}
 .backb2,.clearf,.trk-up,.acceptbar,.distro-go{display:inline-flex;align-items:center;gap:5px}
 .distro-ic,.lcard-go{display:flex;align-items:center}
 .pm{display:flex;align-items:center;justify-content:center;padding:5px}
@@ -18,8 +18,7 @@ svg.di{display:inline-block;vertical-align:-.16em;flex-shrink:0}
 .work-ind{filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
 .trke-art span svg{width:22px;height:22px}
 .pickic svg{width:18px;height:18px}
-.ctag svg{width:11px;height:11px;vertical-align:-.1em}
-.crung-n svg{width:13px;height:13px}
+
 /* menus and sheets sit above the full-screen post view (z 130) */
 .c-mbg,.cs-bg{z-index:140}.c-zoom{z-index:145}
 /* The // mark is the brand, not an icon in a box (2026-10-08): no grey

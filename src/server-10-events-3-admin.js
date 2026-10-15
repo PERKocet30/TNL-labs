@@ -1,6 +1,6 @@
 
 /* ================================================================
-   EVENTS v1.2 — 2026-10-12 (also: `current`, so admin can show the link to send). Running an event (admin only, enforced
+   EVENTS v1.3 — 2026-10-14 (an unused field list out). v1.2 — 2026-10-12 (also: `current`, so admin can show the link to send). Running an event (admin only, enforced
    here) and its public pages: /e/:slug and /e/:slug/rules.
    v1.2: the "entries are open" email to every member (its switch,
    its progress; the sending is in server-10-events-6-mail.js).
@@ -8,8 +8,6 @@
    votes came from brand-new accounts: the usual sign of someone
    stuffing the box.
 ================================================================ */
-const EV_FIELDS = ["title", "brief", "rules", "prize", "cover_url", "channel", "format", "bracket_size", "finalists", "judge_weight", "picks", "min_account_days", "freeze_hours", "require_verified", "published"];
-
 function evClean(b, ev = {}) {
   const o = {};
   const str = (k, max) => { if (b[k] !== undefined) o[k] = String(b[k] ?? "").trim().slice(0, max); };

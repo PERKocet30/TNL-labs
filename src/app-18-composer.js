@@ -1,5 +1,5 @@
 /* ── POST CREATOR · v2.4 · 2026-10-13 (v2.4: ▶ to listen before you pick a song; v2.3: your songs first in Add music; v2 2026-09-28; v2.1: your labs first in Share to a lab; v2.2: upload a song from here, and its cover is the post's picture when there are no photos) ────────────────────────────────
-   Instagram / Facebook grade, TNL look. One page: the work large at the
+   One page: the work large at the
    top (swipe it, reorder it, see each upload land), the caption with
    @mentions, then three rows — invite collaborators, add music, share to a
    lab. Posts go to your profile (channel "profile"); picking a lab posts

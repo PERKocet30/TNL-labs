@@ -1,7 +1,7 @@
 // The member database (2026-10-12): "The admin dashboard should include a
 // database of all members and account information." Admins only, every
 // member, account details — and never a password, a session or a Stripe id.
-// v2 (2026-10-14): "on par with Microsoft or Google" — a directory grid and a tabbed record.
+// v2 (2026-10-14): a directory grid and a tabbed record.
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

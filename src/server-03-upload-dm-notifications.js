@@ -189,7 +189,7 @@ app.post("/api/me/avatar", auth, (req, res) => {
 });
 
 /* Edit your own message. Body only — you can't swap the media out from
-   under people who already validated it. Marked as edited, like Discord. */
+   under people who already validated it. Marked as edited. */
 app.patch("/api/posts/:id", auth, (req, res) => {
   const post = q.postById.get(Number(req.params.id));
   if (!post) return res.status(404).json({ error: "no post" });
@@ -278,7 +278,7 @@ app.delete("/api/comments/:id", auth, (req, res) => {
    NOTIFICATIONS
 ================================================================ */
 app.get("/api/notifications", auth, (req, res) => {
-  /* Instagram's shape (2026-10-12): each row carries the picture of what it's
+  /* 2026-10-12: each row carries the picture of what it's
      about (the post, or the listing's first photo), the listing it points
      at, and whether you follow the person back. */
   const rows = db.prepare(`

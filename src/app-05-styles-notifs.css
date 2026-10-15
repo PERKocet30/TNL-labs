@@ -1,4 +1,4 @@
-/* NOTIFICATIONS v2 · 2026-10-12 — Instagram's rows (app-17-notifs.js):
+/* NOTIFICATIONS v2 · 2026-10-12 — the rows (app-17-notifs.js):
    sections, a picture, one line with the time, the thing it's about. */
 .nf-sec{font-size:16px;font-weight:700;margin:18px 0 6px}
 .sheeth+.nf-sec{margin-top:6px}

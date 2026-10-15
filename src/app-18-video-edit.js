@@ -1,5 +1,5 @@
 /* ── VIDEO EDITOR · 2026-10-08 ─────────────────────────────────────────
-   Instagram's video edit step, kept simple: Trim (drag the two handles on
+   The video edit step, kept simple: Trim (drag the two handles on
    a strip of frames), Cover (scrub to a frame, or pick a photo from the
    camera roll), Sound (the original sound on or off) and Frame (original,
    square, 4:5, 9:16, 16:9 — filled, like the feed shows it). Nothing is

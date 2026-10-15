@@ -111,8 +111,8 @@ app.get("/u/:username", (req, res) => {
   // The image IS the preview. Their best work beats their avatar every time:
   // a 56px circle crops to nothing, a poster stops a thumb.
   const hero = posts.find((p) => p.imageUrl && p.mediaW && p.mediaH) || posts.find((p) => p.imageUrl);
-  /* v3 (2026-09-29): the profile card — picture, name, bio and the work,
-     like Instagram's (server-10-profile-card.js). No ffmpeg → one piece. */
+  /* v3 (2026-09-29): the profile card — picture, name, bio and the work
+     (server-10-profile-card.js). No ffmpeg → one piece. */
   const card = profileCardMeta(u, baseUrl(req));
   const ogImage = card ? card.url : abs(hero && hero.imageUrl) || abs(u.avatar_url) || `${baseUrl(req)}/icon-white-512.png`;
   const ogW = card ? card.w : (hero && hero.mediaW) || 512;

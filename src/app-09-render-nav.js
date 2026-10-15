@@ -81,7 +81,7 @@ function topHTML(){
     </div>
   </div>`}
 
-/* notifPanelHTML: app-17-notifs.js (Instagram-style, 2026-10-12) */
+/* notifPanelHTML: app-17-notifs.js (2026-10-12) */
 async function openProfile(username){
   // Open the sheet on the same tick as the tap. Waiting for the network
   // before showing anything is what made this feel broken.

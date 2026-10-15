@@ -1,7 +1,7 @@
 /* PLACES v1.3 — 2026-10-12 (v1.3: the Tournament chip and Entry marks, at the end). v1.2 — 2026-10-09 ("For you" / "More labs" on the index). Labs as places: the index (one list, each
    genre with its #tags), a lab's Work · Talk tabs, the #tag page, and #tags
-   in text. Familiar like Instagram — square grid, underline tabs, pills —
-   in TNL's white, black and green. Logic: app-11-places.js. */
+   in text. Square grid, underline tabs, pills — in TNL's white, black
+   and green. Logic: app-11-places.js. */
 
 /* ── the index: one list, each genre with its #tags (v1.1) ── */
 .lx-name .lx-new{margin-left:8px;vertical-align:3px}

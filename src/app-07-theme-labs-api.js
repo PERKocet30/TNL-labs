@@ -159,9 +159,6 @@ const LABS = [
     {id:"coding",label:"coding",desc:"Sites, apps, and the interfaces the culture runs on."},
     {id:"finance",label:"finance",desc:"Money, rates, and not getting taken advantage of."}]},
 ];
-const PRODUCTS=[
-  {n:'"Free Me" Tee',p:"$54.99",w:"$65.00",u:"https://tnllabs.com/products/free-me-tee"},
-  {n:"TNL x XSTART JDM Tee",p:"$50.00",w:null,u:"https://tnllabs.com/products/tnl-x-xstart-jdm-tee"}];
 const levelFor=r=>LEVELS.reduce((a,l)=>r>=l.at?l:a,LEVELS[0]);
 const avHTML=(u,cls)=>u&&u.avatarUrl?`<img class="av ${cls||""}" src="${esc(u.avatarUrl)}" alt="">`:`<div class="av ${cls||""}">${esc((u&&u.displayName||"?").slice(0,2).toUpperCase())}</div>`;
 // Turn a raw body into safe HTML: escape first, THEN linkify. Never the

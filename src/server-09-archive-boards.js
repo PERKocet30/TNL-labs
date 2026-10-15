@@ -171,8 +171,7 @@ app.delete("/api/boards/:id", auth, (req, res) => {
 });
 
 /* Pin a TNL piece. This is the one that matters: the person who made it
-   gets told, and earns for it. Pinterest can't do that — it doesn't know
-   who anyone is. */
+   gets told, and earns for it. */
 app.post("/api/boards/:id/pin", auth, verified, rateLimit({ max: 120, windowMs: 3600000, key: "user" }), (req, res) => {
   const b = db.prepare(`SELECT * FROM boards WHERE id = ? AND user_id = ?`).get(Number(req.params.id), req.user.id);
   if (!b) return res.status(404).json({ error: "not your board" });
@@ -257,9 +256,8 @@ app.post("/api/unfurl", auth, verified, rateLimit({ max: 40, windowMs: 600000, k
   try { host = new URL(url).hostname.replace(/^www\./, ""); }
   catch { return res.status(400).json({ error: "bad link" }); }
 
-  /* Pinterest works, and it's worth saying why it differs from Instagram:
-     i.pinimg.com URLs are unsigned, don't expire, and their pin pages
-     serve og:image to anyone. They want the link spread. Meta doesn't. */
+  /* instagram.com is refused up front: its image links expire and it
+     serves crawlers a login wall. */
   if (/^(www\.)?instagram\.com$|^instagr\.am$/i.test(host)) {
     return res.status(422).json({
       error: "Instagram blocks this",

@@ -1,4 +1,4 @@
-/* PLAYLISTS v1.0 — 2026-10-12. The Music lab's library, Spotify's way:
+/* PLAYLISTS v1.0 — 2026-10-12. The Music lab's library:
    Songs | Playlists, a ⊕ on every song, and a playlist page (cover, Play,
    Shuffle, Add songs). Logic: app-13-playlists.js. */
 .mus-tabs{display:flex;gap:8px;padding:14px 16px 0}

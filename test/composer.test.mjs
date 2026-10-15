@@ -1,4 +1,4 @@
-// Post creator v2 (2026-09-28): Instagram / Facebook grade, TNL look.
+// Post creator v2 (2026-09-28).
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { readFileSync } from "node:fs";

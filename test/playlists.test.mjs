@@ -1,5 +1,5 @@
-// Playlists (2026-10-12): "make the music lab function more like Spotify —
-// you listen to music and build your own playlist while in the lab."
+// Playlists (2026-10-12): "you listen to music and build your own playlist
+// while in the lab."
 // Yours only; a song goes in once; deleted songs and suspended artists drop out.
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -39,7 +39,7 @@ try {
   r = await call("me", "POST", `/api/playlists/${pl.id}/tracks`, { trackId: b });
   t("…and a song goes in once", r.already === true && r.playlist.count === 5);
   t("its length adds up (5 × 3 min)", r.playlist.durationMs === 5 * 180000);
-  t("its cover is four songs' covers, the way Spotify makes one", JSON.stringify(r.playlist.covers) === JSON.stringify(["/uploads/a.jpg", "/uploads/b.jpg", "/uploads/c.jpg", "/uploads/d.jpg"]));
+  t("its cover is four songs' covers", JSON.stringify(r.playlist.covers) === JSON.stringify(["/uploads/a.jpg", "/uploads/b.jpg", "/uploads/c.jpg", "/uploads/d.jpg"]));
   t("a song that isn't there can't go in", (await call("me", "POST", `/api/playlists/${pl.id}/tracks`, { trackId: 9999 })).status === 404);
 
   console.log("\nYOURS ONLY");

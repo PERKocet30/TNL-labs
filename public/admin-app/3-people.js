@@ -2,7 +2,7 @@
    v3.1: a phone starts in Cards; the top bar's member search steps aside here (this page has its own).
    v2.1: who's in the tournament; posts say which lab they're in.
    v2.2: "a database of all members and account information" — List | Database, Download CSV.
-   v3.0: "on par with Microsoft or Google" — one directory, two views of the same
+   v3.0: one directory, two views of the same
    rows: Table (a data grid: summary numbers on top, choose columns, compact
    rows, sticky header and name column, sort by any heading, pages of 25/50/100)
    and Cards (for a phone). Search filters as you type, without a round trip.

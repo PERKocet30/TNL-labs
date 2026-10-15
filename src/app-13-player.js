@@ -94,7 +94,7 @@ function paintPlayer(){
         return}
       if(e.target.closest("[data-nowclose]")){a.pause();a.removeAttribute("src");NOWPLAYING=null;PLAYQ=[];NOWFULL=false;paintPlayer();
         if(TAB==="labs"&&CH.library)render();return}
-      if(!e.target.closest("button"))openNowFull();   // the rest of the bar opens the song, like Spotify
+      if(!e.target.closest("button"))openNowFull();   // the rest of the bar opens the song
     };
   }
   musicScope();

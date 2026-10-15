@@ -1,4 +1,4 @@
-// Listing editor v2 (2026-09-28): a Shopify-style product form.
+// Listing editor v2 (2026-09-28): a plain product form.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { readFileSync } from "node:fs";
@@ -16,7 +16,7 @@ t("sound listings keep their own section", sell.includes('<div class="pf-sec">So
 t("photos: up to 8, several at once", sell.includes("SELLIMGS.length<8") && sell.includes('accept="image/*" multiple'));
 
 console.log("\nLESS EXPLANATION");
-t("no Depop pitch anywhere in the app", !/DEPOP TAKES/i.test(src));
+t("no competitor pitch anywhere in the app", !/DEPOP TAKES/i.test(src));
 const upl = src.slice(src.indexOf('const sf=$("#sfile");if(sf)sf.onchange'), src.indexOf('/* Tap a photo to make it the cover'));
 t("no email-confirm block on listing photos (accounts are full access)", upl.length > 50 && !/emailVerified/.test(upl));
 

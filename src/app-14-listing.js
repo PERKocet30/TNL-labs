@@ -1,5 +1,5 @@
 /* ── LISTING PAGE · v2 · 2026-09-30 ────────────────────────────────────
-   Depop / Shopify grade. The photos full width (swipe, dots, tap to zoom,
+   The photos full width (swipe, dots, tap to zoom,
    pinch in the viewer), title and price, size and colour picked like a
    shop (sold-out ones crossed through), the seller, and a Buy bar pinned
    to the bottom so the price and the button are always in reach. */

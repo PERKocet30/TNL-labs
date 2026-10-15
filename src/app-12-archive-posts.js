@@ -5,7 +5,7 @@
 ─────────────────────────────────────────────────────────────────────── */
 function archiveHTML(){
   /* Moodboards came out 2026-10-11 ("simplify"): no boards button, no
-     paste-a-link, no Pinterest, no + on the images. The boards and what's
+     paste-a-link, no embedded boards, no + on the images. The boards and what's
      on them are kept in the database, untouched. */
   const A=ARCHIVE;
   return `<div class="scroll" id="archscroll">
@@ -113,7 +113,6 @@ const IG_SEND=`<i class="igi" aria-hidden="true"><svg viewBox="0 0 24 24" width=
 const IG_COLLAB=`<i class="igi" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/></svg></i>`;
 const IG_FLAG=`<i class="igi" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 21V4h11l-2 4 2 4H6"/></svg></i>`;
 const MK_HEART=on=>`<svg viewBox="0 0 24 24" width="14" height="14" fill="${on?"currentColor":"none"}" stroke="currentColor" stroke-width="2.2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 20.5l-7.2-7.4a4.6 4.6 0 0 1 6.5-6.5l.7.7.7-.7a4.6 4.6 0 0 1 6.5 6.5z"/></svg>`;
-const IG_COLLAB_SM=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/></svg>`;
 const IC_REMIX_SM=`<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M19 12a7 7 0 1 1-2-4.9M19 4v4h-4"/></svg>`;
 
 
@@ -125,7 +124,7 @@ const IC_REMIX_SM=`<svg viewBox="0 0 24 24" width="12" height="12" fill="none" s
    minutes drop the header and group, the way every chat client does. */
 /* msgRowHTML → app-10-chat-6-labs.js (messaging v2) */
 
-/* POST v2 — 2026-10-12, read like Instagram: who (and who it's built with),
+/* POST v2 — 2026-10-12: who (and who it's built with),
    the song or the place; the work; the buttons with their counts; then
    "username caption", the time, the comments. A post with no picture is its
    words, so they stay on top. Helpers: app-12-post-extras.js. */

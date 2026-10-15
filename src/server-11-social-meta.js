@@ -104,7 +104,6 @@ app.get("/api/levels", (_req, res) => res.json({
     tagline: setting("tagline"),
     announcement: setting("announcement"),
     signupsOpen: settingBool("signupsOpen"),
-    pinterestBoard: setting("pinterestBoard") || null,
     distro: settingBool("distroOn") ? {
       level: Number(setting("distroLevel")) || 4,
       levelName: (LEVELS.find((l) => l.id === (Number(setting("distroLevel")) || 4)) || {}).name || "Core",

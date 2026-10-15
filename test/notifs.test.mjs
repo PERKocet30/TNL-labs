@@ -1,4 +1,4 @@
-// Notifications, Instagram's way (2026-10-12): "When someone likes your work
+// Notifications (2026-10-12): "When someone likes your work
 // it doesn't take you directly to the post" → "Notifications should work like
 // Instagram." Rows carry the picture of what they're about and where they
 // lead; likes on one post group; new followers get Follow back.
@@ -50,12 +50,12 @@ try {
   t("three likes on one post are one row", likes.length === 1 && likes[0].people.length === 3);
   const html = K.notifPanelHTML();
   t("…\"Cy, Ben and 1 other liked your post.\"", /<b data-u="cy">Cy<\/b>, <b data-u="ben">Ben<\/b> and 1 other liked your post\./.test(html));
-  t("rows sit under Instagram's sections", /<div class="nf-sec">New<\/div>/.test(html));
+  t("rows sit under sections", /<div class="nf-sec">New<\/div>/.test(html));
   t("the post's picture is on the right of the like", html.includes('<img class="nf-th" src="/uploads/p-t.jpg"'));
   t("a comment shows what they said", html.includes("commented: LEST GO!!"));
   t("a shop like reads as a sentence, never a code", html.includes('liked &quot;Tee&quot;.') && !html.includes("listing_like"));
   t("a follower you follow back shows Following", html.includes(">Following</button>"));
-  t("times are short, like Instagram (now / 3m / 2h / 4d / 1w)", /<span class="nf-ago">now<\/span>/.test(html));
+  t("times are short (now / 3m / 2h / 4d / 1w)", /<span class="nf-ago">now<\/span>/.test(html));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

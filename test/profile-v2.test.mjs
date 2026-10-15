@@ -34,10 +34,10 @@ const call = async (key, { params = {}, user = null, body = {} } = {}) => { let 
   return { code, out }; };
 
 console.log("\nLINKS");
-const L = P.cleanLinks([{ title: "Spotify", url: "open.spotify.com/artist/x" }, { url: "javascript:alert(1)" }, { url: "data:text/html,x" },
+const L = P.cleanLinks([{ title: "Music", url: "music.example.com/artist/x" }, { url: "javascript:alert(1)" }, { url: "data:text/html,x" },
   { url: "http://ok.com" }, { url: "nohost" }, { url: "a.co" }, { url: "b.co" }, { url: "c.co" }, { url: "d.co" }]);
-t("https added; javascript:, data: and junk dropped", L[0].url === "https://open.spotify.com/artist/x" && !L.some((x) => /javascript|data:|nohost/.test(x.url)));
-t("titles kept, at most 5", L[0].title === "Spotify" && L.length === 5);
+t("https added; javascript:, data: and junk dropped", L[0].url === "https://music.example.com/artist/x" && !L.some((x) => /javascript|data:|nohost/.test(x.url)));
+t("titles kept, at most 5", L[0].title === "Music" && L.length === 5);
 t("an old single link still shows", P.profileExtras({ link: "tnllabs.com", links: "[]" }).links[0].url === "https://tnllabs.com/");
 t("pronouns and pins shape cleanly", JSON.stringify(P.profileExtras({ pronouns: "she/her", links: "[]", pinned: '[3,"4",5,6]' })) === JSON.stringify({ pronouns: "she/her", links: [], pinned: [3, 4, 5] }));
 
