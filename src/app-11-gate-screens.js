@@ -106,7 +106,7 @@ function gateHTML(){
         ${has?`<button class="gx-link" id="gxchange">Change photo</button>`:""}`;
     }else if(G.step==="follow"){
       const ppl=G.people||[];
-      body=`<h1 class="gx-h">People to follow</h1><p class="gx-p">Some of the people building here right now.</p>
+      body=`<h1 class="gx-h">People to follow</h1><p class="gx-p">Some of the people making things here right now.</p>
         <div class="gx-people">${G.people===null?`<div class="gx-hint">Loading…</div>`:ppl.map(p=>`<div class="gx-person">
           ${avHTML({displayName:p.display_name,avatarUrl:p.avatar_url},"")}
           <div class="gx-person-b"><b>${esc(p.display_name)}</b><span>@${esc(p.username)}${p.role?" · "+esc(p.role):""}</span></div>

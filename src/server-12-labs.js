@@ -12,13 +12,13 @@
    carries the same caption. Listed in /sitemap.xml (server-12-seo.js).
 ================================================================ */
 const LAB_PITCH = {
-  hq: "The main floor. Say hi, show what you're working on and find people to make things with.",
+  hq: "Say hi, show what you're working on and find people to make things with.",
   pharmacy: "Upload your art: painting, drawing, design, photography, film and edits. Get seen and get feedback.",
   culture: "Upload your songs and beats, build playlists, and get ears on your works in progress.",
   fashion: "Post your designs and drops: concepts, finished pieces and what's releasing next.",
   akatsuki: "Share your anime and manga art, panels and ideas, and talk about what you're watching.",
-  casino: "Post what's happening in the scene: news, features, and promos for your next release.",
-  tna: "Find gigs and open calls, talk rates and money, and build the sites and apps the culture runs on.",
+  casino: "Post what's happening: news, features, and promos for your next release.",
+  tna: "Find gigs and open calls, talk rates and money, and show the sites and apps you build.",
 };
 
 /* Links name the lab (v1.1, 2026-10-15: "rename links to match the

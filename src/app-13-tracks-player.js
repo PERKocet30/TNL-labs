@@ -1,30 +1,18 @@
-/* MUSIC LAB · TRACKS v1.2 — 2026-10-15 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
+/* MUSIC LAB · TRACKS v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
+/* A lab's Talk with nothing in it yet, by its home channel (2026-10-15: in
+   TNL's own words — no rooms, no "the network"). */
 const EMPTY={
-  "general":["Say what you make.","Post one line about what you're working on. Someone here does the thing you need."],
-  "collab-posts":["Looking for someone?","Say what you're building and what you're missing."],
-  "graphic-design":["Post a piece.","Finished, half-done, or a bad first draft. This room is for the work.","Post your work"],
-  "photography":["Drop a shot.","Raw or edited. Tap + to add one."],
-  "clothing-design":["Show a design.","Sketch, mockup, or the real thing."],
-  "clothing-drops":["What's releasing?","Post the drop before it goes live."],
-  "beats":["Make something.","Open the Studio, build a loop, hit publish. Someone here writes to it."],
+  "general":["Say hi.","Tell people what you're working on. Someone here does the thing you need."],
+  "creators":["Talk shop.","Process, tools, feedback. Post finished pieces to Work so they're seen."],
   "music-chat":["Talk music.","What you're listening to, what you're making, what you need."],
-  "tracks":["Finished songs from the network. Press play.","Upload it here and it's in the library."],
-  "anime-chat":["Start the discourse.","Anime is half the design language here. Say what's moving you."],
-  "manga":["Post a panel.","Art, paneling, a page that made you stop. Bring the reference."],
-  "anime-news":["What's dropping?","Seasons, announcements, releases worth the network's time."],
-  "anime-ideas":["Half-formed is fine.","Post the thought before it's finished."],
-  "archive":["Post a reference.","Scans, screenshots, the images everything else gets built from. No caption needed."],
-  "finance":["Talk money.","Rates, invoices, what you should be charging. Nobody here got taught this."],
-  "magazine":["Write something.","A feature, a review, a rant about the scene. Long is fine."],
-  "news":["What's happening?","Drops, shows, moves. Keep the network current."],
-  "coding":["Show what you're building.","A site, an app, a tool. Screenshot or link it."],
+  "clothing-design":["Talk fashion.","Designs in progress, fits, and what's releasing."],
+  "anime-chat":["Talk anime.","Best arc, worst ending, the frame you can't stop thinking about."],
+  "news":["What's happening?","Releases, shows, moves. Post it here first."],
   "opportunities":["What do you need?","A gig, a brief, a person. Say it plainly and someone answers."],
-  "anime-chat":["Start the argument.","Best arc, worst ending, the frame you can't stop thinking about."],
-  "anime-news":["What dropped?","Seasons, trailers, announcements."],
-  "manga":["Post the panel.","The page that made you want to draw. Or the one you drew."],
+  "beats":["Make something.","Open the Studio, build a loop, hit publish. Someone here writes to it."],
 };
 function emptyHTML(ch){
-  const e=EMPTY[ch.id]||["Nothing here yet.","Be the first — post something real."];
+  const e=EMPTY[ch.id]||["Nothing here yet.","Be the first to post."];
   return `<div class="empty estate">
     <div class="eh">${esc(e[0])}</div>
     <div class="ep">${esc(e[1])}</div>

@@ -2,7 +2,7 @@ function wireMarket(){
   wireListing();wireSellVariants();wireBag();
   document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=async()=>{
     if(guest()&&(b.dataset.mv==="sell"||b.dataset.mv==="orders"))
-      return needAccount(b.dataset.mv==="sell"?"Join to sell. Everyone in the lab can — and your rate drops as people vouch for you.":"Join to see your orders.");
+      return needAccount(b.dataset.mv==="sell"?"Join to sell. Anyone can, and your fee drops as your rep grows.":"Join to see your orders.");
     /* Leaving the editor drops the draft. Otherwise the next "＋ Sell" opens
        prefilled with the listing just edited — photos and all — and the
        seller posts a duplicate without noticing. */

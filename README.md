@@ -22,7 +22,7 @@ One Node server, one SQLite database, no framework and no external services requ
 | **Collabs** | Two-sided: the author invites, the other person accepts, and only then does it count — for both of them. |
 | **Standing** | Rep comes only from what other people do with your work, and every point is logged. Levels (Entry → Leadership) lower your Market fees, and at Core TNL can cover your music's distribution (an admin setting). |
 | **Market** | One shared market for what members make: browse by category, list with photos, pricing (a live "you earn"), sizes and colours, inventory and shipping. Offers, saves, one checkout per seller through Stripe Connect, delivery confirmation and reviews. |
-| **Music** | The `// Music` lab is the network's player: Songs and Playlists, a full-screen song with its queue, repeat and shuffle, a bar that carries on as you move through the lab, and lock-screen controls. Members upload songs from the lab or the post creator, each with its own cover. The lab wears the cover of the week's most-played song. A post's own sound plays only while you're on that post. The Studio beat maker is hidden unless Admin → Settings → Studio is on. |
+| **Music** | The `// Music` lab is TNL's player: Songs and Playlists, a full-screen song with its queue, repeat and shuffle, a bar that carries on as you move through the lab, and lock-screen controls. Members upload songs from the lab or the post creator, each with its own cover. The lab wears the cover of the week's most-played song. A post's own sound plays only while you're on that post. The Studio beat maker is hidden unless Admin → Settings → Studio is on. |
 | **The tournament** | One prompt, one entry each, fresh votes every day with a live scoreboard that goes dark for the last hours, then a final. Votes only count in the app; entrants share their own Story card and vote link to bring their people in. |
 | **Archive** | Search every image ever posted, in `// Visual`. |
 | **Messages & notifications** | Direct and group messages, live notifications and unread badges over a Server-Sent Events stream. A notification opens the thing it's about. Messages is a screen of its own: on a computer your chats sit beside the open conversation, next to the side menu; on a phone it fills the screen. Search your chats once there are more than three. |
@@ -133,7 +133,7 @@ Set in Railway → Variables. Values are secret and never go in this repo.
 | `STRIPE_SECRET_KEY` | Market checkout and seller payouts |
 | `SENTRY_DSN` | optional; overrides the built-in error-reporting address |
 
-Things that change without a deploy live in **Admin → Settings**: signups open, auto-verify, guest access, market open, minimum rep to sell, loops/studio on or off, the distribution offer, the announcement banner, headline and tagline.
+Things that change without a deploy live in **Admin → System → Settings**: signups open, auto-verify, guest access, market open, minimum rep to sell, loops/studio on or off, the distribution offer and the announcement banner.
 
 ---
 

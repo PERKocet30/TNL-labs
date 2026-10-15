@@ -1,4 +1,4 @@
-/* TNL LABS admin — Events v1.7, 2026-10-15 (v1.7: a cover picture for shared links, or TNL's card; v1.6: the shared page header, events listed in a card; v1.5: the scoreboard picture buttons wait for voting instead of opening a dead page; v1.4: "Link to send people" up top —
+/* TNL LABS admin — Events v1.8, 2026-10-15 (v1.8: entries go into a lab, named as the app names it; v1.7: a cover picture for shared links, or TNL's card; v1.6: the shared page header, events listed in a card; v1.5: the scoreboard picture buttons wait for voting instead of opening a dead page; v1.4: "Link to send people" up top —
    labs.tnllabs.com/tournament for the one on now, with Copy).
    Events v1.3, 2026-10-12 (the Tournament tab; v1.2: named for it;
    v1.3: the "entries are open" email to every member — its switch, a
@@ -47,7 +47,7 @@ function evFormHTML() {
       <div class="row wrapx" style="gap:12px;align-items:center"><img id="evcovimg" alt="" style="width:160px;aspect-ratio:1/1;object-fit:cover;background:var(--el);border:1px solid var(--line)" src="${esc(f.coverUrl || (f.id && f.published ? `/e/${f.slug}/card.jpg` : ""))}" ${f.coverUrl || (f.id && f.published) ? "" : "hidden"}>
         <div class="row wrapx" style="gap:6px"><label class="btn ghost sm">${f.coverUrl ? "Change picture" : "Choose a picture"}<input type="file" id="evcov" accept="image/*" hidden></label>
           <button class="btn ghost sm" id="evcovx" ${f.coverUrl ? "" : "hidden"}>Use TNL's card</button></div></div></div>
-    ${sel("channel", "Entries post into", f.channel || "graphic-design", [["graphic-design", "// Visual · graphic-design"], ["photography", "// Visual · photography"], ["clothing-design", "// Fashion · clothing-design"], ["general", "// General · general"]])}
+    ${sel("channel", "Entries go into", f.channel || "graphic-design", [["graphic-design", "// Visual"], ["photography", "// Visual · tagged #photography"], ["clothing-design", "// Fashion"], ["general", "// General"]])}
   </div>
   <h2 class="sec">Format ${locked ? `<span class="mono">locked — voting has closed</span>` : ""}</h2>
   <div class="panel evf">

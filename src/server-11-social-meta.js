@@ -100,8 +100,6 @@ app.get("/api/users/:username", maybeAuth, (req, res) => {
 app.get("/api/levels", (_req, res) => res.json({
   levels: LEVELS, accents: ACCENTS,
   site: {
-    headline: setting("headline"),
-    tagline: setting("tagline"),
     announcement: setting("announcement"),
     signupsOpen: settingBool("signupsOpen"),
     distro: settingBool("distroOn") ? {

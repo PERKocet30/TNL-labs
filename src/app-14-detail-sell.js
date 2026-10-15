@@ -22,7 +22,7 @@ function rateHTML(){
   const fee=MKTMETA.feePct??10, n=nextRate();
   return `<div class="ratebar">
     <div class="ratenow"><b>${fee}%</b><span>Your rate</span></div>
-    <div class="rateinfo">${n?`${n.need} more rep → <b>${n.fee}%</b> at ${esc(n.name)}`:"Best rate in the network"}</div>
+    <div class="rateinfo">${n?`${n.need} more rep → <b>${n.fee}%</b> at ${esc(n.name)}`:"Best rate on TNL"}</div>
     <button class="ratelad" id="rateladder">Rates</button>
   </div>`}
 
