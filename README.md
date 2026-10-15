@@ -192,6 +192,7 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 | `/u/:username` | a member's public page, rendered on the server so it previews properly |
 | `/p/:id` | a single post, with its own link preview |
 | `/m/:id` | a Market listing |
+| `/l/:slug/card.jpg` | a lab's link preview (1080×1080): `// VISUAL`, what to do there, its #tags and "Join at …/l/visual", over the lab's latest work blurred (Music: the newest song cover) |
 | `/l/:slug` | a lab, by name — `/l/general`, `/l/visual`, `/l/music`, `/l/fashion`, `/l/anime`, `/l/news`, `/l/business` (`LAB_SLUG`; an old `/l/<id>` link forwards): its name, what to do there (`LAB_PITCH`), its #tags, recent work and "Join and step in" → `/?l=slug` (members land in the lab; everyone else joins first, then lands in it). What a lab's **Share** sends (`server-12-labs.js`) |
 | `/e/:slug` · `/e/:slug/rules` | an event and its official rules (draft rules are generated until an admin writes their own) |
 | `/e/:slug/board` · `/e/:slug/:entry` | a poll's public scoreboard, and one entry's vote link (its preview is the piece; Vote opens `/?e=slug&v=entry` in the app) |
