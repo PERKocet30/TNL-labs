@@ -1,5 +1,6 @@
 /* ================================================================
-   SEARCH · v1.0 — 2026-10-13 ("Optimize the app SEO").
+   SEARCH · v1.1 — 2026-10-15 (each lab's /l/ page is listed).
+   v1.0 — 2026-10-13 ("Optimize the app SEO").
    - /sitemap.xml: every public page, so Google can find them — the
      tournament, members with published work, published work, songs,
      listings for sale, the policy pages. Never a suspended member, chat,
@@ -23,6 +24,7 @@ app.get("/sitemap.xml", (req, res) => {
   const add = (loc, lastmod, priority) => urls.push({ loc: base + loc, lastmod: lastmod ? isoDay(lastmod) : null, priority });
   add("/", Date.now(), "1.0");
   for (const e of db.prepare(`SELECT slug, updated_at FROM events WHERE published = 1 ORDER BY id DESC`).all()) add(`/e/${e.slug}`, e.updated_at, "0.9");
+  for (const id of Object.keys(LAB_PITCH)) add(`/l/${id}`, null, "0.8");   // each lab's page (server-12-labs.js, 2026-10-15)
   for (const u of db.prepare(`SELECT u.username, MAX(p.created_at) t FROM users u JOIN posts p ON p.author_id = u.id AND p.is_work = 1
       WHERE COALESCE(u.suspended, 0) = 0 GROUP BY u.id ORDER BY t DESC LIMIT 5000`).all()) add(profileHref(u.username), u.t, "0.8");
   for (const p of db.prepare(`SELECT p.id, COALESCE(p.edited_at, p.created_at) t FROM posts p JOIN users u ON u.id = p.author_id

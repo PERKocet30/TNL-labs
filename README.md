@@ -63,6 +63,7 @@ test/                           51 test suites — run with npm test
 | `app-07-theme-labs-api` | theme, labs and channels, API client |
 | `app-08-images` | image quality (posts and tournament entries): the original kept up to 3000px (hidden data stripped), 1440px feed and 480px grid copies, `srcset` so screens get the sharp one |
 | `app-08-state-ui` · `app-09-render-nav` | app state, toasts/modals, routing, top bar; `render()` picks the phone or computer frame and keeps your scroll place across repaints |
+| `server-12-labs` | `/l/:id`, a lab's shareable page, and `LAB_PITCH` — the line on what to do in each lab (the same lines head each lab in the app, `app-11-places.js`; `test/lab-share.test.mjs` checks) |
 | `server-12-seo` | search: `/sitemap.xml` (every public page, nothing private) and `ldJson()` — schema.org structured data on the public pages (profile, post, song, listing, event) |
 | `app-09-nav` | back: one trail of screens — every screen change joins it, and the phone's back, swipe-back, ‹ and ✕ all walk it |
 | `app-08-upload` | uploads: the streaming upload, retried twice when the connection drops or the server is restarting (502–504), failures reported to Glitches with size, time and reason |
@@ -191,6 +192,7 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 | `/u/:username` | a member's public page, rendered on the server so it previews properly |
 | `/p/:id` | a single post, with its own link preview |
 | `/m/:id` | a Market listing |
+| `/l/:id` | a lab: its name, what to do there (`LAB_PITCH`), its #tags, recent work and "Join and step in" → `/?l=id` (members land in the lab; everyone else joins first, then lands in it). What a lab's **Share** sends (`server-12-labs.js`) |
 | `/e/:slug` · `/e/:slug/rules` | an event and its official rules (draft rules are generated until an admin writes their own) |
 | `/e/:slug/board` · `/e/:slug/:entry` | a poll's public scoreboard, and one entry's vote link (its preview is the piece; Vote opens `/?e=slug&v=entry` in the app) |
 | `/e/:slug/board.jpg` · `/e/:slug/:entry/story.jpg` | Instagram pictures: the scoreboard (1080×1350, `?size=story` 1080×1920) and an entrant's "Vote for my piece" Story |
