@@ -1208,9 +1208,9 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#labshare").tap();
     await p.waitForFunction(() => window.__shared, null, { timeout: 3000 });
     const sh = await p.evaluate(() => window.__shared);
-    ok(/\/l\/pharmacy$/.test(sh.url) && /^\/\/ Visual on TNL LABS\nUpload your art/.test(sh.text), "the share isn't the caption and the lab's link: " + JSON.stringify(sh));
+    ok(/\/l\/visual$/.test(sh.url) && /^\/\/ Visual on TNL LABS\nUpload your art/.test(sh.text), "the share isn't the caption and the lab's link: " + JSON.stringify(sh));
     await p.evaluate(() => openLab("culture")); await p.waitForSelector("#labshare");
-    await p.locator("#labshare").tap(); await p.waitForFunction(() => window.__shared && /culture$/.test(window.__shared.url), null, { timeout: 3000 });
+    await p.locator("#labshare").tap(); await p.waitForFunction(() => window.__shared && /\/l\/music$/.test(window.__shared.url), null, { timeout: 3000 });
     ok(/Upload your songs/.test(await p.evaluate(() => window.__shared.text)), "Music's share doesn't say upload your songs");
     await p.evaluate(() => { LAB = null; ROOMOPEN = false; TAB = "showroom"; render(); });
     await settledGoto(p, B + "/?l=fashion"); await throughDoor(p);
@@ -1457,7 +1457,7 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
   });
   await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {
     await p.evaluate(() => localStorage.removeItem("tnl-token"));   // signed out (the step before signed this phone in)
-    await settledGoto(p, B + "/?l=pharmacy"); await throughDoor(p);
+    await settledGoto(p, B + "/?l=visual"); await throughDoor(p);
     await p.waitForFunction(() => typeof GATE !== "undefined" && GATE === "join", null, { timeout: 8000 });
     ok(await p.evaluate(() => LABNEXT === "pharmacy" && /\/\/ Visual/.test(GATEWHY)), "the join screen doesn't know which lab you came for");
     await p.evaluate(() => { GATE = null; LABNEXT = null; render(); });

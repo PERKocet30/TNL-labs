@@ -317,7 +317,7 @@ function paintVerifyBar(){
   /* /u/ and /p/ are public pages (they preview in Instagram DMs); their
      "Open in the app" sends ?u= / ?p= so the app lands on that exact thing. */
   const qs=new URLSearchParams(location.search), qu=qs.get("u"), qp=Number(qs.get("p"))||null, qsong=Number(qs.get("s"))||null;   // /s/:id → ?u=&s= : their Music tab, that song picked out (2026-10-10)
-  const ql=qs.get("l"),qlab=ql&&LABS.find(l=>l.id===ql);   // /l/:id (a shared lab) → ?l= : step into it (2026-10-15)
+  const ql=qs.get("l"),qlab=ql&&labBySlug(ql);   // /l/:id (a shared lab) → ?l= : step into it (2026-10-15)
   const back=!me&&!mu&&!mm&&!qu&&!qp&&!qlab?evReturn():null;   // confirmed your email elsewhere: back to the vote
   loadEvents();
   if(me||back){history.replaceState({},"","/");TAB="event";EVSLUG=me||back.slug;EVFOCUS=me?mv:back.v||null;loadEvent()}

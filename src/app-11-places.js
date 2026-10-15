@@ -1,5 +1,5 @@
 /* ================================================================
-   PLACES v1.6 — 2026-10-15 (v1.6: each lab says what to do there, and has
+   PLACES v1.7 — 2026-10-15 (v1.7: links name the lab — /l/visual, LAB_SLUG). v1.6: each lab says what to do there, and has
    a Share — LAB_PITCH, shareLab; a shared /l/ link lands in the lab).
    v1.5 — 2026-10-12 (v1.5: the tournament running in a lab is a
    chip in its Work — every entry, no #tag needed — and entries are marked).
@@ -61,9 +61,15 @@ const LAB_PITCH={
    (/l/:id — a page with a Join button for people who aren't members yet).
    No share sheet (Instagram's in-app browser, most computers): the whole
    message is copied, ready to paste. */
+/* The lab's address says what it is (/l/visual, /l/music — 2026-10-15,
+   "rename links to match the direction of the app"). Ids never change;
+   these are only the names in links. The old /l/<id> links still open
+   (the server forwards them). LAB_SLUG in server-12-labs.js matches. */
+const LAB_SLUG={hq:"general",pharmacy:"visual",culture:"music",fashion:"fashion",akatsuki:"anime",casino:"news",tna:"business"};
+const labBySlug=s=>LABS.find(l=>LAB_SLUG[l.id]===s||l.id===s)||null;
 async function shareLab(l){
   if(!l)return;
-  const url=location.origin+"/l/"+l.id,title="// "+l.name+" on TNL LABS",text=title+"\n"+(LAB_PITCH[l.id]||"");
+  const url=location.origin+"/l/"+(LAB_SLUG[l.id]||l.id),title="// "+l.name+" on TNL LABS",text=title+"\n"+(LAB_PITCH[l.id]||"");
   if(navigator.share){try{await navigator.share({title,text,url});return}catch(e){if(e&&e.name==="AbortError")return}}
   const all=text+"\n"+url;
   try{await navigator.clipboard.writeText(all);toast("Copied: the caption and the link. Paste it anywhere.");return}catch(e){}

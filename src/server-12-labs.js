@@ -1,12 +1,13 @@
 /* ================================================================
-   LAB PAGES v1.0 — 2026-10-15. "Every lab to have a share button with
+   LAB PAGES v1.1 — 2026-10-15 (links name the lab: /l/visual, /l/music; old /l/<id> links forward).
+   v1.0 — 2026-10-15. "Every lab to have a share button with
    captions that describe what to do inside each lab… a brief explanation
    I can send to people."
-   /l/:id is what a lab's Share sends: the lab's name, what to do there
+   /l/:slug is what a lab's Share sends: the lab's name, what to do there
    (LAB_PITCH — the same lines head each lab in the app, LAB_PITCH in
    app-11-places.js; test/lab-share.test.mjs checks they match), its
    #tags and a few pieces of recent work, and one button. "Join and
-   step in" opens /?l=<id>: members land in the lab, everyone else joins
+   step in" opens /?l=<slug>: members land in the lab, everyone else joins
    first and then lands in it. The link preview (Instagram DMs, texts)
    carries the same caption. Listed in /sitemap.xml (server-12-seo.js).
 ================================================================ */
@@ -20,10 +21,19 @@ const LAB_PITCH = {
   tna: "Find gigs and open calls, talk rates and money, and build the sites and apps the culture runs on.",
 };
 
-app.get("/l/:id", (req, res) => {
-  const id = String(req.params.id || ""), P = PLACES[id];
+/* Links name the lab (v1.1, 2026-10-15: "rename links to match the
+   direction of the app"): /l/visual, /l/music… Ids never change — these
+   are only the names in links. A link made before this, /l/<id>, is
+   forwarded to the new one. LAB_SLUG in app-11-places.js matches. */
+const LAB_SLUG = { hq: "general", pharmacy: "visual", culture: "music", fashion: "fashion", akatsuki: "anime", casino: "news", tna: "business" };
+const LAB_BY_SLUG = Object.fromEntries(Object.entries(LAB_SLUG).map(([id, s]) => [s, id]));
+
+app.get("/l/:slug", (req, res) => {
+  const want = String(req.params.slug || "").toLowerCase();
+  if (!LAB_BY_SLUG[want] && LAB_SLUG[want]) return res.redirect(301, `/l/${LAB_SLUG[want]}`);   // an old /l/<id> link
+  const id = LAB_BY_SLUG[want], P = PLACES[id], slug = want;
   if (!P || !LAB_PITCH[id]) return res.status(404).send(lookNotFound("This lab doesn't exist."));
-  const e = lookEsc, base = baseUrl(req), name = LAB_NAME[id], url = `${base}/l/${id}`;
+  const e = lookEsc, base = baseUrl(req), name = LAB_NAME[id], url = `${base}/l/${slug}`;
   const abs = (p) => (p ? (/^https?:/.test(p) ? p : base + p) : null);
   /* recent finished work with a picture, from members in good standing */
   const work = db.prepare(`SELECT p.id, COALESCE(p.thumb_url, p.image_url) img FROM posts p JOIN users u ON u.id = p.author_id
@@ -53,7 +63,7 @@ ${ldJson({ "@context": "https://schema.org", "@type": "CollectionPage", name: ti
 <div class="chips" style="margin:0 0 16px">${GENRE_TAGS[id].map((t) => `<span class="chip">#${e(t)}</span>`).join("")}</div>
 ${work.length ? `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:0 0 18px">${work.map((w) =>
   `<a href="/p/${w.id}" style="display:block;aspect-ratio:1/1;overflow:hidden;background:var(--line)"><img src="${e(abs(w.img))}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block"></a>`).join("")}</div>` : ""}
-<a class="btn block acc" href="/?l=${e(id)}">Join and step into // ${e(name)}</a>
+<a class="btn block acc" href="/?l=${e(slug)}">Join and step into // ${e(name)}</a>
 <p class="cap" style="margin-top:12px">Already a member? The same button opens the lab.</p>`,
   }));
 });

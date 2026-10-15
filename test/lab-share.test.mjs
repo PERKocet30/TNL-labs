@@ -3,6 +3,7 @@
 // upload your art. Music can be upload your songs. Brief explanation I can
 // send to people." The caption is the same in the app and on /l/:id, the
 // page a shared link opens, and that page sends people into the lab.
+// v2 (same day): links name the lab — /l/visual, /l/music — and old /l/<id> links forward.
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -42,17 +43,25 @@ try {
     && (part("app-11-gate-logic.js").match(/labNext\(\)/g) || []).length === 2);
 
   console.log("\nTHE PAGE A SHARED LINK OPENS");
-  const r = await fetch(B + "/l/pharmacy"), h = await r.text();
-  t("/l/pharmacy is a page", r.status === 200 && /text\/html/.test(r.headers.get("content-type")));
+  const r = await fetch(B + "/l/visual"), h = await r.text();
+  t("/l/visual is a page", r.status === 200 && /text\/html/.test(r.headers.get("content-type")));
   t("…named for the lab, with what to do there", h.includes("<h1>// Visual</h1>") && h.includes(app.pharmacy.replace(/'/g, "&#39;")));
   t("…and its preview says the same (Instagram DMs, texts)", h.includes(`property="og:title" content="// Visual on TNL LABS"`) && h.includes(`property="og:description" content="${app.pharmacy.replace(/'/g, "&#39;")}"`));
   t("…its #tags", h.includes("#painting") && h.includes("#photography"));
   t("…recent finished work, never a suspended member's or a chat message", h.includes(`/p/${art}`) && !h.includes(`/p/${hidden}`) && !h.includes(`/p/${talk}`));
-  t("…one button into the lab", h.includes(`href="/?l=pharmacy"`) && /Join and step into \/\/ Visual/.test(h));
-  t("Music's page says upload your songs", (await (await fetch(B + "/l/culture")).text()).includes("Upload your songs"));
+  t("…one button into the lab", h.includes(`href="/?l=visual"`) && /Join and step into \/\/ Visual/.test(h));
+  t("Music's page says upload your songs", (await (await fetch(B + "/l/music")).text()).includes("Upload your songs"));
   t("a lab that doesn't exist is a 404", (await fetch(B + "/l/nope")).status === 404);
   const xml = await (await fetch(B + "/sitemap.xml")).text();
-  t("every lab's page is in the sitemap", ids.every((id) => xml.includes(`<loc>${B}/l/${id}</loc>`)));
+  t("every lab's page is in the sitemap, by name", ["general", "visual", "music", "fashion", "anime", "news", "business"].every((n) => xml.includes(`<loc>${B}/l/${n}</loc>`)) && !xml.includes(`/l/pharmacy`));
+
+  console.log("\nLINKS NAME THE LAB");
+  const slugApp = grab(part("app-11-places.js"), "const LAB_SLUG="), slugSrv = grab(part("server-12-labs.js"), "const LAB_SLUG = ");
+  t("every lab's link is its name (visual, music…), the same in the app and on the server", JSON.stringify(slugApp) === JSON.stringify(slugSrv)
+    && ids.every((id) => slugApp[id]) && slugApp.pharmacy === "visual" && slugApp.culture === "music" && slugApp.akatsuki === "anime" && slugApp.casino === "news" && slugApp.tna === "business" && slugApp.hq === "general");
+  const old = await fetch(B + "/l/pharmacy", { redirect: "manual" });
+  t("a link sent before the rename still works: /l/pharmacy forwards to /l/visual", old.status === 301 && /\/l\/visual$/.test(old.headers.get("location")));
+  t("the app's Share sends the named link, and ?l= takes the name (or an old id)", /"\/l\/"\+\(LAB_SLUG\[l\.id\]/.test(part("app-11-places.js")) && /labBySlug\(ql\)/.test(part("app-19-feed-boot.js")));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
