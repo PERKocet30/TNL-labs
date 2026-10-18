@@ -595,6 +595,19 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".ordvar", { hasText: "M" }).count() > 0, "the order row doesn't show the size");
     await p.evaluate(() => { TAB = "showroom"; MKTVIEW = "browse"; render(); });
   });
+  /* 2026-10-18 "seamless payments": back from Stripe, the buyer lands on that order — not a toast on the home screen */
+  await step(d, "back from paying: Order confirmed shows the item, the total and what's next; View order opens orders", async () => {
+    const o = (await api("/api/orders", token)).buying[0];
+    await settledGoto(p, B + "/?checkout=paid&o=" + o.id); await throughDoor(p);
+    await p.waitForSelector(".od-item", { timeout: 8000 });
+    ok((await p.locator(".od-h").textContent()).trim() === "Order confirmed", "no Order confirmed heading");
+    ok(await p.locator(".od-item .mtitle", { hasText: o.listing.title }).count() === 1, "the item isn't on it");
+    ok(/\$/.test(await p.locator(".od-tot").textContent()) && await p.locator(".od-step").count() === 3, "no total or next steps");
+    ok(await p.evaluate(() => location.search === ""), "the ?checkout= stayed in the address bar");
+    await p.locator(".od-btns [data-mv='orders']").tap();
+    await p.waitForFunction(() => MKTVIEW === "orders", null, { timeout: 5000 });
+    await p.evaluate(() => { TAB = "showroom"; MKTVIEW = "browse"; render(); });
+  });
   /* ---- the bag, saved, recently viewed, price drops, seller tools (2026-09-30) ---- */
   await step(d, "bag: two things from one seller, combined shipping, one checkout reserves both", async () => {
     const { token: ft } = await login("friend");

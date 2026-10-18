@@ -301,7 +301,8 @@ function paintVerifyBar(){
     if(p.get("connect")==="done"){try{await api.connectStatus();await refreshMe();
       toast(ME.payoutsReady?"Payouts connected":"Stripe needs a bit more info")}catch(e){}
       history.replaceState({},"","/")}
-    if(p.get("checkout")==="paid"){bagPaid();toast("Paid — the seller's been told to ship");history.replaceState({},"","/")}
+    if(p.get("checkout")==="paid"||p.get("checkout")==="processing"){bagPaid();const st=p.get("checkout");history.replaceState({},"","/");
+      if(p.get("o"))orderDoneOpen(p.get("o"),st);else toast("Paid — the seller's been told to ship")}   // app-17-order-done
     if(p.get("checkout")==="failed"){toast("Payment didn't go through");history.replaceState({},"","/")}
     if(p.get("dm")){const who=p.get("dm");history.replaceState({},"","/");openDM(who)}   // admin Nudge lands here
   }

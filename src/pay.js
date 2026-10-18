@@ -1,5 +1,11 @@
 /* ================================================================
-   PAYMENTS — Stripe Standard Connect, over the plain HTTP API.
+   PAYMENTS v2.0 — 2026-10-18 — Stripe Standard Connect, over the plain HTTP API.
+   v2.0: more ways to pay. Checkout shows whatever the seller has switched
+   on in their own Stripe (Apple Pay and Google Pay ride on cards; Cash App
+   Pay, Klarna, Link…), minus the ones that take days to clear. If Stripe
+   refuses that, it falls back to cards — the 2026-10-07 fix — so a seller
+   with nothing switched on can still sell. verifySession also says when a
+   payment is still clearing, so nobody is told it failed.
 
    HOW THIS MODEL WORKS (and why it's the free one):
    Each seller connects their OWN Stripe account. We create the charge
@@ -44,9 +50,10 @@ function formEncode(obj, prefix = "", out = []) {
   return out.join("&");
 }
 
-async function stripe(path, { method = "POST", body, account } = {}) {
+async function stripe(path, { method = "POST", body, account, version } = {}) {
   const headers = { Authorization: `Bearer ${KEY}` };
   if (account) headers["Stripe-Account"] = account;   // act as the connected account
+  if (version) headers["Stripe-Version"] = version;   // just this request (only its url and id are read)
   if (body) headers["Content-Type"] = "application/x-www-form-urlencoded";
   const res = await fetch(`https://api.stripe.com/v1/${path}`, {
     method, headers, body: body ? formEncode(body) : undefined,
@@ -103,6 +110,11 @@ export async function loginLink(accountId) {
 
 /* ---------------- checkout ---------------- */
 
+/* Ways to pay that take days to clear. The order would sit "processing"
+   while the buyer waits, so Checkout leaves them out. */
+export const SLOW_METHODS = ["us_bank_account", "acss_debit", "sepa_debit", "bacs_debit", "au_becs_debit",
+  "boleto", "oxxo", "konbini", "customer_balance", "multibanco", "pay_by_bank", "pix"];
+
 /**
  * Direct charge on the SELLER's account, with our commission taken as
  * application_fee_amount. The seller pays Stripe's processing fee out
@@ -127,16 +139,9 @@ export async function createCheckout({
     });
   }
 
-  const out = await stripe("checkout/sessions", {
-    account: sellerAccount, // charge lives on the seller's account
-    body: {
+  const body = (methods) => ({
       mode: "payment",
-      /* Say "card" outright. Left to Stripe's automatic choice, a seller
-         whose Stripe account has no payment methods switched on for the
-         currency gets "No valid payment method types for this Checkout
-         Session" and nobody can buy (first live checkout, 2026-10-07).
-         Card covers Apple Pay and Google Pay in Checkout. */
-      payment_method_types: ["card"],
+      ...methods,
       success_url: successUrl,
       cancel_url: cancelUrl,
       client_reference_id: String(orderId),
@@ -148,8 +153,15 @@ export async function createCheckout({
       ...(collectShipping ? { shipping_address_collection: { allowed_countries: ["US","CA","GB","NL","DE","FR","IE","ES","IT","PT","BE","AU","NZ"] } } : {}),
       // commission on the item only — we don't skim postage
       payment_intent_data: { application_fee_amount: platformFee(amountCents, feePct) },
-    },
   });
+  /* First ask: the seller's own payment methods, without the slow ones.
+     Second ask, only if Stripe refuses the first: cards outright. Left to
+     the automatic choice alone, a seller with nothing switched on for the
+     currency got "No valid payment method types" and nobody could buy
+     (first live checkout, 2026-10-07). Cards cover Apple Pay and Google Pay. */
+  let out = await stripe("checkout/sessions", { account: sellerAccount, body: body({ excluded_payment_method_types: SLOW_METHODS }),
+    version: "2025-09-30.clover" });   // the first API version that can leave methods out
+  if (out.error) out = await stripe("checkout/sessions", { account: sellerAccount, body: body({ payment_method_types: ["card"] }) });
   if (out.error) return { error: out.error, setup: /payment method|capabilit|activate|not enabled|charges_enabled/i.test(out.error) };
   return { url: out.url, id: out.id };
 }
@@ -172,5 +184,7 @@ export async function verifySession(sessionId, sellerAccount) {
       address: [a.line1, a.line2, a.city, [a.state, a.postal_code].filter(Boolean).join(" "), a.country].filter(Boolean).join(", "),
     };
   }
-  return { paid: out.payment_status === "paid", orderId: out.metadata?.order_id, amount: out.amount_total, ship };
+  return { paid: out.payment_status === "paid", orderId: out.metadata?.order_id, amount: out.amount_total, ship,
+    // finished on Stripe's side but the money hasn't cleared yet — not a failure
+    clearing: out.status === "complete" && out.payment_status === "unpaid" };
 }
