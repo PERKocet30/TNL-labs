@@ -22,6 +22,10 @@ import { PALETTE, inkFor } from "./palette.js";
 
 const KEY = process.env.RESEND_API_KEY || "";
 const FROM = process.env.MAIL_FROM || "TNL LABS <onboarding@resend.dev>";
+/* Replies go to a real inbox (2026-10-18, "optimize"): mail from noreply@ that
+   people can answer is better mail — a reply is the strongest "this isn't spam"
+   a mailbox sees. SUPPORT_EMAIL is the inbox the public pages already show. */
+const REPLY_TO = (process.env.SUPPORT_EMAIL || "").trim();
 /* Where Resend lives. Only the tests change it, to a stand-in on localhost. */
 const API = (process.env.RESEND_API_BASE || "https://api.resend.com").replace(/\/+$/, "");
 export const MAIL_ENABLED = !!KEY;
@@ -187,7 +191,7 @@ async function send(to, subject, { html, text }, logLine, headers = null) {
     const res = await fetch(API + "/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: [to], subject, html, text, ...(headers ? { headers } : {}) }),
+      body: JSON.stringify({ from: FROM, to: [to], subject, html, text, ...(REPLY_TO ? { reply_to: REPLY_TO } : {}), ...(headers ? { headers } : {}) }),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
