@@ -1,0 +1,23 @@
+/* ── SHOP v1.0 — 2026-10-18 · the "Order confirmed" screen ── */
+.od{padding:0 16px 40px}
+.od-top{text-align:center;padding:36px 8px 18px;max-width:520px;margin:0 auto}
+.od-ic{width:64px;height:64px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;background:var(--accent-fill);color:var(--on-accent)}
+.od-ic.wait{background:var(--el);color:var(--tx)}
+.od-h{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:0 0 8px}
+.od-p{font-size:15px;line-height:1.5;color:var(--tx2);margin:0}
+.od-p b{color:var(--tx)}
+.od-card{background:var(--card);border:1px solid var(--line);border-radius:var(--rad,16px);padding:16px;max-width:520px;margin:0 auto 12px;box-sizing:border-box}
+.od-item{display:flex;align-items:center;gap:12px;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.od-item .ordimg{width:56px;height:56px;object-fit:cover;flex-shrink:0}
+.od-it{flex:1;min-width:0}
+.od-it .mtitle{color:var(--tx);font-size:15px;font-weight:600;line-height:1.3}
+.od-amt{font-weight:700;font-variant-numeric:tabular-nums}
+.od-sum{display:flex;justify-content:space-between;font-size:14px;color:var(--tx2);padding:3px 0;font-variant-numeric:tabular-nums}
+.od-tot{color:var(--tx);font-size:17px;font-weight:800;padding-top:8px}
+.od-lb{font-size:13px;color:var(--tx2);margin-bottom:8px}
+.od-addr{font-size:15px;line-height:1.5}
+.od-step{display:flex;gap:12px;padding:8px 0;font-size:15px}
+.od-n{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:1.5px solid var(--tx)}
+.od-s{font-size:13px;color:var(--tx2);line-height:1.45;margin-top:2px}
+.od-btns{max-width:520px;margin:18px auto 0;display:flex;flex-direction:column;gap:8px}
+.od-msg{width:100%;min-height:46px;display:flex;align-items:center;justify-content:center;text-align:center}

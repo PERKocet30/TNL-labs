@@ -1,4 +1,9 @@
-/* ---- buying ---- */
+/* ---- buying ---- ORDERS v2.0 — 2026-10-18
+   v2.0: after paying, the buyer lands on "Order confirmed" for that order
+   (?checkout=paid&o=), a payment that's still clearing says so instead of
+   "failed", and paid orders settle in the background every few minutes —
+   a buyer who pays and closes the tab (Instagram's browser does that) no
+   longer leaves the seller waiting until someone opens their orders. */
 app.post("/api/market/:id/buy", auth, verified, rateLimit({ max: 20, windowMs: 3600000, key: "user" }), async (req, res) => {
   const l = db.prepare(`SELECT * FROM listings WHERE id = ?`).get(Number(req.params.id));
   if (!l) return res.status(404).json({ error: "no listing" });
@@ -78,7 +83,7 @@ app.get("/api/market/checkout/done", async (req, res) => {
   if (!order) return res.redirect("/?checkout=failed");
   const seller = q.userById.get(order.seller_id);
   const out = await verifySession(sid, seller?.stripe_account);
-  if (!out.paid) return res.redirect("/?checkout=failed");
+  if (!out.paid) return res.redirect(out.clearing ? `/?checkout=processing&o=${order.cart_id || order.id}` : "/?checkout=failed");
   /* Bind the session to THIS order. "Paid" only proves money moved on the
      seller's account — not that it moved for the order named in the query
      string. This route is unauthenticated and order ids are sequential,
@@ -92,7 +97,7 @@ app.get("/api/market/checkout/done", async (req, res) => {
   const group = sessionFits(order, out);
   if (!group) return res.redirect("/?checkout=failed");
   for (const o of group) settlePaidOrder(o, out);
-  res.redirect("/?checkout=paid");
+  res.redirect(`/?checkout=paid&o=${order.cart_id || order.id}`);
 });
 
 /* Settle one verified-paid order. Shared by the checkout redirect above
@@ -131,25 +136,38 @@ function settlePaidOrder(order, out) {
    25h — past any Checkout session's lifetime — an unpaid one is marked
    cancelled so it is never asked about again. The listing was never
    marked sold on this path, so cancelling reverts nothing. */
-async function reconcileOrders(userId) {
+async function reconcileRows(stale) {
   const now = Date.now();
-  const stale = db.prepare(`
-    SELECT * FROM orders
-    WHERE status='pending' AND payment_ref IS NOT NULL AND payment_ref != ''
-      AND (buyer_id = ? OR seller_id = ?) AND updated_at < ?
-    ORDER BY created_at DESC LIMIT 5`).all(userId, userId, now - 300000);
   for (const order of stale) {
+    const cur = db.prepare(`SELECT status FROM orders WHERE id=?`).get(order.id);
+    if (!cur || cur.status !== "pending") continue;   // a row of a bag settled a moment ago
     db.prepare(`UPDATE orders SET updated_at=? WHERE id=?`).run(now, order.id);
     const seller = q.userById.get(order.seller_id);
     const out = await verifySession(order.payment_ref, seller?.stripe_account);
     const group = sessionFits(order, out);
     if (group) {
       for (const o of group) settlePaidOrder(o, out);
-    } else if (now - order.created_at > 90000000) {
+    } else if (now - order.created_at > (out.clearing ? 14 * 86400000 : 90000000)) {
+      // unpaid past any session's life — or, if it was still clearing, two weeks
       db.prepare(`UPDATE orders SET status='cancelled', updated_at=? WHERE id=?`).run(now, order.id);
     }
   }
 }
+const STALE_PENDING = `SELECT * FROM orders
+    WHERE status='pending' AND payment_ref IS NOT NULL AND payment_ref != '' AND updated_at < ?`;
+async function reconcileOrders(userId) {
+  await reconcileRows(db.prepare(`${STALE_PENDING} AND (buyer_id = ? OR seller_id = ?)
+    ORDER BY created_at DESC LIMIT 5`).all(Date.now() - 300000, userId, userId));
+}
+/* …and on its own, every 5 minutes, for everyone: 20 at a time, each
+   re-checked at most every 5 minutes, newest first. */
+async function reconcileAll() {
+  if (!PAYMENTS_ENABLED) return 0;
+  const rows = db.prepare(`${STALE_PENDING} ORDER BY created_at DESC LIMIT 20`).all(Date.now() - 300000);
+  await reconcileRows(rows);
+  return rows.length;
+}
+setInterval(() => { reconcileAll().catch((e) => console.error("[orders] background settle", e?.message || e)); }, 300000).unref?.();
 
 app.get("/api/orders", auth, async (req, res) => {
   await reconcileOrders(req.user.id).catch(() => {});
@@ -158,7 +176,7 @@ app.get("/api/orders", auth, async (req, res) => {
     id: r.id, amount: r.amount_cents, shipping: r.shipping_cents, status: r.status,
     paid: ["paid","shipped","complete"].includes(r.status), reviewed: reviewed.has(r.id),
     tracking: r.tracking, shipName: r.ship_name, shipAddress: r.ship_address, createdAt: r.created_at,
-    variant: r.variant || "",
+    variant: r.variant || "", cart: r.cart_id || r.id,
     listing: { id: r.listing_id, title: r.title, images: (() => { try { return JSON.parse(r.images || "[]"); } catch { return []; } })() },
     other: { username: r.other_username, displayName: r.other_name, avatarUrl: r.other_avatar || "" },
   });

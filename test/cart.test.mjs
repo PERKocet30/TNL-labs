@@ -104,7 +104,7 @@ console.log("\nWIRED IN");
 const rt = readFileSync(join(ROOT, "src/server.runtime.js"), "utf8");
 const done = rt.slice(rt.indexOf('app.get("/api/market/checkout/done"'), rt.indexOf("function settlePaidOrder"));
 t("the checkout return settles through sessionFits", done.includes("const group = sessionFits(order, out)") && done.includes("for (const o of group) settlePaidOrder(o, out)"));
-t("so does the reconciler", rt.slice(rt.indexOf("async function reconcileOrders")).includes("const group = sessionFits(order, out)"));
+t("so does the reconciler", rt.slice(rt.indexOf("async function reconcileRows")).includes("const group = sessionFits(order, out)"));
 t("the old single-order amount check is gone (sessionFits covers it)", !done.includes("const expectedCents"));
 t("/api/market/saved and /recent aren't swallowed by /api/market/:id", rt.includes('if (!/^\\d+$/.test(req.params.id)) return next();'));
 t("editing a price runs priceChanged", rt.includes("priceChanged(l, next.price_cents, req.user.id)"));

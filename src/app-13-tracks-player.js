@@ -193,6 +193,7 @@ function wireTracks(){
 function marketHTML(){
   if(MKTVIEW==="sell"||MKTVIEW==="edit")return sellHTML();
   if(MKTVIEW==="orders")return ordersHTML();
+  if(MKTVIEW==="confirmed")return orderDoneHTML();   // app-17-order-done
   if(MKTVIEW==="saved")return savedHTML();
   if(MKTVIEW==="detail")return detailHTML();
   if(MKTVIEW==="bag")return bagHTML();
