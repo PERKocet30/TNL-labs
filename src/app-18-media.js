@@ -129,7 +129,9 @@ function wireVideos(){
     for(const e of entries){
       const v=e.target;
       clearTimeout(v._dwell);
-      if(e.isIntersecting&&e.intersectionRatio>0.55){
+      /* starts once on screen (2026-10-18 "audio started playing early"): nearly
+         all of it, or most of the screen for a tall one; on the gallery, the spotlit piece */
+      if(e.isIntersecting&&(e.intersectionRatio>=0.9||e.rootBounds&&e.intersectionRect.height>=e.rootBounds.height*0.8)&&galLets(v)){
         v._dwell=setTimeout(()=>{
         if(liteOn()&&v.paused)return vPlayBtn(v);   // Data saver: it waits for a tap
         vReload(v);
@@ -137,11 +139,8 @@ function wireVideos(){
         if(!v.muted)vLoud(v);
         const p=v.play();
         if(p&&p.catch)p.catch((err)=>{
-          /* iOS refuses autoplay outright in Low Power Mode — no code can
-             override that. Don't leave a dead black box: show a play button
-             and let them start it by hand. */
-          /* The phone wouldn't start it WITH sound without a fresh tap: start it
-             muted instead (one tap on it brings the sound back). */
+          /* refused WITH sound (no fresh tap): start muted, a tap brings the sound back.
+             Refused outright (iOS Low Power Mode): a play button, not a dead black box. */
           if(err&&err.name==="NotAllowedError"&&!v.muted){v.muted=true;vIcon(v);v.play().catch(()=>{});return}
           if(err&&err.name==="NotAllowedError")vPlayBtn(v);
         });
@@ -150,7 +149,7 @@ function wireVideos(){
         try{v.pause()}catch(err){}
       }
     }
-  },{threshold:[0,0.55,1]});
+  },{threshold:[0,0.25,0.5,0.75,0.9,1]});
 
   for(const v of vids){
     if(!v._kept)v.muted=true;     // required, or autoplay is refused outright (a kept one keeps the sound you chose)

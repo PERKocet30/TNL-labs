@@ -9,7 +9,8 @@
    v1.1 (same day): "take the grid off computers completely" — the
    gallery is the computer's only Showroom; and "while scrolling it
    glitches and swipes through multiple" — one swipe or wheel flick is
-   one step, however long the trackpad keeps coasting. Phones keep the
+   one step, however long the trackpad keeps coasting; a video plays
+   only in the spotlight, never as it passes by or from the side. Phones keep the
    feed as it is. Styles: app-05-styles-wide.css.
 ================================================================ */
 let GALI=0, GALRAF=0, GALCLICK=false, GALSTEER=0, GALLAST=0, GALACC=0, GALLOCK=false;
@@ -25,6 +26,8 @@ function musBand(){
 const galBarHTML=()=>galOn()?`<div class="gal-bar"><span class="mono">Walk through the work · ← →</span></div>`:"";
 const galNavHTML=()=>galOn()?`<button class="gal-nav prev" id="galprev" aria-label="Previous piece">${DI.back||"‹"}</button><button class="gal-nav next" id="galnext" aria-label="Next piece"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>`:"";
 
+/* a video on the wall plays only in the spotlight (the video observer in app-18-media.js asks) */
+const galLets=v=>!galOn()||TAB!=="showroom"||!v.closest("#sr-grid")||!!v.closest(".sr-card.on");
 const galCards=()=>{const g=$("#sr-grid");return g?[...g.querySelectorAll(".sr-card")]:[]};
 /* the piece in the spotlight: the one we're walking to, or (after a swipe
    on a touch screen) the one nearest the middle of the wall */
@@ -35,7 +38,10 @@ function galSpot(){
     const r=g.getBoundingClientRect(),mid=r.left+r.width/2;let bd=1e9;
     cs.forEach((c,k)=>{const cr=c.getBoundingClientRect(),d=Math.abs(cr.left+cr.width/2-mid);if(d<bd){bd=d;GALI=k}});
   }
+  const was=g.querySelector(".sr-card.on");
   cs.forEach((c,k)=>c.classList.toggle("on",k===GALI));
+  /* a new piece in the spotlight: its video may start, the one before stops (asked afresh) */
+  if(was!==cs[GALI]&&typeof VOBS!=="undefined"&&VOBS)g.querySelectorAll("video[data-auto]").forEach(v=>{VOBS.unobserve(v);VOBS.observe(v)});
   const p=$("#galprev"),n=$("#galnext");if(p)p.disabled=GALI<=0;if(n)n.disabled=GALI>=cs.length-1;
 }
 function galGo(i,instant){

@@ -911,6 +911,20 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => !!document.querySelector("#e2efar video").getAttribute("src")), "the video didn't load again when scrolled to");
     await p.evaluate(() => { document.querySelector("#e2efar")?.remove(); });
   });
+  /* "Audio started playing early for a video without being fully on the post" (2026-10-18) */
+  await step(d, "a video waits until it's on screen: 60% in view stays still, all of it plays", async () => {
+    await p.evaluate(() => { TAB = "showroom"; POSTOPEN = null; PROFILE = null; render(); });
+    const vid = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.videoUrl && /\.webm$/.test(q.videoUrl)); return x && x.videoUrl; });
+    ok(vid, "no WebM video in the Showroom to test with");
+    await p.evaluate((vid) => { document.querySelector("#sr-grid").insertAdjacentHTML("afterbegin",
+      `<div id="e2eP"><div style="height:${innerHeight}px"></div><div class="vwrap"><video class="sr-img" src="${vid}#t=0.10" style="height:300px" muted loop playsinline preload="none" data-auto></video></div><div style="height:${innerHeight}px"></div></div>`); wireVideos(); }, vid);
+    await p.evaluate(() => { const v = document.querySelector("#e2eP video"); v.scrollIntoView({ block: "end" }); v.closest(".scroll").scrollBy(0, -120); });
+    await p.waitForTimeout(900);
+    ok(await p.evaluate(() => document.querySelector("#e2eP video").paused), "a video 60% on screen started playing");
+    await p.evaluate(() => { document.querySelector("#e2eP video").scrollIntoView({ block: "center" }); }); await p.waitForTimeout(900);
+    ok(await p.evaluate(() => !document.querySelector("#e2eP video").paused), "the video didn't play once it was all on screen");
+    await p.evaluate(() => { document.querySelector("#e2eP").remove(); });
+  });
   /* "Raising volume unmutes video" can't reach a web page; this is the rest of it (2026-10-08). */
   await step(d, "sound stays on: unmute one video and the next one in view plays with sound, until you mute", async () => {
     await p.evaluate(() => { TAB = "showroom"; POSTOPEN = null; PROFILE = null; setVSound(false); render(); });
@@ -1376,8 +1390,20 @@ console.log("\nMEMBER · COMPUTER");
     ok(a.nbw < a.w * 0.9 && a.nbo < 0.6, "the neighbours aren't smaller and dimmed: " + JSON.stringify(a));
     ok(a.inBand === 1, "more than one piece stands where songs play: " + JSON.stringify(a));
     ok(a.pageX <= 1, "the wall makes the page scroll sideways");
-    await p.keyboard.press("ArrowRight"); await p.waitForTimeout(900); a = await look();
+    /* "audio started playing early for a video without being fully on the post": the piece beside the spotlight is a video — it waits */
+    const vid = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.videoUrl && /\.webm$/.test(q.videoUrl)); return x && x.videoUrl; });
+    ok(vid, "no WebM video in the Showroom to test with");
+    await p.evaluate((vid) => { document.querySelectorAll("#sr-grid .sr-card")[1].querySelector(".post-media").innerHTML =
+      (`<div class="vwrap" id="e2eW"><video class="sr-img" src="${vid}#t=0.10" muted loop playsinline preload="none" data-auto></video></div>`); wireVideos(); }, vid);
+    await p.waitForTimeout(900);
+    ok(await p.evaluate(() => document.querySelector("#e2eW video").paused), "a video beside the spotlight started playing");
+    await p.keyboard.press("ArrowRight"); await p.waitForTimeout(1200); a = await look();
     ok(a.i === 1 && a.off < 4, "→ didn't bring the next piece into the spotlight: " + JSON.stringify(a));
+    ok(await p.evaluate(() => !document.querySelector("#e2eW video").paused), "the video didn't start once it was in the spotlight");
+    await p.keyboard.press("ArrowLeft"); await p.waitForTimeout(1200);
+    ok(await p.evaluate(() => document.querySelector("#e2eW video").paused), "the video kept playing after the spotlight moved on");
+    await p.evaluate(() => { document.querySelector("#e2eW").remove(); srPaint(); });
+    await p.keyboard.press("ArrowRight"); await p.waitForTimeout(900); a = await look();
     ok(a.bottom <= a.h + 1, "the piece in the spotlight doesn't fit on the screen: " + JSON.stringify(a));
     await p.locator("#galprev").click(); await p.waitForTimeout(900); a = await look();
     ok(a.i === 0 && a.off < 4, "‹ didn't walk back: " + JSON.stringify(a));
