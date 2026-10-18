@@ -460,6 +460,27 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator('#sr-grid [data-like="' + newId + '"]').count() === 1, "the new work isn't there");
     ok(await p.locator("#sr-new").isHidden(), "the pill stayed");
   });
+  // 2026-10-18: "New work doesn't go away" — an older piece rising into the top 60 isn't new, and a full repaint clears it
+  await step(d, "New work only for newer work: an older piece moving up in the ranking doesn't raise it, and it clears after a full reload", async () => {
+    const res = await p.evaluate(() => {
+      const keep = SRPOSTS.slice(), hidden = () => document.querySelector("#sr-new").hidden;
+      const old = keep[keep.length - 1], minus = keep.slice(0, -1), older = { ...old };
+      SRPOSTS = minus; srPaint(); SRNEW = null; document.querySelector("#sr-new").hidden = true;
+      srMerge([older, ...minus]);   // the same pieces, one older one back in the top 60
+      const afterRankShift = hidden();
+      const newer = { ...keep[0], id: Math.max(...keep.map((x) => Number(x.id))) + 1000 };
+      srMerge([newer, ...SRPOSTS]);
+      const afterNewer = hidden();
+      return { afterRankShift, afterNewer, keep };
+    });
+    ok(res.afterRankShift, "an older piece moving into the Showroom raised New work");
+    ok(!res.afterNewer, "genuinely newer work didn't raise New work");
+    await p.evaluate(() => { SRPOSTS = []; render(); });   // off screen: the next load paints it all
+    await p.evaluate(() => loadShowroom(true)); await p.waitForTimeout(600);
+    ok(await p.locator("#sr-new").isHidden(), "New work stayed after the Showroom repainted in full");
+    await p.evaluate(() => { render(); }); await p.waitForTimeout(200);
+    ok(await p.locator("#sr-new").isHidden(), "New work came back on the next screen paint");
+  });
   /* ---- the shop: sizes and colours, the listing page (2026-09-30) ---- */
   const toMarket = () => p.evaluate(async () => { PROFILE = null; TAB = "market"; MKTVIEW = "browse"; render(); await loadMarket(); render(); });
   await step(d, "sell form: pick sizes, set stock per size, publish", async () => {
