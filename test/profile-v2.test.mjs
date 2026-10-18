@@ -23,12 +23,13 @@ const q = {
 const blocks = new Set();
 const routes = {};
 const part = readFileSync(join(ROOT, "src/server-11-profile.js"), "utf8");
-const P = new Function("db", "q", "app", "auth", "maybeAuth", "blockedIds", "feedRows", "shapePosts",
+const { accentHex } = await import("../src/palette.js");   // followers carry their colour (2026-10-18)
+const P = new Function("db", "q", "app", "auth", "maybeAuth", "blockedIds", "feedRows", "shapePosts", "accentHex",
   part + "\nreturn {cleanLinks,profileExtras,followedBy};")(db, q,
   { get: (p, ...h) => { routes["GET " + p] = h.at(-1); }, post: (p, ...h) => { routes["POST " + p] = h.at(-1); } }, null, null,
   (id) => new Set([...blocks].filter((k) => k.startsWith(id + ":")).map((k) => k.split(":")[1])),
   ({ ids }) => ids.map((id) => ({ ...q.postById.get(id), author_username: q.userById.get(q.postById.get(id).author_id).username })),
-  (rows) => rows.map((r) => ({ id: r.id, by: r.author_username })));
+  (rows) => rows.map((r) => ({ id: r.id, by: r.author_username })), accentHex);
 const call = async (key, { params = {}, user = null, body = {} } = {}) => { let out, code = 200;
   await routes[key]({ params, user: user && q.userById.get(user), body }, { json: (o) => (out = o), status: (s) => { code = s; return { json: (o) => (out = o) }; } });
   return { code, out }; };

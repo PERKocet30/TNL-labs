@@ -246,12 +246,12 @@ app.get("/api/mentionable", auth, (req, res) => {
   const term = (req.query.q || "").toString().toLowerCase().slice(0, 20);
   const hidden = blockedIds(req.user.id);
   const rows = db.prepare(`
-    SELECT username, display_name, avatar_url, role FROM users
+    SELECT username, display_name, avatar_url, role, accent FROM users
     WHERE username != ? AND (? = '' OR username LIKE ? OR LOWER(display_name) LIKE ?)
     ORDER BY rep DESC LIMIT 8`).all(req.user.username, term, `${term}%`, `${term}%`);
   res.json({
     people: rows.filter((r) => !hidden.has(r.username)).map((r) => ({
-      username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", role: r.role,
+      username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", role: r.role, accentHex: accentHex(r.accent),
     })),
   });
 });

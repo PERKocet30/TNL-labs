@@ -19,7 +19,7 @@ function evEntryShape(e) {
   let cp = {}; try { const g = JSON.parse(p.images || "null"); if (Array.isArray(g) && g[0]) cp = { tw: g[0].tw || null, sm: g[0].sm || null, sw: g[0].sw || null }; } catch {}
   return { id: e.id, postId: p.id, imageUrl: p.image_url, thumbUrl: p.thumb_url || p.image_url, w: p.media_w, h: p.media_h, ...cp,
     caption: p.body, seed: e.seed ?? null, dq: !!e.dq_reason,
-    author: { username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url } };
+    author: { username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url, accentHex: accentHex(u.accent) } };
 }
 
 /* A fixed shuffle per viewer: nobody gets top-of-the-list advantage, and the

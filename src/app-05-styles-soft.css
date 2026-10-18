@@ -1,4 +1,8 @@
-/* SOFT v1.0 — 2026-10-18. "I don't like the sharp boxy design language
+/* SOFT v1.1 — 2026-10-18 (v1.1: "make sure everything matches the design
+   language except the actual post" — every screen audited at phone and
+   computer size: the upload boxes, Market tiles and gallery, playlist
+   covers, the composer on a computer and the gallery arrows too).
+   SOFT v1.0 — 2026-10-18. "I don't like the sharp boxy design language
    throughout the app … Profiles should also reflect what color style they
    choose around profile pic. To promote individualism."
    Paper used to be square; now it's soft. Three sizes, one place:
@@ -25,6 +29,21 @@
 .lx-list{gap:10px}
 .lx,.lx:last-child{border:1px solid var(--line)}
 .lx-media{border-radius:var(--rad-m)}
+
+/* places you drop or add a picture */
+.ev-drop,.pc-pick,.pf-add{border-radius:var(--rad)}
+/* the post maker on a computer is a card; its picture side rounds with it */
+.pc{border-radius:var(--rad);overflow:hidden}
+
+/* Market: a product picture isn't a post — its tiles and gallery round */
+.mimgwrap,.lgal{border-radius:var(--rad-m);overflow:hidden}
+
+/* playlist covers */
+.pl-cov{border-radius:var(--rad-s)}
+.pl-cov.big{border-radius:var(--rad-m)}
+
+/* the gallery's arrows are buttons, and buttons are round */
+.gal-nav{border-radius:999px}
 
 /* pictures inside things */
 .msg-i,.msg-v,.c-img,.c-vid,.c-att img,.post-img,.post-vid,.ev-th,.qcard,.trk-vart{border-radius:var(--rad-m)}

@@ -95,7 +95,7 @@ function shapeListing(r, viewerId, side) {
     seller: {
       username: r.seller_username,
       displayName: r.seller_name,
-      avatarUrl: r.seller_avatar || "",
+      avatarUrl: r.seller_avatar || "", accentHex: accentHex(r.seller_accent),
       rep: r.seller_rep,
       level: levelFor(r.seller_rep || 0).id,
     },
