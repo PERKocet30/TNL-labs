@@ -95,7 +95,7 @@ function songMenu(t){
    ⋯ (theirs); photo and three numbers you can open (posts, followers,
    following); name, pronouns and level as a quiet pill; what you make; bio
    with @mentions; links; "Followed by …"; two buttons; four tabs — work,
-   shop, collabs, tagged. Pinned work first. The level ladder, the rate
+   shop, collabs (Tagged came out 2026-10-18: "no need for tag section"). Pinned work first. The level ladder, the rate
    maths, Block/Report, Admin and Log out all moved off the page: into the
    ≡ / ⋯ menus and one compact Levels sheet. */
 const PF_PIN=`<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M15 3l6 6-3 1-4 4 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 4-4z"/></svg>`;
@@ -108,7 +108,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
   /* Your own profile is the page; anyone else's stays a peek (sheet). */
   const pins=(u.pinned||[]).map(Number);
   const pinnedFirst=list=>[...pins.map(id=>list.find(p=>Number(p.id)===id)).filter(Boolean),...list.filter(p=>!pins.includes(Number(p.id)))];
-  const list=PTAB==="collabs"?PROFILE.collabs:PTAB==="tagged"?(PROFTAGGED||[]):pinnedFirst(PROFILE.posts);
+  const list=PTAB==="collabs"?PROFILE.collabs:pinnedFirst(PROFILE.posts);
   const links=u.links&&u.links.length?u.links:(u.link?[{title:"",url:/^https?:\/\//.test(u.link)?u.link:"https://"+u.link}]:[]);
   const linkTxt=x=>x.title||x.url.replace(/^https?:\/\/(www\.)?/,"").replace(/\/$/,"");
   const fb=PROFILE.followedBy;
@@ -145,14 +145,13 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
     ${(PROFILE.tracks||[]).length||mine?`<button class="ptab ${PTAB==="music"?"on":""}" data-ptab="music" role="tab" aria-selected="${PTAB==="music"}" aria-label="Music ${(PROFILE.tracks||[]).length}">${UI_IC.music}</button>`:""}
     <button class="ptab ${PTAB==="shop"?"on":""}" data-ptab="shop" role="tab" aria-selected="${PTAB==="shop"}" aria-label="Shop">${UI_IC.tabShop}</button>
     <button class="ptab ${PTAB==="collabs"?"on":""}" data-ptab="collabs" role="tab" aria-selected="${PTAB==="collabs"}" aria-label="Collabs ${PROFILE.collabs.length}">${UI_IC.tabCollab}</button>
-    <button class="ptab ${PTAB==="tagged"?"on":""}" data-ptab="tagged" role="tab" aria-selected="${PTAB==="tagged"}" aria-label="Tagged">${PF_TAGGED}</button>
   </div>
 
   ${PTAB==="music"&&!ld?musicTabHTML(mine)
   :PTAB==="shop"?`<div class="mkt-grid" style="padding:14px 0 30px">${PROFLISTINGS===null?`${skel("tiles")}`:PROFLISTINGS.length?PROFLISTINGS.map(mktCardHTML).join(""):`<div class="empty">${mine?"Nothing listed yet. Head to Market → Sell to put something up.":"Not selling anything right now."}</div>`}</div>`
-  :ld||(PTAB==="tagged"&&PROFTAGGED===null)?`<div class="worklist asgrid">${[0,1,2].map(()=>`<div class="work skel"><div class="skelbar"></div></div>`).join("")}</div>`
-  :list.length?`<div class="worklist ${K.grid||PTAB==="tagged"?"asgrid":""}">${list.map(p=>workCardHTML(p,PTAB==="collabs",K,PTAB==="work"&&pins.includes(Number(p.id)))).join("")}</div>`
-  :`<div class="empty">${PTAB==="collabs"?"No collabs yet.":PTAB==="tagged"?(mine?"When people tag you in their work, it shows up here.":"No tagged posts yet."):mine?K.empty+" Hit + Post and it lands here.":esc(K.empty)}</div>`}
+  :ld?`<div class="worklist asgrid">${[0,1,2].map(()=>`<div class="work skel"><div class="skelbar"></div></div>`).join("")}</div>`
+  :list.length?`<div class="worklist ${K.grid?"asgrid":""}">${list.map(p=>workCardHTML(p,PTAB==="collabs",K,PTAB==="work"&&pins.includes(Number(p.id)))).join("")}</div>`
+  :`<div class="empty">${PTAB==="collabs"?"No collabs yet.":mine?K.empty+" Hit + Post and it lands here.":esc(K.empty)}</div>`}
 </div></div>`}
 
 /* ---- wiring ---- */

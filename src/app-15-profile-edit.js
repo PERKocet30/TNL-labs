@@ -5,9 +5,8 @@
    instead of a wall of fields. Theme, levels, admin and log out live in ≡.
    2026-10-10: a song link
    brings its song into view. */
-let EDITPF=null, PROFTAGGED=null, PROFTAGLOAD=null, CLIMBUSER=null;
+let EDITPF=null, CLIMBUSER=null;
 const PF_MENU=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`;
-const PF_TAGGED=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17"/><circle cx="12" cy="10" r="3"/><path d="M7 20c1-3 3-4.5 5-4.5s4 1.5 5 4.5"/></svg>`;
 const PF_CHEV=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>`;
 const PF_IC=d=>`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="${d}"/></svg>`;
 const PF_I={theme:PF_IC("M20 14a8 8 0 0 1-10-10 8 8 0 1 0 10 10z"),level:PF_IC("M5 20v-6M12 20V9M19 20V4"),share:PF_IC("M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"),
@@ -121,11 +120,6 @@ function wireProfileV2(){
     onPick:it=>window.open(it.url,"_blank","noopener")});
   /* a song link's song: bring it into view once */
   if(PTAB==="music"&&PFSONG&&PROFILE&&!PROFILE.loading){const r=document.querySelector(`.pmus-row[data-pftrk="${PFSONG}"]`);if(r&&!r.dataset.seen){r.dataset.seen="1";r.scrollIntoView({block:"center"})}}
-  /* the Tagged tab loads when you open it */
-  if(PTAB==="tagged"&&PROFTAGGED===null&&PROFILE&&!PROFILE.loading&&PROFTAGLOAD!==PROFILE.user.username){
-    const un=PROFTAGLOAD=PROFILE.user.username;
-    req(`/api/users/${encodeURIComponent(un)}/tagged`).then(d=>{if(PROFILE&&PROFILE.user.username===un){PROFTAGGED=d.posts;render()}})
-      .catch(()=>{if(PROFILE&&PROFILE.user.username===un){PROFTAGGED=[];render()}})}
 }
 async function shareProfile(un){
   shareMenu({title:"@"+un+" on LABS",link:profileLink(un),story:"/u/"+encodeURIComponent(un)+"/story.jpg"});

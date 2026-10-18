@@ -203,7 +203,7 @@ function wireSheet(){
   const bg=$("#sheetbg");if(!bg)return;
   bg.onclick=e=>{if(e.target===bg&&!EDITING){PROFILE=null;render()}};
   const sx=$("#sheetx");if(sx)sx.onclick=()=>{PROFILE=null;EDITING=false;render()};
-  wireProfileV2();   // profile v2: edit page, ≡ / ⋯ menus, follower lists, tagged (app-15-profile-edit.js)
+  wireProfileV2();   // profile v2: edit page, ≡ / ⋯ menus, follower lists (app-15-profile-edit.js)
   const fb=$("#followb");if(fb)fb.onclick=async()=>{
     if(guest())return needAccount("Join to follow people.");
     const u=PROFILE.user.username;
