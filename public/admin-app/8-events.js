@@ -1,5 +1,5 @@
 /* TNL LABS admin — Events v1.8, 2026-10-15 (v1.8: entries go into a lab, named as the app names it; v1.7: a cover picture for shared links, or TNL's card; v1.6: the shared page header, events listed in a card; v1.5: the scoreboard picture buttons wait for voting instead of opening a dead page; v1.4: "Link to send people" up top —
-   labs.tnllabs.com/tournament for the one on now, with Copy).
+   www.tnllabs.com/tournament for the one on now, with Copy).
    Events v1.3, 2026-10-12 (the Tournament tab; v1.2: named for it;
    v1.3: the "entries are open" email to every member — its switch, a
    preview to yourself, and how far the sending has got).
@@ -23,7 +23,7 @@ VIEWS.events = () => {
   if (EVID) return D.event ? evDetailHTML(D.event) : `<div class="empty">Loading…</div>`;
   const L = D.events?.events;
   if (!L) return `<div class="empty">Loading…</div>`;
-  return `${pageHead("Tournament", `Your tournament lives here. Members see it on the Showroom and at labs.tnllabs.com/e/your-link. Votes only count in the app — Instagram is for reach: each event's Instagram kit has the scoreboard to post and every entry's vote link.`, `<button class="btn fill" id="evnew">New event</button>`)}
+  return `${pageHead("Tournament", `Your tournament lives here. Members see it on the Showroom and at www.tnllabs.com/e/your-link. Votes only count in the app — Instagram is for reach: each event's Instagram kit has the scoreboard to post and every entry's vote link.`, `<button class="btn fill" id="evnew">New event</button>`)}
     <h2 class="sec">Events <span class="mono">${L.length} in all</span></h2>
     <div class="list">${L.length ? L.map((e) => `<button class="li" data-ev="${e.id}"><div class="b"><b>${esc(e.title)}${e.published ? "" : `<span class="tag">draft</span>`}</b>
       <span>/e/${esc(e.slug)} · ${e.format} · ${e.entries} entr${e.entries === 1 ? "y" : "ies"}</span></div><div class="r">${phName(e.phase)}</div>${I.chev}</button>`).join("")
