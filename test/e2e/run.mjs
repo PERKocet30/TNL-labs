@@ -1359,6 +1359,33 @@ console.log("\nMEMBER · COMPUTER");
       await fast(p, 3000, () => p.waitForSelector(sel), tab);
     }
   });
+  // 2026-10-18: "posts with music compete with others… I want it to feel like a virtual showroom" — a gallery wall, one piece in the spotlight
+  await step(d, "a laptop: the Showroom is a gallery — one piece in the spotlight, ← → walk along it, only that piece's song can play, Grid switches back", async () => {
+    await p.setViewportSize({ width: 1366, height: 768 });
+    await p.evaluate(() => { try { localStorage.removeItem("tnl-srview"); } catch (e) {} SRVIEW = "gallery"; });
+    await p.locator('.side [data-tab="showroom"]').click(); await p.waitForSelector("#sr-grid.sr-wall .sr-card.on"); await p.waitForTimeout(700);
+    const look = () => p.evaluate(() => { const cs = [...document.querySelectorAll("#sr-grid .sr-card")], g = document.querySelector("#sr-grid").getBoundingClientRect(), mid = g.left + g.width / 2;
+      const on = cs.filter((c) => c.classList.contains("on")), r = on[0] && on[0].getBoundingClientRect(), nb = cs.find((c) => !c.classList.contains("on"));
+      /* the band a post's song plays in (the music observer's rootMargin), and how many pieces stand in it */
+      const m = musBand().split(" ").map((v) => parseFloat(v) / 100), band = { l: -m[3] * innerWidth, r: innerWidth + m[1] * innerWidth };
+      return { on: on.length, i: cs.indexOf(on[0]), off: r ? Math.abs(r.left + r.width / 2 - mid) : 99, w: r && r.width, bottom: r && r.bottom, h: innerHeight,
+        nbw: nb && nb.getBoundingClientRect().width, nbo: nb && +getComputedStyle(nb).opacity, inBand: band.r <= band.l ? 0 : cs.filter((c) => { const q = c.getBoundingClientRect(); return q.right > band.l && q.left < band.r && q.width; }).length,
+        pageX: document.scrollingElement.scrollWidth - innerWidth }; });
+    let a = await look();
+    ok(a.on === 1 && a.off < 4, "one piece isn't in the middle under the spotlight: " + JSON.stringify(a));
+    ok(a.nbw < a.w * 0.9 && a.nbo < 0.6, "the neighbours aren't smaller and dimmed: " + JSON.stringify(a));
+    ok(a.inBand === 1, "more than one piece stands where songs play: " + JSON.stringify(a));
+    ok(a.pageX <= 1, "the wall makes the page scroll sideways");
+    await p.keyboard.press("ArrowRight"); await p.waitForTimeout(900); a = await look();
+    ok(a.i === 1 && a.off < 4, "→ didn't bring the next piece into the spotlight: " + JSON.stringify(a));
+    ok(a.bottom <= a.h + 1, "the piece in the spotlight doesn't fit on the screen: " + JSON.stringify(a));
+    await p.locator("#galprev").click(); await p.waitForTimeout(900); a = await look();
+    ok(a.i === 0 && a.off < 4, "‹ didn't walk back: " + JSON.stringify(a));
+    await p.locator('[data-srview="grid"]').click(); await p.waitForSelector("#sr-grid:not(.sr-wall) .sr-card");
+    a = await look(); ok(a.inBand === 0, "in the two-across grid a song still starts by itself (two would fight): " + JSON.stringify(a));
+    ok(await p.evaluate(() => localStorage.getItem("tnl-srview")) === "grid", "the Grid choice isn't remembered");
+    await p.setViewportSize({ width: 1440, height: 900 });
+  });
   // 2026-10-18 (first look on a laptop): "too many images on screen, can't focus on any", "login isn't centered", "make labs bigger, more square"
   await step(d, "a laptop: the Showroom is two across under a full-width tournament bar, labs are big near-square cards, log-in sits in the middle of the screen", async () => {
     await p.setViewportSize({ width: 1366, height: 768 });

@@ -26,6 +26,7 @@ async function sendLike(id){
   }
 }
 function wireFeed(){
+  galWire();   // the computer's gallery (app-11-gallery.js)
   wireVideos();   // autoplay in view — must run after every feed repaint
   /* The sound observer travels with the video one. Showroom and the room feed
      paint straight into #sr-grid / #feed and call wireFeed() WITHOUT going

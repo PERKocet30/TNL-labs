@@ -5,7 +5,8 @@ function showroomHTML(){return `<div class="scroll" id="showroom">
 
   <div class="sr-builders" id="sr-builders">${srBuildersHTML()}</div>
 
-  <div class="sr-grid" id="sr-grid">${SRPOSTS.length?SRPOSTS.map(srCardHTML).join(""):skel("cards")}</div>
+  ${galBarHTML()}
+  <div class="sr-gridwrap">${galNavHTML()}<div class="sr-grid${galOn()?" sr-wall":""}" id="sr-grid">${SRPOSTS.length?SRPOSTS.map(srCardHTML).join(""):skel("cards")}</div></div>
 </div>`}
 
 /* SHOWROOM CARD v1.1 — 2026-10-14: the first card's picture loads right away
