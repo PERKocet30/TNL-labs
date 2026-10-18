@@ -32,7 +32,7 @@ function gsHTML(){
     <div class="gs-bar"><i style="transform:scaleX(${n/it.length})"></i></div>
     <ul class="gs-list">${it.map(i=>`<li><button class="gs-i${i.done?" done":""}" data-gs="${i.k}"${i.done?" disabled":""}>
       <span class="gs-c">${i.done?DI.check:""}</span><span>${esc(i.t)}</span>${i.done?"":UI_IC.arrow}</button></li>`).join("")}</ul>
-    <button class="gs-tour" id="gstour">How TNL LABS works</button>
+    <button class="gs-tour" id="gstour">How LABS works</button>
   </section>`;
 }
 async function gsEdit(){await openProfile(myName());if(PROFILE&&PROFILE.user){pfStart(PROFILE.user);EDITING=true;pushView("edit");render()}}

@@ -1,9 +1,9 @@
-/* ── HOW TNL LABS WORKS · v1.0 · 2026-10-18 ─────────────────────────────
+/* ── HOW LABS WORKS · v1.0 · 2026-10-18 ─────────────────────────────
    "A better onboarding process for new members. Walk through all of the
    app's features and profile creation." After joining (photo → colour →
    bio → people) a new member swipes through what's here, one card per
    part of the app, and lands in the Showroom with the Get started list
-   (app-11-getstarted.js). ≡ on your profile → How TNL LABS works opens
+   (app-11-getstarted.js). ≡ on your profile → How LABS works opens
    the same cards any time (GATE="tour"). Swipe, tap Next, or ← →. */
 const TOUR=[
   {ic:()=>UI_IC.tabGrid,h:"The Showroom",p:()=>"Work from every lab, picked fresh for you. Like it, comment, share it to your Story. A song plays when its post reaches the middle of the screen."},
@@ -20,7 +20,7 @@ function tourHTML(G){
   const first=(ME&&ME.displayName||"").split(" ")[0];
   const card=last
     ?`<div class="tour-ic tour-me">${ME&&ME.avatarUrl?`<img src="${esc(ME.avatarUrl)}" alt="">`:GX_PERSON}</div>
-      <h1 class="gx-h">${G.made?`Welcome to TNL LABS${first?", "+esc(first):""}.`:"That's TNL LABS."}</h1>
+      <h1 class="gx-h">${G.made?`Welcome to LABS${first?", "+esc(first):""}.`:"That's LABS."}</h1>
       <p class="gx-p">${G.made&&G.made.mailSent?`We sent a link to <b>${esc(G.f.email)}</b> to confirm your email. `:""}${G.made?"Your Get started list is waiting in the Showroom.":"Open this again any time from ≡ on your profile."}</p>`
     :`<div class="tour-ic">${TOUR[i].ic()}</div><h1 class="gx-h">${esc(TOUR[i].h)}</h1><p class="gx-p">${TOUR[i].p()}</p>`;
   return `<div class="gate"><div class="gx gx-tour">

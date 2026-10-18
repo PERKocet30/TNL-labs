@@ -204,7 +204,7 @@ console.log("\nNEW MEMBER · PHONE");
     ok(cards >= 7 && /Showroom/.test(await p.locator(".tour-card h1").innerText()), "the walkthrough didn't start with the Showroom");
     ok(await p.locator(".tour-dots i").count() === cards + 1, "the dots don't match the cards");
     for (let k = 0; k < cards; k++) { await p.locator("#tournext").tap(); await p.waitForTimeout(80); }
-    ok(/Welcome to TNL LABS, New/.test(await p.locator(".tour-card h1").innerText()), "the last card isn't the welcome");
+    ok(/Welcome to LABS, New/.test(await p.locator(".tour-card h1").innerText()), "the last card isn't the welcome");
     await p.locator("#tournext").tap();
     await p.waitForSelector(".app > .nav", { timeout: 4000 });
     ok(await p.evaluate(() => !GATE), "still inside the sign-up screens");
@@ -223,11 +223,11 @@ console.log("\nNEW MEMBER · PHONE");
     await p.evaluate(() => render()); await p.waitForTimeout(200);
     ok(!(await p.locator("#gs").count()), "✕ didn't put the list away");
   });
-  await step(d, "≡ → How TNL LABS works opens the walkthrough again", async () => {
+  await step(d, "≡ → How LABS works opens the walkthrough again", async () => {
     await p.evaluate(() => openTour()); await p.waitForSelector(".tour-card");
     const n = await p.evaluate(() => TOUR.length);
     for (let k = 0; k < n; k++) await p.locator("#tournext").tap();
-    ok(/That's TNL LABS/.test(await p.locator(".tour-card h1").innerText()) && (await p.locator("#tournext").innerText()) === "Done", "the reopened walkthrough doesn't end on Done");
+    ok(/That's LABS/.test(await p.locator(".tour-card h1").innerText()) && (await p.locator("#tournext").innerText()) === "Done", "the reopened walkthrough doesn't end on Done");
     await p.locator("#tournext").tap(); await p.waitForTimeout(200);
     ok(await p.evaluate(() => !GATE), "Done didn't close it");
   });

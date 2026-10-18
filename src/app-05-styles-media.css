@@ -244,7 +244,7 @@ video.vfill{object-fit:cover}
 /* Story sheets above an opened post (.po-ov is 130): sharing a post you'd
    opened put the sheet behind it (2026-10-09). */
 #igsl .sheet{z-index:140}
-/* onboarding v2 (2026-10-18): your colour, a line about you, How TNL LABS works (app-11-gate-tour) */
+/* onboarding v2 (2026-10-18): your colour, a line about you, How LABS works (app-11-gate-tour) */
 .gx-tint .gx-av{box-shadow:0 0 0 4px var(--bg),0 0 0 7px var(--ring)}
 .gx-sw{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:4px 0 20px}
 .gxf-ta{display:block;width:100%;box-sizing:border-box;min-height:88px;border:1px solid var(--line2);border-radius:12px;background:var(--card);color:var(--tx);font:inherit;font-size:16px;line-height:1.4;padding:12px 14px;resize:none}

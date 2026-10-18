@@ -32,7 +32,7 @@ try {
   t("someone new starts at zero", c.posts === 0 && c.following === 0);
   const app = readFileSync(join(ROOT, "public/index.html"), "utf8");
   t("the walkthrough covers every part of the app", ["The Showroom", "The labs", "Post your work", "Rep and levels", "Collabs and messages", "The Market", "Tournaments", "Your page"].every((h) => app.includes(`h:"${h}"`)));
-  t("≡ on your profile reopens it", app.includes('label:"How TNL LABS works",run:openTour'));
+  t("≡ on your profile reopens it", app.includes('label:"How LABS works",run:openTour'));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -92,7 +92,7 @@ function wireProfileV2(){
   const pm=$("#profmenu");if(pm)pm.onclick=()=>openMenu({react:false,actions:[
     {icon:PF_I.theme,label:THEME==="dark"?"Day mode":"Night mode",run:()=>{setTheme(THEME==="dark"?"light":"dark");render()}},
     {icon:PF_I.level,label:"Level and rates",run:()=>{CLIMB=true;render()}},
-    {icon:PF_I.link,label:"How TNL LABS works",run:openTour},   // the walkthrough new members see (app-11-gate-tour)
+    {icon:PF_I.link,label:"How LABS works",run:openTour},   // the walkthrough new members see (app-11-gate-tour)
     {icon:PF_I.theme,label:liteOn()?"Data saver: on":"Data saver: off",run:()=>{setLite(!liteOn());
       toast(liteOn()?"Data saver on — videos and music wait for a tap":"Data saver off");render()}},
     {icon:PF_I.share,label:"Share profile",run:()=>shareProfile(myName())},
