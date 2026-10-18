@@ -142,6 +142,8 @@ await check("signed out, /api/me says no", "/api/me", { status: 401, type: "json
 }});
 for (const p of ["/api/admin/overview", "/api/admin/members", "/api/admin/backups"])
   await check(`admin stays locked: ${p}`, p, { status: [401, 403], type: "json" });
+// the morning report: 401 without its key (404 where no key is set) — never open
+await check("the morning report stays locked", "/api/report/daily", { status: [401, 404], type: "json" });
 
 /* 5. What a new arrival loads — and that there's something in it. */
 const show = await check("showroom has work in it", "/api/feed/showroom", { status: 200, type: "json", test: (r) => {

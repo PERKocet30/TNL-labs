@@ -125,6 +125,20 @@ The daily read-only checks (`scripts/scientist.mjs`) now run on GitHub
 (`.github/workflows/after-deploy.yml`, 18:45 UTC), where a failure sends an
 email. The old **Scientist** service here can be deleted.
 
+## The morning report (optional, 2026-10-18)
+
+| Variable | Value |
+| --- | --- |
+| `TNL_REPORT_KEY` | a long random string, 32+ characters |
+
+Turns on `/api/report/daily`: one locked, read-only summary (errors,
+glitches, sign-ups/posts/comments against the day before, backup age, disk
+space, payment problems — counts only, nothing personal) that the daily
+check reads. Put the **same** value in the Claude cloud environment the
+check runs in, as the environment variable `TNL_REPORT_KEY`. Without the
+variable the route doesn't exist (404). Change it the same way in both
+places if it ever leaks.
+
 ## The whole list, to paste in
 
 ```
