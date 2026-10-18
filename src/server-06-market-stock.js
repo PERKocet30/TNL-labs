@@ -74,7 +74,17 @@ function priceChanged(l, cents, actorId) {
   for (const r of db.prepare(`SELECT user_id FROM listing_likes WHERE listing_id=?`).all(l.id))
     notify(r.user_id, actorId, "price_drop", null, `"${l.title}" is now ${usd(cents)} (was ${usd(l.price_cents)})`);
 }
-const priceDrop = (r) => r.prev_price_cents > r.price_cents && Date.now() - (r.price_dropped_at || 0) < DROP_MS ? r.prev_price_cents : null;
+const priceDrop = (r) => r.compare_cents > r.price_cents ? r.compare_cents
+  : r.prev_price_cents > r.price_cents && Date.now() - (r.price_dropped_at || 0) < DROP_MS ? r.prev_price_cents : null;
+
+/* COMPARE-AT · 2026-10-18 — the seller's own "was" price, like Shopify's
+   compare-at price: $80 crossed out next to $65. Kept only when it's above
+   the price (anything else clears it); it beats an automatic price drop. */
+function setCompare(id, v, priceCents) {
+  if (v === undefined) return;
+  const c = Math.round(Number(v) * 100) || 0;
+  db.prepare(`UPDATE listings SET compare_cents=? WHERE id=?`).run(c > priceCents && c <= 5000000 ? c : null, id);
+}
 
 /* Market search by size: the listing's own size, or a variant that's still
    in stock in that size. */

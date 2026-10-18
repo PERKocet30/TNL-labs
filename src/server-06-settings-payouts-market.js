@@ -84,7 +84,7 @@ function shapeListing(r, viewerId, side) {
     acceptsOffers: !!r.accepts_offers,
     quantity: r.quantity ?? 1,
     variants: parseVariants(r),
-    wasPrice: priceDrop(r),
+    wasPrice: priceDrop(r), compareAt: r.compare_cents || null, sale: r.compare_cents > r.price_cents,
     status: r.status,
     views: r.views,
     createdAt: r.created_at,
@@ -284,6 +284,7 @@ app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, 
     isLoop && stems ? 1 : 0,
     isLoop ? 1 : vars.length ? stockOf(vars) : Math.min(500, Math.max(1, Math.round(Number(quantity)) || 1)),
     JSON.stringify(vars), now, now);
+  if (!isLoop) setCompare(Number(info.lastInsertRowid), body.compareAt, cents);
   res.json({ id: Number(info.lastInsertRowid) });
 });
 
@@ -339,6 +340,7 @@ app.patch("/api/market/:id", auth, (req, res) => {
          next.brand, next.size, next.condition, next.colour, next.category, next.ships_from, next.accepts_offers,
          next.bpm, next.musical_key, next.stems, next.variants, Date.now(), l.id);
   priceChanged(l, next.price_cents, req.user.id);
+  if (!isLoop) setCompare(l.id, req.body?.compareAt, next.price_cents);
   res.json({ ok: true });
 });
 

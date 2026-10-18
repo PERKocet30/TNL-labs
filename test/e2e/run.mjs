@@ -483,7 +483,7 @@ console.log("\nMEMBER · PHONE");
   });
   /* ---- the shop: sizes and colours, the listing page (2026-09-30) ---- */
   const toMarket = () => p.evaluate(async () => { PROFILE = null; TAB = "market"; MKTVIEW = "browse"; render(); await loadMarket(); render(); });
-  await step(d, "sell form: pick sizes, set stock per size, publish", async () => {
+  await step(d, "sell form: pick sizes, set stock per size, a compare-at price and a category, publish", async () => {
     await toMarket();
     await p.locator('[data-mv="sell"]').first().tap();
     await p.waitForSelector("#sfile", { state: "attached" });
@@ -491,14 +491,20 @@ console.log("\nMEMBER · PHONE");
     await p.waitForSelector(".pf-img", { timeout: 8000 });
     await p.locator("#s-title").fill("E2E Tee"); await p.locator("#s-price").fill("40");
     await p.locator("#s-hasvar").tap();
-    for (const s of ["S", "M", "L"]) await p.locator(`[data-pvq="${s}"]`).tap();
+    for (const s of ["S", "M", "L"]) await p.locator(`[data-pvsize="${s}"]`).tap();   // v2 (2026-10-18): Shopify-style options
     await p.locator("#pvrows .pv-row").nth(1).locator('[data-pvqty="1"]').tap();
     ok((await p.locator("#pvtot").textContent()).startsWith("4 in stock"), "running total: " + (await p.locator("#pvtot").textContent()));
+    ok(await p.locator("#pvrows .pv-name").allTextContents().then((x) => x.join()) === "S,M,L", "rows aren't S, M, L");
+    await p.locator("#s-compare").fill("55");
+    ok(/27% off/.test(await p.locator("#s-cmphint").textContent()), "no sale preview: " + (await p.locator("#s-cmphint").textContent()));
+    await p.locator("#s-cat").selectOption("Outerwear");
     await p.locator("#s-post").tap();
     await p.waitForFunction(() => MKTVIEW === "detail" && MKTONE && MKTONE.title === "E2E Tee", null, { timeout: 8000 });
     const v = await p.evaluate(() => MKTONE.variants.map((x) => x.size + ":" + x.qty).join());
     ok(v === "S:1,M:2,L:1", "saved as " + v);
     ok(await p.evaluate(() => MKTONE.quantity) === 4, "total stock isn't 4");
+    ok(await p.evaluate(() => MKTONE.compareAt === 5500 && MKTONE.wasPrice === 5500 && MKTONE.sale && MKTONE.category === "Outerwear"), "compare-at or category didn't save: " + JSON.stringify(await p.evaluate(() => [MKTONE.compareAt, MKTONE.wasPrice, MKTONE.category])));
+    ok(/\$55\.00/.test(await p.locator(".dprice .mwas").textContent()), "the listing doesn't show $55 crossed out");
   });
   let dropId;
   await step(d, "listing page: swipe photos, readable heart saves in place, Buy bar stays pinned", async () => {

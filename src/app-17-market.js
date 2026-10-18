@@ -150,16 +150,16 @@ function wireMarket(){
         if(!SELLIMGS.length)return toast("Add at least one photo");
         if(!(Number(SELLFORM.price)>=1))return toast("Price must be at least $1");
         if(SELLFORM.hasVariants){
-          const vs=(SELLFORM.variants||[]).filter(v=>v.size||v.colour);
-          if(!vs.length)return toast("Add a size or colour");
+          const vs=pvOut(SELLFORM.variants);
+          if(!(SELLFORM.variants||[]).length)return toast("Pick a size or add a colour");
           if(!vs.some(v=>v.qty>0))return toast("Add stock to at least one size");
         }
       }
       sp._busy=true;sp.disabled=true;sp.textContent=MKTEDIT?"Saving…":"Publishing…";
       try{
         const body={...SELLFORM,images:SELLIMGS,kind:isLoop?"loop":"physical"};
-        body.variants=!isLoop&&SELLFORM.hasVariants?(SELLFORM.variants||[]):[];
-        delete body.hasVariants;
+        body.variants=!isLoop&&SELLFORM.hasVariants?pvOut(SELLFORM.variants):[];
+        delete body.hasVariants;delete body.optSizes;delete body.optColours;
         if(isLoop){
           body.audioUrl=SELLAUDIO;
           body.bpm=SELLFORM.bpm?Number(SELLFORM.bpm):null;
@@ -173,7 +173,7 @@ function wireMarket(){
              wrong about it is fixable here. */
           const id=MKTEDIT;
           const eb={title:body.title,description:body.description||"",price:Number(body.price||0),
-            images:SELLIMGS,category:body.category,acceptsOffers:body.acceptsOffers!==false};
+            images:SELLIMGS,category:body.category,acceptsOffers:body.acceptsOffers!==false,compareAt:isLoop?undefined:(body.compareAt||0)};
           if(SELLFORM.status==="sold"||SELLFORM.status==="active")eb.status=SELLFORM.status;
           if(isLoop){eb.bpm=body.bpm;eb.musicalKey=body.musicalKey;eb.stems=body.stems}
           else{eb.shipping=Number(body.shipping||0);eb.quantity=Number(body.quantity||1);
@@ -283,7 +283,7 @@ function wireMarket(){
       shipping:l.shipping?(l.shipping/100).toFixed(2):"",
       quantity:l.quantity||1,category:l.category,condition:l.condition,
       brand:l.brand||"",size:l.size||"",colour:l.colour||"",shipsFrom:l.shipsFrom||"",
-      acceptsOffers:l.acceptsOffers!==false,status:l.status==="sold"?"sold":"active",
+      acceptsOffers:l.acceptsOffers!==false,status:l.status==="sold"?"sold":"active",compareAt:l.compareAt?(l.compareAt/100).toFixed(2):"",
       bpm:l.bpm||"",musicalKey:l.musicalKey||"",stems:!!l.stems,
       hasVariants:!!(l.variants||[]).length,variants:(l.variants||[]).map(v=>({...v}))};
     MKTVIEW="edit";render()});

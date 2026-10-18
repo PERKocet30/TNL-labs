@@ -581,6 +581,8 @@ if (!ocols.includes("cart_id")) db.exec(`ALTER TABLE orders ADD COLUMN cart_id I
    "Price dropped" tag and the heads-up to everyone who saved it. */
 if (!lcols.includes("prev_price_cents")) db.exec(`ALTER TABLE listings ADD COLUMN prev_price_cents INTEGER`);
 if (!lcols.includes("price_dropped_at")) db.exec(`ALTER TABLE listings ADD COLUMN price_dropped_at INTEGER`);
+// 2026-10-18: the seller's own "was" price (Shopify's compare-at). Shown only while it's above the price.
+if (!lcols.includes("compare_cents")) db.exec(`ALTER TABLE listings ADD COLUMN compare_cents INTEGER`);
 
 /* Studio telemetry. Never throws — a metrics call must never be able to
    take down the thing it's measuring. */
