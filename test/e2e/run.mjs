@@ -1360,9 +1360,9 @@ console.log("\nMEMBER · COMPUTER");
     }
   });
   // 2026-10-18: "posts with music compete with others… I want it to feel like a virtual showroom" — a gallery wall, one piece in the spotlight
-  await step(d, "a laptop: the Showroom is a gallery — one piece in the spotlight, ← → walk along it, only that piece's song can play, Grid switches back", async () => {
+  // v1.1 (same day): "take the grid off computers completely… while scrolling it glitches and swipes thru multiple"
+  await step(d, "a laptop: the Showroom is a gallery (no grid) — one piece in the spotlight, ← → walk along it, only that piece's song can play, one swipe is one step", async () => {
     await p.setViewportSize({ width: 1366, height: 768 });
-    await p.evaluate(() => { try { localStorage.removeItem("tnl-srview"); } catch (e) {} SRVIEW = "gallery"; });
     await p.locator('.side [data-tab="showroom"]').click(); await p.waitForSelector("#sr-grid.sr-wall .sr-card.on"); await p.waitForTimeout(700);
     const look = () => p.evaluate(() => { const cs = [...document.querySelectorAll("#sr-grid .sr-card")], g = document.querySelector("#sr-grid").getBoundingClientRect(), mid = g.left + g.width / 2;
       const on = cs.filter((c) => c.classList.contains("on")), r = on[0] && on[0].getBoundingClientRect(), nb = cs.find((c) => !c.classList.contains("on"));
@@ -1381,20 +1381,23 @@ console.log("\nMEMBER · COMPUTER");
     ok(a.bottom <= a.h + 1, "the piece in the spotlight doesn't fit on the screen: " + JSON.stringify(a));
     await p.locator("#galprev").click(); await p.waitForTimeout(900); a = await look();
     ok(a.i === 0 && a.off < 4, "‹ didn't walk back: " + JSON.stringify(a));
-    await p.locator('[data-srview="grid"]').click(); await p.waitForSelector("#sr-grid:not(.sr-wall) .sr-card");
-    a = await look(); ok(a.inBand === 0, "in the two-across grid a song still starts by itself (two would fight): " + JSON.stringify(a));
-    ok(await p.evaluate(() => localStorage.getItem("tnl-srview")) === "grid", "the Grid choice isn't remembered");
+    ok(!(await p.locator("[data-srview]").count()), "there's still a Grid switch on a computer");
+    /* a trackpad swipe: a burst of sideways wheel events, then a long coast, each 16ms apart — one step, not several */
+    await p.locator("#sr-grid .sr-card.on").hover();
+    for (let k = 0; k < 70; k++) { await p.mouse.wheel(k < 12 ? 60 : Math.max(2, 40 - k / 2), 0); await p.waitForTimeout(16); }
+    await p.waitForTimeout(900); a = await look();
+    ok(a.i === 1 && a.off < 4, "one trackpad swipe didn't move exactly one piece: " + JSON.stringify(a));
+    /* the same with a mouse wheel spun down quickly */
+    for (let k = 0; k < 8; k++) { await p.mouse.wheel(0, 100); await p.waitForTimeout(40); }
+    await p.waitForTimeout(900); a = await look();
+    ok(a.i === 2 && a.off < 4, "one quick spin of the wheel didn't move exactly one piece: " + JSON.stringify(a));
     await p.setViewportSize({ width: 1440, height: 900 });
   });
   // 2026-10-18 (first look on a laptop): "too many images on screen, can't focus on any", "login isn't centered", "make labs bigger, more square"
-  await step(d, "a laptop: the Showroom is two across under a full-width tournament bar, labs are big near-square cards, log-in sits in the middle of the screen", async () => {
+  await step(d, "a laptop: the tournament bar keeps its full width over the work, labs are big near-square cards, log-in sits in the middle of the screen", async () => {
     await p.setViewportSize({ width: 1366, height: 768 });
     await p.locator('.side [data-tab="showroom"]').click(); await p.waitForSelector("#sr-grid .sr-card");
-    // v1.3 (same day): "maybe 2 at a time" — two columns, and the tournament bar keeps its width
-    const cards = await p.evaluate(() => [...document.querySelectorAll("#sr-grid .sr-card")].map((c) => Math.round(c.getBoundingClientRect().left)));
-    ok(new Set(cards).size === 2, "the Showroom isn't two across: " + [...new Set(cards)]);
-    ok(await p.evaluate(() => document.querySelector("#sr-grid .sr-card").getBoundingClientRect().width <= 500), "a Showroom piece is wider than half the column");
-    ok(await p.evaluate(() => { const b = document.querySelector("#ev-bannerwrap"); const c = document.querySelector("#sr-grid").getBoundingClientRect(); return !b.offsetHeight || (b.getBoundingClientRect().width > 900 && Math.abs(b.getBoundingClientRect().left - c.left) < 2); }), "the tournament bar shrank, or doesn't line up with the work");
+    ok(await p.evaluate(() => { const b = document.querySelector("#ev-bannerwrap"); return !b.offsetHeight || b.getBoundingClientRect().width > 900; }), "the tournament bar shrank");
     await p.locator('.side [data-tab="labs"]').click(); await p.waitForSelector(".lx-list .lx");
     const lx = await p.evaluate(() => { const r = document.querySelector(".lx-list .lx").getBoundingClientRect(); return { w: r.width, h: r.height }; });
     ok(lx.w >= 260 && lx.h / lx.w > 0.8 && lx.h / lx.w < 1.4, "lab cards aren't big and near-square: " + JSON.stringify(lx));
