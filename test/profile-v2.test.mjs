@@ -72,16 +72,9 @@ db.prepare(`DELETE FROM posts WHERE id = ?`).run(p1);
 r = await call("POST /api/me/pins", { user: me, body: { postId: p4 } });
 t("a deleted post drops out of the pins", r.out.pinned.join() === [p4, p3].join());
 
-console.log("\nTAGGED");
-const tagged = Number(db.prepare(`INSERT INTO posts (author_id,channel,body,extras,created_at) VALUES (?,?,?,?,?)`).run(amy, "profile", "with me", JSON.stringify({ tags: ["me", "bob"] }), now).lastInsertRowid);
-db.prepare(`INSERT INTO posts (author_id,channel,body,extras,created_at) VALUES (?,?,?,?,?)`).run(bob, "profile", "not me", JSON.stringify({ tags: ["memento"] }), now);
-r = await call("GET /api/users/:username/tagged", { params: { username: "me" } });
-t("posts you're tagged in (exact name, not a prefix)", r.out.posts.length === 1 && r.out.posts[0].id === tagged);
-r = await call("GET /api/users/:username/tagged", { params: { username: "me" }, user: bob });
-t("hides authors you've blocked", r.out.posts.length === 1);
-blocks.add(bob + ":amy");
-r = await call("GET /api/users/:username/tagged", { params: { username: "me" }, user: bob });
-t("…once blocked, gone", r.out.posts.length === 0);
+console.log("\nNO TAGGED TAB (2026-10-18: \"no need for tag section\")");
+{ const app = readFileSync(join(ROOT, "src/app-15-profile.js"), "utf8"), srv = readFileSync(join(ROOT, "src/server-11-profile.js"), "utf8");
+  t("a profile has no Tagged tab, and its list route is gone", !app.includes('data-ptab="tagged"') && !srv.includes("/api/users/:username/tagged")); }
 
 console.log("\nWIRED IN");
 const rt = readFileSync(join(ROOT, "src/server.runtime.js"), "utf8");

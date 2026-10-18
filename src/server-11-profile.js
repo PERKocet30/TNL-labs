@@ -43,17 +43,6 @@ function followList(req, res, dir) {
 app.get("/api/users/:username/followers", maybeAuth, (req, res) => followList(req, res, "followers"));
 app.get("/api/users/:username/following", maybeAuth, (req, res) => followList(req, res, "following"));
 
-/* Posts this member is tagged in (posts.extras.tags, from the post creator). */
-app.get("/api/users/:username/tagged", maybeAuth, (req, res) => {
-  const u = q.userByName.get(req.params.username);
-  if (!u) return res.status(404).json({ error: "no such user" });
-  const ids = db.prepare(`SELECT p.id FROM posts p WHERE p.extras IS NOT NULL AND EXISTS
-    (SELECT 1 FROM json_each(p.extras, '$.tags') t WHERE t.value = ?) ORDER BY p.created_at DESC LIMIT 60`).all(u.username).map((r) => r.id);
-  const hidden = req.user ? blockedIds(req.user.id) : new Set();
-  const rows = ids.length ? feedRows({ ids, viewerId: req.user?.id, limit: 60 }) : [];
-  res.json({ posts: shapePosts(rows.filter((r) => !hidden.has(r.author_username))) });
-});
-
 /* Pin up to three of your own posts to the top of your grid. */
 app.post("/api/me/pins", auth, (req, res) => {
   const id = Number(req.body?.postId);

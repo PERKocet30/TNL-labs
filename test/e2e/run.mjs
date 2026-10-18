@@ -1106,15 +1106,13 @@ console.log("\nMEMBER · PHONE");
     for (const u of ["/u/tester/story.jpg", lid && `/m/${lid}/story.jpg`, tid && `/tr/${tid}/story.jpg`].filter(Boolean))
       ok((await sz(u)) === "1080x1920", u + " isn't a 1080×1920 Story card: " + await sz(u));
   });
-  await step(d, "followers / following open as lists; Tagged shows posts you're tagged in; ⋯ on someone else has Block and Report", async () => {
+  await step(d, "followers / following open as lists; no Tagged tab (2026-10-18); ⋯ on someone else has Block and Report", async () => {
     await p.locator('[data-flist="following"]').tap();
     await p.waitForSelector(".pick .pickrow, .pick .empty", { timeout: 5000 });
     await p.evaluate(() => { PICKER = null; render(); });
     await p.evaluate(() => openProfile("friend"));
     await p.waitForFunction(() => PROFILE && PROFILE.user.username === "friend" && !PROFILE.loading);
-    await p.locator('[data-ptab="tagged"]').tap();
-    await p.waitForFunction(() => Array.isArray(PROFTAGGED), null, { timeout: 5000 });
-    ok(await p.evaluate(() => PROFTAGGED.length) >= 1 && await p.locator(".worklist .work").count() >= 1, "friend's Tagged tab is empty (tester tagged them earlier)");
+    ok(await p.locator('[data-ptab="tagged"]').count() === 0 && await p.locator("[data-ptab]").count() >= 3, "the profile still has a Tagged tab");
     await p.locator("#profmore").tap();
     ok(await p.locator(".c-ma", { hasText: "Block" }).count() === 1 && await p.locator(".c-ma", { hasText: "Report" }).count() === 1, "⋯ is missing Block/Report");
     await p.evaluate(() => { CMENU = null; paintLayer(); EDITING = false; PROFILE = null; TAB = "showroom"; render(); });
@@ -1362,12 +1360,14 @@ console.log("\nMEMBER · COMPUTER");
     }
   });
   // 2026-10-18 (first look on a laptop): "too many images on screen, can't focus on any", "login isn't centered", "make labs bigger, more square"
-  await step(d, "a laptop: the Showroom is one column, labs are big near-square cards, log-in sits in the middle of the screen", async () => {
+  await step(d, "a laptop: the Showroom is two across under a full-width tournament bar, labs are big near-square cards, log-in sits in the middle of the screen", async () => {
     await p.setViewportSize({ width: 1366, height: 768 });
     await p.locator('.side [data-tab="showroom"]').click(); await p.waitForSelector("#sr-grid .sr-card");
-    const cards = await p.evaluate(() => [...document.querySelectorAll("#sr-grid .sr-card")].slice(0, 3).map((c) => Math.round(c.getBoundingClientRect().left)));
-    ok(cards.length >= 2 && new Set(cards).size === 1, "Showroom pieces sit side by side: " + cards);
-    ok(await p.evaluate(() => document.querySelector("#sr-grid .sr-card").getBoundingClientRect().width <= 500), "a Showroom piece is wider than a phone-like column");
+    // v1.3 (same day): "maybe 2 at a time" — two columns, and the tournament bar keeps its width
+    const cards = await p.evaluate(() => [...document.querySelectorAll("#sr-grid .sr-card")].map((c) => Math.round(c.getBoundingClientRect().left)));
+    ok(new Set(cards).size === 2, "the Showroom isn't two across: " + [...new Set(cards)]);
+    ok(await p.evaluate(() => document.querySelector("#sr-grid .sr-card").getBoundingClientRect().width <= 500), "a Showroom piece is wider than half the column");
+    ok(await p.evaluate(() => { const b = document.querySelector("#ev-bannerwrap"); const c = document.querySelector("#sr-grid").getBoundingClientRect(); return !b.offsetHeight || (b.getBoundingClientRect().width > 900 && Math.abs(b.getBoundingClientRect().left - c.left) < 2); }), "the tournament bar shrank, or doesn't line up with the work");
     await p.locator('.side [data-tab="labs"]').click(); await p.waitForSelector(".lx-list .lx");
     const lx = await p.evaluate(() => { const r = document.querySelector(".lx-list .lx").getBoundingClientRect(); return { w: r.width, h: r.height }; });
     ok(lx.w >= 260 && lx.h / lx.w > 0.8 && lx.h / lx.w < 1.4, "lab cards aren't big and near-square: " + JSON.stringify(lx));

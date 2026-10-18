@@ -69,7 +69,7 @@ try {
 
   console.log("\nTHE APP DRAWS IT — ITS OWN MUSIC TAB, NOT THE VISUAL GRID (v1.1)");
   const app = readFileSync(join(ROOT, "public/index.html"), "utf8");
-  t("songs are not tiles in the grid any more", !app.includes("withTracks(") && !app.includes("work-trk") && app.includes("(PROFTAGGED||[]):pinnedFirst(PROFILE.posts);"));
+  t("songs are not tiles in the grid any more", !app.includes("withTracks(") && !app.includes("work-trk") && app.includes(":pinnedFirst(PROFILE.posts);"));
   t("a Music tab, shown when they have songs (or it's yours)", app.includes(`\${(PROFILE.tracks||[]).length||mine?\`<button class="ptab \${PTAB==="music"?"on":""}" data-ptab="music"`));
   t("a song list: number, cover, title, plays, length", app.includes('<span class="pmus-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}"') && app.includes('<span class="pmus-d">${mmss(t.durationMs)}</span>'));
   t("Play at the top", app.includes('<button class="pmus-play" data-pftrk="${(cur||T[0]).id}"'));
