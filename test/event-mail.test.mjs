@@ -44,7 +44,7 @@ db.close();
 
 const PORT = 18900 + (process.pid % 60);
 const srv = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env,
-  PORT: String(PORT), TNL_DATA: DATA, RESEND_API_KEY: "re_test", MAIL_FROM: "TNL LABS <noreply@tnllabs.com>",
+  PORT: String(PORT), TNL_DATA: DATA, RESEND_API_KEY: "re_test", MAIL_FROM: "TNL LABS <noreply@tnllabs.com>", SUPPORT_EMAIL: "support@tnllabs.com",
   RESEND_API_BASE: `http://127.0.0.1:${fake.address().port}`, EVENT_MAIL_PER_DAY: "3", EVENT_MAIL_GAP_MS: "0", PUBLIC_URL: "https://labs.tnllabs.com" } });
 let log = ""; srv.stdout.on("data", (d) => log += d); srv.stderr.on("data", (d) => log += d);
 for (let i = 0; i < 100 && !/listening/.test(log); i++) await wait(100);
@@ -77,6 +77,7 @@ try {
   t("Enter now opens the event in the app", m0.html.includes('href="https://labs.tnllabs.com/?e=art-vol1"'));
   const unsub = /https:\/\/labs\.tnllabs\.com\/mail\/off\?k=([a-f0-9]{36})/.exec(m0.html);
   t("an unsubscribe link in the email…", !!unsub && m0.text.includes(unsub[0]));
+  t("replies go to the support inbox, not noreply", m0.reply_to === "support@tnllabs.com");
   t("…and the one-click headers mail apps turn into a button", m0.headers?.["List-Unsubscribe"] === `<${unsub[0]}>` && m0.headers?.["List-Unsubscribe-Post"] === "List-Unsubscribe=One-Click");
   const s1 = (await call("boss", `/api/admin/events/${a.event.id}`)).j.mail;
   t("admin sees it sending: 3 sent, 2 to go", s1.sent === 3 && s1.left === 2 && !s1.doneAt);
