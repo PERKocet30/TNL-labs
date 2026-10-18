@@ -196,7 +196,7 @@ function marketHTML(){
   if(MKTVIEW==="saved")return savedHTML();
   if(MKTVIEW==="detail")return detailHTML();
   if(MKTVIEW==="bag")return bagHTML();
-  const afCount=[MKTFILT.size,MKTFILT.condition,MKTFILT.range,MKTFILT.kind,(MKTFILT.sort&&MKTFILT.sort!=="new")?MKTFILT.sort:""].filter(Boolean).length;
+  const afCount=[MKTFILT.size,MKTFILT.type,MKTFILT.condition,MKTFILT.range,MKTFILT.kind,(MKTFILT.sort&&MKTFILT.sort!=="new")?MKTFILT.sort:""].filter(Boolean).length;
   return `<div class="scroll" id="mktscroll">
     <div class="shop-head">
       <div class="shop-top">
@@ -209,7 +209,7 @@ function marketHTML(){
       </div>
       <div class="shop-cats fchips">
         <button class="chip ${!MKTFILT.category?"on":""}" data-cat="">All</button>
-        ${MKTMETA.categories.map(c=>`<button class="chip ${MKTFILT.category===c?"on":""}" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}
+        ${MKTMETA.categories.map(c=>`<button class="chip ${MKTFILT.category===c?"on":""}" data-cat="${esc(c)}">${esc(catLabel(c))}</button>`).join("")}
       </div>
       ${MKTFILTOPEN?`<div class="shop-adv">
         ${(MKTMETA.sizes&&MKTMETA.sizes.length)?`<div class="fchips">
@@ -217,6 +217,10 @@ function marketHTML(){
           <button class="chip sm ${!MKTFILT.size?"on":""}" data-size="">Any</button>
           ${MKTMETA.sizes.map(z=>`<button class="chip sm ${MKTFILT.size===z?"on":""}" data-size="${esc(z)}">${esc(z)}</button>`).join("")}
         </div>`:""}
+        <div class="fchips">
+          <span class="dim shop-flabel">Seller</span>
+          ${[["","Anyone"],["brand","Brands"],["vintage","Vintage"],["custom","One of one"]].map(([v,t])=>`<button class="chip sm ${(MKTFILT.type||"")===v?"on":""}" data-mtype="${v}">${t}</button>`).join("")}
+        </div>
         <div class="fchips">
           <span class="dim shop-flabel">Condition</span>
           <button class="chip sm ${!MKTFILT.condition?"on":""}" data-cond="">Any</button>
@@ -237,7 +241,7 @@ function marketHTML(){
           ${[["new","Newest"],["low","Price ↑"],["high","Price ↓"],["liked","Most saved"]].map(([v,l])=>
             `<button class="chip sm ${(MKTFILT.sort||"new")===v?"on":""}" data-sort="${v}">${l}</button>`).join("")}
         </div>
-        ${(MKTFILT.category||MKTFILT.size||MKTFILT.condition||MKTFILT.range||MKTFILT.q||MKTFILT.kind||(MKTFILT.sort&&MKTFILT.sort!=="new"))?
+        ${(MKTFILT.category||MKTFILT.size||MKTFILT.type||MKTFILT.condition||MKTFILT.range||MKTFILT.q||MKTFILT.kind||(MKTFILT.sort&&MKTFILT.sort!=="new"))?
           `<button class="clearf" id="clearfilt">Clear all</button>`:""}
       </div>`:""}
       <div class="shop-links">
@@ -274,6 +278,7 @@ function mktCardHTML(l){
   <div class="mbody">
     <div class="mprice">${money(l.price)}${priceHTML(l)}</div>
     <div class="mtitle">${esc(l.title)}</div>
+    ${sellTypeTag(l)||(l.sellType==="brand"&&l.brand)?`<div class="mtype">${esc(sellTypeTag(l)||l.brand)}</div>`:""}
   </div>
 </div>`}
 

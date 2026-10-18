@@ -7,18 +7,21 @@
    never sold is dropped on save (a sold-out one stays, crossed out).
    Also here, so the big parts stay small: the compare-at ("was") price,
    the category and condition pickers, and the take-home sum.
+   v2.1 (same day): the size buttons come from the category (shoe sizes for
+   footwear, waists for bottoms, print sizes for prints — app-14-sell-specs);
+   art says "finish" where clothes say "colour".
    v1 (2026-09-30): a free-typed row per size/colour. */
 const PV_SIZES=["XS","S","M","L","XL","XXL"];
 const pvX=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
 const pvKey=(s,c)=>(s||"").trim().toUpperCase()+"|"+(c||"").trim().toLowerCase();
-const pvRank=s=>{const k=PV_SIZES.indexOf((s||"").toUpperCase());return k<0?50:k};
+const pvRank=(s,set)=>{const k=(set||PV_SIZES).findIndex(x=>x.toUpperCase()===(s||"").toUpperCase());return k<0?50:k};
 
 /* The options → one row per combination, keeping stock (and ids) already set. */
 function pvSync(f){
   const vs=f.variants||[];
   if(!f.optSizes)f.optSizes=[...new Set(vs.map(v=>(v.size||"").trim()).filter(Boolean))];
   if(!f.optColours)f.optColours=[...new Set(vs.map(v=>(v.colour||"").trim()).filter(Boolean))];
-  f.optSizes.sort((a,b)=>pvRank(a)-pvRank(b));
+  const set=sellSizes(f);f.optSizes.sort((a,b)=>pvRank(a,set)-pvRank(b,set));
   const old=new Map(vs.map(v=>[pvKey(v.size,v.colour),v]));
   const S=f.optSizes.length?f.optSizes:[""], C=f.optColours.length?f.optColours:[""], out=[];
   if(f.optSizes.length||f.optColours.length)for(const s of S)for(const c of C){
@@ -34,8 +37,18 @@ function pvHTML(f){
   const step=(attr,val,lbl)=>`<div class="pf-step"><button type="button" ${attr}="-1" aria-label="Fewer">−</button>
     <input type="number" inputmode="numeric" min="0" max="500" step="1" ${lbl} value="${val}">
     <button type="button" ${attr}="1" aria-label="More">+</button></div>`;
-  const head=`<section class="pf-card"><div class="pf-sec">Size &amp; stock</div>
-    <label class="pf-row"><span>More than one size or colour</span><input type="checkbox" class="pf-sw" id="s-hasvar" ${on?"checked":""}></label>`;
+  const one=sellOne(f), SZ=sellSizes(f), art=sellDept(f)==="Art", noSz=!SZ.length;
+  const colW=art?"finish":"colour", colL=art?"Finish":"Colour";
+  const head=`<section class="pf-card"><div class="pf-sec">${one?"Size":"Size &amp; stock"}</div>
+    ${one?"":`<label class="pf-row"><span>More than one ${noSz?"option":"size"} or ${colW}</span><input type="checkbox" class="pf-sw" id="s-hasvar" ${on?"checked":""}></label>`}`;
+  if(one&&noSz&&art)return "";   // an original painting: its dimensions are in Details
+  if(one)return `${head}
+    <div class="${noSz||art?"":"pf-2"}">
+      ${noSz?"":`<div><label class="pf-lb" for="s-size">Size</label><input class="pf-in" id="s-size" value="${esc(f.size||"")}" maxlength="20" placeholder="${esc(SZ.slice(1,4).join(", ")||"One size")}"></div>`}
+      ${art?"":`<div><label class="pf-lb" for="s-colour">${colL}</label><input class="pf-in" id="s-colour" value="${esc(f.colour||"")}" maxlength="30" placeholder="Black"></div>`}
+    </div>
+    <div class="pf-hint">${f.sellType==="custom"?"One of one — it comes off the Market once it sells.":"One piece — it comes off the Market once it sells."}</div>
+  </section>`;
   if(!on)return `${head}
     <div class="pf-2">
       <div><label class="pf-lb" for="s-size">Size</label><input class="pf-in" id="s-size" value="${esc(f.size||"")}" maxlength="20" placeholder="M, 32, 10"></div>
@@ -44,21 +57,53 @@ function pvHTML(f){
     <div class="pf-row pv-qrow"><span>Quantity</span>${step("data-qty",f.quantity||1,'id="s-qty" aria-label="Quantity"').replace('min="0"','min="1"')}</div>
   </section>`;
   pvSync(f);
-  const sizes=[...PV_SIZES,...f.optSizes.filter(s=>!PV_SIZES.includes(s.toUpperCase()))];
+  const sizes=[...SZ,...f.optSizes.filter(s=>!SZ.some(x=>x.toUpperCase()===s.toUpperCase()))];
   const have=new Set(f.optSizes.map(s=>s.toUpperCase()));
   const add=(id,ph,max)=>`<div class="pv-add"><input class="pf-in" id="${id}" maxlength="${max}" placeholder="${ph}" enterkeyhint="done"><button type="button" class="pv-addb" data-pvadd="${id}">Add</button></div>`;
   return `${head}
-    <div class="pf-lb">Sizes</div>
+    <div class="pf-lb">Sizes${noSz?" (optional)":""}</div>
     <div class="pv-chips">${sizes.map(s=>`<button type="button" class="chip${have.has(s.toUpperCase())?" on":""}" data-pvsize="${esc(s)}">${esc(s)}</button>`).join("")}</div>
-    ${add("pv-newsize","Add a size — 32, 10",20)}
-    <div class="pf-lb">Colours</div>
+    ${add("pv-newsize",noSz?"Small, Large, 14 in…":"Add a size of your own",20)}
+    <div class="pf-lb">${art?"Finishes":"Colours"}</div>
     ${f.optColours.length?`<div class="pv-chips">${f.optColours.map((c,i)=>`<span class="chip on pv-col">${esc(c)}<button type="button" data-pvcx="${i}" aria-label="Remove ${esc(c)}">${pvX}</button></span>`).join("")}</div>`:""}
-    ${add("pv-newcol",f.optColours.length?"Add another colour":"Optional — Black, Washed blue",30)}
+    ${add("pv-newcol",f.optColours.length?`Add another ${colW}`:art?"Optional — Unframed, Black frame":"Optional — Black, Washed blue",30)}
     ${f.variants.length?`<div class="pf-lb">Stock</div><div class="pv-rows" id="pvrows">${f.variants.map((v,i)=>`<div class="pv-row" data-pvi="${i}">
       <span class="pv-name">${esc([v.size,v.colour].filter(Boolean).join(" · "))}</span>
       ${step("data-pvqty",Number(v.qty)||0,`data-pvf="qty" aria-label="In stock: ${esc([v.size,v.colour].filter(Boolean).join(" "))}"`)}</div>`).join("")}</div>`:""}
     <div class="pv-tot" id="pvtot">${pvTotal(f.variants)}</div>
   </section>`}
+
+/* ── WHO'S SELLING · 2026-10-18 ──────────────────────────────────────
+   "Different options for brands or vintage sellers… a brand can sell
+   multiple new items with different variations, versus someone selling a
+   custom piece." First question on a new listing; then a switch at the top.
+     brand    new stock: sizes × colours on, condition New, offers off at first
+     vintage  one pre-loved piece: its size, condition (not New) and maker
+     custom   one of one: made by you, New, no stock to count (the server
+              holds it at 1 — setSellType)
+   The listing wears it: "Vintage", "1 of 1", or the brand's name. */
+const SELLTYPES=[["brand","My brand","Brand","New pieces in sizes and colours, with stock"],
+  ["vintage","Vintage / pre-loved","Vintage","One second-hand piece — its size, maker and condition"],
+  ["custom","One of one","One of one","A custom piece you made. There's only one"]];
+const sellOne=f=>f.sellType==="vintage"||f.sellType==="custom";
+function sellTypeHTML(f){
+  const cur=f.sellType||"";
+  if(!cur&&!MKTEDIT)return `<section class="pf-card st-pick"><div class="pf-sec">What are you selling?</div>
+    ${SELLTYPES.map(([k,t,,d])=>`<button type="button" class="st-opt" data-stype="${k}"><b>${t}</b><span>${d}</span></button>`).join("")}</section>`;
+  return `<div class="st-seg" role="radiogroup" aria-label="What you're selling">${SELLTYPES.map(([k,,s])=>
+    `<button type="button" role="radio" aria-checked="${cur===k}" class="${cur===k?"on":""}" data-stype="${k}">${s}</button>`).join("")}</div>`}
+function sellTypeSet(t){stashSell();const f=SELLFORM=SELLFORM||{},first=!f.sellType;f.sellType=t;
+  if(t==="brand"){f.condition="New";
+    if(!f.hasVariants){const sz=(f.size||"").trim(),c=(f.colour||"").trim();f.hasVariants=true;
+      f.optSizes=sz?[sz]:[];f.optColours=c?[c]:[];f.variants=sz||c?[{id:"",size:sz,colour:c,qty:Number(f.quantity)||1}]:[]}
+    if(first)f.acceptsOffers=false;if(!f.brand&&ME)f.brand=ME.displayName||""}
+  else{if(f.hasVariants){const v=(f.variants||[])[0]||{};f.size=v.size||f.size||"";f.colour=v.colour||f.colour||""}
+    f.hasVariants=false;f.quantity=1;
+    if(t==="custom"){f.condition="New";f.brand=""}else if(!f.condition||f.condition==="New")f.condition="Good";
+    if(first)f.acceptsOffers=true}
+  render()}
+/* What a listing is, in a word — on its card and its page. */
+const sellTypeTag=l=>l.sellType==="vintage"?"Vintage":l.sellType==="custom"?"1 of 1":"";
 
 /* Read the form back into SELLFORM (called by stashSell). */
 function pvStash(){
@@ -67,6 +112,7 @@ function pvStash(){
   document.querySelectorAll("#pvrows .pv-row").forEach(r=>{const v=(SELLFORM.variants||[])[+r.dataset.pvi];
     if(v)v.qty=Math.max(0,Math.min(500,parseInt(r.querySelector('[data-pvf="qty"]').value,10)||0))});
   const cmp=$("#s-compare");if(cmp)SELLFORM.compareAt=cmp.value;
+  specStash();
   const cat=$("#s-cat");if(cat)SELLFORM.category=cat.value;
   const cond=$("#s-cond");if(cond)SELLFORM.condition=cond.value;
 }
@@ -93,6 +139,8 @@ function pvRefreshEarn(){const e=$("#s-earn");if(e){e.innerHTML=sellEarnHTML();c
   const h=$("#s-cmphint");if(h)h.innerHTML=sellCompareHint(SELLFORM||{})}
 
 function wireSellVariants(){
+  wireSellSpecs();   // app-14-sell-specs
+  document.querySelectorAll("[data-stype]").forEach(b=>b.onclick=()=>sellTypeSet(b.dataset.stype));
   ["#s-ship","#s-compare","#s-price"].forEach(id=>{const i=$(id);if(i)i.addEventListener("input",()=>{stashSell();pvRefreshEarn()})});
   const fs=$("#s-freeship");if(fs)fs.addEventListener("change",()=>{stashSell();pvRefreshEarn()});
   const sw=$("#s-hasvar");if(!sw)return;

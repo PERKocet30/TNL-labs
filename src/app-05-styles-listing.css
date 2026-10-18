@@ -83,6 +83,24 @@
 .pf-sel select.pf-in{padding-right:38px;cursor:pointer}
 .pf-sel::after{content:"";position:absolute;right:18px;top:50%;width:7px;height:7px;border-right:2px solid var(--tx2);border-bottom:2px solid var(--tx2);transform:translateY(-70%) rotate(45deg);pointer-events:none}
 
+/* who's selling (2026-10-18): the first question, then a switch; the card's tag */
+.st-opt{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;text-align:left;background:var(--el);border:1px solid var(--line2);border-radius:var(--rad-m,12px);color:var(--tx);font:inherit;padding:16px;margin-top:10px;cursor:pointer}
+.st-opt:first-of-type{margin-top:0}
+.st-opt b{font-size:17px}
+.st-opt span{font-size:14px;color:var(--tx2);line-height:1.4}
+.st-seg{display:flex;gap:4px;padding:4px;background:var(--el);border-radius:999px}
+.st-seg button{flex:1;border:0;background:none;color:var(--tx2);font:inherit;font-size:14px;font-weight:600;padding:10px 6px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.st-seg button.on{background:var(--tx);color:var(--bg)}
+.sp-grid{margin-top:2px}
+.pf-2>:only-child{grid-column:1/-1}
+.dspecs div:last-child:nth-child(odd){grid-column:1/-1}
+.sp-grid:empty{display:none}
+.dspecs{margin:4px 0 18px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--rad-m,12px);overflow:hidden}
+.dspecs div{background:var(--bg);padding:10px 12px;min-width:0}
+.dspecs dt{font-size:12px;color:var(--tx2);margin:0 0 2px}
+.dspecs dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere}
+.mtype{font-size:12px;color:var(--tx2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 /* ── the bag, recently viewed, price drops, the shop at a glance (app-17-bag.js) ── */
 .shop-acts{display:flex;align-items:center;gap:8px}
 .shop-bag{position:relative;width:40px;height:40px;border-radius:50%;border:1px solid var(--line2);background:var(--bg);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}

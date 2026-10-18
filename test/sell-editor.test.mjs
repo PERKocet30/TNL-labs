@@ -12,7 +12,8 @@ const fn = (name) => { const i = src.indexOf("function " + name + "("); const j 
 
 console.log("\nLISTING EDITOR — SECTIONS");
 const sell = fn("sellHTML") + fn("pvHTML");   // Inventory (sizes & colours) is its own part since 2026-09-30
-for (const s of ["Photos", "Pricing", "Size &amp; stock", "Shipping", "Details", "Status"]) t("has a " + s + " card", sell.includes(`<div class="pf-sec">${s}</div>`));
+for (const s of ["Photos", "Pricing", "Shipping", "Details", "Status"]) t("has a " + s + " card", sell.includes(`<div class="pf-sec">${s}</div>`));
+t("has a Size & stock card (just Size for a single piece)", sell.includes('<div class="pf-sec">${one?"Size":"Size &amp; stock"}</div>'));
 t("one Publish / Save button", sell.includes('id="s-post">${MKTEDIT?"Save":"Publish"}'));
 t("sound listings keep their own section", sell.includes('<div class="pf-sec">Sound</div>'));
 t("photos: up to 8, several at once", sell.includes("SELLIMGS.length<8") && sell.includes('accept="image/*" multiple'));
@@ -36,7 +37,8 @@ t("$65 + $8 shipping at 4% → about $67.98, shipping counted (TNL takes nothing
 t("names both fees — no more \"before card processing\"", earn("85", 6, "physical").includes("6% TNL fee and the card fee") && !earn("85", 6, "physical").includes("before card processing"));
 t("no price yet → shows the fees only", earn("", 6, "physical").startsWith("TNL fee 6% · card fee 2.9% + 30¢"));
 t("\"Ships from\" is gone from the form", !sell.includes('id="s-from"'));
-t("category and condition are pickers, not walls of chips", sell.includes('pick("s-cat"') && sell.includes('pick("s-cond"') && !sell.includes('"data-scond"'));
+t("category and condition are pickers, not walls of chips", sell.includes("catPickHTML(f)") && sell.includes('pick("s-cond"') && !sell.includes('"data-scond"'));
+t("the category's own details are asked for in Details", sell.includes("${specFieldsHTML(f)}"));
 t("free sound → says free", earn("0", 6, "loop").startsWith("Free"));
 
 console.log(`\n  ${pass} passed, ${fail} failed`);

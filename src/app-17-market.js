@@ -69,6 +69,7 @@ function wireMarket(){
     loadMarket().then(render)});
   const mf=$("[data-mfree]");if(mf)mf.onclick=()=>{MKTFILT.free=MKTFILT.free?undefined:"1";loadMarket().then(render)};
   document.querySelectorAll("[data-cond]").forEach(b=>b.onclick=()=>{MKTFILT.condition=b.dataset.cond||undefined;loadMarket().then(render)});
+  document.querySelectorAll("[data-mtype]").forEach(b=>b.onclick=()=>{MKTFILT.type=b.dataset.mtype||undefined;loadMarket().then(render)});
   document.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{
     const v=b.dataset.range;MKTFILT.range=v||undefined;
     if(v){const [lo,hi]=v.split("-");MKTFILT.min=lo||undefined;MKTFILT.max=hi||undefined}
@@ -173,7 +174,7 @@ function wireMarket(){
              wrong about it is fixable here. */
           const id=MKTEDIT;
           const eb={title:body.title,description:body.description||"",price:Number(body.price||0),
-            images:SELLIMGS,category:body.category,acceptsOffers:body.acceptsOffers!==false,compareAt:isLoop?undefined:(body.compareAt||0)};
+            images:SELLIMGS,category:body.category,acceptsOffers:body.acceptsOffers!==false,compareAt:isLoop?undefined:(body.compareAt||0),sellType:isLoop?undefined:(body.sellType||""),specs:isLoop?undefined:(body.specs||{})};
           if(SELLFORM.status==="sold"||SELLFORM.status==="active")eb.status=SELLFORM.status;
           if(isLoop){eb.bpm=body.bpm;eb.musicalKey=body.musicalKey;eb.stems=body.stems}
           else{eb.shipping=Number(body.shipping||0);eb.quantity=Number(body.quantity||1);
@@ -283,7 +284,7 @@ function wireMarket(){
       shipping:l.shipping?(l.shipping/100).toFixed(2):"",
       quantity:l.quantity||1,category:l.category,condition:l.condition,
       brand:l.brand||"",size:l.size||"",colour:l.colour||"",shipsFrom:l.shipsFrom||"",
-      acceptsOffers:l.acceptsOffers!==false,status:l.status==="sold"?"sold":"active",compareAt:l.compareAt?(l.compareAt/100).toFixed(2):"",
+      acceptsOffers:l.acceptsOffers!==false,status:l.status==="sold"?"sold":"active",compareAt:l.compareAt?(l.compareAt/100).toFixed(2):"",sellType:l.sellType||"",specs:{...(l.specs||{})},
       bpm:l.bpm||"",musicalKey:l.musicalKey||"",stems:!!l.stems,
       hasVariants:!!(l.variants||[]).length,variants:(l.variants||[]).map(v=>({...v}))};
     MKTVIEW="edit";render()});
