@@ -119,7 +119,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
       :`<button class="pig-plus" id="profmore" aria-label="More">${DI.more}</button><button class="x" id="sheetx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`}</div></div>
 
   <div class="pig-head">
-    ${u.avatarUrl?`<img class="pav pig-av" src="${esc(u.avatarUrl)}" alt="">`:`<div class="pav pig-av">${esc(u.displayName.slice(0,2).toUpperCase())}</div>`}
+    ${u.avatarUrl?`<img class="pav pig-av"${avRing(u)[1]} src="${esc(u.avatarUrl)}" alt="">`:`<div class="pav pig-av"${avRing(u)[1]}>${esc(u.displayName.slice(0,2).toUpperCase())}</div>`}
     <div class="pstats pig-stats ${ld?"sk":""}">
       ${num(st.posts,esc(K.work.toLowerCase()))}
       ${num(PROFILE.followers,"followers",`data-flist="followers"`)}

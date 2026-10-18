@@ -62,7 +62,7 @@ function srBuildersHTML(){
   if(!SRB.length)return "";
   return `<div class="mono sr-feedhead" style="padding-left:0"><span>Who's building</span></div>
     <div class="brow">${SRB.map(x=>`<button class="bcard" data-u="${esc(x.username)}">
-      ${x.avatar_url?`<img class="av" src="${esc(x.avatar_url)}" alt="">`:`<div class="av">${esc(x.display_name.slice(0,2).toUpperCase())}</div>`}
+      ${avHTML({avatarUrl:x.avatar_url,displayName:x.display_name,accentHex:x.accentHex})}
       <div class="bname">${esc(x.display_name)}</div>
       <div class="mono dim">${esc((x.role||"").charAt(0).toUpperCase()+(x.role||"").slice(1))}</div>
     </button>`).join("")}</div>`}

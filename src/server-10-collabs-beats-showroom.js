@@ -236,10 +236,10 @@ app.get("/api/feed/showroom", maybeAuth, (req, res) => {
 app.get("/api/builders", maybeAuth, (req, res) => {
   const ids = rankBuilders(req.user?.id || 0, 12);
   if (!ids.length) return res.json({ builders: [] });
-  const users = new Map(db.prepare(`SELECT id, username, display_name, role, avatar_url FROM users WHERE id IN (${ids.map(Number).join(",")})`)
+  const users = new Map(db.prepare(`SELECT id, username, display_name, role, avatar_url, accent FROM users WHERE id IN (${ids.map(Number).join(",")})`)
     .all().map((u) => [u.id, u]));
   const hidden = req.user ? blockedIds(req.user.id) : new Set();
   res.json({ builders: ids.map((id) => users.get(id)).filter((u) => u && !hidden.has(u.username))
-    .map((u) => ({ username: u.username, display_name: u.display_name, role: u.role, avatar_url: u.avatar_url || "" })) });
+    .map((u) => ({ username: u.username, display_name: u.display_name, role: u.role, avatar_url: u.avatar_url || "", accentHex: accentHex(u.accent) })) });   // their colour rings their picture (2026-10-18)
 });
 
