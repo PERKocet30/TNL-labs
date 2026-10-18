@@ -92,6 +92,7 @@ function wireProfileV2(){
   const pm=$("#profmenu");if(pm)pm.onclick=()=>openMenu({react:false,actions:[
     {icon:PF_I.theme,label:THEME==="dark"?"Day mode":"Night mode",run:()=>{setTheme(THEME==="dark"?"light":"dark");render()}},
     {icon:PF_I.level,label:"Level and rates",run:()=>{CLIMB=true;render()}},
+    {icon:PF_I.link,label:"How TNL LABS works",run:openTour},   // the walkthrough new members see (app-11-gate-tour)
     {icon:PF_I.theme,label:liteOn()?"Data saver: on":"Data saver: off",run:()=>{setLite(!liteOn());
       toast(liteOn()?"Data saver on — videos and music wait for a tap":"Data saver off");render()}},
     {icon:PF_I.share,label:"Share profile",run:()=>shareProfile(myName())},
@@ -122,6 +123,7 @@ function wireProfileV2(){
   if(PTAB==="music"&&PFSONG&&PROFILE&&!PROFILE.loading){const r=document.querySelector(`.pmus-row[data-pftrk="${PFSONG}"]`);if(r&&!r.dataset.seen){r.dataset.seen="1";r.scrollIntoView({block:"center"})}}
 }
 async function shareProfile(un){
+  if(un===myName())gsMark("share");   // Get started: share your page
   shareMenu({title:"@"+un+" on LABS",link:profileLink(un),story:"/u/"+encodeURIComponent(un)+"/story.jpg"});
 }
 function logOut(){

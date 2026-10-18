@@ -2,6 +2,7 @@ function showroomHTML(){return `<div class="scroll" id="showroom">
   <div class="sr-newwrap"><button class="sr-new" id="sr-new"${SRNEW?"":" hidden"}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>New work</button></div>
   ${guest()?`<section class="whatis"><h1 class="wi-tag">Social media by creatives, for creatives.</h1></section>`:""}
   <div id="ev-bannerwrap">${eventBannerHTML()}</div>
+  <div id="gs-slot">${gsHTML()}</div>
 
   <div class="sr-builders" id="sr-builders">${srBuildersHTML()}</div>
 
@@ -117,6 +118,7 @@ document.addEventListener("click",e=>{
   const s=$("#showroom");if(s)s.scrollTo({top:0,behavior:mvReduced()?"auto":"smooth"});
 });
 async function loadShowroom(force){
+  if(typeof gsFlag==="function"&&gsFlag("new"))gsLoad();   // a new member's Get started list (app-11-getstarted)
   if(!force && SRAT && Date.now()-SRAT<8000 && SRPOSTS.length) return; // grid paints from cache
   SRAT=Date.now();
   try{

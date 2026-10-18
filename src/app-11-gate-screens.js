@@ -12,8 +12,9 @@ const GX_OK=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke=
 const GX_NO=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>`;
 const GX_PERSON=`<svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>`;
 
-function gxNew(){return {src:GATE,mode:GATE==="login"?"login":"register",step:"email",
-  f:{displayName:"",username:"",email:"",password:"",roles:[]},
+function gxNew(){const tour=GATE==="tour";   // ≡ → How TNL LABS works: the walkthrough on its own (app-11-gate-tour)
+  return {src:GATE,mode:tour?"tour":GATE==="login"?"login":"register",step:tour?"tour":"email",ti:0,
+  f:{displayName:"",username:"",email:"",password:"",roles:[],bio:"",ig:""},
   err:"",un:{state:"",msg:"",sugg:[]},made:null,people:null,peopleP:null,following:{},
   sent:false,resetUrl:null,busy:false,showpw:false,focused:"",depth:0}}
 /* Back inside the flow. true = handled here; false = close the gate. */
@@ -38,6 +39,7 @@ function gxUnStatus(G){const s=G.un.state;
 function gateHTML(){
   if(!GFLOW||GFLOW.src!==GATE){GFLOW=gxNew();pushView("gate","open")}
   const G=GFLOW,f=G.f;
+  if(G.step==="tour")return tourHTML(G);
   const err=G.err?`<div class="gx-err" role="alert">${esc(G.err)}</div>`:"";
   const why=GATEWHY?`<p class="gx-why">${esc(GATEWHY)}</p>`:"";
   const pw=(id,ac)=>gxField(id,"Password",{type:G.showpw?"text":"password",value:f.password,attrs:`autocomplete="${ac}"`,
@@ -104,6 +106,18 @@ function gateHTML(){
         <input type="file" id="gxfile" accept="image/*" hidden>
         ${err}<button class="gx-btn" id="gxnext"${G.busy?" disabled":""}>${G.busy?"Uploading…":has?"Next":"Add a photo"}</button>
         ${has?`<button class="gx-link" id="gxchange">Change photo</button>`:""}`;
+    }else if(G.step==="colour"){   // 2026-10-18 onboarding: your colour, then a line about you
+      const cur=(ME&&ME.accent)||"lab",hex=(ACCENTS[cur]||{}).hex||"";
+      body=`<div class="gx-mid"><div class="gx-tint" style="--ring:${esc(hex)}">${av()}</div><h1 class="gx-h">Pick your colour</h1>
+        <p class="gx-p">Your profile, your page and your share card wear it. You can change it any time.</p></div>
+        <div class="gx-sw">${Object.entries(ACCENTS).filter(([k,a])=>!a.legacy||cur===k).map(([k,a])=>`<button class="pe-dot ${cur===k?"on":""}" data-gxacc="${esc(k)}" title="${esc(a.name)}" aria-label="${esc(a.name)}"><span style="background:${esc(a.hex)}"></span></button>`).join("")}</div>
+        ${err}<div class="gx-stick"><button class="gx-btn" id="gxnext">Next</button></div>`;
+    }else if(G.step==="bio"){
+      body=`<h1 class="gx-h">Tell people what you make</h1><p class="gx-p">A line or two. It sits under your name on your page.</p>
+        <textarea class="gxf-ta" id="gxbio" maxlength="150" rows="3" placeholder="Illustrator. Posters, zines and album art.">${esc(f.bio)}</textarea>
+        <div class="gx-count" id="biocount">${f.bio.length} / 150</div>
+        ${gxField("gxig","Instagram username (optional)",{value:f.ig,attrs:'autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="31"'})}
+        ${err}<div class="gx-stick"><button class="gx-btn" id="gxnext"${G.busy?" disabled":""}>${G.busy?"Saving…":"Next"}</button></div>`;
     }else if(G.step==="follow"){
       const ppl=G.people||[];
       body=`<h1 class="gx-h">People to follow</h1><p class="gx-p">Some of the people making things here right now.</p>
