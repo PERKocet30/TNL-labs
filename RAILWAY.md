@@ -49,7 +49,7 @@ passport shows an **Admin dashboard** link. Or go straight to `/admin`.
 
 | Variable | Value |
 | --- | --- |
-| `PUBLIC_URL` | `https://labs.tnllabs.com` |
+| `PUBLIC_URL` | `https://tnllabs.com` |
 
 Builds verification links, password resets, Stripe redirects and public
 portfolio links. Wrong value = broken emails. Update it the day you point a
@@ -144,7 +144,7 @@ places if it ever leaks.
 ```
 TNL_DATA=/app/data
 ADMIN_EMAIL=Jorgemfuentes001@gmail.com
-PUBLIC_URL=https://labs.tnllabs.com
+PUBLIC_URL=https://tnllabs.com
 RESEND_API_KEY=re_xxxxxxxx
 MAIL_FROM=TNL LABS <onboarding@resend.dev>
 STRIPE_SECRET_KEY=sk_test_xxxxx

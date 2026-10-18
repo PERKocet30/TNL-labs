@@ -3,7 +3,7 @@
    bar at the top that stays put as you scroll ("make sure the tournament
    is easily navigable because I had problems going back" — the home-screen
    app and Instagram's browser have no back button of their own).
-   v1.2 also: "Invite people" — the link to send (labs.tnllabs.com/
+   v1.2 also: "Invite people" — the link to send (tnllabs.com/
    tournament for the current one, else /e/:slug), shared or copied.
    v1.2 also: "Every entry is in // Visual" — the lab its entries post into,
    opened on its Tournament chip (app-11-places.js).
