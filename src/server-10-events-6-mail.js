@@ -36,7 +36,7 @@ const EVM_WHO = `FROM users WHERE email_verified = 1 AND suspended = 0 AND mail_
 const evmDay = (t = Date.now()) => new Date(t).toISOString().slice(0, 10); // Resend's day ends at midnight UTC
 const evmRow = (id) => db.prepare(`SELECT * FROM event_mail WHERE event_id = ?`).get(id);
 const evmBase = () => {
-  let u = (process.env.PUBLIC_URL || "https://www.tnllabs.com").trim();
+  let u = (process.env.PUBLIC_URL || "https://tnllabs.com").trim();
   if (!/^https?:\/\//i.test(u)) u = "https://" + u;
   return u.replace(/\/+$/, "");
 };

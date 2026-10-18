@@ -18,14 +18,14 @@
    was answering with application/octet-stream and Safari was saving it as
    a file. A single assertion here would have caught that the day it landed.
 
-   Usage:  BASE=https://www.tnllabs.com node scripts/scientist.mjs
+   Usage:  BASE=https://tnllabs.com node scripts/scientist.mjs
    Exit 0 = all green. Exit 1 = at least one failure (fails the run).
    test/scientist.test.mjs runs it against a local copy, full and empty.
 */
 import vm from "node:vm";
 import tls from "node:tls";
 
-const BASE = (process.env.BASE || "https://www.tnllabs.com").replace(/\/+$/, "");
+const BASE = (process.env.BASE || "https://tnllabs.com").replace(/\/+$/, "");
 const TIMEOUT_MS = Number(process.env.SCIENTIST_TIMEOUT || 15000);
 const SLOW_MS = Number(process.env.SCIENTIST_SLOW || 2500);   // warn: a person notices
 const TOO_SLOW_MS = Number(process.env.SCIENTIST_TOO_SLOW || 8000); // fail: a person leaves

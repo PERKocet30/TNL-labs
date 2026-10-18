@@ -1,11 +1,11 @@
 /* ================================================================
-   THE ADDRESS v1.0 — 2026-10-18: the app moves to www.tnllabs.com
+   THE ADDRESS v1.0 — 2026-10-18: the app moves to tnllabs.com
    (server-01-move.js). On an old address the app asks where home is and
    goes there, carrying the sign-in across with a one-use code; on arrival
    it trades the code for a session and takes it out of the address bar.
    Until Railway has CANONICAL_HOST, the old address just stays put.
 ================================================================ */
-const OLD_HOSTS=["labs.tnllabs.com"];
+const OLD_HOSTS=["labs.tnllabs.com","www.tnllabs.com"];
 async function addressMove(){
   const q=new URLSearchParams(location.search),code=q.get("handoff");
   if(code){

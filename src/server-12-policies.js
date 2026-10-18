@@ -31,7 +31,7 @@ function policyPage(res, { path, title, eyebrow, lead, sections }) {
   res.set("Cache-Control", "public, max-age=300");
   res.send(lookPage({
     title: `${title} — TNL LABS`,
-    head: `<link rel="canonical" href="https://www.tnllabs.com${path}"><meta name="description" content="${lookEsc(lead)}">`,
+    head: `<link rel="canonical" href="https://tnllabs.com${path}"><meta name="description" content="${lookEsc(lead)}">`,
     body: `${lookEyebrow(eyebrow)}<h1>${title}</h1><p class="p">${lead}</p>
 <p class="cap">Last updated ${POLICY_UPDATED}</p>${toc}
 ${sections.map(([h, html], i) => `<section class="pol" id="s${i + 1}"><h2>${h}</h2>${html}</section>`).join("\n")}`,
@@ -43,7 +43,7 @@ const mail = () => `<a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>`;
 /* ── Terms of service ───────────────────────────────────────────── */
 app.get("/terms", (_req, res) => policyPage(res, {
   path: "/terms", title: "Terms of service", eyebrow: "Terms",
-  lead: "The rules for using TNL LABS — the app at www.tnllabs.com, its Market and its events. By making an account or buying something here, you agree to them.",
+  lead: "The rules for using TNL LABS — the app at tnllabs.com, its Market and its events. By making an account or buying something here, you agree to them.",
   sections: [
     ["Who we are", `<p>TNL LABS is a social platform and marketplace for creatives, run by TNL LABS (“we”, “us”). Reach us any time at ${mail()}.</p>`],
     ["Your account", `<ul><li>You must be at least 13 to make an account, and at least 18 (or have a parent or guardian's permission) to buy or sell.</li>

@@ -1,8 +1,8 @@
 /* ================================================================
    THE ADDRESS v1.0 — 2026-10-18. "Switch everything to tnllabs.com" —
-   the app moves from labs.tnllabs.com to www.tnllabs.com (Squarespace's
-   DNS can't point the bare tnllabs.com at Railway, so it forwards to www).
-   Off until Railway → Variables has CANONICAL_HOST (e.g. www.tnllabs.com),
+   the app moves from labs.tnllabs.com to tnllabs.com (DNS on Cloudflare,
+   which can point a bare domain at Railway; www forwards here too).
+   Off until Railway → Variables has CANONICAL_HOST (tnllabs.com),
    so nothing changes before the new address works. Then:
      - a page on an old address (a shared /u/, /p/, /e/, /l/, /s/… link)
        answers 301 to the same path on the new one;

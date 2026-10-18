@@ -152,7 +152,7 @@ t("with nothing in flight it stops at once (deploys aren't slower)", code2 === 0
 
 const rt = readFileSync(join(ROOT, "src/server.runtime.js"), "utf8");
 t("a whole upload gets 30 minutes, not Node's 5", rt.includes("server.requestTimeout = 30 * 60 * 1000"));
-t("the alert's Open Admin link is trimmed", rt.includes('process.env.PUBLIC_URL || "https://www.tnllabs.com").trim()'));
+t("the alert's Open Admin link is trimmed", rt.includes('process.env.PUBLIC_URL || "https://tnllabs.com").trim()'));
 
 console.log("\nTHE APP RETRIES A DROPPED UPLOAD");
 const src = readFileSync(join(ROOT, "src/app-08-upload.js"), "utf8");

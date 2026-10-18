@@ -1,7 +1,7 @@
 
 /* ================================================================
    EVENTS v1.2 — 2026-10-12 (v1.2: says which event is the current one,
-   the one www.tnllabs.com/tournament opens).
+   the one tnllabs.com/tournament opens).
    EVENTS v1.1 — 2026-10-07. What members see and do: the event page,
    entering, voting, judging, and the public /e/:slug pages.
    Vote counts never leave the server while a stage is open — except in a
