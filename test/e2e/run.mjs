@@ -1362,12 +1362,14 @@ console.log("\nMEMBER · COMPUTER");
     }
   });
   // 2026-10-18 (first look on a laptop): "too many images on screen, can't focus on any", "login isn't centered", "make labs bigger, more square"
-  await step(d, "a laptop: the Showroom is one column, labs are big near-square cards, log-in sits in the middle of the screen", async () => {
+  await step(d, "a laptop: the Showroom is two across under a full-width tournament bar, labs are big near-square cards, log-in sits in the middle of the screen", async () => {
     await p.setViewportSize({ width: 1366, height: 768 });
     await p.locator('.side [data-tab="showroom"]').click(); await p.waitForSelector("#sr-grid .sr-card");
-    const cards = await p.evaluate(() => [...document.querySelectorAll("#sr-grid .sr-card")].slice(0, 3).map((c) => Math.round(c.getBoundingClientRect().left)));
-    ok(cards.length >= 2 && new Set(cards).size === 1, "Showroom pieces sit side by side: " + cards);
-    ok(await p.evaluate(() => document.querySelector("#sr-grid .sr-card").getBoundingClientRect().width <= 500), "a Showroom piece is wider than a phone-like column");
+    // v1.3 (same day): "maybe 2 at a time" — two columns, and the tournament bar keeps its width
+    const cards = await p.evaluate(() => [...document.querySelectorAll("#sr-grid .sr-card")].map((c) => Math.round(c.getBoundingClientRect().left)));
+    ok(new Set(cards).size === 2, "the Showroom isn't two across: " + [...new Set(cards)]);
+    ok(await p.evaluate(() => document.querySelector("#sr-grid .sr-card").getBoundingClientRect().width <= 500), "a Showroom piece is wider than half the column");
+    ok(await p.evaluate(() => { const b = document.querySelector("#ev-bannerwrap"); const c = document.querySelector("#sr-grid").getBoundingClientRect(); return !b.offsetHeight || (b.getBoundingClientRect().width > 900 && Math.abs(b.getBoundingClientRect().left - c.left) < 2); }), "the tournament bar shrank, or doesn't line up with the work");
     await p.locator('.side [data-tab="labs"]').click(); await p.waitForSelector(".lx-list .lx");
     const lx = await p.evaluate(() => { const r = document.querySelector(".lx-list .lx").getBoundingClientRect(); return { w: r.width, h: r.height }; });
     ok(lx.w >= 260 && lx.h / lx.w > 0.8 && lx.h / lx.w < 1.4, "lab cards aren't big and near-square: " + JSON.stringify(lx));
