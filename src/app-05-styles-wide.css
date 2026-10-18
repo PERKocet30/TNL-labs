@@ -1,4 +1,4 @@
-/* ── COMPUTER LAYOUT v1.5 · 2026-10-18 (Showroom gallery; v1.4: two-pane post maker; v1.3: two-across Showroom, full-width bars; v1.2: one-column Showroom, square lab cards, centred log-in); v1.1 · 2026-10-14; v1.0 · 2026-09-29 ─────────────────────────────────
+/* ── COMPUTER LAYOUT v1.6 · 2026-10-18 (the gallery is the only Showroom; v1.5: Showroom gallery; v1.4: two-pane post maker; v1.3: two-across Showroom, full-width bars; v1.2: one-column Showroom, square lab cards, centred log-in); v1.1 · 2026-10-14; v1.0 · 2026-09-29 ─────────────────────────────────
    Phones keep the app as it is. From 1024px the top bar and bottom nav
    become one left sidebar (render() builds .side only when wide), content
    sits at a reading width beside it, and a mouse gets hover states. Same
@@ -27,20 +27,15 @@
      a wall of three ("too many images, can't focus"), not one at a time ("maybe 2 at a time"). The
      tournament bar and Who's building keep the full width. */
   #showroom .sr-builders,#showroom .whatis,#showroom #ev-bannerwrap{max-width:1000px;margin-left:auto;margin-right:auto}
-  #showroom .sr-grid{columns:2;column-gap:24px;max-width:1000px;margin-left:auto;margin-right:auto;padding-left:16px;padding-right:16px;box-sizing:border-box}
-  #showroom .sr-card{margin-bottom:24px}
   /* the gallery (app-11-gallery.js): one piece under the spotlight, the
      neighbours smaller and dimmed either side, a wall you walk along */
   .gal-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:1000px;margin:6px auto 14px;padding:0 16px;box-sizing:border-box}
   .gal-bar .mono{color:var(--dim)}
-  .gal-seg{display:flex;border:1px solid var(--line)}
-  .gal-seg button{background:none;border:0;padding:8px 16px;font:inherit;font-size:13px;color:var(--dim);cursor:pointer}
-  .gal-seg button.on{background:var(--tx);color:var(--bg)}
   .sr-gridwrap{position:relative}
   #showroom .sr-grid.sr-wall{columns:auto;display:flex;align-items:flex-start;gap:32px;max-width:none;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;
     padding:12px calc(50% - min(260px,23vw)) 48px;overscroll-behavior-x:contain}
   #showroom .sr-grid.sr-wall::-webkit-scrollbar{display:none}
-  #showroom .sr-grid.sr-wall .sr-card{flex:0 0 min(520px,46vw);margin:0;scroll-snap-align:center;border:1px solid var(--line);background:var(--card);
+  #showroom .sr-grid.sr-wall .sr-card{flex:0 0 min(520px,46vw);margin:0;scroll-snap-align:center;scroll-snap-stop:always;border:1px solid var(--line);background:var(--card);
     transform:scale(.84);transform-origin:50% 0;opacity:.38;transition:transform .35s cubic-bezier(.2,.7,.2,1),opacity .35s;cursor:pointer}
   #showroom .sr-grid.sr-wall .sr-card.on{transform:none;opacity:1;cursor:auto;box-shadow:0 34px 60px -44px var(--tx)}
   #showroom .sr-grid.sr-wall .sr-card:not(.on) *{pointer-events:none}
