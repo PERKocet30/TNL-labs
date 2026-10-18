@@ -72,7 +72,7 @@ function songMenu(t){
     {label:"Share song",sub:"A link that shows the cover and plays — Instagram DMs included",icon:DI.out,act:"share"},
     ...(mine?[{label:pinned?"Unpin":"Pin to top",sub:pinned?"Back in with the rest":"First on your Music tab",icon:SONG_PIN,act:"pin"}]:[])],
     onPick:async it=>{
-      if(it.act==="share")return shareMenu({title:t.title+" — @"+(t.by&&t.by.username||""),link:songLink(t)});
+      if(it.act==="share")return shareMenu({title:t.title+" — @"+(t.by&&t.by.username||""),link:songLink(t),story:`/tr/${t.id}/story.jpg`});
       try{const d=await req("/api/me/pinned-track",{method:"POST",body:{trackId:pinned?null:t.id}});
         if(PROFILE){PROFILE.pinnedTrack=d.pinnedTrack;PROFCACHE.delete(PROFILE.user.username)}
         toast(pinned?"Unpinned":"Pinned to the top");render()}catch(e){toast(e.message)}}});
