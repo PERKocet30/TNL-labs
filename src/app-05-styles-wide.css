@@ -1,4 +1,4 @@
-/* ── COMPUTER LAYOUT v1.1 · 2026-10-14 (unused selectors out); v1.0 · 2026-09-29 ─────────────────────────────────
+/* ── COMPUTER LAYOUT v1.2 · 2026-10-18 (one-column Showroom, square lab cards, centred log-in); v1.1 · 2026-10-14; v1.0 · 2026-09-29 ─────────────────────────────────
    Phones keep the app as it is. From 1024px the top bar and bottom nav
    become one left sidebar (render() builds .side only when wide), content
    sits at a reading width beside it, and a mouse gets hover states. Same
@@ -23,8 +23,34 @@
   .side .navb[data-tab="post"] .ic{background:none;padding:0;width:auto}
   .side .navb[data-tab="post"].on{background:var(--accent-fill)}
 
+  /* The Showroom is one column of work on a computer (v1.2, 2026-10-18: "too many images on screen, can't
+     focus on any") — one piece at a time, like a phone held up, centred beside the sidebar. */
+  #showroom .sr-builders,#showroom .sr-grid,#showroom .whatis,#showroom #ev-bannerwrap{max-width:480px;margin-left:auto;margin-right:auto}
+  #showroom .sr-grid{columns:1;padding-left:0;padding-right:0}
+  #showroom .sr-card{margin-bottom:28px}
+
+  /* Labs are big square cards on a computer (v1.2: "make labs bigger, more square"): the lab's latest
+     work across the top, its name and #tags under it — about as tall as wide. Three across. */
+  .lx-head,.lx-list{max-width:1080px}
+  .lx-list{grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
+  .lx,.lx:last-child{flex-direction:column;align-items:stretch;gap:0;padding:0;border:1px solid var(--line);overflow:hidden}
+  .lx-media{flex:none;width:100%;height:auto;aspect-ratio:4/3;border:0;border-bottom:1px solid var(--line)}
+  .lx-media.bare{background:var(--el);border-color:var(--line)}
+  .lx-media .lx-ic svg{width:64px;height:64px;stroke-width:1.5}
+  .lx-body{padding:14px 16px 16px;gap:4px}
+  .lx-name{font-size:22px}
+  .lx-for{white-space:normal}
+  .lx-go{display:none}
+  .lx-sec{padding:22px 0 0}
+
+  /* Log in and sign up: a card in the middle of the whole screen — the sidebar isn't there when you're
+     signed out, so the page mustn't leave room for it (v1.2: "login isn't centered") */
+  .gate{position:fixed;inset:0;z-index:60;align-items:center;padding:32px 16px;box-sizing:border-box}
+  .gx{min-height:0;max-width:440px;margin:auto 0;background:var(--card);border:1px solid var(--line);padding:4px 40px 32px}
+  .gx-body{flex:none}
+  .gx-foot{padding-top:22px}
+
   /* reading widths beside the sidebar */
-  #showroom .sr-builders,#showroom .sr-grid,#showroom .whatis{max-width:1120px;margin-left:auto;margin-right:auto}
   .shop-head,.mkt-grid,.mktfoot{padding-left:max(24px,calc((100% - 1200px) / 2));padding-right:max(24px,calc((100% - 1200px) / 2))}
   .sheet.astab .sheetc{max-width:935px;margin:0 auto;padding-left:28px;padding-right:28px}
   .announce,.verifybar{justify-content:center}
