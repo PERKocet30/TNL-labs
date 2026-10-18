@@ -1,4 +1,4 @@
-// Soft v1.1 (2026-10-18; v1.1: every screen and admin): "I don't like the sharp boxy design language … profiles
+// Soft v1.2 (2026-10-18; v1.2: posts square again, the Market gallery whole; v1.1: every screen and admin): "I don't like the sharp boxy design language … profiles
 // should reflect what color style they choose around profile pic." Cards round,
 // photo grids stay square, and every avatar wears its member's colour as a ring.
 import { fileURLToPath } from "node:url";
@@ -17,16 +17,19 @@ console.log("\nSOFT, NOT BOXY");
 t("three radii, defined once", /:root\{--rad:16px;--rad-m:12px;--rad-s:8px\}/.test(soft));
 t("the soft part is in the app", css.includes(":root{--rad:16px;--rad-m:12px;--rad-s:8px}"));
 const rounded = (sel, v) => new RegExp("(^|[,}\\n])\\s*[^{}]*" + sel.replace(/[.]/g, "\\.") + "[^{}]*\\{[^}]*border-radius:var\\(--" + v + "\\)").test(soft);
-for (const s of [".ev-banner", ".bcard", ".lx", ".ev-invite", ".post", ".ui-card", ".c-post", ".pf-card"]) t(`${s} is a soft card`, rounded(s, "rad"));
-for (const s of [".ev-th", ".msg-i", ".post-img", ".lx-media"]) t(`${s} pictures round a little`, rounded(s, "rad-m"));
+for (const s of [".ev-banner", ".bcard", ".lx", ".ev-invite", ".ui-card", ".c-post", ".pf-card"]) t(`${s} is a soft card`, rounded(s, "rad"));
+for (const s of [".ev-th", ".msg-i", ".lx-media"]) t(`${s} pictures round a little`, rounded(s, "rad-m"));
 for (const s of [".trk-art", ".ordimg", ".pc-th"]) t(`${s} thumbnails round a little less`, rounded(s, "rad-s"));
 t("the phone feed stays edge to edge (Showroom cards round only from 601px)", /@media\(min-width:601px\)\{\.sr-card\{border-radius:var\(--rad\)\}\}/.test(soft) && !/(^|[,}\n])\s*\.sr-card\s*\{[^}]*--rad/.test(soft.replace(/@media\(min-width:601px\)\{[^}]*\}\}/, "")));
 t("photo grids stay square (lab Work, the archive, profile grids)", !/\.pl-tile|\.archcard|\.cell\b|\.work\b/.test(soft));
+// v1.2 (2026-10-18, "errors in market and post on profiles"): a post is a post; the Market gallery shows its whole photo
+t("an opened post and its picture stay square", !/(^|[,\s])\.post(-img|-vid)?[,{\s]/.test(soft.replace(/\/\*[\s\S]*?\*\//g, "")));
+t("the listing gallery isn't clipped to its box (that cut the photo short)", !/\.lgal\s*[,{][^}]*overflow:hidden/.test(soft) && !/\.lgal\{/.test(soft.replace(/\/\*[\s\S]*?\*\//g, "")));
 t("no colours typed here (they live in src/palette.js)", !/#[0-9a-f]{3,8}\b/i.test(soft.replace(/\/\*[\s\S]*?\*\//g, "")));
 
 // v1.1: "make sure everything matches the design language except the actual post"
 for (const s of [".ev-drop", ".pc-pick", ".pf-add", ".pc"]) t(`${s} (where you add a picture, the post maker) is soft`, rounded(s, "rad"));
-for (const s of [".mimgwrap", ".lgal", ".pl-cov.big"]) t(`${s} (Market pictures, a playlist cover) rounds a little`, rounded(s, "rad-m"));
+for (const s of [".mimgwrap", ".pl-cov.big"]) t(`${s} (Market pictures, a playlist cover) rounds a little`, rounded(s, "rad-m"));
 t("the gallery's arrows are round buttons", /\.gal-nav\{border-radius:999px\}/.test(soft));
 const ui = read("public/admin-app/ui.css");
 t("admin: panels, cards, charts, lists and boxes round like the app", /\.panel,\.kpi,\.chart,\.card,\.box,\.list,\.menu-b\{border-radius:var\(--rad\)\}/.test(ui) && /\.stats,\.sum,\.pdb-wrap,\.pc\{border-radius:var\(--rad\);overflow:hidden\}/.test(ui));
