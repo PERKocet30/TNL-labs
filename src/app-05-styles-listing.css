@@ -62,17 +62,44 @@
 .lightbox{touch-action:none}
 .lightbox img{transform-origin:center;will-change:transform}
 
-/* the size and colour editor in the listing form */
-.pv-rows{display:flex;flex-direction:column;gap:8px}
-.pv-row{display:grid;grid-template-columns:1fr 1.3fr auto 34px;gap:6px;align-items:center}
-.pv-row .pf-in{padding:10px 12px;font-size:15px}
-.pv-row .pf-step button{width:32px;height:38px;font-size:18px}
-.pv-row .pf-step input{width:34px;font-size:15px}
-.pv-x{width:34px;height:34px;border:0;background:none;color:var(--dim);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
-.pv-quick{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 14px}
-.pv-quick .chip{font-size:13px;padding:6px 12px}
-.pv-add{margin-top:10px;background:none;border:1px dashed var(--line2);color:var(--tx);border-radius:999px;font:inherit;font-size:14px;padding:10px;width:100%;cursor:pointer}
+/* the size and colour editor in the listing form · v2 2026-10-18 (Shopify-style options) */
+.pv-chips{display:flex;flex-wrap:wrap;gap:8px}
+.pv-chips .chip{font-size:14px;padding:8px 14px;min-width:44px}
+.pv-col{display:inline-flex;align-items:center;gap:4px;padding-right:6px!important}
+.pv-col button{border:0;background:none;color:inherit;display:flex;align-items:center;justify-content:center;width:22px;height:22px;padding:0;cursor:pointer;opacity:.8}
+.pv-add{display:flex;gap:8px;margin-top:10px}
+.pv-add .pf-in{flex:1;min-width:0;padding:10px 14px;font-size:16px}
+.pv-addb{flex-shrink:0;border:1px solid var(--line2);background:none;color:var(--tx);border-radius:999px;font:inherit;font-size:14px;font-weight:600;padding:0 16px;cursor:pointer}
+.pv-rows{display:flex;flex-direction:column}
+.pv-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px;border-top:1px solid var(--line)}
+.pv-row:first-child{border-top:0}
+.pv-name{font-size:15px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv-row .pf-step button{width:36px;height:38px;font-size:18px}
+.pv-row .pf-step input{width:40px;font-size:16px}
 .pv-tot{font-size:13px;color:var(--dim);margin-top:10px}
+.pv-qrow{margin-top:14px}
+.pv-warn{color:var(--red)}
+.pf-sel{position:relative}
+.pf-sel select.pf-in{padding-right:38px;cursor:pointer}
+.pf-sel::after{content:"";position:absolute;right:18px;top:50%;width:7px;height:7px;border-right:2px solid var(--tx2);border-bottom:2px solid var(--tx2);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+
+/* who's selling (2026-10-18): the first question, then a switch; the card's tag */
+.st-opt{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;text-align:left;background:var(--el);border:1px solid var(--line2);border-radius:var(--rad-m,12px);color:var(--tx);font:inherit;padding:16px;margin-top:10px;cursor:pointer}
+.st-opt:first-of-type{margin-top:0}
+.st-opt b{font-size:17px}
+.st-opt span{font-size:14px;color:var(--tx2);line-height:1.4}
+.st-seg{display:flex;gap:4px;padding:4px;background:var(--el);border-radius:999px}
+.st-seg button{flex:1;border:0;background:none;color:var(--tx2);font:inherit;font-size:14px;font-weight:600;padding:10px 6px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.st-seg button.on{background:var(--tx);color:var(--bg)}
+.sp-grid{margin-top:2px}
+.pf-2>:only-child{grid-column:1/-1}
+.dspecs div:last-child:nth-child(odd){grid-column:1/-1}
+.sp-grid:empty{display:none}
+.dspecs{margin:4px 0 18px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--rad-m,12px);overflow:hidden}
+.dspecs div{background:var(--bg);padding:10px 12px;min-width:0}
+.dspecs dt{font-size:12px;color:var(--tx2);margin:0 0 2px}
+.dspecs dd{margin:0;font-size:14px;font-weight:600;overflow-wrap:anywhere}
+.mtype{font-size:12px;color:var(--tx2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── the bag, recently viewed, price drops, the shop at a glance (app-17-bag.js) ── */
 .shop-acts{display:flex;align-items:center;gap:8px}
