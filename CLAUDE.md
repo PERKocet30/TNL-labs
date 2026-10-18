@@ -69,6 +69,10 @@ white `#FFFFFF` with neutral greys by default, black in dark mode (no
 off-white Paper — changed 2026-09-29). Reagent green `#98FC68` is the app's
 accent; each member can pick their own, and their profile — in the app, on
 `/u/:name`, `/p/:id` and the share card — wears it.
+Soft, not boxy (2026-10-18): cards, panels and banners round to `--rad` (16px),
+pictures inside them `--rad-m`, small thumbnails `--rad-s` (`app-05-styles-soft.css`);
+photo grids and edge-to-edge feed media stay square. Every avatar wears its
+member's colour as a ring (`avHTML` → `.ring`).
 
 **Every colour lives in `src/palette.js`** — both themes, the accent, the
 member accents (`ACCENTS`) and the accent maths. Never type a theme colour

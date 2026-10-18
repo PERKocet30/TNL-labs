@@ -133,7 +133,7 @@ const DM = {
   member: db.prepare(`SELECT * FROM dm_members WHERE thread_id = ? AND user_id = ? AND left_at IS NULL`),
   memberAny: db.prepare(`SELECT * FROM dm_members WHERE thread_id = ? AND user_id = ?`),
   members: db.prepare(`
-    SELECT m.*, u.username, u.display_name, u.avatar_url, u.role, u.last_seen_at, u.show_active
+    SELECT m.*, u.username, u.display_name, u.avatar_url, u.role, u.last_seen_at, u.show_active, u.accent
     FROM dm_members m JOIN users u ON u.id = m.user_id
     WHERE m.thread_id = ? AND m.left_at IS NULL ORDER BY m.joined_at, m.user_id`),
   addMember: db.prepare(`
@@ -158,7 +158,8 @@ const DM = {
   mutes: db.prepare(`SELECT chat FROM chat_mutes WHERE user_id = ? AND until > ?`),
 };
 
-const person = (u) => u ? { username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url || "" } : null;
+/* their colour rings their picture (2026-10-18) — only when the row carries it */
+const person = (u) => u ? { username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url || "", ...(u.accent !== undefined ? { accentHex: accentHex(u.accent) } : {}) } : null;
 function mutesFor(userId) { return new Set(DM.mutes.all(userId, Date.now()).map((r) => r.chat)); }
 const isMuted = (userId, chat) => !!db.prepare(`SELECT 1 FROM chat_mutes WHERE user_id = ? AND chat = ? AND until > ?`).get(userId, chat, Date.now());
 
@@ -214,7 +215,7 @@ function shapeMessages(rows) {
   const quoted = new Map(replyIds.length ? db.prepare(`SELECT * FROM dm_messages WHERE id IN (${holes(replyIds)})`)
     .all(...replyIds).map((r) => [r.id, r]) : []);
   const userIds = [...new Set([...rows.map((r) => r.sender_id), ...[...quoted.values()].map((r) => r.sender_id)])];
-  const users = new Map(db.prepare(`SELECT id, username, display_name, avatar_url FROM users WHERE id IN (${holes(userIds)})`)
+  const users = new Map(db.prepare(`SELECT id, username, display_name, avatar_url, accent FROM users WHERE id IN (${holes(userIds)})`)
     .all(...userIds).map((u) => [u.id, u]));
   const postIds = [...new Set(rows.map((r) => r.post_id).filter(Boolean))];
   const posts = new Map(postIds.length ? db.prepare(`

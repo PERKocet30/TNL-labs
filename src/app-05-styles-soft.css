@@ -1,0 +1,64 @@
+/* SOFT v1.1 — 2026-10-18 (v1.1: "make sure everything matches the design
+   language except the actual post" — every screen audited at phone and
+   computer size: the upload boxes, Market tiles and gallery, playlist
+   covers, the composer on a computer and the gallery arrows too).
+   SOFT v1.0 — 2026-10-18. "I don't like the sharp boxy design language
+   throughout the app … Profiles should also reflect what color style they
+   choose around profile pic. To promote individualism."
+   Paper used to be square; now it's soft. Three sizes, one place:
+     --rad    16px  cards, panels, banners, sheets you can see the edge of
+     --rad-m  12px  pictures inside a post, a message, a gallery tile
+     --rad-s   8px  small thumbnails and list rows
+   What stays square on purpose: photo grids (Work, profiles, the archive)
+   and edge-to-edge media in the phone feed — that's the work, not a frame.
+   Buttons and inputs were already round. The Studio keeps its own look.
+   Avatars wear their member's colour as a ring (avHTML adds .ring and
+   --ring), and a profile picture wears it the same way.
+   Loaded after the other app-05 parts and before the computer layout. */
+:root{--rad:16px;--rad-m:12px;--rad-s:8px}
+
+/* cards and panels */
+.post,.ui-card,.beat,.beatmsg,.bcard,.lx,.lx:last-child,.ev-banner,.ev-invite,.ev-link,.ev-note,.ev-cap,
+.crung,.soldbar,.acceptbar,.paybar,.failbar,.ratebar,.dseller,.lcard,.simcard,.pickc,.revitem,
+.installc-in,.c-post,.pf-card,.sk-card,.distro,.pcmus-list,.st-privacy,.gx-out,.bag-g,.sst,
+.pe-link,.pq,.pc-ment,.lpage .lbar{border-radius:var(--rad)}
+.c-post{overflow:hidden}
+@media(min-width:601px){.sr-card{border-radius:var(--rad)}}
+
+/* the labs list: separate soft cards on a phone too, not ruled rows */
+.lx-list{gap:10px}
+.lx,.lx:last-child{border:1px solid var(--line)}
+.lx-media{border-radius:var(--rad-m)}
+
+/* places you drop or add a picture */
+.ev-drop,.pc-pick,.pf-add{border-radius:var(--rad)}
+/* the post maker on a computer is a card; its picture side rounds with it */
+.pc{border-radius:var(--rad);overflow:hidden}
+
+/* Market: a product picture isn't a post — its tiles and gallery round */
+.mimgwrap,.lgal{border-radius:var(--rad-m);overflow:hidden}
+
+/* playlist covers */
+.pl-cov{border-radius:var(--rad-s)}
+.pl-cov.big{border-radius:var(--rad-m)}
+
+/* the gallery's arrows are buttons, and buttons are round */
+.gal-nav{border-radius:999px}
+
+/* pictures inside things */
+.msg-i,.msg-v,.c-img,.c-vid,.c-att img,.post-img,.post-vid,.ev-th,.qcard,.trk-vart{border-radius:var(--rad-m)}
+.ev-th{overflow:hidden}
+
+/* small thumbnails and rows */
+.trk-art,.trke-art,.ordimg,.vthumb,.attach-bar img,.pc-th,.loopart,.sq,.pcmus-row,.trk,.muschip{border-radius:var(--rad-s)}
+
+/* Who's building: a person, wearing their colour */
+.brow{gap:10px}
+.bcard{width:120px;padding:14px 10px 12px;background:var(--card)}
+.bcard .av{width:56px;height:56px;font-size:16px;margin:4px auto 10px}
+
+/* the member's colour around their picture — a gap, then the ring */
+.av.ring{border-color:transparent;box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--ring)}
+.bcard .av.ring{box-shadow:0 0 0 3px var(--card),0 0 0 6px var(--ring)}
+.av.xs.ring,.pc-chip .av.ring,.c-gav .av.ring{box-shadow:0 0 0 1.5px var(--bg),0 0 0 3px var(--ring)}
+.pav{border:0;box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--ring,var(--accent-fill))}   /* the profile owner's colour, not the viewer's */

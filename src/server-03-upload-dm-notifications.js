@@ -225,14 +225,14 @@ app.delete("/api/posts/:id", auth, (req, res) => {
 app.get("/api/posts/:id/comments", maybeAuth, (req, res) => {
   const rows = db.prepare(`
     SELECT c.id, c.body, c.created_at, c.edited_at,
-           u.username, u.display_name, u.avatar_url, u.role, u.rep
+           u.username, u.display_name, u.avatar_url, u.role, u.rep, u.accent
     FROM comments c JOIN users u ON u.id = c.author_id
     WHERE c.post_id = ? ORDER BY c.created_at ASC LIMIT 200`).all(Number(req.params.id));
   const hidden = req.user ? blockedIds(req.user.id) : new Set();
   res.json({
     comments: rows.filter((r) => !hidden.has(r.username)).map((r) => ({
       id: r.id, body: r.body, createdAt: r.created_at, editedAt: r.edited_at,
-      author: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", role: r.role, level: levelFor(r.rep).id },
+      author: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", role: r.role, level: levelFor(r.rep).id, accentHex: accentHex(r.accent) },
     })),
   });
 });
@@ -283,7 +283,7 @@ app.get("/api/notifications", auth, (req, res) => {
      at, and whether you follow the person back. */
   const rows = db.prepare(`
     SELECT n.id, n.kind, n.body, n.post_id, n.listing_id, n.read_at, n.created_at,
-           u.username, u.display_name, u.avatar_url, u.id AS actor_id,
+           u.username, u.display_name, u.avatar_url, u.id AS actor_id, u.accent AS actor_accent,
            COALESCE(p.thumb_url, p.image_url) AS post_thumb, l.images AS listing_images,
            (SELECT 1 FROM follows f WHERE f.follower_id = n.user_id AND f.followee_id = n.actor_id) AS you_follow
     FROM notifications n LEFT JOIN users u ON u.id = n.actor_id
@@ -296,7 +296,7 @@ app.get("/api/notifications", auth, (req, res) => {
     notifications: rows.map((r) => ({
       id: r.id, kind: r.kind, body: r.body, postId: r.post_id, listingId: r.listing_id || null, read: !!r.read_at, createdAt: r.created_at,
       thumb: r.post_thumb || first(r.listing_images) || null,
-      actor: r.username ? { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", youFollow: !!r.you_follow } : null,
+      actor: r.username ? { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", youFollow: !!r.you_follow, accentHex: accentHex(r.actor_accent) } : null,
     })),
   });
 });
@@ -394,7 +394,7 @@ app.get("/api/search", maybeAuth, (req, res) => {
   const hidden = req.user ? blockedIds(req.user.id) : new Set();
   const like = `%${term}%`;
   const people = db.prepare(`
-    SELECT username, display_name, avatar_url, role, roles, rep, bio FROM users
+    SELECT username, display_name, avatar_url, role, roles, rep, bio, accent FROM users
     WHERE (? = '' OR display_name LIKE ? OR username LIKE ? OR bio LIKE ?)
       AND (? = '' OR roles LIKE ? OR role = ?)
     ORDER BY rep DESC LIMIT 24`).all(term, like, like, like, role, `%"${role}"%`, role);
@@ -408,7 +408,7 @@ app.get("/api/search", maybeAuth, (req, res) => {
     WHERE p.is_work = 1 AND p.body LIKE ? ORDER BY p.created_at DESC LIMIT 20`).all(like) : [];
   res.json({
     people: people.filter((p) => !hidden.has(p.username)).map((p) => ({
-      username: p.username, displayName: p.display_name, avatarUrl: p.avatar_url || "",
+      username: p.username, displayName: p.display_name, avatarUrl: p.avatar_url || "", accentHex: accentHex(p.accent),
       role: p.role, roles: (() => { try { return JSON.parse(p.roles || "[]"); } catch { return [p.role]; } })(),
       rep: p.rep, level: levelFor(p.rep).id, bio: p.bio,
     })),

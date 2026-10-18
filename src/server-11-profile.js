@@ -36,7 +36,7 @@ function followList(req, res, dir) {
   const me = req.user?.id;
   const hidden = me ? blockedIds(me) : new Set();
   res.json({ people: rows.filter((x) => !hidden.has(x.username)).map((x) => ({
-    username: x.username, displayName: x.display_name, avatarUrl: x.avatar_url || "", role: x.role || "",
+    username: x.username, displayName: x.display_name, avatarUrl: x.avatar_url || "", role: x.role || "", accentHex: accentHex(x.accent),
     youFollow: me ? !!q.followExists.get(me, x.id) : false, isYou: x.id === me,
   })) });
 }

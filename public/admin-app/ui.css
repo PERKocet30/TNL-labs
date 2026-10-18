@@ -1,4 +1,5 @@
-/* TNL LABS admin ui.css v1.1 — 2026-10-14. The shell and the shared page pieces
+/* TNL LABS admin ui.css v1.2 — 2026-10-18 (v1.2: soft, not boxy — panels, cards,
+   charts and boxes round like the app; see the end). v1.1 — 2026-10-14. The shell and the shared page pieces
    (the whole admin dashboard to one standard); loaded after
    admin.html's own styles. Colours only from /palette.css variables. */
 /* People v3 (2026-10-14): the directory grid and the member record (3-people.js, 3-person.js) */
@@ -112,3 +113,11 @@ h2.sec + .panel,h2.sec + .chart{border-top:1px solid var(--line)}
 /* labels in a card's name line stay label-sized */
 .li .b span.tag{display:inline-block;width:auto;font-size:10.5px;color:var(--tx2);overflow:visible}
 .li .b span.tag.on{color:var(--on-fill)}.li .b span.tag.warn{color:var(--red)}
+
+/* Soft, not boxy (2026-10-18) — the same three radii as the app (app-05-styles-soft.css). */
+:root{--rad:16px;--rad-m:12px;--rad-s:8px}
+.panel,.kpi,.chart,.card,.box,.list,.menu-b{border-radius:var(--rad)}
+.stats,.sum,.pdb-wrap,.pc{border-radius:var(--rad);overflow:hidden}
+/* a titled card is two pieces drawn as one: the title rounds on top, its body below */
+h2.sec:has(+ :is(.panel,.list,.chart)){border-radius:var(--rad) var(--rad) 0 0}
+h2.sec + :is(.panel,.list,.chart){border-radius:0 0 var(--rad) var(--rad)}
