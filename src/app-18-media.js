@@ -364,7 +364,7 @@ function wireMusAuto(){
         paintPlayer();
       }
     }
-  },{rootMargin:"-40% 0px -40% 0px",threshold:0});
+  },{rootMargin:musBand(),threshold:0});   // the band: app-11-gallery.js
   cards.forEach(c=>MOBS.observe(c));
 }
 
