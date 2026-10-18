@@ -1,4 +1,7 @@
-/* SOFT v1.1 — 2026-10-18 (v1.1: "make sure everything matches the design
+/* SOFT v1.2 — 2026-10-18 (v1.2: a post is a post — an opened post and its
+   picture stay square again, and the Market gallery shows its whole photo;
+   rounding .lgal with overflow:hidden cut the picture to its box's height).
+   SOFT v1.1 — 2026-10-18 (v1.1: "make sure everything matches the design
    language except the actual post" — every screen audited at phone and
    computer size: the upload boxes, Market tiles and gallery, playlist
    covers, the composer on a computer and the gallery arrows too).
@@ -18,7 +21,7 @@
 :root{--rad:16px;--rad-m:12px;--rad-s:8px}
 
 /* cards and panels */
-.post,.ui-card,.beat,.beatmsg,.bcard,.lx,.lx:last-child,.ev-banner,.ev-invite,.ev-link,.ev-note,.ev-cap,
+.ui-card,.beat,.beatmsg,.bcard,.lx,.lx:last-child,.ev-banner,.ev-invite,.ev-link,.ev-note,.ev-cap,
 .crung,.soldbar,.acceptbar,.paybar,.failbar,.ratebar,.dseller,.lcard,.simcard,.pickc,.revitem,
 .installc-in,.c-post,.pf-card,.sk-card,.distro,.pcmus-list,.st-privacy,.gx-out,.bag-g,.sst,
 .pe-link,.pq,.pc-ment,.lpage .lbar{border-radius:var(--rad)}
@@ -35,8 +38,11 @@
 /* the post maker on a computer is a card; its picture side rounds with it */
 .pc{border-radius:var(--rad);overflow:hidden}
 
-/* Market: a product picture isn't a post — its tiles and gallery round */
-.mimgwrap,.lgal{border-radius:var(--rad-m);overflow:hidden}
+/* Market: a product picture isn't a post — its tiles round. The listing's own
+   gallery stays as it was: edge to edge on a phone, and clipping its box cut
+   the photo short. On a computer, where it sits in a column, its slides round. */
+.mimgwrap{border-radius:var(--rad-m);overflow:hidden}
+@media(min-width:1024px){.lpage .lg-s{border-radius:var(--rad-m);overflow:hidden}}
 
 /* playlist covers */
 .pl-cov{border-radius:var(--rad-s)}
@@ -46,7 +52,7 @@
 .gal-nav{border-radius:999px}
 
 /* pictures inside things */
-.msg-i,.msg-v,.c-img,.c-vid,.c-att img,.post-img,.post-vid,.ev-th,.qcard,.trk-vart{border-radius:var(--rad-m)}
+.msg-i,.msg-v,.c-img,.c-vid,.c-att img,.ev-th,.qcard,.trk-vart{border-radius:var(--rad-m)}
 .ev-th{overflow:hidden}
 
 /* small thumbnails and rows */

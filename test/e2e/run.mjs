@@ -491,6 +491,9 @@ console.log("\nMEMBER · PHONE");
     await p.waitForSelector("#lgtrack");
     await p.evaluate(() => { document.querySelector(".lgal").dataset.mark = "e2e"; });
     ok(await p.locator("#lgdots i").count() === 3, "no dots for 3 photos");
+    /* 2026-10-18 "errors in market": rounding the gallery's box cut the 4:5 photo to a strip */
+    ok(await p.evaluate(() => { const g = document.querySelector(".lgal").getBoundingClientRect(), sl = document.querySelector(".lg-s").getBoundingClientRect();
+      return g.height >= sl.height - 1 && sl.height > 100; }), "the listing photo is cut short by its box");
     await p.evaluate(() => { const t = document.querySelector("#lgtrack"); t.scrollLeft = t.clientWidth; }); await p.waitForTimeout(400);
     ok(await p.evaluate(() => document.querySelectorAll("#lgdots i")[1].classList.contains("on")), "dots didn't follow the swipe");
     const heart = p.locator(".mlike.big");
@@ -684,6 +687,9 @@ console.log("\nMEMBER · PHONE");
       return !!(a && c && w) && !!(a.compareDocumentPosition(c) & 4) && !!(c.compareDocumentPosition(w) & 4) && /^tester\s/.test(c.textContent.trim()) && /ago|Just now/.test(w.textContent); }),
       "the post is in the wrong order: buttons → \"tester caption\" → time");
     ok(await p.locator('#poov .igact[data-comments]').isHidden(), "comment button still showing");
+    /* 2026-10-18 "errors in … post on profiles": the app went soft, but a post is a post — no rounded frame, a square picture */
+    ok(await p.evaluate(() => { const po = document.querySelector("#poov .post"), m = po.querySelector(".post-img, .post-vid");
+      return getComputedStyle(po).borderTopLeftRadius === "0px" && (!m || getComputedStyle(m).borderTopLeftRadius === "0px"); }), "the opened post got a rounded frame or picture");
     await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; PROFILE = null; TAB = "showroom"; render(); });
   });
   /* "When someone likes your work it doesn't take you directly to the post" (2026-10-12) */
