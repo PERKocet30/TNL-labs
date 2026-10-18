@@ -1106,15 +1106,13 @@ console.log("\nMEMBER · PHONE");
     for (const u of ["/u/tester/story.jpg", lid && `/m/${lid}/story.jpg`, tid && `/tr/${tid}/story.jpg`].filter(Boolean))
       ok((await sz(u)) === "1080x1920", u + " isn't a 1080×1920 Story card: " + await sz(u));
   });
-  await step(d, "followers / following open as lists; Tagged shows posts you're tagged in; ⋯ on someone else has Block and Report", async () => {
+  await step(d, "followers / following open as lists; no Tagged tab (2026-10-18); ⋯ on someone else has Block and Report", async () => {
     await p.locator('[data-flist="following"]').tap();
     await p.waitForSelector(".pick .pickrow, .pick .empty", { timeout: 5000 });
     await p.evaluate(() => { PICKER = null; render(); });
     await p.evaluate(() => openProfile("friend"));
     await p.waitForFunction(() => PROFILE && PROFILE.user.username === "friend" && !PROFILE.loading);
-    await p.locator('[data-ptab="tagged"]').tap();
-    await p.waitForFunction(() => Array.isArray(PROFTAGGED), null, { timeout: 5000 });
-    ok(await p.evaluate(() => PROFTAGGED.length) >= 1 && await p.locator(".worklist .work").count() >= 1, "friend's Tagged tab is empty (tester tagged them earlier)");
+    ok(await p.locator('[data-ptab="tagged"]').count() === 0 && await p.locator("[data-ptab]").count() >= 3, "the profile still has a Tagged tab");
     await p.locator("#profmore").tap();
     ok(await p.locator(".c-ma", { hasText: "Block" }).count() === 1 && await p.locator(".c-ma", { hasText: "Report" }).count() === 1, "⋯ is missing Block/Report");
     await p.evaluate(() => { CMENU = null; paintLayer(); EDITING = false; PROFILE = null; TAB = "showroom"; render(); });
