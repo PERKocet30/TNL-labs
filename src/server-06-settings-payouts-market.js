@@ -20,8 +20,8 @@ app.get("/admin", (_req, res) => res.sendFile(join(__dirname, "..", "public", "a
 /* ================================================================
    MARKET — peer-to-peer listings. Anyone verified can sell.
 ================================================================ */
-const CATEGORIES = ["Tops", "Bottoms", "Outerwear", "Footwear", "Accessories", "Headwear", "Bags", "Jewellery", "Art / Prints", "Other"];
-const CONDITIONS = ["Deadstock", "Like New", "Good", "Worn", "Distressed"];
+const CATEGORIES = [...TAX_CATS.keys()];   // grouped, with sizes and details: server-06-market-taxonomy (2026-10-18)
+const CONDITIONS = ["New", "Deadstock", "Like New", "Good", "Worn", "Distressed"];   // "New": a brand's own stock (2026-10-18)
 /* Loops are listings with kind='loop'. They inherit offers, saves, reviews,
    search and the fee ladder for free — no parallel system to maintain. What
    differs: they deliver instantly, they can be free, and there's nothing to
@@ -84,7 +84,8 @@ function shapeListing(r, viewerId, side) {
     acceptsOffers: !!r.accepts_offers,
     quantity: r.quantity ?? 1,
     variants: parseVariants(r),
-    wasPrice: priceDrop(r),
+    wasPrice: priceDrop(r), compareAt: r.compare_cents || null, sale: r.compare_cents > r.price_cents, sellType: r.sell_type || "",
+    specs: (() => { try { return JSON.parse(r.specs || "{}"); } catch { return {}; } })(), specList: specRows(r),
     status: r.status,
     views: r.views,
     createdAt: r.created_at,
@@ -124,7 +125,7 @@ app.get("/api/market/meta", maybeAuth, (req, res) => {
     WHERE l.status='active' AND json_extract(v.value,'$.size') != ''`).all().map((r) => String(r.size)).sort(sizeOrder);
   const brands = db.prepare(`SELECT brand, COUNT(*) n FROM listings WHERE status='active' AND brand != '' GROUP BY brand ORDER BY n DESC LIMIT 20`).all().map((r) => r.brand);
   res.json({
-    categories: CATEGORIES, conditions: CONDITIONS, sizes, brands,
+    categories: CATEGORIES, conditions: CONDITIONS, sizes, brands, taxonomy: TAXONOMY_META,
     loopCategories: LOOP_CATEGORIES, keys: KEYS,
     paymentsEnabled: PAYMENTS_ENABLED,
     feePct: req.user ? feeForRep(req.user.rep) : FEE_BY_LEVEL[1],
@@ -165,10 +166,11 @@ app.get("/api/market/connect/dashboard", auth, async (req, res) => {
 });
 
 app.get("/api/market", maybeAuth, (req, res) => {
-  const { category, size, condition, brand, q: term, sort, seller, max, min, kind, key, bpm, free } = req.query;
+  const { category, size, condition, brand, q: term, sort, seller, max, min, kind, key, bpm, free, type } = req.query;
   const where = [`l.status = 'active'`];
   const params = [];
   if (kind) { where.push(`l.kind = ?`); params.push(kind); }
+  if (type) { where.push(`l.sell_type = ?`); params.push(String(type)); }
   if (key) { where.push(`l.musical_key = ?`); params.push(key); }
   if (free === "1") where.push(`l.price_cents = 0`);
   if (bpm) { const b = Number(bpm); where.push(`l.bpm BETWEEN ? AND ?`); params.push(b - 5, b + 5); }
@@ -284,6 +286,7 @@ app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, 
     isLoop && stems ? 1 : 0,
     isLoop ? 1 : vars.length ? stockOf(vars) : Math.min(500, Math.max(1, Math.round(Number(quantity)) || 1)),
     JSON.stringify(vars), now, now);
+  if (!isLoop) { setCompare(Number(info.lastInsertRowid), body.compareAt, cents); setSellType(Number(info.lastInsertRowid), body.sellType); setSpecs(Number(info.lastInsertRowid), body.specs, cat); }
   res.json({ id: Number(info.lastInsertRowid) });
 });
 
@@ -339,6 +342,7 @@ app.patch("/api/market/:id", auth, (req, res) => {
          next.brand, next.size, next.condition, next.colour, next.category, next.ships_from, next.accepts_offers,
          next.bpm, next.musical_key, next.stems, next.variants, Date.now(), l.id);
   priceChanged(l, next.price_cents, req.user.id);
+  if (!isLoop) { setCompare(l.id, req.body?.compareAt, next.price_cents); setSellType(l.id, req.body?.sellType); setSpecs(l.id, req.body?.specs, next.category); }
   res.json({ ok: true });
 });
 

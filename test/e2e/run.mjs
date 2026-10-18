@@ -524,22 +524,56 @@ console.log("\nMEMBER · PHONE");
   });
   /* ---- the shop: sizes and colours, the listing page (2026-09-30) ---- */
   const toMarket = () => p.evaluate(async () => { PROFILE = null; TAB = "market"; MKTVIEW = "browse"; render(); await loadMarket(); render(); });
-  await step(d, "sell form: pick sizes, set stock per size, publish", async () => {
+  await step(d, "sell form: pick sizes, set stock per size, a compare-at price and a category, publish", async () => {
     await toMarket();
     await p.locator('[data-mv="sell"]').first().tap();
+    /* 2026-10-18: a new listing first asks who's selling; a brand starts with sizes on */
+    await p.waitForSelector(".st-pick", { timeout: 5000 });
+    ok(await p.locator("#s-title").count() === 0 && await p.locator(".st-opt").count() === 3, "the form shows before choosing who's selling");
+    await p.locator('[data-stype="brand"]').tap();
     await p.waitForSelector("#sfile", { state: "attached" });
+    ok(await p.locator("#s-hasvar").isChecked() && await p.locator("#s-cond").count() === 0, "a brand doesn't start with sizes on (or still asks condition)");
     await p.locator("#sfile").setInputFiles(UPLOAD_PNG);
     await p.waitForSelector(".pf-img", { timeout: 8000 });
     await p.locator("#s-title").fill("E2E Tee"); await p.locator("#s-price").fill("40");
-    await p.locator("#s-hasvar").tap();
-    for (const s of ["S", "M", "L"]) await p.locator(`[data-pvq="${s}"]`).tap();
+    for (const s of ["S", "M", "L"]) await p.locator(`[data-pvsize="${s}"]`).tap();   // v2 (2026-10-18): Shopify-style options
     await p.locator("#pvrows .pv-row").nth(1).locator('[data-pvqty="1"]').tap();
     ok((await p.locator("#pvtot").textContent()).startsWith("4 in stock"), "running total: " + (await p.locator("#pvtot").textContent()));
+    ok(await p.locator("#pvrows .pv-name").allTextContents().then((x) => x.join()) === "S,M,L", "rows aren't S, M, L");
+    await p.locator("#s-compare").fill("55");
+    ok(/27% off/.test(await p.locator("#s-cmphint").textContent()), "no sale preview: " + (await p.locator("#s-cmphint").textContent()));
+    await p.locator("#s-cat").selectOption("Outerwear");
     await p.locator("#s-post").tap();
     await p.waitForFunction(() => MKTVIEW === "detail" && MKTONE && MKTONE.title === "E2E Tee", null, { timeout: 8000 });
     const v = await p.evaluate(() => MKTONE.variants.map((x) => x.size + ":" + x.qty).join());
     ok(v === "S:1,M:2,L:1", "saved as " + v);
     ok(await p.evaluate(() => MKTONE.quantity) === 4, "total stock isn't 4");
+    ok(await p.evaluate(() => MKTONE.compareAt === 5500 && MKTONE.wasPrice === 5500 && MKTONE.sale && MKTONE.category === "Outerwear"), "compare-at or category didn't save: " + JSON.stringify(await p.evaluate(() => [MKTONE.compareAt, MKTONE.wasPrice, MKTONE.category])));
+    ok(/\$55\.00/.test(await p.locator(".dprice .mwas").textContent()), "the listing doesn't show $55 crossed out");
+    ok(await p.evaluate(() => MKTONE.sellType === "brand" && MKTONE.condition === "New"), "not saved as a brand's new stock");
+  });
+  await step(d, "sell form: one of one — a single piece, no stock to count, tagged 1 of 1; Vintage asks condition and maker", async () => {
+    await toMarket();
+    await p.locator('[data-mv="sell"]').first().tap();
+    await p.waitForSelector(".st-pick", { timeout: 5000 });
+    await p.locator('[data-stype="vintage"]').tap();
+    ok(await p.locator("#s-hasvar").count() === 0 && await p.locator("#s-qty").count() === 0, "vintage shows stock controls");
+    ok(await p.locator("#s-cond option").allTextContents().then((o) => !o.includes("New") && o.includes("Good")), "vintage condition list is wrong");
+    ok((await p.locator('label[for="s-brand"]').textContent()) === "Brand / maker", "vintage brand label");
+    await p.locator('.st-seg [data-stype="custom"]').tap();
+    ok(await p.locator("#s-cond").count() === 0 && await p.locator("#s-brand").count() === 0 && await p.locator("#s-qty").count() === 0, "one of one still asks condition, brand or quantity");
+    await p.locator("#sfile").setInputFiles(UPLOAD_PNG);
+    await p.waitForSelector(".pf-img", { timeout: 8000 });
+    await p.locator("#s-title").fill("E2E Custom Jacket"); await p.locator("#s-price").fill("220"); await p.locator("#s-size").fill("One size");
+    await p.locator("#s-post").tap();
+    await p.waitForFunction(() => MKTVIEW === "detail" && MKTONE && MKTONE.title === "E2E Custom Jacket", null, { timeout: 8000 });
+    ok(await p.evaluate(() => MKTONE.sellType === "custom" && MKTONE.quantity === 1 && !MKTONE.variants.length && MKTONE.condition === "New"), "not a one of one: " + JSON.stringify(await p.evaluate(() => [MKTONE.sellType, MKTONE.quantity, MKTONE.condition])));
+    ok(await p.locator(".dchips .dchip", { hasText: "One of one" }).count() === 1, "the page doesn't say One of one");
+    await toMarket();
+    ok(await p.locator(".mcard", { hasText: "E2E Custom Jacket" }).locator(".mtype", { hasText: "1 of 1" }).count() === 1, "the card isn't tagged 1 of 1");
+    await p.evaluate(() => { MKTFILT.type = "custom"; }); await p.evaluate(async () => { await loadMarket(); render(); });
+    ok(await p.evaluate(() => MKT.length > 0 && MKT.every((l) => l.sellType === "custom")), "the One of one filter lets other listings through");
+    await p.evaluate(async () => { MKTFILT = {}; await loadMarket(); TAB = "showroom"; MKTVIEW = "browse"; render(); });
   });
   let dropId;
   await step(d, "listing page: swipe photos, readable heart saves in place, Buy bar stays pinned", async () => {
@@ -653,7 +687,7 @@ console.log("\nMEMBER · PHONE");
     await p.locator('.shop-link[data-mv="orders"]').tap();
     await p.locator('[data-ot="selling"]').tap();
     await p.waitForFunction(() => SHOPSTATS && document.querySelectorAll("#shopstats .sst b").length === 6, null, { timeout: 5000 });
-    const mine = (await api("/api/market?seller=tester", token)).listings[0];
+    const mine = (await api("/api/market?seller=tester", token)).listings.find((l) => l.title === "E2E Tee");   // (the one of one listed after it has no sizes)
     await p.evaluate(async (id) => { MKTVIEW = "detail"; const d = await api.mktOne(id); MKTONE = d.listing; MKTOFFERS = d.offers || []; MKTSELLER = d.seller; MKTSIMILAR = []; render(); }, mine.id);
     await p.locator("[data-mdup]").tap();
     await p.waitForSelector("#s-title");

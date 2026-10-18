@@ -1,4 +1,6 @@
 // Listing editor v2 (2026-09-28): a plain product form.
+// v3 (2026-10-18, "match Shopify standards"): Photos, Pricing with a compare-at
+// price and what you keep after every fee, Size & stock as options, pickers.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { readFileSync } from "node:fs";
@@ -10,7 +12,8 @@ const fn = (name) => { const i = src.indexOf("function " + name + "("); const j 
 
 console.log("\nLISTING EDITOR — SECTIONS");
 const sell = fn("sellHTML") + fn("pvHTML");   // Inventory (sizes & colours) is its own part since 2026-09-30
-for (const s of ["Media", "Pricing", "Inventory", "Shipping", "Details", "Status"]) t("has a " + s + " card", sell.includes(`<div class="pf-sec">${s}</div>`));
+for (const s of ["Photos", "Pricing", "Shipping", "Details", "Status"]) t("has a " + s + " card", sell.includes(`<div class="pf-sec">${s}</div>`));
+t("has a Size & stock card (just Size for a single piece)", sell.includes('<div class="pf-sec">${one?"Size":"Size &amp; stock"}</div>'));
 t("one Publish / Save button", sell.includes('id="s-post">${MKTEDIT?"Save":"Publish"}'));
 t("sound listings keep their own section", sell.includes('<div class="pf-sec">Sound</div>'));
 t("photos: up to 8, several at once", sell.includes("SELLIMGS.length<8") && sell.includes('accept="image/*" multiple'));
@@ -26,12 +29,16 @@ t("free shipping saves as no shipping charge", src.includes('SELLFORM.shipping=(
 t("edit sends status", src.includes('if(SELLFORM.status==="sold"||SELLFORM.status==="active")eb.status=SELLFORM.status;'));
 
 console.log("\nYOU EARN — runs the real function");
-const earn = (price, fee, kind) => new Function("MKTMETA", "SELLFORM", "SELLKIND", "money",
-  fn("sellEarnHTML") + "; return sellEarnHTML();")({ feePct: fee }, { price }, kind, (c) => "$" + (c / 100).toFixed(2));
-t("$85 at 6% → you earn $79.90", earn("85", 6, "physical").includes("<b>$79.90</b>"));
-t("$100 at 10% → you earn $90.00", earn("100", 10, "physical").includes("<b>$90.00</b>"));
-t("says card processing is not included", earn("85", 6, "physical").includes("before card processing"));
-t("no price yet → shows the fee only", earn("", 6, "physical").startsWith("TNL fee 6%"));
+const earn = (price, fee, kind, shipping = "") => new Function("MKTMETA", "SELLFORM", "SELLKIND", "money",
+  fn("sellKeepCents") + fn("sellEarnHTML") + "; return sellEarnHTML();")({ feePct: fee }, { price, shipping }, kind, (c) => "$" + (c / 100).toFixed(2));
+t("$85 at 6% → you keep about $77.14 (TNL fee and the card fee both out)", earn("85", 6, "physical").includes("<b>$77.14</b>"));
+t("$100 at 10% → you keep about $86.80", earn("100", 10, "physical").includes("<b>$86.80</b>"));
+t("$65 + $8 shipping at 4% → about $67.98, shipping counted (TNL takes nothing on postage)", earn("65", 4, "physical", "8").includes("<b>$67.98</b>") && earn("65", 4, "physical", "8").includes("with shipping"));
+t("names both fees — no more \"before card processing\"", earn("85", 6, "physical").includes("6% TNL fee and the card fee") && !earn("85", 6, "physical").includes("before card processing"));
+t("no price yet → shows the fees only", earn("", 6, "physical").startsWith("TNL fee 6% · card fee 2.9% + 30¢"));
+t("\"Ships from\" is gone from the form", !sell.includes('id="s-from"'));
+t("category and condition are pickers, not walls of chips", sell.includes("catPickHTML(f)") && sell.includes('pick("s-cond"') && !sell.includes('"data-scond"'));
+t("the category's own details are asked for in Details", sell.includes("${specFieldsHTML(f)}"));
 t("free sound → says free", earn("0", 6, "loop").startsWith("Free"));
 
 console.log(`\n  ${pass} passed, ${fail} failed`);

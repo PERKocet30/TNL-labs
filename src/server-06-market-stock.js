@@ -74,7 +74,29 @@ function priceChanged(l, cents, actorId) {
   for (const r of db.prepare(`SELECT user_id FROM listing_likes WHERE listing_id=?`).all(l.id))
     notify(r.user_id, actorId, "price_drop", null, `"${l.title}" is now ${usd(cents)} (was ${usd(l.price_cents)})`);
 }
-const priceDrop = (r) => r.prev_price_cents > r.price_cents && Date.now() - (r.price_dropped_at || 0) < DROP_MS ? r.prev_price_cents : null;
+const priceDrop = (r) => r.compare_cents > r.price_cents ? r.compare_cents
+  : r.prev_price_cents > r.price_cents && Date.now() - (r.price_dropped_at || 0) < DROP_MS ? r.prev_price_cents : null;
+
+/* SELLER TYPE · 2026-10-18 — "different options for brands or vintage
+   sellers… a brand can sell multiple new items with different variations,
+   versus someone selling a custom piece." A custom piece is one of one, so
+   its stock is held at 1 with no sizes to pick — the "1 of 1" tag can't lie. */
+const SELL_TYPES = ["brand", "vintage", "custom"];
+function setSellType(id, v) {
+  if (v === undefined) return;
+  const t = SELL_TYPES.includes(v) ? v : "";
+  db.prepare(`UPDATE listings SET sell_type=? WHERE id=?`).run(t, id);
+  if (t === "custom") db.prepare(`UPDATE listings SET quantity=MIN(quantity,1), variants='[]' WHERE id=?`).run(id);
+}
+
+/* COMPARE-AT · 2026-10-18 — the seller's own "was" price, like Shopify's
+   compare-at price: $80 crossed out next to $65. Kept only when it's above
+   the price (anything else clears it); it beats an automatic price drop. */
+function setCompare(id, v, priceCents) {
+  if (v === undefined) return;
+  const c = Math.round(Number(v) * 100) || 0;
+  db.prepare(`UPDATE listings SET compare_cents=? WHERE id=?`).run(c > priceCents && c <= 5000000 ? c : null, id);
+}
 
 /* Market search by size: the listing's own size, or a variant that's still
    in stock in that size. */

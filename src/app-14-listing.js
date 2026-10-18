@@ -70,8 +70,9 @@ function detailHTML(){
       </div>
       ${l.status==="sold"?`<div class="soldbar">SOLD</div>`:""}
       ${lvPickHTML(l)}
-      <div class="dchips">${[l.condition,!hasV&&l.size,l.brand,l.category,!hasV&&l.colour,l.shipsFrom&&("Ships from "+l.shipsFrom)].filter(Boolean).map(v=>`<span class="dchip">${esc(v)}</span>`).join("")}</div>
+      <div class="dchips">${[sellTypeTag(l)==="1 of 1"?"One of one":sellTypeTag(l),l.condition,!hasV&&l.size,l.brand,catLabel(l.category),!hasV&&l.colour,l.shipsFrom&&("Ships from "+l.shipsFrom)].filter(Boolean).map(v=>`<span class="dchip">${esc(v)}</span>`).join("")}</div>
       ${l.description?`<p class="ddesc">${esc(l.description)}</p>`:""}
+      ${specListHTML(l)}
       <div class="dseller" data-u="${esc(l.seller.username)}">
         ${avHTML(l.seller,"sm")}
         <div style="flex:1;min-width:0">

@@ -107,8 +107,8 @@ function wireBag(){
     MKTEDIT=null;SELLKIND=l.kind==="loop"?"loop":"physical";SELLIMGS=[...(l.images||[])];SELLAUDIO=l.audioUrl||null;
     SELLFORM={title:l.title,description:l.description||"",price:((l.price||0)/100).toFixed(2),shipping:l.shipping?(l.shipping/100).toFixed(2):"",
       quantity:1,category:l.category,condition:l.condition,brand:l.brand||"",size:l.size||"",colour:l.colour||"",shipsFrom:l.shipsFrom||"",
-      acceptsOffers:l.acceptsOffers!==false,bpm:l.bpm||"",musicalKey:l.musicalKey||"",stems:!!l.stems,
+      acceptsOffers:l.acceptsOffers!==false,bpm:l.bpm||"",musicalKey:l.musicalKey||"",stems:!!l.stems,compareAt:l.compareAt?(l.compareAt/100).toFixed(2):"",sellType:l.sellType||((l.variants||[]).length?"brand":""),specs:{...(l.specs||{})},
       hasVariants:!!(l.variants||[]).length,variants:(l.variants||[]).map(v=>({size:v.size,colour:v.colour,qty:v.qty}))};
     MKTVIEW="sell";render();toast("Copied — change what's different")});
-  const sx=$("#sdraftx");if(sx)sx.onclick=()=>{sdClear();SELLFORM={category:"Tops",condition:"Good",acceptsOffers:true};SELLIMGS=[];render()};
+  const sx=$("#sdraftx");if(sx)sx.onclick=()=>{sdClear();SELLFORM={category:"Tops",condition:"Good",acceptsOffers:true,sellType:SELLFORM&&SELLFORM.sellType};SELLIMGS=[];render()};   // starting over keeps who's selling
 }

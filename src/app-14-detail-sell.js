@@ -56,19 +56,32 @@ function payoutBannerHTML(){
     <div class="dim">Stripe pays you directly.</div></div>
     <button class="btn sm green" id="payconnect">${ME.hasStripe?"Finish setup":"Connect Stripe"}</button></div>`}
 
-/* ── LISTING EDITOR · v2 · 2026-09-28 ──────────────────────────────
-   A plain product form: Media, Title & description, Pricing,
-   Inventory, Shipping, Details — each a plain card — and one sticky
-   Publish. No banners, no pitch: the fee shows up as the money you keep. */
+/* ── LISTING EDITOR · v3 · 2026-10-18 ──────────────────────────────
+   v3 ("match Shopify standards, simplified and streamlined"): Photos,
+   Title & description, Pricing (price, compare-at, what you keep after
+   every fee), Size & stock (Shopify-style options — app-14-sell-variants),
+   Shipping, Details (category and condition are pickers, not walls of
+   chips) — and one sticky Publish. "Ships from" is gone: Stripe collects
+   the buyer's address, and nobody bought on it.
+   v3.1 (same day): "different options for brands or vintage sellers" —
+   a new listing first asks who's selling (sellTypeHTML, app-14-sell-variants)
+   and the form shapes itself: a brand gets sizes × stock, vintage and one
+   of one get a single piece; condition and brand only where they mean
+   something.
+   v3.2: the category comes right after the title, grouped by department,
+   and Details asks what that category needs (app-14-sell-specs).
+   v2 · 2026-09-28: a plain product form, each section a plain card. */
 function sellEarnHTML(){
   const f=SELLFORM||{}, fee=MKTMETA.feePct??10, p=Number(f.price||0);
   const rates=` · <button class="pf-link" id="rateladder" type="button">Rates</button>`;
   if(SELLKIND==="loop"&&p===0)return `Free — anyone can download it.`;
-  if(!(p>=1))return `TNL fee ${fee}%${rates}`;
-  return `You earn <b>${money(Math.round(p*100*(1-fee/100)))}</b> after the ${fee}% TNL fee, before card processing${rates}`;
+  if(!(p>=1))return `TNL fee ${fee}% · card fee 2.9% + 30¢${rates}`;
+  if(SELLKIND==="loop")return `You keep about <b>${money(Math.max(0,Math.round(p*100*(1-fee/100)-(p*100*0.029+30))))}</b> after the ${fee}% TNL fee and the card fee${rates}`;
+  return `You keep about <b>${money(sellKeepCents(f,fee))}</b>${Number(f.shipping)?" with shipping":""} after the ${fee}% TNL fee and the card fee (2.9% + 30¢)${rates}`;
 }
 function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
   const X=w=>`<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+  const pick=(id,list,cur)=>`<div class="pf-sel"><select class="pf-in" id="${id}">${list.map(c=>`<option${cur===c?" selected":""}>${esc(c)}</option>`).join("")}</select></div>`;
   const chips=(list,attr,cur)=>`<div class="pf-chips">${list.map(c=>`<button type="button" class="chip ${cur===c?"on":""}" ${attr}="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
   const head=`<div class="pf-top">
     <button class="pf-x" data-mv="${MKTEDIT?"detail":"browse"}" aria-label="Close">${X(22)}</button>
@@ -78,11 +91,14 @@ function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
       <h2 class="pf-h">Set up payouts to sell</h2>
       <p class="pf-p">Connect Stripe once — it pays you directly.</p>
       <button class="btn green" id="payconnect2">${ME.hasStripe?"Finish setup":"Connect Stripe"}</button></div></div>`;
-  const noShip=!Number(f.shipping);
+  const noShip=!Number(f.shipping), st=loop?"":(f.sellType||"");
+  if(!loop&&!st&&!MKTEDIT)return `<div class="scroll pf">${head}<div class="pf-body">${sellTypeHTML(f)}</div></div>`;
+  const descPh=loop?"Mood, gear, what it's for":st==="brand"?"Fit, fabric, care":st==="vintage"?"Measurements (pit to pit, length), era, any flaws":st==="custom"?"Materials, how you made it, how it fits":"Fit, measurements, any flaws";
+  const conds=(MKTMETA.conditions||[]).filter(c=>st!=="vintage"||c!=="New");
   return `<div class="scroll pf">${head}${f._restored&&!MKTEDIT?`<div class="sdraft">Picked up where you left off<button type="button" id="sdraftx">Start over</button></div>`:""}
-  <div class="pf-body">
+  <div class="pf-body">${loop?"":sellTypeHTML(f)}
     <section class="pf-card">
-      <div class="pf-sec">Media</div>
+      <div class="pf-sec">Photos</div>
       <div class="pf-media">
         ${SELLIMGS.map((im,i)=>`<div class="pf-img">
           <button type="button" class="pf-imgbtn" data-scover="${i}" aria-label="${i?"Make cover":"Cover photo"}"><img src="${esc(im)}" alt=""></button>
@@ -98,14 +114,17 @@ function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
     <section class="pf-card">
       <label class="pf-lb" for="s-title">Title</label>
       <input class="pf-in" id="s-title" value="${esc(f.title||"")}" maxlength="120" placeholder="${loop?"Name the sound":"Short, clear title"}">
+      ${loop?"":`<label class="pf-lb" for="s-cat">Category</label>${catPickHTML(f)}`}
       <label class="pf-lb" for="s-desc">Description</label>
-      <textarea class="pf-in pf-ta" id="s-desc" rows="4" maxlength="2000" placeholder="${loop?"Mood, gear, what it's for":"Fit, measurements, any flaws"}">${esc(f.description||"")}</textarea>
+      <textarea class="pf-in pf-ta" id="s-desc" rows="4" maxlength="2000" placeholder="${descPh}">${esc(f.description||"")}</textarea>
     </section>
 
     <section class="pf-card">
       <div class="pf-sec">Pricing</div>
-      <label class="pf-lb" for="s-price">Price</label>
-      <div class="pf-money"><span>$</span><input class="pf-in" id="s-price" type="number" inputmode="decimal" min="${loop?0:1}" step="0.01" value="${f.price??""}" placeholder="0.00"></div>
+      <div class="${loop?"":"pf-2"}"><div><label class="pf-lb" for="s-price">Price</label>
+      <div class="pf-money"><span>$</span><input class="pf-in" id="s-price" type="number" inputmode="decimal" min="${loop?0:1}" step="0.01" value="${f.price??""}" placeholder="0.00"></div></div>
+      ${loop?"":sellCompareHTML(f)}</div>
+      ${loop?"":`<div id="s-cmphint">${sellCompareHint(f)}</div>`}
       <div class="pf-hint" id="s-earn">${sellEarnHTML()}</div>
       <label class="pf-row"><span>Accept offers</span><input type="checkbox" class="pf-sw" id="s-offers" ${f.acceptsOffers!==false?"checked":""}></label>
     </section>
@@ -131,23 +150,16 @@ function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
         <label class="pf-lb" for="s-ship">Shipping price</label>
         <div class="pf-money"><span>$</span><input class="pf-in" id="s-ship" type="number" inputmode="decimal" min="0" step="0.01" value="${noShip?"":f.shipping}" placeholder="0.00"></div>
       </div>
-      <label class="pf-lb" for="s-from">Ships from</label>
-      <input class="pf-in" id="s-from" value="${esc(f.shipsFrom||"")}" maxlength="60" placeholder="City">
     </section>
 
     <section class="pf-card">
       <div class="pf-sec">Details</div>
-      <div class="pf-lb">Category</div>
-      ${chips(MKTMETA.categories||[],"data-scat",f.category)}
-      <div class="pf-lb">Condition</div>
-      ${chips(MKTMETA.conditions||[],"data-scond",f.condition)}
-      ${f.hasVariants?`<label class="pf-lb" for="s-brand">Brand</label><input class="pf-in" id="s-brand" value="${esc(f.brand||"")}" maxlength="60">`:`
       <div class="pf-2">
-        <div><label class="pf-lb" for="s-brand">Brand</label><input class="pf-in" id="s-brand" value="${esc(f.brand||"")}" maxlength="60"></div>
-        <div><label class="pf-lb" for="s-size">Size</label><input class="pf-in" id="s-size" value="${esc(f.size||"")}" maxlength="20" placeholder="M, 32, 10"></div>
+        ${st==="brand"||st==="custom"?"":`<div><label class="pf-lb" for="s-cond">Condition</label>${pick("s-cond",conds,f.condition)}</div>`}
+        ${st==="custom"?"":`<div><label class="pf-lb" for="s-brand">${st==="vintage"?"Brand / maker":"Brand"}</label>
+        <input class="pf-in" id="s-brand" value="${esc(f.brand||"")}" maxlength="60" placeholder="${st==="vintage"?"Levi's, unbranded…":st==="brand"?"Your label":"Optional"}"></div>`}
       </div>
-      <label class="pf-lb" for="s-colour">Colour</label>
-      <input class="pf-in" id="s-colour" value="${esc(f.colour||"")}" maxlength="30">`}
+      ${specFieldsHTML(f)}
     </section>`}
 
     ${MKTEDIT?`
