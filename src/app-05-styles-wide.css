@@ -1,4 +1,4 @@
-/* ── COMPUTER LAYOUT v1.2 · 2026-10-18 (one-column Showroom, square lab cards, centred log-in); v1.1 · 2026-10-14; v1.0 · 2026-09-29 ─────────────────────────────────
+/* ── COMPUTER LAYOUT v1.4 · 2026-10-18 (two-pane post maker); v1.2 (one-column Showroom, square lab cards, centred log-in); v1.1 · 2026-10-14; v1.0 · 2026-09-29 ─────────────────────────────────
    Phones keep the app as it is. From 1024px the top bar and bottom nav
    become one left sidebar (render() builds .side only when wide), content
    sits at a reading width beside it, and a mouse gets hover states. Same
@@ -49,6 +49,28 @@
   .gx{min-height:0;max-width:440px;margin:auto 0;background:var(--card);border:1px solid var(--line);padding:4px 40px 32px}
   .gx-body{flex:none}
   .gx-foot{padding-top:22px}
+
+  /* The post maker on a computer (v1.4, 2026-10-18: "a full post composer only for computers —
+     reorganize everything to fit the page"): one screen, no page scroll. The picture fills the left
+     (thumbnails under it), the caption and every option sit in a column on the right that scrolls
+     on its own; New post · Share across the top. */
+  .pcmp-ov{min-height:0;padding:24px 32px;box-sizing:border-box;align-items:center}
+  .pc{max-width:1180px;height:min(100%,860px);flex:1;border:1px solid var(--line)}
+  .pc-top{padding:12px 20px}
+  .pc-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 400px;padding-bottom:0;overflow:hidden}
+  .pc-media{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--el);border-right:1px solid var(--line);overflow:hidden}
+  .pc-side{display:flex;flex-direction:column;min-height:0;overflow-y:auto}
+  .pc-media .pc-stage{flex:1;min-height:0;border-bottom:0;display:flex;align-items:center;justify-content:center}
+  .pc-media .pc-track{width:100%;height:100%}
+  .pc-media .pc-slide{aspect-ratio:auto;max-height:none;height:100%}
+  .pc-media .pc-stage video{height:100%;max-height:100%;object-fit:contain}
+  .pc-media .pc-cov{width:auto;height:100%;max-width:100%;object-fit:contain}
+  .pc-media .pc-pick{flex:1;height:auto;margin:28px;max-width:none}
+  .pc-media .pc-pick.pc-pick-sm{flex:none;margin:0 28px 20px}
+  .pc-media .pc-strip{flex-shrink:0;background:var(--bg);border-top:1px solid var(--line);border-bottom:0;padding:12px 20px}
+  .pc-side .pc-cap{padding:18px 20px}
+  .pc-side .pc-ta{min-height:150px}
+  .pc-side .pc-opt{padding:8px 20px}
 
   /* reading widths beside the sidebar */
   .shop-head,.mkt-grid,.mktfoot{padding-left:max(24px,calc((100% - 1200px) / 2));padding-right:max(24px,calc((100% - 1200px) / 2))}

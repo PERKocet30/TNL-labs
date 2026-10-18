@@ -1377,6 +1377,18 @@ console.log("\nMEMBER · COMPUTER");
     await p.evaluate(() => { GATE = null; GATEWHY = ""; render(); });
     await p.setViewportSize({ width: 1440, height: 900 });
   });
+  // 2026-10-18: "build a full post composer only for computers — reorganize everything to fit the page"
+  await step(d, "a laptop: the post maker is two panes on one screen — the picture left, caption and options right", async () => {
+    await p.setViewportSize({ width: 1366, height: 768 });
+    await p.locator('.side [data-tab="post"]').click(); await p.waitForSelector("#pcov .pc-side");
+    const g = await p.evaluate(() => { const m = document.querySelector(".pc-media").getBoundingClientRect(), sd = document.querySelector(".pc-side").getBoundingClientRect(), pc = document.querySelector(".pc").getBoundingClientRect();
+      return { side: sd.left - m.right, top: Math.abs(sd.top - m.top), bottom: pc.bottom, h: innerHeight, mw: m.width, scroll: document.scrollingElement.scrollHeight - innerHeight }; });
+    ok(g.side >= -1 && g.side < 4 && g.top < 2 && g.mw > 500, "the picture and the options aren't side by side: " + JSON.stringify(g));
+    ok(g.bottom <= g.h && g.scroll <= 1, "the post maker doesn't fit the screen: " + JSON.stringify(g));
+    ok(await p.locator(".pc-side #pcbody").count() === 1 && await p.locator(".pc-side #pclab").count() === 1, "the caption and options aren't in the right-hand column");
+    await p.locator("#pccancel").click(); await p.waitForFunction(() => !PCOMPOSE, null, { timeout: 3000 });
+    await p.setViewportSize({ width: 1440, height: 900 });
+  });
   await step(d, "an opened post sits beside the sidebar", async () => {
     await p.evaluate(() => openPost(SRPOSTS[0])); await p.waitForSelector(".po-ov");
     const left = await p.evaluate(() => document.querySelector(".po-ov").getBoundingClientRect().left);
