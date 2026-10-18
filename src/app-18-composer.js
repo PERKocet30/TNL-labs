@@ -57,8 +57,7 @@ function pcomposeHTML(){
       <div class="pc-ttl">New post</div>
       <button class="pc-share" id="pcgo" ${pcCan(c)?"":"disabled"}>${c.busy?"Sharing…":"Share"}</button>
     </header>
-    <div class="pc-body">
-      ${media}
+    <div class="pc-body"><div class="pc-media">${media}</div><div class="pc-side">
       <div class="pc-cap">${avHTML(ME,"")}
         <textarea class="pc-ta" id="pcbody" rows="3" placeholder="Write a caption… #tag it so people find it">${esc(c.body||"")}</textarea></div>
       <div class="pc-ment" id="pcment" hidden></div>
@@ -94,7 +93,7 @@ function pcomposeHTML(){
         <label class="pc-opt pc-sw-row"><span class="pc-ic">${IG_COMMENT}</span><span class="pc-l">Turn off commenting</span>
           <input type="checkbox" class="pf-sw" id="pccoff" ${c.commentsOff?"checked":""}></label>
       </div>
-    </div>
+    </div></div>
   </div></div>`;
 }
 

@@ -46,7 +46,7 @@
 .obtns{display:flex;gap:6px}
 .btn.sm{padding:6px 11px;font-size:11px}
 .spin{width:16px;height:16px;border:2px solid var(--line2);border-top-color:var(--accent-fill);border-radius:50%;animation:sp .7s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}.wide{width:100%;justify-content:center;margin-top:18px}
+@keyframes sp{to{transform:rotate(360deg)}}.btn.wide{width:100%;justify-content:center;margin-top:18px}   /* .btn only: the body is .wide on a computer, and this gave every page an 18px scroll (fixed 2026-10-18) */
 .ordrow{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start;flex-wrap:wrap}
 .ordimg{width:58px;height:58px;object-fit:cover;border-radius:0;background:var(--el);flex-shrink:0}
 .ordbody{flex:1;min-width:120px}
