@@ -81,7 +81,7 @@ function gateHTML(){
       body=`<h1 class="gx-h">What's your name?</h1><p class="gx-p">This is how you'll show up. You can change it any time.</p>
         ${gxField("dn","Name",{value:f.displayName,attrs:'autocomplete="name" maxlength="28"'})}${err}${next("Next",!!f.displayName.trim())}`;
     }else if(G.step==="username"){
-      body=`<h1 class="gx-h">Create a username</h1><p class="gx-p">Your page will be labs.tnllabs.com/u/<b id="unurl">${esc(f.username||"username")}</b></p>
+      body=`<h1 class="gx-h">Create a username</h1><p class="gx-p">Your page will be ${location.host}/u/<b id="unurl">${esc(f.username||"username")}</b></p>
         ${gxField("un","Username",{value:f.username,attrs:'autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="20"',
           after:`<span class="gxf-st ${G.un.state}" id="unst">${gxUnStatus(G)}</span>`})}
         <div class="gx-hint ${G.un.state==="ok"?"":"bad"}" id="unmsg">${esc(G.un.msg||"")}</div>

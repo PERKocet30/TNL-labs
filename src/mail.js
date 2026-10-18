@@ -60,7 +60,7 @@ const FONT = `'Helvetica Neue',Helvetica,Archivo,Arial,sans-serif`; // single qu
 
 /** One layout for every email. Returns { html, text }. */
 export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader, unsub }) {
-  const origin = (() => { try { return new URL(url).origin; } catch { return "https://labs.tnllabs.com"; } })();
+  const origin = (() => { try { return new URL(url).origin; } catch { return "https://www.tnllabs.com"; } })();
   const href = escapeHtml(url);
   const body = lines.map((l) => `<p class="t2" style="margin:0 0 12px;color:${C.ink2};font-size:15px;line-height:21px">${escapeHtml(l)}</p>`).join("");
   const html = `<!doctype html>

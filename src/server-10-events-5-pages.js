@@ -1,7 +1,7 @@
 
 /* ================================================================
    EVENT PAGES v1.1 — 2026-10-12. The links that go on Instagram.
-   v1.1: labs.tnllabs.com/tournament — the one link to send people. It
+   v1.1: www.tnllabs.com/tournament — the one link to send people. It
    always opens the tournament that's on now (its /e/:slug page), so it
    can sit in a bio and still be right for Vol. 2. ("There's no link for
    me to send out to people to join the tournament.")

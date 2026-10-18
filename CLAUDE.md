@@ -2,7 +2,7 @@
 
 Social media by creatives, for creatives. One Node server (Express), one SQLite
 database (Node's built-in `node:sqlite`), no frontend framework. Live at
-https://labs.tnllabs.com. README.md is the full reference; this file is the rules.
+https://www.tnllabs.com. README.md is the full reference; this file is the rules.
 
 ## Hard rules
 

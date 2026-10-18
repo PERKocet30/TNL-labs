@@ -287,6 +287,7 @@ function paintVerifyBar(){
   if(bar&&ME&&ME.emailVerified)bar.remove();
 }
 (async()=>{
+  if(await addressMove())return;   // on an old address: off to www.tnllabs.com, still signed in (app-19-address)
   try{const d=await api.levels();LEVELS=d.levels;if(d.accents)ACCENTS=d.accents;if(d.site)SITE=d.site}catch(e){/* offline default */}
   if(!studioOn()){const m=LABS.find(l=>l.id==="culture");if(m)m.channels=m.channels.filter(c=>!c.beatlab)}
   if(TOKEN)await refreshMe();          // invalid token just leaves ME null -> guest

@@ -1,6 +1,6 @@
 # TNL LABS
 
-**v2.2 · 2026-10-12** · live at [labs.tnllabs.com](https://labs.tnllabs.com)
+**v2.2 · 2026-10-12** · live at [www.tnllabs.com](https://www.tnllabs.com)
 
 Social media by creatives, for creatives. TNL LABS is where creatives post their work, find each other across scenes, make things together and sell what they make. Standing here is earned only from what other people do with your work — likes, shares, collabs both sides confirm, sales — so the people who build the most rise, not the people who post the most.
 
@@ -129,7 +129,7 @@ Set in Railway → Variables. Values are secret and never go in this repo.
 | Variable | Needed for |
 |---|---|
 | `TNL_DATA` | `/app/data` — puts the database, uploads and backups on the persistent volume. **Required.** |
-| `PUBLIC_URL` | `https://labs.tnllabs.com` — builds email links, Stripe redirects and share links |
+| `PUBLIC_URL` | `https://www.tnllabs.com` — builds email links, Stripe redirects and share links |
 | `ADMIN_EMAIL` | promotes that account to admin on boot |
 | `RESEND_API_KEY`, `MAIL_FROM` | real email (verification, password reset). Without them, links show on screen instead. |
 | `STRIPE_SECRET_KEY` | Market checkout and seller payouts |

@@ -48,7 +48,7 @@ function safeGet(url, { maxBytes = 120000, timeout = 6000, stopAt = /<\/head>/i 
     const finish = (fn, v) => { if (!done) { done = true; clearTimeout(timer); fn(v); } };
     const req = (u.protocol === "https:" ? https : http).get(u, {
       agent: false, lookup: publicLookup, timeout,
-      headers: { "User-Agent": "TNLLabsBot/1.0 (+https://labs.tnllabs.com)", Accept: "text/html,application/xhtml+xml" },
+      headers: { "User-Agent": "TNLLabsBot/1.0 (+https://www.tnllabs.com)", Accept: "text/html,application/xhtml+xml" },
     }, (r) => {
       if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
         r.resume();
