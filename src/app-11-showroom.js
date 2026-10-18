@@ -103,8 +103,10 @@ function srMerge(fresh){
     if(!LIKING[String(p.id)])setLike(String(p.id),!!p.likedByMe,p.likeCount||0);
     document.querySelectorAll('#sr-grid [data-share="'+p.id+'"] .igact-n').forEach(n=>{n.textContent=p.shareCount||""});
   }
-  const have=new Set(SRPOSTS.map(p=>p.id));
-  if(fresh.some(p=>!have.has(p.id))){SRNEW=fresh;const b=$("#sr-new");if(b)b.hidden=false}
+  /* New work means newer than anything here (2026-10-18, "New work doesn't go away"): the
+     Showroom is the top 60 by rank, and an older piece rising into it as ranks shift isn't new */
+  const have=new Set(SRPOSTS.map(p=>p.id)),top=Math.max(0,...SRPOSTS.map(p=>Number(p.id)||0));
+  if(fresh.some(p=>!have.has(p.id)&&Number(p.id)>top)){SRNEW=fresh;const b=$("#sr-new");if(b)b.hidden=false}
 }
 document.addEventListener("click",e=>{
   if(!(e.target&&e.target.closest&&e.target.closest("#sr-new")))return;
@@ -122,7 +124,7 @@ async function loadShowroom(force){
     const fresh=d.posts||[];
     const g=$("#sr-grid"), shown=!!(g&&SRPOSTS.length&&g.querySelector(".sr-card"));
     if(shown)srMerge(fresh);   // on screen: never reshuffle
-    else{SRPOSTS=fresh;srPaint()}
+    else{SRPOSTS=fresh;SRNEW=null;const nb=$("#sr-new");if(nb)nb.hidden=true;srPaint()}   // a full paint has it all
     srBuilders(b.builders||[],!shown);
   }catch(e){/* offline */}
 }
