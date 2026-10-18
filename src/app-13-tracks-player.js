@@ -76,8 +76,8 @@ function trackMenu(t,ctx){
   if(ctx==="pl"&&PLIST&&PLIST.d){const d=PLIST.d;acts.push({icon:DI.x,label:"Take out of this playlist",run:async()=>{
     try{plKeep((await plapi.rm(d.id,t.id)).playlist);await plRefresh(d.id);if(PLQID===d.id)PLAYQ=PLAYQ.filter(x=>x.id!==t.id||(NOWPLAYING&&x.id===NOWPLAYING.id));render();toast("Taken out of "+d.name)}catch(e){toast(e.message)}}})}
   acts.push({icon:DI.music,label:"Go to @"+t.by.username,run:()=>openProfile(t.by.username)});
-  acts.push({icon:DI.out,label:"Share",run:()=>shareMenu({title:t.title+" · @"+t.by.username,link:profileLink(t.by.username),story:`/tr/${t.id}/story.jpg`,
-    note:"The link opens @"+t.by.username+"'s page, where the track is."})});
+  /* the song's own page (/s/:id: its cover, a player, Open in the app), not the artist's profile (2026-10-18) */
+  acts.push({icon:DI.out,label:"Share",run:()=>shareMenu({title:t.title+" · @"+t.by.username,link:songLink(t),story:`/tr/${t.id}/story.jpg`})});
   if(t.by.username!==myName())return openMenu({react:false,preview:(t.title+" · @"+t.by.username).slice(0,120),actions:acts});
   acts.push({icon:DI.edit,label:"Edit title and cover",run:()=>{
     TRKEDIT={id:t.id,title:t.title,artworkUrl:t.artworkUrl||"",busy:false,fresh:false};render()}});

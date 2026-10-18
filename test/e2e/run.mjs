@@ -986,6 +986,20 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".c-ma", { hasText: "Data saver" }).count() === 1, "no Data saver switch in ≡");
     await p.evaluate(() => { closeMenu(); TAB = "showroom"; PROFILE = null; render(); });
   });
+  // 2026-10-18: "when sharing a song it shares the person's profile, not the song"
+  await step(d, "sharing a song from the Music lab sends the song's own page, not the artist's profile", async () => {
+    await p.locator('.nav [data-tab="labs"]').tap();
+    await p.locator('[data-lab="culture"]').first().tap();
+    await fast(p, 3000, () => p.waitForSelector("[data-trkmore]"), "the Music lab's tracks");
+    const id = await p.locator("[data-trkmore]").first().getAttribute("data-trkmore");
+    await p.evaluate(() => { window.__shared = null; const real = shareMenu; window.__realShare = real; shareMenu = (o) => { window.__shared = o; }; });
+    await p.locator("[data-trkmore]").first().tap(); await p.waitForTimeout(300);
+    await p.getByText("Share", { exact: true }).last().tap(); await p.waitForTimeout(300);
+    const sh = await p.evaluate(() => { const o = window.__shared; shareMenu = window.__realShare; return o && { ...o, origin: location.origin }; });
+    ok(sh && sh.link === sh.origin + "/s/" + id, "the song's share link isn't its own page: " + JSON.stringify(sh && sh.link));
+    ok(sh && sh.story === `/tr/${id}/story.jpg`, "the song lost its Story card");
+    await p.evaluate(() => { closeMenu && closeMenu(); });
+  });
   await step(d, "Music: play, the bar shows, the sound moves, next track", async () => {
     await p.locator('.nav [data-tab="labs"]').tap();
     await p.locator('[data-lab="culture"]').first().tap();
