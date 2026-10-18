@@ -1361,6 +1361,22 @@ console.log("\nMEMBER · COMPUTER");
       await fast(p, 3000, () => p.waitForSelector(sel), tab);
     }
   });
+  // 2026-10-18 (first look on a laptop): "too many images on screen, can't focus on any", "login isn't centered", "make labs bigger, more square"
+  await step(d, "a laptop: the Showroom is one column, labs are big near-square cards, log-in sits in the middle of the screen", async () => {
+    await p.setViewportSize({ width: 1366, height: 768 });
+    await p.locator('.side [data-tab="showroom"]').click(); await p.waitForSelector("#sr-grid .sr-card");
+    const cards = await p.evaluate(() => [...document.querySelectorAll("#sr-grid .sr-card")].slice(0, 3).map((c) => Math.round(c.getBoundingClientRect().left)));
+    ok(cards.length >= 2 && new Set(cards).size === 1, "Showroom pieces sit side by side: " + cards);
+    ok(await p.evaluate(() => document.querySelector("#sr-grid .sr-card").getBoundingClientRect().width <= 500), "a Showroom piece is wider than a phone-like column");
+    await p.locator('.side [data-tab="labs"]').click(); await p.waitForSelector(".lx-list .lx");
+    const lx = await p.evaluate(() => { const r = document.querySelector(".lx-list .lx").getBoundingClientRect(); return { w: r.width, h: r.height }; });
+    ok(lx.w >= 260 && lx.h / lx.w > 0.8 && lx.h / lx.w < 1.4, "lab cards aren't big and near-square: " + JSON.stringify(lx));
+    await p.evaluate(() => needAccount("x")); await p.waitForSelector(".gx");
+    const gx = await p.evaluate(() => { const r = document.querySelector(".gx").getBoundingClientRect(); return { mid: r.left + r.width / 2, top: r.top, bottom: innerHeight - r.bottom }; });
+    ok(Math.abs(gx.mid - 683) < 4 && Math.abs(gx.top - gx.bottom) < 40, "the log-in card isn't in the middle of the screen: " + JSON.stringify(gx));
+    await p.evaluate(() => { GATE = null; GATEWHY = ""; render(); });
+    await p.setViewportSize({ width: 1440, height: 900 });
+  });
   await step(d, "an opened post sits beside the sidebar", async () => {
     await p.evaluate(() => openPost(SRPOSTS[0])); await p.waitForSelector(".po-ov");
     const left = await p.evaluate(() => document.querySelector(".po-ov").getBoundingClientRect().left);
