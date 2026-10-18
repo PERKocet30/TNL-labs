@@ -167,7 +167,7 @@ function evDefaultRules(ev) {
   return [
     `${ev.title} — Official Rules`,
     `NO PURCHASE OR PAYMENT NECESSARY TO ENTER OR WIN. A purchase will not improve your chances. This is a contest of skill; chance plays no part in picking the winner.`,
-    `Sponsor. TNL LABS ("TNL"), labs.tnllabs.com.`,
+    `Sponsor. TNL LABS ("TNL"), tnllabs.com.`,
     `Who can enter. You must be 18 or older and have a TNL LABS account. TNL staff, this event's judges and their households can't enter. Void where prohibited.`,
     `Dates. Entries open ${evDate(at("submit").start)} and close ${evDate(at("submit").end)}. Voting runs until the final, which ends ${evDate(final.end)}. Times are US Eastern.`,
     `How to enter. Post one piece through the event page in the app. One entry per person; you can withdraw and replace it until entries close.`,
