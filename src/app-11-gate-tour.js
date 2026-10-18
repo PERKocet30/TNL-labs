@@ -5,15 +5,14 @@
    part of the app, and lands in the Showroom with the Get started list
    (app-11-getstarted.js). ≡ on your profile → How LABS works opens
    the same cards any time (GATE="tour"). Swipe, tap Next, or ← →. */
-const TOUR=[
-  {ic:()=>UI_IC.tabGrid,h:"The Showroom",p:()=>"Work from every lab, picked fresh for you. Like it, comment, share it to your Story. A song plays when its post reaches the middle of the screen."},
-  {ic:()=>UI_IC.hash,h:"The labs",p:()=>`${LABS.map(l=>labMark(l.name)).join(" · ")}. Each lab has Work for finished pieces and Talk for everything else, and #tags help people find you.`},
-  {ic:()=>UI_IC.plusSq,h:"Post your work",p:()=>"Tap + to post a picture, a carousel, a video or a song. Pick the lab it belongs in, add #tags, put a song under a picture, and tag who you made it with."},
-  {ic:()=>UI_IC.tabStanding,h:"Rep and levels",p:()=>"You earn rep only from what other people do with your work: likes, shares, saves, collabs and sales. Rep raises your level, and every level lowers your Market fee."},
-  {ic:()=>UI_IC.tabCollab,h:"Collabs and messages",p:()=>"Made something together? Tag your collaborators. It counts for both of you once they accept. Message anyone from their page."},
-  {ic:()=>UI_IC.tabShop,h:"The Market",p:()=>"Sell prints, merch, beats and more. Buyers pay by card and you're paid out through Stripe."},
-  {ic:()=>DI.star,h:"Tournaments",p:()=>"Enter LABS tournaments with your best piece. Votes only count in the app, so send people here to vote for you."},
-  {ic:()=>UI_IC.home,h:"Your page",p:()=>`It lives at ${location.host}/u/${esc(ME?ME.username:"you")} and wears your colour. Share it from ≡ on your profile, straight to your Instagram Story.`},
+const TOUR=[   // short, like Instagram's: what each place is, never how the ranking works (2026-10-18)
+  {ic:()=>UI_IC.tabGrid,h:"The Showroom",p:()=>"New work from every lab. Like it, comment, share it."},
+  {ic:()=>UI_IC.hash,h:"The labs",p:()=>`${LABS.map(l=>labMark(l.name)).join(" · ")}. Find your people and post where your work belongs.`},
+  {ic:()=>UI_IC.plusSq,h:"Post your work",p:()=>"Tap + to share pictures, videos and songs. Tag who you made it with."},
+  {ic:()=>UI_IC.tabShop,h:"The Market",p:()=>"Buy and sell prints, merch, beats and more."},
+  {ic:()=>UI_IC.home,h:"Your profile",p:()=>`Your work, in your colour, at ${location.host}/u/${esc(ME?ME.username:"you")}. Share it to your Story.`},
+  {ic:()=>UI_IC.dm,h:"Messages",p:()=>"Message anyone, start a group chat, send a post."},
+  {ic:()=>UI_IC.bell,h:"Notifications",p:()=>"See who liked, commented, followed and collabed."},
 ];
 function tourHTML(G){
   const n=TOUR.length,i=Math.max(0,Math.min(n,G.ti||0)),last=i===n;

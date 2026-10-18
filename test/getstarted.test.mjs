@@ -31,7 +31,8 @@ try {
   const c = await (await fetch(B + "/api/me/start", { headers: { Authorization: "Bearer tok-cy" } })).json();
   t("someone new starts at zero", c.posts === 0 && c.following === 0);
   const app = readFileSync(join(ROOT, "public/index.html"), "utf8");
-  t("the walkthrough covers every part of the app", ["The Showroom", "The labs", "Post your work", "Rep and levels", "Collabs and messages", "The Market", "Tournaments", "Your page"].every((h) => app.includes(`h:"${h}"`)));
+  t("the walkthrough covers the Showroom, labs, posting, Market, profile, messages and notifications", ["The Showroom", "The labs", "Post your work", "The Market", "Your profile", "Messages", "Notifications"].every((h) => app.includes(`h:"${h}"`)));
+  t("…and never explains rep, levels or rates", !/h:"Rep and levels"|Market fee/.test(app.slice(app.indexOf("const TOUR="), app.indexOf("function tourHTML"))));
   t("≡ on your profile reopens it", app.includes('label:"How LABS works",run:openTour'));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);

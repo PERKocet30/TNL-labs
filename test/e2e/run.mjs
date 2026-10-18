@@ -201,7 +201,7 @@ console.log("\nNEW MEMBER · PHONE");
     if (await p.locator(".gx-people").count()) await p.locator("#gxnext").tap();
     await p.waitForSelector(".tour-card", { timeout: 4000 });
     const cards = await p.evaluate(() => TOUR.length);
-    ok(cards >= 7 && /Showroom/.test(await p.locator(".tour-card h1").innerText()), "the walkthrough didn't start with the Showroom");
+    ok(cards === 7 && /Showroom/.test(await p.locator(".tour-card h1").innerText()), "the walkthrough didn't start with the Showroom");
     ok(await p.locator(".tour-dots i").count() === cards + 1, "the dots don't match the cards");
     for (let k = 0; k < cards; k++) { await p.locator("#tournext").tap(); await p.waitForTimeout(80); }
     ok(/Welcome to LABS, New/.test(await p.locator(".tour-card h1").innerText()), "the last card isn't the welcome");
