@@ -1390,6 +1390,11 @@ console.log("\nMEMBER · COMPUTER");
     ok(a.nbw < a.w * 0.9 && a.nbo < 0.6, "the neighbours aren't smaller and dimmed: " + JSON.stringify(a));
     ok(a.inBand === 1, "more than one piece stands where songs play: " + JSON.stringify(a));
     ok(a.pageX <= 1, "the wall makes the page scroll sideways");
+    /* "boxes don't match the post": each frame is cut to its piece — no bars beside the picture, for every piece on the wall */
+    const bars = await p.evaluate(() => [...document.querySelectorAll("#sr-grid .sr-card")].map((c) => { const m = c.querySelector(".post-media img.sr-img, .post-media video");
+      const w = m && (m.naturalWidth || m.videoWidth), h = m && (m.naturalHeight || m.videoHeight); if (!w || !h) return 0;
+      const r = m.getBoundingClientRect(); return Math.round(r.width - Math.min(r.width, r.height * w / h)); }).filter((x) => x > 3));
+    ok(!bars.length, "a frame is wider than its piece (bars beside it): " + bars.join(", ") + "px");
     /* "audio started playing early for a video without being fully on the post": the piece beside the spotlight is a video — it waits */
     const vid = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.videoUrl && /\.webm$/.test(q.videoUrl)); return x && x.videoUrl; });
     ok(vid, "no WebM video in the Showroom to test with");

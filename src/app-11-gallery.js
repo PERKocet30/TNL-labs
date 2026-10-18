@@ -10,7 +10,9 @@
    gallery is the computer's only Showroom; and "while scrolling it
    glitches and swipes through multiple" — one swipe or wheel flick is
    one step, however long the trackpad keeps coasting; a video plays
-   only in the spotlight, never as it passes by or from the side. Phones keep the
+   only in the spotlight, never as it passes by or from the side.
+   v1.2: "boxes don't match the post" — each piece's frame is cut to the
+   piece's own shape (galFit), no grey bars beside a tall one. Phones keep the
    feed as it is. Styles: app-05-styles-wide.css.
 ================================================================ */
 let GALI=0, GALRAF=0, GALCLICK=false, GALSTEER=0, GALLAST=0, GALACC=0, GALLOCK=false;
@@ -62,10 +64,26 @@ function galWheel(e){
   GALACC+=(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY)*k;
   if(Math.abs(GALACC)>=30){GALLOCK=true;galGo(GALI+(GALACC>0?1:-1))}
 }
+/* each frame hugs its piece: as wide as the picture is at the wall's
+   height, between 360px (so the name and actions fit) and half the wall */
+const galRatio=c=>{
+  const t=c.querySelector(".caro-t");if(t){const m=/aspect-ratio:\s*([\d.]+)\s*\/\s*([\d.]+)/.exec(t.getAttribute("style")||"");return m?m[1]/m[2]:0.8}
+  const i=c.querySelector(".post-media img.sr-img");if(i){const w=i.naturalWidth||+i.getAttribute("width"),h=i.naturalHeight||+i.getAttribute("height");return w&&h?w/h:0}
+  const v=c.querySelector(".post-media video");if(v)return v.videoWidth&&v.videoHeight?v.videoWidth/v.videoHeight:0;
+  return null;   // a loop: no picture, the usual width
+};
+function galFit(){
+  const g=$("#sr-grid");if(!g||!galOn())return;
+  const H=Math.max(240,innerHeight-300),max=Math.min(720,g.clientWidth/2);
+  for(const c of galCards()){const r=galRatio(c);
+    if(r===0){const m=c.querySelector(".post-media img.sr-img,.post-media video");   // its shape isn't known until it loads
+      if(m&&!m._galfit){m._galfit=1;m.addEventListener(m.tagName==="VIDEO"?"loadedmetadata":"load",()=>{galFit();galGo(GALI,true)},{once:true})}continue}
+    if(r)c.style.setProperty("--galw",Math.round(Math.max(360,Math.min(max,H*r)))+"px")}
+}
 function galWire(){
   const g=$("#sr-grid");if(!g||!galOn())return;
   g.onscroll=()=>{cancelAnimationFrame(GALRAF);GALRAF=requestAnimationFrame(galSpot)};
-  g.onwheel=galWheel;
+  g.onwheel=galWheel;galFit();
   const pv=$("#galprev"),nx=$("#galnext");
   if(pv)pv.onclick=()=>galGo(GALI-1);if(nx)nx.onclick=()=>galGo(GALI+1);
   if(!GALCLICK){GALCLICK=true;   // a click on a neighbour brings it into the spotlight, nothing else
