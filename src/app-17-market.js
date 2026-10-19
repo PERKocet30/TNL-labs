@@ -263,7 +263,7 @@ function wireMarket(){
     /* Listings have had a working /m/ deep link since the SPA learned to
        read it — this is the first button that hands the link out. */
     const url=location.origin+"/m/"+b.dataset.mshare;
-    const title=MKTONE?MKTONE.title:"TNL Market";
+    const title=MKTONE?MKTONE.title:"LABS Market";
     shareMenu({title,link:url,story:`/m/${b.dataset.mshare}/story.jpg`});});
   /* data-medit used to toggle sold while wearing a button labelled Edit —
      the loop detail page has said Edit since 047 and never edited anything.

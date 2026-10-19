@@ -136,12 +136,12 @@ app.get("/u/:username", (req, res) => {
   res.set("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=600");
   const roleChips = (() => { let rs = []; try { rs = JSON.parse(u.roles || "[]"); } catch {} if (!rs.length && u.role) rs = [u.role]; return rs; })();
   res.send(lookPage({
-    title: `${esc(u.display_name)} — TNL LABS`,
+    title: `${esc(u.display_name)} — LABS`,
     accent: accentHex(u.accent),   // their colour, as in the app
     head: `<link rel="canonical" href="${esc(canonical)}">
 
 <meta property="og:type" content="profile">
-<meta property="og:site_name" content="TNL LABS">
+<meta property="og:site_name" content="LABS">
 <meta property="og:url" content="${esc(canonical)}">
 <meta property="og:title" content="${esc(u.display_name)} — ${esc(roleLine)}">
 <meta property="og:description" content="${esc(ogDesc)}">
@@ -149,7 +149,7 @@ app.get("/u/:username", (req, res) => {
 <meta property="og:image:secure_url" content="${esc(ogImage)}">
 <meta property="og:image:width" content="${ogW}">
 <meta property="og:image:height" content="${ogH}">
-<meta property="og:image:alt" content="${esc(u.display_name)} on TNL LABS">
+<meta property="og:image:alt" content="${esc(u.display_name)} on LABS">
 <meta property="profile:username" content="${esc(u.username)}">
 
 <meta name="twitter:card" content="summary_large_image">

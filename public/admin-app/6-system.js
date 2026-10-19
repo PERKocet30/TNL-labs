@@ -1,4 +1,4 @@
-/* TNL LABS admin v2.4 — 2026-10-15. v2.4: the landing headline and tagline fields are gone — nothing in the app showed them.
+/* LABS admin v2.4 — 2026-10-15. v2.4: the landing headline and tagline fields are gone — nothing in the app showed them.
    v2.3 — 2026-10-14. v2.3: the unused archive-board field is gone.
    v2.2 — 2026-10-14. System, in tabs: Settings · Health · Backups & email · Admin log.
    v2.1 — 2026-10-09. System: switches, safety nets, and the log of who changed what.
@@ -31,12 +31,12 @@ VIEWS.system = () => {
     slow_screen: "took over 3 seconds to load", action_failed: "the server couldn't save it" };
   const tabs = {
     settings: () => `<div class="split"><div><h2 class="sec">Who can get in</h2>
-  <div class="panel">${tog("signupsOpen", "Signups open", "Off makes TNL invite-only.")}${tog("guestAccess", "Guests can look around", "The Showroom, Market and profiles without an account.")}
+  <div class="panel">${tog("signupsOpen", "Signups open", "Off makes LABS invite-only.")}${tog("guestAccess", "Guests can look around", "The Showroom, Market and profiles without an account.")}
     ${tog("autoVerify", "Skip email confirmation", "Only while email is broken — anyone could sign up with an address they don't own.")}</div>
   <h2 class="sec">What's open</h2>
   <div class="panel">${tog("marketOpen", "Market", "Buying and selling.")}${tog("studioOpen", "Studio", "The beat maker.")}${g.studioOpen === "1" ? `<div class="set"><div class="t"><span>Studio is on.</span></div><button class="btn ghost sm" data-studio>Studio stats ${I.chev}</button></div>` : ""}${tog("loopsOpen", "Loop market", "Producers selling sounds.")}
     <div class="set"><div class="t"><b>Rep needed to sell</b><span>0 lets anyone list.</span></div><input class="in" id="minrep" type="number" min="0" max="1000" value="${esc(g.minRepToSell)}" style="width:90px"></div>
-    ${tog("distroOn", "Offer distribution", "Reach the level below and TNL puts your music out. It costs real money per artist.")}
+    ${tog("distroOn", "Offer distribution", "Reach the level below and LABS puts your music out. It costs real money per artist.")}
     ${g.distroOn === "1" ? `<div class="set"><div class="t"><b>Level that earns it</b></div><select class="sel" id="distrolvl">${[[2, "Verified"], [3, "Collaborator"], [4, "Core"], [5, "Leadership"]]
       .map(([v, l]) => `<option value="${v}" ${String(g.distroLevel) === String(v) ? "selected" : ""}>${l}</option>`).join("")}</select></div>
       <label class="l" for="distroblurb">The terms, in one line</label><input class="in" id="distroblurb" maxlength="200" value="${esc(g.distroBlurb)}">` : ""}</div></div><div><h2 class="sec">What people see first</h2>
@@ -98,7 +98,7 @@ WIRES.system = () => {
   const st = $("#savetext"); if (st) st.onclick = () => save({ announcement: $("#announce").value });
   const bk = $("#backup"); if (bk) bk.onclick = async () => { bk.disabled = true; await act(() => req("/api/admin/backups", { method: "POST" }), (d) => "Backed up — " + (d.bytes / 1024).toFixed(0) + " KB"); load(); };
   $$("[data-dl]").forEach((b) => b.onclick = () => download("/api/admin/backups/" + encodeURIComponent(b.dataset.dl), b.dataset.dl));
-  const src = $("#dlsource"); if (src) src.onclick = () => download("/api/admin/source", "TNL-LABS.zip");
+  const src = $("#dlsource"); if (src) src.onclick = () => download("/api/admin/source", "LABS.zip");
   const tm = $("#testmail"); if (tm) tm.onclick = async () => { tm.disabled = true;
     try { MAILRESULT = await req("/api/admin/test-email", { method: "POST", body: { to: $("#testto").value.trim() || undefined } }); }
     catch (e) { MAILRESULT = { ok: false, error: e.message }; } paint(); };

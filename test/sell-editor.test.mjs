@@ -31,11 +31,11 @@ t("edit sends status", src.includes('if(SELLFORM.status==="sold"||SELLFORM.statu
 console.log("\nYOU EARN — runs the real function");
 const earn = (price, fee, kind, shipping = "") => new Function("MKTMETA", "SELLFORM", "SELLKIND", "money",
   fn("sellKeepCents") + fn("sellEarnHTML") + "; return sellEarnHTML();")({ feePct: fee }, { price, shipping }, kind, (c) => "$" + (c / 100).toFixed(2));
-t("$85 at 6% → you keep about $77.14 (TNL fee and the card fee both out)", earn("85", 6, "physical").includes("<b>$77.14</b>"));
+t("$85 at 6% → you keep about $77.14 (LABS fee and the card fee both out)", earn("85", 6, "physical").includes("<b>$77.14</b>"));
 t("$100 at 10% → you keep about $86.80", earn("100", 10, "physical").includes("<b>$86.80</b>"));
-t("$65 + $8 shipping at 4% → about $67.98, shipping counted (TNL takes nothing on postage)", earn("65", 4, "physical", "8").includes("<b>$67.98</b>") && earn("65", 4, "physical", "8").includes("with shipping"));
-t("names both fees — no more \"before card processing\"", earn("85", 6, "physical").includes("6% TNL fee and the card fee") && !earn("85", 6, "physical").includes("before card processing"));
-t("no price yet → shows the fees only", earn("", 6, "physical").startsWith("TNL fee 6% · card fee 2.9% + 30¢"));
+t("$65 + $8 shipping at 4% → about $67.98, shipping counted (LABS takes nothing on postage)", earn("65", 4, "physical", "8").includes("<b>$67.98</b>") && earn("65", 4, "physical", "8").includes("with shipping"));
+t("names both fees — no more \"before card processing\"", earn("85", 6, "physical").includes("6% LABS fee and the card fee") && !earn("85", 6, "physical").includes("before card processing"));
+t("no price yet → shows the fees only", earn("", 6, "physical").startsWith("LABS fee 6% · card fee 2.9% + 30¢"));
 t("\"Ships from\" is gone from the form", !sell.includes('id="s-from"'));
 t("category and condition are pickers, not walls of chips", sell.includes("catPickHTML(f)") && sell.includes('pick("s-cond"') && !sell.includes('"data-scond"'));
 t("the category's own details are asked for in Details", sell.includes("${specFieldsHTML(f)}"));

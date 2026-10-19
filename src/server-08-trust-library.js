@@ -287,7 +287,7 @@ app.post("/api/tracks/extract", auth, rateLimit({ max: 20, windowMs: 3600000, ke
 
   const { videoUrl } = req.body || {};
   if (typeof videoUrl !== "string" || !videoUrl.startsWith("/uploads/")) {
-    return res.status(400).json({ error: "pick a video on TNL" });
+    return res.status(400).json({ error: "pick a video on LABS" });
   }
 
   /* Filename only. A path from a client is not a path you follow. */

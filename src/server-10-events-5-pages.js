@@ -15,7 +15,7 @@
    Instagram's browser. Neither shows a count the app wouldn't.
 ================================================================ */
 const evAbs = (base, u) => (/^https?:/.test(u) ? u : base + u);
-const evOg = (base, { title, desc, img, url }) => `<meta property="og:type" content="website"><meta property="og:site_name" content="TNL LABS">
+const evOg = (base, { title, desc, img, url }) => `<meta property="og:type" content="website"><meta property="og:site_name" content="LABS">
 <meta property="og:title" content="${lookEsc(title)}"><meta property="og:description" content="${lookEsc(desc)}">
 <meta property="og:image" content="${lookEsc(evAbs(base, img))}"><meta property="og:url" content="${lookEsc(base + url)}">
 <meta name="twitter:card" content="summary_large_image"><meta name="description" content="${lookEsc(desc)}">`;
@@ -49,7 +49,7 @@ app.get("/e/:slug/board", (req, res) => {
     : board.frozen ? `Frozen at ${when} ET. Votes still count — the last ${ev.freeze_hours} hours stay secret until the results.` : `Live · ${when} ET · ${lookCount(board.total, "vote")}`;
   res.set("Cache-Control", "no-store");
   res.send(lookPage({
-    title: `Scoreboard — ${esc(ev.title)} — TNL LABS`,
+    title: `Scoreboard — ${esc(ev.title)} — LABS`,
     head: evOg(base, { title: `${ev.title} — scoreboard`, desc: note, img: ev.cover_url || `/e/${ev.slug}/card.jpg?v=${evLinkCard(ev, base).v}`, url: `/e/${ev.slug}/board` }) + EV_PAGE_CSS,
     body: `${lookEyebrow(ev.title)}<h1>${stage === "final" ? "The final" : "Scoreboard"}</h1>
 <p class="cap" style="margin:0 0 12px">${esc(note)}</p>${rows}
@@ -67,10 +67,10 @@ app.get("/e/:slug/:entry", (req, res, next) => {
   if (!p || !u) return res.status(404).send(lookNotFound("That piece isn't in this event."));
   const s = evStanding(ev, e), base = baseUrl(req), esc = lookEsc;
   const name = u.display_name || u.username;
-  const desc = [s.tag.charAt(0) + s.tag.slice(1).toLowerCase(), ev.title, s.voting ? "Tap to vote on TNL LABS" : ""].filter(Boolean).join(" · ");
+  const desc = [s.tag.charAt(0) + s.tag.slice(1).toLowerCase(), ev.title, s.voting ? "Tap to vote on LABS" : ""].filter(Boolean).join(" · ");
   res.set("Cache-Control", "no-store");
   res.send(lookPage({
-    title: `${esc(name)} — ${esc(ev.title)} — TNL LABS`, accent: accentHex(u.accent),
+    title: `${esc(name)} — ${esc(ev.title)} — LABS`, accent: accentHex(u.accent),
     head: evOg(base, { title: `${s.voting ? "Vote for " : ""}@${u.username} — ${ev.title}`, desc, img: p.image_url, url: `/e/${ev.slug}/${e.id}` }) + EV_PAGE_CSS,
     body: `${lookEyebrow(ev.title)}<h1>${esc(s.head)}</h1>
 <img class="media" src="${esc(p.image_url)}" alt="" style="max-height:none;object-fit:contain">

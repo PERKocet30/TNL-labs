@@ -91,7 +91,7 @@ ${lookFoot()}
 
 /* The one 404 shape for public pages. */
 const lookNotFound = (what) => lookPage({
-  title: "Not found — TNL LABS", center: true,
+  title: "Not found — LABS", center: true,
   body: `${lookEyebrow("Not found")}<h1>Nothing here</h1><p class="p">${lookEsc(what)}</p><a class="btn" href="/">Enter the lab</a>`,
 });
 

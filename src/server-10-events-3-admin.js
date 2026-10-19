@@ -167,11 +167,11 @@ function evDefaultRules(ev) {
   return [
     `${ev.title} — Official Rules`,
     `NO PURCHASE OR PAYMENT NECESSARY TO ENTER OR WIN. A purchase will not improve your chances. This is a contest of skill; chance plays no part in picking the winner.`,
-    `Sponsor. TNL LABS ("TNL"), tnllabs.com.`,
-    `Who can enter. You must be 18 or older and have a TNL LABS account. TNL staff, this event's judges and their households can't enter. Void where prohibited.`,
+    `Sponsor. LABS ("LABS"), tnllabs.com.`,
+    `Who can enter. You must be 18 or older and have a LABS account. LABS staff, this event's judges and their households can't enter. Void where prohibited.`,
     `Dates. Entries open ${evDate(at("submit").start)} and close ${evDate(at("submit").end)}. Voting runs until the final, which ends ${evDate(final.end)}. Times are US Eastern.`,
     `How to enter. Post one piece through the event page in the app. One entry per person; you can withdraw and replace it until entries close.`,
-    `Your entry must be your own original work, made by you. Don't include anyone else's artwork, photos, logos or trademarks unless you have the right to use them. Entries that break these rules, the TNL community guidelines or the law will be removed.`,
+    `Your entry must be your own original work, made by you. Don't include anyone else's artwork, photos, logos or trademarks unless you have the right to use them. Entries that break these rules, the LABS community guidelines or the law will be removed.`,
     `How the winner is picked. ${ev.format === "bracket"
       ? `Members vote for their favourites to set a bracket. Head-to-head rounds follow, decided by member votes (a tie goes to the higher seed). The last two meet in the final.`
       : ev.format === "poll"
@@ -179,10 +179,10 @@ function evDefaultRules(ev) {
       : `Members vote for their favourites; the top ${ev.finalists} go to the final.`} ${ev.judge_weight > 0
       ? `In the final, judges score each finalist from 1 to 10 for originality, craft and response to the brief. The winner is decided ${ev.judge_weight}% by the judges' scores and ${100 - ev.judge_weight}% by member votes.`
       : `In the final, members vote again and the most votes wins.`}`,
-    `Fair voting. One account per person.${ev.require_verified ? " You need a confirmed email to vote." : ""}${ev.min_account_days ? ` Accounts must be at least ${ev.min_account_days} days old to vote.` : ""} You can't vote for yourself. TNL may remove votes, and disqualify entries, that come from fake, bought or coordinated accounts.`,
-    `Prize. ${ev.prize ? ev.prize : "The prize will be announced before entries open."} The winner will be contacted through the app within 7 days of the final and must reply within 14 days, or a runner-up may be named instead. The prize can't be transferred. The winner is responsible for any taxes, and TNL may ask for tax forms (such as a W-9) where the law requires.`,
-    `Your work stays yours. You keep all rights to your entry. By entering, you let TNL show your entry, your name and your username in the app and in promotion of this event, without further payment.`,
-    `General. TNL may change, pause or cancel the event if something outside its control affects it, and will tell entrants in the app. By entering you agree to these rules and to TNL's decisions, which are final.`,
+    `Fair voting. One account per person.${ev.require_verified ? " You need a confirmed email to vote." : ""}${ev.min_account_days ? ` Accounts must be at least ${ev.min_account_days} days old to vote.` : ""} You can't vote for yourself. LABS may remove votes, and disqualify entries, that come from fake, bought or coordinated accounts.`,
+    `Prize. ${ev.prize ? ev.prize : "The prize will be announced before entries open."} The winner will be contacted through the app within 7 days of the final and must reply within 14 days, or a runner-up may be named instead. The prize can't be transferred. The winner is responsible for any taxes, and LABS may ask for tax forms (such as a W-9) where the law requires.`,
+    `Your work stays yours. You keep all rights to your entry. By entering, you let LABS show your entry, your name and your username in the app and in promotion of this event, without further payment.`,
+    `General. LABS may change, pause or cancel the event if something outside its control affects it, and will tell entrants in the app. By entering you agree to these rules and to LABS' decisions, which are final.`,
   ].join("\n\n");
 }
 
@@ -199,8 +199,8 @@ app.get("/e/:slug", (req, res) => {
   const abs = (u) => (/^https?:/.test(u) ? u : base + u);
   const desc = [label, ev.prize, ev.brief.slice(0, 140)].filter(Boolean).join(" · ");
   res.send(lookPage({
-    title: `${esc(ev.title)} — TNL LABS`,
-    head: `<meta property="og:type" content="website"><meta property="og:site_name" content="TNL LABS">
+    title: `${esc(ev.title)} — LABS`,
+    head: `<meta property="og:type" content="website"><meta property="og:site_name" content="LABS">
 <meta property="og:title" content="${esc(ev.title)}"><meta property="og:description" content="${esc(desc)}">
 <meta property="og:image" content="${esc(abs(img))}">${ev.cover_url || winner?.image_url ? "" : `<meta property="og:image:width" content="1080"><meta property="og:image:height" content="1080">`}<meta property="og:url" content="${esc(base + "/e/" + ev.slug)}">
 <meta name="twitter:card" content="summary_large_image"><meta name="description" content="${esc(desc)}">
@@ -208,7 +208,7 @@ app.get("/e/:slug", (req, res) => {
 ${ldJson({ "@context": "https://schema.org", "@type": "Event", name: ev.title, url: base + "/e/" + ev.slug, description: (ev.brief || desc).slice(0, 500), image: abs(img),
   ...(s[0]?.start ? { startDate: new Date(s[0].start).toISOString() } : {}), ...(s.length && s[s.length - 1].start ? { endDate: new Date(s[s.length - 1].start).toISOString() } : {}),
   eventStatus: "https://schema.org/EventScheduled", eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
-  location: { "@type": "VirtualLocation", url: base + "/e/" + ev.slug }, organizer: { "@type": "Organization", name: "TNL LABS", url: base },
+  location: { "@type": "VirtualLocation", url: base + "/e/" + ev.slug }, organizer: { "@type": "Organization", name: "LABS", url: base },
   ...(ev.prize ? { offers: { "@type": "Offer", price: "0", priceCurrency: "USD", url: base + "/e/" + ev.slug, availability: "https://schema.org/InStock" } } : {}) })}`,
     body: `${lookEyebrow("Event")}<h1>${esc(ev.title)}</h1>
 <p class="cap" style="margin:0 0 16px">${esc(label)}${ev.prize ? " · " + esc(ev.prize) : ""}</p>
@@ -224,7 +224,7 @@ app.get("/e/:slug/rules", (req, res) => {
   if (!ev || !ev.published) return res.status(404).send(lookNotFound("This event doesn't exist."));
   const text = (ev.rules || evDefaultRules(ev)).split(/\n{2,}/);
   res.send(lookPage({
-    title: `Rules — ${lookEsc(ev.title)} — TNL LABS`,
+    title: `Rules — ${lookEsc(ev.title)} — LABS`,
     body: `${lookEyebrow("Official rules")}<h1>${lookEsc(ev.title)}</h1>${text.slice(ev.rules ? 0 : 1).map((t) => `<p class="body" style="margin:0 0 14px">${lookEsc(t)}</p>`).join("")}
 <a class="btn" href="/e/${lookEsc(ev.slug)}">Back to the event</a>`,
   }));

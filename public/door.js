@@ -71,7 +71,7 @@
     if (!m) {
       m = document.createElement("img");
       m.className = "enter-m";
-      m.alt = "TNL";
+      m.alt = "LABS";
       c.insertBefore(m, c.firstChild);
     }
     m.src = MARK;

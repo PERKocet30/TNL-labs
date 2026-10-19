@@ -42,7 +42,7 @@ async function watchTick(now, send) {
     }
     lines.push("You won't get this one again for 6 hours.");
     markSent.run(rule, now);
-    await send(`TNL LABS: ${n} ${name} in the last hour`, `${n} ${name} in the last hour`, lines);
+    await send(`LABS: ${n} ${name} in the last hour`, `${n} ${name} in the last hour`, lines);
     out.push(rule);
   }
   /* the morning digest: 13:00 UTC (9am New York in summer, 8am in winter) */
@@ -64,8 +64,8 @@ async function watchTick(now, send) {
     ];
     markSent.run("digest", now);
     const calm = !errs.length && !gl.length;
-    await send(`TNL LABS: yesterday — ${calm ? "all smooth" : (errs.reduce((s, e) => s + e.n, 0) + " errors, " + gl.reduce((s, g) => s + g.n, 0) + " glitches")}`,
-      "Yesterday on TNL LABS", lines);
+    await send(`LABS: yesterday — ${calm ? "all smooth" : (errs.reduce((s, e) => s + e.n, 0) + " errors, " + gl.reduce((s, g) => s + g.n, 0) + " glitches")}`,
+      "Yesterday on LABS", lines);
     out.push("digest");
   }
   return out;
