@@ -289,6 +289,13 @@ function paintVerifyBar(){
 }
 (async()=>{
   if(await addressMove())return;   // on an old address: off to tnllabs.com, still signed in (app-19-address)
+  /* The tournament banner sits above the Showroom grid. Fetched after the
+     first paint, it landed under the reader and pushed the grid down ~90px
+     on every visit while an event was live (the watch's "screen jumps at
+     showroom — #sr-grid moved", 2026-10-19). So it's asked for at the very start, alongside everything
+     else boot fetches, and waited for — up to 1.5s, never longer — before the
+     first paint. */
+  const evReady=Promise.race([loadEvents(),new Promise(r=>setTimeout(r,1500))]);
   try{const d=await api.levels();LEVELS=d.levels;if(d.accents)ACCENTS=d.accents;if(d.site)SITE=d.site}catch(e){/* offline default */}
   if(!studioOn()){const m=LABS.find(l=>l.id==="culture");if(m)m.channels=m.channels.filter(c=>!c.beatlab)}
   if(TOKEN)await refreshMe();          // invalid token just leaves ME null -> guest
@@ -313,6 +320,7 @@ function paintVerifyBar(){
      if(ME&&nx&&(ME.isAdmin||!nx.startsWith("/admin")))return location.replace(nx);
      if(!ME||nx){GNEXT=nx;ENTER=false;GATE="login";GATEWHY=nx&&nx.startsWith("/admin")?"Log in to open Admin.":""}}}
   try{MKTMETA=await api.mktMeta()}catch(e){}   // public — guests see the Market too
+  await evReady;
   // deep links — a shared /u/ or /m/ URL should land where it says
   let path=location.pathname;try{path=decodeURIComponent(path)}catch(e){}   // /u/xstart%2E → /u/xstart.
   const mu=/^\/u\/([a-z0-9._]+)$/i.exec(path);
@@ -324,7 +332,6 @@ function paintVerifyBar(){
   const qs=new URLSearchParams(location.search), qu=qs.get("u"), qp=Number(qs.get("p"))||null, qsong=Number(qs.get("s"))||null;   // /s/:id → ?u=&s= : their Music tab, that song picked out (2026-10-10)
   const ql=qs.get("l"),qlab=ql&&labBySlug(ql);   // /l/:id (a shared lab) → ?l= : step into it (2026-10-15)
   const back=!me&&!mu&&!mm&&!qu&&!qp&&!qlab?evReturn():null;   // confirmed your email elsewhere: back to the vote
-  loadEvents();
   if(me||back){history.replaceState({},"","/");TAB="event";EVSLUG=me||back.slug;EVFOCUS=me?mv:back.v||null;loadEvent()}
   else if(mu||qu){if(qu)history.replaceState({},"","/");openProfile(mu?mu[1]:qu);if(qsong){PTAB="music";PFSONG=qsong}}
   else if(qp){history.replaceState({},"","/");openPostById(qp)}
