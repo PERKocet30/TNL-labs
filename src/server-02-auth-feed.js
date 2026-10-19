@@ -72,7 +72,7 @@ app.get("/api/auth/username", rateLimit({ max: 120, windowMs: 600000 }), (req, r
 app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (req, res) => {
   // The door can be closed from the dashboard.
   if (!settingBool("signupsOpen")) {
-    return res.status(403).json({ error: "TNL LABS is invite-only right now." });
+    return res.status(403).json({ error: "LABS is invite-only right now." });
   }
   const { username, displayName, email, role, roles, password } = req.body || {};
   const roleList = Array.isArray(roles) ? roles.filter(r=>typeof r==="string"&&r.trim()).slice(0,5) : (role ? [role] : []);
@@ -109,12 +109,12 @@ app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (
 app.get("/api/auth/verify", (req, res) => {
   const row = q.verifyToken.get(String(req.query.token || ""));
   const page = (title, msg, state) => lookPage({
-    title: `${title} — TNL LABS`, center: true,
+    title: `${title} — LABS`, center: true,
     body: `${lookEyebrow(state === "ok" ? "Welcome" : "Account")}
 ${lookIcon(state === "ok" ? "check" : "alert")}
 <h1>${title}</h1>
 <p class="p">${msg}</p>
-<a class="btn" href="/">${state === "ok" ? "Enter the lab" : "Back to TNL LABS"}</a>
+<a class="btn" href="/">${state === "ok" ? "Enter the lab" : "Back to LABS"}</a>
 ${state === "expired" ? `<p class="cap" style="margin-top:18px">Sign in and tap <b>Resend</b> on the banner at the top. A new link takes a second.</p>` : ""}
 ${state === "ok" ? `<script>setTimeout(()=>location.href="/",2500)</script>` : ""}`,
   });

@@ -1,4 +1,4 @@
-/* TNL LABS admin v3.1 — 2026-10-14 (page header; reports and posts each in a card). Labs: reports first, then every post —
+/* LABS admin v3.1 — 2026-10-14 (page header; reports and posts each in a card). Labs: reports first, then every post —
    by lab (genre), #tag, work or talk. Labs are places now; the old channels
    only live on as the #tags their posts carry. */
 let CLAB = "", CTAG = "", CKIND = "", CQ = "";

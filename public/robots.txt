@@ -1,4 +1,4 @@
-# TNL LABS — work posted here belongs to the people who made it.
+# LABS — work posted here belongs to the people who made it.
 # Search engines and link previews are welcome. AI training crawlers are not.
 
 User-agent: GPTBot

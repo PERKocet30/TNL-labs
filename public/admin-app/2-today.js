@@ -1,4 +1,4 @@
-/* TNL LABS admin v3.1 — 2026-10-14 (page header; the chart's choices sit in its card). Today, for the app's direction: labs
+/* LABS admin v3.1 — 2026-10-14 (page header; the chart's choices sit in its card). Today, for the app's direction: labs
    are places (genres explained by #tags), the tournament is the centre,
    Instagram brings people in and the app is where they take part.
    What needs you → the tournament → how it's going → how people take part

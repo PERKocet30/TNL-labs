@@ -346,7 +346,7 @@ app.post("/api/auth/forgot", rateLimit({ max: 5, windowMs: 900000 }), async (req
 app.get("/reset", (req, res) => {
   const token = String(req.query.token || "");
   res.send(lookPage({
-    title: "New password — TNL LABS", center: true,
+    title: "New password — LABS", center: true,
     body: `${lookEyebrow("Account")}
 ${lookIcon("lock")}
 <h1>New password</h1>

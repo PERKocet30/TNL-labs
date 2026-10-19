@@ -1369,7 +1369,7 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#labshare").tap();
     await p.waitForFunction(() => window.__shared, null, { timeout: 3000 });
     const sh = await p.evaluate(() => window.__shared);
-    ok(/\/l\/visual$/.test(sh.url) && /^\/\/ Visual on TNL LABS\nUpload your art/.test(sh.text), "the share isn't the caption and the lab's link: " + JSON.stringify(sh));
+    ok(/\/l\/visual$/.test(sh.url) && /^\/\/ Visual on LABS\nUpload your art/.test(sh.text), "the share isn't the caption and the lab's link: " + JSON.stringify(sh));
     await p.evaluate(() => openLab("culture")); await p.waitForSelector("#labshare");
     await p.locator("#labshare").tap(); await p.waitForFunction(() => window.__shared && /\/l\/music$/.test(window.__shared.url), null, { timeout: 3000 });
     ok(/Upload your songs/.test(await p.evaluate(() => window.__shared.text)), "Music's share doesn't say upload your songs");

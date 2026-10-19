@@ -28,7 +28,7 @@ app.get("/s/:id", (req, res) => {
   const abs = (p) => (p ? (/^https?:/.test(p) ? p : base + p) : null);
   const len = t.durationMs ? `${Math.floor(t.durationMs / 60000)}:${String(Math.round(t.durationMs / 1000) % 60).padStart(2, "0")}` : "";
   const title = `${t.title} — ${row.display_name}`;
-  const desc = [`A song by @${row.username} on TNL LABS`, len, t.plays ? lookCount(t.plays, "play") : null].filter(Boolean).join(" · ");
+  const desc = [`A song by @${row.username} on LABS`, len, t.plays ? lookCount(t.plays, "play") : null].filter(Boolean).join(" · ");
   const img = abs(t.artworkUrl) || abs(row.avatar_url) || `${base}/icon-white-512.png`;
   const url = `${base}/s/${t.id}`;
   res.send(lookPage({
@@ -36,7 +36,7 @@ app.get("/s/:id", (req, res) => {
     accent: accentHex(row.accent),
     head: `<link rel="canonical" href="${e(url)}">
 <meta property="og:type" content="music.song">
-<meta property="og:site_name" content="TNL LABS">
+<meta property="og:site_name" content="LABS">
 <meta property="og:url" content="${e(url)}">
 <meta property="og:title" content="${e(title)}">
 <meta property="og:description" content="${e(desc)}">

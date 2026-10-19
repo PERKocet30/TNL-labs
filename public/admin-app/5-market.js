@@ -1,4 +1,4 @@
-/* TNL LABS admin v2.1 — 2026-10-14 (page header; orders' filters inside their card). Market: is money moving, and is anything stuck. */
+/* LABS admin v2.1 — 2026-10-14 (page header; orders' filters inside their card). Market: is money moving, and is anything stuck. */
 let OSTAT = "all";
 LOADERS.market = async () => {
   const [m, o] = await Promise.all([req("/api/admin/market"), req("/api/admin/orders")]);

@@ -60,7 +60,7 @@ try {
   console.log("\nA SONG LINK THAT LOOKS RIGHT IN AN INSTAGRAM DM (v1.2)");
   const sp = await page(`/s/${older}`);
   t("/s/:id is a page", sp.s === 200);
-  t("its preview: the song and who made it, as a song", meta(sp.html, "og:title") === "Night Drive — SKY" && meta(sp.html, "og:type") === "music.song" && /A song by @sky on TNL LABS · 3:00/.test(meta(sp.html, "og:description") || ""));
+  t("its preview: the song and who made it, as a song", meta(sp.html, "og:title") === "Night Drive — SKY" && meta(sp.html, "og:type") === "music.song" && /A song by @sky on LABS · 3:00/.test(meta(sp.html, "og:description") || ""));
   t("…the cover, as a full address", /^http:\/\/[^/]+\/uploads\/cover1\.jpg$/.test(meta(sp.html, "og:image") || ""));
   t("it plays right there", sp.html.includes('<audio controls preload="none" src="/uploads/NightDrive.mp3"'));
   t("Open in the app → their Music tab, this song", sp.html.includes(`href="/?u=sky&amp;s=${older}"`));

@@ -1,6 +1,6 @@
 
 /* ================================================================
-   TNL LABS — one system, separate venues.
+   LABS — one system, separate venues.
    Vanilla JS client talking to the real backend at the same origin.
 ================================================================ */
 const API = location.origin;
@@ -64,7 +64,7 @@ const ROLES = [
    picked; the page frame is the same for all of them, which is one
    place to look when something breaks instead of eight. */
 const KIND={tag:"PAGE",work:"POSTS",one:"post",collabLine:"With",empty:"No posts up yet.",
-  blurb:"Their page on TNL LABS.",grid:true};
+  blurb:"Their page on LABS.",grid:true};
 function kindOf(){return KIND}
 /* The header line still speaks the member's trade — "YOUR VISUAL",
    "YOUR SOUND" — because that little descriptor is identity, not

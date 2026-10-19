@@ -47,7 +47,7 @@ try {
   const r = await fetch(B + "/l/visual"), h = await r.text();
   t("/l/visual is a page", r.status === 200 && /text\/html/.test(r.headers.get("content-type")));
   t("…named for the lab, with what to do there", h.includes("<h1>// Visual</h1>") && h.includes(app.pharmacy.replace(/'/g, "&#39;")));
-  t("…and its preview says the same (Instagram DMs, texts)", h.includes(`property="og:title" content="// Visual on TNL LABS"`) && h.includes(`property="og:description" content="${app.pharmacy.replace(/'/g, "&#39;")}"`));
+  t("…and its preview says the same (Instagram DMs, texts)", h.includes(`property="og:title" content="// Visual on LABS"`) && h.includes(`property="og:description" content="${app.pharmacy.replace(/'/g, "&#39;")}"`));
   t("…its #tags", h.includes("#painting") && h.includes("#photography"));
   t("…recent finished work, never a suspended member's or a chat message", h.includes(`/p/${art}`) && !h.includes(`/p/${hidden}`) && !h.includes(`/p/${talk}`));
   t("…one button into the lab", h.includes(`href="/?l=visual"`) && /Join and step into \/\/ Visual/.test(h));

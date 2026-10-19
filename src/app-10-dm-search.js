@@ -69,7 +69,7 @@ function enterHTML(){
     ${seen?"":`<video class="enter-v" id="enterVid" playsinline preload="metadata"
       poster="/tnl-enter-poster.jpg" src="/tnl-enter.mp4"></video>`}
     <div class="enter-c" id="enterC">
-      ${mark?`<img class="enter-m" src="${mark}" alt="TNL">`:""}
+      ${mark?`<img class="enter-m" src="${mark}" alt="LABS">`:""}
       <button class="enter-b" id="enterBtn">Enter the lab</button>
     </div>
     ${seen?"":`<button class="enter-s" id="enterSkip" style="position:absolute;right:14px;bottom:18px;z-index:2">SKIP</button>`}
