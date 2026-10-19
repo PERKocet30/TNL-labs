@@ -32,7 +32,7 @@ let PAYMENTS_ENABLED = false, lastCheckout = null;
 const stock = readFileSync(join(ROOT, "src/server-06-market-stock.js"), "utf8");
 const cart = readFileSync(join(ROOT, "src/server-07-cart.js"), "utf8");
 const LISTING_SELECT = `SELECT l.*, u.username AS seller_username FROM listings l JOIN users u ON u.id = l.seller_id`;
-const X = new Function("db", "randomBytes", "q", "notify", "app", "auth", "verified", "maybeAuth", "rateLimit", "baseUrl", "feeForRep", "createCheckout", "LISTING_SELECT", "shapeListings", "getPay",
+const X = new Function("db", "randomBytes", "q", "notify", "app", "auth", "verified", "maybeAuth", "rateLimit", "baseUrl", "feeFor", "createCheckout", "LISTING_SELECT", "shapeListings", "getPay",
   stock + "\n" + cart.replace(/PAYMENTS_ENABLED/g, "getPay()") + "\nreturn {orderGroup,sessionFits,groupTotal,priceChanged,priceDrop,takeStock};")(
   db, randomBytes, q, (...a) => told.push(a),
   { post: (p, ...h) => { routes["POST " + p] = h.at(-1); }, get: (p, ...h) => { routes["GET " + p] = h.at(-1); } },

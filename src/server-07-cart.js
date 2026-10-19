@@ -68,7 +68,7 @@ app.post("/api/cart/checkout", auth, verified, rateLimit({ max: 20, windowMs: 36
       successUrl: `${base}/api/market/checkout/done?session_id={CHECKOUT_SESSION_ID}&o=${lead}`,
       cancelUrl: `${base}/?checkout=cancelled`,
       buyerEmail: req.user.email, sellerAccount: seller.stripe_account,
-      feePct: feeForRep(seller.rep), collectShipping: true,
+      feePct: feeFor(seller), collectShipping: true,
     });
     if (out.error) { drop(); return checkoutFailed(res, out, seller.id, req.user.id, `${lines.length} item${lines.length > 1 ? "s" : ""}`); }
     db.prepare(`UPDATE orders SET payment_ref = ? WHERE cart_id = ?`).run(out.id, lead);
@@ -98,7 +98,7 @@ app.get("/api/shop/stats", auth, (req, res) => {
   const me = req.user.id, month = Date.now() - 30 * 86400000;
   const paid = `status IN ('paid','shipped','complete')`;
   const gross = one(`SELECT COALESCE(SUM(amount_cents),0) n FROM orders WHERE seller_id=? AND ${paid}`, me).n;
-  const fee = feeForRep(req.user.rep);
+  const fee = feeFor(req.user);
   // TNL's cut only comes off what went through card checkout; a sale the
   // buyer paid you for directly is all yours.
   const carded = one(`SELECT COALESCE(SUM(amount_cents),0) n FROM orders WHERE seller_id=? AND ${paid} AND payment_ref IS NOT NULL AND payment_ref != ''`, me).n;

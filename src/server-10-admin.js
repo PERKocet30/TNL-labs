@@ -55,10 +55,10 @@ const ACTIVITY = `
   UNION ALL SELECT user_id, created_at FROM reactions
   UNION ALL SELECT sender_id, created_at FROM dm_messages WHERE kind = 'msg'
   UNION ALL SELECT voter_id, created_at FROM event_votes`;
-const feeOf = (o) => Math.round(o.amount_cents * (feeForRep(o.seller_rep) / 100));
+const feeOf = (o) => Math.round(o.amount_cents * (feeForSeller(o.seller_rep, o.seller_admin) / 100));
 
 function windowStats(a, b) {
-  const orders = db.prepare(`SELECT o.amount_cents, o.shipping_cents, u.rep seller_rep FROM orders o JOIN users u ON u.id = o.seller_id
+  const orders = db.prepare(`SELECT o.amount_cents, o.shipping_cents, u.rep seller_rep, u.is_admin seller_admin FROM orders o JOIN users u ON u.id = o.seller_id
     WHERE o.status IN ${PAID} AND o.created_at > ? AND o.created_at <= ?`).all(a, b);
   return {
     signups: aone(`SELECT COUNT(*) n FROM users WHERE created_at > ? AND created_at <= ?`, a, b),
@@ -201,7 +201,7 @@ app.get("/api/admin/people/:username", auth, admin, (req, res) => {
   res.json({
     person: {
       username: u.username, displayName: u.display_name, email: u.email, avatarUrl: u.avatar_url || "", role: u.role, bio: u.bio || "",
-      rep: u.rep, level: levelFor(u.rep).id, levelName: levelFor(u.rep).name, fee: feeForRep(u.rep),
+      rep: u.rep, level: levelFor(u.rep).id, levelName: levelFor(u.rep).name, fee: feeForSeller(u.rep, u.is_admin),
       verified: !!u.email_verified, isAdmin: !!u.is_admin, suspended: !!u.suspended, payouts: !!u.stripe_ready,
       joined: u.created_at, lastSeen: u.last_seen_at || null,
       /* account information (2026-10-12) — never the password hash, a session token or the Stripe account id */

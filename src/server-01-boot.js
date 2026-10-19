@@ -18,7 +18,7 @@ import { execFile } from "node:child_process";
    the extract route answers 503. */
 let FFMPEG = null;
 try { FFMPEG = (await import("ffmpeg-static")).default || null; } catch { FFMPEG = null; }
-import { db, awardRep, revokeRep, levelFor, LEVELS, DATA_DIR, notify, ensureAdmin, feeForRep, FEE_BY_LEVEL, ACCENTS, accentHex,
+import { db, awardRep, revokeRep, levelFor, LEVELS, DATA_DIR, notify, ensureAdmin, feeForRep, feeFor, feeForSeller, FEE_BY_LEVEL, ACCENTS, accentHex,
          setting, settingBool, setSetting, allSettings, SETTING_DEFAULTS, logError, backupTo, studioEvent } from "./db.js";
 import { sendVerifyEmail, sendResetEmail, sendAlertEmail, sendEventOpenEmail, eventOpenEmail, eventOpenSubject, MAIL_ENABLED, MAIL_TEST_SENDER } from "./mail.js";
 import { PALETTE, paletteCss, accentVars, inkFor, onAccent } from "./palette.js";

@@ -795,6 +795,15 @@ export function levelFor(rep) {
    sales). Listing costs nothing and proves nothing, so it earns nothing.
    A lower rate means you were validated, not that you posted more junk. */
 export const FEE_BY_LEVEL = { 1: 10, 2: 8, 3: 6, 4: 4, 5: 2 };
+/* 2026-10-18: "if an admin is selling on the app it doesn't make sense to be
+   taxed a fee that will go back to me." Admins sell at 0%; everyone else by
+   level. feeFor(user) / feeForSeller(rep, isAdmin) are what money paths use. */
+export function feeForSeller(rep, isAdmin) {
+  return isAdmin ? 0 : feeForRep(rep);
+}
+export function feeFor(u) {
+  return feeForSeller(u ? u.rep : 0, !!(u && u.is_admin));
+}
 export function feeForRep(rep) {
   return FEE_BY_LEVEL[levelFor(rep).id] ?? 10;
 }

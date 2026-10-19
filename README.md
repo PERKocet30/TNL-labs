@@ -178,7 +178,7 @@ Rep is never earned by posting. It comes only from what other people do with you
 | L4 Core | 280 | 4% |
 | L5 Leadership | 560 | 2% |
 
-Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, all in `src/db.js`.
+Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, all in `src/db.js`. Admins sell at 0% — `feeFor(user)` / `feeForSeller(rep, isAdmin)` are what every money path uses (2026-10-18). Sellers see the fee once, folded away, above Publish ("You'll get about $X"); it isn't shown to buyers or broadcast elsewhere. An admin can mark a test order **Test order…** in /admin → Market (`/api/admin/orders/:id/void`): it leaves everyone's lists and numbers and its rep is taken back through the log.
 
 ---
 
