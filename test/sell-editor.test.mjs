@@ -31,9 +31,9 @@ t("edit sends status", src.includes('if(SELLFORM.status==="sold"||SELLFORM.statu
 console.log("\nYOU EARN — runs the real function");
 const earn = (price, fee, kind, shipping = "") => new Function("MKTMETA", "SELLFORM", "SELLKIND", "money",
   fn("sellKeepCents") + fn("sellEarnHTML") + "; return sellEarnHTML();")({ feePct: fee }, { price, shipping }, kind, (c) => "$" + (c / 100).toFixed(2));
-t("$85 at 6% → you'll get about $77.14 (TNL fee and the card fee both out)", earn("85", 6, "physical").includes("<b>$77.14</b>"));
+t("$85 at 6% → you'll get about $77.14 (LABS fee and the card fee both out)", earn("85", 6, "physical").includes("<b>$77.14</b>"));
 t("$100 at 10% → about $86.80", earn("100", 10, "physical").includes("<b>$86.80</b>"));
-t("$65 + $8 shipping at 4% → about $67.98, shipping counted (TNL takes nothing on postage)", earn("65", 4, "physical", "8").includes("<b>$67.98</b>") && earn("65", 4, "physical", "8").includes("with shipping"));
+t("$65 + $8 shipping at 4% → about $67.98, shipping counted (LABS takes nothing on postage)", earn("65", 4, "physical", "8").includes("<b>$67.98</b>") && earn("65", 4, "physical", "8").includes("with shipping"));
 // 2026-10-18 "fees… subtle and discrete… the last thing you see before you finish listing"
 t("the fee isn't spelled out — it's folded away until asked", /^<details class="pf-why"><summary>You'll get about <b>\$77\.14<\/b><\/summary><span>After the 6% LABS fee and the card fee/.test(earn("85", 6, "physical")));
 t("an admin (0%): no LABS fee taken or mentioned", earn("100", 0, "physical").includes("<b>$96.80</b>") && !earn("100", 0, "physical").includes("LABS") && earn("100", 0, "physical").includes("After the card fee"));
