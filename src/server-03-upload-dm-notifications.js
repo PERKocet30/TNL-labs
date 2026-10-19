@@ -350,7 +350,7 @@ app.get("/reset", (req, res) => {
     body: `${lookEyebrow("Account")}
 ${lookIcon("lock")}
 <h1>New password</h1>
-<p class="p">At least 6 characters.</p>
+<p class="p">At least 8 characters, with a letter and a number.</p>
 <input class="in" id="p" type="password" placeholder="New password" autocomplete="new-password">
 <div class="msg" id="m"></div>
 <button class="btn block" id="go" style="margin-top:0">Set password</button>
@@ -358,7 +358,7 @@ ${lookIcon("lock")}
 document.getElementById("go").onclick=async()=>{
   const p=document.getElementById("p").value,m=document.getElementById("m");
   m.className="msg";
-  if(p.length<6){m.textContent="At least 6 characters.";return}
+  if(p.length<8||!/[a-z]/i.test(p)||!/[0-9]/.test(p)){m.textContent="At least 8 characters, with a letter and a number.";return}
   const r=await fetch("/api/auth/reset",{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({token:${JSON.stringify(token).replace(/</g, "\\u003c")},password:p})});
   const d=await r.json();
@@ -375,7 +375,8 @@ app.post("/api/auth/reset", rateLimit({ max: 10, windowMs: 900000 }), async (req
   const row = db.prepare(`SELECT * FROM reset_tokens WHERE token = ?`).get(String(token || ""));
   if (!row) return res.status(400).json({ error: "invalid or used link" });
   if (row.expires_at < Date.now()) return res.status(400).json({ error: "link expired — request a new one" });
-  if (!password || password.length < 6) return res.status(400).json({ error: "password too short" });
+  { const u = q.userById.get(row.user_id) || {}, pwBad = pwProblem(password, { username: u.username, email: u.email });
+    if (pwBad) return res.status(400).json({ error: pwBad }); }   // server-01-passwords
   const hash = await bcrypt.hash(password, 10);
   db.prepare(`UPDATE users SET password_hash = ? WHERE id = ?`).run(hash, row.user_id);
   db.prepare(`DELETE FROM reset_tokens WHERE user_id = ?`).run(row.user_id);

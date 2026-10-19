@@ -279,3 +279,11 @@ video.vfill{object-fit:cover}
 .gs-i.done .gs-c{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
 .gs-tour{background:none;border:0;color:var(--tx);font:inherit;font-size:14px;font-weight:600;padding:8px 0 4px;cursor:pointer;text-decoration:underline}
 @media(prefers-reduced-motion:reduce){.gs-bar i{transition:none}}
+/* the password checklist (pwRules, app-11-gate-screens) */
+.gx-pwr{list-style:none;margin:10px 0 4px;padding:0;display:flex;flex-direction:column;gap:6px}
+.gx-pwr li{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}
+.gx-pwr li.ok{color:var(--tx)}
+.gx-pwr li svg{width:16px;height:16px;flex-shrink:0}
+.gx-pwr li i{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.gx-pwr li i::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--line2)}
+.gx-mail svg{width:48px;height:48px}
