@@ -86,7 +86,9 @@ function recAccount(d) {
     + `<section class="rc danger"><header><h3>Sign-in and suspension</h3></header>
       <div class="dz"><div><b>Sign out everywhere</b><span>Every device they're signed in on (${s.sessions}). They can sign straight back in.</span></div><button class="btn ghost sm" data-pa="signout">Sign out</button></div>
       ${p.isAdmin ? "" : `<div class="dz"><div><b>${p.suspended ? "Restore account" : "Suspend account"}</b><span>${p.suspended ? "They can sign in again." : "Signs them out and stops them signing back in. Their work stays up."}</span></div>
-        <button class="btn ${p.suspended ? "ghost" : "danger"} sm" data-pa="suspend">${p.suspended ? "Restore" : "Suspend"}</button></div>`}</section>`;
+        <button class="btn ${p.suspended ? "ghost" : "danger"} sm" data-pa="suspend">${p.suspended ? "Restore" : "Suspend"}</button></div>
+      <div class="dz"><div><b>Delete account</b><span>Removes them and everything they posted, for good. Not for accounts with Market orders.</span></div>
+        <button class="btn danger sm" data-pa="delete">Delete</button></div>`}</section>`;
 }
 
 function recActivity(d) {
@@ -126,6 +128,12 @@ function wirePerson(el) {
     }
     if (a === "signout") { if (!(await confirmIt(`Sign @${u} out everywhere?`, "Every device they're signed in on. They can sign straight back in.", { ok: "Sign out" }))) return;
       return act(() => req("/api/admin/people/" + encodeURIComponent(u) + "/signout", { method: "POST" }), (r) => `Signed out of ${r.sessions} device${r.sessions === 1 ? "" : "s"}`).then(refreshPerson); }
+    if (a === "delete") {   // 2026-10-19 (server-11-delete-account.js)
+      const t = await promptIt(`Delete @${u} for good?`, { body: "Their work, comments, messages and follows go with it. This can't be undone. Type their username to confirm.", placeholder: u, ok: "Delete" });
+      if (t == null) return;
+      if (t.trim().replace(/^@/, "").toLowerCase() !== u.toLowerCase()) return toast("The username didn't match — nothing was deleted");
+      return act(() => req(base, { method: "DELETE" }), `@${u} deleted`).then(async (r) => { if (!r) return; closePerson(); if (TAB === "people") { await LOADERS.people(); paint(); } });
+    }
     if (a === "suspend") {
       const on = !p.suspended;
       if (!(await confirmIt(on ? `Suspend @${u}?` : `Restore @${u}?`, on ? "They're signed out now and can't sign back in. Their work stays up." : "They can sign in again.", { ok: on ? "Suspend" : "Restore", danger: on }))) return;
