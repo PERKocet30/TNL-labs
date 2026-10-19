@@ -39,7 +39,7 @@ app.get("/l/:slug", (req, res) => {
   const work = db.prepare(`SELECT p.id, COALESCE(p.thumb_url, p.image_url) img FROM posts p JOIN users u ON u.id = p.author_id
     WHERE p.channel IN (${inList(P.channels)}) AND p.is_work = 1 AND COALESCE(u.suspended, 0) = 0 AND COALESCE(p.thumb_url, p.image_url) IS NOT NULL
     ORDER BY p.created_at DESC LIMIT 6`).all();
-  const title = `// ${name} on TNL LABS`, desc = LAB_PITCH[id];
+  const title = `// ${name} on LABS`, desc = LAB_PITCH[id];
   /* the preview: this lab's own card (v1.2), new whenever its words or latest work change */
   const img = `${base}/l/${slug}/card.jpg?v=${labCard(id, base).hash.slice(0, 8)}`;
   res.set("Cache-Control", "public, max-age=300");
@@ -47,7 +47,7 @@ app.get("/l/:slug", (req, res) => {
     title: e(title),
     head: `<link rel="canonical" href="${e(url)}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="TNL LABS">
+<meta property="og:site_name" content="LABS">
 <meta property="og:url" content="${e(url)}">
 <meta property="og:title" content="${e(title)}">
 <meta property="og:description" content="${e(desc)}">
@@ -60,7 +60,7 @@ app.get("/l/:slug", (req, res) => {
 <meta name="twitter:description" content="${e(desc)}">
 <meta name="twitter:image" content="${e(img)}">
 <meta name="description" content="${e(desc)}">
-${ldJson({ "@context": "https://schema.org", "@type": "CollectionPage", name: title, url, description: desc, isPartOf: { "@type": "WebSite", name: "TNL LABS", url: base } })}`,
+${ldJson({ "@context": "https://schema.org", "@type": "CollectionPage", name: title, url, description: desc, isPartOf: { "@type": "WebSite", name: "LABS", url: base } })}`,
     body: `${lookEyebrow("Lab")}<h1>// ${e(name)}</h1>
 <p class="p" style="margin:0 0 14px">${e(desc)}</p>
 <div class="chips" style="margin:0 0 16px">${GENRE_TAGS[id].map((t) => `<span class="chip">#${e(t)}</span>`).join("")}</div>
@@ -99,7 +99,7 @@ function labCard(id, base) {
     if (ground) { const i = g.input(ground);
       g.f.push(`[${i}:v]scale=${W / 4}:${H / 4}:force_original_aspect_ratio=increase,crop=${W / 4}:${H / 4},boxblur=14:3,scale=${W}:${H},eq=brightness=-0.4:saturation=1.2,vignette=PI/4,setsar=1,format=rgb24[gnd]`);
       g.lay("gnd", 0, 0); } else g.box(SCK.shade, W, H, 0, 0);
-    t.at("TNL LABS", P, 120, 34, true, up);
+    t.at("LABS", P, 120, 34, true, up);
     t.at(text.name, P, 176, 128, true, ink);
     text.lines.forEach((l, i) => t.at(l, P, 360 + i * 58, 44, false, ink));
     t.at(text.tags, P, 380 + text.lines.length * 58, 34, true, up);

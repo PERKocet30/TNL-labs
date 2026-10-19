@@ -69,7 +69,7 @@ const LAB_SLUG={hq:"general",pharmacy:"visual",culture:"music",fashion:"fashion"
 const labBySlug=s=>LABS.find(l=>LAB_SLUG[l.id]===s||l.id===s)||null;
 async function shareLab(l){
   if(!l)return;
-  const url=location.origin+"/l/"+(LAB_SLUG[l.id]||l.id),title="// "+l.name+" on TNL LABS",text=title+"\n"+(LAB_PITCH[l.id]||"");
+  const url=location.origin+"/l/"+(LAB_SLUG[l.id]||l.id),title="// "+l.name+" on LABS",text=title+"\n"+(LAB_PITCH[l.id]||"");
   if(navigator.share){try{await navigator.share({title,text,url});return}catch(e){if(e&&e.name==="AbortError")return}}
   const all=text+"\n"+url;
   try{await navigator.clipboard.writeText(all);toast("Copied: the caption and the link. Paste it anywhere.");return}catch(e){}

@@ -1,4 +1,4 @@
-/* TNL LABS admin — Events v1.8, 2026-10-15 (v1.8: entries go into a lab, named as the app names it; v1.7: a cover picture for shared links, or TNL's card; v1.6: the shared page header, events listed in a card; v1.5: the scoreboard picture buttons wait for voting instead of opening a dead page; v1.4: "Link to send people" up top —
+/* LABS admin — Events v1.8, 2026-10-15 (v1.8: entries go into a lab, named as the app names it; v1.7: a cover picture for shared links, or TNL's card; v1.6: the shared page header, events listed in a card; v1.5: the scoreboard picture buttons wait for voting instead of opening a dead page; v1.4: "Link to send people" up top —
    tnllabs.com/tournament for the one on now, with Copy).
    Events v1.3, 2026-10-12 (the Tournament tab; v1.2: named for it;
    v1.3: the "entries are open" email to every member — its switch, a
@@ -38,15 +38,15 @@ function evFormHTML() {
   return `${pageHead(f.id ? "Edit event" : "New event", "Title, format, dates and rules. Nothing goes live until you publish it.", `<button class="btn ghost sm" id="evcancel">Cancel</button>`)}
   <h2 class="sec">Basics</h2>
   <div class="panel evf">
-    ${field("title", "Title", f.title, 'placeholder="TNL Poster Tournament"')}
+    ${field("title", "Title", f.title, 'placeholder="LABS Poster Tournament"')}
     ${f.id ? "" : field("slug", "Link name", f.slug, 'placeholder="poster-tournament" autocapitalize="none"')}
     <label class="fld"><span>The brief</span><textarea class="in" data-f="brief" rows="4" placeholder="What should people make?">${esc(f.brief || "")}</textarea></label>
     ${field("prize", "Prize", f.prize, 'placeholder="e.g. $500 cash — leave empty until decided"')}
-    <div class="fld"><span>Cover picture: what a shared link shows in DMs and texts (a square works best). Leave it empty and TNL draws one with the name, prize and dates.</span>
+    <div class="fld"><span>Cover picture: what a shared link shows in DMs and texts (a square works best). Leave it empty and LABS draws one with the name, prize and dates.</span>
       <input type="hidden" data-f="coverUrl" id="evcovurl" value="${esc(f.coverUrl || "")}">
       <div class="row wrapx" style="gap:12px;align-items:center"><img id="evcovimg" alt="" style="width:160px;aspect-ratio:1/1;object-fit:cover;background:var(--el);border:1px solid var(--line)" src="${esc(f.coverUrl || (f.id && f.published ? `/e/${f.slug}/card.jpg` : ""))}" ${f.coverUrl || (f.id && f.published) ? "" : "hidden"}>
         <div class="row wrapx" style="gap:6px"><label class="btn ghost sm">${f.coverUrl ? "Change picture" : "Choose a picture"}<input type="file" id="evcov" accept="image/*" hidden></label>
-          <button class="btn ghost sm" id="evcovx" ${f.coverUrl ? "" : "hidden"}>Use TNL's card</button></div></div></div>
+          <button class="btn ghost sm" id="evcovx" ${f.coverUrl ? "" : "hidden"}>Use the LABS card</button></div></div></div>
     ${sel("channel", "Entries go into", f.channel || "graphic-design", [["graphic-design", "// Visual"], ["photography", "// Visual · tagged #photography"], ["clothing-design", "// Fashion"], ["general", "// General"]])}
   </div>
   <h2 class="sec">Format ${locked ? `<span class="mono">locked — voting has closed</span>` : ""}</h2>
@@ -183,7 +183,7 @@ WIRES.events = () => {
     } catch (e) { toast(e.message || "Couldn't upload that picture"); }
   };
   if (covX) covX.onclick = (e) => { e.preventDefault(); covUrl.value = ""; EVFORM.coverUrl = "";
-    if (EVFORM.id && EVFORM.published) covImg.src = `/e/${EVFORM.slug}/card.jpg`; else covImg.hidden = true; covX.hidden = true; toast("TNL's card it is — Save to use it"); };
+    if (EVFORM.id && EVFORM.published) covImg.src = `/e/${EVFORM.slug}/card.jpg`; else covImg.hidden = true; covX.hidden = true; toast("The LABS card it is — Save to use it"); };
   on("#evedit", () => { const e = D.event.event; EVFORM = { ...e, plan: e.plan, locked: !!e.state.qualified }; paint(); });
   on("#evsave", async () => {
     const f = EVFORM, b = {};

@@ -49,7 +49,7 @@ function gateHTML(){
   if(G.mode==="login"){
     center=true;
     top=`<span></span><button class="gx-ic" id="gatex" aria-label="Close">${GX_X}</button>`;
-    body=`<div class="gx-brand"><img class="mark gx-mark" src="${GX_MARK}" alt="TNL"><div class="gx-word"><span class="lg">//</span> LABS</div></div>
+    body=`<div class="gx-brand"><img class="mark gx-mark" src="${GX_MARK}" alt="LABS"><div class="gx-word"><span class="lg">//</span> LABS</div></div>
       ${why}${inappGateHTML()}
       ${gxField("u","Username or email",{value:f.username,attrs:'autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"'})}
       ${pw("p","current-password")}

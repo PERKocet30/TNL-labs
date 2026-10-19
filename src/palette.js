@@ -1,5 +1,5 @@
 /* ================================================================
-   PALETTE v1.0 — 2026-09-29. Every colour TNL LABS uses, in one place.
+   PALETTE v1.0 — 2026-09-29. Every colour LABS uses, in one place.
 
    Change a colour here and it changes everywhere:
      • the app          — assemble.mjs writes paletteCss() into index.html

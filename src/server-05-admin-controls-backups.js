@@ -284,7 +284,7 @@ function buildZip(root, files) {
 app.get("/api/admin/source", auth, admin, (req, res) => {
   const root = join(__dirname, "..");
   const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  const name = `TNL-LABS-${stamp}.zip`;
+  const name = `LABS-${stamp}.zip`;
 
   // the files that ARE the app — skip node_modules, db, uploads, git
   /* What serves requests is server.runtime.js, built at boot by assemble.mjs

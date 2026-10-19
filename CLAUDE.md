@@ -64,6 +64,11 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
 
 ## Design language
 
+**The app is LABS (2026-10-18).** Everything members, buyers, link previews,
+emails and the admin read says LABS, never TNL — TNL is a separate brand
+(`test/naming.test.mjs` fails on a stray "TNL"). Code names (`TNL_DATA`,
+`TNLStudio`), the tnllabs.com domain and @handles stay as they are.
+
 Helvetica. `//` marks the labs (`// Music`). White, black and green: true
 white `#FFFFFF` with neutral greys by default, black in dark mode (no
 off-white Paper — changed 2026-09-29). Reagent green `#98FC68` is the app's
