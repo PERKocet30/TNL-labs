@@ -1,5 +1,6 @@
 function wireGate(){
   const G=GFLOW;if(!G)return;const f=G.f;
+  if(G.step==="tour")return wireTour(G);   // app-11-gate-tour.js
   const on=(sel,fn)=>{const el=$(sel);if(el)el.onclick=fn};
   const nx=()=>$("#gxnext");
   const emailOk=()=>/^\S+@\S+\.\S+$/.test(f.email.trim());
@@ -14,6 +15,8 @@ function wireGate(){
     el.oninput=()=>{f[key]=el.value;if(G.err){G.err="";const e=$(".gx-err");if(e)e.remove()}
       const b=nx();if(b&&valid)b.disabled=!valid()}};
   bind("u","username");bind("p","password");bind("fe","email");
+  bind("gxig","ig");
+  {const ta=$("#gxbio");if(ta)ta.oninput=()=>{f.bio=ta.value;const c=$("#biocount");if(c)c.textContent=f.bio.length+" / 150"}}
   bind("em","email",emailOk);bind("pw","password",()=>f.password.length>=6);bind("dn","displayName",()=>!!f.displayName.trim());
   document.querySelectorAll("[data-showpw]").forEach(b=>b.onclick=()=>{G.showpw=!G.showpw;
     const i=$("#p")||$("#pw");if(i){i.type=G.showpw?"text":"password";b.textContent=G.showpw?"Hide":"Show";i.focus()}});
@@ -74,8 +77,16 @@ function wireGate(){
       return gxCreate()}
     if(G.step==="photo"){if(!(ME&&ME.avatarUrl)){const fi=$("#gxfile");if(fi)fi.click();return}
       return gxAfterPhoto()}
-    if(G.step==="follow"){G.step="welcome";return render()}
+    if(G.step==="colour"){G.step="bio";return render()}
+    if(G.step==="bio")return gxSaveBio();
+    if(G.step==="follow"){G.step="tour";G.ti=0;return render()}
   });
+  /* your colour: on at once, everywhere (saved straight away) */
+  document.querySelectorAll("[data-gxacc]").forEach(b=>b.onclick=()=>{const k=b.dataset.gxacc,a=ACCENTS[k];if(!a||!ME)return;
+    ME.accent=k;ME.accentHex=a.hex;try{applyAccent(a.hex);localStorage.setItem("tnl-gs-colour","1")}catch(e){}
+    document.querySelectorAll("[data-gxacc]").forEach(x=>x.classList.toggle("on",x===b));
+    const t=$(".gx-tint");if(t)t.style.setProperty("--ring",a.hex);
+    api.updateMe({accent:k}).then(d=>{if(d&&d.user)ME=d.user}).catch(e=>toast(e.message))});
   on("#gxchange",()=>{const fi=$("#gxfile");if(fi)fi.click()});
   const fi=$("#gxfile");
   if(fi)fi.onchange=async()=>{const file=fi.files[0];if(!file)return;
@@ -84,7 +95,8 @@ function wireGate(){
       ME.avatarUrl=d.avatarUrl||d.url||ME.avatarUrl}
     catch(e){G.err=e.message||"That photo didn't upload. Try another."}
     G.busy=false;render()};
-  on("#gxskip",()=>{if(G.step==="photo")return gxAfterPhoto();G.step="welcome";render()});
+  on("#gxskip",()=>{if(G.step==="photo")return gxAfterPhoto();if(G.step==="colour"){G.step="bio";return render()}
+    if(G.step==="bio")return gxAfterBio();G.step="tour";G.ti=0;render()});
   document.querySelectorAll("[data-fol]").forEach(b=>b.onclick=async()=>{const u=b.dataset.fol;
     const was=!!G.following[u];G.following[u]=!was;b.classList.toggle("on",!was);b.textContent=!was?"Following":"Follow";
     try{const d=await api.follow(u);G.following[u]=!!d.following}
@@ -136,10 +148,20 @@ async function gxCreate(){
     render();
   }
 }
-async function gxAfterPhoto(){
+function gxAfterPhoto(){const G=GFLOW;if(!G)return;G.step="colour";render()}
+/* a line about you, and where else to find you; then people to follow */
+async function gxSaveBio(){
+  const G=GFLOW;if(!G)return;const f=G.f,ig=f.ig.trim().replace(/^@/,"").replace(/^https?:\/\/(www\.)?instagram\.com\//i,"").replace(/[/?#].*$/,"");
+  if(ig&&!/^[A-Za-z0-9._]{1,30}$/.test(ig)){G.err="That doesn't look like an Instagram username.";return render()}
+  G.busy=true;G.err="";render();
+  try{const body={bio:f.bio.trim()};if(ig)body.links=[{url:"https://instagram.com/"+ig}];
+    const d=await api.updateMe(body);if(d&&d.user)ME=d.user;G.busy=false;return gxAfterBio()}
+  catch(e){G.busy=false;G.err=e.message||"That didn't save. Try again.";render()}
+}
+async function gxAfterBio(){
   const G=GFLOW;if(!G)return;
   if(G.people===null&&G.peopleP){try{await G.peopleP}catch(e){}}
-  G.step=(G.people&&G.people.length)?"follow":"welcome";render();
+  G.step=(G.people&&G.people.length)?"follow":"tour";G.ti=0;render();
 }
 /* Sent here just to log in (2026-10-11): /?login=1&next=/admin#system from
    Admin's "Log in". No door, the log-in form at once, and back to next after.

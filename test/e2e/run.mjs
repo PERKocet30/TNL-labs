@@ -183,12 +183,53 @@ console.log("\nNEW MEMBER · PHONE");
     await p.locator(".gx-roles [data-r]").first().tap(); await nextOn();
     await p.waitForFunction(() => typeof ME !== "undefined" && ME && ME.username === "newmember", null, { timeout: 6000 });
   });
-  await step(d, "photo and follow steps can be skipped, welcome lands in the app", async () => {
-    for (let k = 0; k < 4 && (await p.locator("#gxskip").count()); k++) { await p.locator("#gxskip").tap(); await p.waitForTimeout(250); }
-    if (await p.locator("#gxnext").count()) { await p.locator("#gxnext").tap(); await p.waitForTimeout(250); }
-    await p.locator("#gxdone").tap({ timeout: 4000 });
+  // 2026-10-18 onboarding: "walk through all of the app's features and profile creation"
+  await step(d, "after joining: photo, your colour, a line about you, people, then the walkthrough lands in the app", async () => {
+    await p.waitForSelector("#gxskip"); await p.locator("#gxskip").tap();   // photo: later
+    await p.waitForSelector("[data-gxacc]", { timeout: 4000 });
+    const pick = await p.evaluate(() => Object.keys(ACCENTS).find((k) => k !== "lab" && !ACCENTS[k].legacy));
+    await p.locator(`[data-gxacc="${pick}"]`).tap();
+    await p.waitForFunction((k) => ME && ME.accent === k, pick, { timeout: 4000 });
+    ok(await p.evaluate((k) => getComputedStyle(document.documentElement).getPropertyValue("--accent-fill").trim().toLowerCase() === ACCENTS[k].hex.toLowerCase(), pick), "the colour didn't go on at once");
+    await p.locator("#gxnext").tap();
+    await p.waitForSelector("#gxbio", { timeout: 4000 });
+    await p.locator("#gxbio").fill("Painter. Big walls, small zines.");
+    await p.locator("#gxig").fill("@newmember_art");
+    await p.locator("#gxnext").tap();
+    await p.waitForFunction(() => ME && ME.bio === "Painter. Big walls, small zines.", null, { timeout: 4000 });
+    ok(await p.evaluate(() => (ME.links || []).some((l) => /instagram\.com\/newmember_art$/.test(l.url))), "the Instagram link didn't save");
+    if (await p.locator(".gx-people").count()) await p.locator("#gxnext").tap();
+    await p.waitForSelector(".tour-card", { timeout: 4000 });
+    const cards = await p.evaluate(() => TOUR.length);
+    ok(cards === 7 && /Showroom/.test(await p.locator(".tour-card h1").innerText()), "the walkthrough didn't start with the Showroom");
+    ok(await p.locator(".tour-dots i").count() === cards + 1, "the dots don't match the cards");
+    for (let k = 0; k < cards; k++) { await p.locator("#tournext").tap(); await p.waitForTimeout(80); }
+    ok(/Welcome to LABS, New/.test(await p.locator(".tour-card h1").innerText()), "the last card isn't the welcome");
+    await p.locator("#tournext").tap();
     await p.waitForSelector(".app > .nav", { timeout: 4000 });
     ok(await p.evaluate(() => !GATE), "still inside the sign-up screens");
+  });
+  await step(d, "a new member's Get started list: ticks what's done, every line goes somewhere, ✕ puts it away", async () => {
+    await p.waitForSelector("#gs .gs-i", { timeout: 6000 });
+    const st = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll("#gs [data-gs]")].map((b) => [b.dataset.gs, b.classList.contains("done")])));
+    ok(st.colour && st.bio && !st.photo && !st.post && !st.share, "the list doesn't match what they've done: " + JSON.stringify(st));
+    await p.locator('#gs [data-gs="lab"]').tap(); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => TAB === "labs"), "Step into a lab didn't open the labs");
+    await p.evaluate(() => openLab(LABS[0].id)); await p.waitForTimeout(200);
+    await p.evaluate(() => { LAB = null; CH = null; TAB = "showroom"; render(); });
+    await p.waitForSelector("#gs", { timeout: 4000 });
+    ok(await p.locator('#gs [data-gs="lab"].done').count() === 1, "stepping into a lab didn't tick it off");
+    await p.locator("#gsx").tap(); await p.waitForTimeout(200);
+    await p.evaluate(() => render()); await p.waitForTimeout(200);
+    ok(!(await p.locator("#gs").count()), "✕ didn't put the list away");
+  });
+  await step(d, "≡ → How LABS works opens the walkthrough again", async () => {
+    await p.evaluate(() => openTour()); await p.waitForSelector(".tour-card");
+    const n = await p.evaluate(() => TOUR.length);
+    for (let k = 0; k < n; k++) await p.locator("#tournext").tap();
+    ok(/That's LABS/.test(await p.locator(".tour-card h1").innerText()) && (await p.locator("#tournext").innerText()) === "Done", "the reopened walkthrough doesn't end on Done");
+    await p.locator("#tournext").tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => !GATE), "Done didn't close it");
   });
   await d.ctx.close();
 }

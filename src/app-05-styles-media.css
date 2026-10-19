@@ -244,3 +244,38 @@ video.vfill{object-fit:cover}
 /* Story sheets above an opened post (.po-ov is 130): sharing a post you'd
    opened put the sheet behind it (2026-10-09). */
 #igsl .sheet{z-index:140}
+/* onboarding v2 (2026-10-18): your colour, a line about you, How LABS works (app-11-gate-tour) */
+.gx-tint .gx-av{box-shadow:0 0 0 4px var(--bg),0 0 0 7px var(--ring)}
+.gx-sw{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:4px 0 20px}
+.gxf-ta{display:block;width:100%;box-sizing:border-box;min-height:88px;border:1px solid var(--line2);border-radius:12px;background:var(--card);color:var(--tx);font:inherit;font-size:16px;line-height:1.4;padding:12px 14px;resize:none}
+.gxf-ta:focus{outline:none;border-color:var(--tx)}
+#biocount{margin:4px 0 14px;text-align:right}
+.tour-card{text-align:center;max-width:420px;margin:0 auto;animation:tourIn .25s cubic-bezier(.2,.7,.2,1)}
+.tour-ic{width:88px;height:88px;border-radius:50%;margin:0 auto 22px;background:var(--accent-fill);color:var(--on-accent);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.tour-ic svg{width:40px;height:40px}
+.tour-me{background:var(--el);color:var(--dim)}
+.tour-me img{width:100%;height:100%;object-fit:cover}
+.tour-dots{display:flex;gap:6px;justify-content:center;margin:0 0 16px}
+.tour-dots i{width:6px;height:6px;border-radius:3px;background:var(--line2)}
+.tour-dots i.on{background:var(--tx);width:18px}
+.tour-foot{width:100%}
+@keyframes tourIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.tour-card{animation:none}}
+/* Get started (app-11-getstarted) */
+.gs{margin:12px 16px 4px;padding:14px 16px 10px;border:1px solid var(--line);border-radius:var(--rad,16px);background:var(--card)}
+.gs-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.gs-top b{font-size:16px;font-weight:700;margin-right:8px}
+.gs-n{font-size:13px;color:var(--dim)}
+.gs-x{background:none;border:0;color:var(--dim);padding:6px;margin:-6px -6px -6px 0;cursor:pointer;display:flex}
+.gs-bar{height:4px;border-radius:2px;background:var(--line);margin:10px 0 6px;overflow:hidden}
+.gs-bar i{display:block;height:100%;background:var(--accent-fill);transform-origin:0 50%;transition:transform .3s}
+.gs-list{list-style:none;margin:0;padding:0}
+.gs-i{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:11px 0;font:inherit;font-size:15px;color:var(--tx);text-align:left;cursor:pointer}
+.gs-list li:last-child .gs-i{border-bottom:0}
+.gs-i>span:nth-child(2){flex:1}
+.gs-i.done{color:var(--dim);cursor:default}
+.gs-i.done>span:nth-child(2){text-decoration:line-through}
+.gs-c{width:22px;height:22px;border-radius:50%;border:2px solid var(--line2);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-sizing:border-box}
+.gs-i.done .gs-c{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
+.gs-tour{background:none;border:0;color:var(--tx);font:inherit;font-size:14px;font-weight:600;padding:8px 0 4px;cursor:pointer;text-decoration:underline}
+@media(prefers-reduced-motion:reduce){.gs-bar i{transition:none}}

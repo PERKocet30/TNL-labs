@@ -72,6 +72,7 @@ test/                           51 test suites — run with npm test
 | `app-10-dm-search` | search, the door |
 | `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
 | `app-11-places` | Labs as places (2026-10-08; v1.1 2026-10-09: one list of genres with their #tags, Work · Talk only): a lab's tabs, its home channel (`LAB_HOME`), the #tag page, tag suggestions; styles in `app-05-styles-places` |
+| `app-11-gate-tour` · `app-11-getstarted` · `server-11-start` | Onboarding (2026-10-18): after joining, photo → colour → bio → people → How LABS works (one card per part of the app; ≡ on your profile reopens it), then a Get started list on the Showroom for 30 days (`GET /api/me/start`: own posts and follows) |
 | `app-11-gallery` | The Showroom on a computer as a gallery wall (2026-10-18): one piece in the spotlight, ← → / ‹ › / wheel / a click walk along it, only the spotlit piece's song plays (`musBand()`, used by the music observer in `app-18-media`), one swipe or wheel flick = one step; the computer's only Showroom (no grid); styles in `app-05-styles-wide` |
 | `app-11-showroom` · `app-12…13` (`app-12-post-extras`: tags, place, comments off and "Shop this post" on a card) | Showroom, lab index, archive/posts; the Music lab (`app-13-tracks-player`), its playlists (`app-13-playlists`: Songs · Playlists, ⊕ on every song and on the bar), the full-screen song (`app-13-nowplaying`: tap a song or the bar) and the player bar and queue (`app-13-player`) |
 | `app-14-detail-sell` · `app-14-listing` · `app-14-sell-variants` | orders and the listing editor (v3, Shopify-style: Photos · Pricing with a compare-at "was" price and what you keep after the TNL and card fees · Size & stock · Shipping · Details with category and condition pickers); the listing page (photos, size/colour picker, the pinned Buy bar, the pinch-zoom photo viewer); the editor's options — tap sizes, add colours, every combination gets its own stock |
@@ -458,6 +459,7 @@ GET    /api/builders
 
 # health
 GET    /api/health
+GET    /api/me/start          (member) their pieces posted and people followed, for Get started
 GET    /api/report/daily      (Bearer TNL_REPORT_KEY; off without it — the morning check's summary, counts only: server-12-report.js)
 
 # admin

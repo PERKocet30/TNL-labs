@@ -100,6 +100,7 @@ function placeCH(){if(!LAB)return;
 function openLab(id,view,tag){
   const l=LABS.find(x=>x.id===id);if(!l)return;
   if(guest())return needAccount("Join to step into the labs.");
+  gsMark("lab");   // Get started: step into a lab (app-11-getstarted)
   pushView("lab",l.id);
   TAB="labs";LAB=l;LABVIEW=view||"work";LABTAG=tag||null;TAGVIEW=null;ROOMOPEN=true;PLIST=null;PLADD=null;NOWFULL=false;
   PROFILE=null;POSTOPEN=null;OPENCOMMENTS=null;placeCH();
