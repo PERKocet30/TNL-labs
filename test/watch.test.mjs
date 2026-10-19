@@ -51,4 +51,24 @@ t("it counts members, errors, glitches and the worst spot", /1 new member ·/.te
 t("only once that day", !(await watchTick(now + 3600000, mail)).includes("digest") && !(await watchTick(at("2026-09-30T23:59:00Z"), mail)).includes("digest"));
 t("and again the next day", (await watchTick(at("2026-10-01T13:01:00Z"), mail)).includes("digest"));
 t("a calm day says so", sent.at(-1).subject.endsWith("all smooth") || /errors, \d+ glitches/.test(sent.at(-1).subject));
+
+console.log("\nONE PROBLEM, ONE LINE (2026-10-19)");
+// The 19 Oct digest spent all three "worst spot" lines on one jump, split by how far it moved.
+const d3 = at("2026-10-03T08:00:00Z");
+glitch("layout_jump", "showroom", "#sr-grid moved 0.17", d3, 3);
+glitch("layout_jump", "showroom", "#sr-grid moved 0.23", d3, 2);
+glitch("layout_jump", "showroom", "#sr-grid moved 0.12", d3, 1);
+glitch("slow_screen", "my profile", "/api/dm 3.9s", d3, 1);
+glitch("slow_screen", "my profile", "/api/dm 5.3s", d3, 1);
+glitch("action_failed", "chat", "POST /api/dm/:name → 500", d3, 1);
+glitch("action_failed", "chat", "POST /api/dm/:name → 502", d3, 1);
+err("client", "TypeError: x is undefined", d3, 4);
+err("client", "Script error.", d3, 1);
+r = await watchTick(at("2026-10-03T13:02:00Z"), mail);
+const d3l = sent.at(-1).lines;
+const spots = d3l.filter((l) => /^Worst spot:/.test(l));
+t("the same jump is one line, with how far it moved as a range", spots[0] === "Worst spot: 6× screen jumps at showroom — #sr-grid moved 0.12–0.23");
+t("slow calls to the same place are one line too", spots.includes("Worst spot: 2× slow screens at my profile — /api/dm 3.9–5.3s"));
+t("a status code isn't a measurement: → 500 and → 502 stay apart", !spots.some((l) => /→ 50\d–/.test(l)));
+t("the digest names the errors, not just the count", d3l.some((l) => l === "Most often: 4× TypeError: x is undefined"));
 console.log(`\n  ${pass} passed, ${fail} failed`);

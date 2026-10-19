@@ -4,7 +4,7 @@
      rage_tap       the same control tapped 3+ times within ~1s
      layout_jump    the screen moved on its own while someone read (Chrome/Android;
                     iOS Safari doesn't expose layout shifts)
-     slow_screen    an /api GET that took over 3s
+     slow_screen    an /api GET that took over 3s while the screen was showing
      action_failed  a save the server couldn't do (5xx) or never got (network)
    Quiet by design: one report per kind and spot every 30s, sent in batches,
    never the content of a post or message. */
@@ -33,7 +33,15 @@ function glFlush(){
     body:JSON.stringify({events,device:isWide()?"computer":"phone"})}).catch(()=>{})}catch(e){}
   if(GL.q.length)GL.timer=setTimeout(glFlush,4000);
 }
-document.addEventListener("visibilitychange",()=>{if(document.hidden)glFlush()});
+/* A phone that locks, or a switch to another app, pauses a request mid-way;
+   when it comes back the clock says 30s though nobody waited (2026-10-19:
+   the watch's slow /api/dm and /api/notifications were background checks on
+   a pocketed phone — the server answered them in milliseconds). So a call
+   only counts as slow if the screen was showing the whole time, and not just
+   waking up (the network takes a moment to come back). */
+let GLHID=0,GLSHOW=0;
+document.addEventListener("visibilitychange",()=>{if(document.hidden){GLHID++;glFlush()}else GLSHOW=Date.now()});
+const glSeen=(t,h)=>h===GLHID&&!document.hidden&&t-GLSHOW>2000;
 
 /* rage taps: the SAME button, still on screen, tapped 3 times in ~1s. If the
    app answered by moving on (a new screen, a repaint), it's a new button and
@@ -72,12 +80,12 @@ window.fetch=async function(input,init){
   const url=typeof input==="string"?input:(input&&input.url)||"";
   const m=String((init&&init.method)||"GET").toUpperCase();
   const watch=/\/api\//.test(url)&&!/\/api\/(stream|glitch|client-error|upload)/.test(url);
-  const t=Date.now();
+  const t=Date.now(),h=GLHID;
   try{
     const r=await GLFETCH(input,init);
     if(watch){
       const took=Date.now()-t;
-      if(m==="GET"&&took>3000)glitch("slow_screen",glPath(url)+" "+(took/1000).toFixed(1)+"s");
+      if(m==="GET"&&took>3000&&glSeen(t,h))glitch("slow_screen",glPath(url)+" "+(took/1000).toFixed(1)+"s");
       if(m!=="GET"&&r.status>=500)glitch("action_failed",m+" "+glPath(url)+" → "+r.status);
     }
     return r;
