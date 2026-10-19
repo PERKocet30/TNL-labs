@@ -40,6 +40,7 @@ function sentryClient(msg,stack,where){
 }
 window.addEventListener("error",e=>{if(e.target&&e.target!==window)return;   // a missing <img>/<video>, not a crash
   if(/ResizeObserver loop/i.test(String(e.message||"")))return;              // Chrome's harmless layout warning
+  if(/^Script error\.?$/i.test(String(e.message||""))&&!e.error)return;      // someone else's script (Instagram's browser, an extension): the browser hides what broke, so there's nothing to fix
   sentryClient(e.message,e.error&&e.error.stack,"error")});
 window.addEventListener("unhandledrejection",e=>{const r=e.reason||{};sentryClient(r.message||String(r),r.stack,"promise")});      // profile-first composer: {body,imgs:[{url,thumb,w,h}],busy}   // a profile's active market listings (lazy-loaded when the SHOP tab opens)
 let CLIMB=false, CLIMBOPENRUNG=0; // THE CLIMB — the one screen where the whole progression system is legible

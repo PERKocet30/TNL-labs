@@ -333,7 +333,9 @@ app.delete("/api/admin/errors", auth, admin, (req, res) => {
    badly-biased sample. */
 app.post("/api/client-error", maybeAuth, rateLimit({ max: 20, windowMs: 60000 }), (req, res) => {
   const { message, detail, path } = req.body || {};
-  if (message) logError("client", message, detail || "", path || "", req.user?.username || "");
+  /* "Script error." is a browser hiding someone else's crash (Instagram's
+     in-app browser, an extension) — never ours, nothing to act on (2026-10-19). */
+  if (message && !/^Script error\.?$/i.test(String(message).trim())) logError("client", message, detail || "", path || "", req.user?.username || "");
   res.json({ ok: true });
 });
 
