@@ -22,7 +22,7 @@ function rateHTML(){
   const fee=MKTMETA.feePct??10, n=nextRate();
   return `<div class="ratebar">
     <div class="ratenow"><b>${fee}%</b><span>Your rate</span></div>
-    <div class="rateinfo">${n?`${n.need} more rep → <b>${n.fee}%</b> at ${esc(n.name)}`:"Best rate on TNL"}</div>
+    <div class="rateinfo">${n?`${n.need} more rep → <b>${n.fee}%</b> at ${esc(n.name)}`:"Best rate on LABS"}</div>
     <button class="ratelad" id="rateladder">Rates</button>
   </div>`}
 
@@ -75,9 +75,9 @@ function sellEarnHTML(){
   const f=SELLFORM||{}, fee=MKTMETA.feePct??10, p=Number(f.price||0);
   const rates=` · <button class="pf-link" id="rateladder" type="button">Rates</button>`;
   if(SELLKIND==="loop"&&p===0)return `Free — anyone can download it.`;
-  if(!(p>=1))return `TNL fee ${fee}% · card fee 2.9% + 30¢${rates}`;
-  if(SELLKIND==="loop")return `You keep about <b>${money(Math.max(0,Math.round(p*100*(1-fee/100)-(p*100*0.029+30))))}</b> after the ${fee}% TNL fee and the card fee${rates}`;
-  return `You keep about <b>${money(sellKeepCents(f,fee))}</b>${Number(f.shipping)?" with shipping":""} after the ${fee}% TNL fee and the card fee (2.9% + 30¢)${rates}`;
+  if(!(p>=1))return `LABS fee ${fee}% · card fee 2.9% + 30¢${rates}`;
+  if(SELLKIND==="loop")return `You keep about <b>${money(Math.max(0,Math.round(p*100*(1-fee/100)-(p*100*0.029+30))))}</b> after the ${fee}% LABS fee and the card fee${rates}`;
+  return `You keep about <b>${money(sellKeepCents(f,fee))}</b>${Number(f.shipping)?" with shipping":""} after the ${fee}% LABS fee and the card fee (2.9% + 30¢)${rates}`;
 }
 function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
   const X=w=>`<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
@@ -243,7 +243,7 @@ function studioHTML(){
       <div class="distro-h"><span class="distro-ic">${done?DI.check:DI.out}</span>
         <b>${done
           ? "You're "+esc(d.levelName)+". Your music gets distributed."
-          : "At "+esc(d.levelName)+", TNL puts your music on the streaming services."}</b></div>
+          : "At "+esc(d.levelName)+", LABS puts your music on the streaming services."}</b></div>
       <p>${esc(d.blurb)}</p>
       ${done
         ? `<div class="mono distro-go">${DI.out} MESSAGE @TNLLABS WITH A FINISHED TRACK AND IT GOES OUT</div>`

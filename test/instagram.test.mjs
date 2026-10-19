@@ -37,7 +37,7 @@ try {
   t("the listing link opens the app", r.status === 200 && r.html.includes('id="app"'));
   t("its preview is the piece: title and price", meta(r.html, "og:title") === "Camo &quot;Shiesty&quot; tee — $45");
   t("…its photo, as a full address", meta(r.html, "og:image") === `${BASE}/uploads/tee.jpg`);
-  t("…who sells it, the size and condition", /Sold by @seller on TNL LABS · L · Like new/.test(meta(r.html, "og:description") || ""));
+  t("…who sells it, the size and condition", /Sold by @seller on LABS · L · Like new/.test(meta(r.html, "og:description") || ""));
   t("…a product, priced, in stock, at its own address", meta(r.html, "og:type") === "product" && meta(r.html, "product:price:amount") === "45.00"
     && meta(r.html, "product:availability") === "in stock" && meta(r.html, "og:url") === `${BASE}/m/${tee}`);
   t("one preview, not the LABS cover as well", count(r.html, "og:title") === 1 && count(r.html, "og:image") === 1 && !r.html.includes("og-cover-v3-2026-09-23.jpg\">\n<meta property=\"og:image:secure"));
@@ -45,7 +45,7 @@ try {
   const s = await get(`/m/${sold}`);
   t("a sold piece says so, with cents", meta(s.html, "og:title") === "Hoodie — $80.50 · Sold" && meta(s.html, "product:availability") === "out of stock");
   const g = await get(`/m/${gone}`);
-  t("a removed listing gives nothing away (the plain LABS preview)", meta(g.html, "og:title") === "TNL LABS 🧪 — Social media by creatives, for creatives" && !g.html.includes("Gone"));
+  t("a removed listing gives nothing away (the plain LABS preview)", meta(g.html, "og:title") === "LABS 🧪 — Social media by creatives, for creatives" && !g.html.includes("Gone"));
   t("a listing that never existed still opens the app", (await get("/m/99999")).html.includes('id="app"'));
 
   console.log("\nPUBLIC PAGES LAND ON THE THING IN THE APP");

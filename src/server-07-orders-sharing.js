@@ -332,12 +332,12 @@ app.get("/p/:id", (req, res) => {
   const accepted = p.collaborators.filter((c) => c.status === "accepted");
   const title = accepted.length
     ? `${p.author.displayName} × ${accepted.map((c) => c.display_name || c.username).join(" × ")}`
-    : `${p.author.displayName} — TNL LABS`;
+    : `${p.author.displayName} — LABS`;
   /* A collab in the title is the whole pitch: this is what happens here.
      Two names on one piece is more interesting than either name alone. */
   const desc = [
     p.body ? p.body.slice(0, 120) : null,
-    p.beat ? `${p.beat.bpm} BPM beat, made in the TNL studio` : null,
+    p.beat ? `${p.beat.bpm} BPM beat, made in the LABS studio` : null,
     `#${p.channel}`,
     p.likeCount ? `${p.likeCount} ♥` : null,
   ].filter(Boolean).join(" · ").slice(0, 200);
@@ -349,7 +349,7 @@ app.get("/p/:id", (req, res) => {
     accent: accentHex(au && au.accent),   // the author's colour, as in the app
     head: `<link rel="canonical" href="${esc(canonical)}">
 <meta property="og:type" content="article">
-<meta property="og:site_name" content="TNL LABS">
+<meta property="og:site_name" content="LABS">
 <meta property="og:url" content="${esc(canonical)}">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}">
@@ -367,7 +367,7 @@ ${ldJson({ "@context": "https://schema.org", "@type": "SocialMediaPosting", url:
   datePublished: new Date(p.createdAt).toISOString(), ...(p.editedAt ? { dateModified: new Date(p.editedAt).toISOString() } : {}),
   author: [ldPerson(p.author, baseUrl(req)), ...accepted.map((c) => ldPerson(c, baseUrl(req)))],
   interactionStatistic: { "@type": "InteractionCounter", interactionType: "https://schema.org/LikeAction", userInteractionCount: p.likeCount || 0 },
-  isPartOf: { "@type": "WebSite", name: "TNL LABS", url: baseUrl(req) } })}`,
+  isPartOf: { "@type": "WebSite", name: "LABS", url: baseUrl(req) } })}`,
     body: `
 <a class="who" href="/u/${esc(p.author.username)}">
   ${p.author.avatarUrl ? `<img class="av ring" src="${esc(abs(p.author.avatarUrl))}" alt="">` : `<div class="av ring">${esc(p.author.displayName.slice(0, 2).toUpperCase())}</div>`}
@@ -376,7 +376,7 @@ ${ldJson({ "@context": "https://schema.org", "@type": "SocialMediaPosting", url:
 ${p.body ? `<p class="body" style="margin:0 0 14px">${esc(p.body)}</p>` : ""}
 ${p.imageUrl ? `<img class="media" src="${esc(p.imageUrl)}" alt="" style="max-height:none">` : ""}
 ${p.videoUrl ? `<video class="media" src="${esc(p.videoPlayUrl || p.videoUrl)}#t=${((p.video?.start || 0) / 1000).toFixed(2)}${p.video?.end ? "," + (p.video.end / 1000).toFixed(2) : ""}"${p.thumbUrl && p.thumbUrl !== p.imageUrl ? ` poster="${esc(p.thumbUrl)}"` : ""}${p.video?.muted ? " muted" : ""} controls playsinline preload="metadata"></video>` : ""}
-${p.beat ? `<div class="card"><b>${esc(p.beat.name || "untitled loop")}</b><div class="cap">${p.beat.bpm} BPM · made in the TNL studio</div></div>` : ""}
+${p.beat ? `<div class="card"><b>${esc(p.beat.name || "untitled loop")}</b><div class="cap">${p.beat.bpm} BPM · made in the LABS studio</div></div>` : ""}
 ${accepted.length ? `<div class="cap meta"><span class="mk">//</span> Built with ${accepted.map((c) => esc(c.display_name || c.username)).join(" + ")}</div>` : ""}
 <div class="cap meta">${lookCount(p.likeCount, "like")} · ${lookCount(p.shareCount, "share")} · #${esc(p.channel)}</div>
 <a class="btn block acc" href="/?p=${p.id}">Open in the app</a>

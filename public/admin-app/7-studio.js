@@ -1,4 +1,4 @@
-/* TNL LABS admin v2.2 — 2026-10-15 (wording: "the trust TNL runs on"). v2.1 — 2026-10-14 (shared page header; back goes to System, where the Studio switch is). Studio stats, carried over from admin v1
+/* LABS admin v2.2 — 2026-10-15 (wording: "the trust LABS runs on"). v2.1 — 2026-10-14 (shared page header; back goes to System, where the Studio switch is). Studio stats, carried over from admin v1
    unchanged in substance: what producers do with the beat maker. Reached from
    Content → Studio stats. */
 LOADERS.studio = async () => { D.studio = await req("/api/admin/studio"); };
@@ -141,7 +141,7 @@ function studioHTML(){
       profile of anyone's sound. Share it. Use it to recreate their kit.<br><br>
       <b style="color:var(--tx)">And the studio says so</b>, in the upload panel, in plain words.
       A quiet version of this would be mining — and if that ever got out you wouldn't lose a
-      feature, you'd lose the trust TNL runs on. Disclosure is what makes it fair,
+      feature, you'd lose the trust LABS runs on. Disclosure is what makes it fair,
       not the code.
     </p>
   </div>`;

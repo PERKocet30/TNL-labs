@@ -136,7 +136,7 @@ app.post("/api/admin/events/:id/mail-preview", auth, admin, async (req, res) => 
    apps' own Unsubscribe button POSTs straight to it (RFC 8058). */
 const evmByKey = (k) => (/^[a-f0-9]{36}$/.test(String(k || "")) ? db.prepare(`SELECT id, mail_off FROM users WHERE mail_key = ?`).get(String(k)) : null);
 const evmPage = (k, off, done) => lookPage({
-  title: "Tournament emails — TNL LABS", center: true,
+  title: "Tournament emails — LABS", center: true,
   body: `${lookEyebrow("Email")}<h1>${off ? (done ? "You're unsubscribed" : "You're already unsubscribed") : (done ? "You're back on the list" : "Unsubscribe?")}</h1>
 <p class="p">${off ? "You won't get emails about tournaments. Emails about your account, like password resets, still come." : done ? "You'll get an email when the next tournament opens." : "You'll stop getting an email when a tournament opens. Emails about your account still come."}</p>
 <form method="post" action="/mail/${off ? "on" : "off"}?k=${lookEsc(k)}"><button class="btn block${off ? "" : " acc"}" type="submit">${off ? "Turn them back on" : "Unsubscribe"}</button></form>`,

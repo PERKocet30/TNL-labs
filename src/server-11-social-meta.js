@@ -165,7 +165,7 @@ const server = app.listen(PORT, () => {
     const collabs = db.prepare(`SELECT COUNT(*) n FROM collaborators WHERE status='accepted'`).get().n;
     const ok = (b) => (b ? "on " : "OFF");
     console.log(`
-┌─ TNL LABS ─────────────────────────────────
+┌─ LABS ─────────────────────────────────
 │ listening   :${PORT}
 │ data        ${DATA_DIR}${process.env.TNL_DATA ? "" : "   ⚠ NOT a volume — data dies on redeploy"}
 │ public url  ${process.env.PUBLIC_URL || "(unset — verification links will be wrong)"}
@@ -175,7 +175,7 @@ const server = app.listen(PORT, () => {
 │ in the lab  ${users} member${users === 1 ? "" : "s"} · ${posts} post${posts === 1 ? "" : "s"} · ${collabs} confirmed collab${collabs === 1 ? "" : "s"}
 └────────────────────────────────────────────`);
   } catch (e) {
-    console.log(`TNL LABS listening on :${PORT} (banner failed: ${e.message})`);
+    console.log(`LABS listening on :${PORT} (banner failed: ${e.message})`);
   }
 });
 

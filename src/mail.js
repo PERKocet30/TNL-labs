@@ -11,7 +11,7 @@
 
    Set two environment variables to turn real sending on:
      RESEND_API_KEY=re_xxxxxxxx
-     MAIL_FROM="TNL LABS <noreply@tnllabs.com>"   (domain must be verified in Resend)
+     MAIL_FROM="LABS <noreply@tnllabs.com>"   (domain must be verified in Resend)
 
    If RESEND_API_KEY is absent, we DO NOT pretend the mail was sent.
    The link is logged to the server console and returned to the client
@@ -21,7 +21,7 @@
 import { PALETTE, inkFor } from "./palette.js";
 
 const KEY = process.env.RESEND_API_KEY || "";
-const FROM = process.env.MAIL_FROM || "TNL LABS <onboarding@resend.dev>";
+const FROM = process.env.MAIL_FROM || "LABS <onboarding@resend.dev>";
 /* Replies go to a real inbox (2026-10-18, "optimize"): mail from noreply@ that
    people can answer is better mail — a reply is the strongest "this isn't spam"
    a mailbox sees. SUPPORT_EMAIL is the inbox the public pages already show. */
@@ -42,7 +42,7 @@ if (KEY && MAIL_TEST_SENDER) {
    It will ONLY deliver to the email that owns your Resend account.
    Everyone else gets nothing — silently, with no error.
    Fix: verify tnllabs.com in Resend, then set
-        MAIL_FROM=TNL LABS <noreply@tnllabs.com>
+        MAIL_FROM=LABS <noreply@tnllabs.com>
 `);
 }
 
@@ -91,7 +91,7 @@ export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader, 
 <tr><td align="center" style="padding:32px 16px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px">
     <tr><td style="padding:0 4px 18px;font-family:${FONT}">
-      <img src="${origin}/icon-white-512.png" width="28" height="28" alt="TNL" style="vertical-align:middle;border-radius:50%;border:0">
+      <img src="${origin}/icon-white-512.png" width="28" height="28" alt="LABS" style="vertical-align:middle;border-radius:50%;border:0">
       <span class="t1" style="vertical-align:middle;margin-left:8px;color:${C.ink};font-size:15px;font-weight:700;letter-spacing:.04em">LABS &reg;</span>
     </td></tr>
     <tr><td class="card" style="background:${C.card};border:1px solid ${C.line};padding:32px 28px;font-family:${FONT}">
@@ -143,7 +143,7 @@ export function eventOpenEmail({ name, title, brief, prize, closes, url, unsub }
     eyebrow: "Tournament", title,
     lines: [`${name ? name + ", entries" : "Entries"} are open.`, brief, prize ? `Prize: ${prize}` : "", `One piece each. Entries close ${closes}.`].filter(Boolean),
     cta: "Enter now", url, unsub,
-    note: "You're getting this because you're a member of TNL LABS.",
+    note: "You're getting this because you're a member of LABS.",
     preheader: `Entries are open. One piece each, until ${closes}.`,
   });
 }
@@ -161,7 +161,7 @@ function escapeHtml(s) {
 
 /** Returns { sent: boolean, error?: string }. Never throws. */
 export async function sendVerifyEmail(to, name, url) {
-  return send(to, "Confirm your email — TNL LABS", verifyEmail(name, url), `verify link: ${url}`);
+  return send(to, "Confirm your email — LABS", verifyEmail(name, url), `verify link: ${url}`);
 }
 
 /** Alerts and the morning digest, to the admin. Same layout as every other
@@ -178,7 +178,7 @@ export async function sendAlertEmail(to, subject, heading, lines, url) {
 
 /** Password reset. Same honest fallback as verification. */
 export async function sendResetEmail(to, name, url) {
-  return send(to, "Reset your password — TNL LABS", resetEmail(name, url), `reset link: ${url}`);
+  return send(to, "Reset your password — LABS", resetEmail(name, url), `reset link: ${url}`);
 }
 
 async function send(to, subject, { html, text }, logLine, headers = null) {

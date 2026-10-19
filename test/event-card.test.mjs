@@ -27,7 +27,7 @@ try {
 
   console.log("\nTHE PREVIEW PICTURE");
   const a = await og("/e/cup");
-  t("no cover: the preview is TNL's card for this tournament, not the logo", /\/e\/cup\/card\.jpg\?v=[0-9a-f]{8}$/.test(a.img) && !a.img.includes("icon-512"));
+  t("no cover: the preview is the LABS card for this tournament, not the logo", /\/e\/cup\/card\.jpg\?v=[0-9a-f]{8}$/.test(a.img) && !a.img.includes("icon-512"));
   t("…square, because Instagram's previews are", a.w === "1080");
   const r = await fetch(B + "/e/cup/card.jpg");
   const buf = Buffer.from(await r.arrayBuffer());
@@ -45,7 +45,7 @@ try {
   const c = await og("/e/cup");
   t("wins over the card", /\/uploads\/cover\.jpg$/.test(c.img) && !c.w);
   const adm = readFileSync(join(ROOT, "public/admin-app/8-events.js"), "utf8");
-  t("Admin → Tournament has a cover picture, and a way back to TNL's card", adm.includes('data-f="coverUrl"') && adm.includes('id="evcov"') && adm.includes("Use TNL's card") && /\/api\/upload/.test(adm));
+  t("Admin → Tournament has a cover picture, and a way back to the LABS card", adm.includes('data-f="coverUrl"') && adm.includes('id="evcov"') && adm.includes("Use the LABS card") && /\/api\/upload/.test(adm));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

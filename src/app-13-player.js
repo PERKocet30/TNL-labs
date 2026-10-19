@@ -134,7 +134,7 @@ function lockScreen(){
   if(!ms||!NOWPLAYING||typeof MediaMetadata==="undefined")return;
   try{
     const t=NOWPLAYING;
-    ms.metadata=new MediaMetadata({title:t.title,artist:"@"+t.by.username,album:"TNL LABS",
+    ms.metadata=new MediaMetadata({title:t.title,artist:"@"+t.by.username,album:"LABS",
       artwork:t.artworkUrl?[{src:new URL(t.artworkUrl,location.origin).href}]:[]});
     ms.setActionHandler("play",()=>{if(musicHere())audioEl().play().catch(()=>{})});
     ms.setActionHandler("pause",()=>audioEl().pause());
