@@ -34,7 +34,7 @@ const told = [], rep = [], routes = {}, timers = [];
 const read = (f) => readFileSync(join(ROOT, "src", f), "utf8");
 const os = read("server-07-orders-sharing.js");
 const part = os.slice(os.indexOf('app.get("/api/market/checkout/done"'), os.indexOf("\n", os.indexOf("setInterval(() => { reconcileAll()")) + 1);
-const X = new Function("db", "randomBytes", "q", "notify", "app", "auth", "verified", "maybeAuth", "rateLimit", "baseUrl", "feeForRep",
+const X = new Function("db", "randomBytes", "q", "notify", "app", "auth", "verified", "maybeAuth", "rateLimit", "baseUrl", "feeFor",
   "createCheckout", "verifySession", "awardRep", "LISTING_SELECT", "shapeListings", "PAYMENTS_ENABLED", "setInterval",
   read("server-06-market-stock.js") + "\n" + read("server-07-cart.js") + "\n" + part + "\nreturn {reconcileAll, reconcileOrders, settlePaidOrder};")(
   db, randomBytes, q, (...a) => told.push(a),

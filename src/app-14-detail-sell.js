@@ -9,32 +9,17 @@ function savedHTML(){
       :SAVED.map(mktCardHTML).join("")}</div>
   </div>`}
 
-function nextRate(){
-  if(!ME)return null;
-  const lad=MKTMETA.feeLadder||[];
-  const lvl=levelFor(ME.rep).id;
-  const nxt=lad.find(x=>x.level===lvl+1);
-  if(!nxt)return null;
-  return {need:nxt.at-ME.rep,fee:nxt.fee,name:nxt.name};
-}
-function rateHTML(){
-  if(!ME)return "";
-  const fee=MKTMETA.feePct??10, n=nextRate();
-  return `<div class="ratebar">
-    <div class="ratenow"><b>${fee}%</b><span>Your rate</span></div>
-    <div class="rateinfo">${n?`${n.need} more rep → <b>${n.fee}%</b> at ${esc(n.name)}`:"Best rate on LABS"}</div>
-    <button class="ratelad" id="rateladder">Rates</button>
-  </div>`}
-
+/* Fees, quietly (2026-10-18): "any mentions of selling fees need to be more
+   subtle and discrete… the last thing you see before you finish listing."
+   No rate banner on your orders, no "keep %" on the levels screen; the
+   listing form says what you'll get once, above Publish, and only says
+   how if you ask. Admins sell at 0% (feeFor on the server). */
 /* Levels, short (2026-10-07). It was a chart, an explainer paragraph and five
    expanding rows; now: where you are, how far to the next, and one line per
    level. Someone else's pill shows just their level. */
 function climbHTML(){
   const other=CLIMBUSER&&(!ME||CLIMBUSER.username!==ME.username)?CLIMBUSER:null;
   const rep=other?other.rep:(ME?ME.rep:0), me=levelFor(rep), nx=LEVELS.find(x=>x.at>rep);
-  const lad=(MKTMETA.feeLadder&&MKTMETA.feeLadder.length)?MKTMETA.feeLadder
-    :LEVELS.map(l=>({level:l.id,name:l.name,at:l.at,fee:{1:10,2:8,3:6,4:4,5:2}[l.id]}));
-  const keep=x=>100-(lad.find(r=>r.level===x)?.fee??10);
   const pct=nx?Math.min(100,Math.round((rep-me.at)/(nx.at-me.at)*100)):100;
   return `<div class="climb" id="climbbg"><div class="climbw lv2">
     <button class="climb-x" id="climbx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -42,17 +27,17 @@ function climbHTML(){
     <h1 class="lv2-h"><span class="pbadge">L${me.id}</span> ${esc(me.name)}</h1>
     ${other?"":`<div class="ptrack"><div class="pfill" style="width:${pct}%"></div></div>
     <div class="lv2-meta">${rep} rep${nx?` · ${nx.at-rep} to ${esc(nx.name)}`:" · top level"}</div>
-    <p class="lv2-p">Rep comes from what other people do with your work. Higher levels keep more of every sale.</p>`}
+    <p class="lv2-p">Rep comes from what other people do with your work.</p>`}
     <div class="lv2-list">${LEVELS.map(l=>`<div class="lv2-r ${me.id===l.id?"on":""} ${me.id>l.id?"done":""}">
-      <span class="pbadge">L${l.id}</span><b>${esc(l.name)}</b><span class="dim">${l.at} rep</span>${other?"":`<span>keep ${keep(l.id)}%</span>`}</div>`).join("")}</div>
+      <span class="pbadge">L${l.id}</span><b>${esc(l.name)}</b><span class="dim">${l.at} rep</span></div>`).join("")}</div>
   </div></div>`}
 function payoutBannerHTML(){
   if(guest())return "";
   if(!MKTMETA.paymentsEnabled)return `<div class="paybar off"><div><b>Card payments are off</b>
     <div class="dim">Buyers pay you directly for now.</div></div></div>`;
-  if(ME.payoutsReady)return `${rateHTML()}<div class="paybar ok"><div><b>Payouts connected</b></div>
+  if(ME.payoutsReady)return `<div class="paybar ok"><div><b>Payouts connected</b></div>
     <button class="btn sm ghost" id="paydash">Stripe dashboard</button></div>`;
-  return `${rateHTML()}<div class="paybar"><div><b>Set up payouts</b>
+  return `<div class="paybar"><div><b>Set up payouts</b>
     <div class="dim">Stripe pays you directly.</div></div>
     <button class="btn sm green" id="payconnect">${ME.hasStripe?"Finish setup":"Connect Stripe"}</button></div>`}
 
@@ -71,13 +56,14 @@ function payoutBannerHTML(){
    v3.2: the category comes right after the title, grouped by department,
    and Details asks what that category needs (app-14-sell-specs).
    v2 · 2026-09-28: a plain product form, each section a plain card. */
+/* Above Publish, once: what you'll get. The how is folded away. */
 function sellEarnHTML(){
   const f=SELLFORM||{}, fee=MKTMETA.feePct??10, p=Number(f.price||0);
-  const rates=` · <button class="pf-link" id="rateladder" type="button">Rates</button>`;
   if(SELLKIND==="loop"&&p===0)return `Free — anyone can download it.`;
-  if(!(p>=1))return `LABS fee ${fee}% · card fee 2.9% + 30¢${rates}`;
-  if(SELLKIND==="loop")return `You keep about <b>${money(Math.max(0,Math.round(p*100*(1-fee/100)-(p*100*0.029+30))))}</b> after the ${fee}% LABS fee and the card fee${rates}`;
-  return `You keep about <b>${money(sellKeepCents(f,fee))}</b>${Number(f.shipping)?" with shipping":""} after the ${fee}% LABS fee and the card fee (2.9% + 30¢)${rates}`;
+  if(!(p>=1))return "";
+  const keep=SELLKIND==="loop"?Math.max(0,Math.round(p*100*(1-fee/100)-(p*100*0.029+30))):sellKeepCents(f,fee);
+  const why=fee?`After TNL's ${fee}% and the card fee (2.9% + 30¢).`:"After the card fee (2.9% + 30¢).";
+  return `<details class="pf-why"><summary>You'll get about <b>${money(keep)}</b>${SELLKIND!=="loop"&&Number(f.shipping)?" with shipping":""}</summary><span>${why}</span></details>`;
 }
 function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
   const X=w=>`<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
@@ -125,7 +111,6 @@ function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
       <div class="pf-money"><span>$</span><input class="pf-in" id="s-price" type="number" inputmode="decimal" min="${loop?0:1}" step="0.01" value="${f.price??""}" placeholder="0.00"></div></div>
       ${loop?"":sellCompareHTML(f)}</div>
       ${loop?"":`<div id="s-cmphint">${sellCompareHint(f)}</div>`}
-      <div class="pf-hint" id="s-earn">${sellEarnHTML()}</div>
       <label class="pf-row"><span>Accept offers</span><input type="checkbox" class="pf-sw" id="s-offers" ${f.acceptsOffers!==false?"checked":""}></label>
     </section>
 
@@ -169,7 +154,7 @@ function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
     </section>
     <button type="button" class="pf-del" data-mdel="${MKTEDIT}">Delete listing</button>`:""}
   </div>
-  <div class="pf-bar"><button class="gx-btn" id="s-post">${MKTEDIT?"Save":"Publish"}</button></div>
+  <div class="pf-bar"><div class="pf-keep" id="s-earn">${sellEarnHTML()}</div><button class="gx-btn" id="s-post">${MKTEDIT?"Save":"Publish"}</button></div>
   </div>`}
 
 function reviewHTML(){

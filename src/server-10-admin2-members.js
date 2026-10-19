@@ -21,7 +21,7 @@ const MEMBER_CSV_COLS = [
   ["email_confirmed", (r) => (r.email_verified ? "yes" : "no")], ["role", (r) => r.role], ["roles", (r) => jsonList(r.roles).join("; ")],
   ["pronouns", (r) => r.pronouns], ["links", (r) => profileExtras(r).links.map((l) => l.url || l).join(" ")], ["bio", (r) => r.bio],
   ["joined", (r) => isoOrBlank(r.created_at)], ["last_opened_app", (r) => isoOrBlank(r.last_seen_at)], ["last_active", (r) => isoOrBlank(r.last_active)],
-  ["rep", (r) => r.rep], ["level", (r) => "L" + levelFor(r.rep).id + " " + levelFor(r.rep).name], ["commission_pct", (r) => feeForRep(r.rep)],
+  ["rep", (r) => r.rep], ["level", (r) => "L" + levelFor(r.rep).id + " " + levelFor(r.rep).name], ["commission_pct", (r) => feeForSeller(r.rep, r.is_admin)],
   ["posts", (r) => r.posts], ["published_work", (r) => r.work], ["followers", (r) => r.followers], ["following", (r) => r.following],
   ["collabs", (r) => r.collabs], ["listings", (r) => r.listings], ["sold", (r) => r.sold], ["gross_sales_usd", (r) => (r.gross / 100).toFixed(2)],
   ["bought", (r) => r.bought], ["payouts", (r) => (r.stripe_ready ? "on" : r.stripe_account ? "started" : "off")],

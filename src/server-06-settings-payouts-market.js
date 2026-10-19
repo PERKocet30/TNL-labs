@@ -128,7 +128,7 @@ app.get("/api/market/meta", maybeAuth, (req, res) => {
     categories: CATEGORIES, conditions: CONDITIONS, sizes, brands, taxonomy: TAXONOMY_META,
     loopCategories: LOOP_CATEGORIES, keys: KEYS,
     paymentsEnabled: PAYMENTS_ENABLED,
-    feePct: req.user ? feeForRep(req.user.rep) : FEE_BY_LEVEL[1],
+    feePct: req.user ? feeFor(req.user) : FEE_BY_LEVEL[1],
     feeLadder: LEVELS.map((l) => ({ level: l.id, name: l.name, at: l.at, fee: FEE_BY_LEVEL[l.id] })),
   });
 });

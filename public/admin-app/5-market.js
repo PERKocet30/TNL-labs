@@ -1,10 +1,10 @@
-/* LABS admin v2.1 — 2026-10-14 (page header; orders' filters inside their card). Market: is money moving, and is anything stuck. */
+/* LABS admin v2.2 — 2026-10-18 (v2.2: "these sales never happen, only testing" — each order has Test order…, which voids it: off everyone's lists and numbers, its rep taken back; money is refunded in Stripe). v2.1 — 2026-10-14 (page header; orders' filters inside their card). Market: is money moving, and is anything stuck. */
 let OSTAT = "all";
 LOADERS.market = async () => {
   const [m, o] = await Promise.all([req("/api/admin/market"), req("/api/admin/orders")]);
   D.market = m; D.orders = o.orders;
 };
-const STATUS = { pending: "Awaiting payment", paid: "Paid — ship it", shipped: "Shipped", complete: "Delivered", cancelled: "Cancelled" };
+const STATUS = { pending: "Awaiting payment", paid: "Paid — ship it", shipped: "Shipped", complete: "Delivered", cancelled: "Cancelled", void: "Test (voided)" };
 
 VIEWS.market = () => {
   const m = D.market, O = D.orders;
@@ -24,15 +24,16 @@ VIEWS.market = () => {
   <div class="chart">${barsHTML(m.daily.map((x) => x.gmv), { labels, fmt: money, h: 120 })}</div>
 
   <h2 class="sec">Orders <span class="mono">${O ? O.length + " all time" : ""}</span></h2>
-  <div class="panel scroll"><div class="filters" style="margin-bottom:8px">${["all", "paid", "shipped", "complete", "pending", "cancelled"].map((s) =>
+  <div class="panel scroll"><div class="filters" style="margin-bottom:8px">${["all", "paid", "shipped", "complete", "pending", "cancelled", "void"].map((s) =>
     `<button class="pill sm ${OSTAT === s ? "on" : ""}" data-os="${s}">${s === "all" ? "All" : STATUS[s]}${s !== "all" ? ` <span class="dim">${(O || []).filter((o) => o.status === s).length}</span>` : ""}</button>`).join("")}</div>
   ${!O ? `<div class="empty">Loading…</div>` : !rows.length ? `<div class="empty">No orders here.</div>` : `<table class="tbl">
-    <thead><tr><th>Item</th><th>Seller</th><th>Buyer</th><th class="num">Total</th><th class="num">Fee</th><th>Status</th><th class="num">When</th></tr></thead>
+    <thead><tr><th>Item</th><th>Seller</th><th>Buyer</th><th class="num">Total</th><th class="num">Fee</th><th>Status</th><th class="num">When</th><th></th></tr></thead>
     <tbody>${rows.map((o) => `<tr><td>${esc(o.title)}</td>
       <td><button data-person="${esc(o.seller)}">@${esc(o.seller)}</button></td><td><button data-person="${esc(o.buyer)}">@${esc(o.buyer)}</button></td>
       <td class="num">${money(o.amount + o.shipping)}</td><td class="num dim">${o.paid ? money(o.fee) + ` <span class="dim">${o.feePct}%</span>` : "—"}</td>
       <td>${o.status === "paid" && Date.now() - o.createdAt > 3 * 86400000 ? `<span class="tag warn">${esc(STATUS[o.status])}</span>` : esc(STATUS[o.status] || o.status)}${o.tracking ? `<div class="mono">${esc(o.tracking)}</div>` : ""}</td>
-      <td class="num dim">${ago(o.createdAt)}</td></tr>`).join("")}</tbody></table>`}</div>
+      <td class="num dim">${ago(o.createdAt)}</td>
+      <td>${o.status === "void" ? "" : `<button class="btn ghost sm" data-voidorder="${o.id}" data-paid="${o.paid ? 1 : 0}">Test order…</button>`}</td></tr>`).join("")}</tbody></table>`}</div>
 
   <div class="split">
     <div><h2 class="sec">Top sellers</h2>
@@ -46,6 +47,12 @@ VIEWS.market = () => {
 
 WIRES.market = () => {
   $$("[data-os]").forEach((b) => b.onclick = () => { OSTAT = b.dataset.os; paint(); });
+  $$("[data-voidorder]").forEach((b) => b.onclick = async () => {
+    const paid = b.dataset.paid === "1";
+    if (!(await confirmIt("Mark this as a test order?", "It comes off both people's orders and every sales number, and the rep it gave is taken back. A bag goes together."
+      + (paid ? " Money isn't refunded here — if a real payment went through, refund it in Stripe." : ""), { ok: "It was a test", danger: true }))) return;
+    await act(() => req("/api/admin/orders/" + b.dataset.voidorder + "/void", { method: "POST" }), "Marked as a test"); load();
+  });
   $$("[data-dellist]").forEach((b) => b.onclick = async () => {
     if (!(await confirmIt("Remove this listing?", "It comes down from the Market and the seller is told.", { ok: "Remove", danger: true }))) return;
     await act(() => req("/api/admin/listings/" + b.dataset.dellist, { method: "DELETE" }), "Removed"); load();
