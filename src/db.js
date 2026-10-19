@@ -533,6 +533,8 @@ if (!cols.includes("is_admin")) db.exec(`ALTER TABLE users ADD COLUMN is_admin I
 /* Suspension, not deletion. Deleting a member cascades their work out of
    everyone else's collabs and threads — that punishes the wrong people. */
 if (!cols.includes("suspended")) db.exec(`ALTER TABLE users ADD COLUMN suspended INTEGER NOT NULL DEFAULT 0`);
+// 2026-10-19: when an admin last emailed this member a fresh confirm link (server-05-admin-verify-nudge)
+if (!cols.includes("verify_nudged_at")) db.exec(`ALTER TABLE users ADD COLUMN verify_nudged_at INTEGER`);
 /* Profile v2 (2026-10-07): pronouns, up to five links [{title,url}], and up
    to three pinned posts (ids) at the top of the grid. */
 if (!cols.includes("pronouns")) db.exec(`ALTER TABLE users ADD COLUMN pronouns TEXT NOT NULL DEFAULT ''`);

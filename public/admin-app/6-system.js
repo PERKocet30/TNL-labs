@@ -1,4 +1,4 @@
-/* LABS admin v2.4 — 2026-10-15. v2.4: the landing headline and tagline fields are gone — nothing in the app showed them.
+/* LABS admin v2.5 — 2026-10-19. v2.5: "Email them a new confirm link" under Email — everyone unconfirmed gets a fresh link (server-05-admin-verify-nudge). v2.4 — 2026-10-15. v2.4: the landing headline and tagline fields are gone — nothing in the app showed them.
    v2.3 — 2026-10-14. v2.3: the unused archive-board field is gone.
    v2.2 — 2026-10-14. System, in tabs: Settings · Health · Backups & email · Admin log.
    v2.1 — 2026-10-09. System: switches, safety nets, and the log of who changed what.
@@ -68,7 +68,9 @@ VIEWS.system = () => {
   <div class="panel"><div class="row"><input class="in" id="testto" placeholder="Send a test to… (blank = you)"><button class="btn sm" id="testmail">Test</button></div>
     ${MAILRESULT ? `<div class="${MAILRESULT.ok ? "" : "warnbox"}" style="font-size:12.5px;margin-top:8px">${MAILRESULT.ok ? I.check + " Resend accepted it" : "Resend rejected it"} · to ${esc(MAILRESULT.to || "")} ${MAILRESULT.error ? "· " + esc(MAILRESULT.error) : ""}</div>` : ""}
     ${unver.length ? `<label class="l">${unver.length} waiting to confirm their email</label><div class="list">${unver.slice(0, 12).map((m) => `<div class="li"><span class="b"><b>@${esc(m.username)}</b><span>${esc(m.email)} · joined ${ago(m.joined)} ago</span></span>
-      <button class="btn ghost sm" data-verify="${esc(m.username)}">Confirm</button></div>`).join("")}</div>` : ""}</div></div></div>`,
+      <button class="btn ghost sm" data-verify="${esc(m.username)}">Confirm</button></div>`).join("")}</div>
+    <button class="btn sm" id="nudgeall" style="margin-top:10px">Email them a new confirm link</button>
+    <div class="dim" style="font-size:12px;margin-top:6px">Everyone who hasn't confirmed, not just these. Nobody gets it twice in a day.</div>` : ""}</div></div></div>`,
     log: () => `<h2 class="sec">Admin log <span class="mono">every change made from here, newest first</span></h2>
   <div class="panel scroll">${D.log && D.log.log.length ? `<table class="tbl"><thead><tr><th>Who</th><th>What</th><th>About</th><th>Detail</th><th class="num">When</th></tr></thead>
     <tbody>${D.log.log.slice(0, 60).map((l) => `<tr><td>@${esc(l.by || "?")}</td><td>${esc(actionName(l.action))}</td><td>${l.target ? esc(l.target) : "—"}</td>
@@ -102,6 +104,11 @@ WIRES.system = () => {
   const tm = $("#testmail"); if (tm) tm.onclick = async () => { tm.disabled = true;
     try { MAILRESULT = await req("/api/admin/test-email", { method: "POST", body: { to: $("#testto").value.trim() || undefined } }); }
     catch (e) { MAILRESULT = { ok: false, error: e.message }; } paint(); };
+  const na = $("#nudgeall"); if (na) na.onclick = async () => {
+    if (!(await confirmIt("Email a new confirm link?", "Everyone who hasn't confirmed their email gets the sign-up email again, with a fresh link that lasts 24 hours.", { ok: "Send" }))) return;
+    na.disabled = true;
+    await act(() => req("/api/admin/members/remind-unverified", { method: "POST" }), (d) => d.sending ? `Sending to ${d.sending} ${d.sending === 1 ? "person" : "people"}` : "Everyone's had one today already");
+  };
   $$("[data-verify]").forEach((b) => b.onclick = async () => { await act(() => req("/api/admin/members/" + encodeURIComponent(b.dataset.verify) + "/verify", { method: "POST" }), "Confirmed"); load(); });
   const cl = $("#cleanup"); if (cl) cl.onclick = async () => {
     if (!(await confirmIt("Delete unused files?", "Only files nothing in the database points at. Can't be undone.", { ok: "Delete", danger: true }))) return;
