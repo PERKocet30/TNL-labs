@@ -31,6 +31,8 @@ t("item + shipping lines, fee on the item only", sent.body.includes("line_items[
 t("returns the session", r.url === "https://checkout.stripe.com/x" && r.id === "cs_1");
 r = await pay.createCheckout({ ...base, items: [{ title: "A", amountCents: 1000 }, { title: "B", amountCents: 2000 }], amountCents: 3000 });
 t("a bag: one line per item, fee on their sum", sent.body.includes("line_items[1][price_data][product_data][name]=B") && sent.body.includes("application_fee_amount]=120"));
+r = await pay.createCheckout({ ...base, feePct: 0 });
+t("an admin selling (0%): no application fee in the request at all", !sent.body.includes("application_fee_amount") && r.url);
 
 console.log("\nWHEN STRIPE SAYS NO");
 ok = false; reply = { error: { message: "No valid payment method types for this Checkout Session. Please ensure that you have activated payment methods…" } };

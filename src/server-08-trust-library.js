@@ -37,7 +37,7 @@ app.get("/api/sellers/:username", maybeAuth, (req, res) => {
     seller: {
       username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url || "",
       rep: u.rep, level: levelFor(u.rep).id, levelName: levelFor(u.rep).name,
-      fee: feeForRep(u.rep), payouts: !!u.stripe_ready, joined: u.created_at,
+      payouts: !!u.stripe_ready, joined: u.created_at,   // a seller's fee is theirs, not the buyer's business (2026-10-18)
     },
     stats: sellerStats(u.id),
     reviews: rows.map((r) => ({

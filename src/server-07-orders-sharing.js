@@ -56,7 +56,7 @@ app.post("/api/market/:id/buy", auth, verified, rateLimit({ max: 20, windowMs: 3
       cancelUrl: `${base}/?checkout=cancelled`,
       buyerEmail: req.user.email,
       sellerAccount: seller.stripe_account,
-      feePct: feeForRep(seller.rep),   // their level sets their rate
+      feePct: feeFor(seller),   // their level sets their rate; an admin's is 0
       collectShipping: !isLoop,        // Stripe collects the address for physical goods
     });
     if (out.error) {
@@ -183,11 +183,11 @@ app.get("/api/orders", auth, async (req, res) => {
   const buying = db.prepare(`
     SELECT o.*, l.title, l.images, u.username AS other_username, u.display_name AS other_name, u.avatar_url AS other_avatar
     FROM orders o JOIN listings l ON l.id = o.listing_id JOIN users u ON u.id = o.seller_id
-    WHERE o.buyer_id = ? ORDER BY o.created_at DESC LIMIT 40`).all(req.user.id);
+    WHERE o.buyer_id = ? AND o.status != 'void' ORDER BY o.created_at DESC LIMIT 40`).all(req.user.id);   // void: a test order (server-07-orders-void)
   const selling = db.prepare(`
     SELECT o.*, l.title, l.images, u.username AS other_username, u.display_name AS other_name, u.avatar_url AS other_avatar
     FROM orders o JOIN listings l ON l.id = o.listing_id JOIN users u ON u.id = o.buyer_id
-    WHERE o.seller_id = ? ORDER BY o.created_at DESC LIMIT 40`).all(req.user.id);
+    WHERE o.seller_id = ? AND o.status != 'void' ORDER BY o.created_at DESC LIMIT 40`).all(req.user.id);
   res.json({ buying: buying.map(shape), selling: selling.map(shape) });
 });
 
@@ -195,6 +195,7 @@ app.post("/api/orders/:id/ship", auth, (req, res) => {
   const o = db.prepare(`SELECT * FROM orders WHERE id = ?`).get(Number(req.params.id));
   if (!o) return res.status(404).json({ error: "no order" });
   if (o.seller_id !== req.user.id) return res.status(403).json({ error: "not your sale" });
+  if (o.status === "void") return res.status(400).json({ error: "that order was a test" });
   const tracking = (req.body?.tracking || "").toString().slice(0, 80);
   db.prepare(`UPDATE orders SET status='shipped', tracking=?, updated_at=? WHERE id=?`).run(tracking, Date.now(), o.id);
   notify(o.buyer_id, req.user.id, "shipped", null, tracking ? `shipped your order — ${tracking}` : "shipped your order");
@@ -205,6 +206,7 @@ app.post("/api/orders/:id/received", auth, (req, res) => {
   const o = db.prepare(`SELECT * FROM orders WHERE id = ?`).get(Number(req.params.id));
   if (!o) return res.status(404).json({ error: "no order" });
   if (o.buyer_id !== req.user.id) return res.status(403).json({ error: "not your order" });
+  if (o.status === "void") return res.status(400).json({ error: "that order was a test" });
   // Only pay rep for deliveries on orders that were actually PAID. An
   // arrange-mode order is two people clicking buttons — no evidence, no rep.
   if (o.status !== "complete" && (o.status === "shipped" || o.status === "paid") && o.payment_ref) {

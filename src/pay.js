@@ -151,8 +151,8 @@ export async function createCheckout({
       // Let Stripe collect + validate the shipping address on its
       // hosted page. No more prompt() dialogs. Digital loops skip this.
       ...(collectShipping ? { shipping_address_collection: { allowed_countries: ["US","CA","GB","NL","DE","FR","IE","ES","IT","PT","BE","AU","NZ"] } } : {}),
-      // commission on the item only — we don't skim postage
-      payment_intent_data: { application_fee_amount: platformFee(amountCents, feePct) },
+      // commission on the item only — we don't skim postage; none at all for an admin (0%)
+      ...(platformFee(amountCents, feePct) > 0 ? { payment_intent_data: { application_fee_amount: platformFee(amountCents, feePct) } } : {}),
   });
   /* First ask: the seller's own payment methods, without the slow ones.
      Second ask, only if Stripe refuses the first: cards outright. Left to
