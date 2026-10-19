@@ -1490,6 +1490,21 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => TAB === "event" && EVSLUG === "e2e-art"), "didn't land on the tournament");
     await p.evaluate(() => { TAB = "showroom"; render(); });
   });
+  /* 2026-10-19: the watch reported "screen jumps at showroom — #sr-grid moved 0.17": the tournament
+     banner arrived after the first paint and pushed the grid down on every visit while the event was live */
+  await step(d, "with a tournament live, a fresh load paints the banner first — the Showroom grid doesn't jump", async () => {
+    await p.route("**/api/events", async (r) => { await new Promise((x) => setTimeout(x, 400)); await r.continue(); });   // a phone's network, not localhost
+    await settledGoto(p, B + "/"); await throughDoor(p);
+    await p.waitForSelector("#sr-grid .sr-card", { timeout: 8000 }); await p.waitForTimeout(1200);
+    await p.unroute("**/api/events");
+    ok(await p.locator("#ev-bannerwrap .ev-banner").count() === 1, "no tournament banner");
+    const shifts = await p.evaluate(() => new Promise((res) => { const out = [];
+      new PerformanceObserver((l) => { for (const e of l.getEntries()) out.push({ v: e.value, ids: (e.sources || []).map((s) => s.node && (s.node.id || String(s.node.className || ""))).filter(Boolean) }); })
+        .observe({ type: "layout-shift", buffered: true });
+      setTimeout(() => res(out), 300); }));
+    const grid = shifts.filter((s) => s.ids.some((x) => /sr-grid/.test(x)) && s.v > 0.02);
+    ok(!grid.length, "the grid moved: " + JSON.stringify(grid));
+  });
   await step(d, "normal use records no glitches", async () => {
     const g = await glitches();
     ok(!g.recent.length, "recorded: " + g.recent.map((x) => x.kind + " @ " + x.place + " " + x.detail).join(" | "));
