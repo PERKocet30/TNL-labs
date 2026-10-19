@@ -62,7 +62,7 @@ function sellEarnHTML(){
   if(SELLKIND==="loop"&&p===0)return `Free — anyone can download it.`;
   if(!(p>=1))return "";
   const keep=SELLKIND==="loop"?Math.max(0,Math.round(p*100*(1-fee/100)-(p*100*0.029+30))):sellKeepCents(f,fee);
-  const why=fee?`After TNL's ${fee}% and the card fee (2.9% + 30¢).`:"After the card fee (2.9% + 30¢).";
+  const why=fee?`After the ${fee}% LABS fee and the card fee (2.9% + 30¢).`:"After the card fee (2.9% + 30¢).";
   return `<details class="pf-why"><summary>You'll get about <b>${money(keep)}</b>${SELLKIND!=="loop"&&Number(f.shipping)?" with shipping":""}</summary><span>${why}</span></details>`;
 }
 function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";

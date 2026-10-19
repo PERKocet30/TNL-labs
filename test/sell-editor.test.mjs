@@ -35,8 +35,8 @@ t("$85 at 6% → you'll get about $77.14 (TNL fee and the card fee both out)", e
 t("$100 at 10% → about $86.80", earn("100", 10, "physical").includes("<b>$86.80</b>"));
 t("$65 + $8 shipping at 4% → about $67.98, shipping counted (TNL takes nothing on postage)", earn("65", 4, "physical", "8").includes("<b>$67.98</b>") && earn("65", 4, "physical", "8").includes("with shipping"));
 // 2026-10-18 "fees… subtle and discrete… the last thing you see before you finish listing"
-t("the fee isn't spelled out — it's folded away until asked", /^<details class="pf-why"><summary>You'll get about <b>\$77\.14<\/b><\/summary><span>After TNL's 6% and the card fee/.test(earn("85", 6, "physical")));
-t("an admin (0%): no TNL fee taken or mentioned", earn("100", 0, "physical").includes("<b>$96.80</b>") && !earn("100", 0, "physical").includes("TNL") && earn("100", 0, "physical").includes("After the card fee"));
+t("the fee isn't spelled out — it's folded away until asked", /^<details class="pf-why"><summary>You'll get about <b>\$77\.14<\/b><\/summary><span>After the 6% LABS fee and the card fee/.test(earn("85", 6, "physical")));
+t("an admin (0%): no LABS fee taken or mentioned", earn("100", 0, "physical").includes("<b>$96.80</b>") && !earn("100", 0, "physical").includes("LABS") && earn("100", 0, "physical").includes("After the card fee"));
 t("no price yet → nothing at all", earn("", 6, "physical") === "");
 t("it sits above Publish, not under the price", sell.includes('<div class="pf-bar"><div class="pf-keep" id="s-earn">${sellEarnHTML()}</div><button class="gx-btn" id="s-post">') && !sell.includes('<div class="pf-hint" id="s-earn">'));
 t("no Rates link in the form, no rate banner on your orders, no \"keep %\" on levels", !sell.includes("rateladder") && !src.includes("function rateHTML(") && !/keep \$\{keep\(/.test(src) && !src.includes("your fee drops as your rep grows"));
