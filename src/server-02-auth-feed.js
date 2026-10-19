@@ -79,7 +79,7 @@ app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (
   if (!/^[a-z0-9._]{2,20}$/.test(username || "") || username.endsWith(".")) return res.status(400).json({ error: "bad username" });
   if (!displayName?.trim()) return res.status(400).json({ error: "display name required" });
   if (!/^\S+@\S+\.\S+$/.test(email || "")) return res.status(400).json({ error: "bad email" });
-  if (!password || password.length < 6) return res.status(400).json({ error: "password too short" });
+  { const pwBad = pwProblem(password, { username, email }); if (pwBad) return res.status(400).json({ error: pwBad }); }   // server-01-passwords
   if (q.userByName.get(username)) return res.status(409).json({ error: "username taken" });
   if (db.prepare(`SELECT 1 FROM users WHERE email = ?`).get(email.trim()))
     return res.status(409).json({ error: "email already registered" });

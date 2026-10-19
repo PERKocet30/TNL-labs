@@ -17,7 +17,8 @@ function wireGate(){
   bind("u","username");bind("p","password");bind("fe","email");
   bind("gxig","ig");
   {const ta=$("#gxbio");if(ta)ta.oninput=()=>{f.bio=ta.value;const c=$("#biocount");if(c)c.textContent=f.bio.length+" / 150"}}
-  bind("em","email",emailOk);bind("pw","password",()=>f.password.length>=6);bind("dn","displayName",()=>!!f.displayName.trim());
+  bind("em","email",emailOk);bind("pw","password",()=>pwOk(f));
+  {const pi=$("#pw"),pr=$("#pwr");if(pi&&pr){const was=pi.oninput;pi.oninput=e=>{was(e);pr.innerHTML=pwRulesHTML(f)}}}bind("dn","displayName",()=>!!f.displayName.trim());
   document.querySelectorAll("[data-showpw]").forEach(b=>b.onclick=()=>{G.showpw=!G.showpw;
     const i=$("#p")||$("#pw");if(i){i.type=G.showpw?"text":"password";b.textContent=G.showpw?"Hide":"Show";i.focus()}});
   document.querySelectorAll(".gxf-in").forEach(el=>el.onkeydown=e=>{
@@ -65,7 +66,7 @@ function wireGate(){
   on("#gxnext",async()=>{G.err="";
     if(G.step==="email"){if(!emailOk()){G.err="Enter a valid email address.";return render()}
       f.email=f.email.trim();G.step="password";gxForward();return render()}
-    if(G.step==="password"){if(f.password.length<6){G.err="Use at least 6 characters.";return render()}
+    if(G.step==="password"){if(!pwOk(f)){G.err="Your password needs everything on the list.";return render()}
       G.step="name";gxForward();return render()}
     if(G.step==="name"){if(!f.displayName.trim()){G.err="Add your name.";return render()}
       f.displayName=f.displayName.trim();
@@ -77,6 +78,7 @@ function wireGate(){
       return gxCreate()}
     if(G.step==="photo"){if(!(ME&&ME.avatarUrl)){const fi=$("#gxfile");if(fi)fi.click();return}
       return gxAfterPhoto()}
+    if(G.step==="verify")return gxVerified(true);
     if(G.step==="colour"){G.step="bio";return render()}
     if(G.step==="bio")return gxSaveBio();
     if(G.step==="follow"){G.step="tour";G.ti=0;return render()}
@@ -92,10 +94,16 @@ function wireGate(){
   if(fi)fi.onchange=async()=>{const file=fi.files[0];if(!file)return;
     G.busy=true;G.err="";render();
     try{const data=await compressImage(file,500,.85);const d=await api.avatar(data);
-      ME.avatarUrl=d.avatarUrl||d.url||ME.avatarUrl}
+      if(d&&d.user)ME=d.user;   // the server answers with the whole account (2026-10-19: the photo never showed here)
+      if(!ME.avatarUrl)throw new Error("That photo didn't upload. Try another.")}
     catch(e){G.err=e.message||"That photo didn't upload. Try another."}
     G.busy=false;render()};
-  on("#gxskip",()=>{if(G.step==="photo")return gxAfterPhoto();if(G.step==="colour"){G.step="bio";return render()}
+  on("#gxresend",async()=>{G.err="";G.note="";
+    try{const d=await api.resend();G.note=d&&d.already?"Already confirmed.":"Sent again. Check your inbox and spam folder."}catch(e){G.err=e.message}
+    render()});
+  /* the link is usually tapped in the mail app: when they come back, this moves on by itself */
+  clearInterval(GXPOLL);if(G.step==="verify")GXPOLL=setInterval(()=>{if(GFLOW!==G||G.step!=="verify")return clearInterval(GXPOLL);gxVerified(false)},4000);
+  on("#gxskip",()=>{if(G.step==="verify"){G.step="photo";G.err="";return render()}if(G.step==="photo")return gxAfterPhoto();if(G.step==="colour"){G.step="bio";return render()}
     if(G.step==="bio")return gxAfterBio();G.step="tour";G.ti=0;render()});
   document.querySelectorAll("[data-fol]").forEach(b=>b.onclick=async()=>{const u=b.dataset.fol;
     const was=!!G.following[u];G.following[u]=!was;b.classList.toggle("on",!was);b.textContent=!was?"Following":"Follow";
@@ -132,7 +140,8 @@ async function gxCreate(){
   const G=GFLOW,f=G.f;G.busy=true;G.err="";render();
   try{const d=await api.register({displayName:f.displayName,username:f.username,email:f.email,password:f.password,roles:f.roles});
     TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;if(d.verifyUrl)VERIFYURL=d.verifyUrl;
-    G.made={mailSent:!!d.mailSent};G.busy=false;G.step="photo";
+    G.made={mailSent:!!d.mailSent};G.busy=false;
+    G.step=d.mailSent&&!(ME&&ME.emailVerified)?"verify":"photo";   // confirm your email first (2026-10-19), then the profile
     try{applyAccent(ME.accentHex)}catch(e){}
     G.peopleP=api.builders().then(b=>{G.people=((b&&b.builders)||[]).filter(x=>x.username!==ME.username).slice(0,8)})
       .catch(()=>{G.people=[]});
@@ -142,11 +151,20 @@ async function gxCreate(){
     if(GFLOW!==G){try{toast("Something broke — reload the page")}catch(x){}throw e}
     if(/username/i.test(m)){G.step="username";G.un={state:"taken",msg:"That username was just taken.",sugg:[]};render();return gxCheck()}
     if(/email/i.test(m)){G.step="email";G.err=/already/i.test(m)?"There's already an account with this email. Log in instead.":"Enter a valid email address."}
-    else if(/password/i.test(m)){G.step="password";G.err="Use at least 6 characters."}
+    else if(/password/i.test(m)){G.step="password";G.err=m}   // the server's rule, in its words (server-01-passwords)
     else if(/name/i.test(m)){G.step="name";G.err="Add your name."}
     else G.err=m||"Something went wrong. Try again.";
     render();
   }
+}
+/* Confirm your email: "I've confirmed it" asks; the timer asks quietly every few seconds. */
+let GXPOLL=0;
+async function gxVerified(asked){
+  const G=GFLOW;if(!G||G.step!=="verify")return;
+  try{const d=await api.authStatus();if(GFLOW!==G||G.step!=="verify")return;
+    if(d&&d.verified){clearInterval(GXPOLL);if(ME)ME.emailVerified=true;G.err="";G.note="";G.step="photo";return render()}
+    if(asked){G.note="";G.err="Not confirmed yet. Open the email from LABS and tap the link (check spam too).";render()}}
+  catch(e){if(asked){G.err=e.message;render()}}
 }
 function gxAfterPhoto(){const G=GFLOW;if(!G)return;G.step="colour";render()}
 /* a line about you, and where else to find you; then people to follow */

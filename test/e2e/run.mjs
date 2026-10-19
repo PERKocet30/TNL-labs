@@ -177,7 +177,14 @@ console.log("\nNEW MEMBER · PHONE");
     await p.locator("#joinBtn").tap();
     const nextOn = async () => { await p.waitForSelector("#gxnext:not([disabled])", { timeout: 4000 }); await p.locator("#gxnext").tap(); };
     await p.locator("#em").fill("newbie@example.com"); await nextOn();
-    await p.locator("#pw").fill("a-good-password"); await nextOn();
+    // 2026-10-19 "passwords should be more complicated": a weak one keeps Next off, with the checklist saying why
+    await p.locator("#pw").fill("password1"); await p.waitForTimeout(100);
+    ok(await p.locator("#gxnext").isDisabled() && await p.locator("#pwr li.ok").count() < 3, "a common password was let through");
+    await p.locator("#pw").fill("short1"); await p.waitForTimeout(100);
+    ok(await p.locator("#gxnext").isDisabled(), "a short password was let through");
+    await p.locator("#pw").fill("a-good-password7"); await p.waitForTimeout(100);
+    ok(await p.locator("#pwr li.ok").count() === 3, "a good password doesn't tick every line");
+    await nextOn();
     await p.locator("#dn").fill("New Member"); await nextOn();
     await p.locator("#un").fill("newmember"); await nextOn();   // waits for the live username check
     await p.locator(".gx-roles [data-r]").first().tap(); await nextOn();
@@ -185,7 +192,20 @@ console.log("\nNEW MEMBER · PHONE");
   });
   // 2026-10-18 onboarding: "walk through all of the app's features and profile creation"
   await step(d, "after joining: photo, your colour, a line about you, people, then the walkthrough lands in the app", async () => {
-    await p.waitForSelector("#gxskip"); await p.locator("#gxskip").tap();   // photo: later
+    /* "accounts should be prompted to verify their email": the step after joining (mail is off in tests, so it's
+       opened here), and it moves on by itself once the link has been tapped */
+    await p.evaluate(() => { GFLOW.step = "verify"; window.__v = false; api.authStatus = async () => ({ verified: window.__v }); render(); });
+    await p.waitForSelector("#gxresend");
+    await p.locator("#gxnext").tap(); await p.waitForTimeout(300);
+    ok(/Not confirmed yet/.test(await p.locator(".gx-err").innerText()), "I've confirmed it didn't say it isn't yet");
+    await p.evaluate(() => { window.__v = true; });
+    await p.waitForFunction(() => GFLOW && GFLOW.step === "photo", null, { timeout: 7000 });
+    /* "uploading a picture in the onboarding doesn't work": it uploads and shows */
+    await p.locator("#gxfile").setInputFiles(join(ROOT, "public/icon-512.png"));
+    await p.waitForFunction(() => ME && ME.avatarUrl, null, { timeout: 8000 });
+    await p.waitForSelector(".gx-av img", { timeout: 4000 });
+    ok((await p.locator("#gxnext").innerText()) === "Next", "the photo step still asks for a photo after one uploaded");
+    await p.locator("#gxnext").tap(); await p.waitForTimeout(300);
     await p.waitForSelector("[data-gxacc]", { timeout: 4000 });
     const pick = await p.evaluate(() => Object.keys(ACCENTS).find((k) => k !== "lab" && !ACCENTS[k].legacy));
     await p.locator(`[data-gxacc="${pick}"]`).tap();
@@ -212,7 +232,7 @@ console.log("\nNEW MEMBER · PHONE");
   await step(d, "a new member's Get started list: ticks what's done, every line goes somewhere, ✕ puts it away", async () => {
     await p.waitForSelector("#gs .gs-i", { timeout: 6000 });
     const st = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll("#gs [data-gs]")].map((b) => [b.dataset.gs, b.classList.contains("done")])));
-    ok(st.colour && st.bio && !st.photo && !st.post && !st.share, "the list doesn't match what they've done: " + JSON.stringify(st));
+    ok(st.colour && st.bio && st.photo && !st.post && !st.share, "the list doesn't match what they've done: " + JSON.stringify(st));
     await p.locator('#gs [data-gs="lab"]').tap(); await p.waitForTimeout(300);
     ok(await p.evaluate(() => TAB === "labs"), "Step into a lab didn't open the labs");
     await p.evaluate(() => openLab(LABS[0].id)); await p.waitForTimeout(200);

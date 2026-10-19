@@ -20,7 +20,7 @@ function tourHTML(G){
   const card=last
     ?`<div class="tour-ic tour-me">${ME&&ME.avatarUrl?`<img src="${esc(ME.avatarUrl)}" alt="">`:GX_PERSON}</div>
       <h1 class="gx-h">${G.made?`Welcome to LABS${first?", "+esc(first):""}.`:"That's LABS."}</h1>
-      <p class="gx-p">${G.made&&G.made.mailSent?`We sent a link to <b>${esc(G.f.email)}</b> to confirm your email. `:""}${G.made?"Your Get started list is waiting in the Showroom.":"Open this again any time from ≡ on your profile."}</p>`
+      <p class="gx-p">${G.made&&G.made.mailSent&&!(ME&&ME.emailVerified)?`We sent a link to <b>${esc(G.f.email)}</b> to confirm your email. `:""}${G.made?"Your Get started list is waiting in the Showroom.":"Open this again any time from ≡ on your profile."}</p>`
     :`<div class="tour-ic">${TOUR[i].ic()}</div><h1 class="gx-h">${esc(TOUR[i].h)}</h1><p class="gx-p">${TOUR[i].p()}</p>`;
   return `<div class="gate"><div class="gx gx-tour">
     <header class="gx-top">${i>0?`<button class="gx-ic" id="tourback" aria-label="Back">${GX_BACK}</button>`:"<span></span>"}

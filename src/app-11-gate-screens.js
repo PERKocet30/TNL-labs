@@ -31,6 +31,16 @@ function gateClose(){GATE=null;GATEWHY="";GFLOW=null}
 function gxSlug(n){let s=String(n||"").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g,"")
   .replace(/\s+/g,".").replace(/[^a-z0-9._]/g,"").replace(/[._]{2,}/g,".").replace(/^[._]+|[._]+$/g,"").slice(0,20);
   return s.length>=2?s:(s+"lab").slice(0,20)}
+/* A new password, live (2026-10-19, "passwords should be more complicated"); the server has the
+   final say with the same rules (server-01-passwords.js). */
+const PW_EASY=["password","password1","password12","password123","passw0rd","12345678","123456789","1234567890","qwerty123","qwertyuiop",
+  "1q2w3e4r","1qaz2wsx","abc12345","abcd1234","iloveyou1","letmein1","welcome1","admin123","football1","baseball1","monkey123","dragon123",
+  "sunshine1","princess1","trustno1","11111111","00000000","asdf1234","zaq12wsx","tnllabs1","tnllabs123","labs1234"];
+function pwRules(p,f){const low=p.toLowerCase(),nm=String(f.email||"").split("@")[0].toLowerCase(),un=String(f.username||"").toLowerCase();
+  return [{t:"8 or more characters",ok:p.length>=8},{t:"A letter and a number",ok:/[a-z]/i.test(p)&&/[0-9]/.test(p)},
+    {t:"Not easy to guess",ok:p.length>=8&&!PW_EASY.includes(low)&&!(nm.length>=4&&low.includes(nm))&&!(un&&low.includes(un))}]}
+const pwOk=f=>pwRules(f.password,f).every(r=>r.ok);
+const pwRulesHTML=f=>pwRules(f.password,f).map(r=>`<li class="${r.ok?"ok":""}">${r.ok?GX_OK:"<i></i>"}${esc(r.t)}</li>`).join("");
 function gxField(id,label,o={}){
   return `<label class="gxf"><input class="gxf-in" id="${id}" type="${o.type||"text"}" value="${esc(o.value||"")}" placeholder=" " ${o.attrs||""}><span class="gxf-lb">${esc(label)}</span>${o.after||""}</label>`}
 function gxUnStatus(G){const s=G.un.state;
@@ -77,8 +87,8 @@ function gateHTML(){
         ${err}${next("Next",/^\S+@\S+\.\S+$/.test(f.email.trim()))}`;
       foot=`<button class="gx-link" id="gxlogin">I already have an account</button>`;
     }else if(G.step==="password"){
-      body=`<h1 class="gx-h">Create a password</h1><p class="gx-p">At least 6 characters. Pick one you don't use anywhere else.</p>
-        ${pw("pw","new-password")}${err}${next("Next",f.password.length>=6)}`;
+      body=`<h1 class="gx-h">Create a password</h1><p class="gx-p">Pick one you don't use anywhere else.</p>
+        ${pw("pw","new-password")}<ul class="gx-pwr" id="pwr">${pwRulesHTML(f)}</ul>${err}${next("Next",pwOk(f))}`;
     }else if(G.step==="name"){
       body=`<h1 class="gx-h">What's your name?</h1><p class="gx-p">This is how you'll show up. You can change it any time.</p>
         ${gxField("dn","Name",{value:f.displayName,attrs:'autocomplete="name" maxlength="28"'})}${err}${next("Next",!!f.displayName.trim())}`;
@@ -99,7 +109,12 @@ function gateHTML(){
     const skip=G.step!=="welcome"?`<button class="gx-skip" id="gxskip">Skip</button>`:"<span></span>";
     top=`<span></span>${skip}`;
     const av=(cls)=>`<div class="gx-av ${cls||""}">${ME&&ME.avatarUrl?`<img src="${esc(ME.avatarUrl)}" alt="">`:GX_PERSON}</div>`;
-    if(G.step==="photo"){
+    if(G.step==="verify"){   // 2026-10-19: "accounts should be prompted to verify their email"
+      body=`<div class="gx-mid"><div class="gx-av gx-mail">${DI.mail}</div><h1 class="gx-h">Confirm your email</h1>
+        <p class="gx-p">We sent a link to <b>${esc(f.email)}</b>. Tap it, then come back here.</p></div>
+        ${err}${G.note?`<div class="gx-hint">${esc(G.note)}</div>`:""}
+        <div class="gx-stick"><button class="gx-btn" id="gxnext">I've confirmed it</button><button class="gx-link" id="gxresend">Resend the email</button></div>`;
+    }else if(G.step==="photo"){
       const has=!!(ME&&ME.avatarUrl);
       body=`<div class="gx-mid">${av()}<h1 class="gx-h">Add a profile photo</h1>
         <p class="gx-p">So people know whose work they're looking at.</p></div>
