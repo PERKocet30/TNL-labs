@@ -57,6 +57,7 @@ app.post("/api/market/:id/buy", auth, verified, rateLimit({ max: 20, windowMs: 3
       buyerEmail: req.user.email,
       sellerAccount: seller.stripe_account,
       feePct: feeFor(seller),   // their level sets their rate; an admin's is 0
+      platformPaysStripe: seller.stripe_kind === "express",
       collectShipping: !isLoop,        // Stripe collects the address for physical goods
     });
     if (out.error) {
@@ -118,7 +119,7 @@ function settlePaidOrder(order, out) {
      settles below — but the seller is told plainly so they refund one from
      their Stripe dashboard instead of shipping air. */
   if (l && !takeStock(l.id, order.variant_id)) notify(order.seller_id, order.buyer_id, "sale", null,
-    `OVERSOLD: "${l.title}"${vl} was already sold out when this payment landed — refund it from your Stripe dashboard`);
+    `OVERSOLD: "${l.title}"${vl} was already sold out when this payment landed — refund it from Market → Orders → Sold → Your payouts`);
   // A sale is validation with money behind it — the hardest signal to fake.
   awardRep(order.seller_id, "sale_made", order.id);
   notify(order.seller_id, order.buyer_id, "sale", null, `paid for "${l?.title || "your listing"}"${vl} — ship it`, l?.id);

@@ -133,19 +133,30 @@ app.get("/api/market/meta", maybeAuth, (req, res) => {
   });
 });
 
-/* ---- seller payouts (Stripe Standard Connect) ----
-   The seller owns the Stripe account; we never hold their money. */
+/* ---- seller payouts (Stripe Connect · v2.0 2026-10-19: Express) ----
+   The money lands in the seller's own Stripe account; we never hold it.
+   New sellers get Stripe Express — the short signup (pay.js v3.0). Someone
+   who started the long Standard signup and never finished it starts again
+   the short way; anyone who finished keeps what they have. */
 app.post("/api/market/connect", auth, verified, async (req, res) => {
   if (!PAYMENTS_ENABLED) return res.status(400).json({ error: "payments aren't switched on yet" });
-  let acct = req.user.stripe_account;
-  if (!acct) {
-    const made = await createSellerAccount(req.user.email);
-    if (made.error) return res.status(502).json({ error: made.error });
-    acct = made.id;
-    db.prepare(`UPDATE users SET stripe_account = ? WHERE id = ?`).run(acct, req.user.id);
-  }
+  let acct = req.user.stripe_account, kind = req.user.stripe_kind || "standard";
   const base = baseUrl(req);
-  const link = await onboardingLink(acct, `${base}/?connect=refresh`, `${base}/?connect=done`);
+  const who = { email: req.user.email, username: req.user.username, profileUrl: `${base}/u/${encodeURIComponent(req.user.username)}` };
+  let stuck = false;
+  if (acct && kind !== "express") {
+    const st = await accountStatus(acct);
+    stuck = !st.error && !st.ready && !st.detailsSubmitted;   // halfway through the long signup
+  }
+  if (!acct || stuck) {
+    const made = await createSellerAccount({ ...who, expressOnly: stuck });   // stuck + Express off → carry on with theirs
+    if (made.error && !stuck) return res.status(502).json({ error: made.error });
+    if (!made.error) {
+      acct = made.id; kind = made.kind;
+      db.prepare(`UPDATE users SET stripe_account = ?, stripe_kind = ?, stripe_ready = 0 WHERE id = ?`).run(acct, kind, req.user.id);
+    }
+  }
+  const link = await onboardingLink(acct, `${base}/?connect=refresh`, `${base}/?connect=done`, kind);
   if (link.error) return res.status(502).json({ error: link.error });
   res.json({ url: link.url });
 });
@@ -160,7 +171,7 @@ app.get("/api/market/connect/status", auth, async (req, res) => {
 
 app.get("/api/market/connect/dashboard", auth, async (req, res) => {
   if (!req.user.stripe_account) return res.status(400).json({ error: "not connected" });
-  const l = await loginLink(req.user.stripe_account);
+  const l = await loginLink(req.user.stripe_account, req.user.stripe_kind);
   if (l.error) return res.status(502).json({ error: l.error });
   res.json({ url: l.url });
 });

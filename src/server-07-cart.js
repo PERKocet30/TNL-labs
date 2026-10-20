@@ -68,7 +68,7 @@ app.post("/api/cart/checkout", auth, verified, rateLimit({ max: 20, windowMs: 36
       successUrl: `${base}/api/market/checkout/done?session_id={CHECKOUT_SESSION_ID}&o=${lead}`,
       cancelUrl: `${base}/?checkout=cancelled`,
       buyerEmail: req.user.email, sellerAccount: seller.stripe_account,
-      feePct: feeFor(seller), collectShipping: true,
+      feePct: feeFor(seller), collectShipping: true, platformPaysStripe: seller.stripe_kind === "express",
     });
     if (out.error) { drop(); return checkoutFailed(res, out, seller.id, req.user.id, `${lines.length} item${lines.length > 1 ? "s" : ""}`); }
     db.prepare(`UPDATE orders SET payment_ref = ? WHERE cart_id = ?`).run(out.id, lead);
@@ -85,8 +85,12 @@ app.post("/api/cart/checkout", auth, verified, rateLimit({ max: 20, windowMs: 36
    them, and tell the buyer plainly; Stripe's own wording goes to the log. */
 function checkoutFailed(res, out, sellerId, buyerId, what) {
   if (out.setup) {
-    notify(sellerId, buyerId, "sale", null,
-      `Someone tried to buy ${what}, but your Stripe account can't take cards yet — in Stripe, open Settings → Payment methods and turn on Cards`);
+    /* An Express seller has no payment settings of their own — what's missing
+       is the rest of their payouts signup (2026-10-19). */
+    const express = q.userById.get(sellerId)?.stripe_kind === "express";
+    notify(sellerId, buyerId, "sale", null, express
+      ? `Someone tried to buy ${what}, but your payouts aren't finished yet — open the Market, tap Sell, and finish setting up payouts`
+      : `Someone tried to buy ${what}, but your Stripe account can't take cards yet — in Stripe, open Settings → Payment methods and turn on Cards`);
     return res.status(409).json({ error: "This seller's card payments aren't switched on yet. We've told them — nothing was charged.", sellerNotConnected: true });
   }
   return res.status(502).json({ error: "Checkout couldn't open just now — nothing was charged. Try again in a minute." });
