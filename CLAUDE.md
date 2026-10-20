@@ -46,9 +46,10 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
 
 - `src/db.js` — schema, migrations, rep engine. `REP`, `LEVELS` and
   `FEE_BY_LEVEL` are the single source for rep points, levels and commission.
-- `src/pay.js` — Stripe Connect: new sellers on Express (LABS pays the card fee, so it's
-  added into the application fee; pay-later is off for them), older ones on Standard —
-  `users.stripe_kind` says which (2026-10-19). `src/mail.js` — email via Resend.
+- `src/pay.js` — Stripe Connect. `users.stripe_kind` says which kind each seller has
+  (2026-10-19): `express_stripe` (the short signup, Stripe carries the risk, the seller
+  pays Stripe — asked for first), `express` (LABS carries the risk and pays the card fee,
+  so it's added into the application fee; pay-later is off) or Standard (''/`standard`). `src/mail.js` — email via Resend.
 - `public/studio.js` — the Studio (beat maker), hidden unless Admin → Settings
   → Studio is on (`studioOn()`). `public/admin.html` + `public/admin-app/*.js` — `/admin` (keep each ≤ 24KB too).
 - The README has a table of what each numbered part holds, and the API route list.
