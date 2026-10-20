@@ -4,7 +4,7 @@
 import { spawn, spawnSync, execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { rmSync, mkdirSync, writeFileSync } from "node:fs";
+import { rmSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "test/.tmp/story-card");
@@ -45,6 +45,8 @@ try {
   const f = join(DATA, "art.jpg"); writeFileSync(f, Buffer.from(await r.arrayBuffer()));
   const probe = (() => { try { execFileSync(FF, ["-i", f], { stdio: ["ignore", "pipe", "pipe"] }); } catch (e) { return String(e.stderr); } })();
   t("a 1080×1920 picture", r.status === 200 && /1080x1920/.test(probe));
+  // 2026-10-20 "cards look kinda blurry … the highest quality possible": lossless, so Instagram's squeeze is the only one
+  t("…lossless: a full-colour PNG, sent as one", r.headers.get("content-type") === "image/png" && /Video: png[^\n]*rgb24/.test(probe) && readFileSync(f).subarray(1, 4).toString() === "PNG");
   const corner = px(f, 20, 20), low = px(f, 20, 1880);
   t("no white sheet: the corners are the work's colours, not white", !near(corner, [255, 255, 255], 60) && !near(low, [255, 255, 255], 60));
   // away from the darkened edges, clear of the type: just above the piece and just below the tag
