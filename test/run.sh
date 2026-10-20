@@ -7,6 +7,9 @@ cd "$(dirname "$0")/.."
 rm -rf test/.tmp; mkdir -p test/.tmp
 node src/assemble.mjs >/dev/null || { echo "  assemble failed"; exit 1; }
 fail=0
+# the parts share one scope: a name declared twice is a bug (scripts/lint-scope.mjs)
+lint=$(node scripts/lint-scope.mjs 2>&1)
+if [ $? -eq 0 ]; then printf "  PASS  %-22s %s\n" "lint-scope" "$(echo "$lint" | tail -1)"; else printf "  FAIL  lint-scope\n"; echo "$lint" | sed 's/^/        /'; [ -n "$GITHUB_ACTIONS" ] && echo "::error title=lint-scope failed::$(echo "$lint" | head -5 | awk '{printf "%s%%0A", $0}')"; fail=1; fi
 for f in test/*.test.mjs; do
   out=$(node --experimental-sqlite "$f" 2>&1 | grep -v Experimental | grep -v "trace-warnings")
   # a test fails if it threw, or reported failures
