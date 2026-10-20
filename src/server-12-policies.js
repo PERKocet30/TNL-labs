@@ -126,5 +126,28 @@ app.get("/contact", (_req, res) => {
   }));
 });
 
-/* The Market, by name, for anyone — no account needed to look. */
-app.get("/shop", (_req, res) => res.sendFile(join(__dirname, "..", "public", "index.html")));
+/* The Market, by name, for anyone — no account needed to look. It's the
+   link the Market's Share sends (2026-10-20), so its preview in a DM or a
+   text says what the Market is: the same line that sits under its name in
+   the app (MARKET_PITCH in app-17-market-share.js; test/market-share.test.mjs
+   checks they match). The page is the app itself, with its preview tags
+   swapped. */
+const MARKET_PITCH = "Buy and sell what creatives make: clothing, art and prints.";
+const shopHtml = new Map();   // one per site address (PUBLIC_URL, or the request's host when it isn't set)
+app.get("/shop", (req, res) => {
+  const base = baseUrl(req);
+  if (!shopHtml.has(base)) {
+    if (shopHtml.size > 4) shopHtml.clear();   // a made-up Host can't grow it
+    const e = lookEsc, url = `${base}/shop`, title = "LABS Market";
+    shopHtml.set(base, readFileSync(join(__dirname, "..", "public", "index.html"), "utf8")
+      .replace(/<title>[^<]*<\/title>/, `<title>${e(title)}</title>`)
+      .replace(/(property="og:url" content=")[^"]*/, `$1${e(url)}`)
+      .replace(/(property="og:title" content=")[^"]*/, `$1${e(title)}`)
+      .replace(/(name="twitter:title" content=")[^"]*/, `$1${e(title)}`)
+      .replace(/(property="og:description" content=")[^"]*/, `$1${e(MARKET_PITCH)}`)
+      .replace(/(name="twitter:description" content=")[^"]*/, `$1${e(MARKET_PITCH)}`)
+      .replace(/(name="description" content=")[^"]*/, `$1${e(MARKET_PITCH)}`));
+  }
+  res.set("Cache-Control", "no-cache");
+  res.type("html").send(shopHtml.get(base));
+});

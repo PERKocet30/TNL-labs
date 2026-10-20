@@ -202,8 +202,9 @@ function marketHTML(){
     <div class="shop-head">
       <div class="shop-top">
         <h2 class="shop-h">Market</h2>
-        <div class="shop-acts">${bagBtnHTML()}<button class="shop-sell" data-mv="sell">Sell</button></div>
+        <div class="shop-acts"><button class="shop-share" id="mktshare" aria-label="Share the Market">${IG_SEND}</button>${bagBtnHTML()}<button class="shop-sell" data-mv="sell">Sell</button></div>
       </div>
+      <p class="shop-for">${esc(MARKET_PITCH)}</p>
       <div class="shop-search">
         <label class="shop-qwrap">${UI_IC.search}<input class="in shop-q" id="mktq" aria-label="Search the market" placeholder="Search items, brands…" value="${esc(MKTFILT.q||"")}"></label>
         <button class="shop-filt ${MKTFILTOPEN?"on":""}" id="mktfiltbtn">Filters${afCount?` · ${afCount}`:""}</button>

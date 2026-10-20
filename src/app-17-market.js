@@ -59,6 +59,7 @@ function wireMarket(){
       render()}catch(x){toast(x.message)}});
 
   const mq=$("#mktq");if(mq){let t=null;mq.oninput=()=>{MKTFILT.q=mq.value;clearTimeout(t);t=setTimeout(loadMarket,300)}}
+  const msh=$("#mktshare");if(msh)msh.onclick=shareMarket;   // app-17-market-share
   const fb=$("#mktfiltbtn");if(fb)fb.onclick=()=>{MKTFILTOPEN=!MKTFILTOPEN;render()};
   document.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{MKTFILT.category=b.dataset.cat||undefined;loadMarket().then(render)});
   document.querySelectorAll("[data-size]").forEach(b=>b.onclick=()=>{MKTFILT.size=b.dataset.size||undefined;loadMarket().then(render)});
