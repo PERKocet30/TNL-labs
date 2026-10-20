@@ -132,7 +132,7 @@ app.get("/contact", (_req, res) => {
    the app (MARKET_PITCH in app-17-market-share.js; test/market-share.test.mjs
    checks they match). The page is the app itself, with its preview tags
    swapped. */
-const MARKET_PITCH = "Buy and sell what creatives make: clothing, art, prints and beats.";
+const MARKET_PITCH = "Buy and sell what creatives make: clothing, art and prints.";
 const shopHtml = new Map();   // one per site address (PUBLIC_URL, or the request's host when it isn't set)
 app.get("/shop", (req, res) => {
   const base = baseUrl(req);

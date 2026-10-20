@@ -6,7 +6,7 @@
    (MARKET_PITCH in server-12-policies.js; test/market-share.test.mjs
    checks they match). No share sheet (Instagram's in-app browser, most
    computers): the message is copied, ready to paste. */
-const MARKET_PITCH="Buy and sell what creatives make: clothing, art, prints and beats.";
+const MARKET_PITCH="Buy and sell what creatives make: clothing, art and prints.";
 async function shareMarket(){
   const url=location.origin+"/shop",title="LABS Market",text=title+"\n"+MARKET_PITCH;
   if(navigator.share){try{await navigator.share({title,text,url});return}catch(e){if(e&&e.name==="AbortError")return}}
