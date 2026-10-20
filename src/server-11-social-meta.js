@@ -102,6 +102,7 @@ app.get("/api/levels", (_req, res) => res.json({
   site: {
     announcement: setting("announcement"),
     signupsOpen: settingBool("signupsOpen"),
+    oauth: oauthSite(),   // which of Continue with Google / Apple are switched on (server-11-oauth)
     distro: settingBool("distroOn") ? {
       level: Number(setting("distroLevel")) || 4,
       levelName: (LEVELS.find((l) => l.id === (Number(setting("distroLevel")) || 4)) || {}).name || "Core",

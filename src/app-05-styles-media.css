@@ -221,6 +221,9 @@ input, textarea, select, .in, .search { font-size: 16px !important; }
 .gx-btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:50px;border:0;border-radius:999px;background:var(--tx);color:var(--bg);font:inherit;font-size:16px;font-weight:700;margin-top:8px;cursor:pointer;text-decoration:none;box-sizing:border-box}
 .gx-btn:disabled{opacity:.3;cursor:default}
 .gx-btn.ghost{background:none;color:var(--tx);border:1px solid var(--line2)}
+.gx-oauth{display:flex;flex-direction:column;margin:0 0 4px}
+.gx-oa{gap:10px;margin-top:0;margin-bottom:10px}.gx-oa svg{flex:none}
+.gx-or{display:flex;align-items:center;gap:12px;color:var(--dim);font-size:13px;margin:6px 0 14px}.gx-or::before,.gx-or::after{content:"";flex:1;height:1px;background:var(--line)}
 .gx-link{background:none;border:0;color:var(--tx);font:inherit;font-size:15px;font-weight:600;padding:14px 8px;margin:2px auto 0;display:block;cursor:pointer}
 .gx-foot{padding-top:12px;display:flex;flex-direction:column;align-items:center}
 .gx-roles{display:flex;flex-wrap:wrap;gap:8px}
