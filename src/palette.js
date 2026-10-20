@@ -67,10 +67,22 @@ export const ACCENTS = {
   blood:  { name: "Red",    hex: "#EF4444" },
   heat:   { name: "Heat",   hex: "#FF5A1F" },
   gold:   { name: "Gold",   hex: "#FBBF24" },
+  /* v3 (2026-10-20, "add more colors including black"): six deeper ones.
+     Black wears white at night (night:) — black buttons and rings on a
+     black screen would vanish — and on the dark Story cards. Black and
+     Silver are neutral: no hue to keep (test/palette.test.mjs). */
+  black:  { name: "Black",  hex: "#000000", night: "#FFFFFF", neutral: true },
+  silver: { name: "Silver", hex: "#A8A8A8", neutral: true },
+  navy:   { name: "Navy",   hex: "#1E3A8A" },
+  forest: { name: "Forest", hex: "#15803D" },
+  cocoa:  { name: "Cocoa",  hex: "#92400E" },
+  plum:   { name: "Plum",   hex: "#86198F" },
   crimson:{ name: "Crimson",hex: "#DC143C", legacy: true },
   bone:   { name: "Bone",   hex: "#E7E1D2", legacy: true },
 };
 export const accentHex = (key) => (ACCENTS[key] || ACCENTS.lab).hex;
+/** The fill an accent wears on a dark ground: its night stand-in if it has one (Black → white). */
+export const accentFill = (hex, theme) => { if (theme !== "dark") return hex; const a = Object.values(ACCENTS).find((x) => x.night && x.hex.toLowerCase() === String(hex || "").toLowerCase()); return a ? a.night : hex; };
 
 /* ---- accent maths: identical to the app's inkFor / onAccent ---- */
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));

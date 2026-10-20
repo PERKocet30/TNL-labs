@@ -30,7 +30,7 @@ function storyCard(c) {
   const hash = createHash("sha1").update(JSON.stringify([10, c])).digest("hex").slice(0, 12);
   const make = (out, dir) => {
     const W = SC.w, H = SC.h, P = SC.pad, g = evGraph(W, H), t = evAss(dir, W, H), bw = W - 2 * P, by = SC.by, bh = SC.bh;
-    const acc = ffc(c.accent), onAcc = ffc(onAccent(c.accent));
+    const fill = accentFill(c.accent, "dark"), acc = ffc(fill), onAcc = ffc(onAccent(fill));   // the cards are dark: Black wears white
     /* the ground: the work itself, blurred edge to edge and dimmed — or their colour, or black */
     const ground = c.bg || c.art || (c.tiles || [])[0];
     if (ground) {

@@ -211,6 +211,17 @@ console.log("\nNEW MEMBER · PHONE");
     await p.locator(`[data-gxacc="${pick}"]`).tap();
     await p.waitForFunction((k) => ME && ME.accent === k, pick, { timeout: 4000 });
     ok(await p.evaluate((k) => getComputedStyle(document.documentElement).getPropertyValue("--accent-fill").trim().toLowerCase() === ACCENTS[k].hex.toLowerCase(), pick), "the colour didn't go on at once");
+    /* 2026-10-20 "add more colors including black": Black is black by day and wears white at night, never black on black */
+    const fill = () => p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--accent-fill").trim().toUpperCase());
+    await p.locator('[data-gxacc="black"]').tap();
+    await p.waitForFunction(() => ME && ME.accent === "black", null, { timeout: 4000 });
+    ok(await fill() === "#000000", "Black isn't black by day");
+    await p.evaluate(() => { setTheme("dark"); render(); }); await p.waitForTimeout(150);
+    ok(await fill() === "#FFFFFF", "Black is black on the night screen");
+    ok(await p.evaluate(() => getComputedStyle(document.querySelector(".gx-tint")).getPropertyValue("--ring").trim().toUpperCase() === "#FFFFFF"), "Black's ring vanishes at night");
+    await p.evaluate(() => { setTheme("light"); render(); }); await p.waitForTimeout(150);
+    await p.locator(`[data-gxacc="${pick}"]`).tap();
+    await p.waitForFunction((k) => ME && ME.accent === k, pick, { timeout: 4000 });
     await p.locator("#gxnext").tap();
     await p.waitForSelector("#gxbio", { timeout: 4000 });
     await p.locator("#gxbio").fill("Painter. Big walls, small zines.");

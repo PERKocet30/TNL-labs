@@ -4,7 +4,7 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { readFileSync, readdirSync } from "node:fs";
-import { PALETTE, ACCENTS, accentHex, paletteCss, accentSet, accentVars, inkFor, onAccent } from "../src/palette.js";
+import { PALETTE, ACCENTS, accentHex, accentFill, paletteCss, accentSet, accentVars, inkFor, onAccent } from "../src/palette.js";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (f) => readFileSync(join(ROOT, f), "utf8");
 let pass = 0, fail = 0;
@@ -14,7 +14,7 @@ console.log("\nONE PALETTE");
 const keys = ["bg", "card", "el", "tx", "tx2", "dim", "line", "fgRgb", "scrim", "red", "err"];
 t("day and night define the same colours", keys.every((k) => PALETTE.light[k] && PALETTE.dark[k]));
 t("white, black and green", PALETTE.light.bg === "#FFFFFF" && PALETTE.light.tx === "#000000" && PALETTE.dark.bg === "#000000" && PALETTE.dark.tx === "#FFFFFF" && PALETTE.accent === "#98FC68");
-t("member accents live here too, and db.js hands out the same ones", read("src/db.js").includes('export { ACCENTS, accentHex } from "./palette.js"') && accentHex("heat") === "#FF5A1F" && accentHex("nope") === "#98FC68" && Object.keys(ACCENTS).length === 11 && Object.values(ACCENTS).filter((a) => !a.legacy).length === 9);
+t("member accents live here too, and db.js hands out the same ones", read("src/db.js").includes('export { ACCENTS, accentHex } from "./palette.js"') && accentHex("heat") === "#FF5A1F" && accentHex("nope") === "#98FC68" && Object.keys(ACCENTS).length === 17 && Object.values(ACCENTS).filter((a) => !a.legacy).length === 15);
 const css = paletteCss();
 t("the stylesheet has every variable the app uses", ["--bg", "--card", "--el", "--tx", "--tx2", "--dim", "--fg-rgb", "--line", "--line2", "--green", "--accent-fill", "--on-accent", "--fill", "--on-fill", "--scrim", "--red", "--err"].every((v) => css.includes(v + ":")));
 t("day is the default; dark is picked by data-theme", /:root,\[data-theme="light"\]\{--bg:#FFFFFF/.test(css) && /\[data-theme="dark"\]\{--bg:#000000/.test(css));
@@ -50,7 +50,13 @@ const hsl = (h) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, 
   const hue = !d ? 0 : mx === r ? ((g - b) / d + 6) % 6 * 60 : mx === g ? ((b - r) / d + 2) * 60 : ((r - g) / d + 4) * 60; return { h: hue, s: d / (1 - Math.abs(mx + mn - 1) || 1) }; };
 const Yl = (h) => { const v = [1, 3, 5].map((i) => { let x = parseInt(h.slice(i, i + 2), 16) / 255; return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
 const offered = Object.values(ACCENTS).filter((a) => !a.legacy);
-t("every offered colour's text reads at 4.5:1, day and night", offered.every((a) => 0.86 / (Yl(inkFor(a.hex, "light")) + 0.05) >= 4.5 && (Yl(inkFor(a.hex, "dark")) + 0.05) / 0.05 >= 4.5));
-t("…and keeps its hue and richness (no muddy greys)", offered.every((a) => { const x = hsl(a.hex), y = hsl(inkFor(a.hex, "light")), dh = Math.min(Math.abs(x.h - y.h), 360 - Math.abs(x.h - y.h)); return dh < 20 && y.s > 0.6; }));
+t("every offered colour's text reads at 4.5:1, day and night", offered.every((a) => 0.86 / (Yl(inkFor(a.hex, "light")) + 0.05) >= 4.5 && (Yl(inkFor(accentFill(a.hex, "dark"), "dark")) + 0.05) / 0.05 >= 4.5));   // at night Black is white
+t("…and keeps its hue and richness (no muddy greys; Black and Silver are neutral on purpose)", offered.filter((a) => !a.neutral).every((a) => { const x = hsl(a.hex), y = hsl(inkFor(a.hex, "light")), dh = Math.min(Math.abs(x.h - y.h), 360 - Math.abs(x.h - y.h)); return dh < 20 && y.s > 0.6; }));
 
+/* 2026-10-20 "add more colors including black": Black wears white on a dark ground, in the app and on the Story cards */
+const clientFill = (theme) => new Function("THEME", "ACCENTS", grab("accFill") + "\nreturn accFill;")(theme, ACCENTS);
+t("Black is offered, and wears white at night (app and server agree)", !!ACCENTS.black && !ACCENTS.black.legacy && accentFill("#000000", "dark") === "#FFFFFF" && accentFill("#000000", "light") === "#000000"
+  && clientFill("dark")("#000000") === "#FFFFFF" && clientFill("light")("#000000") === "#000000" && clientFill("dark")("#98FC68") === "#98FC68");
+t("…its text at night is white too, never black on black", inkFor(accentFill("#000000", "dark"), "dark") === "#FFFFFF");
+t("the app, the avatar rings and the Story cards all go through it", app.includes("const f=accFill(ACCENTHEX)") && read("src/app-07-theme-labs-api.js").includes("--ring:${accFill(u.accentHex)}") && read("src/server-12-story.js").includes('accentFill(c.accent, "dark")'));
 console.log(`\n  ${pass} passed, ${fail} failed`);

@@ -89,12 +89,16 @@ function onAccent(hex){
     return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)});
   return (.2126*v[0]+.7152*v[1]+.0722*v[2])>.3?"#152C09":"#FFFFFF";
 }
+/* At night a colour with a night stand-in wears it (Black → white, palette.js
+   accentFill): black buttons and rings on a black screen would vanish. */
+function accFill(hex){if(THEME==="light")return hex;const a=Object.values(ACCENTS).find(x=>x.night&&x.hex.toLowerCase()===String(hex||"").toLowerCase());return a?a.night:hex}
 function applyAccent(hex){
   try{
     ACCENTHEX = hex || "#98FC68";
-    document.documentElement.style.setProperty("--green", inkFor(ACCENTHEX));
-    document.documentElement.style.setProperty("--accent-fill", ACCENTHEX);
-    document.documentElement.style.setProperty("--on-accent", onAccent(ACCENTHEX));
+    const f=accFill(ACCENTHEX);
+    document.documentElement.style.setProperty("--green", inkFor(f));
+    document.documentElement.style.setProperty("--accent-fill", f);
+    document.documentElement.style.setProperty("--on-accent", onAccent(f));
   }catch(e){/* never worth taking the app down over a colour */}
 }
 let EDITID=null;

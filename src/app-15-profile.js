@@ -104,7 +104,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
   const st=PROFILE.stats||{posts:0,likesReceived:0,collabs:0};
   if(EDITING&&mine)return editProfileHTML();
   const K=kindOf(u), ld=PROFILE.loading;
-  const acc=inkFor(u.accentHex||"#98FC68");   // never bypass the theme correction
+  const acc=inkFor(accFill(u.accentHex||"#98FC68"));   // never bypass the theme correction
   /* Your own profile is the page; anyone else's stays a peek (sheet). */
   const pins=(u.pinned||[]).map(Number);
   const pinnedFirst=list=>[...pins.map(id=>list.find(p=>Number(p.id)===id)).filter(Boolean),...list.filter(p=>!pins.includes(Number(p.id)))];

@@ -87,7 +87,7 @@ function wireGate(){
   document.querySelectorAll("[data-gxacc]").forEach(b=>b.onclick=()=>{const k=b.dataset.gxacc,a=ACCENTS[k];if(!a||!ME)return;
     ME.accent=k;ME.accentHex=a.hex;try{applyAccent(a.hex);localStorage.setItem("tnl-gs-colour","1")}catch(e){}
     document.querySelectorAll("[data-gxacc]").forEach(x=>x.classList.toggle("on",x===b));
-    const t=$(".gx-tint");if(t)t.style.setProperty("--ring",a.hex);
+    const t=$(".gx-tint");if(t)t.style.setProperty("--ring",accFill(a.hex));
     api.updateMe({accent:k}).then(d=>{if(d&&d.user)ME=d.user}).catch(e=>toast(e.message))});
   on("#gxchange",()=>{const fi=$("#gxfile");if(fi)fi.click()});
   const fi=$("#gxfile");

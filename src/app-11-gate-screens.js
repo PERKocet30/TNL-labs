@@ -123,7 +123,7 @@ function gateHTML(){
         ${has?`<button class="gx-link" id="gxchange">Change photo</button>`:""}`;
     }else if(G.step==="colour"){   // 2026-10-18 onboarding: your colour, then a line about you
       const cur=(ME&&ME.accent)||"lab",hex=(ACCENTS[cur]||{}).hex||"";
-      body=`<div class="gx-mid"><div class="gx-tint" style="--ring:${esc(hex)}">${av()}</div><h1 class="gx-h">Pick your colour</h1>
+      body=`<div class="gx-mid"><div class="gx-tint" style="--ring:${esc(accFill(hex))}">${av()}</div><h1 class="gx-h">Pick your colour</h1>
         <p class="gx-p">Your profile, your page and your share card wear it. You can change it any time.</p></div>
         <div class="gx-sw">${Object.entries(ACCENTS).filter(([k,a])=>!a.legacy||cur===k).map(([k,a])=>`<button class="pe-dot ${cur===k?"on":""}" data-gxacc="${esc(k)}" title="${esc(a.name)}" aria-label="${esc(a.name)}"><span style="background:${esc(a.hex)}"></span></button>`).join("")}</div>
         ${err}<div class="gx-stick"><button class="gx-btn" id="gxnext">Next</button></div>`;
