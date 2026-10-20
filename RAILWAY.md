@@ -93,9 +93,27 @@ Swap to `sk_live_…` once you've run a full purchase through.
 Commission is **not** an env var — it's set by the seller's level in code
 (10% at Entry → 2% at Leadership, see `FEE_BY_LEVEL` in `db.js`).
 
-**Test flow:** Market → Sell → Connect Stripe → onboard → buy your own
+**Test flow:** Market → Sell → Set up payouts → onboard → buy your own
 listing from a second account with card `4242 4242 4242 4242`, any future
 expiry, any CVC.
+
+**Sellers get Stripe Express (2026-10-19).** New sellers go through Stripe's
+short signup; LABS pays the card fee for them (it rides inside the
+application fee) and is responsible if one can't cover a refund. Sellers who
+finished the older, longer signup (Standard) keep it — `users.stripe_kind`
+says which. In the platform Stripe account (the one with **Connect** in its
+menu), once:
+
+1. Settings → Connect → **Platform profile**: accept responsibility for
+   seller losses. Until then new sellers quietly get Standard instead.
+2. Settings → Connect → **Branding**: name **LABS**, icon and logo, brand
+   colour `#98FC68`, accent `#000000`. Express signup and payouts pages show it.
+3. Settings → Connect → **Express Dashboard**: turn on **Issue refunds**.
+
+**Which Stripe account is which.** The platform account is **LABS** (the
+marketplace). Jorge's own shop is a seller on it, **TNL LABS** (TNL is its
+own clothing brand; buyers of TNL pieces see TNL LABS and `TNLLABS.COM` on
+their statement). Checkout shows the *seller's* branding, not the platform's.
 
 ---
 
