@@ -139,7 +139,14 @@ let ENTER = false;
    whole reason autoplay can work at all. (Note ME is still null this early —
    refreshMe() is async — so the old !ME test never distinguished a member
    from a guest anyway.) */
-ENTER = true;
+/* Once per visit (2026-10-20): "having to go back to the enter the labs
+   screen after you're already in the app" — back from /admin, a Stripe
+   checkout or a reload. The door marks the tab (sessionStorage) when it's
+   passed; a tab that's been through it goes straight in. Sound still
+   unlocks on the first tap anywhere (primeAudio in app-18-media). A new
+   tab or a fresh visit still gets the door. */
+const enteredTab=()=>{try{return sessionStorage.getItem("tnl-in")==="1"}catch(e){return false}};
+ENTER = !enteredTab();
 const myName=()=>ME?ME.username:null;
 /* Your own profile is a section of the app, so it renders in the .content
    slot ABOVE the nav. Anyone else you peek at stays an overlay after it. */
