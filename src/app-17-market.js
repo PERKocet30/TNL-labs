@@ -182,14 +182,14 @@ function wireMarket(){
           else{eb.shipping=Number(body.shipping||0);eb.quantity=Number(body.quantity||1);
             eb.brand=body.brand||"";eb.size=body.size||"";eb.condition=body.condition;
             eb.colour=body.colour||"";eb.shipsFrom=body.shipsFrom||"";eb.variants=body.variants}
-          await api.mktUpdate(id,eb);
+          await api.mktUpdate(id,eb);await igShopSave(id,body.igShop);
           MKTEDIT=null;SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME="";
           MKTVIEW="detail";MKTONE=null;render();
           const one=await api.mktOne(id);
           MKTONE=one.listing;MKTOFFERS=one.offers||[];MKTSELLER=one.seller||null;MKTSIMILAR=one.similar||[];
           toast("Saved");render();return;
         }
-        const d=await api.mktCreate(body);
+        const d=await api.mktCreate(body);await igShopSave(d.id,body.igShop);
         const free=isLoop&&Number(SELLFORM.price||0)===0;
         SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME="";sdClear();
         MKTVIEW="detail";MKTONE=null;render();
@@ -289,7 +289,8 @@ function wireMarket(){
       acceptsOffers:l.acceptsOffers!==false,status:l.status==="sold"?"sold":"active",compareAt:l.compareAt?(l.compareAt/100).toFixed(2):"",sellType:l.sellType||"",specs:{...(l.specs||{})},
       bpm:l.bpm||"",musicalKey:l.musicalKey||"",stems:!!l.stems,
       hasVariants:!!(l.variants||[]).length,variants:(l.variants||[]).map(v=>({...v}))};
-    MKTVIEW="edit";render()});
+    MKTVIEW="edit";render();
+    req("/api/market/"+l.id+"/ig-shop").then(d=>{if(SELLFORM){SELLFORM.igShop=d.on;const c=$("#s-ig");if(c)c.checked=d.on}}).catch(()=>{})});
   document.querySelectorAll("[data-mdel]").forEach(b=>b.onclick=async()=>{
     if(!(await uiConfirm("Delete this listing?","",{okLabel:"Delete",danger:true})))return;
     try{await api.mktDelete(b.dataset.mdel);toast("Deleted");MKTEDIT=null;SELLFORM=null;SELLIMGS=[];MKTVIEW="browse";await loadMarket();render()}catch(e){toast(e.message)}});
@@ -333,6 +334,7 @@ function stashSell(){
   if($("#s-from"))SELLFORM.shipsFrom=g("#s-from");
   if($("#s-desc"))SELLFORM.description=g("#s-desc");
   if($("#s-offers"))SELLFORM.acceptsOffers=$("#s-offers").checked;
+  if($("#s-ig"))SELLFORM.igShop=$("#s-ig").checked;
   pvStash();sdSave();
 }
 async function loadMarket(){
