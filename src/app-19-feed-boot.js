@@ -289,6 +289,7 @@ function paintVerifyBar(){
 }
 (async()=>{
   if(await addressMove())return;   // on an old address: off to tnllabs.com, still signed in (app-19-address)
+  if(await oauthLanding())return;  // back from Google / Apple: signed in, or joining; or off to start it (app-11-gate-oauth)
   /* The tournament banner sits above the Showroom grid. Fetched after the
      first paint, it landed under the reader and pushed the grid down ~90px
      on every visit while an event was live (the watch's "screen jumps at

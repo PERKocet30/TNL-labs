@@ -74,23 +74,28 @@ app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (
   if (!settingBool("signupsOpen")) {
     return res.status(403).json({ error: "LABS is invite-only right now." });
   }
-  const { username, displayName, email, role, roles, password } = req.body || {};
+  const { username, displayName, role, roles, password } = req.body || {};
+  /* Continue with Google / Apple (server-11-oauth): a ticket stands in for the email and password. */
+  const tk = req.body?.oauth ? oauthTicket(req.body.oauth) : null;
+  if (req.body?.oauth && !tk) return res.status(410).json({ error: "That sign-in expired. Tap Continue with Google or Apple again." });
+  const email = tk ? tk.email : req.body?.email;
   const roleList = Array.isArray(roles) ? roles.filter(r=>typeof r==="string"&&r.trim()).slice(0,5) : (role ? [role] : []);
   if (!/^[a-z0-9._]{2,20}$/.test(username || "") || username.endsWith(".")) return res.status(400).json({ error: "bad username" });
   if (!displayName?.trim()) return res.status(400).json({ error: "display name required" });
   if (!/^\S+@\S+\.\S+$/.test(email || "")) return res.status(400).json({ error: "bad email" });
-  { const pwBad = pwProblem(password, { username, email }); if (pwBad) return res.status(400).json({ error: pwBad }); }   // server-01-passwords
+  if (!tk) { const pwBad = pwProblem(password, { username, email }); if (pwBad) return res.status(400).json({ error: pwBad }); }   // server-01-passwords
   if (q.userByName.get(username)) return res.status(409).json({ error: "username taken" });
   if (db.prepare(`SELECT 1 FROM users WHERE email = ?`).get(email.trim()))
     return res.status(409).json({ error: "email already registered" });
 
-  const hash = await bcrypt.hash(password, 10);
+  const hash = await bcrypt.hash(tk ? randomBytes(24).toString("hex") : password, 10);   // with a ticket: no password to log in with
   const info = q.createUser.run(username, displayName.trim(), email.trim(), roleList[0] || "Member", hash, Date.now());
   db.prepare(`UPDATE users SET roles = ? WHERE id = ?`).run(JSON.stringify(roleList), info.lastInsertRowid);
   const user = q.userById.get(info.lastInsertRowid);
   const token = randomBytes(24).toString("hex");
   q.createSession.run(token, user.id, Date.now());
   ensureAdmin(); // the very first signup becomes the founder/admin
+  if (tk) { oauthJoined(user.id, req.body.oauth); return res.json({ token, user: publicUser(q.userById.get(user.id)), mailSent: false, oauth: true }); }
   const fresh = q.userById.get(user.id);
   /* If email is broken, this is the switch that stops it costing you
      members. Flip it in the dashboard; people are verified on arrival. */

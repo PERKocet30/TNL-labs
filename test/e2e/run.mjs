@@ -1814,6 +1814,48 @@ console.log("\nINSIDE INSTAGRAM · PHONE");
   await d.ctx.close();
 }
 
+/* ================= Continue with Google or Apple (2026-10-20) ================= */
+console.log("\nGOOGLE / APPLE · PHONE");
+{
+  const d = await device("oauth", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const p = d.page;
+  /* the provider itself can't run here (test/oauth.test.mjs does that): the app's side, with the claim answered in the page */
+  await d.ctx.addInitScript(() => { localStorage.setItem("tnl-intro-seen", "1"); if (location.search.includes("signup=abc123")) localStorage.setItem("tnl-oa-b", "feedfacefeedface"); const f = window.fetch;
+    window.fetch = (u, o) => /\/api\/auth\/oauth\/claim$/.test(String(u)) ? Promise.resolve(new Response(JSON.stringify({ signup: { email: "nova@x.test", name: "Nova Maker", provider: "google" } }), { status: 200, headers: { "content-type": "application/json" } })) : f(u, o); });
+  await step(d, "back from Google as someone new: Join opens on your name, already filled, three steps (no email or password)", async () => {
+    await settledGoto(p, B + "/?signup=abc123&b=feedfacefeedface"); await throughDoor(p);   // this browser started it (its mark)
+    await p.waitForSelector("#dn", { timeout: 6000 });
+    ok(await p.locator("#dn").inputValue() === "Nova Maker", "the name from Google isn't filled in");
+    ok(await p.locator(".gx-prog i").count() === 3 && await p.locator("#em, #pw").count() === 0, "it still asks for an email or a password");
+    ok(await p.evaluate(() => location.search === ""), "the code stayed in the address bar");
+    await p.locator("#gxnext").tap(); await p.waitForSelector("#un", { timeout: 4000 });
+    ok(/^nova/.test(await p.locator("#un").inputValue()), "no username suggested from the name");
+    await p.locator("#gxback").tap(); await p.waitForSelector("#dn", { timeout: 4000 });
+    ok(await p.locator("#em").count() === 0, "back from username went to the email screen");
+  });
+  await step(d, "Log in and Join show Continue with Apple / Google when they're switched on; Google goes to its sign-in", async () => {
+    await p.evaluate(() => { SITE.oauth = { google: true, apple: true }; gateClose(); GATE = "join"; render(); goOut = (u) => { window.__out = u; }; });
+    await p.waitForSelector("[data-oauth=google]", { timeout: 4000 });
+    ok(await p.locator("[data-oauth=apple]").count() === 1 && /or/.test(await p.locator(".gx-or").innerText()), "the buttons or the divider are missing");
+    await p.screenshot({ path: join(SHOTS, "oauth-join.png") });
+    await p.locator("[data-oauth=google]").tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => /\/api\/auth\/oauth\/google\/start\?mode=join&b=[a-f0-9]{32}$/.test(window.__out || "") && window.__out.endsWith(localStorage.getItem("tnl-oa-b"))), "Google didn't start with this browser's mark: " + await p.evaluate(() => window.__out));
+    await p.evaluate(() => { gateClose(); GATE = "login"; render(); });
+    ok(await p.locator("[data-oauth=google][data-oamode=login]").count() === 1, "Log in has no Google button");
+    await p.evaluate(() => { SITE.oauth = { google: false, apple: false }; render(); });
+    ok(await p.locator("[data-oauth]").count() === 0, "the buttons show while switched off");
+    await p.evaluate(() => { gateClose(); render(); });
+  });
+  await step(d, "a ?signin= link someone else sent (not started on this device) is refused", async () => {
+    await p.evaluate(() => localStorage.removeItem("tnl-token"));
+    await settledGoto(p, B + "/?signin=xyz&b=0000000000000000"); await throughDoor(p);
+    await p.waitForTimeout(600);
+    ok(await p.evaluate(() => !TOKEN && !ME), "signed in from someone else's link");
+    ok(await p.evaluate(() => location.search === ""), "the code stayed in the address bar");
+  });
+  await d.ctx.close();
+}
+
 await browser.close();
 stop();
 console.log(`\n  ${pass} passed, ${fail} failed`);

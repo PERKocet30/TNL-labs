@@ -21,7 +21,7 @@ function gxNew(){const tour=GATE==="tour";   // ≡ → How LABS works: the walk
 function gateBack(){const G=GFLOW;if(!G)return false;
   const done=()=>{G.err="";if(G.depth>0)G.depth--;return true};
   if(G.mode==="forgot"){G.mode="login";G.sent=false;G.resetUrl=null;return done()}
-  if(G.mode==="register"&&!G.made){const i=GX_STEPS.indexOf(G.step);if(i>0){G.step=GX_STEPS[i-1];return done()}}
+  if(G.mode==="register"&&!G.made){const S=gxSteps(G),i=S.indexOf(G.step);if(i>0){G.step=S.at(i-1);return done()}}
   return false}
 /* Each forward move is a history entry, so the phone's back swipe walks the
    flow backwards the way it does on Instagram. */
@@ -60,7 +60,7 @@ function gateHTML(){
     center=true;
     top=`<span></span><button class="gx-ic" id="gatex" aria-label="Close">${GX_X}</button>`;
     body=`<div class="gx-brand"><img class="mark gx-mark" src="${GX_MARK}" alt="LABS"><div class="gx-word"><span class="lg">//</span> LABS</div></div>
-      ${why}${inappGateHTML()}
+      ${why}${inappGateHTML()}${oauthHTML("login")}
       ${gxField("u","Username or email",{value:f.username,attrs:'autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"'})}
       ${pw("p","current-password")}
       ${err}
@@ -76,13 +76,13 @@ function gateHTML(){
         ${err}<button class="gx-btn" id="fgo"${G.busy?" disabled":""}>${G.busy?"Sending…":"Send link"}</button>`;
     foot=`<button class="gx-link" id="gxlogin">Back to log in</button>`;
   }else if(!G.made){
-    const i=GX_STEPS.indexOf(G.step);
+    const S=gxSteps(G),i=S.indexOf(G.step);   // with Google / Apple: no email or password steps (app-11-gate-oauth)
     top=`<button class="gx-ic" id="${i>0?"gxback":"gatex"}" aria-label="${i>0?"Back":"Close"}">${i>0?GX_BACK:GX_X}</button>
-      <div class="gx-prog" aria-label="Step ${i+1} of ${GX_STEPS.length}">${GX_STEPS.map((_,k)=>`<i class="${k<=i?"on":""}"></i>`).join("")}</div>
+      <div class="gx-prog" aria-label="Step ${i+1} of ${S.length}">${S.map((_,k)=>`<i class="${k<=i?"on":""}"></i>`).join("")}</div>
       <span class="gx-sp"></span>`;
     const next=(label,ok)=>`<button class="gx-btn" id="gxnext"${ok&&!G.busy?"":" disabled"}>${G.busy?"One moment…":label}</button>`;
     if(G.step==="email"){
-      body=`${why}${inappGateHTML()}<h1 class="gx-h">What's your email?</h1><p class="gx-p">You'll use it to log in and to reset your password.</p>
+      body=`${why}${inappGateHTML()}${oauthHTML("join")}<h1 class="gx-h">What's your email?</h1><p class="gx-p">You'll use it to log in and to reset your password.</p>
         ${gxField("em","Email",{type:"email",value:f.email,attrs:'autocomplete="email" autocapitalize="none" inputmode="email"'})}
         ${err}${next("Next",/^\S+@\S+\.\S+$/.test(f.email.trim()))}`;
       foot=`<button class="gx-link" id="gxlogin">I already have an account</button>`;

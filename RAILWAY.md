@@ -139,6 +139,25 @@ check runs in, as the environment variable `TNL_REPORT_KEY`. Without the
 variable the route doesn't exist (404). Change it the same way in both
 places if it ever leaks.
 
+## Continue with Google / Apple (optional, 2026-10-20)
+
+Each button stays hidden until its variables are set (`server-11-oauth.js`).
+
+| Variable | Value |
+| --- | --- |
+| `GOOGLE_CLIENT_ID` | from Google Cloud → APIs & Services → Credentials → OAuth client ID (type: Web application) |
+| `GOOGLE_CLIENT_SECRET` | the same client's secret |
+| `APPLE_SERVICES_ID` | from Apple Developer → Identifiers → Services IDs (e.g. `com.tnllabs.signin`), with Sign in with Apple turned on |
+
+Google: OAuth consent screen = External, app name LABS, support email
+support@tnllabs.com; authorised redirect URI
+`https://tnllabs.com/api/auth/oauth/google/callback`. Apple (needs the paid
+Apple Developer account): domain `tnllabs.com`, return URL
+`https://tnllabs.com/api/auth/oauth/apple/callback`. Members who pick
+"Hide my email" get an @privaterelay.appleid.com address — for our emails to
+reach them, register `tnllabs.com` / the sending address under Apple's
+Private Email Relay (Certificates, Identifiers & Profiles → Services).
+
 ## The whole list, to paste in
 
 ```
