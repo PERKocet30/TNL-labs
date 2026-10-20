@@ -45,10 +45,10 @@ function evGraph(w, h) {
     lay: (label, x, y) => { f.push(`[${last}][${label}]overlay=${x}:${y}[s${++n}]`); last = `s${n}`; },
     box: (color, bw, bh, x, y) => { const l = `b${n}x${f.length}`; f.push(`color=c=${color}:s=${bw}x${bh}:d=1[${l}]`); g.lay(l, x, y); },
     filter: (expr) => { f.push(`[${last}]${expr}[s${++n}]`); last = `s${n}`; },
-    /* best: the Story cards (2026-10-20, "cards look kinda blurry"), which Instagram squeezes again —
-       top JPEG quality and full colour detail (4:4:4), so bright lines on white stay crisp */
-    out: (file, best) => [...args, "-filter_complex", f.join(";"), "-map", `[${last}]`, "-frames:v", "1",
-      ...(best ? ["-pix_fmt", "yuvj444p", "-q:v", "1", "-qmin", "1"] : ["-q:v", "3"]), file],
+    /* a .png file: the Story cards (2026-10-20, "cards look kinda blurry … the highest quality possible") —
+       lossless, so Instagram's own squeeze is the only one. The rest stay JPEG (link previews must be small). */
+    out: (file) => [...args, "-filter_complex", f.join(";"), "-map", `[${last}]`, "-frames:v", "1",
+      ...(file.endsWith(".png") ? ["-pix_fmt", "rgb24"] : ["-q:v", "3"]), file],
   };
   return g;
 }
@@ -61,15 +61,15 @@ const evUpper = (s, max) => { const c = cardClean(s).toUpperCase(); return c.len
 const evHost = (base) => base.replace(/^https?:\/\//, "");
 
 /* One card at a time (shared with the profile cards), never the same twice at once. */
-function evCardBuild(prefix, hash, makeArgs) {
-  const name = `${prefix}-${hash}.jpg`, out = join(CARD_DIR, name);
+function evCardBuild(prefix, hash, makeArgs, ext = "jpg") {
+  const name = `${prefix}-${hash}.${ext}`, out = join(CARD_DIR, name);
   if (existsSync(out)) return Promise.resolve(out);
   if (CARD_BUILDS.has(out)) return CARD_BUILDS.get(out);
   const job = (CARD_CHAIN = CARD_CHAIN.catch(() => {}).then(async () => {
     if (!FFMPEG) throw new Error("no ffmpeg");
     const dir = join(CARD_DIR, `tmp-${prefix}-${hash}`);
     mkdirSync(dir, { recursive: true });
-    const tmp = join(dir, "card.jpg");
+    const tmp = join(dir, `card.${ext}`);
     try {
       await runFfmpeg(makeArgs(tmp, dir));
       if (!existsSync(tmp)) throw new Error("no output");
@@ -226,9 +226,9 @@ async function evSendCard(res, card, fallback) {
   if (!card) return res.status(404).end();
   if (!FFMPEG || !existsSync(CARD_FONT.bold)) return fallback ? res.redirect(302, fallback) : res.status(503).end();
   try {
-    const file = await evCardBuild(card.prefix, card.hash, card.make);
+    const file = await evCardBuild(card.prefix, card.hash, card.make, card.ext);
     res.set("Cache-Control", "public, max-age=300");
-    res.type("jpg").sendFile(file);
+    res.type(card.ext || "jpg").sendFile(file);
   } catch (e) {
     logError("card", "event card: " + (e.message || "failed"), "", res.req?.path || "", "");
     fallback ? res.redirect(302, fallback) : res.status(503).end();

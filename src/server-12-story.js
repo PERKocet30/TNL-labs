@@ -27,7 +27,7 @@ const SCK = { ink: ffc(PALETTE.dark.tx), ink2: ffc(PALETTE.dark.dim), shade: ffc
 /* c: { prefix, head, sub, art?, bg?, avatar?, tiles?, quote?, cover?, lead?, music?, count?, tag, handle, cta?, url, accent }
    The tournament's entry Story is one of these too (server-10-events-4-cards). */
 function storyCard(c) {
-  const hash = createHash("sha1").update(JSON.stringify([9, c])).digest("hex").slice(0, 12);
+  const hash = createHash("sha1").update(JSON.stringify([10, c])).digest("hex").slice(0, 12);
   const make = (out, dir) => {
     const W = SC.w, H = SC.h, P = SC.pad, g = evGraph(W, H), t = evAss(dir, W, H), bw = W - 2 * P, by = SC.by, bh = SC.bh;
     const acc = ffc(c.accent), onAcc = ffc(onAccent(c.accent));
@@ -98,9 +98,9 @@ function storyCard(c) {
     t.at("LABS ®", P + 70, H - 172, 34, true, ink, 4);
     t.at(c.url, W - P, H - 172, 28, false, ink2, 6);
     g.filter(t.write());
-    return g.out(out, true);
+    return g.out(out);
   };
-  return { hash, prefix: c.prefix, make };
+  return { hash, prefix: c.prefix, make, ext: "png" };   // lossless (2026-10-20); still at …/story.jpg, served as image/png
 }
 const userRole = (u) => { let r = []; try { r = JSON.parse(u.roles || "[]"); } catch {} return evUpper(String(r[0] || u.role || ""), 30); };
 
@@ -165,20 +165,25 @@ app.get("/tr/:id/story.jpg", storyLimit, (req, res) => {
    "Is there any way the music from a post plays in the share cards on
    Instagram?" Instagram's music sticker only takes its own library, but a
    Story can be a video with its own sound. A post with a song gets /p/:id/story.mp4: its Story card,
-   pushed in slowly over 15 seconds (or the song, if shorter), with the
+   held still for 15 seconds (or the song, if shorter), with the
    first 15 seconds of the song under it — faded in and out. Made once,
-   kept next to the picture under og/, one build at a time. */
-const SV = { version: 2, secs: 15, fps: 30 };   // 2: sharper (lanczos, crf 18, 2026-10-20)
+   kept next to the picture under og/, one build at a time.
+   2026-10-20, "the highest quality possible": it held a slow push-in until
+   then, but a moving picture changes every frame — 23MB at this quality,
+   and Instagram blurs motion hardest when it squeezes it again. Held still,
+   from the lossless card, it's crisp at ~3MB. */
+const SV = { version: 3, secs: 15, fps: 30 };
 const SV_BUILDS = new Map();
 function storyVideoArgs(still, audio, secs, out) {
-  const n = Math.round(secs * SV.fps), fadeAt = Math.max(0, secs - 1.5).toFixed(2);
+  const fadeAt = Math.max(0, secs - 1.5).toFixed(2);
   return ["-nostdin", "-y", "-loglevel", "error",
     "-loop", "1", "-framerate", String(SV.fps), "-t", String(secs), "-i", still,
     "-t", String(secs), "-i", audio,
-    "-filter_complex", `[0:v]scale=1188:2112:flags=lanczos,zoompan=z='1+0.05*on/${n}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=${SV.fps},format=yuv420p[v];` +
+    "-filter_complex", `[0:v]scale=out_color_matrix=bt709:flags=lanczos+accurate_rnd+full_chroma_int,format=yuv420p[v];` +
       `[1:a]aresample=44100,afade=t=in:d=0.3,afade=t=out:st=${fadeAt}:d=1.5[a]`,
-    "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-profile:v", "high", "-level", "4.0",
-    "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-t", String(secs), "-movflags", "+faststart", out];
+    "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "medium", "-tune", "stillimage", "-crf", "14", "-profile:v", "high", "-level", "4.0",
+    "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
+    "-c:a", "aac", "-b:a", "256k", "-ac", "2", "-t", String(secs), "-movflags", "+faststart", out];
 }
 async function storyVideo(p, base) {
   const card = postStory(p, base);
@@ -186,7 +191,7 @@ async function storyVideo(p, base) {
   const audio = tr && (cardFile(audioPlayUrl(tr.url)) || cardFile(tr.url));
   if (!audio) return null;
   const secs = Math.max(3, Math.min(SV.secs, tr.duration_ms ? tr.duration_ms / 1000 : SV.secs));
-  const still = await evCardBuild(card.prefix, card.hash, card.make);
+  const still = await evCardBuild(card.prefix, card.hash, card.make, card.ext);
   const prefix = `p${p.id}-storyv`, hash = createHash("sha1").update(JSON.stringify([SV.version, card.hash, audio, secs])).digest("hex").slice(0, 12);
   const name = `${prefix}-${hash}.mp4`, out = join(CARD_DIR, name);
   if (existsSync(out)) return out;

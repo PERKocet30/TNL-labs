@@ -17,7 +17,7 @@ function igStoryOpen(img,link,video){
   IGS={id,link,img,video:video||null,file:null,pic:null,vurl:null,failed:false};igsPaint();
   const ready=()=>{const g=$("#igsgo");if(g){g.disabled=false;g.textContent="Share to Instagram"}};
   const get=(u)=>fetch(u).then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()});
-  get(img).then(b=>{if(!mine())return;IGS.pic=new File([b],"labs-story.jpg",{type:"image/jpeg"});if(!IGS.video){IGS.file=IGS.pic;ready()}})
+  get(img).then(b=>{if(!mine())return;const ty=b.type==="image/png"?"image/png":"image/jpeg";IGS.pic=new File([b],"labs-story."+(ty==="image/png"?"png":"jpg"),{type:ty});if(!IGS.video){IGS.file=IGS.pic;ready()}})
     .catch(()=>{if(mine()&&!IGS.video){IGS.failed=true;igsPaint()}});
   if(video)get(video).then(b=>{if(!mine())return;IGS.file=new File([b],"labs-story.mp4",{type:"video/mp4"});IGS.vurl=URL.createObjectURL(b);igsPaint()})
     .catch(()=>{if(!mine())return;IGS.video=null;IGS.file=IGS.pic;IGS.failed=!IGS.pic;igsPaint()});

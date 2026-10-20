@@ -329,7 +329,7 @@ console.log("\nMEMBER · PHONE");
     ok(size === "1080x1920", "story card is " + size);
     await p.locator("#igsgo").tap(); await p.waitForTimeout(400);
     const r = await p.evaluate(() => ({ n: __igs.length, type: __igs[0] && __igs[0].files && __igs[0].files[0].type, clip: __clip }));
-    ok(r.n === 1 && r.type === "image/jpeg", "the share sheet didn't get the picture: " + JSON.stringify(r));
+    ok(r.n === 1 && r.type === "image/png", "the share sheet didn't get the lossless picture: " + JSON.stringify(r));
     ok(new RegExp("/p/" + pid + "$").test(r.clip), "the link wasn't copied for the sticker: " + r.clip);
     await p.locator("#igsx").tap();
     ok(await p.locator("#igsbg").count() === 0, "the Story sheet didn't close");
@@ -353,7 +353,7 @@ console.log("\nMEMBER · PHONE");
       await p.waitForFunction(() => { const b = document.querySelector("#igsgo"); return b && !b.disabled; }, null, { timeout: 15000 });
       await p.locator("#igsgo").tap(); await p.waitForTimeout(300);
       r = await p.evaluate(() => __igs[0] && __igs[0].files[0].type);
-      ok(r === "image/jpeg", "no video, and the picture didn't go either: " + r);
+      ok(r === "image/png", "no video, and the picture didn't go either: " + r);
     } finally { await p.evaluate(() => { window.fetch = window.__fetch; IGS = null; igsPaint(); }); }
   });
   await step(d, "carousel: starts on 1, counter follows the swipe, a refresh keeps your slide", async () => {

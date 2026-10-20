@@ -74,10 +74,10 @@ function evOpenShare(id){
   EVSHARE={id,img:`/e/${encodeURIComponent(EVSLUG)}/${id}/story.jpg?t=${Math.floor(Date.now()/60000)}`};render();
 }
 async function evSharePic(){
-  const s=EVSHARE, name=`tnl-${EVSLUG}-${s.id}.jpg`;
+  const s=EVSHARE;
   try{
-    const blob=await (await fetch(s.img)).blob();
-    const file=new File([blob],name,{type:"image/jpeg"});
+    const blob=await (await fetch(s.img)).blob(),png=blob.type==="image/png",name=`labs-${EVSLUG}-${s.id}.${png?"png":"jpg"}`;   // the Story card is a lossless PNG (2026-10-20)
+    const file=new File([blob],name,{type:png?"image/png":"image/jpeg"});
     if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});return}
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
     setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast("Saved");
