@@ -150,7 +150,11 @@ app.use((req, res, next) => {
   next();
 });
 
-/* Static shell, pre-gzipped once at boot. index.html alone is ~280KB raw. */
+/* Static shell, pre-gzipped once at boot. index.html alone is ~680KB raw.
+   2026-10-20 (quality week): each file carries an ETag — the gzip's hash —
+   so a phone that has the page asks "has it changed?" and gets a 304
+   (nothing) instead of the whole 200KB again. A new build is a new hash. */
+const GZ_TAGS = new Map();
 const GZ_TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml" };
 const PUB = join(__dirname, "..", "public");
 for (const name of readdirSync(PUB)) {
@@ -160,6 +164,7 @@ for (const name of readdirSync(PUB)) {
     const src = join(PUB, name), gz = src + ".gz";
     if (!existsSync(gz) || statSync(gz).mtimeMs < statSync(src).mtimeMs)
       writeFileSync(gz, zlib.gzipSync(readFileSync(src), { level: 9 }));
+    GZ_TAGS.set(gz, '"' + createHash("sha1").update(readFileSync(gz)).digest("hex").slice(0, 16) + '"');
   } catch (e) {}
 }
 app.use((req, res, next) => {
@@ -170,6 +175,8 @@ app.use((req, res, next) => {
   if (!GZ_TYPES[ext]) return next();
   const gz = join(PUB, p.slice(1) + ".gz");
   if (!existsSync(gz)) return next();
+  const tag = GZ_TAGS.get(gz);
+  if (tag) { res.set("ETag", tag); if (req.headers["if-none-match"] === tag) return res.status(304).end(); }
   res.set("Content-Type", GZ_TYPES[ext]);
   res.set("Content-Encoding", "gzip");
   res.set("Vary", "Accept-Encoding");

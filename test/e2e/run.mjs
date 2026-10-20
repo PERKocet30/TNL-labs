@@ -1535,6 +1535,16 @@ console.log("\nMEMBER · PHONE");
     const grid = shifts.filter((s) => s.ids.some((x) => /sr-grid/.test(x)) && s.v > 0.02);
     ok(!grid.length, "the grid moved: " + JSON.stringify(grid));
   });
+  /* Quality week (2026-10-20): a budget on how fast the Showroom first paints on
+     a fresh visit, so speed can't drift. Loose on CI's shared machines; the
+     point is a regression of seconds, not milliseconds. */
+  await step(d, "budget: once through the door, the Showroom grid paints within 2.5s", async () => {
+    await settledGoto(p, B + "/"); await throughDoor(p);
+    const t0 = Date.now();
+    await p.waitForSelector("#sr-grid .sr-card", { timeout: 8000 });
+    const ms = Date.now() - t0;
+    ok(ms < 2500, "the Showroom took " + ms + "ms to paint after the door");
+  });
   await step(d, "normal use records no glitches", async () => {
     const g = await glitches();
     ok(!g.recent.length, "recorded: " + g.recent.map((x) => x.kind + " @ " + x.place + " " + x.detail).join(" | "));
