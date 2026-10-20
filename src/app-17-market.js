@@ -116,9 +116,10 @@ function wireMarket(){
       if(SELLIMGS.length>=8){toast("8 photos max");break}
       if(!f.type.startsWith("image/")){toast("Photos only");continue}
       if(f.size>30*1024*1024){toast("That photo's too big — 30MB max");continue}
-      try{const data=await compressImage(f,1800,.88);
-        const up=await uploadStream(dataUrlToBlob(data));
-        SELLIMGS=[...SELLIMGS,up.url]}catch(e){toast(e.message)}
+      /* 2026-10-20 ("PNG"): a listing photo gets the same care as a piece of
+         work (uploadWork, app-08-images): the original kept when it's a
+         sensible size, a PNG stays PNG, else a 3000px copy — not an 1800px JPEG. */
+      try{const up=await uploadWork(f);SELLIMGS=[...SELLIMGS,up.url]}catch(e){toast(e.message)}
     }
     SELLUP=false;render();
   };
