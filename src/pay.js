@@ -1,5 +1,22 @@
 /* ================================================================
-   PAYMENTS v2.0 — 2026-10-18 — Stripe Standard Connect, over the plain HTTP API.
+   PAYMENTS v3.0 — 2026-10-19 — Stripe Connect, over the plain HTTP API.
+   v3.0: Express for new sellers. "Setting up an account to sell is really
+   complicated" — Standard is Stripe's full business signup (an authenticator
+   app, a website, a business description, support details, a statement
+   descriptor). New sellers now get Stripe's short signup (name, birthday,
+   last 4 of SSN, bank, a text code): LABS fills in the rest — their LABS
+   page as the website, their name on buyers' statements — and Stripe only
+   asks what's due now. The money moves the same way (a direct charge on
+   the seller's account), but for these accounts LABS pays Stripe's card
+   fee and is on the hook if a seller can't cover a refund. So:
+     · the application fee = commission + the card fee, and the seller nets
+       exactly what they did on Standard (what the listing form promises);
+     · buy-now-pay-later is left out for them (Stripe charges ~6% for it,
+       which the card-fee estimate wouldn't cover);
+     · sellers who already finished Standard keep it. Until Stripe → Connect
+       has Express switched on (the platform profile's loss acknowledgement),
+       creating one fails and we quietly make a Standard account instead —
+       selling never stops.
    v2.0: more ways to pay. Checkout shows whatever the seller has switched
    on in their own Stripe (Apple Pay and Google Pay ride on cards; Cash App
    Pay, Klarna, Link…), minus the ones that take days to clear. If Stripe
@@ -69,19 +86,44 @@ async function stripe(path, { method = "POST", body, account, version } = {}) {
 
 /* ---------------- seller onboarding ---------------- */
 
-/** Create a Standard connected account for a seller. */
-export async function createSellerAccount(email) {
+/* What a buyer sees on their card statement: LABS and the seller, so nobody
+   disputes a charge they don't recognise. 5–22 characters, letters needed,
+   none of < > \\ ' " *. */
+export function statementName(username) {
+  const u = String(username || "").toUpperCase().replace(/[^A-Z0-9 .-]/g, "");
+  return ("LABS " + u).trim().slice(0, 22);
+}
+/* Express: Stripe's short signup. The platform pays the card fee and covers
+   losses; Stripe still checks who they are. Everything LABS already knows is
+   filled in before the first link (after it, Stripe won't let us). */
+const expressBody = ({ email, username, profileUrl }) => ({
+  controller: { stripe_dashboard: { type: "express" }, fees: { payer: "application" },
+    losses: { payments: "application" }, requirement_collection: "stripe" },
+  country: "US", email, business_type: "individual",
+  capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
+  business_profile: { url: profileUrl, product_description: "Sells their own work (clothing, art, music) on LABS, a marketplace for creatives." },
+  settings: { payments: { statement_descriptor: statementName(username) } },
+});
+
+/** Make a seller's Stripe account: Express if the platform has it switched on,
+ *  else Standard (with their LABS page filled in as the website). → { id, kind } */
+export async function createSellerAccount({ email, username, profileUrl, expressOnly = false } = {}) {
   if (!KEY) return { error: "payments not configured" };
-  const out = await stripe("accounts", { body: { type: "standard", email } });
+  const ex = await stripe("accounts", { body: expressBody({ email, username, profileUrl }) });
+  if (!ex.error) return { id: ex.id, kind: "express" };
+  if (expressOnly) return ex;
+  const out = await stripe("accounts", { body: { type: "standard", email, business_profile: profileUrl ? { url: profileUrl } : undefined } });
   if (out.error) return out;
-  return { id: out.id };
+  return { id: out.id, kind: "standard" };
 }
 
-/** A one-time link that walks the seller through Stripe's onboarding. */
-export async function onboardingLink(accountId, refreshUrl, returnUrl) {
+/** A one-time link that walks the seller through Stripe's onboarding. On
+ *  Express it asks only what's due now; the rest waits until it's needed. */
+export async function onboardingLink(accountId, refreshUrl, returnUrl, kind) {
   if (!KEY) return { error: "payments not configured" };
   const out = await stripe("account_links", {
-    body: { account: accountId, refresh_url: refreshUrl, return_url: returnUrl, type: "account_onboarding" },
+    body: { account: accountId, refresh_url: refreshUrl, return_url: returnUrl, type: "account_onboarding",
+      ...(kind === "express" ? { collection_options: { fields: "currently_due", future_requirements: "omit" } } : {}) },
   });
   if (out.error) return out;
   return { url: out.url };
@@ -100,12 +142,15 @@ export async function accountStatus(accountId) {
   };
 }
 
-/** Standard connected accounts have their OWN full Stripe dashboard and sign in
- *  there directly with their own credentials. Stripe's login_links API is
- *  Express-only and errors on Standard accounts ("does not have access to the
- *  Express Dashboard"), so we just point sellers at the dashboard to log in. */
-export async function loginLink(accountId) {
-  return { url: "https://dashboard.stripe.com" };
+/** Express sellers get a one-time link into their payouts page (Stripe texts
+ *  them a code). Standard sellers sign in to their own full Stripe dashboard —
+ *  login_links errors on those ("does not have access to the Express Dashboard"). */
+export async function loginLink(accountId, kind) {
+  if (kind !== "express") return { url: "https://dashboard.stripe.com" };
+  if (!KEY) return { error: "payments not configured" };
+  const out = await stripe(`accounts/${encodeURIComponent(accountId)}/login_links`, {});
+  if (out.error) return out;
+  return { url: out.url };
 }
 
 /* ---------------- checkout ---------------- */
@@ -114,16 +159,24 @@ export async function loginLink(accountId) {
    while the buyer waits, so Checkout leaves them out. */
 export const SLOW_METHODS = ["us_bank_account", "acss_debit", "sepa_debit", "bacs_debit", "au_becs_debit",
   "boleto", "oxxo", "konbini", "customer_balance", "multibanco", "pay_by_bank", "pix"];
+/* Pay-later costs ~6%: fine when the seller pays Stripe (Standard), not
+   when LABS does on a card-fee estimate (Express). */
+export const PAY_LATER = ["klarna", "affirm", "afterpay_clearpay", "zip"];
+/* Stripe's US card price, which LABS pays for Express sellers and passes on
+   inside the application fee — so they keep what the listing form says. */
+export const cardFee = (cents) => Math.round(cents * 0.029) + 30;
 
 /**
  * Direct charge on the SELLER's account, with our commission taken as
- * application_fee_amount. The seller pays Stripe's processing fee out
- * of their side — that's what makes Standard free for the platform.
+ * application_fee_amount. A Standard seller pays Stripe's processing fee
+ * out of their side (that's what makes Standard free for the platform); for
+ * an Express seller LABS pays it, so the fee carries it (platformPaysStripe).
  */
 export async function createCheckout({
   orderId, title, amountCents, shippingCents, currency = "usd",
   successUrl, cancelUrl, buyerEmail, sellerAccount, feePct, collectShipping = false,
   items = null,   // a bag: [{ title, amountCents }] — amountCents is then their sum
+  platformPaysStripe = false,   // an Express seller: LABS pays the card fee, so it rides in the fee
 }) {
   if (!KEY) return { error: "payments not configured" };
   if (!sellerAccount) return { error: "seller hasn't connected payouts yet" };
@@ -139,6 +192,10 @@ export async function createCheckout({
     });
   }
 
+  /* Our commission is on the item only. For an Express seller Stripe bills LABS
+     for the card fee on the whole charge (shipping too), so that's added on. */
+  const appFee = Math.min(amountCents + (shippingCents || 0) - 1,
+    platformFee(amountCents, feePct) + (platformPaysStripe ? cardFee(amountCents + (shippingCents || 0)) : 0));
   const body = (methods) => ({
       mode: "payment",
       ...methods,
@@ -152,14 +209,15 @@ export async function createCheckout({
       // hosted page. No more prompt() dialogs. Digital loops skip this.
       ...(collectShipping ? { shipping_address_collection: { allowed_countries: ["US","CA","GB","NL","DE","FR","IE","ES","IT","PT","BE","AU","NZ"] } } : {}),
       // commission on the item only — we don't skim postage; none at all for an admin (0%)
-      ...(platformFee(amountCents, feePct) > 0 ? { payment_intent_data: { application_fee_amount: platformFee(amountCents, feePct) } } : {}),
+      ...(appFee > 0 ? { payment_intent_data: { application_fee_amount: appFee } } : {}),
   });
+  const skip = platformPaysStripe ? [...SLOW_METHODS, ...PAY_LATER] : SLOW_METHODS;
   /* First ask: the seller's own payment methods, without the slow ones.
      Second ask, only if Stripe refuses the first: cards outright. Left to
      the automatic choice alone, a seller with nothing switched on for the
      currency got "No valid payment method types" and nobody could buy
      (first live checkout, 2026-10-07). Cards cover Apple Pay and Google Pay. */
-  let out = await stripe("checkout/sessions", { account: sellerAccount, body: body({ excluded_payment_method_types: SLOW_METHODS }),
+  let out = await stripe("checkout/sessions", { account: sellerAccount, body: body({ excluded_payment_method_types: skip }),
     version: "2025-09-30.clover" });   // the first API version that can leave methods out
   if (out.error) out = await stripe("checkout/sessions", { account: sellerAccount, body: body({ payment_method_types: ["card"] }) });
   if (out.error) return { error: out.error, setup: /payment method|capabilit|activate|not enabled|charges_enabled/i.test(out.error) };
