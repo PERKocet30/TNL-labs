@@ -176,7 +176,14 @@ console.log("\nNEW MEMBER · PHONE");
   await step(d, "sign up: email → password → name → username → what you make", async () => {
     await p.locator("#joinBtn").tap();
     const nextOn = async () => { await p.waitForSelector("#gxnext:not([disabled])", { timeout: 4000 }); await p.locator("#gxnext").tap(); };
+    /* 2026-10-20 "cleaner, centered, modern": the mark, centred words, the question in the middle of the screen */
+    const look = () => p.evaluate(() => { const h = document.querySelector(".gx-h"), r = h.getBoundingClientRect(), f = document.querySelector(".gxf, .gx-roles");
+      return { mark: !!document.querySelector(".gx-body .gx-mk") && document.querySelector(".gx-mk").getBoundingClientRect().height > 30, centred: getComputedStyle(h).textAlign === "center",
+        top: r.top / innerHeight, fieldUnder: f ? f.getBoundingClientRect().top > r.bottom : true }; });
+    let L = await look();
+    ok(L.mark && L.centred && L.top > 0.15 && L.top < 0.6 && L.fieldUnder, "the email screen isn't centred: " + JSON.stringify(L));
     await p.locator("#em").fill("newbie@example.com"); await nextOn();
+    L = await look(); ok(L.mark && L.centred && L.top > 0.15, "the password screen isn't centred: " + JSON.stringify(L));
     // 2026-10-19 "passwords should be more complicated": a weak one keeps Next off, with the checklist saying why
     await p.locator("#pw").fill("password1"); await p.waitForTimeout(100);
     ok(await p.locator("#gxnext").isDisabled() && await p.locator("#pwr li.ok").count() < 3, "a common password was let through");
@@ -187,6 +194,7 @@ console.log("\nNEW MEMBER · PHONE");
     await nextOn();
     await p.locator("#dn").fill("New Member"); await nextOn();
     await p.locator("#un").fill("newmember"); await nextOn();   // waits for the live username check
+    L = await look(); ok(L.centred && L.top < 0.15, "the long list of what you make should start at the top: " + JSON.stringify(L));
     await p.locator(".gx-roles [data-r]").first().tap(); await nextOn();
     await p.waitForFunction(() => typeof ME !== "undefined" && ME && ME.username === "newmember", null, { timeout: 6000 });
   });
@@ -1695,6 +1703,19 @@ console.log("\nMEMBER · COMPUTER");
   await step(d, "resizing to phone width switches to the phone frame", async () => {
     await p.setViewportSize({ width: 700, height: 900 }); await p.waitForTimeout(300);
     ok(await p.locator(".side").count() === 0 && (await p.locator(".app > .nav").count()) === 1, "didn't switch to the phone frame");
+  });
+  /* 2026-10-20 "cleaner, centered, modern": on a computer Join is one centred card, the same height step to step */
+  await step(d, "Join on a computer: one centred card that keeps its height from step to step", async () => {
+    const v = await browser.newContext({ viewport: { width: 1440, height: 900 } });   // a visitor: Join is for the signed-out
+    await v.addInitScript(() => { localStorage.setItem("tnl-intro-seen", "1"); sessionStorage.setItem("tnl-in", "1"); });
+    const p = await v.newPage(); await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof render === "function" && typeof GATE !== "undefined");
+    const card = () => p.evaluate(() => { const r = document.querySelector(".gate .gx").getBoundingClientRect(); return { h: Math.round(r.height), mid: Math.round(r.left + r.width / 2 - innerWidth / 2), r: getComputedStyle(document.querySelector(".gate .gx")).borderTopLeftRadius }; });
+    await p.evaluate(() => { GATE = "join"; render(); }); await p.waitForSelector("#em");
+    const a = await card();
+    await p.locator("#em").fill("someone@example.com"); await p.locator("#gxnext").click(); await p.waitForSelector("#pw");
+    const b = await card();
+    ok(Math.abs(a.mid) < 4 && a.h === b.h && a.r === "16px", "the card moved or changed height: " + JSON.stringify([a, b]));
+    await v.close();
   });
   await d.ctx.close();
 }
