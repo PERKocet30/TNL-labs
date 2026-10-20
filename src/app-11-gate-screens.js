@@ -81,19 +81,22 @@ function gateHTML(){
       <div class="gx-prog" aria-label="Step ${i+1} of ${S.length}">${S.map((_,k)=>`<i class="${k<=i?"on":""}"></i>`).join("")}</div>
       <span class="gx-sp"></span>`;
     const next=(label,ok)=>`<button class="gx-btn" id="gxnext"${ok&&!G.busy?"":" disabled"}>${G.busy?"One moment…":label}</button>`;
+    const mk=`<img class="mark gx-mk" src="${GX_MARK}" alt="">`;   // the mark atop every Join step (2026-10-20, Google's shape)
+    center=G.step!=="roles";
     if(G.step==="email"){
-      body=`${why}${inappGateHTML()}${oauthHTML("join")}<h1 class="gx-h">What's your email?</h1><p class="gx-p">You'll use it to log in and to reset your password.</p>
+      const oa=oauthHTML("join");   // with Google / Apple on, the first screen reads like theirs: who you're joining, then the choices
+      body=`${mk}<h1 class="gx-h">${oa?"Create your account":"What's your email?"}</h1><p class="gx-p">${oa?"Join the people making things on LABS.":"You'll use it to log in and to reset your password."}</p>${why}${inappGateHTML()}${oa}
         ${gxField("em","Email",{type:"email",value:f.email,attrs:'autocomplete="email" autocapitalize="none" inputmode="email"'})}
         ${err}${next("Next",/^\S+@\S+\.\S+$/.test(f.email.trim()))}`;
       foot=`<button class="gx-link" id="gxlogin">I already have an account</button>`;
     }else if(G.step==="password"){
-      body=`<h1 class="gx-h">Create a password</h1><p class="gx-p">Pick one you don't use anywhere else.</p>
+      body=`${mk}<h1 class="gx-h">Create a password</h1><p class="gx-p">Pick one you don't use anywhere else.</p>
         ${pw("pw","new-password")}<ul class="gx-pwr" id="pwr">${pwRulesHTML(f)}</ul>${err}${next("Next",pwOk(f))}`;
     }else if(G.step==="name"){
-      body=`<h1 class="gx-h">What's your name?</h1><p class="gx-p">This is how you'll show up. You can change it any time.</p>
+      body=`${mk}<h1 class="gx-h">What's your name?</h1><p class="gx-p">This is how you'll show up. You can change it any time.</p>
         ${gxField("dn","Name",{value:f.displayName,attrs:'autocomplete="name" maxlength="28"'})}${err}${next("Next",!!f.displayName.trim())}`;
     }else if(G.step==="username"){
-      body=`<h1 class="gx-h">Create a username</h1><p class="gx-p">Your page will be ${location.host}/u/<b id="unurl">${esc(f.username||"username")}</b></p>
+      body=`${mk}<h1 class="gx-h">Create a username</h1><p class="gx-p">Your page will be ${location.host}/u/<b id="unurl">${esc(f.username||"username")}</b></p>
         ${gxField("un","Username",{value:f.username,attrs:'autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="20"',
           after:`<span class="gxf-st ${G.un.state}" id="unst">${gxUnStatus(G)}</span>`})}
         <div class="gx-hint ${G.un.state==="ok"?"":"bad"}" id="unmsg">${esc(G.un.msg||"")}</div>
@@ -107,6 +110,7 @@ function gateHTML(){
     }
   }else{
     const skip=G.step!=="welcome"?`<button class="gx-skip" id="gxskip">Skip</button>`:"<span></span>";
+    center=G.step!=="follow";
     top=`<span></span>${skip}`;
     const av=(cls)=>`<div class="gx-av ${cls||""}">${ME&&ME.avatarUrl?`<img src="${esc(ME.avatarUrl)}" alt="">`:GX_PERSON}</div>`;
     if(G.step==="verify"){   // 2026-10-19: "accounts should be prompted to verify their email"
@@ -152,7 +156,7 @@ function gateHTML(){
   }
   return `<div class="gate"><div class="gx">
     <header class="gx-top">${top}</header>
-    <main class="gx-body${center?" center":""}">${body}</main>
+    <main class="gx-body${center?" center":" long"}">${body}</main>
     ${foot?`<footer class="gx-foot">${foot}</footer>`:""}
   </div></div>`;
 }
