@@ -615,8 +615,13 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#sfile").setInputFiles(UPLOAD_PNG);
     await p.waitForSelector(".pf-img", { timeout: 8000 });
     await p.locator("#s-title").fill("E2E Custom Jacket"); await p.locator("#s-price").fill("220"); await p.locator("#s-size").fill("One size");
+    /* 2026-10-20: a member can put their piece in the LABS Instagram shop (an admin's are always in, so no switch) */
+    const admin = await p.evaluate(() => !!ME.isAdmin);
+    ok(await p.locator("#s-ig").count() === (admin ? 0 : 1), "the Instagram shop switch shows for the wrong person");
+    if (!admin) await p.locator("#s-ig").check();
     await p.locator("#s-post").tap();
     await p.waitForFunction(() => MKTVIEW === "detail" && MKTONE && MKTONE.title === "E2E Custom Jacket", null, { timeout: 8000 });
+    if (!admin) ok(await p.evaluate(async () => (await req("/api/market/" + MKTONE.id + "/ig-shop")).on === true), "the Instagram shop switch didn't save");
     ok(await p.evaluate(() => MKTONE.sellType === "custom" && MKTONE.quantity === 1 && !MKTONE.variants.length && MKTONE.condition === "New"), "not a one of one: " + JSON.stringify(await p.evaluate(() => [MKTONE.sellType, MKTONE.quantity, MKTONE.condition])));
     ok(await p.locator(".dchips .dchip", { hasText: "One of one" }).count() === 1, "the page doesn't say One of one");
     await toMarket();

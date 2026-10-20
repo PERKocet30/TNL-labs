@@ -112,6 +112,7 @@ function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
       ${loop?"":sellCompareHTML(f)}</div>
       ${loop?"":`<div id="s-cmphint">${sellCompareHint(f)}</div>`}
       <label class="pf-row"><span>Accept offers</span><input type="checkbox" class="pf-sw" id="s-offers" ${f.acceptsOffers!==false?"checked":""}></label>
+      ${loop||(ME&&ME.isAdmin)?"":`<label class="pf-row"><span>Show in the LABS Instagram shop<small class="pf-hint">So it can be tagged in Instagram posts.</small></span><input type="checkbox" class="pf-sw" id="s-ig" ${f.igShop?"checked":""}></label>`}
     </section>
 
     ${loop?`
@@ -248,3 +249,5 @@ function studioHTML(){
 
 /* Renders one piece of work on a profile. Takes the account's KIND so the
    collab credit reads in their language — "Designed with" vs "Made with". */
+/* "Show in the LABS Instagram shop" (2026-10-20): the seller's own switch, saved beside the listing (server-12-meta-feed). */
+const igShopSave=(id,on)=>on===undefined?null:req("/api/market/"+id+"/ig-shop",{method:"POST",body:{on:!!on}}).catch(()=>toast("Couldn't update the Instagram shop setting"));

@@ -14,8 +14,9 @@ const { db } = await import(join(ROOT, "src/db.js"));
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 const now = Date.now();
-const mk = (u, admin) => Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, is_admin) VALUES (?,?,?,?,?,1,?)`).run(u, u, u + "@x.test", "x", now, admin).lastInsertRowid);
-const boss = mk("boss", 1), ana = mk("ana", 0);
+const mk = (u, admin) => { const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, is_admin) VALUES (?,?,?,?,?,1,?)`).run(u, u === "ana" ? "Ana Reyes" : u, u + "@x.test", "x", now, admin).lastInsertRowid);
+  db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?,?,?)`).run("tok-" + u, id, now); return id; };
+const boss = mk("boss", 1), ana = mk("ana", 0); mk("cy", 0);
 const L = (seller, title, o = {}) => Number(db.prepare(`INSERT INTO listings (seller_id, title, description, price_cents, category, brand, condition, colour, images, status, quantity, variants, kind, compare_cents, created_at, updated_at)
   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(seller, title, o.desc ?? "Heavyweight tee, \"boxy\" fit.\nScreen printed.", o.price ?? 4500, o.cat ?? "Tops", o.brand ?? "TNL", o.cond ?? "New", o.colour ?? "Black",
   JSON.stringify(o.imgs ?? ["/uploads/a.jpg", "/uploads/b.jpg"]), o.status ?? "active", o.qty ?? 1, JSON.stringify(o.variants ?? []), o.kind ?? "physical", o.compare ?? null, now, now).lastInsertRowid);
@@ -25,7 +26,7 @@ const gone = L(boss, "Sold hoodie", { status: "sold", qty: 0 });
 L(boss, "Removed cap", { status: "removed" });
 L(boss, "Beat pack", { kind: "loop" });
 L(boss, "No picture", { imgs: [] });
-L(ana, "Ana's jacket");
+const jacket = L(ana, "Ana's jacket", { brand: "" }), anaBeat = L(ana, "Ana's beat", { kind: "loop" });
 db.close();
 const PORT = 8903, B = `http://localhost:${PORT}`;
 const srv = spawn(process.execPath, ["--experimental-sqlite", "--no-warnings", "src/server.runtime.js"], {
@@ -42,7 +43,7 @@ try {
   console.log("\nTHE FEED");
   t("a CSV anyone (Meta) can read", r.status === 200 && /text\/csv/.test(r.headers.get("content-type")));
   t("Meta's columns, in a header row", ["id", "title", "description", "availability", "condition", "price", "link", "image_link", "brand"].every((c) => head.includes(c)));
-  t("only LABS's own physical pieces with a picture: no member's, no beats, nothing removed", rec.length === 4 && !body.includes("Ana's jacket") && !body.includes("Beat pack") && !body.includes("Removed cap") && !body.includes("No picture"));
+  t("only physical pieces with a picture, from LABS or a member who switched it on: no beats, nothing removed", rec.length === 4 && !body.includes("Ana's jacket") && !body.includes("Beat pack") && !body.includes("Removed cap") && !body.includes("No picture"));
   console.log("\nA PIECE WITH SIZES");
   t("one row per size, grouped like Shopify's", by(`labs-${tee}-s1`).item_group_id === `labs-${tee}` && by(`labs-${tee}-s2`).item_group_id === `labs-${tee}` && by(`labs-${tee}-s1`).size === "M");
   t("each size's own stock", by(`labs-${tee}-s1`).availability === "in stock" && by(`labs-${tee}-s1`).quantity_to_sell_on_facebook === "3" && by(`labs-${tee}-s2`).availability === "out of stock");
@@ -54,6 +55,15 @@ try {
   t("a price drop shows as a sale (was / now)", by(`labs-${print}`).price === "60.00 USD" && by(`labs-${print}`).sale_price === "40.00 USD");
   t("worn condition is used; no brand set says LABS; prints are artwork", by(`labs-${print}`).condition === "used" && by(`labs-${print}`).brand === "LABS" && /Artwork/.test(by(`labs-${print}`).google_product_category));
   t("sold out stays in, as out of stock, so a tagged post never breaks", by(`labs-${gone}`).availability === "out of stock" && by(`labs-${gone}`).quantity_to_sell_on_facebook === "0");
+  console.log("\nA MEMBER'S OWN PIECE (THEIR SWITCH)");
+  const api = async (who, path, body) => { const r = await fetch(B + path, { method: body ? "POST" : "GET", headers: { "Content-Type": "application/json", Authorization: "Bearer tok-" + who }, body: body ? JSON.stringify(body) : undefined }); return { s: r.status, j: await r.json().catch(() => ({})) }; };
+  const feed = async () => await (await fetch(B + "/feeds/meta.csv")).text();
+  t("off until they switch it on", (await api("ana", `/api/market/${jacket}/ig-shop`)).j.on === false && !(await feed()).includes("Ana's jacket"));
+  t("nobody else can switch it on", (await api("cy", `/api/market/${jacket}/ig-shop`, { on: true })).s === 403);
+  t("beats can't go in", (await api("ana", `/api/market/${anaBeat}/ig-shop`, { on: true })).s === 400);
+  t("switched on: in the feed, under their name when they gave no brand", (await api("ana", `/api/market/${jacket}/ig-shop`, { on: true })).j.on === true
+    && (await feed()).includes(`"labs-${jacket}"`) && (await feed()).includes('"Ana Reyes"'));
+  t("switched off: gone again", (await api("ana", `/api/market/${jacket}/ig-shop`, { on: false })).j.on === false && !(await feed()).includes("Ana's jacket"));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

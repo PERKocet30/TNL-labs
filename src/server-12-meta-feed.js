@@ -5,9 +5,11 @@
    (Catalog → Data sources → Data feed → Scheduled feed):
      GET /feeds/meta.csv
    One row per product — per size/colour when it has them, grouped
-   (item_group_id) the way Shopify sends them. Only what LABS itself sells:
-   physical listings by an admin (Meta wants the account that tags to be
-   the seller), never other members' listings and never beats. Sold-out
+   (item_group_id) the way Shopify sends them. Physical pieces only (never
+   beats): everything an admin lists, plus any member's listing its seller
+   switched on — "Show in the LABS Instagram shop" on the sell form
+   (2026-10-20: "what if I want other people to be able to tag what they
+   list"). It's theirs to turn on and off: POST /api/market/:id/ig-shop. Sold-out
    stays in as "out of stock" so a tagged post never breaks; removed
    leaves. Price, picture and link are the listing page's own (/m/:id), so
    Meta's checks that feed and page agree pass. test/meta-feed.test.mjs.
@@ -24,9 +26,10 @@ const FEED_CAT = { Tops: "Apparel & Accessories > Clothing > Shirts & Tops", Bot
   "Art / Prints": "Home & Garden > Decor > Artwork > Posters, Prints, & Visual Artwork", "Original art": "Home & Garden > Decor > Artwork",
   Photography: "Home & Garden > Decor > Artwork > Posters, Prints, & Visual Artwork", "Sculpture & objects": "Home & Garden > Decor > Artwork > Sculptures & Statues" };
 
+db.exec(`CREATE TABLE IF NOT EXISTS ig_shop (listing_id INTEGER PRIMARY KEY REFERENCES listings(id) ON DELETE CASCADE, created_at INTEGER NOT NULL)`);
 function metaFeedRows(base) {
-  const ls = db.prepare(`SELECT l.* FROM listings l JOIN users u ON u.id = l.seller_id
-    WHERE u.is_admin = 1 AND COALESCE(u.suspended, 0) = 0 AND l.status IN ('active', 'sold') AND COALESCE(l.kind, 'physical') = 'physical'
+  const ls = db.prepare(`SELECT l.*, u.display_name AS seller_name, u.is_admin AS by_admin FROM listings l JOIN users u ON u.id = l.seller_id
+    WHERE (u.is_admin = 1 OR l.id IN (SELECT listing_id FROM ig_shop)) AND COALESCE(u.suspended, 0) = 0 AND l.status IN ('active', 'sold') AND COALESCE(l.kind, 'physical') = 'physical'
     ORDER BY l.created_at DESC LIMIT 2000`).all();
   const rows = [];
   for (const l of ls) {
@@ -39,7 +42,7 @@ function metaFeedRows(base) {
       condition: ["New", "Deadstock"].includes(l.condition) ? "new" : "used",
       price: feedMoney(onSale ? l.compare_cents : l.price_cents, l.currency), sale_price: onSale ? feedMoney(l.price_cents, l.currency) : "",
       link, image_link: abs(imgs[0]), additional_image_link: imgs.slice(1, 10).map(abs).join(","),
-      brand: l.brand || "LABS", google_product_category: FEED_CAT[l.category] || "Apparel & Accessories",
+      brand: l.brand || (l.by_admin ? "LABS" : l.seller_name) || "LABS", google_product_category: FEED_CAT[l.category] || "Apparel & Accessories",
     };
     const vs = parseVariants(l);
     if (!vs.length) {
@@ -60,4 +63,23 @@ app.get("/feeds/meta.csv", rateLimit({ max: 60, windowMs: 60000 }), (req, res) =
   res.set("Content-Type", "text/csv; charset=utf-8");
   res.set("Cache-Control", "public, max-age=300");
   res.send([FEED_COLS.join(","), ...rows.map((r) => FEED_COLS.map((c) => feedCell(r[c])).join(","))].join("\n") + "\n");
+});
+
+/* The seller's switch. Only physical pieces; only the seller (or an admin) can flip it. */
+function igShopListing(req, res) {
+  const l = db.prepare(`SELECT id, seller_id, kind FROM listings WHERE id = ?`).get(Number(req.params.id) || 0);
+  if (!l) { res.status(404).json({ error: "No such listing." }); return null; }
+  if (l.seller_id !== req.user.id && !req.user.is_admin) { res.status(403).json({ error: "Not your listing." }); return null; }
+  return l;
+}
+app.get("/api/market/:id/ig-shop", auth, (req, res) => {
+  const l = igShopListing(req, res); if (!l) return;
+  res.json({ on: !!db.prepare(`SELECT 1 FROM ig_shop WHERE listing_id = ?`).get(l.id) });
+});
+app.post("/api/market/:id/ig-shop", auth, (req, res) => {
+  const l = igShopListing(req, res); if (!l) return;
+  if ((l.kind || "physical") !== "physical") return res.status(400).json({ error: "Only physical pieces can be tagged on Instagram." });
+  if (req.body?.on) db.prepare(`INSERT OR IGNORE INTO ig_shop (listing_id, created_at) VALUES (?, ?)`).run(l.id, Date.now());
+  else db.prepare(`DELETE FROM ig_shop WHERE listing_id = ?`).run(l.id);
+  res.json({ on: !!req.body?.on });
 });

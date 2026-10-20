@@ -59,3 +59,4 @@ select.pf-in{appearance:none;-webkit-appearance:none}
 .pf-why summary b{color:var(--tx)}
 .pf-why span{display:block;font-size:12px;color:var(--dim);margin-top:4px}
 .pf-bar:has(.pf-keep:not(:empty)){background:var(--bg);border-top:1px solid var(--line)}
+.pf-row small{display:block;margin-top:2px}   /* a line under a switch's label (Show in the LABS Instagram shop) */
