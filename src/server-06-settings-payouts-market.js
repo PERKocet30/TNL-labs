@@ -144,7 +144,7 @@ app.post("/api/market/connect", auth, verified, async (req, res) => {
   const base = baseUrl(req);
   const who = { email: req.user.email, username: req.user.username, profileUrl: `${base}/u/${encodeURIComponent(req.user.username)}` };
   let stuck = false;
-  if (acct && kind !== "express") {
+  if (acct && !String(kind).startsWith("express")) {
     const st = await accountStatus(acct);
     stuck = !st.error && !st.ready && !st.detailsSubmitted;   // halfway through the long signup
   }
