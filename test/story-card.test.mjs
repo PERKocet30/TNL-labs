@@ -4,7 +4,7 @@
 import { spawn, spawnSync, execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { rmSync, mkdirSync, writeFileSync } from "node:fs";
+import { rmSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "test/.tmp/story-card");
@@ -37,6 +37,8 @@ const PORT = 8870, B = `http://localhost:${PORT}`;
 const srv = spawn(process.execPath, ["--experimental-sqlite", "--no-warnings", "src/server.runtime.js"], {
   cwd: ROOT, env: { ...process.env, TNL_DATA: DATA, PORT: String(PORT), STRIPE_SECRET_KEY: "", TNL_NO_VIDEO_FIX: "1", TNL_NO_WATCH: "1" }, stdio: "ignore" });
 const px = (file, x, y) => [...execFileSync(FF, ["-loglevel", "error", "-i", file, "-vf", `crop=2:2:${x}:${y}`, "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], { stdio: ["ignore", "pipe", "pipe"] })].slice(0, 3);
+/* the first quantisation table: fine steps at top JPEG quality */
+const topQ = (file) => { const b = readFileSync(file), at = b.indexOf(Buffer.from([0xff, 0xdb])); if (at < 0) return false; const v = [...b.subarray(at + 5, at + 69)]; return v.reduce((a, c) => a + c) / 64 <= 5; };   // was ~12 at -q:v 3
 const near = (a, b, d = 40) => a.every((v, i) => Math.abs(v - b[i]) <= d);
 try {
   for (let i = 0; i < 100; i++) { try { if ((await fetch(B + "/api/health")).ok) break; } catch {} await new Promise((r) => setTimeout(r, 100)); }
@@ -45,6 +47,8 @@ try {
   const f = join(DATA, "art.jpg"); writeFileSync(f, Buffer.from(await r.arrayBuffer()));
   const probe = (() => { try { execFileSync(FF, ["-i", f], { stdio: ["ignore", "pipe", "pipe"] }); } catch (e) { return String(e.stderr); } })();
   t("a 1080×1920 picture", r.status === 200 && /1080x1920/.test(probe));
+  // 2026-10-20 "cards look kinda blurry": full colour detail (4:4:4), top quality — Instagram squeezes it again
+  t("…sharp: full colour detail and top JPEG quality", /yuvj444p/.test(probe) && topQ(f));
   const corner = px(f, 20, 20), low = px(f, 20, 1880);
   t("no white sheet: the corners are the work's colours, not white", !near(corner, [255, 255, 255], 60) && !near(low, [255, 255, 255], 60));
   // away from the darkened edges, clear of the type: just above the piece and just below the tag

@@ -45,7 +45,10 @@ function evGraph(w, h) {
     lay: (label, x, y) => { f.push(`[${last}][${label}]overlay=${x}:${y}[s${++n}]`); last = `s${n}`; },
     box: (color, bw, bh, x, y) => { const l = `b${n}x${f.length}`; f.push(`color=c=${color}:s=${bw}x${bh}:d=1[${l}]`); g.lay(l, x, y); },
     filter: (expr) => { f.push(`[${last}]${expr}[s${++n}]`); last = `s${n}`; },
-    out: (file) => [...args, "-filter_complex", f.join(";"), "-map", `[${last}]`, "-frames:v", "1", "-q:v", "3", file],
+    /* best: the Story cards (2026-10-20, "cards look kinda blurry"), which Instagram squeezes again —
+       top JPEG quality and full colour detail (4:4:4), so bright lines on white stay crisp */
+    out: (file, best) => [...args, "-filter_complex", f.join(";"), "-map", `[${last}]`, "-frames:v", "1",
+      ...(best ? ["-pix_fmt", "yuvj444p", "-q:v", "1", "-qmin", "1"] : ["-q:v", "3"]), file],
   };
   return g;
 }

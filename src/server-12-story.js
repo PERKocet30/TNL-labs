@@ -27,7 +27,7 @@ const SCK = { ink: ffc(PALETTE.dark.tx), ink2: ffc(PALETTE.dark.dim), shade: ffc
 /* c: { prefix, head, sub, art?, bg?, avatar?, tiles?, quote?, cover?, lead?, music?, count?, tag, handle, cta?, url, accent }
    The tournament's entry Story is one of these too (server-10-events-4-cards). */
 function storyCard(c) {
-  const hash = createHash("sha1").update(JSON.stringify([8, c])).digest("hex").slice(0, 12);
+  const hash = createHash("sha1").update(JSON.stringify([9, c])).digest("hex").slice(0, 12);
   const make = (out, dir) => {
     const W = SC.w, H = SC.h, P = SC.pad, g = evGraph(W, H), t = evAss(dir, W, H), bw = W - 2 * P, by = SC.by, bh = SC.bh;
     const acc = ffc(c.accent), onAcc = ffc(onAccent(c.accent));
@@ -49,7 +49,7 @@ function storyCard(c) {
     disc(SCK.shade, A + 6, "gap", P - 3, ay - 3);
     if (c.avatar) {
       const i = g.input(c.avatar);
-      g.f.push(`[${i}:v]scale=${A * 2}:${A * 2}:force_original_aspect_ratio=increase,crop=${A * 2}:${A * 2},setsar=1,${round(A)}[av]`);
+      g.f.push(`[${i}:v]scale=${A * 2}:${A * 2}:force_original_aspect_ratio=increase:flags=lanczos,crop=${A * 2}:${A * 2},setsar=1,${round(A)}[av]`);
       g.lay("av", P, ay);
     } else {
       disc(SCK.el, A, "av", P, ay);
@@ -62,7 +62,7 @@ function storyCard(c) {
     if (c.art) {
       /* the piece, whole and as large as the frame allows, on a soft shadow */
       const i = g.input(c.art);
-      g.f.push(`[${i}:v]scale=${bw}:${bh}:force_original_aspect_ratio=decrease,setsar=1,format=rgb24,split=2[art][sh0]`,
+      g.f.push(`[${i}:v]scale=${bw}:${bh}:force_original_aspect_ratio=decrease:flags=lanczos,setsar=1,format=rgb24,split=2[art][sh0]`,
         `[sh0]drawbox=c=black:t=fill,format=rgba,colorchannelmixer=aa=0.45,boxblur=12:2[sh]`);
       g.lay("sh", `${P}+(${bw}-w)/2+10`, `${by}+(${bh}-h)/2+18`);
       g.lay("art", `${P}+(${bw}-w)/2`, `${by}+(${bh}-h)/2`);
@@ -73,7 +73,7 @@ function storyCard(c) {
       const rows = Math.max(1, Math.ceil(c.tiles.length / 2)), s = Math.min(Math.floor((bw - gap) / 2), Math.floor((by + bh - gy - (rows - 1) * gap) / rows));
       c.tiles.forEach((f, k) => {
         const x = P + (k % 2) * (s + gap), y = gy + Math.floor(k / 2) * (s + gap), i = g.input(f);
-        g.f.push(`[${i}:v]scale=${s}:${s}:force_original_aspect_ratio=increase,crop=${s}:${s},setsar=1,format=rgb24[t${k}]`);
+        g.f.push(`[${i}:v]scale=${s}:${s}:force_original_aspect_ratio=increase:flags=lanczos,crop=${s}:${s},setsar=1,format=rgb24[t${k}]`);
         g.lay(`t${k}`, x, y);
       });
       if (!c.tiles.length) g.box(`${SCK.shade}@0.4`, bw, s, P, gy);
@@ -98,7 +98,7 @@ function storyCard(c) {
     t.at("LABS ®", P + 70, H - 172, 34, true, ink, 4);
     t.at(c.url, W - P, H - 172, 28, false, ink2, 6);
     g.filter(t.write());
-    return g.out(out);
+    return g.out(out, true);
   };
   return { hash, prefix: c.prefix, make };
 }
@@ -168,16 +168,16 @@ app.get("/tr/:id/story.jpg", storyLimit, (req, res) => {
    pushed in slowly over 15 seconds (or the song, if shorter), with the
    first 15 seconds of the song under it — faded in and out. Made once,
    kept next to the picture under og/, one build at a time. */
-const SV = { version: 1, secs: 15, fps: 30 };
+const SV = { version: 2, secs: 15, fps: 30 };   // 2: sharper (lanczos, crf 18, 2026-10-20)
 const SV_BUILDS = new Map();
 function storyVideoArgs(still, audio, secs, out) {
   const n = Math.round(secs * SV.fps), fadeAt = Math.max(0, secs - 1.5).toFixed(2);
   return ["-nostdin", "-y", "-loglevel", "error",
     "-loop", "1", "-framerate", String(SV.fps), "-t", String(secs), "-i", still,
     "-t", String(secs), "-i", audio,
-    "-filter_complex", `[0:v]scale=1188:2112,zoompan=z='1+0.05*on/${n}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=${SV.fps},format=yuv420p[v];` +
+    "-filter_complex", `[0:v]scale=1188:2112:flags=lanczos,zoompan=z='1+0.05*on/${n}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=${SV.fps},format=yuv420p[v];` +
       `[1:a]aresample=44100,afade=t=in:d=0.3,afade=t=out:st=${fadeAt}:d=1.5[a]`,
-    "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-profile:v", "high", "-level", "4.0",
+    "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-profile:v", "high", "-level", "4.0",
     "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-t", String(secs), "-movflags", "+faststart", out];
 }
 async function storyVideo(p, base) {
