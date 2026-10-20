@@ -1,5 +1,11 @@
 /* ================================================================
-   PAYMENTS v3.0 — 2026-10-19 — Stripe Connect, over the plain HTTP API.
+   PAYMENTS v3.1 — 2026-10-19 — Stripe Connect, over the plain HTTP API.
+   v3.1: Express with Stripe keeping the risk ("Stripe-managed risk"), asked
+   for first. Then the seller pays their own card fee as on Standard (kind
+   "express_stripe": no card fee in our cut, pay-later stays on) and LABS
+   covers nobody's refunds. If Stripe won't do that for this platform, it's
+   v3.0's Express (kind "express": LABS pays the card fee and carries the
+   risk), and failing that Standard.
    v3.0: Express for new sellers. "Setting up an account to sell is really
    complicated" — Standard is Stripe's full business signup (an authenticator
    app, a website, a business description, support details, a statement
@@ -96,20 +102,27 @@ export function statementName(username) {
 /* Express: Stripe's short signup. The platform pays the card fee and covers
    losses; Stripe still checks who they are. Everything LABS already knows is
    filled in before the first link (after it, Stripe won't let us). */
-const expressBody = ({ email, username, profileUrl }) => ({
-  controller: { stripe_dashboard: { type: "express" }, fees: { payer: "application" },
-    losses: { payments: "application" }, requirement_collection: "stripe" },
+const expressBody = ({ email, username, profileUrl }, stripeRisk) => ({
+  controller: { stripe_dashboard: { type: "express" }, requirement_collection: "stripe",
+    ...(stripeRisk ? { fees: { payer: "account" }, losses: { payments: "stripe" } }       // Stripe carries it, seller pays Stripe
+                   : { fees: { payer: "application" }, losses: { payments: "application" } }) },
   country: "US", email, business_type: "individual",
   capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
   business_profile: { url: profileUrl, product_description: "Sells their own work (clothing, art, music) on LABS, a marketplace for creatives." },
   settings: { payments: { statement_descriptor: statementName(username) } },
 });
 
+/** Either Express: the short signup and the payouts page. Only plain
+ *  "express" has LABS paying the card fee (platformPaysStripe). */
+export const isExpress = (kind) => String(kind || "").startsWith("express");
+
 /** Make a seller's Stripe account: Express if the platform has it switched on,
  *  else Standard (with their LABS page filled in as the website). → { id, kind } */
 export async function createSellerAccount({ email, username, profileUrl, expressOnly = false } = {}) {
   if (!KEY) return { error: "payments not configured" };
-  const ex = await stripe("accounts", { body: expressBody({ email, username, profileUrl }) });
+  const sm = await stripe("accounts", { body: expressBody({ email, username, profileUrl }, true) });
+  if (!sm.error) return { id: sm.id, kind: "express_stripe" };
+  const ex = await stripe("accounts", { body: expressBody({ email, username, profileUrl }, false) });
   if (!ex.error) return { id: ex.id, kind: "express" };
   if (expressOnly) return ex;
   const out = await stripe("accounts", { body: { type: "standard", email, business_profile: profileUrl ? { url: profileUrl } : undefined } });
@@ -123,7 +136,7 @@ export async function onboardingLink(accountId, refreshUrl, returnUrl, kind) {
   if (!KEY) return { error: "payments not configured" };
   const out = await stripe("account_links", {
     body: { account: accountId, refresh_url: refreshUrl, return_url: returnUrl, type: "account_onboarding",
-      ...(kind === "express" ? { collection_options: { fields: "currently_due", future_requirements: "omit" } } : {}) },
+      ...(isExpress(kind) ? { collection_options: { fields: "currently_due", future_requirements: "omit" } } : {}) },
   });
   if (out.error) return out;
   return { url: out.url };
@@ -146,7 +159,7 @@ export async function accountStatus(accountId) {
  *  them a code). Standard sellers sign in to their own full Stripe dashboard —
  *  login_links errors on those ("does not have access to the Express Dashboard"). */
 export async function loginLink(accountId, kind) {
-  if (kind !== "express") return { url: "https://dashboard.stripe.com" };
+  if (!isExpress(kind)) return { url: "https://dashboard.stripe.com" };
   if (!KEY) return { error: "payments not configured" };
   const out = await stripe(`accounts/${encodeURIComponent(accountId)}/login_links`, {});
   if (out.error) return out;
