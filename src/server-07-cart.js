@@ -87,7 +87,7 @@ function checkoutFailed(res, out, sellerId, buyerId, what) {
   if (out.setup) {
     /* An Express seller has no payment settings of their own — what's missing
        is the rest of their payouts signup (2026-10-19). */
-    const express = q.userById.get(sellerId)?.stripe_kind === "express";
+    const express = String(q.userById.get(sellerId)?.stripe_kind || "").startsWith("express");
     notify(sellerId, buyerId, "sale", null, express
       ? `Someone tried to buy ${what}, but your payouts aren't finished yet — open the Market, tap Sell, and finish setting up payouts`
       : `Someone tried to buy ${what}, but your Stripe account can't take cards yet — in Stripe, open Settings → Payment methods and turn on Cards`);

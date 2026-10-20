@@ -19,12 +19,13 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "�
 
 /* A pretend Stripe: answers by path; `refuseExpress` plays a platform that
    hasn't switched Express on; `acctState` is what GET /accounts/:id says. */
-let calls = [], refuseExpress = false, acctState = {}, nextId = 1;
+let calls = [], refuseExpress = false, refuseManaged = true, acctState = {}, nextId = 1;
 globalThis.fetch = async (url, o) => {
   const path = String(url).replace("https://api.stripe.com/v1/", ""), body = decodeURIComponent(o.body || "");
   calls.push({ path, body, method: o.method, headers: o.headers });
   const ok = (j) => ({ ok: true, status: 200, json: async () => j });
   const no = (m) => ({ ok: false, status: 400, json: async () => ({ error: { message: m } }) });
+  if (path === "accounts" && body.includes("controller[losses][payments]=stripe")) return refuseManaged || refuseExpress ? no("Stripe-managed risk isn't available for this platform") : ok({ id: "acct_sm" + nextId++ });
   if (path === "accounts" && body.includes("controller[")) return refuseExpress ? no("Please review the responsibilities of managing losses for connected accounts") : ok({ id: "acct_ex" + nextId++ });
   if (path === "accounts") return ok({ id: "acct_std" + nextId++ });
   if (path === "account_links") return ok({ url: "https://connect.stripe.com/setup/x" });
@@ -38,8 +39,8 @@ const pay = await import(join(ROOT, "src/pay.js"));
 console.log("\nTHE SHORT SIGNUP");
 calls = [];
 let r = await pay.createSellerAccount({ email: "m@x.com", username: "bymauriciofuentes", profileUrl: "https://tnllabs.com/u/bymauriciofuentes" });
-let b = calls[0].body;
-t("a new seller gets Express", r.kind === "express" && r.id.startsWith("acct_ex") && calls.length === 1);
+let b = calls[1].body;
+t("Stripe won't carry the risk here: Express with LABS carrying it", r.kind === "express" && r.id.startsWith("acct_ex") && calls.length === 2 && calls[0].body.includes("controller[losses][payments]=stripe"));
 t("…the Express dashboard, Stripe checking who they are", b.includes("controller[stripe_dashboard][type]=express") && b.includes("controller[requirement_collection]=stripe"));
 t("…LABS pays the card fee and covers losses (that's what Express is)", b.includes("controller[fees][payer]=application") && b.includes("controller[losses][payments]=application"));
 t("…their LABS page is the website (no 'your website' screen)", b.includes("business_profile[url]=https://tnllabs.com/u/bymauriciofuentes") && b.includes("business_profile[product_description]="));
@@ -49,10 +50,10 @@ t("the statement name fits Stripe's rules (5–22 characters, letters, no odd sy
   pay.statementName("bymauriciofuentes").length <= 22 && pay.statementName("ab") === "LABS AB" && pay.statementName("o'neil*<x>") === "LABS ONEILX" && pay.statementName("a_very_long_username_indeed").length === 22);
 calls = []; refuseExpress = true;
 r = await pay.createSellerAccount({ email: "m@x.com", username: "m", profileUrl: "https://tnllabs.com/u/m" });
-t("Express not switched on yet: a Standard account instead — selling never stops", r.kind === "standard" && calls.length === 2 && calls[1].body.includes("type=standard") && calls[1].body.includes("business_profile[url]=https://tnllabs.com/u/m"));
+t("Express not switched on yet: a Standard account instead — selling never stops", r.kind === "standard" && calls.length === 3 && calls[2].body.includes("type=standard") && calls[2].body.includes("business_profile[url]=https://tnllabs.com/u/m"));
 calls = [];
 r = await pay.createSellerAccount({ email: "m@x.com", username: "m", expressOnly: true });
-t("…unless only Express will do: then nothing is made (no spare accounts)", !!r.error && calls.length === 1);
+t("…unless only Express will do: then nothing is made (no spare accounts)", !!r.error && calls.length === 2);
 refuseExpress = false;
 
 calls = [];
@@ -119,7 +120,7 @@ t("submitted and waiting on Stripe's review: keeps it too", me(id).stripe_accoun
 refuseExpress = true;
 id = U("stuck2", "acct_old4", ""); acctState.acct_old4 = { charges_enabled: false, details_submitted: false };
 calls = []; r = await hit("POST /api/market/connect", id);
-t("stuck, and Express isn't on yet: carries on with theirs, no spare account made", me(id).stripe_account === "acct_old4" && calls.filter((c) => c.path === "accounts").length === 1 && r.url);
+t("stuck, and Express isn't on yet: carries on with theirs, no spare account made", me(id).stripe_account === "acct_old4" && calls.filter((c) => c.path === "accounts").length === 2 && r.url);
 id = U("new2"); r = await hit("POST /api/market/connect", id);
 t("new, and Express isn't on yet: Standard, as before", me(id).stripe_kind === "standard" && r.url);
 refuseExpress = false;
@@ -127,6 +128,24 @@ refuseExpress = false;
 id = U("ex", "acct_ex9", "express"); calls = [];
 r = await hit("GET /api/market/connect/dashboard", id);
 t("'Your payouts' for an Express seller: their one-time link", r.url === "https://connect.stripe.com/express/login/x");
+
+console.log("\nSTRIPE KEEPS THE RISK (v3.1)");
+refuseManaged = false; calls = [];
+r = await pay.createSellerAccount({ email: "m@x.com", username: "bymauriciofuentes", profileUrl: "https://tnllabs.com/u/bymauriciofuentes" });
+b = calls[0].body;
+t("asked first: Express with Stripe carrying the risk, the seller paying Stripe", r.kind === "express_stripe" && calls.length === 1 && b.includes("controller[losses][payments]=stripe") && b.includes("controller[fees][payer]=account") && b.includes("controller[stripe_dashboard][type]=express"));
+t("…same short signup, same filled-in details", b.includes("business_profile[url]=https://tnllabs.com/u/bymauriciofuentes") && b.includes("settings[payments][statement_descriptor]=LABS BYMAURICIOFUENTES"));
+calls = []; await pay.onboardingLink("acct_sm1", "https://x/r", "https://x/d", "express_stripe");
+t("…Stripe asks only what's due now", calls[0].body.includes("collection_options[fields]=currently_due"));
+calls = []; r = await pay.loginLink("acct_sm1", "express_stripe");
+t("…'Your payouts' opens their Express page", r.url === "https://connect.stripe.com/express/login/x");
+id = U("managed"); calls = []; r = await hit("POST /api/market/connect", id);
+t("the route stores which kind it got", me(id).stripe_kind === "express_stripe" && r.url);
+calls = []; await hit("POST /api/market/connect", id);
+t("…and doesn't treat it as a stuck long signup", calls.filter((c) => c.path === "accounts" || /^accounts\/[^/]+$/.test(c.path)).length === 0);
+const os = readFileSync(join(ROOT, "src/server-07-orders-sharing.js"), "utf8");
+t("checkout: only plain 'express' adds the card fee (Stripe-risk sellers pay Stripe themselves, pay-later stays)", os.includes('platformPaysStripe: seller.stripe_kind === "express",'));
+refuseManaged = true;
 
 console.log("\nWIRED IN");
 const read = (f) => readFileSync(join(ROOT, "src", f), "utf8");
