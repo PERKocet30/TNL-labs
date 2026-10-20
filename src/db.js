@@ -524,6 +524,9 @@ if (!pcols.includes("is_work")) {
 }
 
 if (!cols.includes("stripe_account")) db.exec(`ALTER TABLE users ADD COLUMN stripe_account TEXT NOT NULL DEFAULT ''`);
+/* 2026-10-19: which kind of Stripe account — 'express' (Stripe's short signup;
+   LABS pays the card fee) or '' / 'standard' (the seller's own full account). */
+if (!cols.includes("stripe_kind")) db.exec(`ALTER TABLE users ADD COLUMN stripe_kind TEXT NOT NULL DEFAULT ''`);
 /* Everyone gets black. The accent is theirs. Green is the flask, so it's
    the default — but a fashion designer's page has no reason to look like
    a producer's. Stored as a key, never a raw hex from the client. */

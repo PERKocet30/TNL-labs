@@ -36,10 +36,10 @@ function payoutBannerHTML(){
   if(!MKTMETA.paymentsEnabled)return `<div class="paybar off"><div><b>Card payments are off</b>
     <div class="dim">Buyers pay you directly for now.</div></div></div>`;
   if(ME.payoutsReady)return `<div class="paybar ok"><div><b>Payouts connected</b></div>
-    <button class="btn sm ghost" id="paydash">Stripe dashboard</button></div>`;
+    <button class="btn sm ghost" id="paydash">Your payouts</button></div>`;
   return `<div class="paybar"><div><b>Set up payouts</b>
-    <div class="dim">Stripe pays you directly.</div></div>
-    <button class="btn sm green" id="payconnect">${ME.hasStripe?"Finish setup":"Connect Stripe"}</button></div>`}
+    <div class="dim">A couple of minutes, once.</div></div>
+    <button class="btn sm green" id="payconnect">${ME.hasStripe?"Finish setup":"Set up"}</button></div>`}
 
 /* ── LISTING EDITOR · v3 · 2026-10-18 ──────────────────────────────
    v3 ("match Shopify standards, simplified and streamlined"): Photos,
@@ -75,8 +75,8 @@ function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
   if(!MKTEDIT&&MKTMETA.paymentsEnabled&&ME&&!ME.payoutsReady)return `<div class="scroll pf">${head}
     <div class="pf-gate"><div class="pf-gate-ic">$</div>
       <h2 class="pf-h">Set up payouts to sell</h2>
-      <p class="pf-p">Connect Stripe once — it pays you directly.</p>
-      <button class="btn green" id="payconnect2">${ME.hasStripe?"Finish setup":"Connect Stripe"}</button></div></div>`;
+      <p class="pf-p">A couple of minutes, once: who you are and where your money goes. Stripe checks it and pays you.</p>
+      <button class="btn green" id="payconnect2">${ME.hasStripe?"Finish setup":"Set up payouts"}</button></div></div>`;
   const noShip=!Number(f.shipping), st=loop?"":(f.sellType||"");
   if(!loop&&!st&&!MKTEDIT)return `<div class="scroll pf">${head}<div class="pf-body">${sellTypeHTML(f)}</div></div>`;
   const descPh=loop?"Mood, gear, what it's for":st==="brand"?"Fit, fabric, care":st==="vintage"?"Measurements (pit to pit, length), era, any flaws":st==="custom"?"Materials, how you made it, how it fits":"Fit, measurements, any flaws";
