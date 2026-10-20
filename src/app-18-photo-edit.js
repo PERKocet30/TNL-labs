@@ -123,8 +123,10 @@ async function pedDone(){
        with the same feed and grid copies as any upload. */
     const src=clean?img:pedRender(document.createElement("canvas"),img,e,FULL_MAX);
     const tc=drawFit(src,1440,2400),sc=drawFit(src,480,800);
-    const [url,thumb,sm]=await Promise.all([clean?im.orig:upImg(await canvasBlob(src,"image/jpeg",.92)),
-      upImg(await canvasBlob(tc,"image/jpeg",.86)),upImg(await canvasBlob(sc,"image/jpeg",.8))]);
+    /* an edited PNG stays PNG (2026-10-20: see-through parts and flat graphics keep their edges) */
+    const T=/png$/.test(String(im.url||""))?"image/png":"image/jpeg",q=k=>T==="image/png"?undefined:k;
+    const [url,thumb,sm]=await Promise.all([clean?im.orig:upImg(await canvasBlob(src,T,q(.92))),
+      upImg(await canvasBlob(tc,T,q(.86))),upImg(await canvasBlob(sc,T,q(.8)))]);
     Object.assign(im,{url,thumb,sm,w:src.naturalWidth||src.width,h:src.naturalHeight||src.height,tw:tc.width,sw:sc.width});
   }catch(x){if(!c.dead)toast(x.message)}
   im.busy=false;c.upN--;pcRepaint(c);
