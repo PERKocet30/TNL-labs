@@ -85,7 +85,7 @@ function wireEnter(){
     if(gone)return; gone=true;
     /* localStorage, not sessionStorage: the film is a once-per-device
        moment, while the door itself returns every load to carry the tap. */
-    try{ localStorage.setItem("tnl-intro-seen","1") }catch(e){}
+    try{ localStorage.setItem("tnl-intro-seen","1"); sessionStorage.setItem("tnl-in","1") }catch(e){}
     ENTER=false; render();
   };
   const go=()=>{

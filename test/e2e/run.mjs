@@ -251,6 +251,17 @@ console.log("\nNEW MEMBER · PHONE");
     await p.locator("#tournext").tap(); await p.waitForTimeout(200);
     ok(await p.evaluate(() => !GATE), "Done didn't close it");
   });
+  // 2026-10-20: "having to go back to the enter the labs screen after you're already in the app"
+  await step(d, "once in, coming back from another page or reloading goes straight in; a new tab still gets the door", async () => {
+    await settledGoto(p, B + "/terms"); await p.goBack(); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
+    await p.waitForTimeout(400);
+    ok(await p.locator("#enterOv").count() === 0, "back from another page showed the door again");
+    await p.reload(); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 }); await p.waitForTimeout(400);
+    ok(await p.locator("#enterOv").count() === 0, "a reload showed the door again");
+    const t2 = await d.ctx.newPage(); await t2.goto(B + "/");
+    ok(await t2.waitForSelector("#enterOv", { timeout: 8000 }).then(() => true, () => false), "a fresh tab skipped the door");
+    await t2.close();
+  });
   await d.ctx.close();
 }
 
@@ -1755,7 +1766,7 @@ console.log("\nINSIDE INSTAGRAM · PHONE");
   /* v1.1: from a public page straight to the thing, behind the quick door */
   await step(d, "a post's public page: Open in the app lands on that post — quick door, no film — and its Story sheet sits on top", async () => {
     const pid = (await api("/api/users/friend", "e2e-friend-session")).posts.find((x) => x.isWork && x.imageUrl).id;
-    await p.evaluate(() => { localStorage.removeItem("tnl-intro-seen"); localStorage.setItem("tnl-token", "e2e-friend-session"); });
+    await p.evaluate(() => { localStorage.removeItem("tnl-intro-seen"); sessionStorage.removeItem("tnl-in"); localStorage.setItem("tnl-token", "e2e-friend-session"); });   // a fresh visit, as from Instagram
     await settledGoto(p, B + "/p/" + pid);
     await p.locator("a.btn.block").tap();
     await p.waitForSelector("#enterOv", { timeout: 8000 });
