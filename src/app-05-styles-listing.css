@@ -103,8 +103,10 @@
 
 /* ── the bag, recently viewed, price drops, the shop at a glance (app-17-bag.js) ── */
 .shop-acts{display:flex;align-items:center;gap:8px}
-.shop-bag{position:relative;width:40px;height:40px;border-radius:50%;border:1px solid var(--line2);background:var(--bg);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
-.shop-bag svg{width:20px;height:20px}
+/* what the Market is for, under its name (2026-10-20, like a lab's line) */
+.shop-for{margin:6px 0 14px;font-size:15px;line-height:20px;font-weight:700}
+.shop-bag,.shop-share{position:relative;width:40px;height:40px;border-radius:50%;border:1px solid var(--line2);background:var(--bg);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.shop-bag svg,.shop-share svg{width:20px;height:20px}
 .shop-bag span{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:999px;background:var(--accent-fill);color:var(--on-accent);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px;box-sizing:border-box}
 .shop-bag span[hidden]{display:none}
 .lbar .lbar-bag{width:46px;padding:0}
