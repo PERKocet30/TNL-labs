@@ -46,7 +46,9 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
 
 - `src/db.js` — schema, migrations, rep engine. `REP`, `LEVELS` and
   `FEE_BY_LEVEL` are the single source for rep points, levels and commission.
-- `src/pay.js` — Stripe Connect. `src/mail.js` — email via Resend.
+- `src/pay.js` — Stripe Connect: new sellers on Express (LABS pays the card fee, so it's
+  added into the application fee; pay-later is off for them), older ones on Standard —
+  `users.stripe_kind` says which (2026-10-19). `src/mail.js` — email via Resend.
 - `public/studio.js` — the Studio (beat maker), hidden unless Admin → Settings
   → Studio is on (`studioOn()`). `public/admin.html` + `public/admin-app/*.js` — `/admin` (keep each ≤ 24KB too).
 - The README has a table of what each numbered part holds, and the API route list.
@@ -67,7 +69,8 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
 **The app is LABS (2026-10-18).** Everything members, buyers, link previews,
 emails and the admin read says LABS, never TNL — TNL is a separate brand
 (`test/naming.test.mjs` fails on a stray "TNL"). Code names (`TNL_DATA`,
-`TNLStudio`), the tnllabs.com domain and @handles stay as they are.
+`TNLStudio`), the tnllabs.com domain and @handles stay as they are. Sellers' own
+names are theirs: Jorge's clothing shop sells on LABS as **TNL LABS**.
 
 Helvetica. `//` marks the labs (`// Music`). White, black and green: true
 white `#FFFFFF` with neutral greys by default, black in dark mode (no
