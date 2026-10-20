@@ -40,7 +40,7 @@
 .pe-col{cursor:default;flex-wrap:wrap}
 .pe-sw{flex:1;display:flex;flex-wrap:wrap;gap:8px;padding:8px 0}
 .pe-dot{width:30px;height:30px;border-radius:50%;padding:3px;border:2px solid transparent;background:none;cursor:pointer}
-.pe-dot span{display:block;width:100%;height:100%;border-radius:50%}
+.pe-dot span{display:block;width:100%;height:100%;border-radius:50%;box-shadow:inset 0 0 0 1px var(--line2)}   /* Black shows on the night sheet, Silver on white */
 .pe-dot.on{border-color:var(--tx)}
 .pe-sub{padding:14px 16px 40px}
 .pe-link{display:grid;grid-template-columns:1fr 34px;grid-template-rows:auto auto;gap:0 6px;border:1px solid var(--line);padding:4px 12px;margin-bottom:10px}

@@ -38,7 +38,7 @@ t("admin loads the new styles (?v=1.2)", read("public/admin.html").includes("/ad
 
 console.log("\nYOUR COLOUR AROUND YOUR PICTURE");
 const app07 = read("src/app-07-theme-labs-api.js");
-const [avRing, avHTML] = new Function("esc", app07.slice(app07.indexOf("const avRing="), app07.indexOf("\n", app07.indexOf("const avHTML=")) + 1) + "\nreturn [avRing, avHTML];")((s) => String(s));
+const [avRing, avHTML] = new Function("esc", "accFill", app07.slice(app07.indexOf("const avRing="), app07.indexOf("\n", app07.indexOf("const avHTML=")) + 1) + "\nreturn [avRing, avHTML];")((s) => String(s), (h) => h);   // accFill: day (no night stand-in)
 t("a member with a colour gets the ring, in their colour", /class="av sm ring" style="--ring:#FF5A1F"/.test(avHTML({ avatarUrl: "/u.jpg", displayName: "ana", accentHex: "#FF5A1F" }, "sm")));
 t("no colour, no ring (and the letters still show)", avHTML({ displayName: "ben" }) === '<div class="av ">BE</div>');
 t("only a real #rrggbb goes into the style — nothing else can be injected", avRing({ accentHex: 'red;"><img src=x onerror=alert(1)>' })[0] === "" && avRing({ accentHex: "#12345" })[0] === "");

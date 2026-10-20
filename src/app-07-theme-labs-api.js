@@ -162,7 +162,7 @@ const LABS = [
 const levelFor=r=>LEVELS.reduce((a,l)=>r>=l.at?l:a,LEVELS[0]);
 /* An avatar wears its member's colour as a ring (2026-10-18, "to promote
    individualism"). Only a real #rrggbb from the server is used. */
-const avRing=u=>u&&/^#[0-9a-f]{6}$/i.test(u.accentHex||"")?[" ring",` style="--ring:${u.accentHex}"`]:["",""];
+const avRing=u=>u&&/^#[0-9a-f]{6}$/i.test(u.accentHex||"")?[" ring",` style="--ring:${accFill(u.accentHex)}"`]:["",""];
 const avHTML=(u,cls)=>{const [rc,rs]=avRing(u);return u&&u.avatarUrl?`<img class="av ${cls||""}${rc}"${rs} src="${esc(u.avatarUrl)}" alt="">`:`<div class="av ${cls||""}${rc}"${rs}>${esc((u&&u.displayName||"?").slice(0,2).toUpperCase())}</div>`};
 // Turn a raw body into safe HTML: escape first, THEN linkify. Never the
 // other way round, or you've built an XSS hole.
