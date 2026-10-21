@@ -1,4 +1,4 @@
-/* MUSIC LAB · TRACKS v1.4 — 2026-10-20 (Market and loop heads from the screen kit); v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
+/* MUSIC LAB · TRACKS v1.5 — 2026-10-20 (a song's Story plays 15 seconds of it; Market and loop heads from the screen kit); v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
 /* A lab's Talk with nothing in it yet, by its home channel (2026-10-15: in
    TNL's own words — no rooms, no "the network"). */
 const EMPTY={
@@ -77,7 +77,7 @@ function trackMenu(t,ctx){
     try{plKeep((await plapi.rm(d.id,t.id)).playlist);await plRefresh(d.id);if(PLQID===d.id)PLAYQ=PLAYQ.filter(x=>x.id!==t.id||(NOWPLAYING&&x.id===NOWPLAYING.id));render();toast("Taken out of "+d.name)}catch(e){toast(e.message)}}})}
   acts.push({icon:DI.music,label:"Go to @"+t.by.username,run:()=>openProfile(t.by.username)});
   /* the song's own page (/s/:id: its cover, a player, Open in the app), not the artist's profile (2026-10-18) */
-  acts.push({icon:DI.out,label:"Share",run:()=>shareMenu({title:t.title+" · @"+t.by.username,link:songLink(t),story:`/tr/${t.id}/story.jpg`})});
+  acts.push({icon:DI.out,label:"Share",run:()=>shareMenu({title:t.title+" · @"+t.by.username,link:songLink(t),story:`/tr/${t.id}/story.jpg`,video:`/tr/${t.id}/story.mp4`})});
   if(t.by.username!==myName())return openMenu({react:false,preview:(t.title+" · @"+t.by.username).slice(0,120),actions:acts});
   acts.push({icon:DI.edit,label:"Edit title and cover",run:()=>{
     TRKEDIT={id:t.id,title:t.title,artworkUrl:t.artworkUrl||"",busy:false,fresh:false};render()}});
