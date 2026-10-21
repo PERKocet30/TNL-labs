@@ -1,5 +1,5 @@
 /* ================================================================
-   PLAYLISTS v1.0 — 2026-10-12. "Make the music lab function more like
+   PLAYLISTS v1.1 — 2026-10-20 (head from the screen kit); v1.0 — 2026-10-12. "Make the music lab function more like
    Spotify — you listen to music and build your own playlist while in the
    lab." The Music lab's Work tab is a library now:
    - Songs | Playlists along the top.
@@ -60,8 +60,7 @@ function playlistsHTML(){
   </div>`;
 }
 function playlistHTML(){
-  const P=PLIST,d=P.d,head=`<div class="lr-head"><button class="lr-back" id="plback" aria-label="Back">${DI.back}</button>
-    <div class="lr-title"></div>${d?`<button class="pl-more" id="plmore" aria-label="Rename or delete">${DI.more}</button>`:""}</div>`;
+  const P=PLIST,d=P.d,head=screenHead({back:{id:"plback",label:"Back"},title:"",actions:[d?`<button class="ib pl-more" id="plmore" aria-label="Rename or delete">${DI.more}</button>`:""]});
   if(!d)return `<div class="scroll" id="plscroll">${head}${skel()}</div>`;
   const songs=d.tracks||[],here=PLQID===d.id&&NOWPLAYING&&d.trackIds.includes(NOWPLAYING.id),live=here&&AUDIO&&!AUDIO.paused;
   const len=plLen(d.durationMs);

@@ -1,3 +1,4 @@
+/* v2026-10-20: a lab's head comes from the screen kit (app-08-kit.js) */
 /* ── THE ARCHIVE ─────────────────────────────────────────────────────
    //.JPEG PHARMACY has 226 people posting reference and every image
    scrolls into the void within a day. Nobody can find it again. This is
@@ -52,13 +53,10 @@ function labsHTML(){
   const talk=LABVIEW==="talk";
   return `<div class="labs-wrap roomopen">
   <section class="room">
-    <div class="lr-head">
-      <button class="lr-back" id="labback" aria-label="All labs"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <div class="lr-title"><span class="lg">//</span> ${esc(LAB.name)}</div>
-      <button class="lr-tool lr-share" id="labshare" aria-label="Share ${esc(LAB.name)}">${IG_SEND}<span>Share</span></button>
-      ${LAB.id==="culture"&&studioOn()?`<button class="lr-tool" id="openstudio">${UI_IC.music}<span>Studio</span></button>`:""}
-      ${talk?`<button class="lr-bell" id="lrbell" aria-label="Mute this lab">${UI_IC.bell}</button>`:""}
-    </div>
+    ${screenHead({back:{id:"labback",label:"All labs"},mark:true,title:LAB.name,actions:[
+      shareBtnHTML(`id="labshare" aria-label="Share ${esc(LAB.name)}"`),
+      LAB.id==="culture"&&studioOn()?`<button class="btn ghost sm" id="openstudio">${UI_IC.music}<span>Studio</span></button>`:"",
+      talk?`<button class="ib lr-bell" id="lrbell" aria-label="Mute this lab">${UI_IC.bell}</button>`:""]})}
     ${placeTabsHTML()}
     ${talk?`<div id="lrpins"></div>`:""}
     ${!talk?`<div class="pl-body" id="plbody">${placeBodyHTML()}</div>`:`

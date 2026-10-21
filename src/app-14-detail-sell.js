@@ -1,9 +1,8 @@
-/* The listing page itself lives in app-14-listing.js. */
+/* SAVED · ORDERS · SELL · STUDIO v2026-10-20: Saved and Orders heads and tabs from the screen kit.
+   The listing page itself lives in app-14-listing.js. */
 function savedHTML(){
   return `<div class="scroll">
-    <div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button></div>
-    <div class="page-head"><div class="mono dim">SAVED</div><h2 class="page-h">Your list</h2>
-    <p class="page-sub">Everything you've hearted. Sold items stay so you can see what went.</p></div>
+    ${screenHead({back:{attrs:'data-mv="browse"',label:"Market"},title:"Saved",sub:"Everything you've hearted. Sold items stay so you can see what went."})}
     <div class="mkt-grid">${!SAVED?`${skel("tiles")}`
       :!SAVED.length?`<div class="empty">Nothing saved yet.<br><br>Tap the heart on anything in the Market.</div>`
       :SAVED.map(mktCardHTML).join("")}</div>
@@ -181,13 +180,9 @@ function reviewHTML(){
 function ordersHTML(){
   const list=ORDERS?(ORDTAB==="buying"?ORDERS.buying:ORDERS.selling):[];
   return `<div class="scroll">
-    <div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button></div>
-    <div class="page-head"><div class="mono dim">ORDERS</div><h2 class="page-h">${ORDTAB==="buying"?"Bought":"Sold"}</h2></div>
-    ${ORDTAB==="selling"?`<div style="padding:0 20px">${payoutBannerHTML()}${shopStatsHTML()}</div>`:""}
-    <div class="ptabs" style="margin:0 20px 12px">
-      <button class="ptab ${ORDTAB==="buying"?"on":""}" data-ot="buying">BUYING ${ORDERS?ORDERS.buying.length:""}</button>
-      <button class="ptab ${ORDTAB==="selling"?"on":""}" data-ot="selling">SELLING ${ORDERS?ORDERS.selling.length:""}</button>
-    </div>
+    ${screenHead({back:{attrs:'data-mv="browse"',label:"Market"},title:"Orders"})}
+    ${tabsHTML([["buying","Bought",ORDERS?`<em>${ORDERS.buying.length}</em>`:""],["selling","Sold",ORDERS?`<em>${ORDERS.selling.length}</em>`:""]],ORDTAB,"data-ot")}
+    ${ORDTAB==="selling"?`<div style="padding:12px 20px 0">${payoutBannerHTML()}${shopStatsHTML()}</div>`:""}
     <div style="padding:0 20px 30px">
       ${!ORDERS?`${skel()}`:!list.length?`<div class="empty">Nothing here yet.</div>`
       :list.map(o=>`<div class="ordrow">
