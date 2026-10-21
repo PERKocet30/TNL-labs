@@ -1,4 +1,4 @@
-/* SAVED · ORDERS · SELL · STUDIO v2026-10-20: Saved and Orders heads and tabs from the screen kit.
+/* SAVED · ORDERS · SELL · STUDIO v2026-10-20: Saved and Orders heads and tabs, and the listing form's bar, from the screen kit.
    The listing page itself lives in app-14-listing.js. */
 function savedHTML(){
   return `<div class="scroll">
@@ -68,9 +68,7 @@ function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
   const X=w=>`<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
   const pick=(id,list,cur)=>`<div class="pf-sel"><select class="pf-in" id="${id}">${list.map(c=>`<option${cur===c?" selected":""}>${esc(c)}</option>`).join("")}</select></div>`;
   const chips=(list,attr,cur)=>`<div class="pf-chips">${list.map(c=>`<button type="button" class="chip ${cur===c?"on":""}" ${attr}="${esc(c)}">${esc(c)}</button>`).join("")}</div>`;
-  const head=`<div class="pf-top">
-    <button class="pf-x" data-mv="${MKTEDIT?"detail":"browse"}" aria-label="Close">${X(22)}</button>
-    <div class="pf-title">${MKTEDIT?"Edit listing":"New listing"}</div><span class="pf-sp"></span></div>`;
+  const head=formHead({attrs:`data-mv="${MKTEDIT?"detail":"browse"}"`,label:"Cancel"},MKTEDIT?"Edit listing":"New listing",null);
   if(!MKTEDIT&&MKTMETA.paymentsEnabled&&ME&&!ME.payoutsReady)return `<div class="scroll pf">${head}
     <div class="pf-gate"><div class="pf-gate-ic">$</div>
       <h2 class="pf-h">Set up payouts to sell</h2>

@@ -1,5 +1,5 @@
 /* ================================================================
-   SCREEN KIT v1.0 — 2026-10-20
+   SCREEN KIT v1.1 — 2026-10-20 (formHead, part 3)
    One set of parts for every screen, so the app reads as one thing
    (the admin got the same treatment the same day). Styles:
    app-05-styles-kit.css.

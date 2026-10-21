@@ -4,7 +4,7 @@
 /* the photo editor: full screen, its own layer */
 .ped{position:fixed;inset:0;z-index:95;background:var(--bg);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
 body.ped-on{overflow:hidden}
-.ped .pc-top{padding-top:calc(10px + env(safe-area-inset-top))}
+.ped .kform{padding-top:calc(10px + env(safe-area-inset-top))}
 .ped-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:var(--el);touch-action:none;cursor:grab;overflow:hidden;padding:12px}
 .ped-stage canvas{max-width:100%;max-height:100%;display:block;box-shadow:0 0 0 1px var(--line)}
 .ped-tabs{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}

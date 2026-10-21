@@ -1,9 +1,6 @@
+/* v2026-10-20: the form's bar is the kit's formHead */
 /* ── LISTING EDITOR · v2 · 2026-09-28 ── cards on paper, pill fields, one sticky Publish */
 .pf{display:flex;flex-direction:column}
-.pf-top{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border-bottom:1px solid var(--line)}
-.pf-x{background:none;border:0;color:var(--tx);display:flex;padding:6px;cursor:pointer}
-.pf-title{flex:1;text-align:center;font-size:16px;font-weight:700}
-.pf-sp{width:34px}
 .pf-body{display:flex;flex-direction:column;gap:12px;padding:14px 16px 8px;max-width:640px;width:100%;margin:0 auto;box-sizing:border-box}
 .pf-card{background:var(--card);border:1px solid var(--line);padding:16px}
 .pf-sec{font-size:15px;font-weight:700;margin:0 0 12px}

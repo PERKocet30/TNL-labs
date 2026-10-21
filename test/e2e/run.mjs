@@ -1248,6 +1248,15 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => document.documentElement.dataset.theme) === "light", "day didn't come back");
     await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
   });
+  /* 2026-10-20 one kit, part 3: New post and New listing share the form bar (Cancel · title · the one action) */
+  await step(d, "one kit: New post's bar is Cancel · New post · Share (black pill, off until there's something to share); New listing's is Cancel · New listing", async () => {
+    await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcgo");
+    ok(await p.locator(".pc > .kform #pcgo.btn[disabled]").count() === 1 && await p.locator(".pc > .kform #pccancel.kf-b").count() === 1 && await p.locator(".pc-top").count() === 0, "New post's bar isn't the kit's form bar");
+    await p.locator("#pccancel").tap(); await p.waitForTimeout(300);
+    await p.evaluate(() => { PCOMPOSE = false; TAB = "market"; MKTVIEW = "sell"; render(); }); await p.waitForSelector(".kform");
+    ok((await p.locator(".kform b").first().innerText()) === "New listing" && await p.locator(".pf-top, .pf-x").count() === 0, "New listing's bar isn't the kit's form bar");
+    await p.evaluate(() => { MKTVIEW = "browse"; TAB = "showroom"; render(); });
+  });
   /* 2026-10-20 one kit, part 2: profiles and Edit profile wear the kit's head and form bar */
   await step(d, "one kit: your profile's head is @name · + · ≡, someone else's is ‹ · @name · ⋯ with a black Follow, and Edit profile's bar is Cancel · title · Done", async () => {
     await p.locator('.nav [data-tab="profile"]').tap(); await p.waitForSelector("#profmenu");

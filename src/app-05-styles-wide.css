@@ -75,7 +75,7 @@
      on its own; New post · Share across the top. */
   .pcmp-ov{min-height:0;padding:24px 32px;box-sizing:border-box;align-items:center}
   .pc{max-width:1180px;height:min(100%,860px);flex:1;border:1px solid var(--line)}
-  .pc-top{padding:12px 20px}
+  .kform{padding:12px 20px}
   .pc-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 400px;padding-bottom:0;overflow:hidden}
   .pc-media{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--el);border-right:1px solid var(--line);overflow:hidden}
   .pc-side{display:flex;flex-direction:column;min-height:0;overflow-y:auto}

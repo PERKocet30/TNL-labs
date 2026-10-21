@@ -1,8 +1,6 @@
+/* v2026-10-20: the bar is the kit's formHead (app-05-styles-kit.css) */
 /* ── POST CREATOR · v2.4 · 2026-10-18 (two panes on a computer: .pc-media, .pc-side); v2.3 · 2026-10-14 (unused rules out); v2.2 · 2026-10-09 (v2 2026-09-28) ── the work large, caption, three rows; v2.2: upload a song, its cover as the picture */
 .pc{background:var(--bg);width:100%;max-width:560px;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-.pc-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);flex-shrink:0}
-.pc-cancel{background:none;border:0;color:var(--tx);font:inherit;font-size:15px;padding:6px 2px;cursor:pointer}
-.pc-ttl{font-size:16px;font-weight:700}
 .pc-share{background:var(--tx);color:var(--bg);border:0;border-radius:999px;padding:8px 18px;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
 .pc-share:disabled{opacity:.3;cursor:default}
 /* Never sideways: on iPhone the picker's aspect-ratio could size it wider
