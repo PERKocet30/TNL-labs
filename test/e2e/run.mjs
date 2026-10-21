@@ -1278,7 +1278,8 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { PCOMPOSE = null; PICKER = null; render(); }); await p.waitForTimeout(200);   // drop the draft without the "discard?" question
     await p.evaluate(() => setLabView("archive")); await p.waitForSelector("#archscroll");
     ok(await p.locator("#archq").count() === 0 && await p.locator("[data-asort=saved]").count() === 1, "the archive still has a search box");
-    await p.evaluate(() => { LAB = null; ROOMOPEN = false; TAB = "showroom"; render(); });
+    await p.evaluate(() => openLab("culture")); await p.waitForSelector("#labshare");   // leave Music open, as the later labs step expects
+    await p.evaluate(() => { TAB = "showroom"; render(); });
   });
   /* 2026-10-20 one kit, part 3: New post and New listing share the form bar (Cancel · title · the one action) */
   await step(d, "one kit: New post's bar is Cancel · New post · Share (black pill, off until there's something to share); New listing's is Cancel · New listing", async () => {
