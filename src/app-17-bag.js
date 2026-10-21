@@ -1,7 +1,9 @@
 /* ── THE BAG, RECENTLY VIEWED, PRICE DROPS, SELLER TOOLS · 2026-10-20 (head from the screen kit) · 2026-09-30 ──
    The bag lives on this phone (like any shop before you sign in) and is
    checked against the Market when you open it. Checkout is per seller:
-   one payment, shipping combined (server-07-cart.js). */
+   one payment, shipping combined (server-07-cart.js).
+   2026-10-21: a link can fill it — ?bag=labs-5,labs-7-ab12 (the ids of the
+   Instagram shop feed, sent by /checkout, server-12-meta-feed.js). */
 let MKTBAG=null, MKTRECENT=null, SHOPSTATS=null;
 const bagKey=()=>"tnl-bag:"+(myName()||"guest");
 function bagList(){try{const a=JSON.parse(localStorage.getItem(bagKey())||"[]");return Array.isArray(a)?a:[]}catch(e){return []}}
@@ -10,6 +12,12 @@ function bagAdd(l,v){
   const a=bagList(),vid=v?v.id:"";
   if(a.some(x=>x.id===l.id&&(x.v||"")===vid))return toast("Already in your bag");
   bagPut([{id:l.id,v:vid,at:Date.now()},...a]);toast("Added to bag");
+}
+function bagFromLink(s){
+  const a=bagList();
+  for(const t of String(s||"").split(",").slice(0,40)){const m=/^labs-(\d+)(?:-([a-z0-9]+))?$/i.exec(t.trim());if(!m)continue;
+    const id=Number(m[1]),v=m[2]||"";if(!a.some(x=>x.id===id&&(x.v||"")===v))a.unshift({id,v,at:Date.now()})}
+  bagPut(a);
 }
 const bagDrop=keys=>bagPut(bagList().filter(x=>!keys.includes(x.id+":"+(x.v||""))));
 function paintBagCount(){const n=bagList().length;document.querySelectorAll("[data-bagn]").forEach(e=>{e.textContent=n||"";e.hidden=!n})}
