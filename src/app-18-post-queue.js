@@ -1,3 +1,4 @@
+/* v2026-10-21: pins, alt text, hidden likes go with the post; the Story sheet opens after, if asked (app-18-composer-ig) */
 /* ── POSTING IN THE BACKGROUND + DRAFTS · 2026-09-30 (2026-10-09: a song's cover goes up as the picture when there are no photos) ───────────────────
    Share closes the creator straight away: a strip at the
    top says Posting… (it waits for any photos still uploading), then
@@ -78,10 +79,10 @@ async function pqKick(c){
     const d=await api.post({channel:c.ch?c.ch.id:"profile",body:(c.body||"").trim(),images:imgs,
       videoUrl:c.vid?c.vid.url:undefined,thumbUrl:c.vid&&c.cover?c.cover:undefined,video:c.vid&&c.vedit?c.vedit:undefined,mediaW:c.vid?c.vw:undefined,mediaH:c.vid?c.vh:undefined,
       isWork:true,audioTrackId:c.track?c.track.id:undefined,
-      tags:(c.tags||[]).map(u=>u.username),location:c.location||"",commentsOff:!!c.commentsOff,products:(c.products||[]).map(l=>l.id)});
+      tags:(c.tags||[]).map(u=>u.username),location:c.location||"",commentsOff:!!c.commentsOff,products:(c.products||[]).map(l=>l.id),...pcIgExtras(c)});
     let sent=0;const pid=d&&d.post&&d.post.id;
     if(pid)for(const u of c.collabs||[]){try{await api.invite(pid,u.username);sent++}catch(e){}}
-    c.state="done";c.sent=sent;pdDelete(c.draftId);
+    c.state="done";c.sent=sent;pdDelete(c.draftId);pcAfterPosted(c,pid);
     if(d&&d.post&&PROFILE&&PROFILE.user&&PROFILE.user.username===myName()&&PROFILE.posts){PROFILE.posts.unshift(d.post);render()}
     pqPaint();setTimeout(()=>{PQ=PQ.filter(x=>x!==c);pqPaint()},5000);
   }catch(e){

@@ -1,4 +1,5 @@
-/* ---- POST EXTRAS · 2026-09-30 ----
+/* ---- POST EXTRAS · v1.1 2026-10-21 (Instagram-level composer: people tagged ON the
+   picture — pins at x,y on image i — alt text, and a hidden like count) · 2026-09-30 ----
    What the post creator adds beyond the work: people tagged (up to 20,
    real members who haven't blocked you — they get told), a place (text,
    60 chars), comments off, and products from your own shop. Stored as
@@ -14,8 +15,8 @@ function postExtras(row) {
   const products = (Array.isArray(x.products) ? x.products : []).map((id) => productQ.get(id)).filter((l) => l && l.status !== "removed")
     .map((l) => ({ id: l.id, title: l.title, price: l.price_cents, sold: l.status !== "active",
       image: (() => { try { return JSON.parse(l.images || "[]")[0] || ""; } catch { return ""; } })() }));
-  return { tags: Array.isArray(x.tags) ? x.tags : [], location: x.location || "", commentsOff: !!x.commentsOff, products,
-    video: x.video || null };
+  return { tags: Array.isArray(x.tags) ? x.tags : [], pins: Array.isArray(x.pins) ? x.pins : [], alt: x.alt || "", hideLikes: !!x.hideLikes,
+    location: x.location || "", commentsOff: !!x.commentsOff, products, video: x.video || null };
 }
 const commentsOff = (post) => !!readExtras(post).commentsOff;
 
@@ -36,8 +37,15 @@ function cleanExtras(body, authorId) {
   const products = [...new Set((Array.isArray(body?.products) ? body.products : []).slice(0, 10).map(Number))]
     .filter((id) => Number.isInteger(id) && own.get(id, authorId)).slice(0, 5);
   const video = cleanVideoEdit(body?.video);
-  const any = tags.length || location || off || products.length || video;
-  return { extras: any ? JSON.stringify({ tags, location, commentsOff: off, products, ...(video ? { video } : {}) }) : null, tagIds: ids };
+  /* pins: where on the picture each tagged person is — {username, x, y, i}, 0..1 on image i; only people in tags */
+  const pins = (Array.isArray(body?.pins) ? body.pins : []).slice(0, 20).map((q) => ({
+    username: String(q?.username || "").toLowerCase().replace(/^@/, ""), x: Math.round(Math.min(1, Math.max(0, Number(q?.x) || 0)) * 1000) / 1000,
+    y: Math.round(Math.min(1, Math.max(0, Number(q?.y) || 0)) * 1000) / 1000, i: Math.max(0, Math.min(9, Number(q?.i) | 0)) }))
+    .filter((q) => tags.includes(q.username));
+  const alt = String(body?.alt || "").replace(/\s+/g, " ").trim().slice(0, 200);
+  const hideLikes = body?.hideLikes === true;
+  const any = tags.length || location || off || products.length || video || alt || hideLikes;
+  return { extras: any ? JSON.stringify({ tags, location, commentsOff: off, products, ...(pins.length ? { pins } : {}), ...(alt ? { alt } : {}), ...(hideLikes ? { hideLikes } : {}), ...(video ? { video } : {}) }) : null, tagIds: ids };
 }
 
 /* The video editor's choices (2026-10-08): a trim (ms), the original

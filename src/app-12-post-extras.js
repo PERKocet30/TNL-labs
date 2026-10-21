@@ -1,4 +1,4 @@
-/* ── POST EXTRAS on the card · 2026-09-30 ── people tagged ("with …"), the
+/* ── POST EXTRAS on the card · v1.1 2026-10-21 (pins on the picture) · 2026-09-30 ── people tagged ("with …"), the
    video's chosen cover, comments switched off. */
 /* Shoppable posts: the pieces in the work, under it — tap to buy. */
 function pxShopHTML(p){
@@ -31,9 +31,21 @@ async function pxOpenListing(id){
 }
 document.addEventListener("click",e=>{const b=e.target.closest("[data-pxshop]");if(!b)return;e.stopPropagation();pxOpenListing(+b.dataset.pxshop)},true);
 /* "and 3 others" lists everyone tagged. */
+/* 2026-10-21: people tagged ON the picture (extras.pins) show where they are —
+   the person icon toggles the pins; a pin opens the profile. A post with no
+   pins keeps the list. Pins sit on the first picture (image 0) of the card. */
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-pxtags]");if(!b)return;
   e.stopPropagation();const p=findAnyPost(+b.dataset.pxtags);if(!p)return;
+  const pins=(p.pins||[]).filter(q=>!q.i),media=b.closest(".post-media");
+  if(pins.length&&media){
+    const had=media.querySelector(".px-pins");if(had){had.remove();return}
+    const img=media.querySelector("img, video"),r=img?img.getBoundingClientRect():null,m=media.getBoundingClientRect();
+    const box=r?`left:${r.left-m.left}px;top:${r.top-m.top}px;width:${r.width}px;height:${r.height}px`:"inset:0";
+    media.insertAdjacentHTML("beforeend",`<div class="px-pins" style="${box}">${pins.map(q=>`<button class="px-pin" style="left:${(q.x*100).toFixed(1)}%;top:${(q.y*100).toFixed(1)}%" data-u="${esc(q.username)}">${esc(q.username)}</button>`).join("")}</div>`);
+    const ov=media.querySelector(".px-pins");ov.onclick=ev=>{const pin=ev.target.closest(".px-pin");ev.stopPropagation();if(pin)openProfile(pin.dataset.u);else ov.remove()};
+    return;
+  }
   openPicker({title:"Tagged",items:p.tags.map(u=>({label:"@"+u,username:u})),onPick:it=>openProfile(it.username)});
 },true);
 /* ── HOW A POST READS · 2026-10-12 ──────────────────────────────────────
@@ -51,6 +63,8 @@ function pxNames(p){
 }
 /* The line under the name: the song if there is one, else the place. */
 const pxSub=p=>musChipHTML(p)||(p.location?`<div class="post-loc">${esc(p.location)}</div>`:"");
+/* the like count, unless the maker hid it (they still see it) */
+const pxLikeN=p=>(p.hideLikes&&p.author&&p.author.username!==myName())?"":(p.likeCount||"");
 const PX_PERSON=`<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z"/></svg>`;
 const pxTagBtn=p=>(p.tags&&p.tags.length)?`<button class="px-tagbtn" data-pxtags="${p.id}" aria-label="Tagged: ${esc(p.tags.map(u=>"@"+u).join(", "))}">${PX_PERSON}</button>`:"";
 /* The time under a post: "Just now", "5 minutes ago", "6 days ago", "October 3". */

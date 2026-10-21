@@ -10,7 +10,7 @@ function setLike(id,liked,count){
   for(const p of likeCopies(id)){if(liked!=null)p.likedByMe=liked;p.likeCount=count}
   document.querySelectorAll('[data-like="'+id+'"]').forEach(b=>{
     if(liked!=null)b.classList.toggle("on",liked);
-    const n=b.querySelector(".igact-n");if(n)n.textContent=count||"";});
+    const n=b.querySelector(".igact-n");if(n){const p=likeCopies(id)[0];n.textContent=(p&&p.hideLikes&&p.author&&p.author.username!==myName())?"":(count||"")}});
 }
 async function sendLike(id){
   const s=LIKING[id];if(!s||s.busy)return;

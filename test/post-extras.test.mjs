@@ -42,7 +42,17 @@ const row = q.postById.get(pid), shaped = X.postExtras(row);
 t("saved and shaped", shaped.tags.join() === "amy,bob" && shaped.location === "Studio B" && shaped.commentsOff === true);
 t("each tagged person is told, once", told.filter((a) => a[2] === "tag" && a[3] === pid).map((a) => a[0]).sort().join() === [amy, bob].sort().join());
 t("commentsOff() reads the row", X.commentsOff(row) === true);
-t("an old post (no extras) shapes clean", JSON.stringify(X.postExtras({})) === JSON.stringify({ tags: [], location: "", commentsOff: false, products: [], video: null }));
+t("an old post (no extras) shapes clean", JSON.stringify(X.postExtras({})) === JSON.stringify({ tags: [], pins: [], alt: "", hideLikes: false, location: "", commentsOff: false, products: [], video: null }));
+
+console.log("\nON THE PICTURE (2026-10-21: pins, alt text, a hidden like count)");
+const pz = JSON.parse(X.cleanExtras({ tags: ["amy", "bob"], pins: [{ username: "@Amy", x: 0.25, y: 1.7, i: 2 }, { username: "bob", x: "0.5", y: 0.5 }, { username: "nobody", x: 0.1, y: 0.1 }, { username: "amy", x: -1, y: 0.33333 }],
+  alt: "  A  red  jacket ", hideLikes: true }, me).extras);
+t("a pin is kept only for someone tagged; x and y clamp to 0..1 (3 decimals), i to an image index", pz.pins.length === 3 && pz.pins[0].username === "amy" && pz.pins[0].x === 0.25 && pz.pins[0].y === 1 && pz.pins[0].i === 2
+  && pz.pins[1].username === "bob" && pz.pins[1].x === 0.5 && pz.pins[1].i === 0 && pz.pins[2].x === 0 && pz.pins[2].y === 0.333);
+t("alt text tidied, hideLikes only when true", pz.alt === "A red jacket" && pz.hideLikes === true && !JSON.parse(X.cleanExtras({ alt: "x", hideLikes: "yes" }, me).extras).hideLikes);
+t("alt text alone is enough to keep", X.cleanExtras({ alt: "just alt" }, me).extras !== null && X.cleanExtras({ pins: [{ username: "amy", x: 0, y: 0 }] }, me).extras === null);
+const sh2 = X.postExtras({ extras: JSON.stringify(pz) });
+t("shaped with pins, alt and hideLikes", sh2.pins.length === 3 && sh2.alt === "A red jacket" && sh2.hideLikes === true);
 t("junk in the column doesn't throw", X.postExtras({ extras: "{nope" }).tags.length === 0);
 
 console.log("\nSHOPPABLE POSTS");

@@ -162,7 +162,7 @@ function postHTML(p){const mine=p.author.username===myName();
   ${p.beat?`<div class="beatmsg"><button class="circle" style="width:30px;height:30px;font-size:11px" data-beatplay='${esc(JSON.stringify(p.beat))}' aria-label="Play">${DI.play}</button><div><div class="nm">${esc(p.beat.name||"untitled loop")}</div><div class="mono dim">${p.beat.bpm} BPM${p.beat.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:""}</div></div>${studioOn()?`<button class="act" data-remix="${p.id}" style="margin-left:auto">${IC_REMIX_SM} Remix</button>`:""}</div>`:""}
   ${pxShopHTML(p)}
   <div class="post-acts">
-    <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
+    <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${pxLikeN(p)}</span></button>
     <button class="igact" data-comments="${p.id}" aria-label="Comment"${p.commentsOff?" hidden":""}>${IG_COMMENT}<span class="igact-n">${p.commentCount||""}</span></button>
     <button class="igact" data-share="${p.id}" aria-label="Send">${IG_SEND}<span class="igact-n">${p.shareCount||""}</span></button>
     ${mine?`<button class="igact" data-collab="${p.id}" aria-label="Invite a collaborator" title="Invite a collaborator">${IG_COLLAB}</button>`:""}

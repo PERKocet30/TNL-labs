@@ -1262,6 +1262,40 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".sheetc > .sh .sh-back#sx").count() === 1 && await p.locator(".ksearch #sq").count() === 1, "Search doesn't wear the kit head and search field");
     await p.locator("#sx").tap(); await p.waitForTimeout(300);
   });
+  /* 2026-10-21 "Instagram level": tag people on the picture, Advanced settings, Preview, hidden like count */
+  await step(d, "composer: Tag people puts a pin on the photo where you tap; Advanced hides the like count and takes alt text; Preview is the Showroom card; the post carries it all and the person icon shows the pin", async () => {
+    await p.evaluate(() => { PCOMPOSE = null; PICKER = null; LAB = null; TAB = "showroom"; render(); });
+    await openCreator();
+    await p.locator("#pcfile").setInputFiles([UPLOAD_PNG2]);
+    await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 1 && !PCOMPOSE.upN, null, { timeout: 10000 });
+    await p.waitForSelector("#pctrack .pc-slide img"); await p.waitForTimeout(400);
+    await p.locator("#pctag").tap(); await p.waitForSelector(".pc-taghint");
+    const img = p.locator("#pctrack .pc-slide img").first();
+    const at = await p.evaluate(() => { const im = document.querySelector("#pctrack .pc-slide img"), r = im.getBoundingClientRect(), nw = im.naturalWidth, nh = im.naturalHeight, s = Math.min(r.width / nw, r.height / nh), w = nw * s, h = nh * s;
+      return { x: r.left + (r.width - w) / 2 + w * 0.5, y: r.top + (r.height - h) / 2 + h * 0.25 }; });
+    await p.mouse.click(at.x, at.y); await p.waitForSelector(".pickrow", { timeout: 5000 });
+    await p.locator(".pickrow", { hasText: "friend" }).first().tap(); await p.waitForTimeout(400);
+    const pin = await p.evaluate(() => (PCOMPOSE.tags || []).find((u) => u.username === "friend"));
+    ok(pin && Math.abs(pin.x - 0.5) < 0.05 && Math.abs(pin.y - 0.25) < 0.05 && await p.locator("#pctrack .pc-pin").count() === 1, "the tap didn't become a pin where the tap was: " + JSON.stringify(pin));
+    await p.locator("#pcadv").tap(); await p.waitForSelector("#pchide");
+    await p.locator("#pchide").check(); await p.locator("#pcalt").fill("A blue test picture"); await p.locator("#pcadvdone").tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => PCOMPOSE.hideLikes === true && PCOMPOSE.alt === "A blue test picture"), "Advanced settings didn't stick");
+    ok(/Likes hidden/.test(await p.locator("#pcadv .pc-v").innerText()), "the Advanced row doesn't say what's set");
+    await p.locator("#pcprev").tap(); await p.waitForSelector("#pcprevbg .sr-card", { timeout: 5000 });
+    ok(await p.locator("#pcprevbg .sr-card .post-media img").count() >= 1, "the preview isn't the Showroom card with the picture");
+    await p.locator("#pcprevx").tap(); await p.waitForTimeout(200);
+    await p.locator("#pcbody").fill("pinned #e2etag");
+    await p.locator("#pcgo").tap();
+    await p.waitForFunction(() => !PCOMPOSE, null, { timeout: 15000 });
+    const post = (await myPosts()).find((x) => /pinned #e2etag/.test(x.body || ""));
+    ok(post && post.pins && post.pins.length === 1 && post.pins[0].username === "friend" && post.hideLikes === true && post.alt === "A blue test picture", "the post didn't carry the pin, hidden likes and alt text: " + JSON.stringify(post && { pins: post.pins, h: post.hideLikes, a: post.alt }));
+    await p.evaluate(() => { TAB = "showroom"; SRPOSTS = null; render(); loadShowroom(); }); await p.waitForTimeout(1500);
+    const card = p.locator(`.sr-card:has([data-pxtags="${post.id}"])`).first();
+    await card.locator("[data-pxtags]").tap(); await p.waitForTimeout(200);
+    ok(await card.locator(".px-pins .px-pin").count() === 1 && /friend/.test(await card.locator(".px-pin").innerText()), "the person icon didn't show the pin on the card");
+    await card.locator("[data-pxtags]").tap(); await p.waitForTimeout(200);
+    ok(await card.locator(".px-pins").count() === 0, "tapping again didn't hide the pins");
+  });
   /* 2026-10-21 "fix all the labs": every post lives on your profile; a lab is where you also show it */
   await step(d, "labs: + inside // Visual opens New post already posting to Your profile · // Visual (take it out → Add a lab); the lab's head says Invite; the archive has no search box", async () => {
     await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#labshare");
