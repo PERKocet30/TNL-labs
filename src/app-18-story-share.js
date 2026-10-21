@@ -1,5 +1,5 @@
 /* v2026-10-20: the sheet's head comes from the screen kit */
-/* ── SHARE TO INSTAGRAM STORIES · v1.2 — 2026-10-11 (a post's song plays: the video card) ───────────────────────────
+/* ── SHARE TO INSTAGRAM STORIES · v1.3 — 2026-10-20 (a video post shares the clip itself, in the card) · v1.2 — 2026-10-11 (a post's song plays: the video card) ───────────────────────────
    From any share menu — a post, a profile, a listing, a track: its Story
    card (server-12-story — the work, who made it, in their colour, and the
    link), then one tap shares it
@@ -13,9 +13,9 @@ let IGS=null;
    video (2026-10-11): a post with a song also has /p/1/story.mp4 — the card with
    15 seconds of the song. That's what's shared; the picture stands in while it's
    made, and if it can't be made (or the phone can't share video) the picture goes. */
-function igStoryOpen(img,link,video){
+function igStoryOpen(img,link,video,kind){
   const id=img,mine=()=>IGS&&IGS.id===id;
-  IGS={id,link,img,video:video||null,file:null,pic:null,vurl:null,failed:false};igsPaint();
+  IGS={id,link,img,video:video||null,kind:kind||(video?"song":""),file:null,pic:null,vurl:null,failed:false};igsPaint();
   const ready=()=>{const g=$("#igsgo");if(g){g.disabled=false;g.textContent="Share to Instagram"}};
   const get=(u)=>fetch(u).then(r=>{if(!r.ok)throw new Error(r.status);return r.blob()});
   get(img).then(b=>{if(!mine())return;const ty=b.type==="image/png"?"image/png":"image/jpeg";IGS.pic=new File([b],"labs-story."+(ty==="image/png"?"png":"jpg"),{type:ty});if(!IGS.video){IGS.file=IGS.pic;ready()}})
@@ -37,15 +37,15 @@ function igsHTML(){
   return `<div class="sheet" id="igsbg"><div class="sheetc ev-share" role="dialog" aria-label="Share to Instagram">
     ${sheetHead("Share to your Story","igsx")}
     <div class="ev-shimg">${s.failed?`<div class="dim">Couldn't make the picture. Your link still works.</div>`
-      :s.vurl?`<video src="${s.vurl}" poster="${esc(s.img)}" autoplay muted loop playsinline aria-label="Your Story, with the song"></video>`:`<img src="${esc(s.img)}" alt="Your Story card">`}</div>
-    ${s.video?`<p class="dim igs-song">${DI.music} ${s.vurl?"With the song — 15 seconds. It plays in your Story.":"Adding the song…"}</p>`:""}
+      :s.vurl?`<video src="${s.vurl}" poster="${esc(s.img)}" autoplay muted loop playsinline aria-label="Your Story"></video>`:`<img src="${esc(s.img)}" alt="Your Story card">`}</div>
+    ${s.video?`<p class="dim igs-song">${s.kind==="clip"?DI.play:DI.music} ${s.vurl?(s.kind==="clip"?"The video — the first 15 seconds, with its sound. It plays in your Story.":"With the song — 15 seconds. It plays in your Story."):(s.kind==="clip"?"Getting the video ready…":"Adding the song…")}</p>`:""}
     ${INAPP?`<ol class="ev-howto"><li>${esc(INAPP)}'s browser can't hand a picture to your Story. Open LABS in <b>${outBrowser()}</b> and share it from there.</li>
       <li>Or press and hold the picture to save it, and add it to your Story yourself.</li></ol>`
     :`<ol class="ev-howto"><li>Tap <b>Share to Instagram</b>, then pick <b>Instagram → Stories</b>.</li>
       <li>Your link is copied — add a <b>Link</b> sticker and paste it, so people can tap straight through.</li></ol>`}
     <div class="ev-link"><span>${esc(s.link.replace(/^https?:\/\//,""))}</span><button class="btn ghost" id="igscopy">${DI.copy} Copy</button></div>
     ${INAPP?`<button class="btn green ev-cta" data-outgo>Open in ${outBrowser()}</button>`
-    :`<button class="btn green ev-cta" id="igsgo"${s.file||s.failed?"":" disabled"}>${s.failed?"Share the link":s.file?"Share to Instagram":s.video?"Adding the song…":"Making your card…"}</button>`}
+    :`<button class="btn green ev-cta" id="igsgo"${s.file||s.failed?"":" disabled"}>${s.failed?"Share the link":s.file?"Share to Instagram":s.video?(s.kind==="clip"?"Getting the video ready…":"Adding the song…"):"Making your card…"}</button>`}
   </div></div>`}
 function igsPaint(){
   let l=document.getElementById("igsl");
