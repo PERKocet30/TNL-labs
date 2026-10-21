@@ -1,14 +1,14 @@
-/* SCREEN KIT v1.2 — 2026-10-20 (searchHTML, part 4) (app-08-kit.js). One head, one share, one
+/* SCREEN KIT v1.3 — 2026-10-20 (part 5: the tournament, order done, sheet heads) (app-08-kit.js). One head, one share, one
    set of tabs, one row, one button scale — for every screen. */
 .sh{padding:14px 16px 8px}
 .sh-row{display:flex;align-items:center;gap:8px;min-height:40px}
-.sh-back{flex:none;width:36px;height:36px;margin-left:-8px;border:0;background:none;color:var(--tx);display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;padding:0}
+.sh-back{flex:none;width:44px;height:44px;margin-left:-12px;border:0;background:none;color:var(--tx);display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;padding:0}
 .sh-back svg{width:22px;height:22px}
 .sh-h{flex:1;min-width:0;margin:0;font-size:24px;line-height:28px;font-weight:900;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .has-back .sh-h{font-size:20px}
 .sh-acts{display:flex;align-items:center;gap:8px;flex:none}
 .sh-sub{margin:4px 0 0;color:var(--dim);font-size:14px;line-height:1.45;max-width:560px}
-.has-back .sh-sub{margin-left:28px}
+.has-back .sh-sub{margin-left:32px}
 /* the button scale: .btn is the one main action; .ghost secondary; .quiet text */
 .btn.sm{padding:8px 12px;font-size:12px;gap:6px}
 .btn.quiet{background:none;color:var(--tx);border:0;padding-left:6px;padding-right:6px}
@@ -51,5 +51,6 @@
 .krow.danger,.krow.danger .krow-ic{color:var(--red)}
 .shop-head .sh{padding:0 0 10px}
 .pig>.sh,.sheetc>.sh{padding:0 0 6px}.pig>.sh .sh-row,.sheetc>.sh .sh-row{min-height:36px}
+.ev>.sh{position:sticky;top:0;z-index:6;margin:0 -16px;padding:4px 16px;background:var(--bg);border-bottom:1px solid var(--line)}.od>.sh{padding-bottom:0}
 .cx .sh{padding:calc(10px + env(safe-area-inset-top)) 16px 6px;flex-shrink:0}.cx .ktabs{flex-shrink:0}.cx .ksearch{flex-shrink:0}
 @media(min-width:1024px){.cx-col .sh{padding:22px 20px 10px}.cx-2p .ksearch{margin:0 20px 8px}.sh{padding:22px 28px 10px}.sh-h{font-size:28px;line-height:32px}.scroll>.sh{max-width:1080px;margin-left:auto;margin-right:auto;width:100%;box-sizing:border-box}.lpage .sh{grid-column:1/-1;padding:16px 0}.shop-head .sh{padding:0 0 10px}}

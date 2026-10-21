@@ -1,3 +1,4 @@
+/* v2026-10-20: the share sheet's head comes from the screen kit */
 /* ================================================================
    EVENT POLL v1.0 — 2026-10-07. What the community asked for: a plain
    poll and a scoreboard. Instagram brings people in, the vote happens
@@ -59,7 +60,7 @@ function evPollHTML(){
 function evShareHTML(){
   const s=EVSHARE, url=evVoteUrl(s.id);
   return `<div class="sheet" id="evshsheet"><div class="sheetc ev-share">
-    <div class="sheeth"><div><h2>Share to Instagram</h2></div><button class="x" id="evshx" aria-label="Close">${DI.x}</button></div>
+    ${sheetHead("Share to Instagram","evshx")}
     <div class="ev-shimg">${s.failed?`<div class="dim">Couldn't make the picture. Your link still works.</div>`:`<img src="${esc(s.img)}" alt="Your Story card" id="evshpic">`}</div>
     ${INAPP?`<ol class="ev-howto"><li>${esc(INAPP)}'s browser can't hand a picture to your Story. Open LABS in <b>${outBrowser()}</b> and share it from there.</li>
       <li>Or press and hold the picture to save it, add it to your Story, and put a <b>Link</b> sticker on it with your vote link.</li></ol>`

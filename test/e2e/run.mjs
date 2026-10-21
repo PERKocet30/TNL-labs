@@ -1559,6 +1559,19 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#evback").tap();
     await p.waitForFunction(() => TAB === "showroom" && location.pathname === "/", null, { timeout: 4000 });
   });
+  /* 2026-10-20 one kit, part 5: the tournament, order done and the pop-up sheets */
+  await step(d, "one kit: the tournament's top is ‹ · Tournament (kept at the top), Enter is a sheet with title · ×, and an order's page opens ‹ · Your order", async () => {
+    await p.evaluate(() => { PROFILE = null; POSTOPEN = null; TAB = "showroom"; render(); }); await p.waitForSelector(".ev-banner .ev-go");
+    await p.locator(".ev-banner .ev-go").tap(); await p.waitForSelector(".ev-h", { timeout: 6000 });
+    ok(await p.locator(".ev > .sh .sh-back#evback").count() === 1 && (await p.locator(".ev > .sh .sh-h").innerText()) === "Tournament" && await p.locator(".ev-top").count() === 0, "the tournament doesn't wear the kit head");
+    await p.evaluate(() => { EVENTER = { prep: null, caption: "", agree: false }; render(); }); await p.waitForSelector("#evx");
+    ok(await p.locator(".ev-enter .sheeth h2").count() === 1 && await p.locator(".ev-enter .sheeth .x#evx").count() === 1, "Enter isn't a kit sheet");
+    await p.locator("#evx").tap(); await p.waitForTimeout(200);
+    await p.evaluate(async () => { EVENTER = null; TAB = "market"; ORDERS = await api.orders(); DONEID = ORDERS.buying[0] && ORDERS.buying[0].id; DONESTATE = "paid"; MKTVIEW = "confirmed"; render(); });
+    await p.waitForSelector(".od");
+    ok(await p.locator(".od > .sh .sh-back[data-mv=browse]").count() === 1 && (await p.locator(".od > .sh .sh-h").innerText()) === "Your order", "order done has no ‹ · Your order head");
+    await p.evaluate(() => { MKTVIEW = "browse"; TAB = "showroom"; render(); });
+  });
   /* "Make it so the art event gets posted in visuals so you don't need a specific
      hashtag" (2026-10-12): the tournament page leads to its lab, where a
      Tournament chip holds every entry and each one is marked. */

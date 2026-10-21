@@ -1,3 +1,4 @@
+/* v2026-10-20: a kit head with the way back to the Market */
 /* ── ORDER CONFIRMED v1.0 — 2026-10-18 ─────────────────────────────────
    "Seamless payments": after Stripe, the buyer lands on the order they
    just paid for, the way a shop's thank-you page works: what they bought,
@@ -15,7 +16,7 @@ function orderDoneHTML(){
   const rows=ORDERS?(ORDERS.buying||[]).filter(o=>o.cart===DONEID||o.id===DONEID).sort((a,b)=>a.id-b.id):null;
   const wait=DONESTATE==="processing";
   const ic=`<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true">${wait?'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>':'<path d="M5 12.5l4.5 4.5L19 7.5"/>'}</svg>`;
-  const top=`<div class="od-top"><div class="od-ic${wait?" wait":""}">${ic}</div>
+  const top=`${screenHead({back:{attrs:'data-mv="browse"',label:"Market"},title:wait?"Payment":"Your order"})}<div class="od-top"><div class="od-ic${wait?" wait":""}">${ic}</div>
     <h2 class="od-h">${wait?"Payment processing":"Order confirmed"}</h2>
     <p class="od-p">${wait?"Your bank is still clearing it. We'll tell you and the seller the moment it lands — nothing to do.":
       rows&&rows.length?`Thanks — <b>${esc(rows[0].other.displayName)}</b> has been told to ship it.`:"Thanks — the seller has been told to ship it."}</p></div>`;
