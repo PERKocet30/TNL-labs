@@ -1,4 +1,5 @@
-/* ================================================================
+/* v2026-10-20: the inbox head, search and tabs are the kit's (app-05-styles-kit.css).
+   ================================================================
    MESSAGES v2.0 — 2026-09-29. Inbox, chat, hold menu, sheets, and the
    lab-room chat pieces. Own bubbles are inverted like the primary
    button; images stay square; reagent green only marks "on" states.
@@ -12,10 +13,7 @@ body.chat-on{overflow:hidden}
 .cx-h h2{flex:1;font-size:17px;font-weight:700;margin:0 0 0 4px}
 .cx-ib{width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:none;border:0;border-radius:999px;color:var(--tx);cursor:pointer}
 .cx-ib:active{background:var(--el)}
-.cx-tabs{display:flex;gap:8px;padding:12px 14px 6px;flex-shrink:0}
-.cx-tabs button{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--line2);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--tx2)}
-.cx-tabs button.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
-.cx-tabs b,.c-jump b{background:var(--accent-fill);color:var(--on-accent);border-radius:999px;font-size:11px;min-width:18px;padding:1px 5px;text-align:center}
+.c-jump b{background:var(--accent-fill);color:var(--on-accent);border-radius:999px;font-size:11px;min-width:18px;padding:1px 5px;text-align:center}
 .cx-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 0 20px}
 .cx-row{display:flex;align-items:center;gap:12px;width:100%;padding:9px 14px;background:none;border:0;color:var(--tx);text-align:left;cursor:pointer}
 .cx-row:active{background:var(--el)}
@@ -200,10 +198,6 @@ textarea.c-in{resize:none;min-height:42px;max-height:120px;line-height:1.35;font
    A phone: full screen, nothing dimmed behind. A computer: beside the side menu, your chats
    on the left and the conversation on the right. Searching your chats; the button shows where you are. */
 .cx{background:var(--bg)}
-.cx-q{display:flex;align-items:center;gap:8px;margin:10px 14px 2px;padding:0 12px;background:var(--el);border-radius:10px;color:var(--dim);flex-shrink:0}
-.cx-q svg{width:16px;height:16px;flex-shrink:0}
-.cx-q input{flex:1;min-width:0;background:none;border:0;outline:none;padding:9px 0;font:inherit;font-size:16px;color:var(--tx)}
-.cx-q input::-webkit-search-cancel-button{display:none}
 .cx-row[hidden]{display:none}
 #dmBtn.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
 .cx-none{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:32px}
@@ -219,6 +213,6 @@ textarea.c-in{resize:none;min-height:42px;max-height:120px;line-height:1.35;font
   .cx-2p #cxclose,.cx-2p #cxback{display:none}
   .cx-2p .cx-th{padding-left:16px}
   .cx-row{padding:9px 20px}.cx-row:hover{background:var(--el)}.cx-row.sel{background:var(--el)}
-  .cx-2p .cx-tabs{padding:4px 20px 6px}.cx-2p .cx-q{margin:0 20px 8px}
+  .cx-2p .ktabs{padding:0 12px}
   body.chat-on .side .navb.on:not([data-tab="post"]){background:none;font-weight:400;color:var(--dim)}
 }

@@ -1,3 +1,4 @@
+/* v2026-10-20: the head comes from the screen kit */
 /* ── NOTIFICATIONS v2.1 · 2026-10-12 (back from a post lands here again) ─────────────────────────────────────
    Sections — New, Today, This
    week, This month, Earlier. A row is the person's picture, one line
@@ -56,7 +57,7 @@ function notifPanelHTML(){
   NFROWS=NOTIFS?nfRows(NOTIFS):[];
   let last="";
   return `<div class="sheet" id="npbg"><div class="sheetc nf">
-    <div class="sheeth"><div><h2>Notifications</h2></div><button class="x" id="npx" aria-label="Close">${DI.x}</button></div>
+    ${screenHead({back:{id:"npx",label:"Close"},title:"Notifications"})}
     ${!NOTIFS?`${skel()}`:!NOTIFS.length?`<div class="empty">Nothing yet.<br>Post work and it starts here.</div>`
       :NFROWS.map((r,i)=>{const h=r.sec!==last?`<div class="nf-sec">${r.sec}</div>`:"";last=r.sec;return h+nfRowHTML(r,i)}).join("")}
   </div></div>`;

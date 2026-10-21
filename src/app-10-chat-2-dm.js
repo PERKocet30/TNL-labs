@@ -1,3 +1,4 @@
+/* v2026-10-20: the inbox head, search and tabs come from the screen kit (app-08-kit.js) */
 /* MESSAGES v2.1 — 2026-10-14 (a screen of its own: two columns on a computer, full screen on a phone, search your chats).
    v2.0 — 2026-09-29. The inbox and the chat screen (markup). */
 const chatTitle=c=>c.isGroup?(c.title||c.people.filter(p=>p.username!==myName()).map(p=>(p.displayName||p.username).split(" ")[0]).join(", ")||"Group")
@@ -19,16 +20,9 @@ function dmEmptyHTML(){return `<div class="cx-none"><span class="cx-none-ic">${U
 
 function inboxHTML(){
   const I=INBOX, list=!I?null:INBOXTAB==="requests"?I.requests:I.threads;
-  return `<header class="cx-h cx-ih">
-      <button class="cx-ib" id="cxclose" aria-label="Back">${CI.back}</button>
-      <h2>Messages</h2>
-      <button class="cx-ib" id="cxnew" aria-label="New message">${CI.compose}</button>
-    </header>
-    ${I&&(I.threads.length+I.requests.length)>3?`<label class="cx-q">${UI_IC.search}<input id="cxq" type="search" placeholder="Search" autocomplete="off" aria-label="Search your chats"></label>`:""}
-    <div class="cx-tabs" role="tablist">
-      <button class="${INBOXTAB==="chats"?"on":""}" data-itab="chats" role="tab">Chats</button>
-      <button class="${INBOXTAB==="requests"?"on":""}" data-itab="requests" role="tab">Requests${I&&I.requestCount?`<b>${I.requestCount}</b>`:""}</button>
-    </div>
+  return `${screenHead({back:{id:"cxclose",label:"Back"},title:"Messages",actions:[`<button class="ib" id="cxnew" aria-label="New message">${CI.compose}</button>`]})}
+    ${I&&(I.threads.length+I.requests.length)>3?searchHTML("cxq","Search your chats"):""}
+    ${tabsHTML([["chats","Chats"],["requests","Requests",I&&I.requestCount?`<b>${I.requestCount}</b>`:""]],INBOXTAB,"data-itab")}
     <div class="cx-list">${!I?`${skel()}`:!list.length
       ?(INBOXTAB==="requests"?`<div class="cx-empty"><b>No requests</b><span>Messages from people you don't follow land here first.</span></div>`
         :`<div class="cx-empty"><b>No messages yet</b><span>Start a chat with someone you want to make something with.</span><button class="btn" id="cxnew2">New message</button></div>`)

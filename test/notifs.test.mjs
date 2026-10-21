@@ -44,7 +44,8 @@ try {
   const src = readFileSync(join(ROOT, "src/app-17-notifs.js"), "utf8");
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
   const avHTML = (u) => `<i class="av">${u.displayName}</i>`;
-  const K = new Function("esc", "avHTML", "DI", "skel", "NOTIFS", src + "\nreturn {nfRows, nfRowHTML, nfText, notifPanelHTML};")(esc, avHTML, { x: "x" }, () => "", N);
+  const screenHead = (o) => `<div class="sh"><h2>${o.title}</h2></div>`;   // the kit's head (app-08-kit.js), 2026-10-20
+  const K = new Function("esc", "avHTML", "DI", "skel", "NOTIFS", "screenHead", src + "\nreturn {nfRows, nfRowHTML, nfText, notifPanelHTML};")(esc, avHTML, { x: "x" }, () => "", N, screenHead);
   const rows = K.nfRows(N);
   const likes = rows.filter((r) => r.n.kind === "like");
   t("three likes on one post are one row", likes.length === 1 && likes[0].people.length === 3);

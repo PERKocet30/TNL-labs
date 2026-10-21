@@ -1,3 +1,4 @@
+/* v2026-10-20: the Search head and field come from the screen kit */
 function wirePicker(){
   const bg=$("#pickbg");if(!bg)return;
   bg.onclick=e=>{if(e.target===bg)closePicker()};
@@ -34,8 +35,8 @@ function timeAgo(t){const s=(Date.now()-t)/1000;
 
 /* dmPanelHTML → app-10-chat-2-dm.js (messaging v2) */
 function searchPanelHTML(){return `<div class="sheet" id="sbg"><div class="sheetc">
-  <div class="sheeth"><div><h2>Search</h2></div><button class="x" id="sx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-  <input class="in" id="sq" placeholder="Name, username, or bio" value="${esc(SEARCHQ)}">
+  ${screenHead({back:{id:"sx",label:"Close"},title:"Search"})}
+  ${searchHTML("sq","Name, username, or bio",SEARCHQ)}
   <div class="mono lbl">FILTER BY WHAT THEY MAKE</div>
   <div class="roles">${ROLES.slice(0,12).map(r=>`<button class="chip ${SEARCHROLE===r?"on":""}" data-sr="${esc(r)}">${esc(r)}</button>`).join("")}</div>
   ${SEARCHING?`<div class="empty">Searching…</div>`:SEARCHRES?`
