@@ -107,6 +107,6 @@
 .pc-prevc{max-width:480px;padding:22px 0 50px}.pc-prevc .sheeth{padding:0 20px}.pc-prev{pointer-events:none}.pc-prev .sr-card{margin:0;width:100%;max-width:none}
 .pc-l .dim{font-size:12px;font-weight:400}
 /* pins on a posted card (app-12-post-extras.js) */
-.px-pins{position:absolute;z-index:3}
+.px-pins{position:absolute;z-index:3;pointer-events:none}.px-pins .px-pin{pointer-events:auto}
 .px-pin{position:absolute;transform:translate(-50%,-100%);margin-top:-6px;background:rgba(0,0,0,.82);color:#fff;border:0;border-radius:8px;padding:5px 9px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
 .px-pin::after{content:"";position:absolute;left:50%;bottom:-5px;width:10px;height:10px;background:rgba(0,0,0,.82);transform:translateX(-50%) rotate(45deg)}

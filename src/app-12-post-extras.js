@@ -43,7 +43,7 @@ document.addEventListener("click",e=>{
     const img=media.querySelector("img, video"),r=img?img.getBoundingClientRect():null,m=media.getBoundingClientRect();
     const box=r?`left:${r.left-m.left}px;top:${r.top-m.top}px;width:${r.width}px;height:${r.height}px`:"inset:0";
     media.insertAdjacentHTML("beforeend",`<div class="px-pins" style="${box}">${pins.map(q=>`<button class="px-pin" style="left:${(q.x*100).toFixed(1)}%;top:${(q.y*100).toFixed(1)}%" data-u="${esc(q.username)}">${esc(q.username)}</button>`).join("")}</div>`);
-    const ov=media.querySelector(".px-pins");ov.onclick=ev=>{const pin=ev.target.closest(".px-pin");ev.stopPropagation();if(pin)openProfile(pin.dataset.u);else ov.remove()};
+    media.querySelectorAll(".px-pin").forEach(pin=>pin.onclick=ev=>{ev.stopPropagation();openProfile(pin.dataset.u)});
     return;
   }
   openPicker({title:"Tagged",items:p.tags.map(u=>({label:"@"+u,username:u})),onPick:it=>openProfile(it.username)});
