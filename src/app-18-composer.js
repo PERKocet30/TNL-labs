@@ -1,3 +1,4 @@
+/* v2026-10-20: the bar is the kit's formHead (Cancel · New post · Share) */
 /* ── POST CREATOR · v2.4 · 2026-10-13 (v2.4: ▶ to listen before you pick a song; v2.3: your songs first in Add music; v2 2026-09-28; v2.1: your labs first in Share to a lab; v2.2: upload a song from here, and its cover is the post's picture when there are no photos) ────────────────────────────────
    One page: the work large at the
    top (swipe it, reorder it, see each upload land), the caption with
@@ -52,11 +53,7 @@ function pcomposeHTML(){
 
   const lab=c.ch?esc(labMark(c.ch.lab)):"Profile only";
   return `<div class="pcmp-ov" id="pcov"><div class="pc" role="dialog" aria-label="New post">
-    <header class="pc-top">
-      <button class="pc-cancel" id="pccancel">Cancel</button>
-      <div class="pc-ttl">New post</div>
-      <button class="pc-share" id="pcgo" ${pcCan(c)?"":"disabled"}>${c.busy?"Sharing…":"Share"}</button>
-    </header>
+    ${formHead({id:"pccancel",label:"Cancel"},"New post",{id:"pcgo",label:c.busy?"Sharing…":"Share",disabled:!pcCan(c)})}
     <div class="pc-body"><div class="pc-media">${media}</div><div class="pc-side">
       <div class="pc-cap">${avHTML(ME,"")}
         <textarea class="pc-ta" id="pcbody" rows="3" placeholder="Write a caption… #tag it so people find it">${esc(c.body||"")}</textarea></div>

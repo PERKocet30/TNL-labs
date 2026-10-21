@@ -1,3 +1,4 @@
+/* v2026-10-20: the bar is the kit's formHead */
 /* ── VIDEO EDITOR · 2026-10-08 ─────────────────────────────────────────
    The video edit step, kept simple: Trim (drag the two handles on
    a strip of frames), Cover (scrub to a frame, or pick a photo from the
@@ -22,14 +23,14 @@ function vedHTML(){
       <div class="ped-hint">Drag the ends to trim. Nothing is cut from your file.</div>`
     :t==="cover"?`${strip(`<input type="range" class="ved-h ved-one" id="vedc" min="0" max="${d}" step="50" value="${VED.at||0}" aria-label="Pick a frame">`)}
       <div class="ved-cov">${VED.c.cover?`<img class="ved-covth" src="${esc(VED.c.cover)}" alt="Current cover">`:""}
-        <button class="pc-share" id="vedcok"${VED.busy?" disabled":""}>${VED.busy?"Saving…":"Use this frame"}</button>
+        <button class="btn" id="vedcok"${VED.busy?" disabled":""}>${VED.busy?"Saving…":"Use this frame"}</button>
         <label class="chip ved-roll">From camera roll<input type="file" accept="image/*" id="vedcf" hidden></label></div>`
     :t==="sound"?`<label class="pc-opt pc-sw-row"><span class="pc-l">Original sound</span><input type="checkbox" class="pf-sw" id="vedsnd" ${e.muted?"":"checked"}></label>
       <div class="ped-hint">${VED.c.track?`Your music, “${esc(VED.c.track.title)}”, plays with it${e.muted?" on its own":""}.`:"Off: the video plays silent, and there's no sound button on it."}</div>`
     :`<div class="ped-row">${VED_RATIOS.map(([k,l])=>`<button class="chip${e.ratio===k?" on":""}" data-vedr="${k}">${l}</button>`).join("")}</div>
       <div class="ped-hint">How it's framed in the feed. The full video is kept.</div>`;
   return `<div class="ped ved" role="dialog" aria-label="Edit video">
-    <header class="pc-top"><button class="pc-cancel" id="vedx">Cancel</button><div class="pc-ttl">Edit video</div><button class="pc-share" id="vedok">Done</button></header>
+    ${formHead({id:"vedx",label:"Cancel"},"Edit video",{id:"vedok",label:"Done"})}
     <div class="ped-stage ved-stage" id="vedstage"><div class="ved-frame${r?" vfill":""}" style="${r?`aspect-ratio:${r}`:VED.ar?`aspect-ratio:${VED.ar}`:""}">
       <video id="vedv" src="${esc(VED.c.vid.url)}" playsinline preload="auto" crossorigin="anonymous"${VED.c.cover?` poster="${esc(VED.c.cover)}"`:""}></video>
       <span class="ved-play" id="vedplay" aria-hidden="true">${DI.play}</span></div></div>

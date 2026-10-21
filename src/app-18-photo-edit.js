@@ -1,3 +1,4 @@
+/* v2026-10-20: the bar is the kit's formHead */
 /* ── PHOTO EDITOR · 2026-09-30 ─────────────────────────────────────────
    The edit step, on the phone, nothing new on the server: crop
    (original, square, 4:5, 16:9 — drag to position, zoom), filters, and
@@ -53,7 +54,7 @@ function pedHTML(){
     :t==="filter"?`<div class="ped-filters">${Object.entries(PED_FILTERS).map(([k,f])=>`<button class="ped-f${e.filter===k?" on":""}" data-pedf="${k}"><canvas data-pedft="${k}" width="72" height="72"></canvas><span>${f.n}</span></button>`).join("")}</div>`
     :PED_ADJ.map(([k,l])=>`<label class="ped-sl"><span>${l}</span><input type="range" min="-100" max="100" value="${e[k]||0}" data-pedj="${k}"><b data-pedv="${k}">${e[k]||0}</b></label>`).join("");
   return `<div class="ped" role="dialog" aria-label="Edit photo">
-    <header class="pc-top"><button class="pc-cancel" id="pedx">Cancel</button><div class="pc-ttl">Edit</div><button class="pc-share" id="pedok">Done</button></header>
+    ${formHead({id:"pedx",label:"Cancel"},"Edit",{id:"pedok",label:"Done"})}
     <div class="ped-stage" id="pedstage"><canvas id="pedc"></canvas></div>
     <div class="ped-tabs">${[["filter","Filters"],["crop","Crop"],["adjust","Adjust"]].map(([k,l])=>`<button class="ped-tab${t===k?" on":""}" data-pedt="${k}">${l}</button>`).join("")}</div>
     <div class="ped-panel">${panel}</div>
