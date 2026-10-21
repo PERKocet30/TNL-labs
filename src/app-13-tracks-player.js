@@ -1,4 +1,4 @@
-/* MUSIC LAB · TRACKS v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
+/* MUSIC LAB · TRACKS v1.4 — 2026-10-20 (Market and loop heads from the screen kit); v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
 /* A lab's Talk with nothing in it yet, by its home channel (2026-10-15: in
    TNL's own words — no rooms, no "the network"). */
 const EMPTY={
@@ -200,11 +200,7 @@ function marketHTML(){
   const afCount=[MKTFILT.size,MKTFILT.type,MKTFILT.condition,MKTFILT.range,MKTFILT.kind,(MKTFILT.sort&&MKTFILT.sort!=="new")?MKTFILT.sort:""].filter(Boolean).length;
   return `<div class="scroll" id="mktscroll">
     <div class="shop-head">
-      <div class="shop-top">
-        <h2 class="shop-h">Market</h2>
-        <div class="shop-acts"><button class="shop-share" id="mktshare" aria-label="Share the Market">${IG_SEND}</button>${bagBtnHTML()}<button class="shop-sell" data-mv="sell">Sell</button></div>
-      </div>
-      <p class="shop-for">${esc(MARKET_PITCH)}</p>
+      ${screenHead({title:"Market",sub:MARKET_PITCH,actions:[shareBtnHTML(`id="mktshare" aria-label="Share the Market"`),bagBtnHTML(),`<button class="btn sm shop-sell" data-mv="sell">Sell</button>`]})}
       <div class="shop-search">
         <label class="shop-qwrap">${UI_IC.search}<input class="in shop-q" id="mktq" aria-label="Search the market" placeholder="Search items, brands…" value="${esc(MKTFILT.q||"")}"></label>
         <button class="shop-filt ${MKTFILTOPEN?"on":""}" id="mktfiltbtn">Filters${afCount?` · ${afCount}`:""}</button>
@@ -287,9 +283,7 @@ function mktCardHTML(l){
 function loopDetailHTML(l){
   const mine=l.seller.username===myName();
   return `<div class="scroll" id="mktscroll">
-    <div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button>
-      <button class="backb2" data-mshare="${l.id}">Share</button>
-      ${mine?`<button class="backb2" data-medit="${l.id}">Edit</button>`:""}</div>
+    ${screenHead({back:{attrs:'data-mv="browse"',label:"Market"},title:l.seller.displayName||l.seller.username,actions:[shareBtnHTML(`data-mshare="${l.id}"`),mine?`<button class="btn ghost sm" data-medit="${l.id}">${DI.edit}<span>Edit</span></button>`:""]})}
     <div class="dwrap">
       <div class="loopart ${l.images[0]?"":"noart"}">
         ${l.images[0]?`<img src="${esc(l.images[0])}" alt="">`:`<div class="loopglyph">${DI.music}</div>`}

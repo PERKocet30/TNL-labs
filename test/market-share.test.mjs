@@ -19,7 +19,7 @@ console.log("\nTHE LINE");
 const appPitch = pitch(part("app-17-market-share.js")), srvPitch = pitch(part("server-12-policies.js"));
 t("the Market says what it's for", !!appPitch && appPitch.length < 140);
 t("…in the same words the link preview uses", appPitch === srvPitch);
-t("it sits under the Market's name", part("app-13-tracks-player.js").includes('<p class="shop-for">${esc(MARKET_PITCH)}</p>'));
+t("it sits under the Market's name", part("app-13-tracks-player.js").includes('title:"Market",sub:MARKET_PITCH'));
 
 console.log("\nSHARE");
 t("a Share button beside the bag", part("app-13-tracks-player.js").includes('id="mktshare" aria-label="Share the Market"') && part("app-17-market.js").includes("msh.onclick=shareMarket"));

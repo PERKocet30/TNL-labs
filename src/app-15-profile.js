@@ -1,3 +1,4 @@
+/* PROFILE v2026-10-20: the head comes from the screen kit (app-08-kit.js); Follow is the black main action */
 function workCardHTML(p, collab, K, pinned) {
   K = K || KIND;
   const accepted = p.collaborators.filter(c => c.status === "accepted");
@@ -114,9 +115,8 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
   const fb=PROFILE.followedBy;
   const num=(n,label,attr)=>`<${attr?`button ${attr}`:"div"} class="pstat"><b>${ld?"—":n}</b><span>${label}</span></${attr?"button":"div"}>`;
   return `<div class="sheet ${mine?"astab":""}" id="sheetbg"><div class="sheetc pig" style="--green:${acc}">
-  <div class="sheeth pig-top"><div class="pig-user">${esc(u.username)}</div>
-    <div class="pig-topr">${mine?`${ld?"":`<button class="pig-plus" id="profpost" aria-label="New post">${UI_IC.plusSq}</button>`}<button class="pig-plus" id="profmenu" aria-label="Settings">${PF_MENU}</button>`
-      :`<button class="pig-plus" id="profmore" aria-label="More">${DI.more}</button><button class="x" id="sheetx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`}</div></div>
+  ${screenHead({back:mine?null:{id:"sheetx",label:"Close"},title:u.username,actions:mine?[ld?"":`<button class="ib" id="profpost" aria-label="New post">${UI_IC.plusSq}</button>`,`<button class="ib" id="profmenu" aria-label="Settings">${PF_MENU}</button>`]
+    :[`<button class="ib" id="profmore" aria-label="More">${DI.more}</button>`]})}
 
   <div class="pig-head">
     ${u.avatarUrl?`<img class="pav pig-av"${avRing(u)[1]} src="${esc(u.avatarUrl)}" alt="">`:`<div class="pav pig-av"${avRing(u)[1]}>${esc(u.displayName.slice(0,2).toUpperCase())}</div>`}
@@ -136,7 +136,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
   <div class="pactions">
     ${ld?`<div class="skelbtn"></div>`:mine?`<button class="btn ghost" id="editb">Edit profile</button>
       <button class="btn ghost" id="shareprof" data-share-u="${esc(u.username)}">Share profile</button>`
-      :`<button class="btn ${PROFILE.youFollow?"ghost":"green"}" id="followb">${PROFILE.youFollow?"Following":"Follow"}</button>
+      :`<button class="btn ${PROFILE.youFollow?"ghost":""}" id="followb">${PROFILE.youFollow?"Following":"Follow"}</button>
         <button class="btn ghost" id="msgb">Message</button>`}
   </div>
 

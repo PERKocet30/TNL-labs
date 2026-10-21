@@ -1236,14 +1236,30 @@ console.log("\nMEMBER · PHONE");
     const { token: ft } = await login("friend");
     ok(JSON.stringify(await api("/api/chats", ft)).includes("hey from e2e") || JSON.stringify(await api("/api/dm", ft)).includes("hey from e2e"), "friend's inbox doesn't have it");
   });
-  await step(d, "signed in, the top bar has the moon: Night on, the sun brings Day back", async () => {
+  /* 2026-10-20 one kit: the top bar is search · messages · bell; day/night lives in the profile menu */
+  await step(d, "signed in, the top bar has no moon; Night mode in the profile menu switches night on, Day mode brings day back", async () => {
     await p.evaluate(() => { DMOPENPANEL = false; CHAT = null; paintLayer(); PROFILE = null; TAB = "showroom"; render(); });
-    const moon = p.locator('.top [data-theme-set="dark"]');
-    ok(await moon.count() === 1, "no night-mode button in the signed-in top bar");
-    await moon.tap(); await p.waitForTimeout(200);
+    ok(await p.locator(".top [data-theme-set]").count() === 0, "the signed-in top bar still has a day/night button");
+    const viaMenu = async (label) => { await p.locator('.nav [data-tab="profile"]').tap(); await p.waitForSelector("#profmenu"); await p.locator("#profmenu").tap();
+      await p.locator(".c-ma", { hasText: label }).first().tap(); await p.waitForTimeout(200); };
+    await viaMenu("Night mode");
     ok(await p.evaluate(() => document.documentElement.dataset.theme === "dark" && localStorage.getItem("tnl-theme") === "dark"), "night didn't switch on");
-    await p.locator('.top [data-theme-set="light"]').tap(); await p.waitForTimeout(200);
+    await viaMenu("Day mode");
     ok(await p.evaluate(() => document.documentElement.dataset.theme) === "light", "day didn't come back");
+    await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
+  });
+  /* 2026-10-20 one kit, part 2: profiles and Edit profile wear the kit's head and form bar */
+  await step(d, "one kit: your profile's head is @name · + · ≡, someone else's is ‹ · @name · ⋯ with a black Follow, and Edit profile's bar is Cancel · title · Done", async () => {
+    await p.locator('.nav [data-tab="profile"]').tap(); await p.waitForSelector("#profmenu");
+    ok(await p.locator(".pig > .sh .sh-h").count() === 1 && await p.locator(".pig > .sh .sh-acts .ib").count() === 2 && await p.locator(".pig-top, .pig-plus").count() === 0, "your profile doesn't wear the kit head");
+    await p.locator("#editb").tap(); await p.waitForSelector("#ed-save");
+    ok(await p.locator(".kform #ed-save.btn").count() === 1 && await p.locator(".kform #ed-cancel.kf-b").count() === 1 && await p.locator(".pe-top").count() === 0, "Edit profile's bar isn't the kit's form bar");
+    await p.locator("#ed-cancel").tap(); await p.waitForSelector("#editb");
+    await p.evaluate(() => openProfile("friend")); await p.waitForSelector("#followb");
+    ok(await p.locator(".pig > .sh .sh-back#sheetx").count() === 1 && await p.locator(".pig > .sh .sh-acts #profmore.ib").count() === 1, "someone else's profile has no back · name · more head");
+    ok(await p.evaluate(() => { const b = document.querySelector("#followb"); return b && !b.classList.contains("green") && b.classList.contains("btn"); }), "Follow isn't the black main action");
+    await p.locator("#sheetx").tap(); await p.waitForTimeout(400);
+    await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
   });
   /* ---- profile v2 (2026-10-07) ---- */
   await step(d, "edit profile: plain rows; a half-typed bio survives the Links screen; Done saves pronouns, bio, links", async () => {
@@ -1423,6 +1439,28 @@ console.log("\nMEMBER · PHONE");
     await p.waitForFunction(() => typeof LAB !== "undefined" && LAB && LAB.id === "fashion", null, { timeout: 8000 });
     ok(await p.evaluate(() => location.search === ""), "the ?l= stayed in the address bar");
     await p.evaluate(() => { LAB = null; ROOMOPEN = false; TAB = "showroom"; render(); });
+  });
+  /* 2026-10-20 "the app feels like patchwork": one screen head for every screen — back · title · actions, one Share pill, underline tabs */
+  await step(d, "one kit: Labs, a lab, Market, a listing, bag, orders and saved share one head, one Share, one set of tabs; the top bar is search · messages · bell", async () => {
+    const head = async (what) => {
+      const h = await p.evaluate(() => ({ sh: document.querySelectorAll(".content .sh").length, h: document.querySelectorAll(".content .sh .sh-h").length,
+        old: document.querySelectorAll(".lr-head, .dnav, .backb2, .lx-head, .shop-top, .page-head").length, share: document.querySelectorAll(".content .sh-share").length,
+        theme: document.querySelectorAll(".top [data-theme-set]").length, emoji: /🧪/.test(document.querySelector(".top").innerText) }));
+      ok(h.sh === 1 && h.h === 1 && h.old === 0 && h.theme === 0 && !h.emoji, what + " doesn't wear the one head: " + JSON.stringify(h));
+      return h;
+    };
+    await p.evaluate(() => { LAB = null; TAB = "labs"; render(); }); await p.waitForSelector(".lx-list"); await head("Labs");
+    await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#labshare");
+    ok((await head("a lab")).share === 1 && await p.locator(".content .ktabs .ktab, .content .pl-tabs .pl-tab").count() >= 2, "a lab has no Share pill or underline tabs");
+    await p.evaluate(() => { LAB = null; ROOMOPEN = false; TAB = "market"; MKTVIEW = "browse"; render(); }); await p.waitForSelector("#mktscroll");
+    ok((await head("Market")).share === 1 && await p.locator(".content .sh-acts .shop-sell").count() === 1, "Market's head lacks Share · bag · Sell");
+    await p.locator("#mktscroll [data-mopen]").first().tap(); await p.waitForSelector(".lpage");
+    ok((await head("a listing")).share === 1 && await p.locator(".content .sh-back").count() === 1, "a listing has no back and Share in its head");
+    await p.evaluate(() => { MKTVIEW = "bag"; render(); }); await head("the bag");
+    await p.evaluate(async () => { MKTVIEW = "orders"; ORDERS = await api.orders(); ORDTAB = "buying"; render(); });
+    ok(await p.locator(".content .ktabs [data-ot]").count() === 2, "Orders' Bought / Sold aren't underline tabs"); await head("orders");
+    await p.evaluate(() => { MKTVIEW = "saved"; render(); }); await head("saved");
+    await p.evaluate(() => { MKTVIEW = "browse"; TAB = "showroom"; render(); });
   });
   /* "I want to simplify. Let's just remove moodboards for now" (2026-10-11) */
   await step(d, "Visual's archive is a plain search now: no moodboards, no paste-a-link; searching and opening a picture still work", async () => {

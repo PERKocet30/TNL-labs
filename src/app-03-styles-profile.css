@@ -240,7 +240,7 @@ body.has-now .content{padding-bottom:56px}
 .mloop-by{font-size:12px;margin-top:3px}
 .shop-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
 .shop-h{font-size:28px;font-weight:700;margin:0;letter-spacing:-.02em}
-.shop-sell{background:var(--accent-fill);color:var(--on-accent);border:none;border-radius:999px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer;flex:none}
+.shop-sell{flex:none}
 .shop-search{display:flex;gap:8px;margin-top:14px}
 .shop-q{flex:1;font-size:13px}
 .shop-filt{flex:none;background:var(--el);border:1px solid var(--line2);color:var(--tx);border-radius:999px;padding:0 16px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}

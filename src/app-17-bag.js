@@ -1,4 +1,4 @@
-/* ── THE BAG, RECENTLY VIEWED, PRICE DROPS, SELLER TOOLS · 2026-09-30 ──
+/* ── THE BAG, RECENTLY VIEWED, PRICE DROPS, SELLER TOOLS · 2026-10-20 (head from the screen kit) · 2026-09-30 ──
    The bag lives on this phone (like any shop before you sign in) and is
    checked against the Market when you open it. Checkout is per seller:
    one payment, shipping combined (server-07-cart.js).
@@ -26,8 +26,7 @@ function bagBtnHTML(){const n=bagList().length;
 
 function bagHTML(){
   const items=bagList();
-  const head=`<div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button></div>
-    <div class="page-head"><div class="mono dim">BAG</div><h2 class="page-h">Your bag</h2></div>`;
+  const head=screenHead({back:{attrs:'data-mv="browse"',label:"Market"},title:"Your bag"});
   if(!items.length)return `<div class="scroll">${head}<div class="empty">Your bag is empty.<br><br>Tap the bag on anything in the Market.</div></div>`;
   if(!MKTBAG)return `<div class="scroll">${head}${skel()}</div>`;
   const byId=new Map(MKTBAG.map(l=>[l.id,l])),groups=new Map();

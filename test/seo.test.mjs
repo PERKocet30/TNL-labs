@@ -46,7 +46,7 @@ try {
 
   console.log("\nWHAT EACH PAGE IS (schema.org)");
   const home = await html("/");
-  t("the home page's title says what it is", /<title>LABS 🧪 — Social media for artists, designers &amp; musicians<\/title>/.test(home));
+  t("the home page's title says what it is", /<title>LABS — Social media for artists, designers &amp; musicians<\/title>/.test(home));
   t("…and it's LABS the website, linked to its Instagram", (lds(home)[0]["@graph"] || []).some((x) => x["@type"] === "WebSite") && home.includes("instagram.com/tnl.labs"));
   const prof = lds(await html("/u/artist"))[0];
   t("a profile is a ProfilePage about a Person, with their bio and links", prof["@type"] === "ProfilePage" && prof.mainEntity["@type"] === "Person" && prof.mainEntity.name === "Ana Artist" && prof.mainEntity.description === "I paint" && prof.mainEntity.sameAs[0] === "https://ana.studio");

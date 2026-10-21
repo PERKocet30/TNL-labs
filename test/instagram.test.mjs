@@ -45,7 +45,7 @@ try {
   const s = await get(`/m/${sold}`);
   t("a sold piece says so, with cents", meta(s.html, "og:title") === "Hoodie — $80.50 · Sold" && meta(s.html, "product:availability") === "out of stock");
   const g = await get(`/m/${gone}`);
-  t("a removed listing gives nothing away (the plain LABS preview)", meta(g.html, "og:title") === "LABS 🧪 — Social media by creatives, for creatives" && !g.html.includes("Gone"));
+  t("a removed listing gives nothing away (the plain LABS preview)", meta(g.html, "og:title") === "LABS — Social media by creatives, for creatives" && !g.html.includes("Gone"));
   t("a listing that never existed still opens the app", (await get("/m/99999")).html.includes('id="app"'));
 
   console.log("\nPUBLIC PAGES LAND ON THE THING IN THE APP");

@@ -1,4 +1,4 @@
-/* ── EDIT PROFILE v2 · 2026-10-07 ──────────────────────────────────────
+/* ── EDIT PROFILE v2.2 · 2026-10-20 (the form bar and Data saver's icon come from the kit) · v2 2026-10-07 ──────────────────────────────────────
    Cancel · Edit profile · Done, your
    photo in the middle, then quiet rows — name, pronouns, bio, links, what
    you make, your colour. Links and roles open their own small screens
@@ -9,7 +9,7 @@ let EDITPF=null, CLIMBUSER=null;
 const PF_MENU=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`;
 const PF_CHEV=`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>`;
 const PF_IC=d=>`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="${d}"/></svg>`;
-const PF_I={theme:PF_IC("M20 14a8 8 0 0 1-10-10 8 8 0 1 0 10 10z"),level:PF_IC("M5 20v-6M12 20V9M19 20V4"),share:PF_IC("M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"),
+const PF_I={theme:PF_IC("M20 14a8 8 0 0 1-10-10 8 8 0 1 0 10 10z"),saver:PF_IC("M4 12h16M12 4v16M12 4l-4 4M12 4l4 4M12 20l-4-4M12 20l4-4"),level:PF_IC("M5 20v-6M12 20V9M19 20V4"),share:PF_IC("M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"),
   link:PF_IC("M10 14l4-4M8 12l-2 2a3 3 0 0 0 4 4l2-2M16 12l2-2a3 3 0 0 0-4-4l-2 2"),admin:PF_IC("M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"),
   out:PF_IC("M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"),block:PF_IC("M5 5l14 14M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"),flag:PF_IC("M5 21V4h12l-2 4 2 4H5")};
 
@@ -20,9 +20,9 @@ function pfStart(u){
 }
 function editProfileHTML(){
   const u=PROFILE.user,f=EDITPF||(pfStart(u),EDITPF);
-  const top=(left,title,right)=>`<header class="pe-top">${left}<b>${title}</b>${right}</header>`;
+  const top=formHead;
   let body;
-  if(f.sub==="links")body=`${top(`<button class="pe-b" id="pe-back">‹ Back</button>`,"Links",`<span class="pe-sp"></span>`)}
+  if(f.sub==="links")body=`${top({id:"pe-back",back:true},"Links",null)}
     <div class="pe-sub">${f.links.map((x,i)=>`<div class="pe-link">
       <input class="pe-in" data-pl="${i}" data-k="title" value="${esc(x.title||"")}" maxlength="40" placeholder="Title (optional)">
       <input class="pe-in" data-pl="${i}" data-k="url" value="${esc(x.url||"")}" maxlength="200" placeholder="URL" inputmode="url" autocapitalize="none">
@@ -30,11 +30,11 @@ function editProfileHTML(){
       ${f.links.length<5?`<button class="pe-add" id="pe-addlink">+ Add a link</button>`:""}
       <p class="pe-hint">Up to 5. The first shows on your profile; the rest sit behind “and more”.</p></div>`;
   else if(f.sub==="roles"){const q=f.q.toLowerCase();
-    body=`${top(`<button class="pe-b" id="pe-back">‹ Back</button>`,"What you make",`<span class="pe-n">${f.roles.length}/5</span>`)}
+    body=`${top({id:"pe-back",back:true},"What you make",`<span class="kf-n">${f.roles.length}/5</span>`)}
     <div class="pe-sub"><input class="pe-in pe-q" id="pe-rq" value="${esc(f.q)}" placeholder="Search" autocapitalize="none">
       ${f.roles.length?`<div class="roles pe-sel">${f.roles.map(r=>`<button class="chip on" data-er="${esc(r)}">${esc(r)} ×</button>`).join("")}</div>`:""}
       <div class="roles" id="pe-rlist">${ROLES.filter(r=>!f.roles.includes(r)&&(!q||r.toLowerCase().includes(q))).map(r=>`<button class="chip" data-er="${esc(r)}">${esc(r)}</button>`).join("")}</div></div>`;}
-  else body=`${top(`<button class="pe-b" id="ed-cancel">Cancel</button>`,"Edit profile",`<button class="pe-b pe-done" id="ed-save">Done</button>`)}
+  else body=`${top({id:"ed-cancel",label:"Cancel"},"Edit profile",{id:"ed-save",label:"Done"})}
     <div class="pe-av">${u.avatarUrl?`<img class="pav" src="${esc(u.avatarUrl)}" alt="">`:`<div class="pav">${esc(u.displayName.slice(0,2).toUpperCase())}</div>`}
       <button class="pe-photo" id="avbtn">Change photo</button><input type="file" id="avin" accept="image/*" hidden></div>
     <div class="pe-rows">
@@ -93,7 +93,7 @@ function wireProfileV2(){
     {icon:PF_I.theme,label:THEME==="dark"?"Day mode":"Night mode",run:()=>{setTheme(THEME==="dark"?"light":"dark");render()}},
     {icon:PF_I.level,label:"Your level",run:()=>{CLIMB=true;render()}},
     {icon:PF_I.link,label:"How LABS works",run:openTour},   // the walkthrough new members see (app-11-gate-tour)
-    {icon:PF_I.theme,label:liteOn()?"Data saver: on":"Data saver: off",run:()=>{setLite(!liteOn());
+    {icon:PF_I.saver,label:liteOn()?"Data saver: on":"Data saver: off",run:()=>{setLite(!liteOn());
       toast(liteOn()?"Data saver on — videos and music wait for a tap":"Data saver off");render()}},
     {icon:PF_I.share,label:"Share profile",run:()=>shareProfile(myName())},
     ...(ME&&ME.isAdmin?[{icon:PF_I.admin,label:"Admin dashboard",run:()=>{location.href="/admin"}}]:[]),

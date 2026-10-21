@@ -1,5 +1,5 @@
 /* ================================================================
-   PLACES v1.7 — 2026-10-15 (v1.7: links name the lab — /l/visual, LAB_SLUG). v1.6: each lab says what to do there, and has
+   PLACES v1.8 — 2026-10-20 (the #tag page's head from the screen kit); v1.7 — 2026-10-15 (v1.7: links name the lab — /l/visual, LAB_SLUG). v1.6: each lab says what to do there, and has
    a Share — LAB_PITCH, shareLab; a shared /l/ link lands in the lab).
    v1.5 — 2026-10-12 (v1.5: the tournament running in a lab is a
    chip in its Work — every entry, no #tag needed — and entries are marked).
@@ -208,8 +208,7 @@ function closeTag(){const f=TAGVIEW&&TAGVIEW.from;TAGVIEW=null;if(!f)return;TAB=
   if(f.lab){LAB=LABS.find(l=>l.id===f.lab)||null;if(LAB){LABVIEW=f.view;LABTAG=f.tag;ROOMOPEN=true;placeCH();setTimeout(loadPlace,0)}}}
 function tagHTML(){
   const T=TAGVIEW,d=T.d;
-  return `<div class="scroll pl-tagpage" id="tagscroll"><div class="lr-head"><button class="lr-back" id="tagback" aria-label="Back">${DI.back||"←"}</button>
-    <div class="lr-title">#${esc(T.tag)}</div></div>
+  return `<div class="scroll pl-tagpage" id="tagscroll">${screenHead({back:{id:"tagback",label:"Back"},title:"#"+T.tag})}
     ${!d?skel():d.error?plErr(d):`<div class="pl-tagh"><b>${d.count}</b> ${d.count===1?"post":"posts"}
       <div class="pl-tags wrap">${Object.entries(d.labs).sort((a,b)=>b[1]-a[1]).map(([id,n])=>{const l=LABS.find(x=>x.id===id);
         return l?`<button class="pl-chip" data-taglab="${id}">${esc(labMark(l.name))}<span>${n}</span></button>`:""}).join("")}</div></div>
