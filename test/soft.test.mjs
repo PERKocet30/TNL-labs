@@ -34,7 +34,7 @@ t("the gallery's arrows are round buttons", /\.gal-nav\{border-radius:999px\}/.t
 const ui = read("public/admin-app/ui.css");
 t("admin: panels, cards, charts, lists and boxes round like the app", /\.panel,\.kpi,\.chart,\.card,\.box,\.list,\.menu-b\{border-radius:var\(--rad\)\}/.test(ui) && /\.stats,\.sum,\.pdb-wrap,\.pc\{border-radius:var\(--rad\);overflow:hidden\}/.test(ui));
 t("admin: a titled card rounds as one piece", ui.includes("h2.sec:has(+ :is(.panel,.list,.chart)){border-radius:var(--rad) var(--rad) 0 0}") && ui.includes("h2.sec + :is(.panel,.list,.chart){border-radius:0 0 var(--rad) var(--rad)}"));
-t("admin loads the new styles (?v=1.2)", read("public/admin.html").includes("/admin-app/ui.css?v=1.2"));
+t("admin loads the styles (?v=2.0 or later)", read("public/admin.html").match(/\/admin-app\/ui.css\?v=(1\.[2-9]|[2-9]\.\d)/));
 
 console.log("\nYOUR COLOUR AROUND YOUR PICTURE");
 const app07 = read("src/app-07-theme-labs-api.js");

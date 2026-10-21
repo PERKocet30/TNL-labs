@@ -101,6 +101,7 @@ test/                           51 test suites — run with npm test
 | `server-10-links` · `server-10-live` | link previews behind a DNS-level SSRF guard; the signed-in live stream, typing, presence, lab reactions and pins |
 | `server-10-places` | Labs as places: `PLACES` (each lab's channels and home), #tags read from captions plus the old channel's tag for posts from before the cutover, and the lab feed / work / tags and #tag routes; pins from any of the lab's channels |
 | `server-10-pulse-labs` | Admin · the direction: `/api/admin/direction` — each lab's work, talk and #tags, trending #tags, the tournament and what needs you about it, how people take part. `LAB_NAME` must match `LABS` |
+| `server-10-admin-v4` | Admin v4 (2026-10-20): the per-day series behind the charts with the period before, top work, the audience breakdown, every seller and every listing |
 | `server-10-events-1-core` · `-2-routes` · `-3-admin` · `-4-cards` · `-5-pages` · `-6-mail` | Events: the schema and state machine (`tickEvent()`: submit → vote → bracket rounds → judged final → results, idempotent, runs every minute), entering/voting/judging, the poll's scoreboard (`evBoard`), admin, the Instagram cards (entry Story, scoreboard post/Story) and the public `/e/:slug`, `/rules`, `/board` and `/e/:slug/:entry` pages; `-6-mail`: the "entries are open" email to every member, and `/mail/off` |
 
 ---
@@ -210,18 +211,22 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 
 ---
 
-## Admin dashboard (`/admin`) — v3.1, 2026-10-14
+## Admin dashboard (`/admin`) — v4.0, 2026-10-20
 
-Admin-only; every route checks on the server. `public/admin.html` is the shell and base styles, `public/admin-app/ui.css` the shell, People and card styles, and the app is `public/admin-app/1-core.js` … `8-events.js` (People is `3-people.js`, one member's record `3-person.js`). The data comes from `src/server-10-admin.js`, `src/server-10-admin2-members.js`, `src/server-10-pulse-labs.js` plus the older admin routes. Each file stays under 24KB.
+Admin-only; every route checks on the server. `public/admin.html` is the shell and base styles, `public/admin-app/ui.css` the shell, chart and card styles, and the app is `public/admin-app/1-core.js` … `9-studio.js` (Home `2-home.js`, Members `3-people.js` with one record in `3-person.js`, Content `4-content.js`, Orders/Listings/Sellers `5-*.js`, Settings `6-settings.js`, Events `8-events.js`, Analytics `9-analytics.js`). The data comes from `src/server-10-admin.js`, `src/server-10-admin2-members.js`, `src/server-10-pulse-labs.js`, `src/server-10-admin-v4.js` plus the older admin routes. Each file stays under 24KB.
 
-- **Every page:** on a computer a side menu (Today, People, Labs, Tournament, Market, System; who's signed in, day/night, Open the app); on a phone the tabs along the top. A search bar finds any member by name, @username or email and opens their record (People has its own search instead). Each page starts with its title, one line on what it's for and its main buttons, then its sections as titled cards (`pageHead`, `card`, `subTabs` in `1-core.js`; any `h2.sec` followed by a panel, list or chart is drawn as one card).
-- **Today:** what needs you (reports, orders not shipped after 3 days, backups, errors, stale collab invites, new members to welcome, and the tournament — a draft, entries or voting ending within 48h), the tournament (stage, entries, voters, votes), eight numbers against the previous 7, 30 or 90 days, a daily chart, how people take part, the labs and the #tags people use.
-- **People — the member directory:** summary numbers for whatever is filtered or searched (members, active in 30 days, email confirmed, have posted, selling, sales, suspended); **Table** (choose from 18 columns, Compact rows, sticky header and name column, sort by any heading) or **Cards**, remembered per screen size — a phone starts in Cards, a computer in Table; pages of 25, 50 or 100; search as you type; filters (new, never posted, gone quiet, in the tournament, sellers, unverified, suspended, admins); one status word (Active, New, Inactive, Suspended); **Export CSV** of every member (`/api/admin/members.csv` — never a password, session or Stripe id; formula-safe cells; each download in the admin log). Message a group from the bottom.
-- **A member's record:** name, member number, status and badges, then Message, Confirm email, Adjust rep (with a reason), Feature +40, Copy email; tabs **Overview** (grouped numbers and "Needs a look"), **Account** (Profile, Contact & sign-in, Payments, Access; sign out everywhere and suspend kept apart at the bottom), **Activity** (recent posts, the rep log with dates) and **Notes** (the private admin note).
-- **Labs:** open reports first, then every post, filterable by lab, #tag, work or talk, and text; pin, delete. Tap a lab or a #tag on Today to land here filtered.
-- **Tournament:** set up and run events, with the Instagram kit.
-- **Market:** sales, commission, orders by status, top sellers, stale listings.
-- **System,** in tabs: **Settings** (who can get in, what's open, what people see first), **Health** (database, uploads, errors, glitches, server, unused files), **Backups & email**, and the **Admin log** — every change made from the dashboard, with who and when (`admin_log`, written by a hook on `/api/admin` writes).
+Ten sections in four groups, laid out like a shop's admin: **Run** (Home, Orders, Listings, Sellers), **People & content** (Members, Content, Events), **Understand** (Analytics), **Set up** (Health, Settings). Old links keep working (`#today` → Home, `#market` → Orders, `#system` → Settings; typing a `#hash` opens that section).
+
+- **On a computer:** a grouped side menu with the ten sections, who's signed in, day/night and Open the app; tables where there are rows. **On a phone:** a bottom bar with Home, Orders, Members, Content and **More** (a sheet with every section); every table becomes cards. One date range — 7, 30 or 90 days — sits at the top of Home and Analytics and is remembered.
+- **Every page:** a search bar finds any member by name, @username or email and opens their record (Members has its own search instead). Each page starts with its title, one line on what it's for and its main buttons, then titled cards (`pageHead`, `card`, `subTabs`, `kpiHTML`, `lineHTML`, `breakHTML`, `funnelHTML` in `1-core.js`). Every number card says its share or its change against the period before, with a sparkline.
+- **Home:** what needs you first (reports, orders not shipped after 3 days, backups, errors, stale collab invites, new members, the tournament), four numbers, one line chart with a metric picker (active, work, votes, sign-ups, sales) and the period before behind it, Top work, the tournament, the labs and how people take part.
+- **Orders:** sales, fees and average order against the period before; orders by status with counts; a sales-per-day line; void from the row.
+- **Listings:** live, sold, "no one's looking" (live 2+ weeks, under 5 views) and saves; search; remove. **Sellers:** who's ready to be paid, who's stuck in Stripe's signup (nudge them from here), what kind of Stripe account each has.
+- **Members:** the directory — numbers for whatever is filtered, Table (18 columns, sort, sticky header) or Cards, pages of 25/50/100, filters, Export CSV (`/api/admin/members.csv` — never a password, session or Stripe id; logged). **A member's record:** Overview, Account, Activity, Notes; Message, Confirm email, Adjust rep (with a reason), Feature, Copy email; sign out everywhere and suspend kept apart at the bottom.
+- **Content:** open reports first, then every post, filterable by lab, #tag, work or talk, and text; pin, delete. Tap a lab on Home to land here filtered.
+- **Events:** set up and run events, with the Instagram kit.
+- **Analytics,** in tabs: **Members** (sign-ups, active, retention, by role and by lab, when people are on), **Reach** (work, votes, the funnel), **Commerce** (sales, orders, fees, top sellers), **Content** (posts, top work, #tags; the Studio's own stats behind a button).
+- **Health:** database, uploads, errors, glitches, server, unused files. **Settings,** in tabs: **Settings** (who can get in, what's open, what people see first), **Backups & email**, and the **Admin log** — every change made from the dashboard, with who and when (`admin_log`, written by a hook on `/api/admin` writes).
 
 ---
 
@@ -465,8 +470,13 @@ GET    /api/me/start          (member) their pieces posted and people followed, 
 GET    /api/report/daily      (Bearer TNL_REPORT_KEY; off without it — the morning check's summary, counts only: server-12-report.js)
 
 # admin
-GET    /api/admin/pulse?days=&tz=   (admin)  Today: numbers, series, needs-you
-GET    /api/admin/direction?days=&tz=   (admin)  Today: labs + #tags, the tournament, taking part, tournament needs
+GET    /api/admin/pulse?days=&tz=   (admin)  Home: numbers, series, needs-you
+GET    /api/admin/direction?days=&tz=   (admin)  Home: labs + #tags, the tournament, taking part, tournament needs
+GET    /api/admin/series?days=&tz=   (admin)  per-day series for the charts, the period before, fees (server-10-admin-v4.js)
+GET    /api/admin/topwork?days=   (admin)  the work people reacted to most
+GET    /api/admin/audience?days=&tz=   (admin)  members by role and lab, hours people are on, verified, sellers
+GET    /api/admin/sellers   (admin)  every seller: Stripe kind, ready or stuck, listings, sales
+GET    /api/admin/listings   (admin)  every listing with views, saves, sales
 GET    /api/admin/posts?lab=&tag=&kind=&q=   (admin)  moderation by lab and #tag
 GET    /api/admin/people · /api/admin/people/:username   (admin)
 GET    /api/admin/members.csv   (admin — every member as a spreadsheet; logged)

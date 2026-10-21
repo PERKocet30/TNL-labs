@@ -1,11 +1,11 @@
-/* LABS admin v2.5 — 2026-10-19. v2.5: "Email them a new confirm link" under Email — everyone unconfirmed gets a fresh link (server-05-admin-verify-nudge). v2.4 — 2026-10-15. v2.4: the landing headline and tagline fields are gone — nothing in the app showed them.
+/* LABS admin v4.0 — 2026-10-20 (v4: System is two sections — Settings here: switches, email, backups, the admin log; Health is its own page, 6-health.js, built from the same loader). v2.5 — 2026-10-19. v2.5: "Email them a new confirm link" under Email — everyone unconfirmed gets a fresh link (server-05-admin-verify-nudge). v2.4 — 2026-10-15. v2.4: the landing headline and tagline fields are gone — nothing in the app showed them.
    v2.3 — 2026-10-14. v2.3: the unused archive-board field is gone.
    v2.2 — 2026-10-14. System, in tabs: Settings · Health · Backups & email · Admin log.
    v2.1 — 2026-10-09. System: switches, safety nets, and the log of who changed what.
    v2.1: Studio stats live here, by the Studio switch (they were under Content). */
 let MAILRESULT = null, SYSTAB = "settings";
-const SYSTABS = [["settings", "Settings"], ["health", "Health"], ["data", "Backups & email"], ["log", "Admin log"]];
-LOADERS.system = async () => {
+const SYSTABS = [["settings", "Switches"], ["data", "Backups & email"], ["log", "Admin log"]];
+LOADERS.settings = LOADERS.health = async () => {
   const [health, settings, backups, errors, maillog, log, glitches] = await Promise.all(["/api/admin/health", "/api/admin/settings", "/api/admin/backups",
     "/api/admin/errors", "/api/admin/mail-log", "/api/admin/log", "/api/admin/glitches"].map((u) => req(u).catch(() => null)));
   Object.assign(D, { health, settings, backups, errors, maillog, log, glitches });
@@ -18,7 +18,8 @@ const ACTIONS = [[/\/rep$/, "Adjusted rep"], [/\/feature$/, "Featured"], [/\/ver
   [/^pin post/, "Pinned a post"], [/^unpin post/, "Unpinned a post"]];
 const actionName = (a) => (ACTIONS.find(([re]) => re.test(a)) || [0, a])[1];
 
-VIEWS.system = () => {
+VIEWS.system = () => VIEWS.settings();
+VIEWS.settings = (only) => {
   const h = D.health, g = D.settings && D.settings.settings;
   if (!h || !g) return `<div class="empty">Loading…</div>`;
   const tog = (k, label, desc) => `<div class="set"><div class="t"><b>${esc(label)}</b><span>${desc}</span></div>
@@ -77,14 +78,18 @@ VIEWS.system = () => {
       <td class="dim" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.detail)}">${l.detail && l.detail !== "{}" ? esc(l.detail) : ""}</td><td class="num dim">${ago(l.at)}</td></tr>`).join("")}</tbody></table>`
     : `<div class="empty">Nothing yet — changes you make will show here.</div>`}</div>`,
   };
+  if (only === "health") return `${pageHead("Health", "Is the app well: server, storage, errors and what felt broken on members' screens", `<div class="row wrapx" style="gap:6px">${ok(h.onVolume, "Data on the volume", "Data NOT on a volume")}${ok(h.mail, "Email on", "Email off")}${ok(h.payments, "Payments on", "Payments off")}</div>`)}<div class="systab">${tabs.health()}</div>`;
   return `
-  ${pageHead("System", "Switches, safety nets, and a record of every change made from here.", `<div class="row wrapx" style="gap:6px">${ok(h.onVolume, "Data on the volume", "Data NOT on a volume")}${ok(h.mail, "Email on", "Email off")}
+  ${pageHead("Settings", "Switches, email, backups, and a record of every change made from here.", `<div class="row wrapx" style="gap:6px">${ok(h.onVolume, "Data on the volume", "Data NOT on a volume")}${ok(h.mail, "Email on", "Email off")}
     ${ok(h.payments, "Payments on", "Payments off")}${ok(h.publicUrl, "Public URL set", "Public URL unset")}</div>`)}
-  ${subTabs(SYSTABS, SYSTAB, "data-systab")}
-  <div class="systab">${tabs[SYSTAB]()}</div>`;
+  ${subTabs(SYSTABS, SYSTAB === "health" ? "settings" : SYSTAB, "data-systab")}
+  <div class="systab">${tabs[SYSTAB === "health" ? "settings" : SYSTAB]()}</div>`;
 };
+/* Health: the same numbers, their own page — the morning report's links land here. */
+VIEWS.health = () => VIEWS.settings("health");
 
-WIRES.system = () => {
+WIRES.health = () => WIRES.settings();
+WIRES.settings = () => {
   $$("[data-systab]").forEach((b) => b.onclick = () => { SYSTAB = b.dataset.systab; paint(); });
   const stu = $("[data-studio]"); if (stu) stu.onclick = () => go("studio");
   const save = async (body, msg = "Saved — live now") => { const d = await act(() => req("/api/admin/settings", { method: "PATCH", body }), msg); if (d) { D.settings.settings = d.settings; paint(); } };

@@ -42,9 +42,9 @@ r = await call();
 t("email not set up: says so, sends nothing", r.code === 400 && /Email isn't set up/.test(r.out.error));
 
 console.log("\nIN THE ADMIN");
-const adm = readFileSync(join(ROOT, "public/admin-app/6-system.js"), "utf8");
+const adm = readFileSync(join(ROOT, "public/admin-app/6-settings.js"), "utf8");
 t("System → Email has the button, with a confirm step", adm.includes('id="nudgeall"') && adm.includes("/api/admin/members/remind-unverified") && adm.includes('confirmIt("Email a new confirm link?"'));
-t("the admin page loads the new script", readFileSync(join(ROOT, "public/admin.html"), "utf8").includes("6-system.js?v=2.5"));
+t("the admin page loads the new script", readFileSync(join(ROOT, "public/admin.html"), "utf8").includes("6-settings.js?v=4.0"));
 t("it's the sign-up email with a fresh link (issueVerification)", src.includes("await issueVerification(u, req)"));
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
