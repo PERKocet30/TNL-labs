@@ -1,3 +1,4 @@
+/* v2026-10-20: the tournament's top is the kit's head (.ev>.sh in app-05-styles-kit.css) */
 /* EVENTS v1.2 — 2026-10-12 (v1.2: the ‹ back bar, held at the top as you scroll; Invite people).
    EVENTS v1.1 — 2026-10-07. The tournament screen, the Showroom banner,
    the poll's scoreboard and the Share to Instagram sheet.
@@ -12,9 +13,6 @@
 .ev-go{flex:none;background:var(--accent-fill);color:var(--on-accent);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700}
 
 .ev{padding:0 16px 120px}
-.ev-top{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:2px;margin:0 -16px;padding:4px 16px 4px 4px;background:var(--bg);border-bottom:1px solid var(--line)}
-.ev-back{width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:none;border:0;border-radius:999px;color:var(--tx);cursor:pointer}
-.ev-toptitle{font-size:17px;font-weight:700;letter-spacing:-.01em}
 .ev-head{padding:14px 0 4px}
 .ev-h{font-size:30px;line-height:34px;letter-spacing:-.02em;margin:8px 0 6px}
 .ev-ph{font-size:15px;line-height:21px;font-weight:700}

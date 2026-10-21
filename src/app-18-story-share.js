@@ -1,3 +1,4 @@
+/* v2026-10-20: the sheet's head comes from the screen kit */
 /* ── SHARE TO INSTAGRAM STORIES · v1.2 — 2026-10-11 (a post's song plays: the video card) ───────────────────────────
    From any share menu — a post, a profile, a listing, a track: its Story
    card (server-12-story — the work, who made it, in their colour, and the
@@ -34,7 +35,7 @@ function shareMenu({title,link,story,note}){
 function igsHTML(){
   const s=IGS;
   return `<div class="sheet" id="igsbg"><div class="sheetc ev-share" role="dialog" aria-label="Share to Instagram">
-    <div class="sheeth"><div><h2>Share to your Story</h2></div><button class="x" id="igsx" aria-label="Close">${DI.x}</button></div>
+    ${sheetHead("Share to your Story","igsx")}
     <div class="ev-shimg">${s.failed?`<div class="dim">Couldn't make the picture. Your link still works.</div>`
       :s.vurl?`<video src="${s.vurl}" poster="${esc(s.img)}" autoplay muted loop playsinline aria-label="Your Story, with the song"></video>`:`<img src="${esc(s.img)}" alt="Your Story card">`}</div>
     ${s.video?`<p class="dim igs-song">${DI.music} ${s.vurl?"With the song — 15 seconds. It plays in your Story.":"Adding the song…"}</p>`:""}

@@ -1,3 +1,4 @@
+/* v2026-10-20: the tournament's top and the Enter sheet's head come from the screen kit */
 /* ================================================================
    EVENT SCREEN v1.2 — 2026-10-12 (state + what you see). v1.2: a ‹ back
    bar at the top that stays put as you scroll ("make sure the tournament
@@ -154,7 +155,7 @@ function evResultsHTML(){
 /* The lab an event's entries post into (Visual, for the art tournament). */
 const evLab=e=>LABS.find(l=>l.channels.some(c=>c.id===e.channel))||null;
 /* The ‹ bar: walks back the same trail as the phone's back (app-09-nav.js). */
-const evTopHTML=()=>`<div class="ev-top"><button class="ev-back" id="evback" aria-label="Back">${di('<path d="M15 5l-7 7 7 7"/>',22)}</button><span class="ev-toptitle">Tournament</span></div>`;
+const evTopHTML=()=>screenHead({back:{id:"evback",label:"Back"},title:"Tournament"});   // the kit's head, kept at the top as you scroll (.ev>.sh)
 function eventHTML(){
   if(!EV||EV.event.slug!==EVSLUG)return `<div class="scroll ev" id="evscroll">${evTopHTML()}${skel("cards")}</div>`;
   const p=EV.event.phase.phase;
@@ -167,7 +168,7 @@ function eventHTML(){
 function evEnterHTML(){
   const s=EVENTER;
   return `<div class="sheet" id="evsheet"><div class="sheetc ev-enter">
-    <div class="sheeth"><div><h2>Enter ${esc(EV.event.title)}</h2></div><button class="x" id="evx" aria-label="Close">${DI.x}</button></div>
+    ${sheetHead("Enter "+EV.event.title,"evx")}
     <label class="ev-drop">${s.prep?`<img src="${s.prep.thumb}" alt="">`:`<span>${DI.plus}<br>Choose your piece</span>`}
       <input type="file" id="evfile" accept="image/*" hidden></label>
     <textarea class="in ev-cap" id="evcap" maxlength="500" placeholder="Say something about it (optional)">${esc(s.caption||"")}</textarea>

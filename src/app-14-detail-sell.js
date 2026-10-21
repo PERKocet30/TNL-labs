@@ -1,4 +1,4 @@
-/* SAVED · ORDERS · SELL · STUDIO v2026-10-20: Saved and Orders heads and tabs, and the listing form's bar, from the screen kit.
+/* SAVED · ORDERS · SELL · STUDIO v2026-10-20: Saved and Orders heads and tabs, the listing form's bar and the review sheet's head, from the screen kit.
    The listing page itself lives in app-14-listing.js. */
 function savedHTML(){
   return `<div class="scroll">
@@ -159,8 +159,7 @@ function reviewHTML(){
   if(!REVIEWING)return "";
   const o=REVIEWING;
   return `<div class="sheet" id="revbg"><div class="sheetc" style="max-width:420px">
-    <div class="sheeth"><div><h2>How did it go?</h2></div>
-      <button class="x" id="revx" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    ${sheetHead("How did it go?","revx")}
     <div class="revitem">
       <img class="ordimg" src="${esc(o.listing.images[0]||"")}" alt="">
       <div><div class="mtitle">${esc(o.listing.title)}</div>

@@ -1,5 +1,5 @@
 /* ================================================================
-   SCREEN KIT v1.2 — 2026-10-20 (searchHTML, part 4; formHead, part 3)
+   SCREEN KIT v1.3 — 2026-10-20 (sheetHead, part 5; searchHTML, part 4; formHead, part 3)
    One set of parts for every screen, so the app reads as one thing
    (the admin got the same treatment the same day). Styles:
    app-05-styles-kit.css.
@@ -13,6 +13,8 @@
                  sections.
    rowHTML     — icon · label · value · chevron: menus, options, settings.
    searchHTML  — the one search field (grey, rounded, the search glyph).
+   sheetHead   — a pop-up sheet's head: title · ×. Full screens that slide in
+                 (Notifications, Search, Messages) use screenHead with a ‹ instead.
    formHead    — a form's bar: quiet Cancel/‹ Back · title · the one action as a
                  small black pill (Edit profile, New post, New listing).
    Buttons:    .btn (the one main action per screen) · .btn.ghost
@@ -44,3 +46,4 @@ function formHead(left,title,right){
   return `<header class="kform">${L}<b>${esc(title)}</b>${R}</header>`;
 }
 const searchHTML=(id,placeholder,value="",attrs="")=>`<label class="ksearch">${UI_IC.search}<input id="${id}" type="search" placeholder="${esc(placeholder)}" value="${esc(value||"")}" autocomplete="off" aria-label="${esc(placeholder)}" ${attrs}></label>`;
+const sheetHead=(title,closeId,sub="")=>`<div class="sheeth"><div><h2>${esc(title)}</h2>${sub?`<p class="dim">${esc(sub)}</p>`:""}</div><button class="x" id="${closeId}" aria-label="Close">${DI.x}</button></div>`;
