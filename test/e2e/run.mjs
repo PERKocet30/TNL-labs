@@ -1928,7 +1928,7 @@ console.log("\nINSIDE INSTAGRAM · PHONE");
     await settledGoto(p, B + "/p/" + pid);
     await p.locator("a.btn.block").tap();
     await p.waitForSelector("#enterOv", { timeout: 8000 });
-    ok(await p.locator("#enterVid").count() === 0, "a deep link shouldn't play the intro film");
+    ok(await p.locator("#enterVid").count() === 0 && await p.locator("#enterSkip").count() === 0, "a deep link shouldn't play the intro film");
     await throughDoor(p);
     await p.evaluate(() => { goOut = (u) => { window.__out = u; }; });
     await p.waitForFunction((id) => POSTOPEN && POSTOPEN.id === id, pid, { timeout: 6000 });
@@ -1945,9 +1945,20 @@ console.log("\nINSIDE INSTAGRAM · PHONE");
     await throughDoor(p);
     await p.evaluate(() => { goOut = (u) => { window.__out = u; }; });
     await p.waitForFunction(() => PROFILE && PROFILE.user && PROFILE.user.username === "friend", null, { timeout: 6000 });
-    // back to how this section started: a visitor, intro seen
-    await p.evaluate(() => { localStorage.removeItem("tnl-token"); localStorage.setItem("tnl-intro-seen", "1"); });
+    // back to how this section started: a visitor
+    await p.evaluate(() => { localStorage.removeItem("tnl-token"); });
     await settledGoto(p, B + "/"); await throughDoor(p);
+  });
+  /* 2026-10-21: "Take the intro off" — a first visit is the plain door, no film, no SKIP, one tap */
+  await step(d, "a first visit: the plain door, no intro film, one tap in", async () => {
+    await p.evaluate(() => { localStorage.removeItem("tnl-intro-seen"); sessionStorage.removeItem("tnl-in"); });
+    await settledGoto(p, B + "/");
+    await p.waitForSelector("#enterOv", { timeout: 8000 });
+    ok(await p.locator("#enterVid").count() === 0 && await p.locator("#enterSkip").count() === 0 && await p.locator("#enterOv video").count() === 0, "a first visit still had the film or SKIP");
+    ok(await p.evaluate(() => !/tnl-enter/.test(document.documentElement.innerHTML)), "the app still points at the intro film");
+    await p.locator("#enterBtn").tap();
+    await p.waitForFunction(() => !document.querySelector("#enterOv"), null, { timeout: 4000 });
+    ok(await p.evaluate(() => localStorage.getItem("tnl-intro-seen") === "1" && sessionStorage.getItem("tnl-in") === "1"), "the tap should mark this device as in");
     await p.evaluate(() => { goOut = (u) => { window.__out = u; }; });
   });
   await step(d, "keep-it-on-your-phone becomes Open in Safari (no Add to Home Screen steps that can't work here)", async () => {

@@ -14,7 +14,7 @@ One Node server, one SQLite database, no framework and no external services requ
 
 | Area | What it does |
 |---|---|
-| **The door** | "Enter the lab" landing with the vial loader. The first visit plays the intro film; after that it's one tap in. The tap also unlocks audio on iOS. A link from outside gets the quick door and lands on the exact thing it pointed at. |
+| **The door** | "Enter the lab" landing with the vial loader: one tap in, every visit (the intro film retired 2026-10-21). The tap also unlocks audio on iOS. A link from outside lands on the exact thing it pointed at. |
 | **Showroom** | The front page: real work from every lab, ranked by what other people do with it — your own taps never count, and work made together gets a lift. Anyone can browse; posting needs an account. |
 | **Labs** | Places, one per genre: `// General`, `// Visual` (every visual art — painting, drawing, illustration, sculpture, design, photo, film), `// Music`, `// Fashion`, `// Anime`, `// News` and `// Business`. Each genre is explained by its #tags. Inside: **Work** (everything made there, narrowed by #tag) and **Talk** (one conversation). Members tag their own work; the labs that match what you make come first. Names are display-only — lab and channel IDs never change. |
 | **Posts** | A post is a piece of work: up to 10 images or a video, a song from the library, credits for collaborators (counted once they accept), feedback, shares and saves. The post creator puts the work first, then the caption with #tags and @mentions, then collaborators, music (pick a song or upload one), the lab, people and products. With no photos, a song's cover becomes the picture. |
