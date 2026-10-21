@@ -1,12 +1,12 @@
 
 /* ================================================================
-   ANYTHING ON LABS, AS AN INSTAGRAM STORY · v2.1 — 2026-10-20 (a video post's Story is the clip itself, in the card) · v2 — 2026-10-11 (bold: see SC). "Make it so I
+   ANYTHING ON LABS, AS AN INSTAGRAM STORY · v2.2 — 2026-10-20 (a song's Story plays 15 seconds of it; a video post's Story is the clip itself, in the card) · v2 — 2026-10-11 (bold: see SC). "Make it so I
    can share … to IG stories — for anything on the app." 1080×1920 cards:
      /p/:id/story.jpg      a post — the work whole (a video's cover) over a
                            blurred fill of itself; a text post as a quote
      /u/:name/story.jpg    a profile — name, role, bio, four recent pieces
      /m/:id/story.jpg      a listing — the photo, title, price
-     /tr/:id/story.jpg     a track — the artwork, title, who made it
+     /tr/:id/story.jpg     a track — the artwork, title, who made it (and /story.mp4: with 15 seconds of it)
    (the tournament has its own, server-10-events-4-cards). One layout:
    a heading, the picture, a tag in the maker's colour with their handle,
    the TNL mark and the link — drawn with the event cards' kit (ffmpeg +
@@ -214,10 +214,20 @@ async function storyVideo(p, base) {
   const audio = (tr && (cardFile(audioPlayUrl(tr.url)) || cardFile(tr.url))) || null;
   const clip = (card && p.video_url && cardFile(p.video_url)) || null;   // a video post: the clip itself (2026-10-20)
   if (!audio && !clip) return null;
+  return buildStoryVideo(`p${p.id}-storyv`, card, audio, clip, tr && tr.duration_ms);
+}
+/* a song shared from the Music lab (2026-10-20, "it didn't play"): its card with 15 seconds of it */
+async function trackStoryVideo(tr, base) {
+  const card = trackStory(tr, base);
+  const audio = (card && (cardFile(audioPlayUrl(tr.url)) || cardFile(tr.url))) || null;
+  if (!audio) return null;
+  return buildStoryVideo(`tr${tr.id}-storyv`, card, audio, null, tr.duration_ms);
+}
+async function buildStoryVideo(prefix, card, audio, clip, songMs) {
   const clipSecs = clip ? await mediaSecs(clip) : 0;   // the Story is as long as the clip, up to 15 seconds
-  const secs = Math.max(3, Math.min(SV.secs, clip ? (clipSecs || SV.secs) : tr && tr.duration_ms ? tr.duration_ms / 1000 : SV.secs));
+  const secs = Math.max(3, Math.min(SV.secs, clip ? (clipSecs || SV.secs) : songMs ? songMs / 1000 : SV.secs));
   const still = await evCardBuild(card.prefix, card.hash, card.make, card.ext);
-  const prefix = `p${p.id}-storyv`, hash = createHash("sha1").update(JSON.stringify([SV.version, card.hash, audio, secs, clip])).digest("hex").slice(0, 12);
+  const hash = createHash("sha1").update(JSON.stringify([SV.version, card.hash, audio, secs, clip])).digest("hex").slice(0, 12);
   const name = `${prefix}-${hash}.mp4`, out = join(CARD_DIR, name);
   if (existsSync(out)) return out;
   if (SV_BUILDS.has(out)) return SV_BUILDS.get(out);
@@ -235,6 +245,20 @@ async function storyVideo(p, base) {
   job.finally(() => SV_BUILDS.delete(out)).catch(() => {});
   return job;
 }
+app.get("/tr/:id/story.mp4", storyLimit, async (req, res) => {
+  const tr = db.prepare(`SELECT * FROM tracks WHERE id = ?`).get(Number(req.params.id) || 0);
+  if (!tr) return res.status(404).end();
+  if (!FFMPEG || !existsSync(CARD_FONT.bold)) return res.status(503).end();
+  try {
+    const file = await trackStoryVideo(tr, baseUrl(req));
+    if (!file) return res.status(404).end();
+    res.set("Cache-Control", "public, max-age=300");
+    res.type("mp4").sendFile(file);
+  } catch (e) {
+    logError("card", "track story video: " + (e.message || "failed"), "", req.path, "");
+    res.status(503).end();
+  }
+});
 app.get("/p/:id/story.mp4", storyLimit, async (req, res) => {
   const p = q.postById.get(Number(req.params.id) || 0);
   if (!p || !p.is_work || !(p.audio_track_id || p.video_url)) return res.status(404).end();

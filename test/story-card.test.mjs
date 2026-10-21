@@ -94,6 +94,12 @@ try {
   t("a video post with a song: the clip with the song under it, as long as the clip", /1080x1920/.test(sp) && /Audio: aac/.test(sp) && /Duration: 00:00:0[78]\./.test(sp));
   const svol = String(spawnSync(FF, ["-i", sf, "-af", "volumedetect", "-f", "null", "-"]).stderr);
   t("…and the song is what you hear", Number((/mean_volume: (-?[\d.]+) dB/.exec(svol) || [])[1]) > -40);
+  console.log("\nA SONG FROM THE MUSIC LAB (2026-10-20, \"it didn't play\")");
+  const tf = join(DATA, "track-story.mp4"); const trr = await fetch(`${B}/tr/${tr}/story.mp4`); writeFileSync(tf, Buffer.from(await trr.arrayBuffer())); const tp = probe2(tf);
+  t("a song has a Story video: its card, 15 seconds of it", trr.status === 200 && /Video: h264[^\n]*1080x1920/.test(tp) && /Audio: aac/.test(tp) && /Duration: 00:00:15\.0/.test(tp));
+  const tvol = String(spawnSync(FF, ["-i", tf, "-af", "volumedetect", "-f", "null", "-"]).stderr);
+  t("…and you can hear it", Number((/mean_volume: (-?[\d.]+) dB/.exec(tvol) || [])[1]) > -40);
+  t("the Music lab's share asks for it", readFileSync(join(ROOT, "src/app-13-tracks-player.js"), "utf8").includes("video:`/tr/${t.id}/story.mp4`"));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

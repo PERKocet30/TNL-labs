@@ -1,5 +1,5 @@
 /* v2026-10-20: the sheet's head comes from the screen kit */
-/* ── SHARE TO INSTAGRAM STORIES · v1.3 — 2026-10-20 (a video post shares the clip itself, in the card) · v1.2 — 2026-10-11 (a post's song plays: the video card) ───────────────────────────
+/* ── SHARE TO INSTAGRAM STORIES · v1.4 — 2026-10-20 (a song from the Music lab goes as a video too; a video post shares the clip itself, in the card) · v1.2 — 2026-10-11 (a post's song plays: the video card) ───────────────────────────
    From any share menu — a post, a profile, a listing, a track: its Story
    card (server-12-story — the work, who made it, in their colour, and the
    link), then one tap shares it
@@ -25,12 +25,12 @@ function igStoryOpen(img,link,video,kind){
 }
 /* The one share menu for anything (2026-10-08): a profile, a listing, a
    track. Instagram Story first; then the phone's own sheet; then the link. */
-function shareMenu({title,link,story,note}){
+function shareMenu({title,link,story,note,video}){
   openPicker({eyebrow:"SHARE",title:title||"Share",note:note||"",items:[
-    ...(story?[{label:"Instagram Story",sub:"A picture of it for your Story, with the link to paste",icon:DI.out,act:"story"}]:[]),
+    ...(story?[{label:"Instagram Story",sub:video?"15 seconds of it for your Story, with the link to paste":"A picture of it for your Story, with the link to paste",icon:DI.out,act:"story"}]:[]),
     ...(navigator.share?[{label:"Send off the app",sub:"Messages, WhatsApp, AirDrop — anywhere on your phone",icon:DI.out,act:"native"}]:[]),
     {label:"Copy link",sub:link.replace(/^https?:\/\//,""),icon:DI.copy,act:"copy"}],
-    onPick:it=>{if(it.act==="story")return igStoryOpen(story,link);if(it.act==="native")return shareOut({title,url:link});copyText(link)}});
+    onPick:it=>{if(it.act==="story")return igStoryOpen(story,link,video||null,video?"song":"");if(it.act==="native")return shareOut({title,url:link});copyText(link)}});
 }
 function igsHTML(){
   const s=IGS;
