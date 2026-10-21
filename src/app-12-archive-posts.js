@@ -1,4 +1,4 @@
-/* v2026-10-20: a lab's head comes from the screen kit (app-08-kit.js) */
+/* v2026-10-21: the archive is a browse, not a search (no box — pictures aren't labelled); the lab head's Share is Invite. v2026-10-20: the head comes from the screen kit */
 /* ── THE ARCHIVE ─────────────────────────────────────────────────────
    //.JPEG PHARMACY has 226 people posting reference and every image
    scrolls into the void within a day. Nobody can find it again. This is
@@ -10,16 +10,13 @@ function archiveHTML(){
      on them are kept in the database, untouched. */
   const A=ARCHIVE;
   return `<div class="scroll" id="archscroll">
-    <div class="archbar"><input class="in archq" id="archq" placeholder="Search the archive…" value="${esc(ARCHFILT.q||"")}"></div>
     <div class="fchips archchips">
-      ${[["","Everything"],["saved","Most saved"],["liked","Most liked"]].map(([v,l])=>
+      ${[["","Newest"],["saved","Most saved"],["liked","Most liked"]].map(([v,l])=>
         `<button class="chip sm ${(ARCHFILT.sort||"")===v?"on":""}" data-asort="${v}">${l}</button>`).join("")}
-      ${(ARCHFILT.q||ARCHFILT.sort)?`<button class="clearf mono" id="archclear">${DI.x} Clear</button>`:""}
     </div>
     ${!A?`${skel()}`
       :!A.images.length?`<div class="empty">
-        ${ARCHFILT.q?`Nothing matches "${esc(ARCHFILT.q)}".`
-          :`The archive is empty.<br><br>Every image published to a lab lands here — searchable, forever.`}
+        The archive is empty.<br><br>Every picture posted to this lab lands here, forever.
       </div>`
       :`<div class="archgrid">${A.images.map(x=>`
         <button class="archcard" data-aopen="${x.id}" style="${(x.w&&x.h)?`grid-row-end:span ${Math.max(12,Math.min(34,Math.round((x.h/x.w)*20)))}`:""}">
@@ -54,7 +51,7 @@ function labsHTML(){
   return `<div class="labs-wrap roomopen">
   <section class="room">
     ${screenHead({back:{id:"labback",label:"All labs"},mark:true,title:LAB.name,actions:[
-      shareBtnHTML(`id="labshare" aria-label="Share ${esc(LAB.name)}"`),
+      shareBtnHTML(`id="labshare" aria-label="Invite people to ${esc(LAB.name)}"`,"Invite"),
       LAB.id==="culture"&&studioOn()?`<button class="btn ghost sm" id="openstudio">${UI_IC.music}<span>Studio</span></button>`:"",
       talk?`<button class="ib lr-bell" id="lrbell" aria-label="Mute this lab">${UI_IC.bell}</button>`:""]})}
     ${placeTabsHTML()}

@@ -330,7 +330,7 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => { const e = document.elementFromPoint(innerWidth / 2, innerHeight * 0.7); return !!(e && e.closest(".pick")); }), "the share menu opened behind the post");
     await p.locator(".pick").getByText("Into a lab", { exact: true }).tap(); await p.waitForTimeout(300);
     await p.locator(".pick").getByText(/general/i).first().tap();
-    await p.waitForFunction(() => /Shared to/.test(TOASTT || ""), null, { timeout: 4000 });
+    await p.waitForFunction(() => /Sent to/.test(TOASTT || ""), null, { timeout: 4000 });   // 2026-10-21: "Sent", not "Shared" — Share is for sending out
     await p.evaluate(() => { POSTOPEN = null; render(); });
   });
   /* "Make it so I can share a post off the app to IG stories" (2026-10-08). */
@@ -1262,6 +1262,24 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".sheetc > .sh .sh-back#sx").count() === 1 && await p.locator(".ksearch #sq").count() === 1, "Search doesn't wear the kit head and search field");
     await p.locator("#sx").tap(); await p.waitForTimeout(300);
   });
+  /* 2026-10-21 "fix all the labs": every post lives on your profile; a lab is where you also show it */
+  await step(d, "labs: + inside // Visual opens New post already posting to Your profile · // Visual (take it out → Add a lab); the lab's head says Invite; the archive has no search box", async () => {
+    await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#labshare");
+    ok((await p.locator("#labshare").innerText()).trim() === "Invite", "the lab's head doesn't say Invite");
+    await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcto");
+    ok(await p.locator("#pcto .pc-me").count() === 1 && /Visual/.test(await p.locator("#pcto .pc-labchip").innerText()), "New post from inside the lab isn't posting to Your profile · // Visual");
+    ok((await p.locator("#pcgo").innerText()).trim() === "Post" && await p.locator("#pclab").count() === 1 && await p.locator(".pc-opt", { hasText: "Share to a lab" }).count() === 0, "the composer still says Share for posting");
+    await p.locator("#pcto [data-pclabrm]").tap(); await p.waitForTimeout(200);
+    ok(await p.locator("#pcto .pc-labchip").count() === 0 && /Add a lab/.test(await p.locator("#pclab").innerText()), "taking the lab out didn't leave + Add a lab");
+    await p.locator("#pclab").tap(); await p.waitForSelector(".pickrow");
+    ok(await p.locator(".pick h2", { hasText: "Add a lab" }).count() === 1 && await p.locator(".pickrow", { hasText: "Profile only" }).count() === 0, "the picker still offers Profile only");
+    await p.locator(".pickrow", { hasText: "Visual" }).first().tap(); await p.waitForTimeout(200);
+    ok(/Visual/.test(await p.locator("#pcto .pc-labchip").innerText()), "picking a lab didn't add its chip");
+    await p.evaluate(() => { PCOMPOSE = null; PICKER = null; render(); }); await p.waitForTimeout(200);   // drop the draft without the "discard?" question
+    await p.evaluate(() => setLabView("archive")); await p.waitForSelector("#archscroll");
+    ok(await p.locator("#archq").count() === 0 && await p.locator("[data-asort=saved]").count() === 1, "the archive still has a search box");
+    await p.evaluate(() => { LAB = null; ROOMOPEN = false; TAB = "showroom"; render(); });
+  });
   /* 2026-10-20 one kit, part 3: New post and New listing share the form bar (Cancel · title · the one action) */
   await step(d, "one kit: New post's bar is Cancel · New post · Share (black pill, off until there's something to share); New listing's is Cancel · New listing", async () => {
     await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcgo");
@@ -1486,18 +1504,18 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { MKTVIEW = "browse"; TAB = "showroom"; render(); });
   });
   /* "I want to simplify. Let's just remove moodboards for now" (2026-10-11) */
-  await step(d, "Visual's archive is a plain search now: no moodboards, no paste-a-link; searching and opening a picture still work", async () => {
+  await step(d, "Visual's archive is a browse now: an Archive chip, no search box, no moodboards; sorts and opening a picture still work", async () => {
     await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#plarchive");
-    ok((await p.locator("#plarchive").innerText()).trim() === "Search the archive", "the link still mentions boards");
-    await p.locator("#plarchive").tap(); await p.waitForSelector("#archq");
-    ok(await p.locator("#myboards, #pastein, #pastego, [data-asave], [data-asrc]").count() === 0, "moodboard controls are still on the archive");
+    ok((await p.locator("#plarchive").innerText()).trim() === "Archive", "the chip doesn't just say Archive");
+    await p.locator("#plarchive").tap(); await p.waitForSelector("#archscroll");
+    ok(await p.locator("#archq, #myboards, #pastein, #pastego, [data-asave], [data-asrc]").count() === 0, "a search box or moodboard controls are still on the archive");
     await p.waitForSelector(".archgrid .archcard", { timeout: 6000 });
     await p.locator(".archgrid .archcard").first().tap(); await p.waitForSelector("#lb");
     await p.locator("#lb").tap(); await p.waitForTimeout(200);
-    await p.locator("#archq").fill("zzznothing"); await p.waitForSelector(".empty", { timeout: 5000 });
-    ok(/Nothing matches/.test(await p.locator("#archscroll .empty").innerText()), "search didn't run");
-    await p.locator("#archclear").tap(); await p.waitForSelector(".archgrid .archcard", { timeout: 5000 });
-    await p.evaluate(() => { LAB = null; ROOMOPEN = false; LIGHTBOX = null; TAB = "showroom"; render(); });
+    await p.locator("[data-asort=saved]").tap(); await p.waitForSelector(".archgrid .archcard", { timeout: 5000 });
+    ok(await p.locator("[data-asort=saved].on").count() === 1, "the sort chip didn't take");
+    await p.locator("#plwork").tap(); await p.waitForSelector(".pl-grid");
+    await p.evaluate(() => { LAB = null; ROOMOPEN = false; TAB = "showroom"; render(); });
   });
   // 2026-10-09: the labs that match what you make come first
   await step(d, "your labs first: a stylist who shoots sees Fashion, then Visual, under For you", async () => {

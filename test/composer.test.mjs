@@ -14,8 +14,14 @@ t("large swipeable preview with a counter", html.includes('class="pc-track" id="
 t("thumbnail strip with remove and add", html.includes('class="pc-strip"') && html.includes("data-pcrm") && html.includes('class="pc-th pc-add"'));
 t("drag a thumbnail to reorder (2026-09-30)", src.includes("function pcDragWire(c)") && wire.includes("pcDragWire(c);") && html.includes('data-pci="${i}"'));
 t("a spinner tile per photo still uploading", html.includes("Array.from({length:c.upN||0}"));
-t("three rows: invite collaborators, add music, share to a lab",
-  html.includes("Invite collaborators") && html.includes("Add music") && html.includes("Share to a lab"));
+t("rows: invite collaborators, add music — and no \"Share to a lab\" (2026-10-21: Share is for sending out)",
+  html.includes("Invite collaborators") && html.includes("Add music") && !html.includes("Share to a lab"));
+// 2026-10-21 "make sharing into labs and posting on profiles cohesive": every post lives on your
+// profile; a lab is where you also show it. The row says so, and the button says Post.
+t("a Posting-to row: Your profile fixed, + Add a lab, the lab as a chip you can take out",
+  html.includes('class="pc-to"') && html.includes("Your profile") && html.includes("Add a lab") && html.includes("data-pclabrm") && html.includes('id="pclab"'));
+t("the main button says Post, not Share", html.includes('label:c.busy?"Posting…":"Post"') && !html.includes('"Sharing…"'));
+t("the lab picker is called Add a lab and says it stays on your profile", wire.includes('title:"Add a lab"') && wire.includes("stays on your profile") && !wire.includes("Profile only"));
 t("no explanation note under the caption", !html.includes("pcmp-note") && !/Showroom, where collabs rank highest/.test(src));
 
 console.log("\nPOST CREATOR — BEHAVIOUR");

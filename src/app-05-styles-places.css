@@ -1,4 +1,4 @@
-/* PLACES v1.3 — 2026-10-12 (v1.3: the Tournament chip and Entry marks, at the end). v1.2 — 2026-10-09 ("For you" / "More labs" on the index). Labs as places: the index (one list, each
+/* PLACES v1.4 — 2026-10-21 (month markers, Older) · v1.3 — 2026-10-12 (v1.3: the Tournament chip and Entry marks, at the end). v1.2 — 2026-10-09 ("For you" / "More labs" on the index). Labs as places: the index (one list, each
    genre with its #tags), a lab's Work · Talk tabs, the #tag page, and #tags
    in text. Square grid, underline tabs, pills — in TNL's white, black
    and green. Logic: app-11-places.js. */
@@ -60,3 +60,7 @@
 .pl-chip.ev.on::before{background:var(--on-accent)}
 .pl-chip.ev.on span{color:var(--on-accent)}
 .pl-entry{position:absolute;left:6px;bottom:6px;padding:3px 7px;border-radius:999px;background:var(--accent-fill);color:var(--on-accent);font-size:10px;line-height:12px;font-weight:700;font-style:normal;letter-spacing:.05em;text-transform:uppercase}
+
+/* 2026-10-21: the grid as the archive */
+.pl-month{grid-column:1/-1;padding:14px 4px 6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.pl-older{display:block;width:100%;text-align:center;padding:14px}
