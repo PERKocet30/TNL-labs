@@ -1248,6 +1248,18 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => document.documentElement.dataset.theme) === "light", "day didn't come back");
     await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
   });
+  /* 2026-10-20 one kit, part 4: Messages, Notifications and Search wear the kit's head; Chats / Requests are underline tabs; one search field */
+  await step(d, "one kit: Messages is ‹ · Messages · new with Chats / Requests underlined; Notifications and Search open with ‹ · title and the one search field", async () => {
+    await p.locator("#dmBtn").tap(); await p.waitForSelector("#cxclose");
+    ok(await p.locator(".cx .sh .sh-back#cxclose").count() === 1 && await p.locator(".cx .sh .sh-acts #cxnew.ib").count() === 1 && await p.locator(".cx .ktabs [data-itab=requests]").count() === 1 && await p.locator(".cx-h.cx-ih, .cx-tabs").count() === 0, "Messages doesn't wear the kit head and tabs");
+    await p.locator("#cxclose").tap(); await p.waitForTimeout(300);
+    await p.locator("#notifBtn").tap(); await p.waitForSelector("#npx");
+    ok(await p.locator(".nf > .sh .sh-back#npx").count() === 1 && (await p.locator(".nf > .sh .sh-h").innerText()) === "Notifications", "Notifications doesn't wear the kit head");
+    await p.locator("#npx").tap(); await p.waitForTimeout(300);
+    await p.locator("#searchBtn").tap(); await p.waitForSelector("#sq");
+    ok(await p.locator(".sheetc > .sh .sh-back#sx").count() === 1 && await p.locator(".ksearch #sq").count() === 1, "Search doesn't wear the kit head and search field");
+    await p.locator("#sx").tap(); await p.waitForTimeout(300);
+  });
   /* 2026-10-20 one kit, part 3: New post and New listing share the form bar (Cancel · title · the one action) */
   await step(d, "one kit: New post's bar is Cancel · New post · Share (black pill, off until there's something to share); New listing's is Cancel · New listing", async () => {
     await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcgo");

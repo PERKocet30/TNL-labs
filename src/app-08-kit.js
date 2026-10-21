@@ -1,5 +1,5 @@
 /* ================================================================
-   SCREEN KIT v1.1 — 2026-10-20 (formHead, part 3)
+   SCREEN KIT v1.2 — 2026-10-20 (searchHTML, part 4; formHead, part 3)
    One set of parts for every screen, so the app reads as one thing
    (the admin got the same treatment the same day). Styles:
    app-05-styles-kit.css.
@@ -12,6 +12,7 @@
                  inside a section stay chips (.chip); never pills for
                  sections.
    rowHTML     — icon · label · value · chevron: menus, options, settings.
+   searchHTML  — the one search field (grey, rounded, the search glyph).
    formHead    — a form's bar: quiet Cancel/‹ Back · title · the one action as a
                  small black pill (Edit profile, New post, New listing).
    Buttons:    .btn (the one main action per screen) · .btn.ghost
@@ -42,3 +43,4 @@ function formHead(left,title,right){
   const R=right?typeof right==="string"?right:`<button class="btn sm" ${right.id?`id="${right.id}"`:""} ${right.attrs||""} ${right.disabled?"disabled":""}>${esc(right.label)}</button>`:"<span></span>";
   return `<header class="kform">${L}<b>${esc(title)}</b>${R}</header>`;
 }
+const searchHTML=(id,placeholder,value="",attrs="")=>`<label class="ksearch">${UI_IC.search}<input id="${id}" type="search" placeholder="${esc(placeholder)}" value="${esc(value||"")}" autocomplete="off" aria-label="${esc(placeholder)}" ${attrs}></label>`;
