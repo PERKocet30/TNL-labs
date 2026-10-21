@@ -124,6 +124,7 @@ function pcPreviewWire(){
 }
 /* wired from wirePCompose */
 function pcIgWire(c){
+  if(!c)return;
   pcTagWire(c);
   const pv=$("#pcprev");if(pv)pv.onclick=()=>pcPreviewOpen(c);
   const st=$("#pcstory");if(st)st.onchange=()=>{c.storyAfter=st.checked};

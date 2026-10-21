@@ -833,7 +833,8 @@ console.log("\nMEMBER · PHONE");
   await step(d, "share closes at once and posts in the background; tags, place and comments-off land", async () => {
     const before = (await myPosts()).length;
     await p.evaluate(() => { PCOMPOSE.tags = [{ username: "friend", displayName: "Friend" }]; PCOMPOSE.location = "Brooklyn"; render(); });
-    await p.locator("#pccoff").check();
+    await p.locator("#pcadv").tap(); await p.waitForSelector("#pccoff");   // 2026-10-21: commenting lives in Advanced settings
+    await p.locator("#pccoff").check(); await p.locator("#pcadvdone").tap(); await p.waitForTimeout(200);
     await p.locator("#pcgo").tap();
     ok(await p.evaluate(() => !PCOMPOSE), "the creator didn't close straight away");
     await p.waitForSelector("#pql .pq", { timeout: 2000 });
