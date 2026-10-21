@@ -18,6 +18,10 @@ execFileSync(FF, ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=0xD0
   "-filter_complex", "[0][1]vstack", "-frames:v", "1", join(DATA, "uploads", "piece.jpg")]);
 // …and a placeholder profile picture: flat yellow
 execFileSync(FF, ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=0xF0D020:s=300x300:d=1", "-frames:v", "1", join(DATA, "uploads", "face.jpg")]);
+// …and a placeholder video: 8 seconds, green, with a 440Hz tone of its own
+execFileSync(FF, ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=0x10C040:s=720x900:d=8", "-f", "lavfi", "-i", "sine=frequency=440:duration=8",
+  "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", join(DATA, "uploads", "clip.mp4")]);
+execFileSync(FF, ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=0x10C040:s=720x900:d=1", "-frames:v", "1", join(DATA, "uploads", "clip.jpg")]);
 // …and two placeholder songs: a 20-second tone and a 6-second one
 for (const [n, secs] of [["song", 20], ["short", 6]])
   execFileSync(FF, ["-loglevel", "error", "-y", "-f", "lavfi", "-i", `sine=frequency=330:duration=${secs}`, "-ac", "2", join(DATA, "uploads", n + ".wav")]);
@@ -32,6 +36,9 @@ const tr = T("Night Song", "/uploads/song.wav", 20000), short = T("Short Song", 
 const P = (body, img, track) => Number(db.prepare(`INSERT INTO posts (author_id, channel, body, image_url, media_w, media_h, is_work, audio_track_id, created_at) VALUES (?,?,?,?,800,1000,1,?,?)`)
   .run(uid, "graphic-design", body, img, track, now).lastInsertRowid);
 const art = P("A piece", "/uploads/piece.jpg", tr), words = P("Every piece started as a voice memo at 3am.", null, null), brief = P("Short", "/uploads/piece.jpg", short);
+const V = (track) => Number(db.prepare(`INSERT INTO posts (author_id, channel, body, image_url, thumb_url, video_url, media_w, media_h, is_work, audio_track_id, created_at) VALUES (?,?,?,?,?,?,720,900,1,?,?)`)
+  .run(uid, "graphic-design", "A clip", "/uploads/clip.jpg", "/uploads/clip.jpg", "/uploads/clip.mp4", track, now).lastInsertRowid);
+const vid = V(null), vidSong = V(tr);
 
 const PORT = 8870, B = `http://localhost:${PORT}`;
 const srv = spawn(process.execPath, ["--experimental-sqlite", "--no-warnings", "src/server.runtime.js"], {
@@ -75,6 +82,18 @@ try {
   const b6 = join(DATA, "short.mp4"); writeFileSync(b6, Buffer.from(await (await fetch(`${B}/p/${brief}/story.mp4`)).arrayBuffer()));
   t("a song shorter than 15 seconds sets the length", /Duration: 00:00:0[56]\./.test(probe2(b6)));
   t("a post with no song has no video (the picture is its Story)", (await fetch(`${B}/p/${words}/story.mp4`)).status === 404);
+  console.log("\nA VIDEO POST — the clip itself goes to the Story (2026-10-20)");
+  const cf = join(DATA, "clip-story.mp4"); const cr = await fetch(`${B}/p/${vid}/story.mp4`); writeFileSync(cf, Buffer.from(await cr.arrayBuffer())); const cp = probe2(cf);
+  t("a video post has a Story video even without a song", cr.status === 200 && /Video: h264[^\n]*1080x1920/.test(cp));
+  t("…as long as the clip (8 seconds), with the clip's own sound", /Duration: 00:00:0[78]\./.test(cp) && /Audio: aac/.test(cp));
+  const cvol = String(spawnSync(FF, ["-i", cf, "-af", "volumedetect", "-f", "null", "-"]).stderr);
+  t("…and you can hear it", Number((/mean_volume: (-?[\d.]+) dB/.exec(cvol) || [])[1]) > -40);
+  const frame = join(DATA, "clip-frame.png"); execFileSync(FF, ["-loglevel", "error", "-y", "-ss", "2", "-i", cf, "-frames:v", "1", frame]);
+  t("the clip plays inside the card's frame (green in the middle, the card's dark ground beside it)", near(px(frame, 540, 920), [0x10, 0xC0, 0x40], 40) && !near(px(frame, 90, 920), [0x10, 0xC0, 0x40], 40));
+  const sf = join(DATA, "clip-song.mp4"); writeFileSync(sf, Buffer.from(await (await fetch(`${B}/p/${vidSong}/story.mp4`)).arrayBuffer())); const sp = probe2(sf);
+  t("a video post with a song: the clip with the song under it, as long as the clip", /1080x1920/.test(sp) && /Audio: aac/.test(sp) && /Duration: 00:00:0[78]\./.test(sp));
+  const svol = String(spawnSync(FF, ["-i", sf, "-af", "volumedetect", "-f", "null", "-"]).stderr);
+  t("…and the song is what you hear", Number((/mean_volume: (-?[\d.]+) dB/.exec(svol) || [])[1]) > -40);
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -1,6 +1,6 @@
 
 /* ================================================================
-   ANYTHING ON LABS, AS AN INSTAGRAM STORY · v2 — 2026-10-11 (bold: see SC). "Make it so I
+   ANYTHING ON LABS, AS AN INSTAGRAM STORY · v2.1 — 2026-10-20 (a video post's Story is the clip itself, in the card) · v2 — 2026-10-11 (bold: see SC). "Make it so I
    can share … to IG stories — for anything on the app." 1080×1920 cards:
      /p/:id/story.jpg      a post — the work whole (a video's cover) over a
                            blurred fill of itself; a text post as a quote
@@ -172,34 +172,59 @@ app.get("/tr/:id/story.jpg", storyLimit, (req, res) => {
    then, but a moving picture changes every frame — 23MB at this quality,
    and Instagram blurs motion hardest when it squeezes it again. Held still,
    from the lossless card, it's crisp at ~3MB. */
-const SV = { version: 3, secs: 15, fps: 30 };
+const SV = { version: 4, secs: 15, fps: 30 };   // v4: a video post's clip plays in the card
 const SV_BUILDS = new Map();
-function storyVideoArgs(still, audio, secs, out) {
+function storyVideoArgs(still, audio, secs, out, clip) {
   const fadeAt = Math.max(0, secs - 1.5).toFixed(2);
-  return ["-nostdin", "-y", "-loglevel", "error",
+  const vq = ["-c:v", "libx264", "-preset", "medium", "-crf", clip ? 17 : 14, "-profile:v", "high", "-level", "4.0",
+    "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-pix_fmt", "yuv420p"];
+  if (!clip) return ["-nostdin", "-y", "-loglevel", "error",
     "-loop", "1", "-framerate", String(SV.fps), "-t", String(secs), "-i", still,
     "-t", String(secs), "-i", audio,
     "-filter_complex", `[0:v]scale=out_color_matrix=bt709:flags=lanczos+accurate_rnd+full_chroma_int,format=yuv420p[v];` +
       `[1:a]aresample=44100,afade=t=in:d=0.3,afade=t=out:st=${fadeAt}:d=1.5[a]`,
-    "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "medium", "-tune", "stillimage", "-crf", "14", "-profile:v", "high", "-level", "4.0",
-    "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
+    "-map", "[v]", "-map", "[a]", ...vq, "-tune", "stillimage",
     "-c:a", "aac", "-b:a", "256k", "-ac", "2", "-t", String(secs), "-movflags", "+faststart", out];
+  /* a video post (2026-10-20, "make it so I share videos inside the labs to Instagram"):
+     the clip itself plays in the card's frame — the same place and size the cover
+     holds on the picture card — over the card, with the song if the post has one,
+     else the clip's own sound (or none). The first 15 seconds. */
+  const P = SC.pad, bw = SC.w - 2 * P, by = SC.by, bh = SC.bh;
+  const sound = audio ? `[2:a]aresample=44100,afade=t=in:d=0.3,afade=t=out:st=${fadeAt}:d=1.5[a]` : "";
+  return ["-nostdin", "-y", "-loglevel", "error",
+    "-loop", "1", "-framerate", String(SV.fps), "-t", String(secs), "-i", still,
+    "-t", String(secs), "-i", clip,
+    ...(audio ? ["-t", String(secs), "-i", audio] : []),
+    "-filter_complex", `[1:v]scale=${bw}:${bh}:force_original_aspect_ratio=decrease:flags=lanczos,fps=${SV.fps},setsar=1[clip];` +
+      `[0:v][clip]overlay=x=${P}+(${bw}-overlay_w)/2:y=${by}+(${bh}-overlay_h)/2:shortest=1:format=yuv420,` +
+      `scale=out_color_matrix=bt709,format=yuv420p[v]${sound ? ";" + sound : ""}`,
+    "-map", "[v]", ...(audio ? ["-map", "[a]"] : ["-map", "1:a?"]), ...vq,
+    "-c:a", "aac", "-b:a", "256k", "-ac", "2", "-t", String(secs), "-shortest", "-movflags", "+faststart", out];
+}
+/* how long a clip is — ffmpeg prints it from the header before it complains about having no output; no decode, no ffprobe */
+function mediaSecs(file) {
+  return new Promise((ok) => execFile(FFMPEG, ["-nostdin", "-hide_banner", "-i", file], { timeout: 20000, maxBuffer: 256 * 1024 }, (_e, _o, se) => {
+    const m = /Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/.exec(String(se || ""));
+    ok(m ? +m[1] * 3600 + +m[2] * 60 + +m[3] : 0);
+  }));
 }
 async function storyVideo(p, base) {
   const card = postStory(p, base);
   const tr = card && p.audio_track_id && db.prepare(`SELECT url, duration_ms FROM tracks WHERE id = ?`).get(p.audio_track_id);
-  const audio = tr && (cardFile(audioPlayUrl(tr.url)) || cardFile(tr.url));
-  if (!audio) return null;
-  const secs = Math.max(3, Math.min(SV.secs, tr.duration_ms ? tr.duration_ms / 1000 : SV.secs));
+  const audio = (tr && (cardFile(audioPlayUrl(tr.url)) || cardFile(tr.url))) || null;
+  const clip = (card && p.video_url && cardFile(p.video_url)) || null;   // a video post: the clip itself (2026-10-20)
+  if (!audio && !clip) return null;
+  const clipSecs = clip ? await mediaSecs(clip) : 0;   // the Story is as long as the clip, up to 15 seconds
+  const secs = Math.max(3, Math.min(SV.secs, clip ? (clipSecs || SV.secs) : tr && tr.duration_ms ? tr.duration_ms / 1000 : SV.secs));
   const still = await evCardBuild(card.prefix, card.hash, card.make, card.ext);
-  const prefix = `p${p.id}-storyv`, hash = createHash("sha1").update(JSON.stringify([SV.version, card.hash, audio, secs])).digest("hex").slice(0, 12);
+  const prefix = `p${p.id}-storyv`, hash = createHash("sha1").update(JSON.stringify([SV.version, card.hash, audio, secs, clip])).digest("hex").slice(0, 12);
   const name = `${prefix}-${hash}.mp4`, out = join(CARD_DIR, name);
   if (existsSync(out)) return out;
   if (SV_BUILDS.has(out)) return SV_BUILDS.get(out);
   const job = (CARD_CHAIN = CARD_CHAIN.catch(() => {}).then(async () => {
     const tmp = join(CARD_DIR, `tmp-${name}`);
     try {
-      await new Promise((ok, no) => execFile(FFMPEG, storyVideoArgs(still, audio, secs, tmp), { timeout: 120000, maxBuffer: 1024 * 1024 },
+      await new Promise((ok, no) => execFile(FFMPEG, storyVideoArgs(still, audio, secs, tmp, clip), { timeout: 180000, maxBuffer: 1024 * 1024 },
         (err, _o, se) => (err ? no(new Error(String(se || err).slice(0, 300))) : ok())));
       await new Promise((ok, no) => rename(tmp, out, (e) => (e ? no(e) : ok())));
       await Promise.all(readdirSync(CARD_DIR).filter((f) => f.startsWith(prefix + "-") && f !== name).map(cardRm));   // the old song or card
@@ -212,7 +237,7 @@ async function storyVideo(p, base) {
 }
 app.get("/p/:id/story.mp4", storyLimit, async (req, res) => {
   const p = q.postById.get(Number(req.params.id) || 0);
-  if (!p || !p.is_work || !p.audio_track_id) return res.status(404).end();
+  if (!p || !p.is_work || !(p.audio_track_id || p.video_url)) return res.status(404).end();
   if (!FFMPEG || !existsSync(CARD_FONT.bold)) return res.status(503).end();
   try {
     const file = await storyVideo(p, baseUrl(req));

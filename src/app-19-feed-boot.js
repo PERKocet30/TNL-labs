@@ -1,3 +1,4 @@
+/* v2026-10-20: a video post shares the clip itself to a Story (the sheet knows it is a clip) */
 /* LIKES v2 — 2026-09-29. One state per post however many buttons show it (a
    card and the opened post). A tap flips it at once; the server is told the
    state you want, one request per post at a time, and its answer wins. */
@@ -92,7 +93,7 @@ function wireFeed(){
               try{await api.share(id,{channel:c.ch});toast("Shared to "+c.label)}catch(e){toast(e.message)}}});
           return;
         }
-        if(it.act==="story")return igStoryOpen(`/p/${pubId}/story.jpg`,link,post&&post.audioTrack?`/p/${pubId}/story.mp4`:null);   // with its song (2026-10-11)
+        if(it.act==="story")return igStoryOpen(`/p/${pubId}/story.jpg`,link,post&&(post.audioTrack||post.videoUrl)?`/p/${pubId}/story.mp4`:null,post&&post.videoUrl?"clip":post&&post.audioTrack?"song":"");   // with its song (2026-10-11); a video post: the clip itself (2026-10-20)
         if(it.act==="native"){
           const data={title:post.author.displayName+" on LABS",
             text:post.body?post.body.slice(0,140):"Made on LABS.",url:link};
