@@ -30,7 +30,6 @@ h1,h2,h3{letter-spacing:-.02em}
 .chip.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
 /* auth */
 .brand{font-weight:900;font-size:14px;letter-spacing:.03em}
-.brand .fl{font-size:.9em}
 .lbl{display:block;margin:13px 0 6px;color:var(--dim)}
 .roles{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 /* top bar */
@@ -54,8 +53,6 @@ h1,h2,h3{letter-spacing:-.02em}
    An index, then a room. Paper cards, 1px rules, square media, pill tabs;
    green only marks state — new, active — and the // of a lab name. */
 .lg{color:var(--green);font-weight:700;letter-spacing:-.04em}
-.lx-head{padding:22px 16px 14px}
-.lx-head .page-h{margin:0}
 .lx-sub{margin:4px 0 0;color:var(--dim);font-size:13px}
 .lx-list{display:grid;grid-template-columns:1fr;padding:0 16px 28px}
 .lx{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--card);
@@ -88,7 +85,7 @@ h1,h2,h3{letter-spacing:-.02em}
 .lr-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-fill);display:inline-block}
 
 @media(min-width:900px){
-  .lx-head,.lx-list{max-width:1040px;margin-left:auto;margin-right:auto;width:100%;box-sizing:border-box}
+  .lx-list{max-width:1040px;margin-left:auto;margin-right:auto;width:100%;box-sizing:border-box}
   .labs-wrap{justify-content:center}
   .labs-wrap .room{max-width:720px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
 }

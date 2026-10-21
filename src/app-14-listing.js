@@ -1,4 +1,4 @@
-/* ── LISTING PAGE · v2 · 2026-09-30 ────────────────────────────────────
+/* ── LISTING PAGE · v2.1 · 2026-10-20 (head from the screen kit) · v2 · 2026-09-30 ────────────────────────────────────
    The photos full width (swipe, dots, tap to zoom,
    pinch in the viewer), title and price, size and colour picked like a
    shop (sold-out ones crossed through), the seller, and a Buy bar pinned
@@ -59,8 +59,7 @@ function detailHTML(){
   const l=MKTONE, mine=l.seller.username===myName(), hasV=(l.variants||[]).length;
   const acc=MKTOFFERS.find(o=>o.status==="accepted"), pend=MKTOFFERS.find(o=>o.status==="pending");
   return `<div class="scroll lpage" id="mktscroll">
-    <div class="dnav"><button class="backb2" data-mv="browse">${DI.back} Market</button>
-      <button class="backb2" data-mshare="${l.id}">Share</button></div>
+    ${screenHead({back:{attrs:'data-mv="browse"',label:"Market"},title:l.seller.displayName||l.seller.username,actions:[shareBtnHTML(`data-mshare="${l.id}"`)]})}
     ${lgHTML(l)}
     <div class="dbody">
       <div class="dtop">

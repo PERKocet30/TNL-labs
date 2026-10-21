@@ -1,3 +1,4 @@
+/* SHOWROOM + LABS INDEX · 2026-10-20: the Labs head comes from the screen kit (app-08-kit.js) */
 function showroomHTML(){return `<div class="scroll" id="showroom">
   <div class="sr-newwrap"><button class="sr-new" id="sr-new"${SRNEW?"":" hidden"}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>New work</button></div>
   ${guest()?`<section class="whatis"><h1 class="wi-tag">Social media by creatives, for creatives.</h1></section>`:""}
@@ -154,8 +155,7 @@ function labsGridHTML(){
         <span class="lx-go" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><path d="M9 5l7 7-7 7"/></svg></span>
       </div>`};
   return `<div class="scroll">
-    <div class="lx-head"><h2 class="page-h">Labs</h2>
-      <p class="lx-sub">Pick a genre. Tag your work so people find it.</p></div>
+    ${screenHead({title:"Labs",sub:"Pick a genre. Tag your work so people find it."})}
     <div class="lx-list" id="lxlist">${o.mine.length?`<div class="lx-sec">For you <span>· from what you make</span></div>`:""}${o.mine.map(card).join("")}${o.mine.length&&o.rest.length?`<div class="lx-sec">More labs</div>`:""}${o.rest.map(card).join("")}</div>
   </div>`;
 }

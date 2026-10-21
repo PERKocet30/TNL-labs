@@ -1,4 +1,4 @@
-/* ── COMPUTER LAYOUT v1.7 · 2026-10-18 (each gallery piece's frame hugs its own shape; v1.6: the gallery is the only Showroom; v1.5: Showroom gallery; v1.4: two-pane post maker; v1.3: two-across Showroom, full-width bars; v1.2: one-column Showroom, square lab cards, centred log-in); v1.1 · 2026-10-14; v1.0 · 2026-09-29 ─────────────────────────────────
+/* ── COMPUTER LAYOUT v1.8 · 2026-10-20 (the Labs head is the kit's) · v1.7 · 2026-10-18 (each gallery piece's frame hugs its own shape; v1.6: the gallery is the only Showroom; v1.5: Showroom gallery; v1.4: two-pane post maker; v1.3: two-across Showroom, full-width bars; v1.2: one-column Showroom, square lab cards, centred log-in); v1.1 · 2026-10-14; v1.0 · 2026-09-29 ─────────────────────────────────
    Phones keep the app as it is. From 1024px the top bar and bottom nav
    become one left sidebar (render() builds .side only when wide), content
    sits at a reading width beside it, and a mouse gets hover states. Same
@@ -50,7 +50,7 @@
 
   /* Labs are big square cards on a computer (v1.2: "make labs bigger, more square"): the lab's latest
      work across the top, its name and #tags under it — about as tall as wide. Three across. */
-  .lx-head,.lx-list{max-width:1080px}
+  .lx-list{max-width:1080px}
   .lx-list{grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
   .lx,.lx:last-child{flex-direction:column;align-items:stretch;gap:0;padding:0;border:1px solid var(--line);overflow:hidden}
   .lx-media{flex:none;width:100%;height:auto;aspect-ratio:4/3;border:0;border-bottom:1px solid var(--line)}

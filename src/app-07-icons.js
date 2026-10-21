@@ -1,5 +1,5 @@
 /* ================================================================
-   DRAWN ICONS v1.0 — 2026-09-29
+   DRAWN ICONS v1.1 — 2026-10-20 (chev for the kit's rows)
    Every control draws its icon: 2px stroke, square caps, mitred joins,
    currentColor — the same geometry as the nav. No emoji or glyphs as
    icons (✎ 🗑 🔇 ▶︎ ♫ ★ …): iOS paints those as colour emoji that ignore
@@ -30,5 +30,6 @@ const DI={
   copy:di('<rect x="8" y="8" width="12" height="12"/><path d="M16 8V4H4v12h4"/>',18),
   flag:di('<path d="M6 21V4h11l-2 4 2 4H6"/>',18),
   board:di('<rect x="4" y="4" width="16" height="16"/><path d="M12 4v16M4 12h8"/>',18),
+  chev:di('<path d="M9 5l7 7-7 7"/>',18),
   lock:di('<rect x="5" y="11" width="14" height="9"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',14),
 };
