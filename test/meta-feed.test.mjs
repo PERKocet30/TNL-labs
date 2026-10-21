@@ -23,6 +23,7 @@ const L = (seller, title, o = {}) => Number(db.prepare(`INSERT INTO listings (se
 const tee = L(boss, "Drop 01 Tee", { variants: [{ id: "s1", size: "M", colour: "", qty: 3 }, { id: "s2", size: "L", colour: "", qty: 0 }] });
 const print = L(boss, "Poster", { cat: "Art / Prints", cond: "Like New", brand: "", qty: 2, compare: 6000, price: 4000, colour: "" });
 const gone = L(boss, "Sold hoodie", { status: "sold", qty: 0 });
+const emo = L(boss, "Camo Shiesty🪖 ✌🏽", { desc: "Sashiko 🪡 stitched ❤️‍🔥", qty: 1 });
 L(boss, "Removed cap", { status: "removed" });
 L(boss, "Beat pack", { kind: "loop" });
 L(boss, "No picture", { imgs: [] });
@@ -43,7 +44,7 @@ try {
   console.log("\nTHE FEED");
   t("a CSV anyone (Meta) can read", r.status === 200 && /text\/csv/.test(r.headers.get("content-type")));
   t("Meta's columns, in a header row", ["id", "title", "description", "availability", "condition", "price", "link", "image_link", "brand"].every((c) => head.includes(c)));
-  t("only physical pieces with a picture, from LABS or a member who switched it on: no beats, nothing removed", rec.length === 4 && !body.includes("Ana's jacket") && !body.includes("Beat pack") && !body.includes("Removed cap") && !body.includes("No picture"));
+  t("only physical pieces with a picture, from LABS or a member who switched it on: no beats, nothing removed", rec.length === 5 && !body.includes("Ana's jacket") && !body.includes("Beat pack") && !body.includes("Removed cap") && !body.includes("No picture"));
   console.log("\nA PIECE WITH SIZES");
   t("one row per size, grouped like Shopify's", by(`labs-${tee}-s1`).item_group_id === `labs-${tee}` && by(`labs-${tee}-s2`).item_group_id === `labs-${tee}` && by(`labs-${tee}-s1`).size === "M");
   t("each size's own stock", by(`labs-${tee}-s1`).availability === "in stock" && by(`labs-${tee}-s1`).quantity_to_sell_on_facebook === "3" && by(`labs-${tee}-s2`).availability === "out of stock");
@@ -55,6 +56,7 @@ try {
   t("a price drop shows as a sale (was / now)", by(`labs-${print}`).price === "60.00 USD" && by(`labs-${print}`).sale_price === "40.00 USD");
   t("worn condition is used; no brand set says LABS; prints are artwork", by(`labs-${print}`).condition === "used" && by(`labs-${print}`).brand === "LABS" && /Artwork/.test(by(`labs-${print}`).google_product_category));
   t("sold out stays in, as out of stock, so a tagged post never breaks", by(`labs-${gone}`).availability === "out of stock" && by(`labs-${gone}`).quantity_to_sell_on_facebook === "0");
+  t("no emoji in what Meta shows (its shop draws them as boxes)", by(`labs-${emo}`).title === "Camo Shiesty" && by(`labs-${emo}`).description === "Sashiko stitched");
   console.log("\nA MEMBER'S OWN PIECE (THEIR SWITCH)");
   const api = async (who, path, body) => { const r = await fetch(B + path, { method: body ? "POST" : "GET", headers: { "Content-Type": "application/json", Authorization: "Bearer tok-" + who }, body: body ? JSON.stringify(body) : undefined }); return { s: r.status, j: await r.json().catch(() => ({})) }; };
   const feed = async () => await (await fetch(B + "/feeds/meta.csv")).text();

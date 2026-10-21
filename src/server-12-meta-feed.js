@@ -1,5 +1,5 @@
 /* ================================================================
-   THE PRODUCT FEED FOR INSTAGRAM v1.1 — 2026-10-21. "Link the app to Meta
+   THE PRODUCT FEED FOR INSTAGRAM v1.2 — 2026-10-21. "Link the app to Meta
    so I can tag my product on Instagram like Shopify." Meta's Commerce
    Manager reads a catalog from a web address on a schedule
    (Catalog → Data sources → Data feed → Scheduled feed):
@@ -17,10 +17,13 @@
    post sends people to /checkout?products=labs-5:1,labs-7-ab12:1 (Meta's
    format: our feed ids, then quantity); that lands in the LABS bag with
    those pieces in it (?bag=, app-17-bag.js), where checkout is per seller.
+   v1.2 (2026-10-21): no emoji in what Meta shows — its shop draws them as
+   broken boxes ("Sashiko Hoodie🪡"). The listing in the app keeps them.
 ================================================================ */
 const FEED_COLS = ["id", "item_group_id", "title", "description", "availability", "quantity_to_sell_on_facebook", "condition", "price", "sale_price",
   "link", "image_link", "additional_image_link", "brand", "size", "color", "google_product_category"];
 const feedCell = (v) => `"${String(v ?? "").replace(/[\r\n\t]+/g, " ").replace(/"/g, '""').trim()}"`;
+const feedPlain = (v) => String(v ?? "").replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{1F3FB}-\u{1F3FF}\uFE0E\uFE0F\u200D\u20E3]/gu, "").replace(/[ \t]{2,}/g, " ").trim();
 const feedMoney = (cents, cur) => `${(cents / 100).toFixed(2)} ${cur || "USD"}`;
 /* Meta's own words for what a piece is in: the clothing ones, else Apparel & Accessories. */
 const FEED_CAT = { Tops: "Apparel & Accessories > Clothing > Shirts & Tops", Bottoms: "Apparel & Accessories > Clothing > Pants",
@@ -42,7 +45,7 @@ function metaFeedRows(base) {
     const abs = (u) => base + u, link = `${base}/m/${l.id}`;
     const onSale = l.compare_cents && l.compare_cents > l.price_cents;
     const one = {
-      title: l.title.slice(0, 200), description: (l.description || l.title).slice(0, 5000),
+      title: (feedPlain(l.title) || "Untitled").slice(0, 200), description: (feedPlain(l.description) || feedPlain(l.title) || "Untitled").slice(0, 5000),
       condition: ["New", "Deadstock"].includes(l.condition) ? "new" : "used",
       price: feedMoney(onSale ? l.compare_cents : l.price_cents, l.currency), sale_price: onSale ? feedMoney(l.price_cents, l.currency) : "",
       link, image_link: abs(imgs[0]), additional_image_link: imgs.slice(1, 10).map(abs).join(","),
