@@ -1285,18 +1285,18 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#pcprev").tap(); await p.waitForSelector("#pcprevbg .sr-card", { timeout: 5000 });
     ok(await p.locator("#pcprevbg .sr-card .post-media img").count() >= 1, "the preview isn't the Showroom card with the picture");
     await p.locator("#pcprevx").tap(); await p.waitForTimeout(200);
-    await p.locator("#pcbody").fill("pinned #e2etag");
+    await p.locator("#pcbody").fill("pinned #pintag");
     await p.locator("#pcgo").tap();
     await p.waitForFunction(() => !PCOMPOSE, null, { timeout: 15000 });
-    const post = (await myPosts()).find((x) => /pinned #e2etag/.test(x.body || ""));
+    const post = (await myPosts()).find((x) => /pinned #pintag/.test(x.body || ""));
     ok(post && post.pins && post.pins.length === 1 && post.pins[0].username === "friend" && post.hideLikes === true && post.alt === "A blue test picture", "the post didn't carry the pin, hidden likes and alt text: " + JSON.stringify(post && { pins: post.pins, h: post.hideLikes, a: post.alt }));
-    await p.evaluate(() => { TAB = "showroom"; render(); return loadShowroom(true); });
-    const card = p.locator(`.sr-card:has([data-pxtags="${post.id}"])`).first();
-    await card.waitFor({ timeout: 8000 });
-    await card.locator("[data-pxtags]").tap(); await p.waitForTimeout(200);
-    ok(await card.locator(".px-pins .px-pin").count() === 1 && /friend/.test(await card.locator(".px-pin").innerText()), "the person icon didn't show the pin on the card");
-    await card.locator("[data-pxtags]").tap(); await p.waitForTimeout(200);
+    await p.evaluate((pp) => openPost(pp), post); await p.waitForSelector(".po-ov [data-pxtags]", { timeout: 8000 });
+    const card = p.locator(".po-ov").first();
+    await card.locator("[data-pxtags]").first().tap(); await p.waitForTimeout(200);
+    ok(await card.locator(".px-pins .px-pin").count() === 1 && /friend/.test(await card.locator(".px-pin").innerText()), "the person icon didn't show the pin on the opened post");
+    await card.locator("[data-pxtags]").first().tap(); await p.waitForTimeout(200);
     ok(await card.locator(".px-pins").count() === 0, "tapping again didn't hide the pins");
+    await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
   });
   /* 2026-10-21 "fix all the labs": every post lives on your profile; a lab is where you also show it */
   await step(d, "labs: + inside // Visual opens New post already posting to Your profile · // Visual (take it out → Add a lab); the lab's head says Invite; the archive has no search box", async () => {
