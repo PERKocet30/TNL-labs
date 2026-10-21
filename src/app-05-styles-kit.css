@@ -17,6 +17,13 @@
 /* round icon buttons sit on the same scale as .btn.sm */
 .sh-acts .ib,.sh-acts .shop-bag{width:36px;height:36px}
 .sh-acts .lr-bell{margin-left:0;background:var(--el);border:1px solid var(--line)}.sh-acts .lr-bell.on{color:var(--green)}
+/* a form's bar: Cancel · title · the one action */
+.kform{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
+.kform b{font-size:16px;font-weight:700;text-align:center}
+.kform>:last-child{justify-self:end}
+.kf-b{display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:var(--tx);font:inherit;font-size:15px;padding:6px 0;cursor:pointer;justify-self:start}
+.kf-b svg{width:18px;height:18px;margin-left:-4px}
+.kform .kf-n{font-size:13px;color:var(--dim)}
 /* tabs: the sections of a screen, underlined */
 .ktabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px;margin:0 0 4px}
 .ktab{flex:1;position:relative;background:none;border:0;padding:12px 4px 11px;font-family:inherit;font-size:14px;line-height:18px;font-weight:700;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;justify-content:center;gap:6px}
@@ -35,4 +42,5 @@
 .krow-go svg{width:18px;height:18px}
 .krow.danger,.krow.danger .krow-ic{color:var(--red)}
 .shop-head .sh{padding:0 0 10px}
+.pig>.sh{padding:0 0 6px}.pig>.sh .sh-row{min-height:36px}
 @media(min-width:1024px){.sh{padding:22px 28px 10px}.sh-h{font-size:28px;line-height:32px}.scroll>.sh{max-width:1080px;margin-left:auto;margin-right:auto;width:100%;box-sizing:border-box}.lpage .sh{grid-column:1/-1;padding:16px 0}.shop-head .sh{padding:0 0 10px}}

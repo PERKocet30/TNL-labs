@@ -12,6 +12,8 @@
                  inside a section stay chips (.chip); never pills for
                  sections.
    rowHTML     — icon · label · value · chevron: menus, options, settings.
+   formHead    — a form's bar: quiet Cancel/‹ Back · title · the one action as a
+                 small black pill (Edit profile, New post, New listing).
    Buttons:    .btn (the one main action per screen) · .btn.ghost
                (secondary, outlined) · .btn.quiet (text). Green is the
                nav's Post and the member's accent, not a button colour.
@@ -34,4 +36,9 @@ function tabsHTML(items,on,attr,cls=""){
 function rowHTML(r){
   const tag=r.href?"a":"button",at=r.href?`href="${esc(r.href)}" ${/^https?:/.test(r.href)?'target="_blank" rel="noopener"':""}`:'type="button"';
   return `<${tag} class="krow${r.cls?" "+r.cls:""}" ${at} ${r.attrs||""}>${r.icon?`<span class="krow-ic">${r.icon}</span>`:""}<span class="krow-b"><b>${esc(r.label)}</b>${r.sub?`<span>${esc(r.sub)}</span>`:""}</span>${r.value?`<span class="krow-v">${esc(r.value)}</span>`:""}${r.chev===false?"":`<span class="krow-go">${DI.chev}</span>`}</${tag}>`;
+}
+function formHead(left,title,right){
+  const L=left?typeof left==="string"?left:`<button class="kf-b" ${left.id?`id="${left.id}"`:""} ${left.attrs||""}>${left.back?`${DI.back}<span>Back</span>`:esc(left.label||"Cancel")}</button>`:"<span></span>";
+  const R=right?typeof right==="string"?right:`<button class="btn sm" ${right.id?`id="${right.id}"`:""} ${right.attrs||""} ${right.disabled?"disabled":""}>${esc(right.label)}</button>`:"<span></span>";
+  return `<header class="kform">${L}<b>${esc(title)}</b>${R}</header>`;
 }

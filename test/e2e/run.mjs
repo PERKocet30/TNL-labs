@@ -1238,6 +1238,19 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => document.documentElement.dataset.theme) === "light", "day didn't come back");
     await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
   });
+  /* 2026-10-20 one kit, part 2: profiles and Edit profile wear the kit's head and form bar */
+  await step(d, "one kit: your profile's head is @name · + · ≡, someone else's is ‹ · @name · ⋯ with a black Follow, and Edit profile's bar is Cancel · title · Done", async () => {
+    await p.locator('.nav [data-tab="profile"]').tap(); await p.waitForSelector("#profmenu");
+    ok(await p.locator(".pig > .sh .sh-h").count() === 1 && await p.locator(".pig > .sh .sh-acts .ib").count() === 2 && await p.locator(".pig-top, .pig-plus").count() === 0, "your profile doesn't wear the kit head");
+    await p.locator("#editb").tap(); await p.waitForSelector("#ed-save");
+    ok(await p.locator(".kform #ed-save.btn").count() === 1 && await p.locator(".kform #ed-cancel.kf-b").count() === 1 && await p.locator(".pe-top").count() === 0, "Edit profile's bar isn't the kit's form bar");
+    await p.locator("#ed-cancel").tap(); await p.waitForSelector("#editb");
+    await p.evaluate(() => openProfile("friend")); await p.waitForSelector("#followb");
+    ok(await p.locator(".pig > .sh .sh-back#sheetx").count() === 1 && await p.locator(".pig > .sh .sh-acts #profmore.ib").count() === 1, "someone else's profile has no back · name · more head");
+    ok(await p.evaluate(() => { const b = document.querySelector("#followb"); return b && !b.classList.contains("green") && b.classList.contains("btn"); }), "Follow isn't the black main action");
+    await p.locator("#sheetx").tap(); await p.waitForTimeout(400);
+    await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
+  });
   /* ---- profile v2 (2026-10-07) ---- */
   await step(d, "edit profile: plain rows; a half-typed bio survives the Links screen; Done saves pronouns, bio, links", async () => {
     await p.evaluate(() => { DMOPENPANEL = false; CHAT = null; paintLayer(); });

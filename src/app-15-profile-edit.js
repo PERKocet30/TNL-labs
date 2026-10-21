@@ -1,4 +1,4 @@
-/* ── EDIT PROFILE v2.1 · 2026-10-20 (Data saver has its own icon) · v2 2026-10-07 ──────────────────────────────────────
+/* ── EDIT PROFILE v2.2 · 2026-10-20 (the form bar and Data saver's icon come from the kit) · v2 2026-10-07 ──────────────────────────────────────
    Cancel · Edit profile · Done, your
    photo in the middle, then quiet rows — name, pronouns, bio, links, what
    you make, your colour. Links and roles open their own small screens
@@ -20,9 +20,9 @@ function pfStart(u){
 }
 function editProfileHTML(){
   const u=PROFILE.user,f=EDITPF||(pfStart(u),EDITPF);
-  const top=(left,title,right)=>`<header class="pe-top">${left}<b>${title}</b>${right}</header>`;
+  const top=formHead;
   let body;
-  if(f.sub==="links")body=`${top(`<button class="pe-b" id="pe-back">‹ Back</button>`,"Links",`<span class="pe-sp"></span>`)}
+  if(f.sub==="links")body=`${top({id:"pe-back",back:true},"Links",null)}
     <div class="pe-sub">${f.links.map((x,i)=>`<div class="pe-link">
       <input class="pe-in" data-pl="${i}" data-k="title" value="${esc(x.title||"")}" maxlength="40" placeholder="Title (optional)">
       <input class="pe-in" data-pl="${i}" data-k="url" value="${esc(x.url||"")}" maxlength="200" placeholder="URL" inputmode="url" autocapitalize="none">
@@ -30,11 +30,11 @@ function editProfileHTML(){
       ${f.links.length<5?`<button class="pe-add" id="pe-addlink">+ Add a link</button>`:""}
       <p class="pe-hint">Up to 5. The first shows on your profile; the rest sit behind “and more”.</p></div>`;
   else if(f.sub==="roles"){const q=f.q.toLowerCase();
-    body=`${top(`<button class="pe-b" id="pe-back">‹ Back</button>`,"What you make",`<span class="pe-n">${f.roles.length}/5</span>`)}
+    body=`${top({id:"pe-back",back:true},"What you make",`<span class="kf-n">${f.roles.length}/5</span>`)}
     <div class="pe-sub"><input class="pe-in pe-q" id="pe-rq" value="${esc(f.q)}" placeholder="Search" autocapitalize="none">
       ${f.roles.length?`<div class="roles pe-sel">${f.roles.map(r=>`<button class="chip on" data-er="${esc(r)}">${esc(r)} ×</button>`).join("")}</div>`:""}
       <div class="roles" id="pe-rlist">${ROLES.filter(r=>!f.roles.includes(r)&&(!q||r.toLowerCase().includes(q))).map(r=>`<button class="chip" data-er="${esc(r)}">${esc(r)}</button>`).join("")}</div></div>`;}
-  else body=`${top(`<button class="pe-b" id="ed-cancel">Cancel</button>`,"Edit profile",`<button class="pe-b pe-done" id="ed-save">Done</button>`)}
+  else body=`${top({id:"ed-cancel",label:"Cancel"},"Edit profile",{id:"ed-save",label:"Done"})}
     <div class="pe-av">${u.avatarUrl?`<img class="pav" src="${esc(u.avatarUrl)}" alt="">`:`<div class="pav">${esc(u.displayName.slice(0,2).toUpperCase())}</div>`}
       <button class="pe-photo" id="avbtn">Change photo</button><input type="file" id="avin" accept="image/*" hidden></div>
     <div class="pe-rows">

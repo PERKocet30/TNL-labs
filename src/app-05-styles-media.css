@@ -160,10 +160,6 @@ input, textarea, select, .in, .search { font-size: 16px !important; }
 /* Profile, Instagram-shaped: @handle on top, avatar beside stats, a quiet
    category line, equal-width actions, standing as a glass tube, icon tabs,
    a tight three-column grid. */
-.pig .pig-top{align-items:center;margin-bottom:10px}
-.pig-user{font-size:18px;font-weight:700;letter-spacing:-.01em}
-.pig-topr{display:flex;align-items:center;gap:2px}
-.pig-plus{width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:none;border:0;padding:0;color:var(--tx);cursor:pointer}
 .pig .pig-stats .pstat b{font-size:17px;font-weight:700}
 .pig .pig-stats .pstat span{font-size:13px;color:var(--tx2)}
 .pig .pname{font-size:15px;font-weight:700}
