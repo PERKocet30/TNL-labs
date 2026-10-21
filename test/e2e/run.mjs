@@ -735,11 +735,13 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => bagList().length) === 0, "bag not emptied");
     await p.evaluate(() => { MKTVIEW = "browse"; render(); });
   });
-  await step(d, "Checkout on a tagged Instagram post opens the LABS bag with that piece in it", async () => {
+  await step(d, "Checkout on a tagged Instagram post opens the LABS bag with exactly that piece in it", async () => {
+    await p.evaluate(() => bagPut([{ id: 999999, v: "", at: Date.now() }]));   // something left over from before
     await settledGoto(p, B + "/checkout?products=" + encodeURIComponent(`labs-${tote}:1`) + "&cart_origin=instagram"); await throughDoor(p);
     await p.waitForSelector(".bag-g", { timeout: 8000 });
     ok(await p.evaluate((id) => bagList().some((x) => x.id === id), tote), "the tote isn't in the bag");
     ok(await p.locator(".bag-t", { hasText: "Tote" }).count() === 1, "the bag doesn't show it");
+    ok(await p.evaluate(() => bagList().length) === 1, "the bag should be exactly what Checkout sent, not added to what was there");
     ok(await p.evaluate(() => location.search === ""), "?bag= stayed in the address bar");
     await p.evaluate(() => { bagPut([]); MKTVIEW = "browse"; render(); });
   });

@@ -3,7 +3,9 @@
    checked against the Market when you open it. Checkout is per seller:
    one payment, shipping combined (server-07-cart.js).
    2026-10-21: a link can fill it — ?bag=labs-5,labs-7-ab12 (the ids of the
-   Instagram shop feed, sent by /checkout, server-12-meta-feed.js). */
+   Instagram shop feed, sent by /checkout, server-12-meta-feed.js). It makes
+   the bag exactly those pieces, as Shopify's checkout links do: Checkout on
+   Instagram means "buy these", and Meta's checkout test wants only them. */
 let MKTBAG=null, MKTRECENT=null, SHOPSTATS=null;
 const bagKey=()=>"tnl-bag:"+(myName()||"guest");
 function bagList(){try{const a=JSON.parse(localStorage.getItem(bagKey())||"[]");return Array.isArray(a)?a:[]}catch(e){return []}}
@@ -14,7 +16,7 @@ function bagAdd(l,v){
   bagPut([{id:l.id,v:vid,at:Date.now()},...a]);toast("Added to bag");
 }
 function bagFromLink(s){
-  const a=bagList();
+  const a=[];
   for(const t of String(s||"").split(",").slice(0,40)){const m=/^labs-(\d+)(?:-([a-z0-9]+))?$/i.exec(t.trim());if(!m)continue;
     const id=Number(m[1]),v=m[2]||"";if(!a.some(x=>x.id===id&&(x.v||"")===v))a.unshift({id,v,at:Date.now()})}
   bagPut(a);
