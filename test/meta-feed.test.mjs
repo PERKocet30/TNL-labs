@@ -64,6 +64,13 @@ try {
   t("switched on: in the feed, under their name when they gave no brand", (await api("ana", `/api/market/${jacket}/ig-shop`, { on: true })).j.on === true
     && (await feed()).includes(`"labs-${jacket}"`) && (await feed()).includes('"Ana Reyes"'));
   t("switched off: gone again", (await api("ana", `/api/market/${jacket}/ig-shop`, { on: false })).j.on === false && !(await feed()).includes("Ana's jacket"));
+  console.log("\nCHECKOUT FROM A TAGGED POST");
+  const co = async (q) => { const r = await fetch(B + "/checkout" + q, { redirect: "manual" }); return { s: r.status, to: r.headers.get("location") || "" }; };
+  const one = await co(`?products=labs-${tee}-s1%3A2%2Clabs-${print}%3A1&coupon=X&cart_origin=instagram`);
+  t("Meta's checkout link lands in the bag with those pieces (sizes kept)", one.s === 302 && one.to === "/?bag=" + encodeURIComponent(`labs-${tee}-s1,labs-${print}`));
+  const junk = await co(`?products=${encodeURIComponent('labs-1:1,"><script>,https://evil.test,labs-x:1')}`);
+  t("only our own ids pass on; anything else is dropped", junk.s === 302 && junk.to === "/?bag=labs-1");
+  t("no products: an empty bag, not an error", (await co("")).to === "/?bag=");
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

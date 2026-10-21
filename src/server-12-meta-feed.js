@@ -1,5 +1,5 @@
 /* ================================================================
-   THE PRODUCT FEED FOR INSTAGRAM v1.0 — 2026-10-20. "Link the app to Meta
+   THE PRODUCT FEED FOR INSTAGRAM v1.1 — 2026-10-21. "Link the app to Meta
    so I can tag my product on Instagram like Shopify." Meta's Commerce
    Manager reads a catalog from a web address on a schedule
    (Catalog → Data sources → Data feed → Scheduled feed):
@@ -13,6 +13,10 @@
    stays in as "out of stock" so a tagged post never breaks; removed
    leaves. Price, picture and link are the listing page's own (/m/:id), so
    Meta's checks that feed and page agree pass. test/meta-feed.test.mjs.
+   v1.1 (2026-10-21): the shop's checkout URL. Tapping Checkout on a tagged
+   post sends people to /checkout?products=labs-5:1,labs-7-ab12:1 (Meta's
+   format: our feed ids, then quantity); that lands in the LABS bag with
+   those pieces in it (?bag=, app-17-bag.js), where checkout is per seller.
 ================================================================ */
 const FEED_COLS = ["id", "item_group_id", "title", "description", "availability", "quantity_to_sell_on_facebook", "condition", "price", "sale_price",
   "link", "image_link", "additional_image_link", "brand", "size", "color", "google_product_category"];
@@ -82,4 +86,11 @@ app.post("/api/market/:id/ig-shop", auth, (req, res) => {
   if (req.body?.on) db.prepare(`INSERT OR IGNORE INTO ig_shop (listing_id, created_at) VALUES (?, ?)`).run(l.id, Date.now());
   else db.prepare(`DELETE FROM ig_shop WHERE listing_id = ?`).run(l.id);
   res.json({ on: !!req.body?.on });
+});
+
+/* The shop's checkout URL: Meta's ids → the bag. Only our own ids pass on. */
+app.get("/checkout", (req, res) => {
+  const ids = String(req.query.products || "").split(",").map((t) => t.split(":")[0].trim())
+    .filter((t) => /^labs-\d+(-[a-z0-9]+)?$/i.test(t)).slice(0, 40);
+  res.redirect(302, "/?bag=" + encodeURIComponent(ids.join(",")));
 });
