@@ -705,9 +705,11 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { TAB = "showroom"; MKTVIEW = "browse"; render(); });
   });
   /* ---- the bag, saved, recently viewed, price drops, seller tools (2026-09-30) ---- */
+  let tote = 0;   // for the Instagram checkout step below (one login: they're rate-limited)
   await step(d, "bag: two things from one seller, combined shipping, one checkout reserves both", async () => {
     const { token: ft } = await login("friend");
     const cap = (await api("/api/market", ft, { title: "Cap", price: 30, shipping: 12, category: "Accessories", images: ["/uploads/e2e-p2.png"] })).id;
+    tote = (await api("/api/market", ft, { title: "Tote", price: 20, category: "Accessories", images: ["/uploads/e2e-p2.png"] })).id;
     await api("/api/market/" + dropId, ft, undefined);   // (a view)
     await toMarket();
     await p.locator(`[data-mopen="${dropId}"]`).first().tap(); await p.waitForSelector(".lbar-bag");
@@ -732,6 +734,14 @@ console.log("\nMEMBER · PHONE");
     ok(b.length === before + 2, `orders ${before} → ${b.length}`);
     ok(await p.evaluate(() => bagList().length) === 0, "bag not emptied");
     await p.evaluate(() => { MKTVIEW = "browse"; render(); });
+  });
+  await step(d, "Checkout on a tagged Instagram post opens the LABS bag with that piece in it", async () => {
+    await settledGoto(p, B + "/checkout?products=" + encodeURIComponent(`labs-${tote}:1`) + "&cart_origin=instagram"); await throughDoor(p);
+    await p.waitForSelector(".bag-g", { timeout: 8000 });
+    ok(await p.evaluate((id) => bagList().some((x) => x.id === id), tote), "the tote isn't in the bag");
+    ok(await p.locator(".bag-t", { hasText: "Tote" }).count() === 1, "the bag doesn't show it");
+    ok(await p.evaluate(() => location.search === ""), "?bag= stayed in the address bar");
+    await p.evaluate(() => { bagPut([]); MKTVIEW = "browse"; render(); });
   });
   await step(d, "Saved works (it used to say 'no listing'); Recently viewed shows on the Market", async () => {
     await p.evaluate(async () => { MKTRECENT = null; MKT = null; });
