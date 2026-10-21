@@ -1677,37 +1677,53 @@ console.log("\nMEMBER · COMPUTER");
     await fast(p, 3000, () => p.waitForSelector(".lx-list"), "Labs from the side menu");
     ok(await p.evaluate(() => !DMOPENPANEL && !document.querySelector("#chatlayer .cx")), "Messages stayed open over Labs");
   });
-  await step(d, "admin → System shows the Glitches panel with the phone's rage tap", async () => {
-    await settledGoto(p, B + "/admin#system");
-    // 2026-10-14: System is in tabs — Glitches live under Health
-    await fast(p, 5000, () => p.locator("[data-systab=health]").waitFor(), "the admin System page");
-    await p.locator("[data-systab=health]").click();
-    await fast(p, 3000, () => p.locator("h2.sec", { hasText: "Glitches" }).first().waitFor(), "System → Health");
+  await step(d, "admin → Health shows the Glitches panel with the phone's rage tap", async () => {
+    // 2026-10-20 (admin v4): Health is its own section; an old #system link lands on Settings
+    await settledGoto(p, B + "/admin#health");
+    await fast(p, 6000, () => p.locator("h2.sec", { hasText: "Glitches" }).first().waitFor(), "the admin Health page");
     ok(await p.getByText(/× rage taps · /).count() > 0, "the rage tap isn't listed");
     ok(await p.getByText(/Glitches, 24h/).count() > 0, "no Glitches KPI");
     await p.screenshot({ path: join(SHOTS, "admin-glitches.png"), fullPage: false });
     await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
   // 2026-10-09: Today runs on the direction — the tournament, the labs and their #tags
-  await step(d, "admin → Today leads with the tournament; a lab opens its posts in Labs", async () => {
-    await settledGoto(p, B + "/admin#today");
-    await fast(p, 6000, () => p.locator("h2.sec", { hasText: "The tournament" }).first().waitFor(), "the admin Today page");
-    ok(await p.locator(".tour [data-ev-open]").count() === 1, "no tournament panel");
-    ok(await p.locator("h2.sec", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
-    ok(await p.locator("nav.tabs [data-tab=content]", { hasText: "Labs" }).count() === 1, "the Content tab isn't called Labs");
-    // 2026-10-14: on a computer, a side menu; any member is a search away from the top bar
-    ok(await p.locator(".side .nv[data-tab=people]").isVisible() && !(await p.locator("nav.tabs").isVisible()), "no side menu on a computer");
+  await step(d, "admin → Home: the work queue first, numbers with their share, a line chart, the tournament; a lab opens its posts in Content", async () => {
+    await settledGoto(p, B + "/admin#today");   // the old link: lands on Home
+    await fast(p, 6000, () => p.locator(".tour [data-ev-open]").waitFor(), "the admin Home page");
+    ok(await p.evaluate(() => location.hash === "#home" || TAB === "home"), "an old #today link didn't land on Home");
+    ok(await p.locator(".rc h3", { hasText: "Needs you" }).count() === 1, "no work queue");
+    ok(await p.locator(".kpi .s").count() >= 4, "the numbers don't say their share");
+    ok(await p.locator(".line svg polyline.nw").count() === 1 && await p.locator(".line svg polyline.pv").count() === 1, "no line chart with last period behind");
+    ok(await p.locator(".rc h3", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
+    // 2026-10-20: on a computer, a grouped side menu with the ten sections and no bottom bar
+    ok(await p.locator(".side .nv").count() === 10 && !(await p.locator(".bbar").isVisible()), "no ten-section side menu on a computer");
+    ok(await p.locator(".side .grp").count() === 4, "the side menu isn't grouped");
     await p.locator("#gq").fill("tester");
     await fast(p, 4000, () => p.locator("#gres [data-gp]").first().waitFor(), "member search results");
     await p.locator("#gres [data-gp]").first().dispatchEvent("mousedown");
     await fast(p, 4000, () => p.locator("#person .rec-hd").waitFor(), "the member's record");
     ok(await p.locator("#person [data-ptab]").count() === 4, "the record has no tabs");
     await p.keyboard.press("Escape");
-    await p.screenshot({ path: join(SHOTS, "admin-today.png"), fullPage: false });
-    await p.locator("tr[data-labf=pharmacy]").click();
+    await p.screenshot({ path: join(SHOTS, "admin-home.png"), fullPage: false });
+    await p.locator("[data-labf=pharmacy]").first().click();
     // the lab list arrives with the posts — wait for it, not just the empty select
     await fast(p, 5000, () => p.locator("#clab option[value=pharmacy]").waitFor({ state: "attached" }), "the Labs tab");
     ok(await p.locator("#clab").inputValue() === "pharmacy", "the lab filter wasn't set");
+    await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
+  });
+  /* admin v4 (2026-10-20): every section opens, with its frame; Orders has status tabs; Analytics its four tabs */
+  await step(d, "admin → every section opens on a computer: Orders, Listings, Sellers, Analytics, Settings", async () => {
+    for (const [tab, want] of [["orders", "[data-os=paid]"], ["listings", "[data-ls=active]"], ["sellers", ".kpi"], ["analytics", "[data-atab=commerce]"], ["settings", "[data-systab=data]"]]) {
+      await settledGoto(p, B + "/admin#" + tab);
+      await fast(p, 6000, () => p.locator(want).first().waitFor(), "admin → " + tab);
+      ok(await p.locator(".pg-hd h1").count() === 1, tab + " has no page title");
+    }
+    await settledGoto(p, B + "/admin#analytics"); await fast(p, 6000, () => p.locator("[data-atab=commerce]").waitFor(), "Analytics");
+    await p.locator("[data-atab=commerce]").click();
+    ok(await p.locator(".line").count() >= 2, "Commerce has no charts");
+    await settledGoto(p, B + "/admin#orders"); await fast(p, 6000, () => p.locator("[data-os=paid]").waitFor(), "Orders");
+    ok(await p.locator(".toc table").first().isVisible() && !(await p.locator(".toc .cards2").first().isVisible()), "Orders on a computer isn't a table");
+    await p.screenshot({ path: join(SHOTS, "admin-orders.png"), fullPage: false });
     await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
   await step(d, "resizing to phone width switches to the phone frame", async () => {
@@ -1735,8 +1751,8 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
 {
   const d = await device("admin-link", { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const p = d.page;
-  await step(d, "Admin signed out: Log in opens the log-in at once (no door) and lands back on Admin's System tab", async () => {
-    await settledGoto(p, B + "/admin#system");
+  await step(d, "Admin signed out: Log in opens the log-in at once (no door) and lands back on Admin's Settings", async () => {
+    await settledGoto(p, B + "/admin#settings");
     const btn = p.locator("#adminlogin");
     await btn.waitFor({ timeout: 8000 });
     ok(/This browser isn't signed in/.test(await p.locator(".gate").innerText()), "the Admins-only page doesn't say why");
@@ -1749,8 +1765,19 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     const user = (await api("/api/me", "e2e-tester-session")).user;
     await p.route("**/api/auth/login", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify({ token: "e2e-tester-session", user }) }));
     await p.locator("#u").fill("tester"); await p.locator("#p").fill(PASS); await p.locator("#go").tap();
-    await p.waitForURL(/\/admin#system$/, { timeout: 8000 });
-    await p.locator("[data-systab=health]").waitFor({ timeout: 8000 });   // System, signed in (its tabs since 2026-10-14)
+    await p.waitForURL(/\/admin#settings$/, { timeout: 8000 });
+    await p.locator("[data-systab=data]").waitFor({ timeout: 8000 });   // Settings, signed in
+  });
+  // admin v4 (2026-10-20): on a phone, a bottom bar with four sections and More; tables are cards
+  await step(d, "admin on a phone: a bottom bar, More opens the rest, Orders are cards", async () => {
+    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 5 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone");
+    await p.locator(".bbar [data-more]").tap();
+    await fast(p, 3000, () => p.locator(".msheet .mi[data-tab=analytics]").waitFor(), "the More sheet");
+    await p.locator(".msheet .mi[data-tab=orders]").tap();
+    await fast(p, 6000, () => p.locator("[data-os=paid]").waitFor(), "Orders from More");
+    ok(await p.locator(".msheet").count() === 0, "More stayed open");
+    ok(!(await p.locator(".toc table").first().isVisible()), "Orders on a phone is a sideways table");
+    await p.screenshot({ path: join(SHOTS, "admin-phone-orders.png"), fullPage: false });
   });
   // 2026-10-14: on a phone, People starts in Cards (no sideways swiping) and has one search box, not two
   await step(d, "admin → People on a phone: cards, and one search box", async () => {
@@ -1758,7 +1785,7 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await fast(p, 6000, () => p.locator("#pres .li").first().waitFor(), "People's member cards");
     ok(await p.locator("#pres .pdb").count() === 0, "a phone opened People as the sideways table");
     ok(await p.locator("#gq").count() === 0 && await p.locator("#pq").count() === 1, "People shows two search boxes");
-    await p.locator("[data-tab=today]:visible").tap();
+    await p.locator("[data-tab=home]:visible").tap();
     await fast(p, 4000, () => p.locator("#gq").waitFor(), "the top-bar search on other pages");
   });
   await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {

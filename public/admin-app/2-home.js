@@ -1,74 +1,59 @@
-/* LABS admin v3.1 — 2026-10-14 (page header; the chart's choices sit in its card). Today, for the app's direction: labs
+/* LABS admin v4.0 — 2026-10-20. Home: what needs you first (the work queue), then
+   this period's numbers with their share, the activity line with last period behind,
+   the pieces that did best, the tournament, the labs. v3.1 — 2026-10-14 (page header; the chart's choices sit in its card). Today, for the app's direction: labs
    are places (genres explained by #tags), the tournament is the centre,
    Instagram brings people in and the app is where they take part.
    What needs you → the tournament → how it's going → how people take part
    → the labs and their #tags. Numbers: /api/admin/pulse + /api/admin/direction. */
 let METRIC = "active";
-const METRICS = [["active", "Active members"], ["work", "Work posted"], ["votes", "Tournament votes"], ["signups", "New members"], ["gmv", "Sales"]];
+const METRICS = [["active", "Active members"], ["work", "Work posted"], ["votes", "Votes"], ["signups", "New members"], ["gmv", "Sales"]];
 const WAYS = { build: "build", talk: "talk", feedback: "learn", compete: "compete", collab: "collaborate", sell: "sell" };
 
-LOADERS.today = async () => {
-  const [p, d] = await Promise.all([req(pulseURL()), req(pulseURL().replace("/pulse", "/direction"))]);
-  D.pulse = p; D.dir = d;
+LOADERS.home = async () => {
+  const q = pulseURL();
+  const [p, d, sr, tw] = await Promise.all([req(q), req(q.replace("/pulse", "/direction")), req(q.replace("/pulse", "/series")), req(q.replace("/pulse", "/topwork"))]);
+  D.pulse = p; D.dir = d; D.series = sr; D.topwork = tw.work;
 };
-
-VIEWS.today = () => {
-  const p = D.pulse, d = D.dir;
-  if (!p || !d) return `<div class="empty">Loading…</div>`;
-  const n = p.now, b = p.before, s = { ...p.series, votes: d.series.votes }, labels = dayLabels(p.start, p.days);
-  const kpi = (k, v, before, spark, fmt = num, sub) => `<div class="kpi"><div class="k">${k}</div><div class="v">${fmt(v)}</div>
-    ${sub || delta(v, before, fmt)}${spark ? sparkHTML(spark) : ""}</div>`;
+VIEWS.today = () => VIEWS.home();
+VIEWS.home = () => {
+  const p = D.pulse, d = D.dir, S = D.series;
+  if (!p || !d || !S) return `<div class="empty">Loading…</div>`;
+  const n = p.now, b = p.before, labels = dayLabels(p.start, p.days), M = p.totals.members;
   const needs = [...p.inbox, ...d.needs];
+  const today = new Date().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+  const work = D.topwork || [];
   return `
-  ${pageHead("Today", "What needs you, the tournament, and how the community is doing.",
-    `<div class="seg" role="group" aria-label="Period">${[7, 30, 90].map((x) => `<button class="${RANGE === x ? "on" : ""}" data-range="${x}">${x} days</button>`).join("")}</div>`)}
-
-  <h2 class="sec">Needs you</h2>
-  <div class="panel needs">${needs.length ? needs.map(needHTML).join("") : `<div class="clear">${I.check} Nothing waiting. Go make something.</div>`}</div>
-
-  <h2 class="sec">The tournament <span class="mono">votes only count in the app</span></h2>
-  ${tourHTML(d.tournament)}
-
-  <h2 class="sec">Last ${p.days} days <span class="mono">compared with the ${p.days} before</span></h2>
-  <div class="grid g2 g4">
-    ${kpi("Active members", n.active, b.active, s.active)}
-    ${kpi("New members", n.signups, b.signups, s.signups)}
-    ${kpi("Work posted", n.work, b.work, s.work)}
-    ${kpi("Tournament votes", d.votes.now, d.votes.before, s.votes)}
-    ${kpi("Feedback given", n.feedback, b.feedback, null, num, `<span class="d">likes, comments and reactions · ${deltaText(n.feedback, b.feedback)}</span>`)}
-    ${kpi("Collabs confirmed", n.collabs, b.collabs, null, num, `<span class="d">${num(p.totals.collabs)} all time · ${deltaText(n.collabs, b.collabs)}</span>`)}
-    ${kpi("Sales", n.gmv, b.gmv, s.gmv, money, `<span class="d">${n.orders} order${n.orders === 1 ? "" : "s"} · ${deltaText(n.gmv, b.gmv, money)}</span>`)}
-    ${kpi("Commission (est.)", n.commission, b.commission, null, money)}
+  ${pageHead("Home", `${today} · what needs you, then the last ${p.days} days`, rangeHTML())}
+  ${card(`Needs you`, `<div class="body"><div class="q">${needs.length ? needs.map(queueHTML).join("") : `<div class="clear">${I.check} Nothing waiting. Go make something.</div>`}</div></div>`, needs.length ? `${needs.length} thing${needs.length === 1 ? "" : "s"}` : "")}
+  <div class="grid g2 g4" style="margin-top:12px">
+    ${kpiHTML("Active members", num(n.active), { now: n.active, before: b.active, share: `${pct(n.active, M)} of ${num(M)} members`, series: S.series.active })}
+    ${kpiHTML("New members", num(n.signups), { now: n.signups, before: b.signups, share: `${num(p.seen)} opened the app`, series: S.series.signups })}
+    ${kpiHTML("Work posted", num(n.work), { now: n.work, before: b.work, share: `${num(n.feedback)} likes, comments and reactions`, series: S.series.work })}
+    ${kpiHTML("Sales", money(n.gmv), { now: n.gmv, before: b.gmv, fmt: money, share: `${n.orders} order${n.orders === 1 ? "" : "s"} · ${money(S.fees.now)} in fees`, series: S.series.gmv })}
   </div>
-  <p class="mono" style="margin-top:8px">${num(p.seen)} of ${num(p.totals.members)} members opened the app in this period (counted since Sep 29) · active = posted, gave feedback, reacted, voted or messaged</p>
-
-  <div class="split">
-    <div>
-      <h2 class="sec">Every day</h2>
-      <div class="chart"><div class="filters" style="margin-bottom:12px">${METRICS.map(([k, l]) => `<button class="pill sm ${METRIC === k ? "on" : ""}" data-metric="${k}">${l}</button>`).join("")}</div>${barsHTML(s[METRIC] || [], { labels, fmt: METRIC === "gmv" ? money : num })}</div>
-
-      <h2 class="sec">How people take part <span class="mono">members, all time</span></h2>
-      <div class="panel">${partHTML(d.takingPart)}</div>
+  <div class="two" style="margin-top:12px">
+    <div>${card(`<span class="row wrapx" style="gap:6px">${METRICS.map(([k, l]) => `<button class="pill sm ${METRIC === k ? "on" : ""}" data-metric="${k}">${l}</button>`).join("")}</span>`,
+      `<div class="body">${lineHTML(S.series[METRIC === "votes" ? "votes" : METRIC === "gmv" ? "gmv" : METRIC], S.prev[METRIC], { labels, fmt: METRIC === "gmv" ? money : num })}
+       <div class="leg"><span><i></i>Last ${p.days} days</span><span><i class="pv"></i>The ${p.days} before</span><a data-go="analytics" style="margin-left:auto;text-decoration:underline;cursor:pointer">Analytics ${I.chev}</a></div></div>`)}
+      ${card("Top work this period", `<div class="body">${work.length ? `<div class="tw">${work.map((w) => `<a href="/p/${w.id}" target="_blank"><div class="im">${w.img ? `<img src="${esc(w.img)}" alt="" loading="lazy">` : ""}</div>
+        <div class="tn"><b>@${esc(w.user.username)}</b> · ${w.likes}♥ ${w.comments}💬${w.shares ? " " + w.shares + "↗" : ""}</div></a>`).join("")}</div>` : `<div class="empty">No work posted in this period.</div>`}</div>`, "likes, comments, shares")}
     </div>
     <div>
-      <h2 class="sec">Labs <span class="mono">this period · tap for the posts</span></h2>
-      <div class="panel">${labsHTML(d.labs)}</div>
-
-      <h2 class="sec">#tags people are using</h2>
-      <div class="panel">${d.tags.length ? `<div class="tgs">${d.tags.map((t) => `<button class="chip tg" data-tagf="${esc(t.tag)}" title="${esc(t.labs.map(labTitle).join(", "))}">#${esc(t.tag)} <span>${t.count}</span></button>`).join("")}</div>`
-        : `<div class="empty">No #tags in this period yet.</div>`}</div>
-
-      <h2 class="sec">Most active</h2>
-      <div class="list">${p.top.length ? p.top.map((u) => `<button class="li" data-person="${esc(u.username)}">${av(u)}
-        <span class="b"><b>${esc(u.displayName || u.username)}</b><span>@${esc(u.username)}</span></span><span class="r">${u.n} actions</span></button>`).join("")
-        : `<div class="empty">Nobody yet.</div>`}</div>
+      ${card("The tournament", tourHTML(d.tournament).replace('class="panel tour"', 'class="body tour"'), "votes only count in the app")}
+      ${card("Labs this period", `<div class="body">${labsHTML(d.labs)}</div>`, "tap for the posts")}
+      ${card("How people take part", `<div class="body">${partHTML(d.takingPart)}</div>`, "members, all time")}
     </div>
   </div>`;
 };
-
 const labTitle = (id) => (id === "profile" ? "profiles" : "// " + ((D.dir && D.dir.labs.find((l) => l.id === id)) || { name: id }).name);
 const leftText = (ms) => (ms < 3600000 ? Math.max(1, Math.round(ms / 60000)) + "m" : ms < 2 * 86400000 ? Math.round(ms / 3600000) + "h" : Math.round(ms / 86400000) + " days");
-
+/* one line of the queue: a count in a circle, what it is, where to act */
+function queueHTML(it) {
+  const go = it.go === "market" ? "orders" : it.go === "system" ? (it.kind === "unverified" ? "settings" : "health") : it.go === "today" ? "home" : it.go;
+  const n = it.n != null ? it.n : (it.kind === "tournament" ? "!" : "•");
+  return `<div class="qi ${it.level || "mid"}"><div class="qn">${esc(String(n))}</div><div class="qt"><b>${esc(it.text)}</b>${it.people && it.people.length ? `<span>${it.people.slice(0, 6).map((u) => "@" + esc(u)).join(", ")}${it.people.length > 6 ? " +" + (it.people.length - 6) : ""}</span>` : ""}</div>
+    ${it.event ? `<button class="btn ghost sm" data-ev-open="${it.event}">Open ${I.chev}</button>` : go ? `<button class="btn ghost sm" data-go="${esc(go)}">${go === "content" ? "Review" : "Open"} ${I.chev}</button>` : ""}</div>`;
+}
 function tourHTML(T) {
   if (!T) return `<div class="panel"><div class="clear">No tournament yet. <button class="btn sm" data-go="events">Set one up ${I.chev}</button></div></div>`;
   const ph = T.phase, left = ph.end ? ph.end - Date.now() : null;
@@ -118,8 +103,7 @@ function needHTML(it) {
   return `<div class="need ${it.level}"><span class="dot"></span><div class="t">${esc(it.text)}${ppl}</div>${cta}</div>`;
 }
 
-WIRES.today = () => {
-  $$("[data-range]").forEach((b) => b.onclick = () => { RANGE = +b.dataset.range; try { localStorage.setItem("tnl-admin-range", RANGE); } catch (e) {} D.pulse = null; paint(); load(); });
+WIRES.home = () => {
   $$("[data-metric]").forEach((b) => b.onclick = () => { METRIC = b.dataset.metric; paint(); });
   $$("[data-ev-open]").forEach((b) => b.onclick = () => { EVID = +b.dataset.evOpen; EVFORM = null; D.event = null; go("events"); });
   $$("[data-labf]").forEach((r) => r.onclick = () => { CLAB = r.dataset.labf; CTAG = ""; CKIND = ""; CQ = ""; D.posts = null; go("content"); });

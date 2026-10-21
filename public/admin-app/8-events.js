@@ -23,7 +23,7 @@ VIEWS.events = () => {
   if (EVID) return D.event ? evDetailHTML(D.event) : `<div class="empty">Loading…</div>`;
   const L = D.events?.events;
   if (!L) return `<div class="empty">Loading…</div>`;
-  return `${pageHead("Tournament", `Your tournament lives here. Members see it on the Showroom and at tnllabs.com/e/your-link. Votes only count in the app — Instagram is for reach: each event's Instagram kit has the scoreboard to post and every entry's vote link.`, `<button class="btn fill" id="evnew">New event</button>`)}
+  return `${pageHead("Events", `Your tournament lives here. Members see it on the Showroom and at tnllabs.com/e/your-link. Votes only count in the app — Instagram is for reach: each event's Instagram kit has the scoreboard to post and every entry's vote link.`, `<button class="btn fill" id="evnew">New event</button>`)}
     <h2 class="sec">Events <span class="mono">${L.length} in all</span></h2>
     <div class="list">${L.length ? L.map((e) => `<button class="li" data-ev="${e.id}"><div class="b"><b>${esc(e.title)}${e.published ? "" : `<span class="tag">draft</span>`}</b>
       <span>/e/${esc(e.slug)} · ${e.format} · ${e.entries} entr${e.entries === 1 ? "y" : "ies"}</span></div><div class="r">${phName(e.phase)}</div>${I.chev}</button>`).join("")

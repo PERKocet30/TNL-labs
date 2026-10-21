@@ -13,7 +13,7 @@ LOADERS.content = async () => {
 VIEWS.content = () => {
   const P = D.posts, R = D.reports;
   return `
-  ${pageHead("Labs", "Every post, by lab and #tag. Reports come first.")}
+  ${pageHead("Content", "Every post, by lab and #tag. Reports come first.")}
   ${R && R.length ? `<h2 class="sec">Reports <span class="mono">${R.length} open</span></h2><div class="panel reps">${R.map(reportHTML).join("")}</div>` : ""}
   <h2 class="sec">Posts <span class="mono">${P ? P.posts.length + " shown" : ""}</span></h2>
   <div class="panel">

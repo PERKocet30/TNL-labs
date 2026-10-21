@@ -2,7 +2,7 @@
    unchanged in substance: what producers do with the beat maker. Reached from
    Content → Studio stats. */
 LOADERS.studio = async () => { D.studio = await req("/api/admin/studio"); };
-VIEWS.studio = () => `${pageHead("Studio stats", "What producers do with the beat maker.", `<button class="btn ghost sm" data-go="system">Back to System</button>`)}
+VIEWS.studio = () => `${pageHead("Studio stats", "What producers do with the beat maker.", `<button class="btn ghost sm" data-go="analytics">Back to Analytics</button>`)}
   <div class="studio" style="margin-top:12px">${studioHTML()}</div>`;
 function studioHTML(){
   const d=D.studio;
