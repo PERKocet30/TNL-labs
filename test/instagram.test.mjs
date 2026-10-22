@@ -57,8 +57,7 @@ try {
   t("chat stays for members", (await one(chat)).s === 404 && (await one(chat, "tok-seller")).s === 200);
   t("a missing post is a 404", (await one(999999)).s === 404);
   const door = readFileSync(join(ROOT, "src/app-10-dm-search.js"), "utf8");
-  const deep = new Function(door.slice(door.indexOf("const isDeepLanding="), door.indexOf("\n", door.indexOf("const isDeepLanding="))) + "\nreturn isDeepLanding;")();
-  t("a deep link gets the quick door: ?e= ?u= ?p= and /m/…", deep({ search: "?p=4", pathname: "/" }) && deep({ search: "?e=art&v=2", pathname: "/" }) && deep({ search: "", pathname: "/m/9" }) && !deep({ search: "", pathname: "/" }));
+  t("every visit gets the quick door — no intro film, a deep link included (2026-10-21)", door.includes('class="enter quick"') && !door.includes("tnl-enter") && !door.includes("enterVid") && !door.includes("enterSkip"));
 
   console.log("\nINSIDE INSTAGRAM'S BROWSER");
   const app = readFileSync(join(ROOT, "public/index.html"), "utf8");

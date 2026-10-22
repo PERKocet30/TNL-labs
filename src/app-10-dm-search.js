@@ -1,4 +1,4 @@
-/* v2026-10-20: the Search head and field come from the screen kit */
+/* v2026-10-21: the intro film is gone; the Search head and field come from the screen kit */
 function wirePicker(){
   const bg=$("#pickbg");if(!bg)return;
   bg.onclick=e=>{if(e.target===bg)closePicker()};
@@ -52,76 +52,34 @@ function searchPanelHTML(){return `<div class="sheet" id="sbg"><div class="sheet
 </div></div>`}
 /* Missing video, blocked playback, a stalled network — every one of those
    ends in done(), never in a locked screen. The 20s timer is the last resort. */
-/* Someone who tapped a link to one thing — a vote, a profile, a post, a
-   listing — gets the quick door, not the film: one tap and they're there.
-   The tap stays: it's what unlocks sound. Read once at load, before boot
-   tidies the address bar. (2026-10-09) */
-const isDeepLanding=(loc)=>/[?&](e|u|p)=/.test(loc.search)||/^\/m\/\d/.test(loc.pathname);
-const DEEPLANDING=typeof location!=="undefined"&&isDeepLanding(location);
+/* THE DOOR (2026-10-21: the intro film is gone). "Take the intro off —
+   it was a nice homage to the community that helped build the app, but I
+   need a professional app now." Every visit, first or hundredth, gets the
+   same door: the mark, the button, one tap, straight in. The tap stays:
+   it's the gesture that unlocks sound on iOS. tnl-intro-seen is still
+   written — door.js reads it to pour the vial slowly once, then snap. */
 function enterHTML(){
   const mark = (document.querySelector(".mark")||{}).src || "";
-  /* First visit gets the film. Every visit after that gets the same door
-     with no video behind it: the mark, the button, one tap, straight in.
-     wireEnter already treats a missing video as "nothing to wait for" and
-     goes on the tap, so omitting the element IS the fast path. */
-  let seen=false; try{ seen = !!localStorage.getItem("tnl-intro-seen") }catch(e){}
-  if(DEEPLANDING)seen=true;
-  return `<div class="enter${seen?" quick":""}" id="enterOv">
-    ${seen?"":`<video class="enter-v" id="enterVid" playsinline preload="metadata"
-      poster="/tnl-enter-poster.jpg" src="/tnl-enter.mp4"></video>`}
+  return `<div class="enter quick" id="enterOv">
     <div class="enter-c" id="enterC">
       ${mark?`<img class="enter-m" src="${mark}" alt="LABS">`:""}
       <button class="enter-b" id="enterBtn">Enter the lab</button>
     </div>
-    ${seen?"":`<button class="enter-s" id="enterSkip" style="position:absolute;right:14px;bottom:18px;z-index:2">SKIP</button>`}
   </div>`;
 }
 
 function wireEnter(){
   if(!ENTER)return;
   const ov=$("#enterOv"); if(!ov)return;
-  const v=$("#enterVid"), c=$("#enterC");
-  let gone=false, started=false;
+  let gone=false;
   const done=()=>{
     if(gone)return; gone=true;
-    /* localStorage, not sessionStorage: the film is a once-per-device
-       moment, while the door itself returns every load to carry the tap. */
     try{ localStorage.setItem("tnl-intro-seen","1"); sessionStorage.setItem("tnl-in","1") }catch(e){}
     ENTER=false; render();
   };
-  const go=()=>{
-    /* Synchronous inside the gesture. An await here and iOS stops counting
-       this as a tap, which is the whole reason the door exists. */
-    /* Synchronous inside the gesture — one shared unlock, no second copy to
-       drift. skipWire: done() -> render() wires the observer once the
-       overlay is gone, so nothing autoplays behind the intro. */
-    primeAudio(true);
-    if(v){
-      ov.classList.add("playing");   // the door is white; the film only shows once it plays
-      v.muted=false;
-      const p=v.play();
-      if(p&&p.catch)p.catch(done);
-      if(c)c.style.display="none";
-    } else done();
-    started=true;
-  };
-  const eb=$("#enterBtn"); if(eb)eb.onclick=go;
-  /* 073 removed SKIP from the repeat-visit door but left this wiring
-     unconditional — $("#enterSkip") was null on every visit after the
-     first, and the resulting TypeError killed the whole boot. Both
-     lookups are guarded now; a door element that isn't rendered is a
-     door element that doesn't get wired. */
-  const es=$("#enterSkip"); if(es)es.onclick=done;
-  /* Before ENTER is pressed these must NOT dismiss. preload="metadata" fetches
-     the file the moment this renders, so a video that is missing or slow fired
-     onerror instantly and closed the door before anyone could touch it. Until
-     the tap, a broken video just hides itself and the button stands. */
-  if(v){
-    v.onerror=()=>{ if(started)done(); else v.style.display="none"; };
-    v.onstalled=()=>{ if(started)done(); };
-    v.onended=done;
-  }
-  setTimeout(()=>{ if(started)done(); },20000);
+  /* Synchronous inside the gesture. An await here and iOS stops counting
+     this as a tap, which is the whole reason the door exists. */
+  const eb=$("#enterBtn"); if(eb)eb.onclick=()=>{ primeAudio(true); done(); };
 }
 
 function navHTML(){
