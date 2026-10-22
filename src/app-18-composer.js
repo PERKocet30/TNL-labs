@@ -1,4 +1,4 @@
-/* v2026-10-20: the bar is the kit's formHead (Cancel · New post · Share) */
+/* v2026-10-21 (later the same day): tag people on the picture, Preview, Also share to your Story, Advanced settings — app-18-composer-ig.js. Posting to · Your profile · + Add a lab (one post, one place list; Share is for sending out). v2026-10-20: the bar is the kit's formHead */
 /* ── POST CREATOR · v2.4 · 2026-10-13 (v2.4: ▶ to listen before you pick a song; v2.3: your songs first in Add music; v2 2026-09-28; v2.1: your labs first in Share to a lab; v2.2: upload a song from here, and its cover is the post's picture when there are no photos) ────────────────────────────────
    One page: the work large at the
    top (swipe it, reorder it, see each upload land), the caption with
@@ -35,7 +35,7 @@ function pcomposeHTML(){
       <button class="pc-edit pc-edit-top" data-pcvedit aria-label="Edit video">${PC_EDIT}<span>Edit</span></button></div>`}
   else if(c.imgs.length||c.upN)media=`
     <div class="pc-stage">
-      <div class="pc-track" id="pctrack">${c.imgs.map(im=>`<div class="pc-slide"><img src="${esc(im.url||im.thumb)}" alt=""></div>`).join("")}
+      <div class="pc-track ${c.tagMode?"tagging":""}" id="pctrack">${c.imgs.map((im,i)=>`<div class="pc-slide"><img src="${esc(im.url||im.thumb)}" alt="">${pcPinsHTML(c,i)}</div>`).join("")}
         ${c.upN&&!c.imgs.length?`<div class="pc-slide pc-busy"><span class="spin"></span></div>`:""}</div>
       ${c.imgs.length>1?`<span class="pc-count" id="pccount">${c.idx+1}/${c.imgs.length}</span>`:""}
       ${c.imgs.length&&!(c.imgs[c.idx]||{}).gif?`<button class="pc-edit" data-pcedit aria-label="Edit photo">${PC_EDIT}<span>Edit</span></button>`:""}
@@ -51,12 +51,21 @@ function pcomposeHTML(){
   else media=`${pdRowHTML(c)}<label class="pc-pick">${file}${PC_PICK}<b>Add photos or video</b><span>Up to 10 photos, or 1 video</span></label>`;
   const tags=c.tags||[];
 
-  const lab=c.ch?esc(labMark(c.ch.lab)):"Profile only";
+  /* Where people see it (2026-10-21, "make sharing into labs and posting on profiles
+     cohesive"): every post lives on your profile; a lab is where you also show it.
+     Your profile is fixed; one lab can be added (the one you're standing in comes
+     already added). "Share" is for sending things out, never for this. */
+  const to=`<div class="pc-to" id="pcto"><span class="pc-to-l">Posting to</span>
+      <span class="pc-chip pc-me">${avHTML(ME,"")}Your profile</span>
+      ${c.ch?`<span class="pc-chip pc-labchip"><i class="lg">//</i>${esc(c.ch.lab)}<button data-pclabrm aria-label="Take it out of ${esc(c.ch.lab)}">${PC_X}</button></span><button class="pc-chip pc-add2" id="pclab" aria-label="Change lab">${DI.edit}</button>`
+        :`<button class="pc-chip pc-add2" id="pclab">${DI.plus}<span>Add a lab</span></button>`}
+    </div>`;
   return `<div class="pcmp-ov" id="pcov"><div class="pc" role="dialog" aria-label="New post">
-    ${formHead({id:"pccancel",label:"Cancel"},"New post",{id:"pcgo",label:c.busy?"Sharing…":"Share",disabled:!pcCan(c)})}
+    ${formHead({id:"pccancel",label:"Cancel"},"New post",{id:"pcgo",label:c.busy?"Posting…":"Post",disabled:!pcCan(c)})}
     <div class="pc-body"><div class="pc-media">${media}</div><div class="pc-side">
+      ${to}
       <div class="pc-cap">${avHTML(ME,"")}
-        <textarea class="pc-ta" id="pcbody" rows="3" placeholder="Write a caption… #tag it so people find it">${esc(c.body||"")}</textarea></div>
+        <textarea class="pc-ta" id="pcbody" rows="3" maxlength="${PC_CAP_MAX}" placeholder="Write a caption… #tag it so people find it">${esc(c.body||"")}</textarea></div>${pcCapCountHTML(c)}
       <div class="pc-ment" id="pcment" hidden></div>
       <div class="pc-opts">
         <button class="pc-opt" id="pccollab"><span class="pc-ic">${IG_COLLAB}</span><span class="pc-l">Invite collaborators</span>
@@ -71,11 +80,9 @@ function pcomposeHTML(){
         ${c.pick&&!c.musup?`<div class="pc-mus"><label class="pcmus-up"><span class="pc-ic">${UI_IC.plus}</span><span class="pc-l"><b>Upload a song</b><span class="dim">Then name it and add a cover</span></span><input type="file" id="pcmusfile" accept="${TRACK_ACCEPT}" hidden></label>
           <input class="pc-q" id="pcmusq" placeholder="Search tracks or artists" value="${esc(c.q||"")}">
           <div class="pcmus-list">${pcmusRowsHTML(c.list,!!(c.q&&c.q.trim()))}</div></div>`:""}
-        <button class="pc-opt" id="pclab"><span class="pc-ic lg">//</span><span class="pc-l">Share to a lab</span>
-          <span class="pc-v">${lab}</span>${PC_CHEV}</button>
         <button class="pc-opt" id="pctag"><span class="pc-ic">${PC_TAG}</span><span class="pc-l">Tag people</span>
           <span class="pc-v">${tags.length?tags.length+" tagged":""}</span>${PC_CHEV}</button>
-        ${tags.length?`<div class="pc-chips">${tags.map((u,i)=>`<span class="pc-chip">${avHTML(u,"")}@${esc(u.username)}
+        ${tags.length?`<div class="pc-chips">${tags.map((u,i)=>`<span class="pc-chip">${avHTML(u,"")}@${esc(u.username)}${u.x!=null?` <span class="dim">· on the photo</span>`:""}
           <button data-pctrm="${i}" aria-label="Remove">${PC_X}</button></span>`).join("")}</div>`:""}
         <button class="pc-opt" id="pcshop"><span class="pc-ic">${UI_IC.navMarket}</span><span class="pc-l">Tag products</span>
           <span class="pc-v">${(c.products||[]).length?(c.products.length+" tagged"):"From your shop"}</span>${PC_CHEV}</button>
@@ -87,8 +94,7 @@ function pcomposeHTML(){
           <span class="pc-v">${c.cover?"Change":"First frame"}</span>${PC_CHEV}</button>
           <button class="pc-opt" id="pcved"><span class="pc-ic">${PC_EDIT}</span><span class="pc-l">Edit video</span>
           <span class="pc-v">${vedSummary(c.vedit)}</span>${PC_CHEV}</button>`:""}
-        <label class="pc-opt pc-sw-row"><span class="pc-ic">${IG_COMMENT}</span><span class="pc-l">Turn off commenting</span>
-          <input type="checkbox" class="pf-sw" id="pccoff" ${c.commentsOff?"checked":""}></label>
+        ${pcIgRowsHTML(c)}
       </div>
     </div></div>
   </div></div>`;
@@ -172,21 +178,13 @@ function wirePCompose(){
   const ve=document.querySelector("[data-pcvedit]");if(ve)ve.onclick=()=>vedOpen(c,"trim");
 
   /* ── tag people, location, comments ── */
-  const toTag=ppl=>ppl.filter(u=>u.username!==myName()&&!(c.tags||[]).find(x=>x.username===u.username))
-    .map(u=>({label:u.displayName,sub:"@"+u.username+(u.role?" · "+u.role:""),avatar:u.avatarUrl,u}));
-  const tg=$("#pctag");if(tg)tg.onclick=async()=>{
-    if((c.tags||[]).length>=20)return toast("Up to 20 people");
-    openPicker({title:"Tag people",search:"Search people",loading:true,note:"They'll be told they're in it.",
-      onSearch:async q=>toTag((await api.mentionable(q)).people||[]),
-      onPick:it=>{if(PCOMPOSE===c&&it.u){(c.tags=c.tags||[]).push(it.u);render()}}});
-    try{const d=await api.mentionable("");if(PICKER){PICKER.items=toTag(d.people||[]);PICKER.loading=false;render()}}catch(e){}
-  };
+    const tg=$("#pctag");if(tg)tg.onclick=()=>pcTagStart(c);   // on the picture when there is one (app-18-composer-ig)
   document.querySelectorAll("[data-pctrm]").forEach(b=>b.onclick=()=>{c.tags.splice(+b.dataset.pctrm,1);render()});
   const lc=$("#pcloc");if(lc)lc.onclick=async e=>{
     if(e.target.closest("[data-pclocx]")){c.location="";return render()}
     const v=await uiPrompt("Add location",{placeholder:"City, venue or studio",value:c.location||"",okLabel:"Add"});
     if(v!=null&&PCOMPOSE===c){c.location=v.replace(/\s+/g," ").trim().slice(0,60);render()}};
-  const co=$("#pccoff");if(co)co.onchange=()=>{c.commentsOff=co.checked};
+  pcIgWire(c);   // preview, Story after, advanced settings, pins (app-18-composer-ig)
   /* ── products from your own shop (shoppable posts) ── */
   const sh=$("#pcshop");if(sh)sh.onclick=async()=>{
     if((c.products||[]).length>=5)return toast("Up to 5 products");
@@ -238,12 +236,13 @@ function wirePCompose(){
   };
   document.querySelectorAll("[data-pccrm]").forEach(b=>b.onclick=()=>{c.collabs.splice(+b.dataset.pccrm,1);render()});
   const lb=$("#pclab");if(lb)lb.onclick=()=>{
-    const items=[{label:"Profile only",sub:"Not in a lab",icon:DI.check,ch:null}];
-    /* Labs are places now: pick the genre, tag the rest with #hashtags. */
+    /* Labs are places: pick the genre, tag the rest with #hashtags. Your labs first. */
+    const items=[];
     for(const l of labsOrdered()){const ch=labHome(l);
       items.push({label:labMark(l.name),sub:(LAB_ID[l.id]||{}).for||"",icon:"//",ch:{id:ch.id,label:l.name,lab:l.name}})}
-    openPicker({title:"Share to a lab",items,onPick:it=>{if(PCOMPOSE===c){c.ch=it.ch;render()}}});
+    openPicker({eyebrow:"POSTING TO",title:"Add a lab",note:"It stays on your profile either way — a lab is where people also see it.",items,onPick:it=>{if(PCOMPOSE===c){c.ch=it.ch;render()}}});
   };
+  const lrm=document.querySelector("[data-pclabrm]");if(lrm)lrm.onclick=()=>{c.ch=null;render()};
   const ma=document.querySelector("[data-pcmusadd]");if(ma)ma.onclick=async()=>{
     c.pick=!c.pick;render();
     if(c.pick&&!c.list){try{c.list=(await api.tracks("")).tracks}catch(e){c.list=[]}render()}};

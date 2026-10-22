@@ -10,12 +10,26 @@ const fn = (name) => { const i = src.indexOf("function " + name + "("); const j 
 const html = fn("pcomposeHTML"), wire = fn("wirePCompose");
 
 console.log("\nPOST CREATOR — LAYOUT");
-t("large swipeable preview with a counter", html.includes('class="pc-track" id="pctrack"') && html.includes('id="pccount"'));
+t("large swipeable preview with a counter", html.includes('id="pctrack"') && html.includes('id="pccount"'));
 t("thumbnail strip with remove and add", html.includes('class="pc-strip"') && html.includes("data-pcrm") && html.includes('class="pc-th pc-add"'));
 t("drag a thumbnail to reorder (2026-09-30)", src.includes("function pcDragWire(c)") && wire.includes("pcDragWire(c);") && html.includes('data-pci="${i}"'));
 t("a spinner tile per photo still uploading", html.includes("Array.from({length:c.upN||0}"));
-t("three rows: invite collaborators, add music, share to a lab",
-  html.includes("Invite collaborators") && html.includes("Add music") && html.includes("Share to a lab"));
+t("rows: invite collaborators, add music — and no \"Share to a lab\" (2026-10-21: Share is for sending out)",
+  html.includes("Invite collaborators") && html.includes("Add music") && !html.includes("Share to a lab"));
+// 2026-10-21 "make sharing into labs and posting on profiles cohesive": every post lives on your
+// profile; a lab is where you also show it. The row says so, and the button says Post.
+t("a Posting-to row: Your profile fixed, + Add a lab, the lab as a chip you can take out",
+  html.includes('class="pc-to"') && html.includes("Your profile") && html.includes("Add a lab") && html.includes("data-pclabrm") && html.includes('id="pclab"'));
+t("the main button says Post, not Share", html.includes('label:c.busy?"Posting…":"Post"') && !html.includes('"Sharing…"'));
+t("the lab picker is called Add a lab and says it stays on your profile", wire.includes('title:"Add a lab"') && wire.includes("stays on your profile") && !wire.includes("Profile only"));
+// 2026-10-21 "Instagram level": tag people on the picture, Preview, Also share to your Story, Advanced settings (app-18-composer-ig.js)
+const ig = readFileSync(join(ROOT, "src/app-18-composer-ig.js"), "utf8");
+t("Tag people places them on the picture (pins drawn on the slide; the tap lands on the drawn picture, not the letterbox)", wire.includes("pcTagStart(c)") && html.includes("pcPinsHTML(c,i)") && ig.includes("function pcDrawn(img)") && ig.includes("tapped the letterbox"));
+t("Preview, Also share to your Story, Advanced settings rows", html.includes("pcIgRowsHTML(c)") && ig.includes('id="pcprev"') && ig.includes('id="pcstory"') && ig.includes('id="pcadv"'));
+t("Advanced: comments, hide like count, alt text (200)", ig.includes('id="pccoff"') && ig.includes('id="pchide"') && ig.includes('id="pcalt"') && ig.includes('maxlength="200"'));
+t("the preview is the Showroom's own card", ig.includes("srCardHTML(PCPREV,0)"));
+t("the post carries pins, alt and hideLikes; the Story sheet opens after if asked", readFileSync(join(ROOT, "src/app-18-post-queue.js"), "utf8").includes("...pcIgExtras(c)") && readFileSync(join(ROOT, "src/app-18-post-queue.js"), "utf8").includes("pcAfterPosted(c,pid)"));
+t("a caption counter near the 2,200 limit", html.includes('maxlength="${PC_CAP_MAX}"') && ig.includes("PC_CAP_MAX=2200"));
 t("no explanation note under the caption", !html.includes("pcmp-note") && !/Showroom, where collabs rank highest/.test(src));
 
 console.log("\nPOST CREATOR — BEHAVIOUR");

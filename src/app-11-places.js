@@ -1,5 +1,5 @@
 /* ================================================================
-   PLACES v1.8 — 2026-10-20 (the #tag page's head from the screen kit); v1.7 — 2026-10-15 (v1.7: links name the lab — /l/visual, LAB_SLUG). v1.6: each lab says what to do there, and has
+   PLACES v1.9 — 2026-10-21 (the Work grid is the archive: month markers, Older; the archive is a chip, no search); v1.8 — 2026-10-20 (the #tag page's head from the screen kit); v1.7 — 2026-10-15 (v1.7: links name the lab — /l/visual, LAB_SLUG). v1.6: each lab says what to do there, and has
    a Share — LAB_PITCH, shareLab; a shared /l/ link lands in the lab).
    v1.5 — 2026-10-12 (v1.5: the tournament running in a lab is a
    chip in its Work — every entry, no #tag needed — and entries are marked).
@@ -85,7 +85,7 @@ let LABVIEW="work", LABTAG=null, PLACE={}, TAGVIEW=null, LABTAGS=null;
 const PLV=[["work","Work"],["talk","Talk"]];
 const papi={
   feed:l=>req("/api/labs/"+l+"/feed"),
-  work:(l,t)=>req("/api/labs/"+l+"/work"+(!t?"":/^event:/.test(t)?"?event="+encodeURIComponent(t.slice(6)):"?tag="+encodeURIComponent(t))),
+  work:(l,t,before)=>req("/api/labs/"+l+"/work?"+(!t?"":/^event:/.test(t)?"event="+encodeURIComponent(t.slice(6)):"tag="+encodeURIComponent(t))+(before?"&before="+before:"")),
   labTags:()=>req("/api/labs/tags"),
   tag:t=>req("/api/tags/"+encodeURIComponent(t)),
   tags:(lab,q)=>req("/api/tags?lab="+encodeURIComponent(lab||"")+"&q="+encodeURIComponent(q||"")),
@@ -130,7 +130,17 @@ function plTileHTML(p){const src=plThumb(p);
   return `<button class="pl-tile" data-plpost="${p.id}" aria-label="Open">${src?`<img src="${esc(src)}" alt="" loading="lazy" decoding="async">`
     :`<span class="pl-txt">${esc((p.body||"").slice(0,90))}</span>`}
     ${p.images&&p.images.length>1?`<i class="pl-multi" aria-hidden="true"></i>`:""}${p.videoUrl?`<i class="pl-vid" aria-hidden="true">${DI.play}</i>`:""}${p.entry?`<i class="pl-entry" title="${esc(p.entry.title)}">Entry</i>`:""}</button>`}
-const plGridHTML=list=>`<div class="pl-grid">${list.map(plTileHTML).join("")}</div>`;
+/* The grid scrolls back in time (2026-10-21): a month marker where the month
+   changes (not for this month), and the next page of older pieces loads as you
+   near the end. */
+const plMonth=t=>new Date(t).toLocaleDateString(undefined,{month:"long",year:"numeric"});
+function plGridHTML(list,more){
+  let last=plMonth(Date.now()),out="";
+  for(const p of list){const m=p.createdAt?plMonth(p.createdAt):last;
+    if(m!==last){out+=`<div class="pl-month">${esc(m)}</div>`;last=m}
+    out+=plTileHTML(p)}
+  return `<div class="pl-grid">${out}</div>${more?`<button class="pl-link pl-older" id="plolder">Older</button>`:""}`;
+}
 /* LABTAG "event:<slug>" = the tournament running here (every entry, no #tag). */
 const plEvChip=(ev,on)=>`<button class="pl-chip ev ${on?"on":""}" data-pltag="event:${esc(ev.slug)}" aria-label="${esc(ev.title)}">Tournament<span>${ev.n}</span></button>`;
 const plChip=(t,on,n)=>`<button class="pl-chip ${on?"on":""}" data-pltag="${esc(t)}">${t?"#"+esc(t):"All"}${n?`<span>${n}</span>`:""}</button>`;
@@ -164,13 +174,12 @@ function plInnerHTML(){
     const ev=(d&&d.event)||(P["work:"]||{}).event||null;
     if(LABTAG&&!evOn&&!chips.includes(LABTAG))chips.unshift(LABTAG);
     return `<p class="pl-for">${esc(LAB_PITCH[LAB.id]||(LAB_ID[LAB.id]||{}).for||"")}</p>
-      ${chips.length||ev?`<div class="pl-tags">${plChip("",!LABTAG)}${ev?plEvChip(ev,evOn):""}${chips.map(t=>plChip(t,LABTAG===t)).join("")}</div>`:""}
-      ${LAB.channels.some(c=>c.archive)?`<button class="pl-link" id="plarchive">Search the archive</button>`:""}
+      ${chips.length||ev?`<div class="pl-tags">${plChip("",!LABTAG)}${ev?plEvChip(ev,evOn):""}${chips.map(t=>plChip(t,LABTAG===t)).join("")}${LAB.channels.some(c=>c.archive)?`<button class="pl-chip" id="plarchive">Archive</button>`:""}</div>`:""}
       ${!d?`<div class="pl-grid">${Array.from({length:9},()=>`<i class="pl-tile sk-img"></i>`).join("")}</div>`
-        :d.error?plErr(d):d.posts.length?plGridHTML(d.posts)
+        :d.error?plErr(d):d.posts.length?plGridHTML(d.posts,d.more)
         :evOn?plEmpty("No entries yet.","Enter from the tournament page — your piece shows up here.")
         :LABTAG?plEmpty("Nothing tagged #"+LABTAG+" here yet.","Tag your work with #"+LABTAG+" when you post it.")
-        :plEmpty("No work here yet.","Post a piece and share it to "+labMark(LAB.name)+". Tag it so people find it.")}`;
+        :plEmpty("No work here yet.","Post a piece with "+labMark(LAB.name)+" added. Tag it so people find it.")}`;
   }
   return "";
 }
@@ -185,12 +194,26 @@ function wirePlace(){
   document.querySelectorAll("[data-plpost]").forEach(b=>b.onclick=()=>{const id=Number(b.dataset.plpost);
     const p=all().find(x=>x.id===id)||(TAGVIEW&&TAGVIEW.d&&TAGVIEW.d.posts.find(x=>x.id===id));if(p)openPost(p)});
   on("#plarchive",()=>setLabView("archive"));
+  on("#plolder",()=>plOlder());
   on("#plwork",()=>setLabView("work"));
   if(TAGVIEW){on("#tagback",()=>navBack(closeTag));
     document.querySelectorAll("[data-taglab]").forEach(b=>b.onclick=()=>openLab(b.dataset.taglab,"work",TAGVIEW.tag))}
 }
 
-/* Posting from inside a lab shares to that lab by default. */
+/* The next page of older pieces, appended to what's shown (2026-10-21). */
+let PLOLDERBUSY=false;
+async function plOlder(){
+  if(PLOLDERBUSY||!LAB||LABVIEW!=="work")return;const lab=LAB.id,key=placeKey(),P=PLACE[lab]||{},d=P[key];
+  if(!d||!d.more||!d.posts.length)return;
+  const b=$("#plolder");if(b){b.disabled=true;b.textContent="Loading…"}
+  PLOLDERBUSY=true;
+  try{const last=d.posts[d.posts.length-1],n=await papi.work(lab,LABTAG,last.createdAt);
+    const seen=new Set(d.posts.map(p=>p.id));d.posts.push(...n.posts.filter(p=>!seen.has(p.id)));d.more=n.more}
+  catch(e){d.more=false}
+  finally{PLOLDERBUSY=false}
+  if(LAB&&LAB.id===lab&&placeKey()===key)paintPlace();
+}
+/* Posting from inside a lab adds that lab by default. */
 function pcLabNow(){if(TAB!=="labs"||!LAB)return null;const h=labHome(LAB);return {id:h.id,label:LAB.name,lab:LAB.name,auto:true}}   // auto: not a draft by itself
 
 /* ---- a #tag across every lab, like a hashtag page ---- */

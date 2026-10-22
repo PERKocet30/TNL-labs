@@ -10,7 +10,7 @@ function setLike(id,liked,count){
   for(const p of likeCopies(id)){if(liked!=null)p.likedByMe=liked;p.likeCount=count}
   document.querySelectorAll('[data-like="'+id+'"]').forEach(b=>{
     if(liked!=null)b.classList.toggle("on",liked);
-    const n=b.querySelector(".igact-n");if(n)n.textContent=count||"";});
+    const n=b.querySelector(".igact-n");if(n){const p=likeCopies(id)[0];n.textContent=(p&&p.hideLikes&&p.author&&p.author.username!==myName())?"":(count||"")}});
 }
 async function sendLike(id){
   const s=LIKING[id];if(!s||s.busy)return;
@@ -87,10 +87,10 @@ function wireFeed(){
         if(it.act==="dm")return sendPostSheet(id);   // pick one or several people and chats
         if(it.act==="lab"){
           const chans=labsOrdered().map(   /* your labs first (2026-10-09) */ l=>({label:labMark(l.name),sub:(LAB_ID[l.id]||{}).for||"",icon:"//",ch:labHome(l).id}));
-          openPicker({title:"Share to a lab",
-            note:"",
+          openPicker({eyebrow:"SEND",title:"To a lab's Talk",
+            note:"It lands in the conversation, like a message.",
             items:chans,onPick:async(c)=>{
-              try{await api.share(id,{channel:c.ch});toast("Shared to "+c.label)}catch(e){toast(e.message)}}});
+              try{await api.share(id,{channel:c.ch});toast("Sent to "+c.label)}catch(e){toast(e.message)}}});
           return;
         }
         if(it.act==="story")return igStoryOpen(`/p/${pubId}/story.jpg`,link,post&&(post.audioTrack||post.videoUrl)?`/p/${pubId}/story.mp4`:null,post&&post.videoUrl?"clip":post&&post.audioTrack?"song":"");   // with its song (2026-10-11); a video post: the clip itself (2026-10-20)

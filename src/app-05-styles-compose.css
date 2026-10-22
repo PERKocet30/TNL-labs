@@ -1,4 +1,13 @@
-/* v2026-10-20: the bar is the kit's formHead (app-05-styles-kit.css) */
+/* v2026-10-21: the Posting-to row. v2026-10-20: the bar is the kit's formHead (app-05-styles-kit.css) */
+.pc-to{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:12px 16px 4px}
+.pc-to-l{font-size:13px;color:var(--dim);margin-right:2px}
+.pc-to .pc-chip{padding:4px 10px 4px 4px;font-weight:600}
+.pc-to .pc-me{border-color:transparent;background:var(--el)}
+.pc-to .pc-me .av{width:20px;height:20px;font-size:9px}
+.pc-to .pc-labchip .lg{margin:0 2px 0 4px}
+.pc-to .pc-labchip button{display:flex;background:none;border:0;color:var(--dim);padding:0 0 0 2px;cursor:pointer}
+.pc-to .pc-add2{background:none;border:1px dashed var(--line2);color:var(--tx);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:4px 10px 4px 6px;gap:4px}
+.pc-to .pc-add2 svg{width:14px;height:14px}
 /* ── POST CREATOR · v2.4 · 2026-10-18 (two panes on a computer: .pc-media, .pc-side); v2.3 · 2026-10-14 (unused rules out); v2.2 · 2026-10-09 (v2 2026-09-28) ── the work large, caption, three rows; v2.2: upload a song, its cover as the picture */
 .pc{background:var(--bg);width:100%;max-width:560px;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .pc-share{background:var(--tx);color:var(--bg);border:0;border-radius:999px;padding:8px 18px;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
@@ -82,3 +91,22 @@
 .pcmus-pp{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--line2);background:none;color:var(--tx);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .pcmus-pp.on{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
 .pcmus-pp svg{width:16px;height:16px}
+
+/* 2026-10-21: Instagram-level parts (app-18-composer-ig.js) */
+.pc-slide{position:relative}
+.pc-track.tagging .pc-slide{cursor:crosshair}
+.pc-taghint{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:3;background:rgba(0,0,0,.78);color:#fff;font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;white-space:nowrap;cursor:pointer}
+.pc-pinbox{position:absolute;pointer-events:none}
+.pc-pin{position:absolute;transform:translate(-50%,-100%);margin-top:-6px;pointer-events:auto;display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,.82);color:#fff;border:0;border-radius:8px;padding:5px 8px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.pc-pin::after{content:"";position:absolute;left:50%;bottom:-5px;width:10px;height:10px;background:rgba(0,0,0,.82);transform:translateX(-50%) rotate(45deg)}
+.pc-pin i{display:flex;opacity:.7}.pc-pin i svg{width:12px;height:12px}
+.pc-capn{text-align:right;font-size:12px;color:var(--dim);padding:0 16px 6px}.pc-capn.over{color:var(--red)}
+.pc-alt{padding:12px 16px 4px}.pc-alt label{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}.pc-alt label b{font-size:15px}.pc-alt .dim{font-size:13px}
+.pc-ta-alt{width:100%;box-sizing:border-box;border:1px solid var(--line2);border-radius:12px;padding:10px 12px;font:inherit;font-size:15px;background:var(--el);color:var(--tx);resize:vertical}
+.sheetc .pc-opt{padding-left:0;padding-right:0}
+.pc-prevc{max-width:480px;padding:22px 0 50px}.pc-prevc .sheeth{padding:0 20px}.pc-prev{pointer-events:none}.pc-prev .sr-card{margin:0;width:100%;max-width:none}
+.pc-l .dim{font-size:12px;font-weight:400}
+/* pins on a posted card (app-12-post-extras.js) */
+.px-pins{position:absolute;z-index:3;pointer-events:none}.px-pins .px-pin{pointer-events:auto}
+.px-pin{position:absolute;transform:translate(-50%,-100%);margin-top:-6px;background:rgba(0,0,0,.82);color:#fff;border:0;border-radius:8px;padding:5px 9px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.px-pin::after{content:"";position:absolute;left:50%;bottom:-5px;width:10px;height:10px;background:rgba(0,0,0,.82);transform:translateX(-50%) rotate(45deg)}

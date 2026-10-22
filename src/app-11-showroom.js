@@ -40,7 +40,7 @@ function srCardHTML(p,i){
     ${pxShopHTML(p)}
     <div class="sr-meta">
       <div class="sr-acts">
-        <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${p.likeCount||""}</span></button>
+        <button class="igact ${p.likedByMe?"on":""}" data-like="${p.id}" aria-label="Like">${IG_HEART}<span class="igact-n">${pxLikeN(p)}</span></button>
         <button class="igact" data-comments="${p.id}" aria-label="Comment"${p.commentsOff?" hidden":""}>${IG_COMMENT}<span class="igact-n">${p.commentCount||""}</span></button>
         <button class="igact" data-share="${p.id}" aria-label="Send">${IG_SEND}<span class="igact-n">${p.shareCount||""}</span></button>
         ${p.author.username===myName()?`<button class="igact" data-collab="${p.id}" aria-label="Invite a collaborator" title="Invite a collaborator">${IG_COLLAB}</button>`:""}

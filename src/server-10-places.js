@@ -1,6 +1,6 @@
 
 /* ================================================================
-   PLACES v1.4 — 2026-10-12 (v1.4: the tournament lives in its lab — Work
+   PLACES (Work pages back in time, 2026-10-21) v1.4 — 2026-10-12 (v1.4: the tournament lives in its lab — Work
    gets a Tournament chip with every entry, no #tag needed, and each entry
    is marked; "make it so the art event gets posted in visuals so you
    don't need a specific hashtag").
@@ -130,17 +130,23 @@ app.get("/api/labs/:lab/feed", auth, (req, res) => {
 });
 
 /* Work: everything made here, optionally one #tag; plus the lab's tags. */
+/* 2026-10-21 ("searching the archive doesn't make sense"): the Work grid is the
+   archive — it keeps scrolling back in time. ?before=<created_at> gives the next
+   page of older pieces; `more` says whether there are any. */
+const WORK_PAGE = 60;
 app.get("/api/labs/:lab/work", auth, (req, res) => {
   const P = placeOr404(req, res); if (!P) return;
-  const tag = cleanTag(req.query.tag);
+  const tag = cleanTag(req.query.tag), before = Number(req.query.before) || 0;
   const lev = labEvent(P), evOn = !!lev && req.query.event === lev.slug;
-  const ids = evOn
+  const cut = before ? `AND created_at < ${before}` : "";
+  let ids = evOn
     ? db.prepare(`SELECT post_id id FROM event_entries WHERE event_id = ? AND dq_reason IS NULL ORDER BY created_at DESC LIMIT 120`).all(lev.id).map((r) => r.id)
     : tag
-    ? tagCandidates(tag, P.channels, { workOnly: true, limit: 120 }).map((r) => r.id)
-    : db.prepare(`SELECT id FROM posts WHERE channel IN (${inList(P.channels)}) AND is_work = 1 ORDER BY created_at DESC LIMIT 120`).all().map((r) => r.id);
+    ? tagCandidates(tag, P.channels, { workOnly: true, limit: 400 }).filter((r) => !before || r.created_at < before).slice(0, WORK_PAGE + 1).map((r) => r.id)
+    : db.prepare(`SELECT id FROM posts WHERE channel IN (${inList(P.channels)}) AND is_work = 1 ${cut} ORDER BY created_at DESC LIMIT ${WORK_PAGE + 1}`).all().map((r) => r.id);
+  const more = !evOn && ids.length > WORK_PAGE; if (more) ids = ids.slice(0, WORK_PAGE);
   const recent = db.prepare(`SELECT body, channel, created_at FROM posts WHERE channel IN (${inList(P.channels)}) ORDER BY created_at DESC LIMIT 400`).all();
-  res.json({ lab: req.params.lab, tag: evOn ? null : tag || null, posts: placePosts(ids, req), tags: topTags(recent, 16).filter((t) => !PLAIN_TAGS.has(t.tag)),
+  res.json({ lab: req.params.lab, tag: evOn ? null : tag || null, posts: placePosts(ids, req), more, tags: topTags(recent, 16).filter((t) => !PLAIN_TAGS.has(t.tag)),
     event: lev ? { slug: lev.slug, title: lev.title, n: lev.n } : null, eventOn: evOn ? lev.slug : null });
 });
 

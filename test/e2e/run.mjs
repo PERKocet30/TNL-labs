@@ -330,7 +330,7 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => { const e = document.elementFromPoint(innerWidth / 2, innerHeight * 0.7); return !!(e && e.closest(".pick")); }), "the share menu opened behind the post");
     await p.locator(".pick").getByText("Into a lab", { exact: true }).tap(); await p.waitForTimeout(300);
     await p.locator(".pick").getByText(/general/i).first().tap();
-    await p.waitForFunction(() => /Shared to/.test(TOASTT || ""), null, { timeout: 4000 });
+    await p.waitForFunction(() => /Sent to/.test(TOASTT || ""), null, { timeout: 4000 });   // 2026-10-21: "Sent", not "Shared" — Share is for sending out
     await p.evaluate(() => { POSTOPEN = null; render(); });
   });
   /* "Make it so I can share a post off the app to IG stories" (2026-10-08). */
@@ -833,7 +833,8 @@ console.log("\nMEMBER · PHONE");
   await step(d, "share closes at once and posts in the background; tags, place and comments-off land", async () => {
     const before = (await myPosts()).length;
     await p.evaluate(() => { PCOMPOSE.tags = [{ username: "friend", displayName: "Friend" }]; PCOMPOSE.location = "Brooklyn"; render(); });
-    await p.locator("#pccoff").check();
+    await p.locator("#pcadv").tap(); await p.waitForSelector("#pccoff");   // 2026-10-21: commenting lives in Advanced settings
+    await p.locator("#pccoff").check(); await p.locator("#pcadvdone").tap(); await p.waitForTimeout(200);
     await p.locator("#pcgo").tap();
     ok(await p.evaluate(() => !PCOMPOSE), "the creator didn't close straight away");
     await p.waitForSelector("#pql .pq", { timeout: 2000 });
@@ -1262,6 +1263,60 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".sheetc > .sh .sh-back#sx").count() === 1 && await p.locator(".ksearch #sq").count() === 1, "Search doesn't wear the kit head and search field");
     await p.locator("#sx").tap(); await p.waitForTimeout(300);
   });
+  /* 2026-10-21 "Instagram level": tag people on the picture, Advanced settings, Preview, hidden like count */
+  await step(d, "composer: Tag people puts a pin on the photo where you tap; Advanced hides the like count and takes alt text; Preview is the Showroom card; the post carries it all and the person icon shows the pin", async () => {
+    await p.evaluate(() => { PCOMPOSE = null; PICKER = null; LAB = null; TAB = "showroom"; render(); });
+    await openCreator();
+    await p.locator("#pcfile").setInputFiles([UPLOAD_PNG2]);
+    await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 1 && !PCOMPOSE.upN, null, { timeout: 10000 });
+    await p.waitForSelector("#pctrack .pc-slide img"); await p.waitForTimeout(400);
+    await p.locator("#pctag").tap(); await p.waitForSelector(".pc-taghint");
+    const img = p.locator("#pctrack .pc-slide img").first();
+    const at = await p.evaluate(() => { const im = document.querySelector("#pctrack .pc-slide img"), r = im.getBoundingClientRect(), nw = im.naturalWidth, nh = im.naturalHeight, s = Math.min(r.width / nw, r.height / nh), w = nw * s, h = nh * s;
+      return { x: r.left + (r.width - w) / 2 + w * 0.5, y: r.top + (r.height - h) / 2 + h * 0.25 }; });
+    await p.mouse.click(at.x, at.y); await p.waitForSelector(".pickrow", { timeout: 5000 });
+    await p.locator(".pickrow", { hasText: "friend" }).first().tap(); await p.waitForTimeout(400);
+    const pin = await p.evaluate(() => (PCOMPOSE.tags || []).find((u) => u.username === "friend"));
+    ok(pin && Math.abs(pin.x - 0.5) < 0.05 && Math.abs(pin.y - 0.25) < 0.05 && await p.locator("#pctrack .pc-pin").count() === 1, "the tap didn't become a pin where the tap was: " + JSON.stringify(pin));
+    await p.locator("#pcadv").tap(); await p.waitForSelector("#pchide");
+    await p.locator("#pchide").check(); await p.locator("#pcalt").fill("A blue test picture"); await p.locator("#pcadvdone").tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => PCOMPOSE.hideLikes === true && PCOMPOSE.alt === "A blue test picture"), "Advanced settings didn't stick");
+    ok(/Likes hidden/.test(await p.locator("#pcadv .pc-v").innerText()), "the Advanced row doesn't say what's set");
+    await p.locator("#pcprev").tap(); await p.waitForSelector("#pcprevbg .sr-card", { timeout: 5000 });
+    ok(await p.locator("#pcprevbg .sr-card .post-media img").count() >= 1, "the preview isn't the Showroom card with the picture");
+    await p.locator("#pcprevx").tap(); await p.waitForTimeout(200);
+    await p.locator("#pcbody").fill("pinned #pintag");
+    await p.locator("#pcgo").tap();
+    await p.waitForFunction(() => !PCOMPOSE, null, { timeout: 15000 });
+    const post = (await myPosts()).find((x) => /pinned #pintag/.test(x.body || ""));
+    ok(post && post.pins && post.pins.length === 1 && post.pins[0].username === "friend" && post.hideLikes === true && post.alt === "A blue test picture", "the post didn't carry the pin, hidden likes and alt text: " + JSON.stringify(post && { pins: post.pins, h: post.hideLikes, a: post.alt }));
+    await p.evaluate((pp) => openPost(pp), post); await p.waitForSelector(".po-ov [data-pxtags]", { timeout: 8000 });
+    const card = p.locator(".po-ov").first();
+    await card.locator("[data-pxtags]").first().tap(); await p.waitForTimeout(200);
+    ok(await card.locator(".px-pins .px-pin").count() === 1 && /friend/.test(await card.locator(".px-pin").innerText()), "the person icon didn't show the pin on the opened post");
+    await card.locator("[data-pxtags]").first().tap(); await p.waitForTimeout(200);
+    ok(await card.locator(".px-pins").count() === 0, "tapping again didn't hide the pins");
+    await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
+  });
+  /* 2026-10-21 "fix all the labs": every post lives on your profile; a lab is where you also show it */
+  await step(d, "labs: + inside // Visual opens New post already posting to Your profile · // Visual (take it out → Add a lab); the lab's head says Invite; the archive has no search box", async () => {
+    await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#labshare");
+    ok((await p.locator("#labshare").innerText()).trim() === "Invite", "the lab's head doesn't say Invite");
+    await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcto");
+    ok(await p.locator("#pcto .pc-me").count() === 1 && /Visual/.test(await p.locator("#pcto .pc-labchip").innerText()), "New post from inside the lab isn't posting to Your profile · // Visual");
+    ok((await p.locator("#pcgo").innerText()).trim() === "Post" && await p.locator("#pclab").count() === 1 && await p.locator(".pc-opt", { hasText: "Share to a lab" }).count() === 0, "the composer still says Share for posting");
+    await p.locator("#pcto [data-pclabrm]").tap(); await p.waitForTimeout(200);
+    ok(await p.locator("#pcto .pc-labchip").count() === 0 && /Add a lab/.test(await p.locator("#pclab").innerText()), "taking the lab out didn't leave + Add a lab");
+    await p.locator("#pclab").tap(); await p.waitForSelector(".pickrow");
+    ok(await p.locator(".pick h2", { hasText: "Add a lab" }).count() === 1 && await p.locator(".pickrow", { hasText: "Profile only" }).count() === 0, "the picker still offers Profile only");
+    await p.locator(".pickrow", { hasText: "Visual" }).first().tap(); await p.waitForTimeout(200);
+    ok(/Visual/.test(await p.locator("#pcto .pc-labchip").innerText()), "picking a lab didn't add its chip");
+    await p.evaluate(() => { PCOMPOSE = null; PICKER = null; render(); }); await p.waitForTimeout(200);   // drop the draft without the "discard?" question
+    await p.evaluate(() => setLabView("archive")); await p.waitForSelector("#archscroll");
+    ok(await p.locator("#archq").count() === 0 && await p.locator("[data-asort=saved]").count() === 1, "the archive still has a search box");
+    await p.evaluate(() => openLab("culture")); await p.waitForSelector("#labshare");   // leave Music open, as the later labs step expects
+    await p.evaluate(() => { TAB = "showroom"; render(); });
+  });
   /* 2026-10-20 one kit, part 3: New post and New listing share the form bar (Cancel · title · the one action) */
   await step(d, "one kit: New post's bar is Cancel · New post · Share (black pill, off until there's something to share); New listing's is Cancel · New listing", async () => {
     await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcgo");
@@ -1486,18 +1541,18 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { MKTVIEW = "browse"; TAB = "showroom"; render(); });
   });
   /* "I want to simplify. Let's just remove moodboards for now" (2026-10-11) */
-  await step(d, "Visual's archive is a plain search now: no moodboards, no paste-a-link; searching and opening a picture still work", async () => {
+  await step(d, "Visual's archive is a browse now: an Archive chip, no search box, no moodboards; sorts and opening a picture still work", async () => {
     await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#plarchive");
-    ok((await p.locator("#plarchive").innerText()).trim() === "Search the archive", "the link still mentions boards");
-    await p.locator("#plarchive").tap(); await p.waitForSelector("#archq");
-    ok(await p.locator("#myboards, #pastein, #pastego, [data-asave], [data-asrc]").count() === 0, "moodboard controls are still on the archive");
+    ok((await p.locator("#plarchive").innerText()).trim() === "Archive", "the chip doesn't just say Archive");
+    await p.locator("#plarchive").tap(); await p.waitForSelector("#archscroll");
+    ok(await p.locator("#archq, #myboards, #pastein, #pastego, [data-asave], [data-asrc]").count() === 0, "a search box or moodboard controls are still on the archive");
     await p.waitForSelector(".archgrid .archcard", { timeout: 6000 });
     await p.locator(".archgrid .archcard").first().tap(); await p.waitForSelector("#lb");
     await p.locator("#lb").tap(); await p.waitForTimeout(200);
-    await p.locator("#archq").fill("zzznothing"); await p.waitForSelector(".empty", { timeout: 5000 });
-    ok(/Nothing matches/.test(await p.locator("#archscroll .empty").innerText()), "search didn't run");
-    await p.locator("#archclear").tap(); await p.waitForSelector(".archgrid .archcard", { timeout: 5000 });
-    await p.evaluate(() => { LAB = null; ROOMOPEN = false; LIGHTBOX = null; TAB = "showroom"; render(); });
+    await p.locator("[data-asort=saved]").tap(); await p.waitForSelector(".archgrid .archcard", { timeout: 5000 });
+    ok(await p.locator("[data-asort=saved].on").count() === 1, "the sort chip didn't take");
+    await p.locator("#plwork").tap(); await p.waitForSelector(".pl-grid");
+    await p.evaluate(() => { LAB = null; ROOMOPEN = false; TAB = "showroom"; render(); });
   });
   // 2026-10-09: the labs that match what you make come first
   await step(d, "your labs first: a stylist who shoots sees Fashion, then Visual, under For you", async () => {

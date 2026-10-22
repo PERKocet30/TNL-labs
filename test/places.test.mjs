@@ -36,6 +36,8 @@ const oldCollab = post(ben, "collab-posts", "need a photographer for a shoot", {
 const oldFeedback = post(cam, "feedback", "thoughts on this mix?", { ago: 20 * D });
 const tricky = post(cam, "creators", "see https://x.com/#frag and it&#39;s fine #ok_tag #a", { ago: 1 * D });
 for (const u of [ben, cam]) db.prepare(`INSERT INTO likes (post_id, user_id, created_at) VALUES (?,?,?)`).run(oldGd, u, now - D);
+// 2026-10-21: 70 older pieces, so Work has more than one page
+for (let i = 0; i < 70; i++) post(ana, "creators", "older piece " + i, { work: 1, ago: 60 * D + i * 3600000, img: "/uploads/a.jpg" });
 db.close();
 
 const PORT = 18900 + (process.pid % 90);
@@ -160,6 +162,15 @@ try {
   t("unpublished: no chip, no marks", (await call("dee", "GET", "/api/labs/pharmacy/work")).j.event === null && !(await call("dee", "GET", "/api/labs/pharmacy/work")).j.posts.some((p) => p.entry));
   t("the app draws the chip and the mark, and the tournament page links to its lab", appPlaces.includes('data-pltag="event:${esc(ev.slug)}"') && appPlaces.includes('<i class="pl-entry"')
     && readFileSync(join(ROOT, "src/app-17-event-1.js"), "utf8").includes("Every entry is in ${esc(labMark(evLab(e).name))}"));
+  console.log("\nWORK PAGES BACK IN TIME (2026-10-21: the grid is the archive)");
+  let p1 = await call("dee", "GET", "/api/labs/pharmacy/work");
+  t("the first page is 60 pieces and says there are more", p1.j.posts.length === 60 && p1.j.more === true);
+  const lastAt = p1.j.posts[59].createdAt;
+  let p2 = await call("dee", "GET", "/api/labs/pharmacy/work?before=" + lastAt);
+  t("…?before= gives the older ones, none repeated, newest first", p2.j.posts.length > 0 && p2.j.posts.every((x) => x.createdAt < lastAt) && !p2.j.posts.some((x) => ids(p1.j.posts).includes(x.id)) && p2.j.posts[0].createdAt > p2.j.posts[p2.j.posts.length - 1].createdAt);
+  t("…and the last page says so", p2.j.more === false);
+  let pt = await call("dee", "GET", "/api/labs/pharmacy/work?tag=poster&before=" + now);
+  t("a #tag pages the same way", Array.isArray(pt.j.posts) && pt.j.more === false);
 } catch (e) {
   fail++; console.log("  ✗  threw: " + e.message); console.log(log.slice(-1500));
 } finally { srv.kill(); }
