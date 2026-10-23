@@ -653,6 +653,7 @@ export const SETTING_DEFAULTS = {
   minRepToSell:   "0",     // gate selling behind standing if it gets messy
   autoVerify:     "0",     // "1" skips email verification — use if mail breaks
   announcement:   "",      // a banner across the top of the app
+  nudgeMail:      "1",     // the weekly "finish your page" email (server-11-nudge); "0" stops it
 
 
   /* Distribution. A real promise with a real cost, so it's a setting: you

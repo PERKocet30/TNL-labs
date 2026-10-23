@@ -2004,6 +2004,17 @@ console.log("\nINSIDE INSTAGRAM · PHONE");
     await p.evaluate(() => { localStorage.removeItem("tnl-token"); });
     await settledGoto(p, B + "/"); await throughDoor(p);
   });
+  /* 2026-10-23: the weekly reminder email's button lands on that step (server-11-nudge, app-11-getstarted) */
+  await step(d, "the reminder email's button: /?start=photo opens Edit profile, /?start=music your Music tab, through log in", async () => {
+    await p.evaluate(() => localStorage.setItem("tnl-token", "e2e-friend-session"));   // signed in, as the email's reader would be
+    await settledGoto(p, B + "/?login=1&next=%2F%3Fstart%3Dphoto"); await throughDoor(p);
+    await p.waitForFunction(() => typeof EDITING !== "undefined" && EDITING === true, null, { timeout: 8000 });
+    ok(await p.evaluate(() => location.search === ""), "?start= stayed in the address bar");
+    await settledGoto(p, B + "/?start=music"); await throughDoor(p);
+    await p.waitForFunction(() => PROFILE && PROFILE.user && PROFILE.user.username === myName() && PTAB === "music", null, { timeout: 8000 });
+    await p.evaluate(() => { localStorage.removeItem("tnl-token"); });   // back to a visitor, as this section expects
+    await settledGoto(p, B + "/"); await throughDoor(p);
+  });
   /* 2026-10-21: "Take the intro off" — a first visit is the plain door, no film, no SKIP, one tap */
   await step(d, "a first visit: the plain door, no intro film, one tap in", async () => {
     await p.evaluate(() => { localStorage.removeItem("tnl-intro-seen"); sessionStorage.removeItem("tnl-in"); });

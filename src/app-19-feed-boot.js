@@ -334,12 +334,14 @@ function paintVerifyBar(){
   const qs=new URLSearchParams(location.search), qu=qs.get("u"), qp=Number(qs.get("p"))||null, qsong=Number(qs.get("s"))||null;   // /s/:id → ?u=&s= : their Music tab, that song picked out (2026-10-10)
   const ql=qs.get("l"),qlab=ql&&labBySlug(ql);   // /l/:id (a shared lab) → ?l= : step into it (2026-10-15)
   const qbag=qs.get("bag");   // /checkout (a tagged Instagram post's Checkout) → ?bag= : those pieces in the bag (2026-10-21)
+  const qstart=qs.get("start");   // the weekly reminder email's button → ?start=photo… : that step (app-11-getstarted, 2026-10-23)
   const back=!me&&!mu&&!mm&&!qu&&!qp&&!qlab&&qbag===null?evReturn():null;   // confirmed your email elsewhere: back to the vote
   if(me||back){history.replaceState({},"","/");TAB="event";EVSLUG=me||back.slug;EVFOCUS=me?mv:back.v||null;loadEvent()}
   else if(mu||qu){if(qu)history.replaceState({},"","/");openProfile(mu?mu[1]:qu);if(qsong){PTAB="music";PFSONG=qsong}}
   else if(qp){history.replaceState({},"","/");openPostById(qp)}
   else if(qlab){history.replaceState({},"","/");if(ME)openLab(qlab.id);else{LABNEXT=qlab.id;needAccount("Join to step into "+labMark(qlab.name)+".")}}
   else if(qbag!==null){history.replaceState({},"","/");bagFromLink(qbag);TAB="market";MKTVIEW="bag";bagLoad()}
+  else if(qstart!==null&&ME){history.replaceState({},"","/");startGo(qstart)}
   else if(path==="/shop"){TAB="market";MKTVIEW="browse"}
   else if(mm){TAB="market";MKTVIEW="detail";
     try{const d=await api.mktOne(mm[1]);MKTONE=d.listing;MKTOFFERS=d.offers||[]}catch(e){}}

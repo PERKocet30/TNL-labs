@@ -1,4 +1,4 @@
-/* LABS admin v4.0 — 2026-10-20 (v4: System is two sections — Settings here: switches, email, backups, the admin log; Health is its own page, 6-health.js, built from the same loader). v2.5 — 2026-10-19. v2.5: "Email them a new confirm link" under Email — everyone unconfirmed gets a fresh link (server-05-admin-verify-nudge). v2.4 — 2026-10-15. v2.4: the landing headline and tagline fields are gone — nothing in the app showed them.
+/* LABS admin v4.1 — 2026-10-23 (v4.1: Email → "Weekly reminders": the finish-your-page email, its numbers and a preview to yourself, server-11-nudge). v4.0 — 2026-10-20 (v4: System is two sections — Settings here: switches, email, backups, the admin log; Health is its own page, 6-health.js, built from the same loader). v2.5 — 2026-10-19. v2.5: "Email them a new confirm link" under Email — everyone unconfirmed gets a fresh link (server-05-admin-verify-nudge). v2.4 — 2026-10-15. v2.4: the landing headline and tagline fields are gone — nothing in the app showed them.
    v2.3 — 2026-10-14. v2.3: the unused archive-board field is gone.
    v2.2 — 2026-10-14. System, in tabs: Settings · Health · Backups & email · Admin log.
    v2.1 — 2026-10-09. System: switches, safety nets, and the log of who changed what.
@@ -6,9 +6,9 @@
 let MAILRESULT = null, SYSTAB = "settings";
 const SYSTABS = [["settings", "Switches"], ["data", "Backups & email"], ["log", "Admin log"]];
 LOADERS.settings = LOADERS.health = async () => {
-  const [health, settings, backups, errors, maillog, log, glitches] = await Promise.all(["/api/admin/health", "/api/admin/settings", "/api/admin/backups",
-    "/api/admin/errors", "/api/admin/mail-log", "/api/admin/log", "/api/admin/glitches"].map((u) => req(u).catch(() => null)));
-  Object.assign(D, { health, settings, backups, errors, maillog, log, glitches });
+  const [health, settings, backups, errors, maillog, log, glitches, nudge] = await Promise.all(["/api/admin/health", "/api/admin/settings", "/api/admin/backups",
+    "/api/admin/errors", "/api/admin/mail-log", "/api/admin/log", "/api/admin/glitches", "/api/admin/nudge"].map((u) => req(u).catch(() => null)));
+  Object.assign(D, { health, settings, backups, errors, maillog, log, glitches, nudge });
 };
 const mb = (b) => ((b || 0) / 1048576).toFixed(1) + " MB";
 const ACTIONS = [[/\/rep$/, "Adjusted rep"], [/\/feature$/, "Featured"], [/\/verify$/, "Confirmed email"], [/\/suspend$/, "Suspended / restored"],
@@ -26,6 +26,7 @@ VIEWS.settings = (only) => {
     <button class="sw ${g[k] === "1" ? "on" : ""}" data-tog="${k}" role="switch" aria-checked="${g[k] === "1"}" aria-label="${esc(label)}"></button></div>`;
   const ok = (on, yes, no) => `<span class="tag ${on ? "on" : "warn"}">${on ? yes : no}</span>`;
   const unver = D.maillog ? D.maillog.members.filter((m) => !m.verified) : [];
+  const N = D.nudge;
   const E = D.errors, G = D.glitches;
   const GNAME = { rage_tap: "rage taps", layout_jump: "screen jumps", slow_screen: "slow screens", action_failed: "failed saves" };
   const GWHY = { rage_tap: "tapped 3+ times fast — it didn't seem to respond", layout_jump: "the screen moved while they read",
@@ -71,7 +72,10 @@ VIEWS.settings = (only) => {
     ${unver.length ? `<label class="l">${unver.length} waiting to confirm their email</label><div class="list">${unver.slice(0, 12).map((m) => `<div class="li"><span class="b"><b>@${esc(m.username)}</b><span>${esc(m.email)} · joined ${ago(m.joined)} ago</span></span>
       <button class="btn ghost sm" data-verify="${esc(m.username)}">Confirm</button></div>`).join("")}</div>
     <button class="btn sm" id="nudgeall" style="margin-top:10px">Email them a new confirm link</button>
-    <div class="dim" style="font-size:12px;margin-top:6px">Everyone who hasn't confirmed, not just these. Nobody gets it twice in a day.</div>` : ""}</div></div></div>`,
+    <div class="dim" style="font-size:12px;margin-top:6px">Everyone who hasn't confirmed, not just these. Nobody gets it twice in a day.</div>` : ""}
+    ${N ? `<div style="margin-top:14px">${tog("nudgeMail", "Weekly reminders", `A member whose page has gaps — photo, colour, bio, first piece, music for a producer — gets one email a week saying which, until it's done or ${N.max} have gone. Each has an unsubscribe.`)}
+    <div class="row sp" style="margin-top:6px"><span class="dim" style="font-size:12px">${N.ready ? `${N.due} due now · ${N.sentWeek} sent this week · ${N.sentTotal} ever · up to ${N.perDay} a day` : N.mailOn ? (N.on ? "Paused: email is on Resend's test sender." : "Off.") : "Off: email isn't set up."}${N.lastError ? ` · <span class="warn">last error: ${esc(N.lastError)}</span>` : ""}</span>
+      <button class="btn ghost sm" id="nudgeme">Send me mine</button></div></div>` : ""}</div></div></div>`,
     log: () => `<h2 class="sec">Admin log <span class="mono">every change made from here, newest first</span></h2>
   <div class="panel scroll">${D.log && D.log.log.length ? `<table class="tbl"><thead><tr><th>Who</th><th>What</th><th>About</th><th>Detail</th><th class="num">When</th></tr></thead>
     <tbody>${D.log.log.slice(0, 60).map((l) => `<tr><td>@${esc(l.by || "?")}</td><td>${esc(actionName(l.action))}</td><td>${l.target ? esc(l.target) : "—"}</td>
@@ -114,6 +118,8 @@ WIRES.settings = () => {
     na.disabled = true;
     await act(() => req("/api/admin/members/remind-unverified", { method: "POST" }), (d) => d.sending ? `Sending to ${d.sending} ${d.sending === 1 ? "person" : "people"}` : "Everyone's had one today already");
   };
+  const nm = $("#nudgeme"); if (nm) nm.onclick = async () => { nm.disabled = true;
+    await act(() => req("/api/admin/nudge/preview", { method: "POST" }), (d) => `Sent to ${d.to} — ${d.items.length} ${d.items.length === 1 ? "gap" : "gaps"}`); nm.disabled = false; };
   $$("[data-verify]").forEach((b) => b.onclick = async () => { await act(() => req("/api/admin/members/" + encodeURIComponent(b.dataset.verify) + "/verify", { method: "POST" }), "Confirmed"); load(); });
   const cl = $("#cleanup"); if (cl) cl.onclick = async () => {
     if (!(await confirmIt("Delete unused files?", "Only files nothing in the database points at. Can't be undone.", { ok: "Delete", danger: true }))) return;
