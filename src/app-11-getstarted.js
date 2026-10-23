@@ -1,4 +1,7 @@
-/* ── GET STARTED · v1.0 · 2026-10-18 ────────────────────────────────────
+/* ── GET STARTED · v1.1 · 2026-10-23 ────────────────────────────────────
+   v1.1: the weekly reminder email (server-11-nudge) lands here — /?start=
+   photo|music|piece|bio|colour|follow|market opens that step (startGo) and
+   shows the list this visit whatever its age (GSFORCE).
    Onboarding, part two: after the walkthrough (app-11-gate-tour) a new
    member finds a short list at the top of the Showroom: the seven things
    that make the app theirs. Each line is a shortcut to doing it, and it
@@ -6,7 +9,7 @@
    closed (✕), on the device they joined on ("new", set as the walkthrough
    ends). Its numbers (/api/me/start) arrive before the Showroom first
    paints (app-19-feed-boot), so it never appears under a reader. */
-let GS=null, GSAT=0;
+let GS=null, GSAT=0, GSFORCE=false;
 const GS_DAYS=30;
 const gsFlag=k=>{try{return !!localStorage.getItem("tnl-gs-"+k)}catch(e){return false}};
 const gsMark=k=>{try{localStorage.setItem("tnl-gs-"+k,"1")}catch(e){}};
@@ -22,7 +25,15 @@ function gsItems(){
     {k:"share",t:"Share your page",done:gsFlag("share"),go:()=>shareProfile(myName())},
   ];
 }
-const gsShow=()=>!!(ME&&GS&&gsFlag("new")&&!gsFlag("off")&&ME.createdAt&&Date.now()-ME.createdAt<GS_DAYS*864e5&&gsItems().some(i=>!i.done));
+const gsShow=()=>!!(ME&&GS&&(GSFORCE||(gsFlag("new")&&!gsFlag("off")&&ME.createdAt&&Date.now()-ME.createdAt<GS_DAYS*864e5))&&gsItems().some(i=>!i.done));
+/* From the reminder email's button: straight to that step. */
+async function startGo(k){
+  if(!ME)return;GSFORCE=true;gsMark("new");
+  if(k==="music"){await openProfile(myName());PTAB="music";render();return}
+  if(k==="market"){TAB="market";MKTVIEW="sell";render();return}
+  const i=gsItems().find(z=>z.k===(k==="piece"?"post":k));
+  if(i)i.go();else{TAB="showroom";render()}   // done already? the step is still the right place to land
+}
 function gsHTML(){
   if(!gsShow())return "";
   const it=gsItems(),n=it.filter(i=>i.done).length;

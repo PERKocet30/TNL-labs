@@ -17,6 +17,8 @@
    the one-click List-Unsubscribe headers mail apps show as a button.
    Nothing goes out while email isn't set up, or on Resend's test
    sender (it would only reach the account owner).
+   2026-10-23: the unsubscribe (mail_off, /mail/off) covers every LABS
+   email — this one and the weekly reminder (server-11-nudge).
 ================================================================ */
 db.exec(`CREATE TABLE IF NOT EXISTS event_mail (
   event_id INTEGER PRIMARY KEY REFERENCES events(id) ON DELETE CASCADE,
@@ -136,9 +138,9 @@ app.post("/api/admin/events/:id/mail-preview", auth, admin, async (req, res) => 
    apps' own Unsubscribe button POSTs straight to it (RFC 8058). */
 const evmByKey = (k) => (/^[a-f0-9]{36}$/.test(String(k || "")) ? db.prepare(`SELECT id, mail_off FROM users WHERE mail_key = ?`).get(String(k)) : null);
 const evmPage = (k, off, done) => lookPage({
-  title: "Tournament emails — LABS", center: true,
+  title: "LABS emails", center: true,
   body: `${lookEyebrow("Email")}<h1>${off ? (done ? "You're unsubscribed" : "You're already unsubscribed") : (done ? "You're back on the list" : "Unsubscribe?")}</h1>
-<p class="p">${off ? "You won't get emails about tournaments. Emails about your account, like password resets, still come." : done ? "You'll get an email when the next tournament opens." : "You'll stop getting an email when a tournament opens. Emails about your account still come."}</p>
+<p class="p">${off ? "You won't get emails about tournaments or reminders to finish your page. Emails about your account, like password resets, still come." : done ? "You'll get an email when the next tournament opens, and a reminder if your page has gaps." : "You'll stop getting emails about tournaments and reminders to finish your page. Emails about your account still come."}</p>
 <form method="post" action="/mail/${off ? "on" : "off"}?k=${lookEsc(k)}"><button class="btn block${off ? "" : " acc"}" type="submit">${off ? "Turn them back on" : "Unsubscribe"}</button></form>`,
 });
 app.get("/mail/off", (req, res) => {

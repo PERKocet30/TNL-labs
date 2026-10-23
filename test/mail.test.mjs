@@ -1,6 +1,6 @@
 // Mail v1.2 (2026-10-12; v1.1 2026-09-29): every email the app sends is in the design language.
 // Renders the real templates from src/mail.js — nothing is sent.
-import { verifyEmail, resetEmail, alertEmail, renderEmail, eventOpenEmail } from "../src/mail.js";
+import { verifyEmail, resetEmail, alertEmail, renderEmail, eventOpenEmail, nudgeEmail, nudgeSubject, NUDGE_ITEMS } from "../src/mail.js";
 import { readFileSync, readdirSync } from "node:fs";
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
@@ -8,10 +8,11 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "�
 const url = "https://labs.tnllabs.com/api/auth/verify?token=abc123&x=1";
 const v = verifyEmail("Ana Reyes", url), r = resetEmail("Ana Reyes", "https://labs.tnllabs.com/reset?token=def456");
 const w = alertEmail("Yesterday on TNL LABS", ["0 new members · 7 posts.", "Errors: none."], "https://labs.tnllabs.com/admin#system");
+const nu = nudgeEmail({ name: "Ana", items: ["photo", "music", "colour"], role: "Producer", done: 4, total: 7, url: "https://labs.tnllabs.com/?login=1&next=%2F%3Fstart%3Dphoto", unsub: "https://labs.tnllabs.com/mail/off?k=abc" });
 const ev = eventOpenEmail({ name: "Ana", title: "The Art Tournament", brief: "Make something.", prize: "$500", closes: "November 30, 2026", url: "https://labs.tnllabs.com/?e=art", unsub: "https://labs.tnllabs.com/mail/off?k=abc" });
 
 console.log("\nTHE DESIGN LANGUAGE");
-for (const [n, e] of [["verify", v], ["reset", r], ["watch alert", w], ["tournament open (v2.1)", ev]]) {
+for (const [n, e] of [["verify", v], ["reset", r], ["watch alert", w], ["tournament open (v2.1)", ev], ["weekly reminder (v2.2)", nu]]) {
   const h = e.html;
   t(`${n}: white by default (#FFFFFF, ink #000)`, /<body[^>]*background:#FFFFFF/.test(h) && /color:#000000/.test(h));
   t(`${n}: dark mode for mail apps that support it`, /prefers-color-scheme: dark/.test(h) && /\.bg \{ background:#000000/.test(h));
@@ -24,7 +25,16 @@ for (const [n, e] of [["verify", v], ["reset", r], ["watch alert", w], ["tournam
   t(`${n}: a plain-text version with the link`, e.text.includes("https://labs.tnllabs.com/") && e.text.includes("LABS ®"));
 }
 
-t("tournament: an unsubscribe link, in the email and the text", ev.html.includes('href="https://labs.tnllabs.com/mail/off?k=abc"') && ev.text.includes("Unsubscribe from tournament emails: https://labs.tnllabs.com/mail/off?k=abc"));
+t("tournament: an unsubscribe link, in the email and the text", ev.html.includes('href="https://labs.tnllabs.com/mail/off?k=abc"') && ev.text.includes("Unsubscribe from LABS emails: https://labs.tnllabs.com/mail/off?k=abc"));
+console.log("\nTHE WEEKLY REMINDER");
+t("the first gap is the headline, the button and the subject", nu.html.includes(">Add a profile photo</h1>") && nu.html.includes(">Add a photo</a>") && nudgeSubject("photo") === "Add a profile photo — LABS");
+t("it says how far along the page is", nu.html.includes("Ana, your page is 4 of 7 done."));
+t("the first gap's line is the one in the email", nu.text.includes("People follow faces.") && !nu.text.includes("Your page says Producer"));
+t("the other gaps are one line", nu.text.includes("Also still open: upload your music, pick your colour."));
+t("one a week at most, none once it's done — said in the email", nu.text.includes("One of these a week at most, and none once your page is done."));
+t("the button opens that step, through log in", nu.html.includes('href="https://labs.tnllabs.com/?login=1&amp;next=%2F%3Fstart%3Dphoto"'));
+t("music first for a producer: the role line", nudgeEmail({ name: "Ana", items: ["music"], role: "DJ", done: 6, total: 7, url: "https://x.test/", unsub: "https://x.test/u" }).text.includes("Your page says DJ, but there's no music on it yet. One track is enough to start."));
+t("every gap has words", Object.values(NUDGE_ITEMS).every((i) => i.title && i.line && i.cta));
 t("account emails have no unsubscribe (they always go)", !/Unsubscribe/.test(v.html + r.html));
 
 console.log("\nSAFE");

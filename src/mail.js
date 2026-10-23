@@ -1,6 +1,11 @@
 /* ================================================================
-   MAIL v2.1 — 2026-10-12. Verification and password-reset emails,
+   MAIL v2.2 — 2026-10-23. Verification and password-reset emails,
    in the app's design language (see THE LOOK below).
+   v2.2: the weekly "finish your page" reminder (nudgeEmail): one email
+   a week to a member whose page has gaps, saying exactly which — a
+   photo, their colour, a line about what they make, their first piece,
+   music if they're a producer — with one button to the first of them.
+   The unsubscribe link now covers every LABS email, not just tournaments.
    v2.1: the "entries are open" email that goes to every member when a
    tournament opens, with an unsubscribe link (and the one-click
    List-Unsubscribe headers mail apps show as a button).
@@ -109,12 +114,12 @@ export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader, 
       </div>
     </td></tr>
     <tr><td style="padding:18px 4px 0;font-family:${FONT}">
-      <p class="t2" style="margin:0;color:${C.ink2};font-size:12px;line-height:16px">Social media by creatives, for creatives.<br><a class="t2" href="${origin}" style="color:${C.ink2};text-decoration:none">${escapeHtml(origin.replace(/^https?:\/\//, ""))}</a>${unsub ? `<br><a class="t2" href="${escapeHtml(unsub)}" style="color:${C.ink2};text-decoration:underline">Unsubscribe from tournament emails</a>` : ""}</p>
+      <p class="t2" style="margin:0;color:${C.ink2};font-size:12px;line-height:16px">Social media by creatives, for creatives.<br><a class="t2" href="${origin}" style="color:${C.ink2};text-decoration:none">${escapeHtml(origin.replace(/^https?:\/\//, ""))}</a>${unsub ? `<br><a class="t2" href="${escapeHtml(unsub)}" style="color:${C.ink2};text-decoration:underline">Unsubscribe from LABS emails</a>` : ""}</p>
     </td></tr>
   </table>
 </td></tr></table>
 </body></html>`;
-  const text = [`LABS ®`, ``, `// ${eyebrow.toUpperCase()}`, title, ``, ...lines, ``, `${cta}: ${url}`, ``, note, ``, `Social media by creatives, for creatives.`, origin, ...(unsub ? [``, `Unsubscribe from tournament emails: ${unsub}`] : [])].join("\n");
+  const text = [`LABS ®`, ``, `// ${eyebrow.toUpperCase()}`, title, ``, ...lines, ``, `${cta}: ${url}`, ``, note, ``, `Social media by creatives, for creatives.`, origin, ...(unsub ? [``, `Unsubscribe from LABS emails: ${unsub}`] : [])].join("\n");
   return { html, text };
 }
 
@@ -148,6 +153,37 @@ export function eventOpenEmail({ name, title, brief, prize, closes, url, unsub }
   });
 }
 export const eventOpenSubject = (title) => `${title}: entries are open`;
+
+/** The weekly reminder. `items` are the gaps, first the one the button
+    goes to; `done`/`total` are the Get started numbers. The words for
+    each gap live here so the email and the admin preview agree. */
+export const NUDGE_ITEMS = {
+  photo:  { title: "Add a profile photo", line: "People follow faces. A photo makes the page yours.", cta: "Add a photo" },
+  music:  { title: "Upload your music", line: "Your page says {role}, but there's no music on it yet. One track is enough to start.", cta: "Upload a track" },
+  piece:  { title: "Post your first piece", line: "Your page is empty until you post. One piece is enough.", cta: "Post a piece" },
+  bio:    { title: "Say what you make", line: "One line under your name tells people why to follow you.", cta: "Write your line" },
+  colour: { title: "Pick your colour", line: "Every member has one. It wraps your avatar and colours your page.", cta: "Pick a colour" },
+  follow: { title: "Follow 3 people", line: "Your feed is built from who you follow. Three is a start.", cta: "Find people" },
+  market: { title: "List a piece in the Market", line: "Your page says {role}. List one piece and it's on your page and in the Market.", cta: "List a piece" },
+};
+export function nudgeEmail({ name, items, role, done, total, url, unsub }) {
+  const [top, ...rest] = items.map((k) => ({ k, ...NUDGE_ITEMS[k] })).filter((i) => i.title);
+  const said = (s) => s.replace("{role}", role || "you make things");
+  return renderEmail({
+    eyebrow: "Your page", title: top.title,
+    lines: [`${name ? name + ", your" : "Your"} page is ${done} of ${total} done.`, said(top.line),
+      rest.length ? `Also still open: ${rest.map((i) => i.title.toLowerCase()).join(", ")}.` : ""].filter(Boolean),
+    cta: top.cta, url, unsub,
+    note: "One of these a week at most, and none once your page is done. You're getting this because you're a member of LABS.",
+    preheader: `${done} of ${total} done. ${said(top.line)}`,
+  });
+}
+export const nudgeSubject = (k) => `${NUDGE_ITEMS[k]?.title || "Finish your page"} — LABS`;
+export async function sendNudgeEmail(to, subject, mail, unsub) {
+  return send(to, subject, mail, `${subject} — ${to}`, {
+    "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  });
+}
 export async function sendEventOpenEmail(to, subject, mail, unsub) {
   return send(to, subject, mail, `${subject} — ${to}`, {
     "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",

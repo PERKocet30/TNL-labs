@@ -87,6 +87,7 @@ test/                           51 test suites — run with npm test
 | `app-19-feed-boot` | feed, badges, boot |
 | `server-01-boot` | setup, compression, caching rules, Sentry, prepared queries |
 | `server-02…11` | auth/feed, uploads/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/beats/Showroom, social/meta |
+| `server-11-nudge` | The weekly reminder (2026-10-23): a member whose page has gaps gets one tailored email a week — photo, music for a music role, first piece, bio, colour, 3 follows, a listing for a fashion role — until it's done or 4 have gone; 3 days after joining at the earliest; at most 40 a day. Admin → Settings → Email switches it and previews it; `?start=<gap>` opens that step in the app. Words in `mail.js` (`NUDGE_ITEMS`); unsubscribe shared with the tournament email |
 | `server-11-profile` | profile v2: links, pronouns, pins (`/api/me/pins`), followers/following lists, the Tagged tab, "Followed by" |
 | `server-12-policies` | the public policy pages Stripe reviews: `/terms`, `/privacy`, `/policies` (shipping, returns, disputes, prohibited items), `/contact`, `/shop`, and `lookFoot()` — the footer on every server-built page. `SUPPORT_EMAIL` sets the inbox |
 | `server-12-video` | old videos fixed on boot (index-first copy, a cover where none); and the light copies made in the background one at a time: for video, 720p/30fps/~1.3 Mbps (`video_feed` → `videoPlayUrl`; the original stays `videoUrl`); for music, 128 kbps AAC (`audio_play` → a track's `url`; the upload stays `fileUrl`) |
@@ -501,6 +502,8 @@ POST   /api/admin/broadcast   (admin)
 GET    /api/admin/health   (admin)
 POST   /api/admin/cleanup   (admin)
 POST   /api/admin/test-email   (admin)
+GET    /api/admin/nudge         (admin)  the weekly reminder's numbers
+POST   /api/admin/nudge/preview (admin)  your own copy
 GET    /api/admin/mail-log   (admin)
 GET    /api/admin/backups   (admin)
 POST   /api/admin/backups   (admin)
