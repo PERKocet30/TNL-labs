@@ -80,3 +80,18 @@ document.addEventListener("click",e=>{
   e.stopPropagation();const p=findAnyPost(+b.dataset.pxcollabs);if(!p)return;
   openPicker({title:"Built with",items:p.collaborators.filter(c=>c.status==="accepted").map(c=>({label:c.display_name||c.username,sub:"@"+c.username,username:c.username})),onPick:it=>openProfile(it.username)});
 },true);
+/* Captions, Instagram's feed way (2026-10-25: "not like Instagram"). In
+   the feed: the name and the caption up to its first line break, cut near
+   two lines, then "… more" right after the words; a tap opens the rest in
+   place, line breaks and all. The opened post (CSLOTPO) shows it all. */
+const CAP_PREV=80;
+function capHTML(body){
+  const t=String(body||"").trim();
+  if(CSLOTPO)return rich(t);
+  let pv=t.split("\n")[0].trim();
+  if(pv.length>CAP_PREV)pv=pv.slice(0,CAP_PREV).replace(/\s+\S*$/,"");
+  if(pv===t)return rich(t);
+  return `<span class="cap-prev">${rich(pv)}… <button type="button" class="capmore">more</button></span><span class="cap-full">${rich(t)}</span>`;
+}
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest(".capmore");if(!b)return;
+  e.stopPropagation();const c=b.closest(".sr-body,.post-cap");if(c)c.classList.add("open")});
