@@ -73,6 +73,13 @@
 .pc-chip .av{width:22px;height:22px;font-size:8px}
 .pc-chip button{background:none;border:0;color:var(--dim);display:flex;padding:3px;cursor:pointer}
 .pc-mus{padding:10px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+/* which part of the song plays (2026-10-25): a bar for the song, a window you drag */
+.pc-part{padding:0 16px 14px 56px}
+.pc-part-l{display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim);margin-bottom:8px}
+.pc-part-l b{color:var(--tx);font-weight:700;font-variant-numeric:tabular-nums}
+.pc-part-bar{position:relative;height:28px;border-radius:999px;background:var(--el);touch-action:none;cursor:pointer}
+.pc-part-win{position:absolute;top:0;bottom:0;min-width:28px;border-radius:999px;background:var(--accent-fill);box-shadow:0 1px 4px rgba(0,0,0,.18);cursor:grab}
+.pc-part-win:focus-visible{outline:2px solid var(--tx);outline-offset:2px}
 .pc-q{width:100%;box-sizing:border-box;background:var(--el);border:1px solid var(--line2);border-radius:999px;color:var(--tx);font:inherit;font-size:16px;padding:10px 16px;outline:none}
 /* upload a song from here; a song's cover as the picture (v2.2) */
 .pcmus-up{display:flex;align-items:center;gap:12px;padding:10px 8px;border:1px dashed var(--line2);background:var(--card);color:var(--tx);cursor:pointer}

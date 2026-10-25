@@ -245,9 +245,13 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
 
   /* Music rides on the post — the id must point at a real library track
      (Instagram model: pick a sound from the catalog, never a raw file). */
-  const atid = (() => { const n = Number(audioTrackId);
+  const atrk = (() => { const n = Number(audioTrackId);
     if (!Number.isInteger(n) || n <= 0) return null;
-    return db.prepare(`SELECT id FROM tracks WHERE id = ?`).get(n) ? n : null; })();
+    return db.prepare(`SELECT id, duration_ms FROM tracks WHERE id = ?`).get(n) || null; })();
+  const atid = atrk ? atrk.id : null;
+  /* Which part of the song (2026-10-25): a start in ms, inside the song, never so late that nothing's left to play. */
+  const astart = (() => { if (!atrk) return 0; const n = Math.round(Number(req.body?.audioStart) || 0);
+    const max = atrk.duration_ms ? Math.max(0, atrk.duration_ms - 1000) : 0; return Math.max(0, atrk.duration_ms ? Math.min(n, max) : n); })();
 
   /* Several images, one post. Most lab chat is exactly this: someone drops
      four refs mid-sentence and it's ONE thought, not four posts.
@@ -284,6 +288,7 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
     atid,
     Date.now()
   );
+  if (astart) db.prepare(`UPDATE posts SET audio_start = ? WHERE id = ?`).run(astart, Number(info.lastInsertRowid));   // which part of the song
   applyExtras(Number(info.lastInsertRowid), req.body, req.user.id);   // tags, place, comments off
   if (videoUrl) queueFeedVideo(videoUrl);   // a light copy for the feed, in the background
   const row = feedRows({ authorId: req.user.id, viewerId: req.user.id, limit: 1 })
@@ -351,6 +356,7 @@ app.post("/api/posts/:id/share", auth, verified, (req, res) => {
     original.audio_track_id,   // and it keeps its sound
     Date.now()
   );
+  if (original.audio_start) db.prepare(`UPDATE posts SET audio_start = ? WHERE id = ?`).run(original.audio_start, Number(info.lastInsertRowid));   // …from the same part of the song
   if (original.author_id !== req.user.id) { awardRep(original.author_id, "share_received", original.id); notify(original.author_id, req.user.id, "share", original.id); }
   const row = feedRows({ authorId: req.user.id, viewerId: req.user.id, limit: 1 })
     .find((r) => r.id === Number(info.lastInsertRowid));

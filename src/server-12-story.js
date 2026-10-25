@@ -174,13 +174,13 @@ app.get("/tr/:id/story.jpg", storyLimit, (req, res) => {
    from the lossless card, it's crisp at ~3MB. */
 const SV = { version: 4, secs: 15, fps: 30 };   // v4: a video post's clip plays in the card
 const SV_BUILDS = new Map();
-function storyVideoArgs(still, audio, secs, out, clip) {
+function storyVideoArgs(still, audio, secs, out, clip, startSecs = 0) {
   const fadeAt = Math.max(0, secs - 1.5).toFixed(2);
   const vq = ["-c:v", "libx264", "-preset", "medium", "-crf", clip ? 17 : 14, "-profile:v", "high", "-level", "4.0",
     "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-pix_fmt", "yuv420p"];
   if (!clip) return ["-nostdin", "-y", "-loglevel", "error",
     "-loop", "1", "-framerate", String(SV.fps), "-t", String(secs), "-i", still,
-    "-t", String(secs), "-i", audio,
+    ...(startSecs ? ["-ss", startSecs.toFixed(3)] : []), "-t", String(secs), "-i", audio,
     "-filter_complex", `[0:v]scale=out_color_matrix=bt709:flags=lanczos+accurate_rnd+full_chroma_int,format=yuv420p[v];` +
       `[1:a]aresample=44100,afade=t=in:d=0.3,afade=t=out:st=${fadeAt}:d=1.5[a]`,
     "-map", "[v]", "-map", "[a]", ...vq, "-tune", "stillimage",
@@ -194,7 +194,7 @@ function storyVideoArgs(still, audio, secs, out, clip) {
   return ["-nostdin", "-y", "-loglevel", "error",
     "-loop", "1", "-framerate", String(SV.fps), "-t", String(secs), "-i", still,
     "-t", String(secs), "-i", clip,
-    ...(audio ? ["-t", String(secs), "-i", audio] : []),
+    ...(audio ? [...(startSecs ? ["-ss", startSecs.toFixed(3)] : []), "-t", String(secs), "-i", audio] : []),
     "-filter_complex", `[1:v]scale=${bw}:${bh}:force_original_aspect_ratio=decrease:flags=lanczos,fps=${SV.fps},setsar=1[clip];` +
       `[0:v][clip]overlay=x=${P}+(${bw}-overlay_w)/2:y=${by}+(${bh}-overlay_h)/2:shortest=1:format=yuv420,` +
       `scale=out_color_matrix=bt709,format=yuv420p[v]${sound ? ";" + sound : ""}`,
@@ -214,7 +214,9 @@ async function storyVideo(p, base) {
   const audio = (tr && (cardFile(audioPlayUrl(tr.url)) || cardFile(tr.url))) || null;
   const clip = (card && p.video_url && cardFile(p.video_url)) || null;   // a video post: the clip itself (2026-10-20)
   if (!audio && !clip) return null;
-  return buildStoryVideo(`p${p.id}-storyv`, card, audio, clip, tr && tr.duration_ms);
+  /* the part of the song the post plays (2026-10-25): its 15 seconds start there; what's left of the song is what there is */
+  const startMs = audio ? Math.max(0, Math.min(Number(p.audio_start) || 0, Math.max(0, (tr.duration_ms || 0) - 1000))) : 0;
+  return buildStoryVideo(`p${p.id}-storyv`, card, audio, clip, tr && tr.duration_ms ? Math.max(1000, tr.duration_ms - startMs) : null, startMs / 1000);
 }
 /* a song shared from the Music lab (2026-10-20, "it didn't play"): its card with 15 seconds of it */
 async function trackStoryVideo(tr, base) {
@@ -223,18 +225,18 @@ async function trackStoryVideo(tr, base) {
   if (!audio) return null;
   return buildStoryVideo(`tr${tr.id}-storyv`, card, audio, null, tr.duration_ms);
 }
-async function buildStoryVideo(prefix, card, audio, clip, songMs) {
+async function buildStoryVideo(prefix, card, audio, clip, songMs, startSecs = 0) {
   const clipSecs = clip ? await mediaSecs(clip) : 0;   // the Story is as long as the clip, up to 15 seconds
   const secs = Math.max(3, Math.min(SV.secs, clip ? (clipSecs || SV.secs) : songMs ? songMs / 1000 : SV.secs));
   const still = await evCardBuild(card.prefix, card.hash, card.make, card.ext);
-  const hash = createHash("sha1").update(JSON.stringify([SV.version, card.hash, audio, secs, clip])).digest("hex").slice(0, 12);
+  const hash = createHash("sha1").update(JSON.stringify([SV.version, card.hash, audio, secs, clip, startSecs || 0])).digest("hex").slice(0, 12);
   const name = `${prefix}-${hash}.mp4`, out = join(CARD_DIR, name);
   if (existsSync(out)) return out;
   if (SV_BUILDS.has(out)) return SV_BUILDS.get(out);
   const job = (CARD_CHAIN = CARD_CHAIN.catch(() => {}).then(async () => {
     const tmp = join(CARD_DIR, `tmp-${name}`);
     try {
-      await new Promise((ok, no) => execFile(FFMPEG, storyVideoArgs(still, audio, secs, tmp, clip), { timeout: 180000, maxBuffer: 1024 * 1024 },
+      await new Promise((ok, no) => execFile(FFMPEG, storyVideoArgs(still, audio, secs, tmp, clip, startSecs), { timeout: 180000, maxBuffer: 1024 * 1024 },
         (err, _o, se) => (err ? no(new Error(String(se || err).slice(0, 300))) : ok())));
       await new Promise((ok, no) => rename(tmp, out, (e) => (e ? no(e) : ok())));
       await Promise.all(readdirSync(CARD_DIR).filter((f) => f.startsWith(prefix + "-") && f !== name).map(cardRm));   // the old song or card

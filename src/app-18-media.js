@@ -246,7 +246,7 @@ let MUSDELEG=false;
       MUSMUTE=stopping?p.id:null;    // that POST stays silent; others still autoplay
       MUSAUTOID=p.id;                // this post owns the sound now — and it
                                      // still stops the instant the post leaves
-      playTrack(p.audioTrack);
+      playTrack(p.audioTrack,false,p.audioStart);
       /* Repaint so the glyph flips — a tap must always visibly do something,
          otherwise working and broken look the same. render() rewires, which
          covers wireMusAuto(). */
@@ -342,10 +342,10 @@ function wireMusAuto(){
           if([...document.querySelectorAll("video[data-auto]")].some(v=>!v.paused&&!v.muted))return;   // a video has the sound
           MUSAUTOID=p.id;
           if(NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id){
-            a.currentTime=0;
+            a.currentTime=(p.audioStart||0)/1000;
             const pr=a.play();if(pr&&pr.catch)pr.catch(()=>{});
             paintPlayer();
-          }else playTrack(p.audioTrack,true);
+          }else playTrack(p.audioTrack,true,p.audioStart);
         },300);
       }else if(!e.isIntersecting&&MUSBAND.has(String(p.id))&&MUSAUTOID!==p.id){
         MUSBAND.delete(String(p.id));   // passed through without settling: nothing was playing for it

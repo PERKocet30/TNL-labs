@@ -25,7 +25,7 @@ function uiChoose(title,body,opts){
 const pdKey=()=>"tnl-drafts:"+(myName()||"");
 function pdList(){try{const a=JSON.parse(localStorage.getItem(pdKey())||"[]");return Array.isArray(a)?a:[]}catch(e){return []}}
 function pdPut(a){try{localStorage.setItem(pdKey(),JSON.stringify(a.slice(0,20)));return true}catch(e){return false}}
-const PD_KEEP=["body","imgs","vid","cover","vedit","vw","vh","track","ch","collabs","tags","location","commentsOff","products"];
+const PD_KEEP=["body","imgs","vid","cover","vedit","vw","vh","track","musStart","ch","collabs","tags","location","commentsOff","products"];
 function pdSave(c){
   if(c.upN||c.vidbusy){toast("Wait for the upload to finish, then save");return false}
   const d={id:c.draftId||("d"+Date.now()),at:Date.now()};
@@ -78,7 +78,7 @@ async function pqKick(c){
     const imgs=c.imgs.length?c.imgs.map(({busy,orig,edit,gif,...im})=>im):cov?[{url:cov,thumb:cov,w:cw[0]||undefined,h:cw[1]||undefined}]:[];
     const d=await api.post({channel:c.ch?c.ch.id:"profile",body:(c.body||"").trim(),images:imgs,
       videoUrl:c.vid?c.vid.url:undefined,thumbUrl:c.vid&&c.cover?c.cover:undefined,video:c.vid&&c.vedit?c.vedit:undefined,mediaW:c.vid?c.vw:undefined,mediaH:c.vid?c.vh:undefined,
-      isWork:true,audioTrackId:c.track?c.track.id:undefined,
+      isWork:true,audioTrackId:c.track?c.track.id:undefined,audioStart:c.track?(c.musStart||0):undefined,
       tags:(c.tags||[]).map(u=>u.username),location:c.location||"",commentsOff:!!c.commentsOff,products:(c.products||[]).map(l=>l.id),...pcIgExtras(c)});
     let sent=0;const pid=d&&d.post&&d.post.id;
     if(pid)for(const u of c.collabs||[]){try{await api.invite(pid,u.username);sent++}catch(e){}}
