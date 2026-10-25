@@ -826,7 +826,12 @@ console.log("\nMEMBER · PHONE");
     const side = await p.evaluate(() => { const b = document.querySelector(".pc-body"); b.scrollLeft = 40; return { sl: b.scrollLeft, ox: getComputedStyle(b).overflowX }; });
     ok(side.sl === 0 && side.ox === "hidden", "the form can slide sideways: " + JSON.stringify(side));
     await p.locator("#pcfile").setInputFiles([UPLOAD_PNG, UPLOAD_PNG2, UPLOAD_PNG3]);
+    /* 2026-10-25 "images aren't uploading": each photo takes its place at once, then its upload lands into that place */
+    const at0 = await p.evaluate(() => { PCOMPOSE.imgs.forEach((im, k) => im._k = k); return { n: PCOMPOSE.imgs.length, busy: PCOMPOSE.imgs.filter((i) => i.busy).length, tiles: document.querySelectorAll(".pc-strip .pc-th[data-pci]").length }; });
+    ok(at0.n === 3 && at0.tiles === 3, "three photos should have their places the moment they're picked: " + JSON.stringify(at0));
     await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 3 && !PCOMPOSE.upN, null, { timeout: 10000 });
+    const landed = await p.evaluate(() => ({ ks: PCOMPOSE.imgs.map((i) => i._k), ok: PCOMPOSE.imgs.every((i) => !i.busy && /^\/uploads\//.test(i.url) && !i.local) }));
+    ok(landed.ks.join() === "0,1,2" && landed.ok, "the uploads should land into their own places, in the order picked: " + JSON.stringify(landed));
     const order0 = await p.evaluate(() => PCOMPOSE.imgs.map((i) => i.url));
     const th = await p.locator('.pc-th[data-pci="0"]').boundingBox(), step2 = (await p.locator('.pc-th[data-pci="1"]').boundingBox()).x - th.x;
     await p.mouse.move(th.x + th.width / 2, th.y + th.height / 2); await p.mouse.down();
@@ -834,6 +839,16 @@ console.log("\nMEMBER · PHONE");
     await p.mouse.up(); await p.waitForTimeout(200);
     const order1 = await p.evaluate(() => PCOMPOSE.imgs.map((i) => i.url));
     ok(order1[2] === order0[0] && order1[0] === order0[1], "drag didn't move the first photo to the end: " + JSON.stringify({ order0, order1 }));
+    /* 2026-10-25 "rearranging images glitches": a touch the phone turns into a scroll (pointercancel) must reorder nothing */
+    const order2 = await p.evaluate(async () => {
+      const th = document.querySelector('.pc-th[data-pci="0"]'), r = th.getBoundingClientRect(), x = r.x + r.width / 2, y = r.y + r.height / 2;
+      const ev = (type, cx) => th.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 7, pointerType: "touch", clientX: cx, clientY: y, isPrimary: true }));
+      ev("pointerdown", x); await new Promise((ok) => setTimeout(ok, 300));   // held: lifted
+      const lifted = th.classList.contains("pc-lift");
+      ev("pointermove", x + 140); ev("pointercancel", x + 140);   // the phone took over and scrolled
+      return { lifted, order: PCOMPOSE.imgs.map((i) => i.url), lift: th.classList.contains("pc-lift"), moved: [...document.querySelectorAll(".pc-th")].some((t) => t.style.transform) };
+    });
+    ok(order2.lifted && order2.order.join() === order1.join() && !order2.lift && !order2.moved, "a cancelled drag reordered the photos or left them lifted: " + JSON.stringify(order2));
   });
   await step(d, "photo editor: square crop + a filter make a new square image", async () => {
     await p.evaluate(() => { PCOMPOSE.idx = 0; render(); });
