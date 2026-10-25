@@ -1,3 +1,4 @@
+/* v2026-10-25: a photo takes its place in the strip the moment it's picked and uploads land into it, two at a time (pcAddPhotos, app-18-post-queue); a drag the phone turns into a scroll reorders nothing.
 /* v2026-10-21 (later the same day): tag people on the picture, Preview, Also share to your Story, Advanced settings — app-18-composer-ig.js. Posting to · Your profile · + Add a lab (one post, one place list; Share is for sending out). v2026-10-20: the bar is the kit's formHead */
 /* ── POST CREATOR · v2.4 · 2026-10-13 (v2.4: ▶ to listen before you pick a song; v2.3: your songs first in Add music; v2 2026-09-28; v2.1: your labs first in Share to a lab; v2.2: upload a song from here, and its cover is the post's picture when there are no photos) ────────────────────────────────
    One page: the work large at the
@@ -38,13 +39,12 @@ function pcomposeHTML(){
       <div class="pc-track ${c.tagMode?"tagging":""}" id="pctrack">${c.imgs.map((im,i)=>`<div class="pc-slide"><img src="${esc(im.url||im.thumb)}" alt="">${pcPinsHTML(c,i)}</div>`).join("")}
         ${c.upN&&!c.imgs.length?`<div class="pc-slide pc-busy"><span class="spin"></span></div>`:""}</div>
       ${c.imgs.length>1?`<span class="pc-count" id="pccount">${c.idx+1}/${c.imgs.length}</span>`:""}
-      ${c.imgs.length&&!(c.imgs[c.idx]||{}).gif?`<button class="pc-edit" data-pcedit aria-label="Edit photo">${PC_EDIT}<span>Edit</span></button>`:""}
+      ${c.imgs.length&&!(c.imgs[c.idx]||{}).gif&&!(c.imgs[c.idx]||{}).busy?`<button class="pc-edit" data-pcedit aria-label="Edit photo">${PC_EDIT}<span>Edit</span></button>`:""}
     </div>
     <div class="pc-strip">
       ${c.imgs.map((im,i)=>`<div class="pc-th ${i===c.idx?"on":""}${im.busy?" pc-busy":""}" data-pci="${i}"><button class="pc-thb" data-pcgo="${i}" aria-label="Photo ${i+1}"><img src="${esc(im.thumb)}" alt="" draggable="false"></button>
         ${im.busy?`<span class="spin"></span>`:`<button class="pc-rm sm" data-pcrm="${i}" aria-label="Remove photo">${PC_X}</button>`}</div>`).join("")}
-      ${Array.from({length:c.upN||0},()=>`<div class="pc-th pc-busy"><span class="spin"></span></div>`).join("")}
-      ${c.imgs.length+(c.upN||0)<10?`<label class="pc-th pc-add" aria-label="Add photos">${UI_IC.plus}${file}</label>`:""}
+      ${c.imgs.length<10?`<label class="pc-th pc-add" aria-label="Add photos">${UI_IC.plus}${file}</label>`:""}
     </div>`;
   else if(pcCover(c))media=`<div class="pc-stage"><img class="pc-cov" src="${esc(pcCover(c))}" alt="${esc(c.track.title)} — cover"><span class="pc-covtag">${UI_IC.music} Song cover</span></div>
     <label class="pc-pick pc-pick-sm">${file}<b>Add photos or video instead</b></label>`;
@@ -142,17 +142,7 @@ function wirePCompose(){
       c.vidbusy=false;pcRepaint(c);return;
     }
     if(c.vid||c.vidbusy){toast("Video posts stand alone");return}
-    const room=10-c.imgs.length-(c.upN||0);
-    if(rest.length>room)toast("10 photos max");
-    const take=rest.slice(0,Math.max(0,room));if(!take.length)return;
-    c.upN=(c.upN||0)+take.length;render();
-    for(const file of take){
-      try{const im=await uploadWork(file);   // the original + feed and grid copies (app-08-images.js)
-        if(c.dead)return;
-        c.imgs.push(im);}
-      catch(e){if(c.dead)return;toast(e.message)}
-      c.upN--;pcRepaint(c);
-    }
+    pcAddPhotos(c,rest);   // each gets its place at once, then uploads land into it (app-18-post-queue)
   };
   const tr=$("#pctrack");
   if(tr){

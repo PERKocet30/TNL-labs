@@ -62,7 +62,7 @@ t("names in srcset are escaped", !I.imgAttrs({ url: '/uploads/"x', thumb: "/uplo
 
 console.log("\nWIRED IN");
 const app = readFileSync(join(ROOT, "public/index.html"), "utf8"), rt = readFileSync(join(ROOT, "src/server.runtime.js"), "utf8");
-t("the creator uploads the original + copies", app.includes("const im=await uploadWork(file);"));
+t("the creator uploads the original + copies", app.includes("const up=await uploadWork(file);"));
 t("feed copies are 1440 wide; grid copies 480", app.includes("drawFit(img,1440,2400),sc=drawFit(img,480,800)"));
 t("transparency stays transparent (PNG copies)", app.includes('const copyType=alpha?"image/png":"image/jpeg"'));
 t("Showroom and posts use srcset", (app.match(/\$\{imgAttrs\(/g) || []).length >= 4);
