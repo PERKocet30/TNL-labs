@@ -26,4 +26,4 @@ Disallow: /api/
 Disallow: /admin
 Allow: /
 
-Sitemap: https://labs.tnllabs.com/sitemap.xml
+Sitemap: https://tnllabs.com/sitemap.xml

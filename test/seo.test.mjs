@@ -42,7 +42,7 @@ try {
   t("it lists the home page, the event, the artist, their work, their song and what's for sale", has("/") && has("/e/art-cup") && has("/u/artist") && has(`/p/${work}`) && has(`/s/${song}`) && has(`/m/${tee}`));
   t("…and never chat, a draft event, a member with no work, a suspended member, or removed / sold listings",
     !has(`/p/${chat}`) && !has("/e/draft-cup") && !has("/u/quiet") && !has("/u/banned") && !has(`/p/${bannedWork}`) && !has(`/m/${gone}`) && !has(`/m/${sold}`));
-  t("robots.txt points to it, and still turns AI crawlers away", /Sitemap: https:\/\/labs\.tnllabs\.com\/sitemap\.xml/.test(readFileSync(join(ROOT, "public/robots.txt"), "utf8")) && /GPTBot/.test(readFileSync(join(ROOT, "public/robots.txt"), "utf8")));
+  t("robots.txt points to it, and still turns AI crawlers away", /Sitemap: https:\/\/tnllabs\.com\/sitemap\.xml/.test(readFileSync(join(ROOT, "public/robots.txt"), "utf8")) && /GPTBot/.test(readFileSync(join(ROOT, "public/robots.txt"), "utf8")));
 
   console.log("\nWHAT EACH PAGE IS (schema.org)");
   const home = await html("/");
