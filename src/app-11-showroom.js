@@ -46,7 +46,7 @@ function srCardHTML(p,i){
         ${p.author.username===myName()?`<button class="igact" data-collab="${p.id}" aria-label="Invite a collaborator" title="Invite a collaborator">${IG_COLLAB}</button>`:""}
         ${p.collaborators.find(c=>c.username===myName()&&c.status==="pending")?`<button class="igpill" data-accept="${p.id}">Accept collab</button>`:""}
       </div>
-      ${p.body?`<div class="sr-body"><b data-u="${esc(p.author.username)}">${esc(p.author.username)}</b> ${rich(p.body)}</div>`:""}
+      ${p.body?`<div class="sr-body"><b data-u="${esc(p.author.username)}">${esc(p.author.username)}</b> ${capHTML(p.body)}</div>`:""}
       <div class="post-when">${igAgo(p.createdAt)}${p.editedAt?" · Edited":""}</div>
       <div class="cslot" data-cslot="${p.id}">${cslotHTML(p)}</div>
     </div>

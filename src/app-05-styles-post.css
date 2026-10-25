@@ -1,4 +1,9 @@
-/* POST v2 — 2026-10-12 (logic: postHTML in
+/* POST v2.2 — 2026-10-25. Captions the way Instagram's feed has them: in
+   the feed, the name and the caption up to its first line break, then
+   "… more" right after the words (capHTML, app-12-post-extras) opens the
+   rest in place; the opened post shows it all. Line breaks are kept
+   ("A TEAM🪖⏎⏎The latest drop…" was one run-on line).
+   POST v2 — 2026-10-12 (logic: postHTML in
    app-12-archive-posts.js, srCardHTML in app-11-showroom.js, helpers in
    app-12-post-extras.js). Name line, then the song or the place; the
    caption after the buttons; the time; tagged people on the picture. */
@@ -8,6 +13,10 @@
 .post-names .lvl{font-size:10px;margin:0 2px 0 4px;vertical-align:1px}
 .post-loc{font-size:12px;line-height:16px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .post-hw .muschip{font-size:12px;color:var(--tx2)}
+.post-cap,.post-body,.sr-body{white-space:pre-line}
+.cap-full,.open>.cap-prev{display:none}
+.open>.cap-full{display:inline}
+.capmore{border:0;background:none;margin:0;padding:0;font:inherit;line-height:inherit;color:var(--dim);cursor:pointer}
 .post-media{position:relative}
 .px-tagbtn{position:absolute;left:10px;bottom:10px;z-index:2;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.72);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .post-cap{font-size:14px;line-height:1.45;color:var(--tx);margin-top:8px;word-break:break-word}

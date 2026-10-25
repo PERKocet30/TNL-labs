@@ -127,7 +127,7 @@ const IC_REMIX_SM=`<svg viewBox="0 0 24 24" width="12" height="12" fill="none" s
 function postHTML(p){const mine=p.author.username===myName();
   const myPending=p.collaborators.find(c=>c.username===myName()&&c.status==="pending");
   const media=!!(p.imageUrl||p.videoUrl||(p.images&&p.images.length)||p.beat);
-  const cap=!p.body?"":media?`<div class="post-cap"><b class="post-capu" data-u="${esc(p.author.username)}">${esc(p.author.username)}</b> ${rich(p.body)}</div>`:`<div class="post-body">${rich(p.body)}</div>`;
+  const cap=!p.body?"":media?`<div class="post-cap"><b class="post-capu" data-u="${esc(p.author.username)}">${esc(p.author.username)}</b> ${capHTML(p.body)}</div>`:`<div class="post-body">${rich(p.body)}</div>`;
   return `<div class="post ${p.pending?"pending":""} ${p.failed?"failed":""}">
   ${p.pending?`<div class="mono sending">${UPPROG!==null&&UPPROG<1?`UPLOADING ${Math.round(UPPROG*100)}%`:"SENDING…"}</div>${UPPROG!==null&&UPPROG<1?`<div class="uptrack"><div class="upbar" id="upbar" style="width:${Math.round(UPPROG*100)}%"></div></div>`:""}`:""}
   ${p.failed?`<div class="failbar"><span>Didn't send.</span><button class="retryb" data-retry="${p.id}">Retry</button><button class="retryb ghost" data-discard="${p.id}">Discard</button></div>`:""}
