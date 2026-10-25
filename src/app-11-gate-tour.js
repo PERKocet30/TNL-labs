@@ -1,4 +1,7 @@
-/* ── HOW LABS WORKS · v1.0 · 2026-10-18 ─────────────────────────────
+/* ── HOW LABS WORKS · v1.1 · 2026-10-25 ─────────────────────────────
+   v1.1: the Market card says what's actually for sale — clothing, art and
+   prints, the same words as the Market's own pitch ("you can't sell beats
+   right now").
    "A better onboarding process for new members. Walk through all of the
    app's features and profile creation." After joining (photo → colour →
    bio → people) a new member swipes through what's here, one card per
@@ -9,7 +12,7 @@ const TOUR=[   // short, like Instagram's: what each place is, never how the ran
   {ic:()=>UI_IC.tabGrid,h:"The Showroom",p:()=>"New work from every lab. Like it, comment, share it."},
   {ic:()=>UI_IC.hash,h:"The labs",p:()=>`${LABS.map(l=>labMark(l.name)).join(" · ")}. Find your people and post where your work belongs.`},
   {ic:()=>UI_IC.plusSq,h:"Post your work",p:()=>"Tap + to share pictures, videos and songs. Tag who you made it with."},
-  {ic:()=>UI_IC.tabShop,h:"The Market",p:()=>"Buy and sell prints, merch, beats and more."},
+  {ic:()=>UI_IC.tabShop,h:"The Market",p:()=>"Buy and sell what creatives make: clothing, art and prints."},
   {ic:()=>UI_IC.home,h:"Your profile",p:()=>`Your work, in your colour, at ${location.host}/u/${esc(ME?ME.username:"you")}. Share it to your Story.`},
   {ic:()=>UI_IC.dm,h:"Messages",p:()=>"Message anyone, start a group chat, send a post."},
   {ic:()=>UI_IC.bell,h:"Notifications",p:()=>"See who liked, commented, followed and collabed."},

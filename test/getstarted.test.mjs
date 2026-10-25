@@ -34,6 +34,8 @@ try {
   t("the walkthrough covers the Showroom, labs, posting, Market, profile, messages and notifications", ["The Showroom", "The labs", "Post your work", "The Market", "Your profile", "Messages", "Notifications"].every((h) => app.includes(`h:"${h}"`)));
   t("…and never explains rep, levels or rates", !/h:"Rep and levels"|Market fee/.test(app.slice(app.indexOf("const TOUR="), app.indexOf("function tourHTML"))));
   t("≡ on your profile reopens it", app.includes('label:"How LABS works",run:openTour'));
+  { const tour = app.slice(app.indexOf("const TOUR="), app.indexOf("function tourHTML"));
+    t("the Market card only promises what's for sale — clothing, art and prints, not beats (2026-10-25)", tour.includes("Buy and sell what creatives make: clothing, art and prints.") && !/beats/i.test(tour)); }
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
