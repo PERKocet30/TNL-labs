@@ -745,21 +745,26 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => location.search === ""), "?bag= stayed in the address bar");
     await p.evaluate(() => { bagPut([]); MKTVIEW = "browse"; render(); });
   });
-  /* 2026-10-25: "Captions work weird" — a caption written on two lines (a blank line between) showed as one run-on line */
-  await step(d, "captions keep their line breaks: in the feed card, the opened post and a text post", async () => {
-    const lines = await p.evaluate(() => {
-      const out = {};
-      for (const cls of ["sr-body", "post-cap", "post-body"]) {
-        const one = document.createElement("div"), two = document.createElement("div");
-        one.className = two.className = cls; one.style.width = two.style.width = "300px";
-        one.innerHTML = "<b>june</b> " + rich("A TEAM"); two.innerHTML = "<b>june</b> " + rich("A TEAM\n\nThe latest drop is live.");
-        document.body.append(one, two);
-        out[cls] = { one: one.offsetHeight, two: two.offsetHeight };
-        one.remove(); two.remove();
-      }
+  /* 2026-10-25: "Captions work weird" / "not like Instagram": in the feed, the caption up to its first line break and "… more"
+     right after the words, which opens the rest in place; the opened post shows it all with its line breaks */
+  await step(d, "captions like Instagram's feed: the first line and … more, tap for the rest; the opened post shows it all with its line breaks", async () => {
+    const r = await p.evaluate(() => {
+      const mk = (cls, body, opened) => { CSLOTPO = !!opened; const e = document.createElement("div"); e.className = cls; e.style.width = "358px";   // a phone's caption width
+        e.innerHTML = "<b>june</b> " + capHTML(body); CSLOTPO = false; document.body.append(e); return e; };
+      const long = "A TEAM\n\nThe latest drop is live.\nTap in.";
+      const one = mk("sr-body", "A TEAM"), feed = mk("sr-body", long), card = mk("post-cap", long), opened = mk("post-cap", long, true);
+      const wordy = mk("sr-body", "word ".repeat(40).trim());
+      const out = { one: one.offsetHeight, feed: feed.offsetHeight, card: card.offsetHeight, opened: opened.offsetHeight, wordy: wordy.offsetHeight,
+        feedText: feed.innerText.replace(/\s+/g, " ").trim(), moreOne: !!one.querySelector(".capmore"), moreOpened: !!opened.querySelector(".capmore"), moreWordy: !!wordy.querySelector(".capmore") };
+      feed.querySelector(".capmore").click(); out.feedOpen = feed.offsetHeight; out.openText = feed.innerText;
+      [one, feed, card, opened, wordy].forEach((e) => e.remove());
       return out;
     });
-    for (const [cls, h] of Object.entries(lines)) ok(h.two >= h.one * 2.5, `${cls}: the blank line between the two lines was squashed: ` + JSON.stringify(h));
+    ok(r.feedText === "june A TEAM… more" && r.feed === r.one && r.card === r.one, "the feed should show the first line then … more, on one line: " + JSON.stringify(r));
+    ok(!r.moreOne, "a one-line caption shouldn't get … more");
+    ok(r.moreWordy && r.wordy <= r.one * 2.2, "a long single-line caption should be cut to about two lines with … more: " + JSON.stringify(r));
+    ok(r.feedOpen >= r.one * 3.5 && /A TEAM\n\nThe latest drop is live\.\nTap in\./.test(r.openText), "tapping … more didn't open the rest with its line breaks: " + JSON.stringify(r));
+    ok(r.opened >= r.one * 3.5 && !r.moreOpened, "the opened post should show the whole caption, line breaks kept: " + JSON.stringify(r));
   });
   await step(d, "Saved works (it used to say 'no listing'); Recently viewed shows on the Market", async () => {
     await p.evaluate(async () => { MKTRECENT = null; MKT = null; });
