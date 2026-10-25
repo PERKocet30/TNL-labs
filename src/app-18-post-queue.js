@@ -93,7 +93,7 @@ async function pqKick(c){
 function pqProg(c){
   if(c.state==="done")return 1;if(c.state==="posting")return .92;
   if(c.vidbusy)return .9*(c.vidprog||0);
-  const n=c.imgs.length+(c.upN||0);return n?.9*c.imgs.filter(i=>!i.busy).length/n:.1;
+  const n=c.imgs.length;return n?.9*c.imgs.filter(i=>!i.busy).length/n:.1;   // a photo still uploading holds its place (busy)
 }
 function pqHTML(c,i){
   const th=c.imgs[0]?c.imgs[0].thumb:c.cover||"";
@@ -119,7 +119,39 @@ function pqPaint(){
 /* Closing the tab mid-post would lose it — ask first. */
 addEventListener("beforeunload",e=>{if(PQ.some(c=>c.state==="waiting"||c.state==="posting")){e.preventDefault();e.returnValue=""}});
 
-/* ── drag a thumbnail to reorder (hold on a phone, drag with a mouse) ── */
+/* ── photos land where they were picked (2026-10-25: "images aren't uploading") ──
+   Each picked photo takes its place in the strip at once (busy, showing the
+   phone's own copy), then the uploads run two at a time and land into that
+   slot — so eight photos don't wait in a line with nothing to show, and
+   the order you picked is the order you get. A photo that fails leaves. */
+const PC_UP_AT_ONCE=2;
+function pcAddPhotos(c,files){
+  const room=10-c.imgs.length;
+  if(files.length>room)toast("10 photos max");
+  const take=files.slice(0,Math.max(0,room));if(!take.length)return;
+  const slots=take.map(file=>{let local="";try{local=URL.createObjectURL(file)}catch(e){}
+    const im={busy:true,thumb:local,url:local,local};c.imgs.push(im);return {im,file}});
+  c.upN=(c.upN||0)+slots.length;render();
+  let next=0;
+  const run=async()=>{
+    while(next<slots.length){
+      const {im,file}=slots[next++];
+      try{const up=await uploadWork(file);   // the original + feed and grid copies (app-08-images.js)
+        if(c.dead)return;
+        delete im.busy;Object.assign(im,up)}
+      catch(e){if(c.dead)return;const k=c.imgs.indexOf(im);if(k>=0){c.imgs.splice(k,1);c.idx=Math.min(c.idx||0,Math.max(0,c.imgs.length-1))}toast(e.message)}
+      try{if(im.local)URL.revokeObjectURL(im.local)}catch(e){}delete im.local;
+      c.upN--;pcRepaint(c);
+    }
+  };
+  for(let k=0;k<Math.min(PC_UP_AT_ONCE,slots.length);k++)run();
+}
+
+/* ── drag a thumbnail to reorder (hold on a phone, drag with a mouse) ──
+   2026-10-25 ("rearranging images glitches"): a drag that the phone turns
+   into a scroll (pointercancel) now drops nothing — it used to reorder on
+   wherever the finger was; while a thumbnail is lifted the strip can't
+   scroll under it; the others slide aside to show where it will land. */
 function pcDragWire(c){
   const strip=document.querySelector(".pc-strip");if(!strip)return;
   strip.querySelectorAll(".pc-th[data-pci]").forEach(th=>{
@@ -127,17 +159,23 @@ function pcDragWire(c){
     const start=e=>{if(e.target.closest(".pc-rm"))return;const i=+th.dataset.pci;
       d={i,x:e.clientX,y:e.clientY,on:false,id:e.pointerId};
       hold=setTimeout(()=>{if(d)lift()},e.pointerType==="mouse"?0:220)};
-    const lift=()=>{d.on=true;th.classList.add("pc-lift");try{th.setPointerCapture(d.id)}catch(e){}};
+    const ths=()=>[...strip.querySelectorAll(".pc-th[data-pci]")];
+    const step=()=>th.getBoundingClientRect().width+6;
+    const target=(w,x)=>Math.max(0,Math.min(c.imgs.length-1,w.i+Math.round((x-w.x)/step())));
+    const aside=(w,to)=>ths().forEach((t,k)=>{if(t===th)return;t.style.transform=k>w.i&&k<=to?`translate3d(-${step()}px,0,0)`:k<w.i&&k>=to?`translate3d(${step()}px,0,0)`:""});
+    const lift=()=>{d.on=true;strip._lift=true;th.classList.add("pc-lift");try{th.setPointerCapture(d.id)}catch(e){}};
+    const drop=()=>{strip._lift=false;th.classList.remove("pc-lift");ths().forEach(t=>t.style.transform="")};
     th.onpointerdown=start;
     th.onpointermove=e=>{if(!d)return;const dx=e.clientX-d.x;
       if(!d.on){if(Math.abs(e.clientY-d.y)>8||(e.pointerType!=="mouse"&&Math.abs(dx)>8)){clearTimeout(hold);d=null}else if(e.pointerType==="mouse"&&Math.abs(dx)>6)lift();return}
-      e.preventDefault();th.style.transform=`translate3d(${dx}px,0,0) scale(1.06)`};
-    th.onpointerup=th.onpointercancel=e=>{clearTimeout(hold);if(!d)return;const was=d;d=null;
-      if(!was.on)return;th.classList.remove("pc-lift");th.style.transform="";
-      const step=th.getBoundingClientRect().width+6,to=Math.max(0,Math.min(c.imgs.length-1,was.i+Math.round((e.clientX-was.x)/step)));
+      e.preventDefault();th.style.transform=`translate3d(${dx}px,0,0) scale(1.06)`;aside(d,target(d,e.clientX))};
+    th.onpointercancel=()=>{clearTimeout(hold);if(!d)return;const was=d;d=null;if(was.on)drop()};   // the phone took it as a scroll: nothing moves
+    th.onpointerup=e=>{clearTimeout(hold);if(!d)return;const was=d;d=null;
+      if(!was.on)return;const to=target(was,e.clientX);drop();
       th._moved=true;setTimeout(()=>{th._moved=false},0);
       if(to===was.i)return;
       const [m]=c.imgs.splice(was.i,1);c.imgs.splice(to,0,m);c.idx=to;render()};
     th.addEventListener("click",e=>{if(th._moved){e.stopPropagation();e.preventDefault()}},true);
   });
+  if(!strip._tm){strip._tm=true;strip.addEventListener("touchmove",e=>{if(strip._lift)e.preventDefault()},{passive:false})}   // a lifted thumbnail: the strip holds still
 }
