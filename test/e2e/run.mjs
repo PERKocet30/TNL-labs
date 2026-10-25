@@ -745,6 +745,20 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => location.search === ""), "?bag= stayed in the address bar");
     await p.evaluate(() => { bagPut([]); MKTVIEW = "browse"; render(); });
   });
+  /* 2026-10-25: "These profiles don't actually work. I click them and nothing happens." — Who's building arrives after the page is wired */
+  await step(d, "Who's building: tapping a person opens their profile, even when the strip arrives after the page", async () => {
+    await p.evaluate(() => { TAB = "showroom"; POSTOPEN = null; PROFILE = null; render(); });
+    await p.waitForSelector("#sr-builders", { timeout: 6000 });
+    const who = await p.evaluate(async () => {   // the strip filled in late, as it is on a real first load
+      const list = SRB.length ? SRB : await api.builders().then((d) => d.builders || []).catch(() => []);
+      srBuilders(list, true); return list[0] && list[0].username;
+    });
+    ok(who, "no one in Who's building to tap");
+    await p.locator(`#sr-builders .bcard[data-u="${who}"]`).tap();
+    await p.waitForFunction((u) => PROFILE && PROFILE.user && PROFILE.user.username === u, who, { timeout: 5000 }).catch(() => {});
+    ok(await p.evaluate((u) => !!(PROFILE && PROFILE.user && PROFILE.user.username === u), who), "tapping " + who + " in Who's building did nothing");
+    await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
+  });
   await step(d, "Saved works (it used to say 'no listing'); Recently viewed shows on the Market", async () => {
     await p.evaluate(async () => { MKTRECENT = null; MKT = null; });
     await toMarket();

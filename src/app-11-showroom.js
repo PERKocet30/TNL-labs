@@ -82,7 +82,7 @@ let SRNEW=null, SRBNEXT=null;
    in size waits for the next full refresh (the New work pill, a first paint). */
 function srBuilders(list,fresh){
   const bb=$("#sr-builders");
-  if(fresh||!bb||(!!SRB.length)===(!!list.length)||!SRBLOADED){SRB=list;SRBLOADED=true;SRBNEXT=null;if(bb)bb.innerHTML=srBuildersHTML()}
+  if(fresh||!bb||(!!SRB.length)===(!!list.length)||!SRBLOADED){SRB=list;SRBLOADED=true;SRBNEXT=null;if(bb){bb.innerHTML=srBuildersHTML();wireProfileLinks(bb)}}   // 2026-10-25: the cards land after the page is wired — wire them too, or a tap does nothing
   else SRBNEXT=list;
 }
 function srPaint(){
