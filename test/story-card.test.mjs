@@ -39,6 +39,7 @@ const art = P("A piece", "/uploads/piece.jpg", tr), words = P("Every piece start
 const V = (track) => Number(db.prepare(`INSERT INTO posts (author_id, channel, body, image_url, thumb_url, video_url, media_w, media_h, is_work, audio_track_id, created_at) VALUES (?,?,?,?,?,?,720,900,1,?,?)`)
   .run(uid, "graphic-design", "A clip", "/uploads/clip.jpg", "/uploads/clip.jpg", "/uploads/clip.mp4", track, now).lastInsertRowid);
 const vid = V(null), vidSong = V(tr);
+const late = P("From the drop", "/uploads/piece.jpg", tr); db.prepare(`UPDATE posts SET audio_start = 12000 WHERE id = ?`).run(late);   // the song from 0:12 (2026-10-25)
 
 const PORT = 8870, B = `http://localhost:${PORT}`;
 const srv = spawn(process.execPath, ["--experimental-sqlite", "--no-warnings", "src/server.runtime.js"], {
@@ -82,6 +83,10 @@ try {
   const b6 = join(DATA, "short.mp4"); writeFileSync(b6, Buffer.from(await (await fetch(`${B}/p/${brief}/story.mp4`)).arrayBuffer()));
   t("a song shorter than 15 seconds sets the length", /Duration: 00:00:0[56]\./.test(probe2(b6)));
   t("a post with no song has no video (the picture is its Story)", (await fetch(`${B}/p/${words}/story.mp4`)).status === 404);
+  console.log("\nTHE PART OF THE SONG THE POST PLAYS (2026-10-25)");
+  const lf = join(DATA, "late.mp4"); const lv = Buffer.from(await (await fetch(`${B}/p/${late}/story.mp4`)).arrayBuffer()); writeFileSync(lf, lv);
+  t("a post that plays the song from 0:12 of 0:20 gets the 8 seconds that are left, from there", /Duration: 00:00:0[78]\./.test(probe2(lf)) && !lv.equals(vb));
+  t("the Story takes its sound from the song's start point", src.includes('"-ss", startSecs.toFixed(3)') && src.includes("startMs / 1000"));
   console.log("\nA VIDEO POST — the clip itself goes to the Story (2026-10-20)");
   const cf = join(DATA, "clip-story.mp4"); const cr = await fetch(`${B}/p/${vid}/story.mp4`); writeFileSync(cf, Buffer.from(await cr.arrayBuffer())); const cp = probe2(cf);
   t("a video post has a Story video even without a song", cr.status === 200 && /Video: h264[^\n]*1080x1920/.test(cp));

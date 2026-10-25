@@ -1067,6 +1067,32 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { TRACKS = null; });   // the save above loaded the library list; let it load fresh
   });
   /* "You should be able to listen to a song before you pick it for a post" (2026-10-13). */
+  /* "You should be able to select what part the song plays" (2026-10-25): a bar under the picked song, a 15-second window to drag */
+  await step(d, "which part of the song plays: drag the window under a long song, the times follow, and the post keeps that start", async () => {
+    await openCreator();
+    await p.locator("[data-pcmusadd]").tap();
+    await p.locator("#pcmusfile").setInputFiles({ name: "long-song.wav", mimeType: "audio/wav", buffer: wav(24, 330) });
+    await p.waitForSelector("#trkeov", { timeout: 15000 });
+    await p.locator("#trketitle").fill("Long Song");
+    await p.locator("#trkesave").tap();
+    await p.waitForFunction(() => !TRKEDIT && PCOMPOSE && PCOMPOSE.track && PCOMPOSE.track.title === "Long Song", null, { timeout: 10000 });
+    ok(await p.evaluate(() => PCOMPOSE.track.durationMs >= 23000), "the song's length should be known: " + await p.evaluate(() => PCOMPOSE.track.durationMs));
+    await p.waitForSelector("#pcpartbar", { timeout: 5000 });
+    const before = await p.evaluate(() => ({ start: PCOMPOSE.musStart || 0, t: document.querySelector("#pcpartt").textContent }));
+    ok(before.start === 0 && before.t.startsWith("0:00 – 0:15"), "a picked song should start at the top: " + JSON.stringify(before));
+    const bar = await p.locator("#pcpartbar").boundingBox();
+    await p.mouse.move(bar.x + bar.width * 0.3, bar.y + bar.height / 2); await p.mouse.down();
+    await p.mouse.move(bar.x + bar.width * 0.9, bar.y + bar.height / 2, { steps: 6 }); await p.mouse.up();
+    const after = await p.evaluate(() => ({ start: PCOMPOSE.musStart || 0, t: document.querySelector("#pcpartt").textContent, left: parseFloat(document.querySelector("#pcpartwin").style.left) }));
+    ok(after.start >= 8000 && after.start <= 9000 && after.t.startsWith("0:0" + Math.round(after.start / 1000)) && after.left > 30, "dragging to the end should land the window on the last 15 seconds: " + JSON.stringify(after));
+    await p.locator("#pcbody").fill("From the drop");
+    await p.locator("#pcgo").tap();
+    await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 10000 });
+    const np = (await myPosts())[0];
+    ok(np.audioTrack && np.audioTrack.title === "Long Song" && np.audioStart === after.start, "the post should keep where the song starts: " + JSON.stringify({ audioStart: np.audioStart, start: after.start }));
+    await fetch(B + "/api/tracks/" + np.audioTrack.id, { method: "DELETE", headers: { authorization: "Bearer " + token } });
+    await p.evaluate(() => { TRACKS = null; PQ = []; TAB = "showroom"; render(); });   // the library list loaded with the song in it; let it load fresh
+  });
   await step(d, "Add music: ▶ plays a song without picking it, tap again stops it; the row picks it and it keeps playing; closing the post maker stops it", async () => {
     await openCreator();
     await p.locator("[data-pcmusadd]").tap();

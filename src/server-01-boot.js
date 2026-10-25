@@ -322,7 +322,7 @@ function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false, p
   const whereSql = where.length ? "WHERE " + where.join(" AND ") : "";
   const sql = `
     SELECT
-      p.id, p.channel, p.body, p.beat_json, p.image_url, p.video_url, p.thumb_url, p.media_w, p.media_h, p.is_work, p.edited_at, p.shared_from, p.created_at, p.audio_track_id,
+      p.id, p.channel, p.body, p.beat_json, p.image_url, p.video_url, p.thumb_url, p.media_w, p.media_h, p.is_work, p.edited_at, p.shared_from, p.created_at, p.audio_track_id, p.audio_start,
       p.images, p.reply_to, p.link_json, p.extras,
       tr.title AS track_title, tr.url AS track_url, tr.artwork_url AS track_art, tr.duration_ms AS track_dur, tu.username AS track_by,
       u.username AS author_username, u.display_name AS author_name, u.role AS author_role,
@@ -413,6 +413,7 @@ function shapePost(row, side) {
        track was later deleted (LEFT JOIN finds nothing). */
     audioTrack: row.track_url ? { id: row.audio_track_id, title: row.track_title, url: audioPlayUrl(row.track_url),
       artworkUrl: row.track_art || "", durationMs: row.track_dur || 0, by: { username: row.track_by } } : null,
+    audioStart: row.audio_start || 0,   // where in the song it starts (ms)
     isWork: !!row.is_work,
     /* Lab chat: the message this one answers, emoji reactions, and the
        preview card for a pasted link. */

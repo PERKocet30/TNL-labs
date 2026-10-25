@@ -148,7 +148,7 @@ function lockScreen(){
    mutes: Control Center showed LABS playing and nothing came out (Jorge's
    recording, switch on). Saying "playback" makes it play like a music app. */
 function soundOn(){try{const s=navigator.audioSession;if(s&&s.type!=="playback")s.type="playback"}catch(e){}}
-function playTrack(t,silent){
+function playTrack(t,silent,startMs){
   const a=audioEl();soundOn();
   /* Same track already loaded: this is a toggle, not a new play. The promise
      used to be dropped on the floor here, so an iOS refusal looked identical
@@ -158,6 +158,8 @@ function playTrack(t,silent){
     else a.pause();
     return}
   NOWPLAYING=t; a.src=t.url;
+  if(startMs>0){const at=startMs/1000,seek=()=>{try{a.currentTime=at}catch(e){}};   // the part of the song the post plays (2026-10-25)
+    try{a.currentTime=at}catch(e){}a.addEventListener("loadedmetadata",seek,{once:true})}
   a.play().catch(err=>{if(silent)return;
     /* Name the refusal. iOS rejects play() for exactly three reasons and
        they need three different fixes: NotAllowedError = gesture credit

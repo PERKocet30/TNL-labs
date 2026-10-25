@@ -1,3 +1,4 @@
+/* v2026-10-25: pick which part of the song plays — the bar under the picked song (pcPartHTML/pcPartWire, app-18-pc-preview).
 /* v2026-10-25: a photo takes its place in the strip the moment it's picked and uploads land into it, two at a time (pcAddPhotos, app-18-post-queue); a drag the phone turns into a scroll reorders nothing.
 /* v2026-10-21 (later the same day): tag people on the picture, Preview, Also share to your Story, Advanced settings — app-18-composer-ig.js. Posting to · Your profile · + Add a lab (one post, one place list; Share is for sending out). v2026-10-20: the bar is the kit's formHead */
 /* ── POST CREATOR · v2.4 · 2026-10-13 (v2.4: ▶ to listen before you pick a song; v2.3: your songs first in Add music; v2 2026-09-28; v2.1: your labs first in Share to a lab; v2.2: upload a song from here, and its cover is the post's picture when there are no photos) ────────────────────────────────
@@ -74,7 +75,7 @@ function pcomposeHTML(){
           <button data-pccrm="${i}" aria-label="Remove">${PC_X}</button></span>`).join("")}</div>`:""}
         ${c.track?`<div class="pc-opt pc-on"><button class="pc-ic pc-pp" data-pcmusplay aria-label="${pcPvOn(c.track.id)?"Pause":"Play"}">${pcPvOn(c.track.id)?DI.pause:DI.play}</button>
             <span class="pc-l"><b>${esc(c.track.title)}</b><span class="dim">@${esc(c.track.by.username)}</span></span>
-            <button class="pc-x" data-pcmusrm aria-label="Remove music">${PC_X}</button></div>`
+            <button class="pc-x" data-pcmusrm aria-label="Remove music">${PC_X}</button></div>${pcPartHTML(c)}`
           :`<button class="pc-opt" data-pcmusadd><span class="pc-ic">${UI_IC.music}</span><span class="pc-l">Add music</span><span class="pc-v"></span>${PC_CHEV}</button>`}
         ${c.musup?`<div class="pc-mus"><div class="pcmus-up busy"><span class="spin"></span><b>Uploading your song…</b></div></div>`:""}
         ${c.pick&&!c.musup?`<div class="pc-mus"><label class="pcmus-up"><span class="pc-ic">${UI_IC.plus}</span><span class="pc-l"><b>Upload a song</b><span class="dim">Then name it and add a cover</span></span><input type="file" id="pcmusfile" accept="${TRACK_ACCEPT}" hidden></label>
@@ -236,7 +237,7 @@ function wirePCompose(){
   const ma=document.querySelector("[data-pcmusadd]");if(ma)ma.onclick=async()=>{
     c.pick=!c.pick;render();
     if(c.pick&&!c.list){try{c.list=(await api.tracks("")).tracks}catch(e){c.list=[]}render()}};
-  const pickTrack=el=>el.onclick=()=>{c.track=(c.list||[]).find(t=>String(t.id)===el.dataset.pcmuspick)||null;c.pick=false;
+  const pickTrack=el=>el.onclick=()=>{c.track=(c.list||[]).find(t=>String(t.id)===el.dataset.pcmuspick)||null;c.pick=false;c.musStart=0;
     if(PCPV&&(!c.track||PCPV.id!==c.track.id))pcPrevStop();   // the one you were hearing carries on if it's the one you picked
     render()};
   document.querySelectorAll("[data-pcmuspick]").forEach(pickTrack);
@@ -255,8 +256,9 @@ function wirePCompose(){
       render();
     }catch(e){c.musup=false;render();toast(e.message||"Upload failed")}
   };
-  const mr=document.querySelector("[data-pcmusrm]");if(mr)mr.onclick=()=>{c.track=null;pcPrevStop();render()};
-  const mp=document.querySelector("[data-pcmusplay]");if(mp)mp.onclick=()=>pcPrevToggle(c.track);
+  const mr=document.querySelector("[data-pcmusrm]");if(mr)mr.onclick=()=>{c.track=null;c.musStart=0;pcPrevStop();render()};
+  const mp=document.querySelector("[data-pcmusplay]");if(mp)mp.onclick=()=>pcPrevToggle(c.track,c.musStart||0);
+  pcPartWire(c);   // which part of the song (app-18-pc-preview)
 
   /* No scrim dismiss — Cancel is the way out, and it asks before binning a draft. */
   const cc=$("#pccancel");if(cc)cc.onclick=async()=>{if(await pcLeave())render()};

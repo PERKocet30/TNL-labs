@@ -513,6 +513,10 @@ if (!pcols.includes("media_h")) db.exec(`ALTER TABLE posts ADD COLUMN media_h IN
    all come from the tracks table for free. No FK on purpose — a deleted
    track must not delete the post; the join simply returns no chip. */
 if (!pcols.includes("audio_track_id")) db.exec(`ALTER TABLE posts ADD COLUMN audio_track_id INTEGER`);
+/* Where in the song it starts, in ms (2026-10-25, "you should be able to
+   select what part the song plays"): the feed plays from here, the Story
+   video takes its 15 seconds from here. 0 = the top. */
+if (!pcols.includes("audio_start")) db.exec(`ALTER TABLE posts ADD COLUMN audio_start INTEGER NOT NULL DEFAULT 0`);
 /* What the post creator adds beyond the work itself: people tagged, a
    place, and whether comments are on. {tags:[username], location, commentsOff} */
 if (!pcols.includes("extras")) db.exec(`ALTER TABLE posts ADD COLUMN extras TEXT`);
