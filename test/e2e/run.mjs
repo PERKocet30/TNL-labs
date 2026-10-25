@@ -745,6 +745,22 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => location.search === ""), "?bag= stayed in the address bar");
     await p.evaluate(() => { bagPut([]); MKTVIEW = "browse"; render(); });
   });
+  /* 2026-10-25: "Captions work weird" — a caption written on two lines (a blank line between) showed as one run-on line */
+  await step(d, "captions keep their line breaks: in the feed card, the opened post and a text post", async () => {
+    const lines = await p.evaluate(() => {
+      const out = {};
+      for (const cls of ["sr-body", "post-cap", "post-body"]) {
+        const one = document.createElement("div"), two = document.createElement("div");
+        one.className = two.className = cls; one.style.width = two.style.width = "300px";
+        one.innerHTML = "<b>june</b> " + rich("A TEAM"); two.innerHTML = "<b>june</b> " + rich("A TEAM\n\nThe latest drop is live.");
+        document.body.append(one, two);
+        out[cls] = { one: one.offsetHeight, two: two.offsetHeight };
+        one.remove(); two.remove();
+      }
+      return out;
+    });
+    for (const [cls, h] of Object.entries(lines)) ok(h.two >= h.one * 2.5, `${cls}: the blank line between the two lines was squashed: ` + JSON.stringify(h));
+  });
   await step(d, "Saved works (it used to say 'no listing'); Recently viewed shows on the Market", async () => {
     await p.evaluate(async () => { MKTRECENT = null; MKT = null; });
     await toMarket();
