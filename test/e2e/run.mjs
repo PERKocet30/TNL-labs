@@ -1916,7 +1916,7 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator(".line svg polyline.nw").count() === 1 && await p.locator(".line svg polyline.pv").count() === 1, "no line chart with last period behind");
     ok(await p.locator(".rc h3", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
     // 2026-10-20: on a computer, a grouped side menu with the ten sections and no bottom bar
-    ok(await p.locator(".side .nv").count() === 10 && !(await p.locator(".bbar").isVisible()), "no ten-section side menu on a computer");
+    ok(await p.locator(".side .nv").count() === 11 && !(await p.locator(".bbar").isVisible()), "no eleven-section side menu on a computer");
     ok(await p.locator(".side .grp").count() === 4, "the side menu isn't grouped");
     await p.locator("#gq").fill("tester");
     await fast(p, 4000, () => p.locator("#gres [data-gp]").first().waitFor(), "member search results");
