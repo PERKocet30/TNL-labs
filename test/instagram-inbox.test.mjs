@@ -25,7 +25,7 @@ let MSGS = { c1: [
   { id: "m1", created_time: "2026-10-26T09:58:00+0000", from: { id: "U9", username: "ana.paints" }, to: { data: [{ id: "ME1", username: "tnl.labs" }] }, message: "Hey, is the tournament open?",
     attachments: { data: [{ image_data: { url: "https://cdn.test/a.jpg" } }] } },
 ] };
-let REJECT_ATTACHMENTS = false, REFRESHED = 0;
+let REJECT_ATTACHMENTS = false, REFRESHED = 0, TOO_BIG = false;   // TOO_BIG: Meta says "reduce the amount of data" above 10 conversations / 5 messages
 const json = (o, status = 200) => ({ ok: status < 300, status, json: async () => o });
 globalThis.fetch = async (u, opts = {}) => {
   u = String(u); CALLS.push(u);
@@ -34,9 +34,11 @@ globalThis.fetch = async (u, opts = {}) => {
   if (p === "/access_token") return json({ access_token: "long-lived-token", expires_in: 5184000 });
   if (p === "/refresh_access_token") { REFRESHED++; return json({ access_token: "refreshed-token", expires_in: 5184000 }); }
   if (p === "/me" && url.searchParams.get("fields") === "user_id,username") return json({ user_id: "ME1", username: "tnl.labs" });
-  if (p === "/me/conversations") return json({ data: CONVS });
+  const big = { error: { message: "Please reduce the amount of data you're asking for, then retry your request", code: 1 } };
+  if (p === "/me/conversations") return TOO_BIG && Number(url.searchParams.get("limit")) > 10 ? json(big, 500) : json({ data: CONVS });
   const m = p.match(/^\/(c\d+)$/);
   if (m) { const f = url.searchParams.get("fields");
+    if (TOO_BIG && Number((/limit\((\d+)\)/.exec(f) || [])[1]) > 5) return json(big, 500);
     if (REJECT_ATTACHMENTS && /attachments/.test(f)) return json({ error: { message: "(#100) Tried accessing nonexisting field (attachments)", code: 100 } }, 400);
     return json({ id: m[1], messages: { data: MSGS[m[1]] || [] } }); }
   return json({ error: { message: "no such thing " + p, code: 803 } }, 400);
@@ -109,6 +111,11 @@ REJECT_ATTACHMENTS = true; CONVS = [{ id: "c1", updated_time: "2026-10-26T10:06:
 ({ r, calls } = await sinceCalls(() => call("POST /api/admin/instagram/sync")));
 t("if Meta rejects the attachments field, the same conversation is asked for again without it", r.code === 200 && calls.filter((u) => /\/c1\?/.test(u)).length === 2 && !/attachments/.test(calls.at(-1)));
 REJECT_ATTACHMENTS = false;
+TOO_BIG = true; CONVS = [{ id: "c1", updated_time: "2026-10-26T10:07:00+0000" }];
+({ r, calls } = await sinceCalls(() => call("POST /api/admin/instagram/sync")));
+t("\"reduce the amount of data\": it asks again for less (10 conversations, 5 messages) and the check goes through", r.code === 200 && r.body.ok !== false
+  && calls.some((u) => /conversations.*limit=10/.test(u)) && calls.some((u) => /limit%285%29|limit\(5\)/.test(u)) && !(await call("GET /api/admin/instagram")).body.lastError);
+TOO_BIG = false;
 
 console.log("\nWEBHOOKS");
 const vt = (await call("GET /api/admin/instagram")).body.webhook.verifyToken;
