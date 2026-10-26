@@ -19,8 +19,8 @@ let TOKEN = null; try { TOKEN = localStorage.getItem("tnl-token"); } catch (e) {
 let ME = null, TAB = "home", RANGE = 30, D = {}, TOASTT = null;
 /* the sections, in groups (the sidebar shows the groups; the phone's bar shows the first four and More) */
 const TABS = [["home", "Home"], ["orders", "Orders"], ["listings", "Listings"], ["sellers", "Sellers"],
-  ["people", "Members"], ["content", "Content"], ["events", "Events"], ["analytics", "Analytics"], ["health", "Health"], ["settings", "Settings"]];
-const GROUPS = [["Run", ["home", "orders", "listings", "sellers"]], ["People & content", ["people", "content", "events"]], ["Understand", ["analytics", "health"]], ["Set up", ["settings"]]];
+  ["people", "Members"], ["content", "Content"], ["events", "Events"], ["instagram", "Instagram"], ["analytics", "Analytics"], ["health", "Health"], ["settings", "Settings"]];
+const GROUPS = [["Run", ["home", "orders", "listings", "sellers"]], ["People & content", ["people", "content", "events", "instagram"]], ["Understand", ["analytics", "health"]], ["Set up", ["settings"]]];
 const PHONE_BAR = ["home", "orders", "people", "content"];
 /* old links and old data-go targets still land somewhere sensible */
 const OLD_TABS = { today: "home", market: "orders", system: "settings" };
@@ -54,6 +54,7 @@ const NAVI = {
   analytics: di('<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>', 18), health: di('<path d="M3 12h4l2-6 4 12 2-6h6"/>', 18),
   settings: di('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>', 18),
   more: di('<path d="M4 7h16M4 12h16M4 17h16"/>', 18),
+  instagram: di('<rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3.5"/><path d="M16.5 7.5h.01"/>', 18),
   people: di('<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3 2.8 3 6"/>', 18),
   content: di('<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>', 18), events: di('<path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v3M8 20h8M10 17h4v3h-4z"/>', 18),
 };
@@ -165,7 +166,7 @@ function paint() {
     app.innerHTML = `<div class="gate"><div><div class="brand">LABS <i>//</i> Admin</div>
     <h1>Admins only</h1><p>${TOKEN ? "This account isn't an admin. Log in with one and you'll come straight back here."
       : "This browser isn't signed in — LABS on your home screen keeps its own sign-in, so email links open here signed out. Log in once and it'll remember you."}</p><a class="btn" id="adminlogin" href="${esc(back)}">Log in</a></div></div>`; return; }
-  const n = (k) => (D.pulse && k === "home" && D.pulse.inbox.length) || (D.pulse && k === "content" && (D.pulse.inbox.find((i) => i.kind === "reports") || {}).n) || 0;
+  const n = (k) => (D.pulse && k === "home" && D.pulse.inbox.length) || (D.pulse && k === "content" && (D.pulse.inbox.find((i) => i.kind === "reports") || {}).n) || (k === "instagram" && D.instagram?.unread) || 0;
   const badge = (k) => n(k) ? `<b>${n(k)}</b>` : "";
   /* keep the field you're typing in (and where the cursor is) through a repaint */
   const fo = document.activeElement && document.activeElement.id && app.contains(document.activeElement) ? document.activeElement : null;
