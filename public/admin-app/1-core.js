@@ -19,8 +19,8 @@ let TOKEN = null; try { TOKEN = localStorage.getItem("tnl-token"); } catch (e) {
 let ME = null, TAB = "home", RANGE = 30, D = {}, TOASTT = null;
 /* the sections, in groups (the sidebar shows the groups; the phone's bar shows the first four and More) */
 const TABS = [["home", "Home"], ["orders", "Orders"], ["listings", "Listings"], ["sellers", "Sellers"],
-  ["people", "Members"], ["content", "Content"], ["events", "Events"], ["instagram", "Instagram"], ["analytics", "Analytics"], ["health", "Health"], ["settings", "Settings"]];
-const GROUPS = [["Run", ["home", "orders", "listings", "sellers"]], ["People & content", ["people", "content", "events", "instagram"]], ["Understand", ["analytics", "health"]], ["Set up", ["settings"]]];
+  ["people", "Members"], ["content", "Content"], ["events", "Events"], ["instagram", "Instagram"], ["analytics", "Analytics"], ["health", "Health"], ["systems", "Systems"], ["settings", "Settings"]];
+const GROUPS = [["Run", ["home", "orders", "listings", "sellers"]], ["People & content", ["people", "content", "events", "instagram"]], ["Understand", ["analytics", "health", "systems"]], ["Set up", ["settings"]]];
 const PHONE_BAR = ["home", "orders", "people", "content"];
 /* old links and old data-go targets still land somewhere sensible */
 const OLD_TABS = { today: "home", market: "orders", system: "settings" };
@@ -52,6 +52,7 @@ const NAVI = {
   orders: di('<path d="M4 7h16v13H4zM8 7V4h8v3M4 12h16"/>', 18), listings: di('<path d="M4 4h16v16H4zM4 14l5-5 4 4 3-3 4 4M15 8h.01"/>', 18),
   sellers: di('<path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2M12 11v6M9.5 14h5"/>', 18),
   analytics: di('<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>', 18), health: di('<path d="M3 12h4l2-6 4 12 2-6h6"/>', 18),
+  systems: di('<path d="M4 5h16v6H4zM4 13h16v6H4zM8 8h.01M8 16h.01"/>', 18),
   settings: di('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>', 18),
   more: di('<path d="M4 7h16M4 12h16M4 17h16"/>', 18),
   instagram: di('<rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3.5"/><path d="M16.5 7.5h.01"/>', 18),

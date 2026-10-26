@@ -80,7 +80,9 @@ execSync(`node --experimental-sqlite ${JSON.stringify(join(TMP, "seed.mjs"))}`, 
 const server = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], {
   cwd: ROOT, env: { ...process.env, TNL_DATA: DATA, PORT: String(PORT), PUBLIC_URL: B, SENTRY_DSN: "", ADMIN_EMAIL: "tester@example.com",
     // no boot backfill: its AAC copies of the seeded WAVs land mid-run, and this Chromium plays no AAC
-    TNL_NO_VIDEO_FIX: "1" }, stdio: ["ignore", "pipe", "pipe"] });
+    TNL_NO_VIDEO_FIX: "1",
+    // the Systems page is walked with no keys (a GITHUB_TOKEN in the runner's own environment must not count)
+    GITHUB_TOKEN: "", RAILWAY_API_TOKEN: "", RAILWAY_PROJECT_TOKEN: "", GOOGLE_SERVICE_ACCOUNT: "", META_ACCESS_TOKEN: "" }, stdio: ["ignore", "pipe", "pipe"] });
 let serverLog = ""; server.stdout.on("data", (d) => (serverLog += d)); server.stderr.on("data", (d) => (serverLog += d));
 const stop = () => { try { server.kill(); } catch {} };
 process.on("exit", stop);
@@ -1915,8 +1917,16 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator(".kpi .s").count() >= 4, "the numbers don't say their share");
     ok(await p.locator(".line svg polyline.nw").count() === 1 && await p.locator(".line svg polyline.pv").count() === 1, "no line chart with last period behind");
     ok(await p.locator(".rc h3", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
-    // 2026-10-20: on a computer, a grouped side menu with the ten sections and no bottom bar
-    ok(await p.locator(".side .nv").count() === 11 && !(await p.locator(".bbar").isVisible()), "no eleven-section side menu on a computer");
+    // 2026-10-20: on a computer, a grouped side menu with every section and no bottom bar (twelve since Systems and Instagram, 2026-10-26)
+    ok(await p.locator(".side .nv").count() === 12 && !(await p.locator(".bbar").isVisible()), "no twelve-section side menu on a computer");
+    // 2026-10-26: Systems — what's live, what's waiting for a Push; with no keys set, each card says so plainly
+    await p.locator(".side .nv[data-tab=systems]").click();
+    await fast(p, 6000, () => p.locator(".pg-hd h1", { hasText: "Systems" }).waitFor(), "the Systems page");
+    ok((await p.locator(".empty", { hasText: "isn't connected yet" }).count()) === 4, "Systems doesn't say its keys aren't set yet (Railway, GitHub, Google, Meta)");
+    ok(await p.locator("#sysfresh").count() === 1, "no Look again on Systems");
+    // 2026-10-26: the week's report sits at the top of Systems with a button that emails it now
+    ok(await p.locator(".sec", { hasText: "This week" }).count() === 1 && await p.locator("#wkmail").count() === 1, "Systems doesn't show the week with an Email-me-now button");
+    await p.locator(".side .nv[data-tab=home]").click(); await p.waitForTimeout(400);
     ok(await p.locator(".side .grp").count() === 4, "the side menu isn't grouped");
     await p.locator("#gq").fill("tester");
     await fast(p, 4000, () => p.locator("#gres [data-gp]").first().waitFor(), "member search results");

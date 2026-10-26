@@ -197,6 +197,83 @@ and the verify token Admin shows, and tick `messages`. Then Admin →
 Instagram → **Connect Instagram**, sign in as the LABS account, and the
 inbox fills in. Webhooks only start once Meta marks the app Live with
 Advanced Access; until then LABS checks every 3 minutes (`IG_POLL_MS`).
+## Admin → Systems (optional, 2026-10-26)
+
+The Systems page in `/admin` reads Railway and GitHub so it can say what's
+live, what's building and what's waiting for a Push (`server-10-admin-systems.js`).
+Read-only; each card says "isn't connected yet" until its key is here.
+
+| Variable | Value |
+| --- | --- |
+| `RAILWAY_PROJECT_TOKEN` | Railway → this project → Settings → Tokens → New token (environment: production). It can only see this project. The project, service and environment ids come from the variables Railway already sets. (`RAILWAY_API_TOKEN`, an account token from Account settings → Tokens, works too.) |
+| `GITHUB_TOKEN` | GitHub → Settings → Developer settings → Fine-grained tokens → Generate: repository **PERKocet30/TNL-labs** only; permissions **Actions, Contents, Pull requests: Read-only** (Metadata comes with them; there is no Checks option for personal tokens, and none is needed); expiry 1 year. |
+| `GITHUB_REPO` | only if it ever changes — default `PERKocet30/TNL-labs` |
+
+Both tokens stay on the server. The page gets names and numbers, never a key.
+
+### Google (Search Console + Merchant Center), 2026-10-26
+
+The Systems page also shows how people find LABS on Google Search and how the
+market's pieces do on Google Shopping (`server-10-admin-systems2-google.js`).
+One Google **service account** reads both, read-only. About 10 minutes:
+
+1. **Make the service account.** console.cloud.google.com → the LABS project →
+   IAM & Admin → Service accounts → **Create service account**: name
+   `labs-admin`, no roles → Done. Open it → **Keys** → Add key → Create new
+   key → **JSON**. A file downloads: that's the key.
+2. **Let it read Search Console.** search.google.com/search-console →
+   tnllabs.com → Settings → Users and permissions → **Add user**: the
+   account's email (`labs-admin@….iam.gserviceaccount.com`), permission
+   **Restricted**.
+3. **Let it read Merchant Center.** merchants.google.com → Settings (gear) →
+   People and access → **Add person**: the same email, access **Standard**,
+   never Admin (there's no read-only level and Google's Merchant scope can
+   write, so the role is the limit; the app only ever reads).
+4. **Enable the two APIs** in the Cloud project: APIs & Services → Library →
+   **Google Search Console API** → Enable; **Merchant API** → Enable.
+5. **Link the project to Merchant Center (once).** After the key is in and
+   deployed, admin → Systems shows "One step left" under Google Shopping. In
+   Merchant Center set the service account to **Admin**, tap **Link** in
+   Systems, then set it back to Standard. (Google only takes this from an
+   Admin; it never needs doing again.)
+6. **Put the key in Railway.** Open the JSON file, copy the whole thing, and add
+   it as one variable:
+
+| Variable | Value |
+| --- | --- |
+| `GOOGLE_SERVICE_ACCOUNT` | the whole JSON key file, pasted as-is (Railway keeps the line breaks; base64 of it also works) |
+| `GSC_SITE` | only if it ever changes — default `sc-domain:tnllabs.com` (a URL-prefix property would be `https://tnllabs.com/`) |
+| `MERCHANT_ID` | only if it ever changes — default `413920275` |
+
+The key signs a short-lived token on the server; neither reaches the page.
+
+### Meta (Instagram + Facebook), 2026-10-26
+
+The Systems page also shows Instagram and Facebook (`server-10-admin-systems3-meta.js`):
+followers, reach, link taps, the posts that reach most, when followers are
+online, where they are, and the shop catalog's rejections. One **system-user
+token** reads it all and doesn't expire. About 10 minutes, in Business
+Manager (business.facebook.com):
+
+1. **Business settings → Users → System users → Add**: name `labs-admin`,
+   role **Employee** → Create.
+2. Open it → **Add assets**: Pages → the LABS Page (Read / "View performance"
+   is enough); Instagram accounts → @tnl.labs (Read); Catalogs → the LABS
+   catalog (Read).
+3. **Generate new token** → pick the LABS app (the one made for the Instagram
+   shop) → expiration **Never** → permissions: `pages_show_list`,
+   `pages_read_engagement`, `instagram_basic`, `instagram_manage_insights`,
+   `catalog_management` → Generate → copy it (it shows once).
+4. Railway → Variables:
+
+| Variable | Value |
+| --- | --- |
+| `META_ACCESS_TOKEN` | the system-user token |
+| `META_CATALOG_ID` | Commerce Manager → the LABS catalog → its ID (in the address bar or Settings). Leave it out and the shop card is simply not shown. |
+| `META_PAGE_ID` / `META_IG_USER_ID` | only if the token can see more than one Page — otherwise found from the token |
+
+If Systems says "no permission", one of the five permissions or the Page
+assignment is missing.
 
 ## The whole list, to paste in
 
@@ -220,7 +297,7 @@ PLATFORM_FEE_PCT     ← dead. Replaced by per-level rates.
 ## Priority
 
 1. **`TNL_DATA` + the volume** — everything else is pointless if data vanishes
-2. **`ADMIN_EMAIL`** — so you can see what's actually happening
+2. **`ADMIN_EMAIL`** — so you can see what's actually happening (alerts, the morning digest, and the Monday week-in-review email)
 3. **`PUBLIC_URL`** — so links work
 4. **Resend** — before anyone but you signs up
 5. **Stripe** — before anyone sells anything real

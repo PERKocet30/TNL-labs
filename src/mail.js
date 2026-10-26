@@ -212,6 +212,18 @@ export async function sendAlertEmail(to, subject, heading, lines, url) {
   return send(to, subject, alertEmail(heading, lines, url), `${subject} — ${lines.join(" / ")}`);
 }
 
+/** The week, to the admin (server-10-weekly.js, 2026-10-26): section headings
+    as their own lines, the rest as sentences — same layout as every email. */
+export function weeklyEmail(subject, lines, url) {
+  return renderEmail({
+    eyebrow: "This week", title: subject.replace(/^LABS this week:\s*/, "This week on LABS"), lines, cta: "Open Admin", url,
+    note: "Every Monday morning. Counts and patterns only — never a member's name.", preheader: lines.find((l) => !l.startsWith("—")) || subject,
+  });
+}
+export async function sendWeeklyEmail(to, subject, lines, url) {
+  return send(to, subject, weeklyEmail(subject, lines, url), `${subject} — ${lines.length} lines`);
+}
+
 /** Password reset. Same honest fallback as verification. */
 export async function sendResetEmail(to, name, url) {
   return send(to, "Reset your password — LABS", resetEmail(name, url), `reset link: ${url}`);
