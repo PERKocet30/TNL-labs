@@ -28,7 +28,7 @@ const MT = { token: () => MT_ENV("META_ACCESS_TOKEN"), url: () => MT_ENV("META_G
   page: () => MT_ENV("META_PAGE_ID").replace(/\D/g, ""), ig: () => MT_ENV("META_IG_USER_ID").replace(/\D/g, ""), catalog: () => MT_ENV("META_CATALOG_ID").replace(/\D/g, "") };
 const MT_CACHE = { at: 0, body: null };
 const mtLine = (s) => String(s || "").split("\n")[0].trim().slice(0, 200);
-const mtDay = (t) => new Date(t).toISOString().slice(0, 10);
+const mtDay = (t) => { const d = new Date(t); return isNaN(d) ? "" : d.toISOString().slice(0, 10); };
 const mtPct = (a, b) => (b ? Math.round(((a - b) / b) * 1000) / 10 : null);
 /* a link the page may follow: Instagram's or Facebook's own, nothing else */
 const mtUrl = (u) => /^https:\/\/(www\.)?(instagram\.com|facebook\.com)\//.test(String(u || "")) ? String(u).slice(0, 300) : "";
@@ -56,9 +56,9 @@ async function mtWho() {
     const acc = await mtGet("me/accounts", { fields: "id,name,instagram_business_account", limit: 10 });
     const withIg = (acc.data || []).find((p) => p.instagram_business_account) || (acc.data || [])[0];
     if (!withIg) throw new Error("The token can't see any Facebook Page. In Business Manager, assign the LABS Page to the system user.");
-    page = String(withIg.id); pageName = withIg.name || ""; if (!ig && withIg.instagram_business_account) ig = String(withIg.instagram_business_account.id);
+    page = String(withIg.id || "").replace(/\D/g, ""); pageName = withIg.name || ""; if (!ig && withIg.instagram_business_account) ig = String(withIg.instagram_business_account.id || "").replace(/\D/g, "");
   }
-  if (!ig) { const p = await mtGet(page, { fields: "name,instagram_business_account" }); pageName = pageName || p.name || ""; ig = String(p.instagram_business_account?.id || ""); }
+  if (!ig) { const p = await mtGet(page, { fields: "name,instagram_business_account" }); pageName = pageName || p.name || ""; ig = String(p.instagram_business_account?.id || "").replace(/\D/g, ""); }
   if (!ig) throw new Error("That Page has no Instagram account connected. In Instagram → Settings → Linked accounts, connect the LABS Page.");
   return { page, pageName, ig };
 }
@@ -100,7 +100,7 @@ async function mtInstagram(ig) {
     totals: { reach, reachBefore, reachChange: mtPct(reach, reachBefore), profileViews: T("profile_views"), linkTaps: T("website_clicks"), engaged: T("accounts_engaged"), interactions: T("total_interactions"),
       before: { profileViews: TP("profile_views"), linkTaps: TP("website_clicks"), engaged: TP("accounts_engaged"), interactions: TP("total_interactions") } },
     days, recent: posts.slice(0, 30), top: [...posts].sort((a, b) => b.reach - a.reach).slice(0, 8), kinds,
-    stories: (stories.data || []).map((s) => ({ id: String(s.id), at: Date.parse(s.timestamp || "") || null, url: mtUrl(s.permalink), reach: ins(s, "reach"), replies: ins(s, "replies") })),
+    stories: (stories.data || []).slice(0, 50).map((s) => ({ id: String(s.id), at: Date.parse(s.timestamp || "") || null, url: mtUrl(s.permalink), reach: ins(s, "reach"), replies: ins(s, "replies") })),
     where: { countries: demo(country), cities: demo(city), ages: demo(age) }, bestHours,
   };
 }

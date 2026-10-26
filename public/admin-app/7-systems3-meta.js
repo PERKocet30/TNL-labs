@@ -17,8 +17,8 @@ function sysMetaHTML() {
   const ig = () => {
     if (!I || I.error) return `<div class="panel">${sysErr(I ? I.error : "No answer.")}</div>`;
     const T = I.totals, days = I.days || [];
-    const post = (p) => `<a class="li" href="${esc(p.url)}" target="_blank" rel="noopener"><span class="b"><b style="font-weight:500;font-size:13px">${esc(p.caption || MT_KIND[p.kind] || "Post")}</b>
-      <span>${esc(MT_KIND[p.kind] || p.kind)} · ${p.at ? ago(p.at) + " ago" : ""} · ${num(p.likes)} likes · ${num(p.comments)} comments</span></span><span class="r">${num(p.reach)} reached<br>${num(p.saves)} saved · ${num(p.shares)} shared</span></a>`;
+    const post = (p) => `<${p.url ? `a href="${esc(p.url)}" target="_blank" rel="noopener"` : "div"} class="li"><span class="b"><b style="font-weight:500;font-size:13px">${esc(p.caption || MT_KIND[p.kind] || "Post")}</b>
+      <span>${esc(MT_KIND[p.kind] || p.kind)} · ${p.at ? ago(p.at) + " ago" : ""} · ${num(p.likes)} likes · ${num(p.comments)} comments</span></span><span class="r">${num(p.reach)} reached<br>${num(p.saves)} saved · ${num(p.shares)} shared</span></${p.url ? "a" : "div"}>`;
     return `<div class="grid g2 g4">
       ${kpiHTML("Followers", num(I.followers), { share: I.netFollowers ? `<i class="${I.netFollowers > 0 ? "up" : "dn"}">${I.netFollowers > 0 ? "+" : ""}${num(I.netFollowers)} in 28 days</i>` : "" })}
       ${kpiHTML("People reached", num(T.reach), { share: mtChg(T.reach, T.reachBefore) })}
@@ -30,7 +30,7 @@ function sysMetaHTML() {
     <div class="split">
       <div><h2 class="sec">Posts that reached most <span class="mono">last 30 posts</span></h2><div class="panel">${I.top.length ? `<div class="list">${I.top.map(post).join("")}</div>` : `<div class="empty">No posts yet.</div>`}</div>
         <h2 class="sec">What kind of post works <span class="mono">people reached, each</span></h2><div class="panel">${I.kinds.length ? breakHTML(I.kinds.map((k) => ({ label: `${MT_KIND[k.kind] || k.kind}s (${k.n})`, n: k.avgReach }))) : `<div class="empty">No posts yet.</div>`}</div></div>
-      <div><h2 class="sec">Stories up now</h2><div class="panel">${I.stories.length ? `<div class="list">${I.stories.map((s) => `<a class="li" href="${esc(s.url)}" target="_blank" rel="noopener"><span class="b"><b style="font-weight:500;font-size:13px">Story · ${s.at ? ago(s.at) + " ago" : ""}</b></span><span class="r">${num(s.reach)} reached · ${num(s.replies)} replies</span></a>`).join("")}</div>` : `<div class="empty">None up right now.</div>`}</div>
+      <div><h2 class="sec">Stories up now</h2><div class="panel">${I.stories.length ? `<div class="list">${I.stories.map((s) => `<${s.url ? `a href="${esc(s.url)}" target="_blank" rel="noopener"` : "div"} class="li"><span class="b"><b style="font-weight:500;font-size:13px">Story · ${s.at ? ago(s.at) + " ago" : ""}</b></span><span class="r">${num(s.reach)} reached · ${num(s.replies)} replies</span></${s.url ? "a" : "div"}>`).join("")}</div>` : `<div class="empty">None up right now.</div>`}</div>
         <h2 class="sec">When followers are online</h2><div class="panel">${I.bestHours.length ? `<div class="set"><div class="t"><b>${I.bestHours.map((h) => mtHour(h.hour)).join(" · ")}</b><span>the busiest hours this week — post then</span></div></div>` : `<div class="empty">Meta hasn't said yet (needs 100+ followers).</div>`}</div>
         <h2 class="sec">Where followers are</h2><div class="panel">${I.where.countries.length ? breakHTML(I.where.countries) : `<div class="empty">Meta hasn't said yet (needs 100+ followers).</div>`}
           ${I.where.cities.length ? `<p class="dim" style="font-size:12px;margin:10px 0 0">Cities: ${I.where.cities.map((c) => esc(c.label)).join(", ")}</p>` : ""}${I.where.ages.length ? `<p class="dim" style="font-size:12px;margin:6px 0 0">Ages: ${I.where.ages.map((a) => `${esc(a.label)} (${num(a.n)})`).join(", ")}</p>` : ""}</div></div>
