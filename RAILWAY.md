@@ -226,6 +226,34 @@ One Google **service account** reads both, read-only. About 10 minutes:
 
 The key signs a short-lived token on the server; neither reaches the page.
 
+### Meta (Instagram + Facebook), 2026-10-26
+
+The Systems page also shows Instagram and Facebook (`server-10-admin-systems3-meta.js`):
+followers, reach, link taps, the posts that reach most, when followers are
+online, where they are, and the shop catalog's rejections. One **system-user
+token** reads it all and doesn't expire. About 10 minutes, in Business
+Manager (business.facebook.com):
+
+1. **Business settings → Users → System users → Add**: name `labs-admin`,
+   role **Employee** → Create.
+2. Open it → **Add assets**: Pages → the LABS Page (Read / "View performance"
+   is enough); Instagram accounts → @tnl.labs (Read); Catalogs → the LABS
+   catalog (Read).
+3. **Generate new token** → pick the LABS app (the one made for the Instagram
+   shop) → expiration **Never** → permissions: `pages_show_list`,
+   `pages_read_engagement`, `instagram_basic`, `instagram_manage_insights`,
+   `catalog_management` → Generate → copy it (it shows once).
+4. Railway → Variables:
+
+| Variable | Value |
+| --- | --- |
+| `META_ACCESS_TOKEN` | the system-user token |
+| `META_CATALOG_ID` | Commerce Manager → the LABS catalog → its ID (in the address bar or Settings). Leave it out and the shop card is simply not shown. |
+| `META_PAGE_ID` / `META_IG_USER_ID` | only if the token can see more than one Page — otherwise found from the token |
+
+If Systems says "no permission", one of the five permissions or the Page
+assignment is missing.
+
 ## The whole list, to paste in
 
 ```
