@@ -138,8 +138,8 @@ function gxCheck(){
 
 async function gxCreate(){
   const G=GFLOW,f=G.f;G.busy=true;G.err="";render();
-  try{const d=await api.register(G.oauth?{displayName:f.displayName,username:f.username,roles:f.roles,oauth:G.oauth}   // Google / Apple: the ticket stands in
-      :{displayName:f.displayName,username:f.username,email:f.email,password:f.password,roles:f.roles});
+  try{const d=await api.register(G.oauth?{displayName:f.displayName,username:f.username,roles:f.roles,oauth:G.oauth,src:landedSrc(G)}   // Google / Apple: the ticket stands in
+      :{displayName:f.displayName,username:f.username,email:f.email,password:f.password,roles:f.roles,src:landedSrc(G)});
     TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;if(d.verifyUrl)VERIFYURL=d.verifyUrl;
     G.made={mailSent:!!d.mailSent};G.busy=false;
     G.step=d.mailSent&&!(ME&&ME.emailVerified)?"verify":"photo";   // confirm your email first (2026-10-19), then the profile

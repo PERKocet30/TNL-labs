@@ -194,6 +194,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 async function req(path,opts={}){
   const h={"Content-Type":"application/json"};
   if(TOKEN)h.Authorization="Bearer "+TOKEN;
+  try{h["X-TZ"]=Intl.DateTimeFormat().resolvedOptions().timeZone||""}catch(e){}
   const r=await fetch(API+path,{method:opts.method||"GET",headers:h,body:opts.body?JSON.stringify(opts.body):undefined});
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(d.error||("HTTP "+r.status));
