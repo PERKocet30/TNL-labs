@@ -1668,6 +1668,24 @@ console.log("\nMEMBER · PHONE");
     await p.waitForFunction(() => { const i = document.querySelector("#evshpic"); return i && i.complete && i.naturalWidth > 0; }, null, { timeout: 15000 });
     await p.locator("#evshx").tap();
     ok(await p.locator("#evshsheet").count() === 0, "the share sheet didn't close");
+    /* 2026-10-26: "there's no share feature for the individual entries — everybody can send them to their friends" */
+    ok(await p.locator(".ev-focus .ev-fbar [data-evshr]").isVisible() && !(await p.locator(".ev-focus .ev-shr").isVisible()) && await p.locator(".ev-row [data-evshr]").count() === 2, "not every piece has a Share button (the opened piece and each scoreboard row)");
+    await p.evaluate(() => { window.__sent = null; navigator.share = async (d) => { window.__sent = d; }; });
+    const y1 = await p.evaluate(() => document.querySelector("#evscroll").scrollTop);
+    await p.locator(`.ev-row [data-evshr="${fid}"]`).tap(); await p.waitForSelector("#evshsheet");
+    ok(/Share @friend's piece/.test(await p.locator("#evshsheet").innerText()), "someone else's piece should open its own share sheet");
+    await p.waitForFunction((id) => { const i = document.querySelector("#evshpic"); return i && i.complete && i.naturalWidth > 0 && i.src.includes("/" + id + "/story"); }, fid, { timeout: 15000 });
+    await p.locator("#evshsend").tap();
+    await p.waitForFunction(() => window.__sent, null, { timeout: 3000 });
+    ok(await p.evaluate((id) => window.__sent.url.endsWith("/e/e2e-art/" + id) && /Vote for @friend's piece/.test(window.__sent.text), fid), "Send to friends didn't send that piece's vote link");
+    /* "I want to share everybody's work on my Story": the picture goes to the share sheet, and the vote link is copied for the Link sticker */
+    await p.evaluate(() => { window.__files = null; window.__clip = ""; navigator.canShare = () => true; navigator.share = async (d) => { window.__files = d.files; };
+      navigator.clipboard.writeText = async (x) => { window.__clip = x; }; });
+    await p.locator("#evshgo").tap();
+    await p.waitForFunction(() => window.__files, null, { timeout: 8000 });
+    ok(await p.evaluate((id) => window.__files.length === 1 && window.__files[0].size > 1000 && window.__clip.endsWith("/e/e2e-art/" + id), fid), "Share picture to your Story didn't hand over that piece's picture and copy its link");
+    await p.locator("#evshx").tap();
+    ok(await p.evaluate(() => document.querySelector("#evscroll").scrollTop) === y1, "sharing jumped the screen");
     await p.evaluate(() => { EVFOCUS = null; TAB = "showroom"; render(); });
   });
   /* "Make sure the tournament is easily navigable because I had problems going

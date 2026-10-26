@@ -102,13 +102,15 @@ function evStanding(ev, e) {
   return { head, tag, voting, row, board, cur, stage };
 }
 
-function evEntryStory(ev, e, base) {
+/* Someone else sharing the piece (?for=them, 2026-10-26): the card speaks about it, not as its artist. */
+const EV_THEIRS = { "Vote for my piece": "Vote for this piece", "I'm in.": "In the tournament", "I won.": "The winner" };
+function evEntryStory(ev, e, base, theirs = false) {
   const p = q.postById.get(e.post_id), u = q.userById.get(e.user_id);
   const art = cardFile(p?.image_url) || cardFile(p?.thumb_url);
   if (!u || !art) return null;
   const s = evStanding(ev, e), accent = accentHex(u.accent);
   /* the same card as every other Story (server-12-story): the piece over itself, blurred, in white */
-  return storyCard({ prefix: `ev${ev.id}-e${e.id}`, head: evUpper(s.head, 22), sub: evUpper(ev.title, 34), art, avatar: cardFile(u.avatar_url),
+  return storyCard({ prefix: `ev${ev.id}-e${e.id}${theirs ? "t" : ""}`, head: evUpper(theirs ? EV_THEIRS[s.head] || s.head : s.head, 22), sub: evUpper(ev.title, 34), art, avatar: cardFile(u.avatar_url),
     tag: s.tag, handle: "@" + u.username, cta: s.voting ? "Tap the link to vote" : "", url: `${evHost(base)}/e/${ev.slug}/${e.id}`, accent });
 }
 
@@ -247,5 +249,5 @@ app.get("/e/:slug/:entry/story.jpg", rateLimit({ max: 60, windowMs: 60000 }), (r
   const e = db.prepare(`SELECT * FROM event_entries WHERE id = ? AND event_id = ? AND dq_reason IS NULL`).get(Number(req.params.entry) || 0, ev.id);
   if (!e) return res.status(404).end();
   const p = q.postById.get(e.post_id);
-  evSendCard(res, evEntryStory(ev, e, baseUrl(req)), p?.image_url || null);
+  evSendCard(res, evEntryStory(ev, e, baseUrl(req), req.query.for === "them"), p?.image_url || null);
 });

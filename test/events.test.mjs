@@ -4,7 +4,7 @@
 // scoreboard, which freezes before the end), and the Instagram pages and cards.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { spawn, execFileSync } from "node:child_process";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "test/.tmp/events");
@@ -207,6 +207,9 @@ try {
   if (FF) {
     let j = await jpeg(`/e/art/${pu.h}/story.jpg`);
     t("an entrant's Instagram Story card: a real 1080×1920 picture, lossless", j.s === 200 && j.png && j.w === 1080 && j.h === 1920);
+    const jt = await jpeg(`/e/art/${pu.h}/story.jpg?for=them`);
+    t("someone else sharing it gets its own card (\"Vote for this piece\", not \"for my piece\"), same size", jt.s === 200 && jt.w === 1080 && jt.h === 1920 && Buffer.compare(jt.b, j.b) !== 0
+      && /"Vote for my piece": "Vote for this piece"/.test(readFileSync(join(ROOT, "src/server-10-events-4-cards.js"), "utf8")));
     j = await jpeg("/e/art/board.jpg");
     t("TNL's scoreboard post: 1080×1350", j.s === 200 && j.jpg && j.w === 1080 && j.h === 1350);
     j = await jpeg("/e/art/board.jpg?size=story");

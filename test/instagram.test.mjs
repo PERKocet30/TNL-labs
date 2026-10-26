@@ -65,7 +65,7 @@ try {
   t("one tap opens Safari on an iPhone, the browser on Android", app.includes('"x-safari-"+url') && app.includes("#Intent;scheme=https;"));
   t("if Instagram blocks that, it shows the taps that always work", app.includes("Open in ${onIOS()?\"external browser\":\"Chrome\"}"));
   t("the home-screen card becomes Open in Safari there", app.includes('if(st==="inapp")return inappCardHTML();'));
-  t("the tournament's Story sheet offers Safari there too", /\$\{INAPP\?`<button class="btn green ev-cta" data-outgo>Open in \$\{outBrowser\(\)\}<\/button>`:`<button class="btn green ev-cta" id="evshgo">/.test(app));
+  t("the tournament's Story sheet offers Safari there too", /\$\{INAPP\?`<button class="btn (green|ghost) ev-cta" data-outgo>Open in \$\{outBrowser\(\)\}<\/button>`:`<button class="btn (green|ghost) ev-cta" id="evshgo">/.test(app));
   t("Story sheets sit above an opened post", /#igsl \.sheet\{z-index:140\}/.test(app));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
