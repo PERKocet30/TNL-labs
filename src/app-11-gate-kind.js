@@ -23,6 +23,6 @@ const KIND_COPY={
 const kindCopy=()=>KIND_COPY[myKind()]||KIND_COPY.maker;
 function collectorCardHTML(on){
   return `<button class="gx-coll${on?" on":""}" data-collector aria-pressed="${on?"true":"false"}">
-    <b>I'm here for the art</b><span>Collector — discover, collect and support artists. Add what you make any time.</span></button>
+    <b>I'm here for the art</b><span>Collector — follow artists, collect, vote and post like any account. Add what you make any time.</span></button>
     <div class="gx-or">or pick what you make</div>`;
 }

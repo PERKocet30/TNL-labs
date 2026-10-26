@@ -26,9 +26,9 @@ function gsItems(){
   if(coll)it.push({k:"support",t:"Like 3 pieces you love",done:!!GS&&GS.likes>=3,go:()=>{TAB="showroom";render();const g=$("#sr-grid");if(g)g.scrollIntoView({behavior:mvReduced()?"auto":"smooth",block:"start"})}});
   if(k==="music")it.push({k:"music",t:"Upload your first track",done:!!GS&&GS.tracks>=1,go:()=>startGo("music")});
   if(k==="fashion")it.push({k:"market",t:"List a piece in the Market",done:!!GS&&GS.listings>=1,go:()=>startGo("market")});
-  if(!coll)it.push({k:"post",t:"Post your first piece",done:!!GS&&GS.posts>=1,go:gsPost});
+  it.push({k:"post",t:coll?"Post your first photo":"Post your first piece",done:!!GS&&GS.posts>=1,go:gsPost});   // collectors post too, like any account
   it.push({k:"lab",t:"Step into a lab",done:gsFlag("lab"),go:()=>{TAB="labs";render()}});
-  if(!coll)it.push({k:"share",t:"Share your page",done:gsFlag("share"),go:()=>shareProfile(myName())});
+  it.push({k:"share",t:"Share your page",done:gsFlag("share"),go:()=>shareProfile(myName())});
   return it;
 }
 const GS_NOPIC_MS=3*864e5;
@@ -41,7 +41,7 @@ async function startGo(k){
   if(!ME)return;GSFORCE=true;gsMark("new");
   if(k==="music"){await openProfile(myName());PTAB="music";render();return}
   if(k==="market"){TAB="market";MKTVIEW="sell";render();return}
-  const i=gsItems().find(z=>z.k===(k==="piece"?"post":k==="love"?"bio":k));
+  const i=gsItems().find(z=>z.k===(k==="piece"?"post":k==="love"?"bio":k==="first"?"post":k));
   if(i)i.go();else{TAB="showroom";render()}   // done already? the step is still the right place to land
 }
 function gsHTML(){

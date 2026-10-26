@@ -55,14 +55,15 @@ function nudgeGaps(u) {
   const n = (sql) => db.prepare(sql).get(u.id)?.n ?? 0;
   const role = roles.find((r) => REMIND_MUSIC.has(r)) || roles.find((r) => REMIND_FASHION.has(r)) || roles[0] || "";
   const items = [];
-  // a collector (only "Collector", 2026-10-26): no piece to post — a line about what they love, artists to follow, pieces to like
+  // a collector (only "Collector", 2026-10-26): a line about what they love, artists to follow, pieces to like, then a first post
   if (roles.length && roles.every((r) => r === "Collector")) {
     if (!u.avatar_url) items.push("photo");
     if (!String(u.bio || "").trim()) items.push("love");
     if (!u.accent || u.accent === "lab") items.push("colour");
     if (n(`SELECT COUNT(*) n FROM follows WHERE follower_id = ?`) < 3) items.push("follow");
     if (n(`SELECT COUNT(*) n FROM likes WHERE user_id = ?`) < 3) items.push("support");
-    return { items, role: "Collector", done: Math.max(0, 6 - items.length), total: 6 };   // Get started's six for a collector
+    if (!n(`SELECT COUNT(*) n FROM posts WHERE author_id = ? AND is_work = 1`)) items.push("first");   // they post too, like any account
+    return { items, role: "Collector", done: Math.max(0, 8 - items.length), total: 8 };   // Get started's eight for a collector
   }
   if (!u.avatar_url) items.push("photo");
   if (roles.some((r) => REMIND_MUSIC.has(r)) && !n(`SELECT COUNT(*) n FROM tracks WHERE user_id = ?`)) items.push("music");
@@ -136,7 +137,7 @@ app.post("/api/admin/nudge/preview", auth, admin, rateLimit({ max: 10, windowMs:
   if (!MAIL_ENABLED) return res.status(400).json({ error: "Email isn't set up yet (RESEND_API_KEY in Railway → Variables)." });
   const me = db.prepare(`SELECT * FROM users WHERE id = ?`).get(req.user.id);
   let gaps = nudgeGaps(me);
-  if (!gaps.items.length) gaps = { items: Object.keys(NUDGE_ITEMS).filter((k) => k !== "love" && k !== "support"), role: gaps.role || "Producer", done: 0, total: 7 };
+  if (!gaps.items.length) gaps = { items: Object.keys(NUDGE_ITEMS).filter((k) => !["love", "support", "first"].includes(k)), role: gaps.role || "Producer", done: 0, total: 7 };
   const { subject, mail, unsub } = nudgeMailFor(me, gaps);
   const r = await sendNudgeEmail(me.email, "[Preview] " + subject, mail, unsub);
   if (!r.sent) return res.status(502).json({ error: r.error || "It didn't send." });

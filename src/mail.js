@@ -179,6 +179,7 @@ export const NUDGE_ITEMS = {
   bio:    { title: "Say what you make", line: "One line under your name tells people why to follow you.", cta: "Write your line" },
   love:   { title: "Say what you love", line: "One line under your name tells artists what you're into.", cta: "Write your line" },
   support: { title: "Like 3 pieces you love", line: "Every like counts for the artist who made it. Three is a start.", cta: "Find pieces" },
+  first:  { title: "Post your first photo", line: "Your page works like any feed: post what you love — your collection, a fit, a show you went to.", cta: "Post a photo" },
   colour: { title: "Pick your colour", line: "Every member has one. It wraps your avatar and colours your page.", cta: "Pick a colour" },
   follow: { title: "Follow 3 people", line: "Your feed is built from who you follow. Three is a start.", cta: "Find people" },
   market: { title: "List a piece in the Market", line: "Your page says {role}. List one piece and it's on your page and in the Market.", cta: "List a piece" },
