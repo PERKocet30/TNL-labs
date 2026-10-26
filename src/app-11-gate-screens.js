@@ -76,7 +76,7 @@ function gateHTML(){
         ${err}<button class="gx-btn" id="fgo"${G.busy?" disabled":""}>${G.busy?"Sending…":"Send link"}</button>`;
     foot=`<button class="gx-link" id="gxlogin">Back to log in</button>`;
   }else if(!G.made){
-    const S=gxSteps(G),i=S.indexOf(G.step);   // with Google / Apple: no email or password steps (app-11-gate-oauth)
+    const S=gxSteps(G),i=S.indexOf(G.step);   // with Google / Apple / Facebook: no email or password steps (app-11-gate-oauth)
     top=`<button class="gx-ic" id="${i>0?"gxback":"gatex"}" aria-label="${i>0?"Back":"Close"}">${i>0?GX_BACK:GX_X}</button>
       <div class="gx-prog" aria-label="Step ${i+1} of ${S.length}">${S.map((_,k)=>`<i class="${k<=i?"on":""}"></i>`).join("")}</div>
       <span class="gx-sp"></span>`;
@@ -84,7 +84,7 @@ function gateHTML(){
     const mk=`<img class="mark gx-mk" src="${GX_MARK}" alt="">`;   // the mark atop every Join step (2026-10-20, Google's shape)
     center=G.step!=="roles";
     if(G.step==="email"){
-      const oa=oauthHTML("join");   // with Google / Apple on, the first screen reads like theirs: who you're joining, then the choices
+      const oa=oauthHTML("join");   // with Google / Apple / Facebook on, the first screen reads like theirs: who you're joining, then the choices
       body=`${mk}<h1 class="gx-h">${oa?"Create your account":"What's your email?"}</h1><p class="gx-p">${oa?"Join the people making things on LABS.":"You'll use it to log in and to reset your password."}</p>${why}${inappGateHTML()}${oa}
         ${gxField("em","Email",{type:"email",value:f.email,attrs:'autocomplete="email" autocapitalize="none" inputmode="email"'})}
         ${err}${next("Next",/^\S+@\S+\.\S+$/.test(f.email.trim()))}`;

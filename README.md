@@ -146,6 +146,7 @@ Set in Railway → Variables. Values are secret and never go in this repo.
 | `STRIPE_SECRET_KEY` | Market checkout and seller payouts |
 | `SENTRY_DSN` | optional; overrides the built-in error-reporting address |
 | `IG_APP_ID`, `IG_APP_SECRET` | optional; the Instagram inbox in Admin (a Meta app with Instagram API with Instagram Login). `IG_VERIFY_TOKEN` (any word) and `IG_POLL_MS` are optional too. |
+| `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET` | optional; Continue with Facebook (Meta's login for everyone, Instagram accounts included) — the Meta app's own id and secret, see RAILWAY.md |
 
 Things that change without a deploy live in **Admin → System → Settings**: signups open, auto-verify, guest access, market open, minimum rep to sell, loops/studio on or off, the distribution offer and the announcement banner.
 

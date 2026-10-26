@@ -1,15 +1,25 @@
 /* ================================================================
-   SIGN IN WITH GOOGLE OR APPLE v1.0 — 2026-10-20. "We should make it so
-   you can sign up with Google or Apple like most apps." Each is off until
+   SIGN IN WITH GOOGLE, APPLE OR FACEBOOK v1.1 — 2026-10-26 (v1.0
+   2026-10-20). "We should make it so you can sign up with Google or Apple
+   like most apps." / "…with Meta/Instagram too." Each is off until
    Railway → Variables has its keys (RAILWAY.md):
-     Google  GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (a free OAuth client)
-     Apple   APPLE_SERVICES_ID (a Services ID; needs the Apple Developer
-             account). Sign-in only needs Apple's signed id_token, so no
-             private key lives here.
+     Google    GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (a free OAuth client)
+     Apple     APPLE_SERVICES_ID (a Services ID; needs the Apple Developer
+               account). Sign-in only needs Apple's signed id_token, so no
+               private key lives here.
+     Facebook  FACEBOOK_APP_ID + FACEBOOK_APP_SECRET (the Meta app's own
+               id and secret — the same app as the Instagram inbox). Meta's
+               login for everyone, an Instagram account included through
+               Accounts Center; Instagram-only login is for business
+               accounts and gives no email, so it's not the door here.
    The flow:
      GET  /api/auth/oauth/:p/start     → the provider, with a one-use state + nonce
      …/google/callback (GET, ?code)    → we trade the code for Google's id_token
      …/apple/callback  (POST form)     → Apple posts its id_token straight back
+     …/facebook/callback (GET, ?code)  → we trade the code (with our secret) for
+                                         a token, then ask Graph who they are;
+                                         the token exchange is the proof, and
+                                         /me carries appsecret_proof
    Every id_token is checked here: RS256 against the provider's published
    keys, issuer, audience (our id), expiry and our nonce.
    Then: a known identity → signed in. A verified email that already has
@@ -43,9 +53,15 @@ const OAUTH = {
     jwks: env("APPLE_JWKS_URL", "https://appleid.apple.com/auth/keys"),
     iss: [env("APPLE_ISSUER", "https://appleid.apple.com")],
   },
+  facebook: {
+    id: env("FACEBOOK_APP_ID"), secret: env("FACEBOOK_APP_SECRET"), scope: "public_profile,email",   // both granted without Meta's review
+    auth: env("FACEBOOK_AUTH_URL", "https://www.facebook.com/v24.0/dialog/oauth"),
+    token: env("FACEBOOK_TOKEN_URL", "https://graph.facebook.com/v24.0/oauth/access_token"),
+    me: env("FACEBOOK_ME_URL", "https://graph.facebook.com/v24.0/me"),
+  },
 };
-const oauthOn = (p) => !!(OAUTH[p] && OAUTH[p].id && (p !== "google" || OAUTH[p].secret));
-const oauthSite = () => ({ google: oauthOn("google"), apple: oauthOn("apple") });   // /api/levels → site.oauth
+const oauthOn = (p) => !!(OAUTH[p] && OAUTH[p].id && (p === "apple" || OAUTH[p].secret));
+const oauthSite = () => ({ google: oauthOn("google"), apple: oauthOn("apple"), facebook: oauthOn("facebook") });   // /api/levels → site.oauth
 
 /* Short-lived, one-use things, in memory (one server; a restart just means "try again"). */
 const OA_STATES = new Map(), OA_CODES = new Map();
@@ -136,7 +152,7 @@ app.get("/api/auth/oauth/:p/start", oaLimit, (req, res) => {
   if (!/^[a-f0-9]{16,64}$/.test(b)) return oaFail(res, "failed");   // the browser's mark (see above)
   const nonce = randomBytes(18).toString("hex"), state = oaPut(OA_STATES, { p, nonce, b }, 600000);
   const qs = new URLSearchParams({ client_id: cfg.id, redirect_uri: oaRedirect(req, p), scope: cfg.scope, state, nonce,
-    ...(p === "apple" ? { response_type: "code id_token", response_mode: "form_post" } : { response_type: "code", prompt: "select_account" }) });
+    ...(p === "apple" ? { response_type: "code id_token", response_mode: "form_post" } : p === "facebook" ? { response_type: "code" } : { response_type: "code", prompt: "select_account" }) });
   res.redirect(302, `${cfg.auth}?${qs}`);
 });
 app.get("/api/auth/oauth/google/callback", oaLimit, async (req, res) => {
@@ -151,6 +167,26 @@ app.get("/api/auth/oauth/google/callback", oaLimit, async (req, res) => {
     if (!r.ok || !j.id_token) throw new Error("token " + r.status);
     oaFinish(res, "google", await oaVerify("google", j.id_token, st.nonce), "", st.b);
   } catch (e) { logError("auth", "google sign-in: " + e.message, "", req.path, ""); oaFail(res, "failed"); }
+});
+app.get("/api/auth/oauth/facebook/callback", oaLimit, async (req, res) => {
+  const st = oaGet(OA_STATES, req.query.state, true);
+  if (!st || st.p !== "facebook" || !oauthOn("facebook")) return oaFail(res, "expired");
+  if (req.query.error || !req.query.code) return oaFail(res, "cancelled");
+  try {
+    const cfg = OAUTH.facebook;
+    /* the code is traded with our secret, so a token that comes back was issued to this app for this person */
+    const tq = new URLSearchParams({ code: String(req.query.code), client_id: cfg.id, client_secret: cfg.secret, redirect_uri: oaRedirect(req, "facebook") });
+    const r = await fetch(`${cfg.token}?${tq}`, { signal: AbortSignal.timeout(10000) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.access_token) throw new Error("token " + r.status);
+    const mq = new URLSearchParams({ fields: "id,name,email", access_token: j.access_token, appsecret_proof: createHmac("sha256", cfg.secret).update(j.access_token).digest("hex") });
+    const m = await fetch(`${cfg.me}?${mq}`, { signal: AbortSignal.timeout(10000) });
+    const me = await m.json().catch(() => ({}));
+    if (!m.ok || !me.id) throw new Error("me " + m.status);
+    /* Facebook only hands over an address it has confirmed; an account with none (phone-only, or email declined) can't join this way */
+    const email = String(me.email || "").trim();
+    oaFinish(res, "facebook", { sub: String(me.id), email, email_verified: !!email, name: me.name }, "", st.b);
+  } catch (e) { logError("auth", "facebook sign-in: " + e.message, "", req.path, ""); oaFail(res, "failed"); }
 });
 app.post("/api/auth/oauth/apple/callback", oaLimit, express.urlencoded({ extended: false, limit: "20kb" }), async (req, res) => {
   const b = req.body || {}, st = oaGet(OA_STATES, b.state, true);

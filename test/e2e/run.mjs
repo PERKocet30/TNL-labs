@@ -2144,15 +2144,15 @@ console.log("\nGOOGLE / APPLE · PHONE");
     ok(await p.locator("#em").count() === 0, "back from username went to the email screen");
   });
   await step(d, "Log in and Join show Continue with Apple / Google when they're switched on; Google goes to its sign-in", async () => {
-    await p.evaluate(() => { SITE.oauth = { google: true, apple: true }; gateClose(); GATE = "join"; render(); goOut = (u) => { window.__out = u; }; });
+    await p.evaluate(() => { SITE.oauth = { google: true, apple: true, facebook: true }; gateClose(); GATE = "join"; render(); goOut = (u) => { window.__out = u; }; });
     await p.waitForSelector("[data-oauth=google]", { timeout: 4000 });
-    ok(await p.locator("[data-oauth=apple]").count() === 1 && /or/.test(await p.locator(".gx-or").innerText()), "the buttons or the divider are missing");
+    ok(await p.locator("[data-oauth=apple]").count() === 1 && await p.locator("[data-oauth=facebook]").count() === 1 && /or/.test(await p.locator(".gx-or").innerText()), "the buttons or the divider are missing");
     await p.screenshot({ path: join(SHOTS, "oauth-join.png") });
     await p.locator("[data-oauth=google]").tap(); await p.waitForTimeout(200);
     ok(await p.evaluate(() => /\/api\/auth\/oauth\/google\/start\?mode=join&b=[a-f0-9]{32}$/.test(window.__out || "") && window.__out.endsWith(localStorage.getItem("tnl-oa-b"))), "Google didn't start with this browser's mark: " + await p.evaluate(() => window.__out));
     await p.evaluate(() => { gateClose(); GATE = "login"; render(); });
     ok(await p.locator("[data-oauth=google][data-oamode=login]").count() === 1, "Log in has no Google button");
-    await p.evaluate(() => { SITE.oauth = { google: false, apple: false }; render(); });
+    await p.evaluate(() => { SITE.oauth = { google: false, apple: false, facebook: false }; render(); });
     ok(await p.locator("[data-oauth]").count() === 0, "the buttons show while switched off");
     await p.evaluate(() => { gateClose(); render(); });
   });
