@@ -5,10 +5,11 @@
    live, whether a deploy is stuck, and what is waiting for a Push.
      GET /api/admin/systems   (admins only)
    Each service is off until its key is in Railway → Variables (RAILWAY.md):
-     Railway  RAILWAY_API_TOKEN (an account/team token, read-only is enough) —
-              project, service and environment ids are the ones Railway
-              sets on every deploy (RAILWAY_PROJECT_ID etc.); override with
-              RAILWAY_SYSTEMS_* if the admin should watch another service.
+     Railway  RAILWAY_PROJECT_TOKEN (Project → Settings → Tokens: sees this
+              project only — preferred) or RAILWAY_API_TOKEN (an account
+              token). Project, service and environment ids are the ones
+              Railway sets on every deploy (RAILWAY_PROJECT_ID etc.);
+              override with RAILWAY_SYSTEMS_* to watch another service.
      GitHub   GITHUB_TOKEN (a fine-grained token: this repo, read-only on
               Contents, Pull requests and Checks) + GITHUB_REPO
               (owner/name, default PERKocet30/TNL-labs).
@@ -19,7 +20,7 @@
 ================================================================ */
 const SYS_ENV = (k, d = "") => (process.env[k] || "").trim() || d;
 const SYS = {
-  railwayToken: () => SYS_ENV("RAILWAY_API_TOKEN"),
+  railwayToken: () => SYS_ENV("RAILWAY_API_TOKEN"), railwayProjectToken: () => SYS_ENV("RAILWAY_PROJECT_TOKEN"),
   railwayUrl: () => SYS_ENV("RAILWAY_API_URL", "https://backboard.railway.com/graphql/v2"),
   railwayIds: () => ({ projectId: SYS_ENV("RAILWAY_SYSTEMS_PROJECT_ID", SYS_ENV("RAILWAY_PROJECT_ID")),
     serviceId: SYS_ENV("RAILWAY_SYSTEMS_SERVICE_ID", SYS_ENV("RAILWAY_SERVICE_ID")),
@@ -37,13 +38,13 @@ const sysTitle = (msg) => { const lines = String(msg || "").split("\n").map((l) 
 
 /* Railway: the last few deploys of this service, newest first. */
 async function sysRailway() {
-  const token = SYS.railwayToken(), ids = SYS.railwayIds();
-  if (!token) return { on: false };
+  const token = SYS.railwayToken(), ptoken = SYS.railwayProjectToken(), ids = SYS.railwayIds();
+  if (!token && !ptoken) return { on: false };
   if (!ids.projectId || !ids.serviceId) return { on: true, error: "Railway didn't tell the app its project and service ids." };
   const query = `query($in: DeploymentListInput!) { deployments(input: $in, first: 8) { edges { node { id status createdAt meta } } } }`;
   try {
     const r = await fetch(SYS.railwayUrl(), { method: "POST", signal: AbortSignal.timeout(8000),
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json", ...(ptoken ? { "Project-Access-Token": ptoken } : { Authorization: `Bearer ${token}` }) },
       body: JSON.stringify({ query, variables: { in: { projectId: ids.projectId, serviceId: ids.serviceId, ...(ids.environmentId ? { environmentId: ids.environmentId } : {}) } } }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok || j.errors) return { on: true, error: sysLine(j.errors?.[0]?.message || `Railway answered ${r.status}.`) };

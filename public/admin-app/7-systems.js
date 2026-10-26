@@ -25,7 +25,7 @@ VIEWS.systems = () => {
   else { headline = `Serving ${L.commit ? `version ${L.commit}` : "the current version"}, up ${up}.`; headTag = `<span class="tag on">steady</span>`; }
 
   const railway = () => {
-    if (!R.on) return sysOff("Railway", "RAILWAY_API_TOKEN");
+    if (!R.on) return sysOff("Railway", "RAILWAY_PROJECT_TOKEN");
     if (R.error) return sysErr(R.error);
     if (!R.deploys.length) return `<div class="empty">No deploys yet.</div>`;
     return `<div class="list">${R.deploys.map((d) => `<div class="li"><span class="b"><b style="font-weight:500;font-size:13px">${esc(d.message || "(no message)")}</b>

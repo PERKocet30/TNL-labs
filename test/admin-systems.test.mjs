@@ -28,8 +28,8 @@ const fake = createServer((req, res) => {
     seen.calls++;
     const json = (code, obj) => { res.writeHead(code, { "Content-Type": "application/json" }); res.end(JSON.stringify(obj)); };
     if (req.url === "/graphql") {
-      seen.railwayAuth = req.headers.authorization; seen.railwayBody = JSON.parse(body);
-      if (seen.railwayAuth !== "Bearer rw-secret") return json(200, { errors: [{ message: "Not Authorized" }] });
+      seen.railwayAuth = req.headers["project-access-token"] ? "project:" + req.headers["project-access-token"] : req.headers.authorization; seen.railwayBody = JSON.parse(body);
+      if (seen.railwayAuth !== "Bearer rw-secret" && seen.railwayAuth !== "project:rw-project") return json(200, { errors: [{ message: "Not Authorized" }] });
       return json(200, { data: { deployments: { edges: [
         { node: { id: "d3", status: "BUILDING", createdAt: new Date(now - 60000).toISOString(), meta: { commitHash: "ccccccc999", commitMessage: "Merge pull request #150 from x/y\n\nNext thing", branch: "main" } } },
         { node: { id: "d2", status: "SUCCESS", createdAt: new Date(now - 3600000).toISOString(), meta: { commitHash: LIVE, commitMessage: "Merge pull request #149 from x/z\n\nGoogle feed", branch: "main" } } },
@@ -110,11 +110,16 @@ try {
   t("…and the wrong key isn't echoed either", !JSON.stringify(bad).includes("wrong"));
   t("GitHub without a key says it's off", bad.github.on === false && !bad.github.error);
   t("the page still gets what the server knows itself", bad.live.commit === "aaaaaaa");
+  srv.kill(); await new Promise((r) => setTimeout(r, 300));
+  srv = start({ RAILWAY_API_TOKEN: "", RAILWAY_PROJECT_TOKEN: "rw-project" }); await ready();
+  const proj = await (await get("/api/admin/systems", "boss")).json();
+  t("a project token (sees this project only) works, sent the way Railway expects", seen.railwayAuth === "project:rw-project" && proj.railway.deploys && proj.railway.deploys.length === 3);
+  t("…and never reaches the page", !JSON.stringify(proj).includes("rw-project"));
 
   console.log("\nTHE PAGE");
   const core = readFileSync(join(ROOT, "public/admin-app/1-core.js"), "utf8"), page = readFileSync(join(ROOT, "public/admin-app/7-systems.js"), "utf8"), html = readFileSync(join(ROOT, "public/admin.html"), "utf8");
   t("Systems is a section under Understand, with its own script", /\["systems", "Systems"\]/.test(core) && /"health", "systems"\]/.test(core) && /7-systems\.js/.test(html));
-  t("the page says plainly when a key isn't set", /RAILWAY_API_TOKEN/.test(page) && /GITHUB_TOKEN/.test(page) && /RAILWAY\.md/.test(page));
+  t("the page says plainly when a key isn't set", /RAILWAY_PROJECT_TOKEN/.test(page) && /GITHUB_TOKEN/.test(page) && /RAILWAY\.md/.test(page));
   t("it never takes a token from the page or stores one", !/localStorage\.(set|get)Item\(["'](railway|github)/i.test(page));
 } finally { srv.kill(); fake.close(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
