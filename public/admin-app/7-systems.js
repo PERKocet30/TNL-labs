@@ -61,4 +61,4 @@ VIEWS.systems = () => {
   </div>
   ${typeof sysGoogleHTML === "function" ? sysGoogleHTML() : ""}`;
 };
-WIRES.systems = () => { const b = $("#sysfresh"); if (b) b.onclick = () => { D.systemsFresh = true; D.systems = null; paint(); load(); }; };
+WIRES.systems = () => { const b = $("#sysfresh"); if (b) b.onclick = () => { D.systemsFresh = true; D.systems = null; paint(); load(); }; if (typeof ggWire === "function") ggWire(); };

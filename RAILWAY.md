@@ -210,7 +210,12 @@ One Google **service account** reads both, read-only. About 10 minutes:
    write, so the role is the limit; the app only ever reads).
 4. **Enable the two APIs** in the Cloud project: APIs & Services → Library →
    **Google Search Console API** → Enable; **Merchant API** → Enable.
-5. **Put the key in Railway.** Open the JSON file, copy the whole thing, and add
+5. **Link the project to Merchant Center (once).** After the key is in and
+   deployed, admin → Systems shows "One step left" under Google Shopping. In
+   Merchant Center set the service account to **Admin**, tap **Link** in
+   Systems, then set it back to Standard. (Google only takes this from an
+   Admin; it never needs doing again.)
+6. **Put the key in Railway.** Open the JSON file, copy the whole thing, and add
    it as one variable:
 
 | Variable | Value |
