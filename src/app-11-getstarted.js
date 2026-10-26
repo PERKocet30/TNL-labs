@@ -23,7 +23,7 @@ function gsItems(){
     {k:"bio",t:coll?"Say what you love":"Say what you make",done:!!String(me.bio||"").trim(),go:gsEdit},
     {k:"follow",t:coll?"Follow 3 artists":"Follow 3 people",done:!!GS&&GS.following>=3,go:()=>{const b=$("#sr-builders");if(b)b.scrollIntoView({behavior:mvReduced()?"auto":"smooth",block:"center"})}},
   ];
-  if(coll)it.push({k:"support",t:"Like 3 pieces you love",done:!!GS&&GS.likes>=3,go:()=>{TAB="showroom";render();const g=$("#sr-grid");if(g)g.scrollIntoView({behavior:mvReduced()?"auto":"smooth",block:"start"})}});
+  if(coll)it.push({k:"support",t:"Like 3 pieces",done:!!GS&&GS.likes>=3,go:()=>{TAB="showroom";render();const g=$("#sr-grid");if(g)g.scrollIntoView({behavior:mvReduced()?"auto":"smooth",block:"start"})}});
   if(k==="music")it.push({k:"music",t:"Upload your first track",done:!!GS&&GS.tracks>=1,go:()=>startGo("music")});
   if(k==="fashion")it.push({k:"market",t:"List a piece in the Market",done:!!GS&&GS.listings>=1,go:()=>startGo("market")});
   it.push({k:"post",t:coll?"Post your first photo":"Post your first piece",done:!!GS&&GS.posts>=1,go:gsPost});   // collectors post too, like any account

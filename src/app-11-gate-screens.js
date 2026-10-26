@@ -104,7 +104,7 @@ function gateHTML(){
         ${err}${next("Next",G.un.state==="ok")}`;
     }else{
       const coll=f.roles.includes(COLLECTOR);   // 2026-10-26: a door for people here for the art (app-11-gate-kind)
-      body=`<h1 class="gx-h">What brings you to LABS?</h1><p class="gx-p">Pick up to 5. It's how people find you.</p>
+      body=`<h1 class="gx-h">What brings you here?</h1><p class="gx-p">Pick up to 5.</p>
         ${collectorCardHTML(coll)}
         <div class="gx-roles">${ROLES.filter(r=>r!==COLLECTOR).map(r=>`<button class="chip ${f.roles.includes(r)?"on":""}" data-r="${esc(r)}">${esc(r)}</button>`).join("")}</div>
         <div class="gx-count" id="rcount">${coll?"Collector":f.roles.length+" of 5 selected"}</div>

@@ -65,14 +65,14 @@ try {
   t("Collector is a role, with labs to land in", /const ROLES = \[\s*"Collector"/.test(app) && /"Collector":\["pharmacy","culture","fashion"\]/.test(read("src/app-11-places.js")));
   t("its own door above 'what you make', never mixed in with the chips", scr.includes("${collectorCardHTML(coll)}") && scr.includes("ROLES.filter(r=>r!==COLLECTOR)") && /f\.roles=f\.roles\.includes\(COLLECTOR\)\?\[\]:\[COLLECTOR\]/.test(lg));
   t("the photo step has no Skip", /G\.step!=="welcome"&&G\.step!=="photo"\?/.test(scr));
-  t("the photo and bio steps speak to the kind of member", scr.includes("kindCopy().photo") && scr.includes("kc.bioH") && /bioH:"What kind of work do you love\?"/.test(kind));
+  t("the photo and bio steps speak to the kind of member", scr.includes("kindCopy().photo") && scr.includes("kc.bioH") && /bioH:"What do you love\?"/.test(kind));
   t("a member is a maker as soon as they pick something they make", /if\(r\.length&&r\.every\(x=>x===COLLECTOR\)\)return "collector";/.test(kind));
 
   console.log("\nGET STARTED FOLLOWS THE KIND");
   const st = (await call("col", "/api/me/start")).j;
   t("the numbers for every kind's steps: follows, likes, tracks, listings", st.following === 2 && st.likes === 1 && st.tracks === 0 && st.listings === 0 && st.posts === 0);
   const gs = read("src/app-11-getstarted.js");
-  t("a collector follows artists, likes pieces — and posts, like any account", gs.includes('t:"Like 3 pieces you love"') && gs.includes('coll?"Follow 3 artists"') && gs.includes('t:coll?"Post your first photo":"Post your first piece"'));
+  t("a collector follows artists, likes pieces — and posts, like any account", gs.includes('t:"Like 3 pieces"') && gs.includes('coll?"Follow 3 artists"') && gs.includes('t:coll?"Post your first photo":"Post your first piece"'));
   t("music gets a first track, fashion a first listing", gs.includes('t:"Upload your first track"') && gs.includes('t:"List a piece in the Market"'));
   t("no photo brings the list back, whenever they joined, three days after it's closed", /const gsNoPic=\(\)=>!!\(ME&&!ME\.avatarUrl&&Date\.now\(\)-gsOffAt\(\)>GS_NOPIC_MS\)/.test(gs) && /GS_NOPIC_MS=3\*864e5/.test(gs)
     && read("src/app-19-feed-boot.js").includes("if(ME&&gsWant())await gsLoad(true);"));
@@ -82,17 +82,17 @@ try {
   const c = SENT.find((m) => m.to[0] === "col@x.test");
   t("a collector is asked what they love, not what they make", c && c.subject === "Say what you love — LABS");
   t("…of their own eight, and asked for a first photo, not a 'piece'", c && c.text.includes("Col, your page is 3 of 8 done.") && /post your first photo/i.test(c.text) && !/post your first piece/i.test(c.text));
-  t("…and to like pieces they love", c && /like 3 pieces you love/i.test(c.text));
+  t("…and to like pieces they love", c && /like 3 pieces/i.test(c.text));
   await until(() => SENT.some((m) => m.to[0] === "art@x.test"));
   const a = SENT.find((m) => m.to[0] === "art@x.test");
   t("a maker still gets the maker's list (posted already, so: follow 3 people)", a && a.subject === "Follow 3 people — LABS" && !/love/i.test(a.subject));
 
   console.log("\nTHE WEEKLY REPORT");
   const w = (await call("boss", "/api/admin/weekly")).j;
-  t("new collectors and makers counted apart", w.lines.some((l) => /Of them, 2 joined as collectors \(here for the art\) and 1 as maker\./.test(l)));
+  t("new collectors and makers counted apart", w.lines.some((l) => /^2 collectors, 1 maker\.$/.test(l)));
 
   console.log("\nTHE PROFILE");
-  t("an empty collector page says what they're here for", read("src/app-15-profile.js").includes("Here for the art: a Collector on LABS."));
+  t("an empty collector page says what they're here for", read("src/app-15-profile.js").includes('"Collector."'));
 } finally { srv.kill(); fake.close(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

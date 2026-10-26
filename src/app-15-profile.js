@@ -151,7 +151,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
   :PTAB==="shop"?`<div class="mkt-grid" style="padding:14px 0 30px">${PROFLISTINGS===null?`${skel("tiles")}`:PROFLISTINGS.length?PROFLISTINGS.map(mktCardHTML).join(""):`<div class="empty">${mine?"Nothing listed yet. Head to Market → Sell to put something up.":"Not selling anything right now."}</div>`}</div>`
   :ld?`<div class="worklist asgrid">${[0,1,2].map(()=>`<div class="work skel"><div class="skelbar"></div></div>`).join("")}</div>`
   :list.length?`<div class="worklist ${K.grid?"asgrid":""}">${list.map(p=>workCardHTML(p,PTAB==="collabs",K,PTAB==="work"&&pins.includes(Number(p.id)))).join("")}</div>`
-  :`<div class="empty">${PTAB==="collabs"?"No collabs yet.":memberKind(PROFILE.user&&PROFILE.user.roles)==="collector"?(mine?"Post what you love: your collection, a fit, a show you went to. Hit + Post and it lands here.":"Here for the art: a Collector on LABS."):mine?K.empty+" Hit + Post and it lands here.":esc(K.empty)}</div>`}
+  :`<div class="empty">${PTAB==="collabs"?"No collabs yet.":memberKind(PROFILE.user&&PROFILE.user.roles)==="collector"?(mine?"Nothing posted yet. Hit + Post.":"Collector."):mine?K.empty+" Hit + Post and it lands here.":esc(K.empty)}</div>`}
 </div></div>`}
 
 /* ---- wiring ---- */
