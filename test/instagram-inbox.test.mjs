@@ -116,6 +116,14 @@ TOO_BIG = true; CONVS = [{ id: "c1", updated_time: "2026-10-26T10:07:00+0000" }]
 t("\"reduce the amount of data\": it asks again for less (10 conversations, 5 messages) and the check goes through", r.code === 200 && r.body.ok !== false
   && calls.some((u) => /conversations.*limit=10/.test(u)) && calls.some((u) => /limit%285%29|limit\(5\)/.test(u)) && !(await call("GET /api/admin/instagram")).body.lastError);
 TOO_BIG = false;
+let SLOW = false;   // Meta too slow above 10 conversations: the fetch times out
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (u, o) => { if (SLOW && /me\/conversations/.test(String(u)) && Number(new URL(String(u)).searchParams.get("limit")) > 10) { CALLS.push(String(u)); const e = new Error("The operation was aborted due to timeout"); e.name = "TimeoutError"; throw e; } return realFetch(u, o); };
+SLOW = true; CONVS = [{ id: "c1", updated_time: "2026-10-26T10:08:00+0000" }];
+({ r, calls } = await sinceCalls(() => call("POST /api/admin/instagram/sync")));
+t("Instagram too slow to answer: it asks again for fewer and the check goes through", r.code === 200 && r.body.ok !== false && calls.some((u) => /conversations.*limit=10/.test(u)));
+SLOW = false; globalThis.fetch = realFetch;
+t("it waits up to 30 seconds for Instagram", /Number\(process\.env\.IG_WAIT_MS\) \|\| 30000/.test(src));
 
 console.log("\nWEBHOOKS");
 const vt = (await call("GET /api/admin/instagram")).body.webhook.verifyToken;
