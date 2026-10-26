@@ -48,6 +48,10 @@
 .ev-pick.busy{opacity:.5}
 .ev-mine,.ev-seed{position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:999px;background:var(--tx);color:var(--bg);font-size:11px;font-weight:700}
 .ev-seed{left:auto;right:8px;background:rgba(0,0,0,.6);color:#fff}
+.ev-shr{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:999px;border:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);color:#fff;cursor:pointer}
+.ev-rshr{width:36px;height:36px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ev-facts{display:flex;align-items:center;gap:8px}.ev-facts .btn{height:44px}
+.ev-share .ev-cta+.ev-shimg{margin-top:12px}
 .ev-by{position:absolute;left:0;right:0;bottom:0;padding:6px 8px;font-size:12px;line-height:16px;background:linear-gradient(transparent,rgba(0,0,0,.55));color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .ev-empty{border-style:dashed}
 
@@ -84,7 +88,7 @@
 
 /* the poll: a scoreboard you vote from */
 .ev-board{border-top:1px solid var(--line)}
-.ev-row{display:grid;grid-template-columns:28px 56px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.ev-row{display:grid;grid-template-columns:28px 56px 1fr auto auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .ev-row img{width:56px;height:56px;object-fit:cover;display:block;background:var(--el);cursor:zoom-in}
 .ev-rk{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center}
 .ev-rwho{min-width:0;display:flex;flex-direction:column;gap:2px;font-size:15px;line-height:19px}
@@ -115,7 +119,7 @@
 .ev-link span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ev-link .btn{padding:8px 12px;font-size:13px}
 .ev-link .btn svg{width:14px;height:14px;margin-right:4px}
-.ev-focus .ev-by{display:none}
+.ev-focus .ev-by,.ev-focus .ev-shr{display:none}
 
 /* 2026-10-12: Invite people — the link to send, and a button that shares or copies it. */
 .ev-invite{display:flex;align-items:center;gap:12px;margin:16px 0 4px;padding:12px 12px 12px 14px;border:1px solid var(--line)}

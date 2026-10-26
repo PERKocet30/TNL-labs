@@ -1,18 +1,6 @@
 /* v2026-10-20: the share sheet's head comes from the screen kit */
-/* ================================================================
-   EVENT POLL v1.0 — 2026-10-07. What the community asked for: a plain
-   poll and a scoreboard. Instagram brings people in, the vote happens
-   here.
-     · the board: every piece, ranked, with its votes and how far it moved
-       in the last 24 hours. Frozen for the last hours of each stage.
-     · one tap to vote (or `picks` a day), resets at midnight ET
-     · EVFOCUS — the piece someone tapped through to from Instagram
-       (/e/:slug/:id → /?e=slug&v=id), shown first, big, with Vote
-     · EVSHARE — "Share to Instagram": the entrant's Story card from the
-       server, shared straight to Instagram where the phone allows it
-     · after confirming your email in another tab, the app brings you
-       back to the piece you were voting for (tnl-evret)
-================================================================ */
+/* EVENT POLL (2026-10-07): a scoreboard you vote from. EVFOCUS — the piece a link opened (/?e=slug&v=id);
+   EVSHARE — the share sheet for any piece (2026-10-26; was the entrant's own only); tnl-evret — back to the piece after confirming email. */
 let EVFOCUS=null, EVSHARE=null;
 
 const evVoteUrl=id=>`${location.origin}/e/${EVSLUG}/${id}`;
@@ -37,7 +25,7 @@ function evFocusHTML(){
   return `<div class="ev-focus">${evThumb(e,{big:true})}
     <div class="ev-fbar"><div><b data-u="${esc(e.author.username)}">@${esc(e.author.username)}</b>
       ${r?`<div class="dim ev-small">#${r.rank} · ${r.votes} ${r.votes===1?"vote":"votes"}</div>`:""}</div>
-      ${voting?evVoteBtn(e):""}</div></div>`;
+      <div class="ev-facts"><button class="btn ghost" data-evshr="${e.id}">${DI.out} Share</button>${voting?evVoteBtn(e):""}</div></div></div>`;
 }
 function evPollHTML(){
   const B=EV.board, me=EV.me;if(!B)return evQualifyHTML();
@@ -52,32 +40,34 @@ function evPollHTML(){
         <img ${imgAttrs({url:e.imageUrl,thumb:e.thumbUrl,w:e.w,h:e.h,tw:e.tw,sm:e.sm,sw:e.sw})} alt="" loading="lazy" data-evzoom="${esc(e.imageUrl)}">
         <div class="ev-rwho"><b data-u="${esc(e.author.username)}">@${esc(e.author.username)}</b>
           <span class="dim">${r.votes} ${r.votes===1?"vote":"votes"} ${evMove(r.move)}</span></div>
-        ${evVoteBtn(e)}</div>`}).join("")}</div></div>
+        <button class="ev-rshr" data-evshr="${e.id}" aria-label="Share @${esc(e.author.username)}'s piece">${DI.out}</button>${evVoteBtn(e)}</div>`}).join("")}</div></div>
     <a class="ev-boardlink" href="/e/${esc(EV.event.slug)}/board" target="_blank" rel="noopener">Open the public scoreboard</a>`;
 }
 
 /* ---- Share to Instagram ---- */
 function evShareHTML(){
-  const s=EVSHARE, url=evVoteUrl(s.id);
+  const s=EVSHARE, url=evVoteUrl(s.id), e=evById(s.id), mine=!!(EV.me.entry&&EV.me.entry.id===s.id), who=e?"@"+e.author.username:"this piece";
   return `<div class="sheet" id="evshsheet"><div class="sheetc ev-share">
-    ${sheetHead("Share to Instagram","evshx")}
+    ${sheetHead(mine?"Share your piece":"Share "+esc(who)+"'s piece","evshx")}
+    <button class="btn green ev-cta" id="evshsend">${DI.out} Send to friends</button>
     <div class="ev-shimg">${s.failed?`<div class="dim">Couldn't make the picture. Your link still works.</div>`:`<img src="${esc(s.img)}" alt="Your Story card" id="evshpic">`}</div>
     ${INAPP?`<ol class="ev-howto"><li>${esc(INAPP)}'s browser can't hand a picture to your Story. Open LABS in <b>${outBrowser()}</b> and share it from there.</li>
-      <li>Or press and hold the picture to save it, add it to your Story, and put a <b>Link</b> sticker on it with your vote link.</li></ol>`
+      <li>Or press and hold the picture to save it, add it to your Story, and put a <b>Link</b> sticker on it with the vote link.</li></ol>`
     :`<ol class="ev-howto"><li>Share the picture to your Story (or save it).</li>
-      <li>Add a <b>Link</b> sticker with your vote link.</li>
-      <li>Only votes in the app count — the link takes people straight to your piece.</li></ol>`}
+      <li>Add a <b>Link</b> sticker and paste — the vote link is copied for you.</li>
+      <li>Only votes in the app count — the link takes people straight to the piece.</li></ol>`}
     <div class="ev-link"><span>${esc(url.replace(/^https?:\/\//,""))}</span><button class="btn ghost" id="evshcopy">${DI.copy} Copy</button></div>
-    ${INAPP?`<button class="btn green ev-cta" data-outgo>Open in ${outBrowser()}</button>`:`<button class="btn green ev-cta" id="evshgo">Share picture</button>`}
+    ${INAPP?`<button class="btn ghost ev-cta" data-outgo>Open in ${outBrowser()}</button>`:`<button class="btn ghost ev-cta" id="evshgo">Share picture to your Story</button>`}
   </div></div>`;
 }
 function evOpenShare(id){
-  EVSHARE={id,img:`/e/${encodeURIComponent(EVSLUG)}/${id}/story.jpg?t=${Math.floor(Date.now()/60000)}`};render();
+  EVSHARE={id,img:`/e/${encodeURIComponent(EVSLUG)}/${id}/story.jpg?t=${Math.floor(Date.now()/60000)}${EV.me.entry&&EV.me.entry.id===id?"":"&for=them"}`};render();
 }
 async function evSharePic(){
   const s=EVSHARE;
+  try{await navigator.clipboard.writeText(evVoteUrl(s.id))}catch(e){}
   try{
-    const blob=await (await fetch(s.img)).blob(),png=blob.type==="image/png",name=`labs-${EVSLUG}-${s.id}.${png?"png":"jpg"}`;   // the Story card is a lossless PNG (2026-10-20)
+    const blob=await (await fetch(s.img)).blob(),png=blob.type==="image/png",name=`labs-${EVSLUG}-${s.id}.${png?"png":"jpg"}`;
     const file=new File([blob],name,{type:png?"image/png":"image/jpeg"});
     if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});return}
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
@@ -87,12 +77,14 @@ async function evSharePic(){
 function wireEvPoll(){
   const on=(sel,fn)=>{const el=$(sel);if(el)el.onclick=fn};
   on("#evshare",()=>evOpenShare(EV.me.entry.id));
+  document.querySelectorAll("#evscroll [data-evshr]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();evOpenShare(Number(b.dataset.evshr))});
   if(!EVSHARE)return;
   const close=()=>{EVSHARE=null;render()};
   on("#evshx",close);
   const bg=$("#evshsheet");if(bg)bg.onclick=e=>{if(e.target===bg)close()};
   const pic=$("#evshpic");if(pic)pic.onerror=()=>{EVSHARE.failed=true;render()};
   on("#evshgo",evSharePic);
+  on("#evshsend",()=>{const e=evById(EVSHARE.id),t=EV.event.title;shareOut({title:t,text:(EV.me.entry&&EV.me.entry.id===EVSHARE.id?"Vote for my piece":"Vote for @"+(e?e.author.username:"this")+"'s piece")+" in "+t+" on LABS",url:evVoteUrl(EVSHARE.id)})});
   on("#evshcopy",async()=>{try{await navigator.clipboard.writeText(evVoteUrl(EVSHARE.id));toast("Link copied")}catch(e){toast("Couldn't copy")}});
 }
 
