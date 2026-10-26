@@ -82,7 +82,7 @@ const server = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"
     // no boot backfill: its AAC copies of the seeded WAVs land mid-run, and this Chromium plays no AAC
     TNL_NO_VIDEO_FIX: "1",
     // the Systems page is walked with no keys (a GITHUB_TOKEN in the runner's own environment must not count)
-    GITHUB_TOKEN: "", RAILWAY_API_TOKEN: "", RAILWAY_PROJECT_TOKEN: "" }, stdio: ["ignore", "pipe", "pipe"] });
+    GITHUB_TOKEN: "", RAILWAY_API_TOKEN: "", RAILWAY_PROJECT_TOKEN: "", GOOGLE_SERVICE_ACCOUNT: "" }, stdio: ["ignore", "pipe", "pipe"] });
 let serverLog = ""; server.stdout.on("data", (d) => (serverLog += d)); server.stderr.on("data", (d) => (serverLog += d));
 const stop = () => { try { server.kill(); } catch {} };
 process.on("exit", stop);
@@ -1922,7 +1922,7 @@ console.log("\nMEMBER · COMPUTER");
     // 2026-10-26: Systems — what's live, what's waiting for a Push; with no keys set, each card says so plainly
     await p.locator(".side .nv[data-tab=systems]").click();
     await fast(p, 6000, () => p.locator(".pg-hd h1", { hasText: "Systems" }).waitFor(), "the Systems page");
-    ok((await p.locator(".empty", { hasText: "isn't connected yet" }).count()) === 2, "Systems doesn't say its keys aren't set yet");
+    ok((await p.locator(".empty", { hasText: "isn't connected yet" }).count()) === 3, "Systems doesn't say its keys aren't set yet (Railway, GitHub, Google)");
     ok(await p.locator("#sysfresh").count() === 1, "no Look again on Systems");
     await p.locator(".side .nv[data-tab=home]").click(); await p.waitForTimeout(400);
     ok(await p.locator(".side .grp").count() === 4, "the side menu isn't grouped");
