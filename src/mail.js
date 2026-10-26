@@ -154,6 +154,21 @@ export function eventOpenEmail({ name, title, brief, prize, closes, url, unsub }
 }
 export const eventOpenSubject = (title) => `${title}: entries are open`;
 
+/** The morning voting opens (2026-10-26): `at` is the start time in words
+    ("3 PM ET"), `entries` how many pieces are in, `rules` the who-can-vote line. */
+export function voteOpenEmail({ name, title, at, entries, picks, rules, url, unsub }) {
+  return renderEmail({
+    eyebrow: "Tournament", title,
+    lines: [`${name ? name + ", voting" : "Voting"} opens today at ${at}.`,
+      `${entries} piece${entries === 1 ? " is" : "s are"} in. Pick your favourites — ${picks === 1 ? "one vote" : picks + " votes"} a day, resetting at midnight ET.`,
+      "Votes only count in the LABS app, not on Instagram.", rules].filter(Boolean),
+    cta: "See the entries", url, unsub,
+    note: "You're getting this because you're a member of LABS.",
+    preheader: `Voting opens today at ${at}. ${entries} pieces are in.`,
+  });
+}
+export const voteOpenSubject = (title, at) => `${title}: voting opens today at ${at}`;
+
 /** The weekly reminder. `items` are the gaps, first the one the button
     goes to; `done`/`total` are the Get started numbers. The words for
     each gap live here so the email and the admin preview agree. */
