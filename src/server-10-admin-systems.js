@@ -14,8 +14,8 @@
               (owner/name, default PERKocet30/TNL-labs).
    The keys never leave the server: the page gets numbers and names, never a
    token, and an error from a service is reported as one plain line.
-   Answers are cached for 60 s so a refresh-happy admin can't run up the
-   APIs. test/admin-systems.test.mjs runs it against pretend services.
+   Answers are cached for 60 s (5 s on "Look again") and limited per admin, so
+   a refresh-happy admin can't run up the APIs; links are only ever GitHub's own. test/admin-systems.test.mjs runs it against pretend services.
 ================================================================ */
 const SYS_ENV = (k, d = "") => (process.env[k] || "").trim() || d;
 const SYS = {
@@ -68,6 +68,7 @@ async function sysGithub(liveCommit) {
     if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? "GitHub refused the token." : r.status === 404 ? "GitHub can't find that repo with this token." : `GitHub answered ${r.status}.`);
     return r.json();
   };
+  const ghUrl = (u) => /^https:\/\/github\.com\//.test(String(u || "")) ? u : "";   // a link the page may follow: GitHub's own, nothing else
   const checksOf = (runs) => {
     const list = runs?.check_runs || [];
     if (!list.length) return "none";
@@ -79,24 +80,26 @@ async function sysGithub(liveCommit) {
       gh("/pulls?state=closed&sort=updated&direction=desc&per_page=12")]);
     const prs = await Promise.all(open.map(async (p) => {
       let checks = "none"; try { checks = checksOf(await gh(`/commits/${p.head.sha}/check-runs?per_page=20`)); } catch {}
-      return { number: p.number, title: sysLine(p.title), branch: p.head.ref, sha: String(p.head.sha).slice(0, 7), url: p.html_url,
+      return { number: p.number, title: sysLine(p.title), branch: p.head.ref, sha: String(p.head.sha).slice(0, 7), url: ghUrl(p.html_url),
         updatedAt: sysWhen(p.updated_at), draft: !!p.draft, checks };
     }));
     const merges = closed.filter((p) => p.merged_at).slice(0, 8).map((p) => ({ number: p.number, title: sysLine(p.title), sha: String(p.merge_commit_sha || "").slice(0, 7),
-      url: p.html_url, mergedAt: sysWhen(p.merged_at), live: !!liveCommit && String(p.merge_commit_sha || "").startsWith(liveCommit) }));
+      url: ghUrl(p.html_url), mergedAt: sysWhen(p.merged_at), live: !!liveCommit && String(p.merge_commit_sha || "").startsWith(liveCommit) }));
     let deployCheck = null;
     try {
       const runs = await gh("/actions/runs?branch=main&per_page=6");
       const run = (runs.workflow_runs || []).find((w) => /after deploy/i.test(w.name || ""));
-      if (run) deployCheck = { status: run.status, conclusion: run.conclusion, url: run.html_url, at: sysWhen(run.created_at), sha: String(run.head_sha || "").slice(0, 7) };
+      if (run) deployCheck = { status: run.status, conclusion: run.conclusion, url: ghUrl(run.html_url), at: sysWhen(run.created_at), sha: String(run.head_sha || "").slice(0, 7) };
     } catch {}
     return { on: true, repo, prs, merges, deployCheck };
   } catch (e) { return { on: true, error: /abort|timeout/i.test(e.message) ? "GitHub didn't answer in time." : sysLine(e.message) }; }
 }
 
-app.get("/api/admin/systems", auth, admin, async (req, res) => {
+/* Cached a minute; "Look again" asks afresh, but a held-down button can't run up the APIs: 10 looks a minute per admin,
+   each look fanning out to the services at most once every 5 s. */
+app.get("/api/admin/systems", auth, admin, rateLimit({ max: 10, windowMs: 60000, key: "user" }), async (req, res) => {
   const now = Date.now();
-  if (SYS_CACHE.body && now - SYS_CACHE.at < 60000 && !req.query.fresh) return res.json({ ...SYS_CACHE.body, cached: true });
+  if (SYS_CACHE.body && now - SYS_CACHE.at < (req.query.fresh ? 5000 : 60000)) return res.json({ ...SYS_CACHE.body, cached: true });
   const liveCommit = (process.env.RAILWAY_GIT_COMMIT_SHA || "").slice(0, 7);
   const [railway, github] = await Promise.all([sysRailway(), sysGithub(liveCommit)]);
   const live = { commit: liveCommit || null, uptimeS: Math.round(process.uptime()), node: process.version };

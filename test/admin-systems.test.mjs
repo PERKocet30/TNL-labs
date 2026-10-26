@@ -44,7 +44,7 @@ const fake = createServer((req, res) => {
     if (req.url.startsWith("/repos/PERKocet30/TNL-labs/pulls?state=closed")) return json(200, [
       { number: 149, title: "Google feed", merged_at: new Date(now - 3700000).toISOString(), merge_commit_sha: LIVE, html_url: "https://github.com/x/pull/149" },
       { number: 148, title: "Closed, never merged", merged_at: null, merge_commit_sha: "dead", html_url: "https://github.com/x/pull/148" },
-      { number: 147, title: "Earlier", merged_at: new Date(now - 90000000).toISOString(), merge_commit_sha: "bbbbbbb1", html_url: "https://github.com/x/pull/147" }]);
+      { number: 147, title: "Earlier", merged_at: new Date(now - 90000000).toISOString(), merge_commit_sha: "bbbbbbb1", html_url: "javascript:alert(1)" }]);
     if (req.url.startsWith("/repos/PERKocet30/TNL-labs/commits/1111111abc/check-runs")) return json(200, { check_runs: [{ status: "completed", conclusion: "success" }, { status: "completed", conclusion: "success" }] });
     if (req.url.startsWith("/repos/PERKocet30/TNL-labs/commits/2222222abc/check-runs")) return json(200, { check_runs: [{ status: "completed", conclusion: "success" }, { status: "in_progress", conclusion: null }] });
     if (req.url.startsWith("/repos/PERKocet30/TNL-labs/actions/runs")) return json(200, { workflow_runs: [
@@ -90,19 +90,24 @@ try {
   t("merged PRs only — closed-unmerged left out — and which one is live", S.github.merges.length === 2 && S.github.merges[0].number === 149 && S.github.merges[0].live === true
     && S.github.merges[1].live === false && !raw.includes("never merged"));
   t("the live-site check after the last merge", S.github.deployCheck && S.github.deployCheck.conclusion === "success" && S.github.deployCheck.sha === "aaaaaaa");
+  t("every link the page may follow is GitHub's own; anything else is dropped", [...S.github.prs, S.github.merges[0], S.github.deployCheck].every((x) => /^https:\/\/github\.com\//.test(x.url)) && S.github.merges[1].url === "");
 
   console.log("\nCACHED");
   const calls = seen.calls;
   const again = await (await get("/api/admin/systems", "boss")).json();
   t("a second look within a minute doesn't ask the services again", again.cached === true && seen.calls === calls);
+  await new Promise((r) => setTimeout(r, 5100));
   await get("/api/admin/systems?fresh=1", "boss");
-  t("…unless the admin asks to look again", seen.calls > calls);
+  t("…unless the admin asks to look again (and even then, the services hear from us at most every 5 s)", seen.calls > calls);
+  const c2 = seen.calls; await get("/api/admin/systems?fresh=1", "boss");
+  t("a held-down Look again doesn't fan out again inside 5 s", seen.calls === c2);
 
   console.log("\nWHEN A KEY IS WRONG OR MISSING");
   srv.kill(); await new Promise((r) => setTimeout(r, 300));
   srv = start({ RAILWAY_API_TOKEN: "wrong", GITHUB_TOKEN: "" }); await ready();
   const bad = await (await get("/api/admin/systems", "boss")).json();
   t("a refused Railway token is one plain line, not a crash", bad.railway.on === true && /Not Authorized/.test(bad.railway.error) && !bad.railway.deploys);
+  t("…and the wrong key isn't echoed either", !JSON.stringify(bad).includes("wrong"));
   t("GitHub without a key says it's off", bad.github.on === false && !bad.github.error);
   t("the page still gets what the server knows itself", bad.live.commit === "aaaaaaa");
 
