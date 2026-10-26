@@ -107,27 +107,38 @@ function igStore(acc, m, convId, via) {
   return !had;
 }
 
+/* "Please reduce the amount of data you're asking for" (2026-10-26, the first real connect): Meta caps
+   how much one call returns, so ask again for less — 25, then 10, then 5 — before giving up. */
+const igTooBig = (e) => /reduce the amount of data/i.test(e?.message || "") || e?.code === 1;
+async function igGetLess(path, paramsFor, token, sizes = [25, 10, 5]) {
+  let last;
+  for (const n of sizes) { try { return await igGet(path, paramsFor(n), token); } catch (e) { last = e; if (!igTooBig(e)) throw e; } }
+  throw last;
+}
 /* ── polling: what moved since last time ── */
 let IG_SYNCING = false;
 async function igSync(reason = "tick") {
   const acc = igAccount(); if (!acc || IG_SYNCING) return { ok: false, skipped: true };
   IG_SYNCING = true; let fresh = 0, convs = 0;
   try {
-    const list = await igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: 40 }, acc.token);
+    const list = await igGetLess("/me/conversations", (n) => ({ platform: "instagram", fields: "id,updated_time", limit: n }), acc.token);
+    let skipped = 0;
     for (const c of list.data || []) {
       const id = String(c.id), up = igTime(c.updated_time);
       const known = db.prepare(`SELECT synced_updated_at FROM ig_conversations WHERE id = ?`).get(id);
       if (known && known.synced_updated_at >= up) continue;
       convs++;
       let d;
-      try { d = await igGet("/" + id, { fields: `messages.limit(20){${IG_MSG_FIELDS}}` }, acc.token); }
-      catch (e) { if (e.code === 100) d = await igGet("/" + id, { fields: "messages.limit(20){id,created_time,from,to,message}" }, acc.token); else throw e; }   // an attachments field Meta doesn't know here
+      try {
+        try { d = await igGetLess("/" + id, (n) => ({ fields: `messages.limit(${n}){${IG_MSG_FIELDS}}` }), acc.token, [20, 10, 5]); }
+        catch (e) { if (e.code === 100 || igTooBig(e)) d = await igGetLess("/" + id, (n) => ({ fields: `messages.limit(${n}){id,created_time,from,to,message}` }), acc.token, [20, 10, 5]); else throw e; }   // plain text only: attachments are what makes it too big
+      } catch (e) { if (!igTooBig(e)) throw e; skipped++; console.error("[instagram] conversation skipped:", e.message); continue; }   // one heavy conversation doesn't stop the rest
       igPutConv.run(id, "", "", up);
       for (const m of d.messages?.data || []) if (igStore(acc, m, id, "poll")) fresh++;
       db.prepare(`UPDATE ig_conversations SET synced_updated_at = ? WHERE id = ?`).run(up, id);
     }
-    db.prepare(`UPDATE ig_account SET synced_at = ?, last_error = NULL WHERE id = 1`).run(Date.now());
-    return { ok: true, fresh, conversations: convs };
+    db.prepare(`UPDATE ig_account SET synced_at = ?, last_error = ? WHERE id = 1`).run(Date.now(), skipped ? `${skipped} conversation${skipped === 1 ? "" : "s"} too big for Instagram to send — tried again next check.` : null);
+    return { ok: true, fresh, conversations: convs, skipped };
   } catch (e) { igNote(e); console.error("[instagram]", reason, e.message); return { ok: false, error: igErr(e) }; }
   finally { IG_SYNCING = false; }
 }
