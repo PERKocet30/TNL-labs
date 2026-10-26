@@ -10,7 +10,7 @@ import { randomBytes, createHash, createHmac, timingSafeEqual } from "node:crypt
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const TMP = join(ROOT, "test", ".tmp", "instagram-inbox");
 rmSync(TMP, { recursive: true, force: true }); mkdirSync(TMP, { recursive: true });
-process.env.TNL_DATA = TMP; process.env.PUBLIC_URL = "https://labs.test";
+process.env.IG_RETRY_MS = "0"; process.env.TNL_DATA = TMP; process.env.PUBLIC_URL = "https://labs.test";
 process.env.IG_APP_ID = "123456"; process.env.IG_APP_SECRET = "shh-app-secret"; delete process.env.IG_VERIFY_TOKEN;
 const { db } = await import(join(ROOT, "src/db.js"));
 db.exec(`CREATE TABLE IF NOT EXISTS admin_log (id INTEGER PRIMARY KEY, admin_id INTEGER, action TEXT, target TEXT, detail TEXT, created_at INTEGER)`);
@@ -35,7 +35,11 @@ globalThis.fetch = async (u, opts = {}) => {
   if (p === "/refresh_access_token") { REFRESHED++; return json({ access_token: "refreshed-token", expires_in: 5184000 }); }
   if (p === "/me" && url.searchParams.get("fields") === "user_id,username") return json({ user_id: "ME1", username: "tnl.labs" });
   const big = { error: { message: "Please reduce the amount of data you're asking for, then retry your request", code: 1 } };
-  if (p === "/me/conversations") return TOO_BIG && Number(url.searchParams.get("limit")) > 10 ? json(big, 500) : json({ data: CONVS });
+  if (p === "/me/conversations") {
+    const lim = Number(url.searchParams.get("limit"));
+    if (TOO_BIG && lim > 1) return json(big, 500);   // a busy inbox: only one at a time (the real Meta, Oct 26)
+    if (lim === 1) { const i = Number(url.searchParams.get("after") || 0); return json({ data: CONVS.slice(i, i + 1), paging: i + 1 < CONVS.length ? { cursors: { after: String(i + 1) } } : {} }); }
+    return json({ data: CONVS }); }
   const m = p.match(/^\/(c\d+)$/);
   if (m) { const f = url.searchParams.get("fields");
     if (TOO_BIG && Number((/limit\((\d+)\)/.exec(f) || [])[1]) > 5) return json(big, 500);
@@ -113,15 +117,23 @@ t("if Meta rejects the attachments field, the same conversation is asked for aga
 REJECT_ATTACHMENTS = false;
 TOO_BIG = true; CONVS = [{ id: "c1", updated_time: "2026-10-26T10:07:00+0000" }];
 ({ r, calls } = await sinceCalls(() => call("POST /api/admin/instagram/sync")));
-t("\"reduce the amount of data\": it asks again for less (10 conversations, 5 messages) and the check goes through", r.code === 200 && r.body.ok !== false
-  && calls.some((u) => /conversations.*limit=10/.test(u)) && calls.some((u) => /limit%285%29|limit\(5\)/.test(u)) && !(await call("GET /api/admin/instagram")).body.lastError);
+t("\"reduce the amount of data\": the list is walked one at a time, messages asked for 5, and the check goes through", r.code === 200 && r.body.ok !== false
+  && calls.some((u) => /conversations.*limit=1(&|$)/.test(u)) && calls.some((u) => /limit%285%29|limit\(5\)/.test(u)) && !(await call("GET /api/admin/instagram")).body.lastError);
 TOO_BIG = false;
 let SLOW = false;   // Meta too slow above 10 conversations: the fetch times out
 const realFetch = globalThis.fetch;
-globalThis.fetch = async (u, o) => { if (SLOW && /me\/conversations/.test(String(u)) && Number(new URL(String(u)).searchParams.get("limit")) > 10) { CALLS.push(String(u)); const e = new Error("The operation was aborted due to timeout"); e.name = "TimeoutError"; throw e; } return realFetch(u, o); };
+globalThis.fetch = async (u, o) => { if (SLOW && /me\/conversations/.test(String(u)) && Number(new URL(String(u)).searchParams.get("limit")) > 1) { CALLS.push(String(u)); const e = new Error("The operation was aborted due to timeout"); e.name = "TimeoutError"; throw e; } return realFetch(u, o); };
 SLOW = true; CONVS = [{ id: "c1", updated_time: "2026-10-26T10:08:00+0000" }];
 ({ r, calls } = await sinceCalls(() => call("POST /api/admin/instagram/sync")));
-t("Instagram too slow to answer: it asks again for fewer and the check goes through", r.code === 200 && r.body.ok !== false && calls.some((u) => /conversations.*limit=10/.test(u)));
+t("Instagram too slow to answer: it walks the list one at a time and the check goes through", r.code === 200 && r.body.ok !== false && calls.some((u) => /conversations.*limit=1(&|$)/.test(u)));
+TOO_BIG = true; CONVS = [{ id: "c3", updated_time: "2026-10-26T10:12:00+0000" }, { id: "c2", updated_time: "2026-10-26T10:11:00+0000" }, { id: "c1", updated_time: "2026-10-26T10:08:00+0000" }];
+MSGS.c3 = [{ id: "m9", created_time: "2026-10-26T10:12:00+0000", from: { id: "U7", username: "kay" }, to: { data: [{ id: "ME1" }] }, message: "yo" }];
+MSGS.c2 = [{ id: "m8", created_time: "2026-10-26T10:11:00+0000", from: { id: "U8", username: "lee" }, to: { data: [{ id: "ME1" }] }, message: "hey" }];
+({ r, calls } = await sinceCalls(() => call("POST /api/admin/instagram/sync")));
+t("one at a time: the two new conversations are read, and the walk stops at the one already read", r.body.ok !== false && r.body.fresh === 2
+  && calls.filter((u) => /me\/conversations.*limit=1(&|$)/.test(u)).length === 3 && !calls.some((u) => /\/c1\?/.test(u)));
+TOO_BIG = false;
+db.exec(`DELETE FROM ig_messages WHERE mid IN ('m8','m9'); DELETE FROM ig_conversations WHERE id IN ('c2','c3')`); CONVS = [{ id: "c1", updated_time: "2026-10-26T10:08:00+0000" }];   // back to the one conversation the webhook checks below count on
 SLOW = false; globalThis.fetch = realFetch;
 t("it waits up to 30 seconds for Instagram", /Number\(process\.env\.IG_WAIT_MS\) \|\| 30000/.test(src));
 
