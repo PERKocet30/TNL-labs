@@ -176,6 +176,20 @@ Apple Developer account): domain `tnllabs.com`, return URL
 reach them, register `tnllabs.com` / the sending address under Apple's
 Private Email Relay (Certificates, Identifiers & Profiles → Services).
 
+## Admin → Systems (optional, 2026-10-26)
+
+The Systems page in `/admin` reads Railway and GitHub so it can say what's
+live, what's building and what's waiting for a Push (`server-10-admin-systems.js`).
+Read-only; each card says "isn't connected yet" until its key is here.
+
+| Variable | Value |
+| --- | --- |
+| `RAILWAY_PROJECT_TOKEN` | Railway → this project → Settings → Tokens → New token (environment: production). It can only see this project. The project, service and environment ids come from the variables Railway already sets. (`RAILWAY_API_TOKEN`, an account token from Account settings → Tokens, works too.) |
+| `GITHUB_TOKEN` | GitHub → Settings → Developer settings → Fine-grained tokens → Generate: repository **PERKocet30/TNL-labs** only; permissions **Actions, Contents, Pull requests: Read-only** (Metadata comes with them; there is no Checks option for personal tokens, and none is needed); expiry 1 year. |
+| `GITHUB_REPO` | only if it ever changes — default `PERKocet30/TNL-labs` |
+
+Both tokens stay on the server. The page gets names and numbers, never a key.
+
 ## The whole list, to paste in
 
 ```

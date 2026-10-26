@@ -188,3 +188,7 @@ h2.sec + :is(.panel,.list,.chart){border-radius:0 0 var(--rad) var(--rad)}
 /* two columns on a computer */
 .two{display:grid;grid-template-columns:1fr;gap:12px}@media(min-width:1024px){.two{grid-template-columns:1fr 1fr}}
 .rc{border-radius:var(--rad)}.rc .body{padding:14px}.rc h3 a,.rc h3 button{font-size:12px;font-weight:600;text-decoration:underline;color:var(--tx)}
+
+/* Systems (7-systems.js, 2026-10-26): a third tag colour for things in motion; list rows that are links */
+.tag.wait{color:var(--tx);border-color:var(--tx)}
+a.li{color:inherit;text-decoration:none}a.li:hover{background:var(--el)}.li .b i.mono{font-style:normal}

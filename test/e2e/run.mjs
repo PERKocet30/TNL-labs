@@ -1915,8 +1915,14 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator(".kpi .s").count() >= 4, "the numbers don't say their share");
     ok(await p.locator(".line svg polyline.nw").count() === 1 && await p.locator(".line svg polyline.pv").count() === 1, "no line chart with last period behind");
     ok(await p.locator(".rc h3", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
-    // 2026-10-20: on a computer, a grouped side menu with the ten sections and no bottom bar
-    ok(await p.locator(".side .nv").count() === 10 && !(await p.locator(".bbar").isVisible()), "no ten-section side menu on a computer");
+    // 2026-10-20: on a computer, a grouped side menu with every section and no bottom bar (eleven since Systems, 2026-10-26)
+    ok(await p.locator(".side .nv").count() === 11 && !(await p.locator(".bbar").isVisible()), "no eleven-section side menu on a computer");
+    // 2026-10-26: Systems — what's live, what's waiting for a Push; with no keys set, each card says so plainly
+    await p.locator(".side .nv[data-tab=systems]").click();
+    await fast(p, 6000, () => p.locator(".pg-hd h1", { hasText: "Systems" }).waitFor(), "the Systems page");
+    ok((await p.locator(".empty", { hasText: "isn't connected yet" }).count()) === 2, "Systems doesn't say its keys aren't set yet");
+    ok(await p.locator("#sysfresh").count() === 1, "no Look again on Systems");
+    await p.locator(".side .nv[data-tab=home]").click(); await p.waitForTimeout(400);
     ok(await p.locator(".side .grp").count() === 4, "the side menu isn't grouped");
     await p.locator("#gq").fill("tester");
     await fast(p, 4000, () => p.locator("#gres [data-gp]").first().waitFor(), "member search results");
