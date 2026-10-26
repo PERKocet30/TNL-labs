@@ -2,7 +2,7 @@ import express from "express";
 import zlib from "node:zlib";
 import cors from "cors";
 import bcrypt from "bcryptjs";
-import { randomBytes, createHash, createPublicKey, verify as cryptoVerify, sign as cryptoSign } from "node:crypto";
+import { randomBytes, createHash, createHmac, createPublicKey, verify as cryptoVerify, sign as cryptoSign } from "node:crypto";
 import { crc32 as zlibCrc32 } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -107,11 +107,6 @@ app.use(cors());
    (noai/noimageai, and TDMRep's opt-out for EU text-and-data mining).
    Ordinary search engines and link previews are unaffected. */
 app.use((req, res, next) => { res.set("X-Robots-Tag", "noai, noimageai"); res.set("tdm-reservation", "1"); next(); });
-/* Real media does NOT come through here — it streams to disk via
-   /api/upload/stream. This limit only covers small base64 payloads
-   (avatars, beat audio), and stays low on purpose: anything parsed as
-   JSON is held in RAM in full. */
-app.use(express.json({ limit: "12mb" })); // only the small base64 route uses this now
 /* The app shell must NEVER be edge-cached. index.html changes every deploy;
    a copy cached at Cloudflare means people keep getting the old build no
    matter what you push, and redeploying doesn't fix it. The service worker

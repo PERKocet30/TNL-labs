@@ -176,6 +176,27 @@ Apple Developer account): domain `tnllabs.com`, return URL
 reach them, register `tnllabs.com` / the sending address under Apple's
 Private Email Relay (Certificates, Identifiers & Profiles → Services).
 
+## The Instagram inbox (optional, 2026-10-26)
+
+Admin → Instagram reads the messages people send the LABS Instagram
+account. Read only; replies happen in Instagram (`server-12-instagram-inbox.js`).
+
+| Variable | Value |
+| --- | --- |
+| `IG_APP_ID` | from developers.facebook.com → your app → App settings → Basic → App ID |
+| `IG_APP_SECRET` | the same page → App secret (Show) |
+| `IG_VERIFY_TOKEN` | optional — any word; if left out Admin shows one to paste into Meta |
+
+In the Meta app, add the product **Instagram → API setup with Instagram
+login**. Under *Generate access tokens* add the LABS Instagram account (a
+professional account; this is what lets the app read its own messages
+without Meta's review). Under *Set up Instagram business login* paste the
+redirect URI `https://tnllabs.com/api/instagram/callback`. Under *Configure
+webhooks* paste the callback URL `https://tnllabs.com/api/instagram/webhook`
+and the verify token Admin shows, and tick `messages`. Then Admin →
+Instagram → **Connect Instagram**, sign in as the LABS account, and the
+inbox fills in. Webhooks only start once Meta marks the app Live with
+Advanced Access; until then LABS checks every 3 minutes (`IG_POLL_MS`).
 ## Admin → Systems (optional, 2026-10-26)
 
 The Systems page in `/admin` reads Railway and GitHub so it can say what's

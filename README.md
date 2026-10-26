@@ -86,6 +86,7 @@ test/                           51 test suites — run with npm test
 | `app-18-composer` · `app-18-media` · `app-18-photo-edit` · `app-18-post-queue` · `app-18-video-edit` | the post creator; carousels, video autoplay, music and the audio unlock; the photo editor (crop, filters, adjust — on the phone); posting in the background, drafts, drag to reorder; the video editor (trim, cover from a frame or the camera roll, sound on/off, frame shape — kept as instructions on the post in `extras.video`, never re-encoded) |
 | `app-19-feed-boot` | feed, badges, boot |
 | `server-01-boot` | setup, compression, caching rules, Sentry, prepared queries |
+| `server-01-json` | the JSON body parser (moved out of boot 2026-10-26); keeps the raw bytes for Meta's signed webhook only |
 | `server-02…11` | auth/feed, uploads/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/beats/Showroom, social/meta |
 | `server-11-nudge` | The weekly reminder (2026-10-23): a member whose page has gaps gets one tailored email a week — photo, music for a music role, first piece, bio, colour, 3 follows, a listing for a fashion role — until it's done or 4 have gone; 3 days after joining at the earliest; at most 40 a day. Admin → Settings → Email switches it and previews it; `?start=<gap>` opens that step in the app. Words in `mail.js` (`NUDGE_ITEMS`); unsubscribe shared with the tournament email |
 | `server-11-profile` | profile v2: links, pronouns, pins (`/api/me/pins`), followers/following lists, the Tagged tab, "Followed by" |
@@ -93,6 +94,7 @@ test/                           51 test suites — run with npm test
 | `server-12-video` | old videos fixed on boot (index-first copy, a cover where none); and the light copies made in the background one at a time: for video, 720p/30fps/~1.3 Mbps (`video_feed` → `videoPlayUrl`; the original stays `videoUrl`); for music, 128 kbps AAC (`audio_play` → a track's `url`; the upload stays `fileUrl`) |
 | `server-12-story` · `app-18-story-share` | anything on LABS as an Instagram Story: 1080×1920 cards for a post (`/p/:id/story.jpg`, a text post as a quote), a profile (`/u/:name/story.jpg`), a listing (`/m/:id/story.jpg`) and a track (`/tr/:id/story.jpg`); `shareMenu()` — Instagram Story, Send off the app, Copy link — on profiles, listings and tracks, and the post menu's "Instagram Story" sheet: one tap shares the picture and copies the link for a Link sticker |
 | `server-12-instagram` · `app-18-instagram` | LABS alongside Instagram: `/m/:id` hands over the app with the listing's own preview (photo, title, price, seller) for Instagram DMs and link stickers (`listingPage()`); inside Instagram's, Facebook's or TikTok's browser (`INAPP`) the home-screen card becomes "Open in Safari", Log in / Join say so, and the Story sheet opens Safari — `openOutside()` tries `x-safari-` / Android `intent://`, then shows ••• → Open in external browser |
+| `server-12-instagram-inbox` · admin `7-instagram` | The Instagram inbox (2026-10-26): messages sent to the LABS Instagram account, read in **Admin → Instagram**. Connect once through Instagram's own sign-in (Instagram API with Instagram Login; `IG_APP_ID`, `IG_APP_SECRET`); the long-lived key stays on the server and is refreshed daily. New messages come by polling (`/me/conversations`, every `IG_POLL_MS`, 3 min) and by signed webhook (`/api/instagram/webhook`) once Meta marks the app Live. Read only — Reply opens the conversation in Instagram (`ig.me/m/<username>`). Nothing here is shown to members. |
 | `server-02-post-extras` | a post's people tagged, place, comments on/off and products from your own shop (`posts.extras`) |
 | `server-05-admin-verify-nudge` | Admin → System → Data → Email → **Email them a new confirm link**: everyone who hasn't confirmed (not suspended) gets the sign-up email again with a fresh 24-hour link; nobody twice in a day (`users.verify_nudged_at`) |
 | `server-07-cart` | the bag checkout (several items from one seller, one payment, shipping combined — `sessionFits()` binds a paid session to its whole group), `/api/shop/stats` |
@@ -143,6 +145,7 @@ Set in Railway → Variables. Values are secret and never go in this repo.
 | `RESEND_API_KEY`, `MAIL_FROM` | real email (verification, password reset). Without them, links show on screen instead. |
 | `STRIPE_SECRET_KEY` | Market checkout and seller payouts |
 | `SENTRY_DSN` | optional; overrides the built-in error-reporting address |
+| `IG_APP_ID`, `IG_APP_SECRET` | optional; the Instagram inbox in Admin (a Meta app with Instagram API with Instagram Login). `IG_VERIFY_TOKEN` (any word) and `IG_POLL_MS` are optional too. |
 
 Things that change without a deploy live in **Admin → System → Settings**: signups open, auto-verify, guest access, market open, minimum rep to sell, loops/studio on or off, the distribution offer and the announcement banner.
 
@@ -217,7 +220,7 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 
 Admin-only; every route checks on the server. `public/admin.html` is the shell and base styles, `public/admin-app/ui.css` the shell, chart and card styles, and the app is `public/admin-app/1-core.js` … `9-studio.js` (Home `2-home.js`, Members `3-people.js` with one record in `3-person.js`, Content `4-content.js`, Orders/Listings/Sellers `5-*.js`, Settings `6-settings.js`, Systems `7-systems.js` + `7-systems2-google.js` + `7-systems3-meta.js` (the week's report with "Email me this now", Railway + GitHub, Google Search + Shopping, Instagram + Facebook; read-only; `src/server-10-admin-systems*.js`, 2026-10-26), Events `8-events.js`, Analytics `9-analytics.js`). The data comes from `src/server-10-admin.js`, `src/server-10-admin2-members.js`, `src/server-10-pulse-labs.js`, `src/server-10-admin-v4.js` plus the older admin routes. Each file stays under 24KB.
 
-Ten sections in four groups, laid out like a shop's admin: **Run** (Home, Orders, Listings, Sellers), **People & content** (Members, Content, Events), **Understand** (Analytics), **Set up** (Health, Settings). Old links keep working (`#today` → Home, `#market` → Orders, `#system` → Settings; typing a `#hash` opens that section).
+Twelve sections in four groups, laid out like a shop's admin: **Run** (Home, Orders, Listings, Sellers), **People & content** (Members, Content, Events, Instagram), **Understand** (Analytics, Health, Systems), **Set up** (Settings). Old links keep working (`#today` → Home, `#market` → Orders, `#system` → Settings; typing a `#hash` opens that section).
 
 - **On a computer:** a grouped side menu with the ten sections, who's signed in, day/night and Open the app; tables where there are rows. **On a phone:** a bottom bar with Home, Orders, Members, Content and **More** (a sheet with every section); every table becomes cards. One date range — 7, 30 or 90 days — sits at the top of Home and Analytics and is remembered.
 - **Every page:** a search bar finds any member by name, @username or email and opens their record (Members has its own search instead). Each page starts with its title, one line on what it's for and its main buttons, then titled cards (`pageHead`, `card`, `subTabs`, `kpiHTML`, `lineHTML`, `breakHTML`, `funnelHTML` in `1-core.js`). Every number card says its share or its change against the period before, with a sparkline.
@@ -517,6 +520,17 @@ DELETE /api/admin/errors   (admin)
 GET    /api/admin/studio   (admin)
 GET    /api/admin/settings   (admin)
 PATCH  /api/admin/settings   (admin)
+
+# instagram inbox (admin; server-12-instagram-inbox)
+GET    /api/admin/instagram   (admin) status, setup values, conversations
+GET    /api/admin/instagram/thread/:id   (admin) one conversation, marks it read
+GET    /api/admin/instagram/connect   (admin) → Instagram's sign-in URL
+POST   /api/admin/instagram/sync   (admin) check now
+POST   /api/admin/instagram/seen   (admin)
+POST   /api/admin/instagram/disconnect   (admin)
+GET    /api/instagram/callback   back from Instagram's sign-in (one-use state)
+GET    /api/instagram/webhook   Meta's handshake
+POST   /api/instagram/webhook   signed deliveries (X-Hub-Signature-256)
 
 # archive
 GET    /api/archive

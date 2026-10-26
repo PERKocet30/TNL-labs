@@ -192,3 +192,12 @@ h2.sec + :is(.panel,.list,.chart){border-radius:0 0 var(--rad) var(--rad)}
 /* Systems (7-systems.js, 2026-10-26): a third tag colour for things in motion; list rows that are links */
 .tag.wait{color:var(--tx);border-color:var(--tx)}
 a.li{color:inherit;text-decoration:none}a.li:hover{background:var(--el)}.li .b i.mono{font-style:normal}.li .b a{color:inherit;text-decoration:underline}@media(min-width:760px){.g3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* Instagram inbox (7-instagram.js) */
+.igst{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}.igst p{margin-top:4px;font-size:13px;line-height:1.5}
+.warnl{color:var(--red);font-size:13px;line-height:1.5}
+.igrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:13px}.igrow:first-of-type{border-top:0}.igrow code{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx)}
+.igthread{display:flex;flex-direction:column;gap:10px;padding:4px 0}.igday{text-align:center;color:var(--dim);font-size:11px;margin:8px 0 2px}
+.igm{display:flex;flex-direction:column;align-items:flex-start;max-width:78%}.igm.me{align-self:flex-end;align-items:flex-end}
+.igm .bub{background:var(--el);border-radius:var(--rad);padding:10px 12px;font-size:14px;line-height:1.45;white-space:pre-wrap;word-break:break-word}.igm.me .bub{background:var(--fill);color:var(--on-fill)}
+.igm .bub p{margin:0}.igm .bub img{display:block;max-width:240px;border-radius:var(--rad-m);margin-top:6px}.igm .bub p+img,.igm .bub p+.igfile{margin-top:8px}.igfile{text-decoration:underline;font-size:13px}
+.igm>.mono{margin-top:3px;font-size:11px;color:var(--dim)}
