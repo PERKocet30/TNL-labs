@@ -157,12 +157,14 @@ check runs in, as the environment variable `TNL_REPORT_KEY`. Without the
 variable the route doesn't exist (404). Change it the same way in both
 places if it ever leaks.
 
-## Continue with Google / Apple (optional, 2026-10-20)
+## Continue with Google / Apple / Facebook (optional, 2026-10-20; Facebook 2026-10-26)
 
 Each button stays hidden until its variables are set (`server-11-oauth.js`).
 
 | Variable | Value |
 | --- | --- |
+| `FACEBOOK_APP_ID` | the Meta app (developers.facebook.com → your app → App settings → Basic → App ID) — the same app as the Instagram inbox, its own id, not the Instagram product's |
+| `FACEBOOK_APP_SECRET` | the same page → App secret |
 | `GOOGLE_CLIENT_ID` | from Google Cloud → APIs & Services → Credentials → OAuth client ID (type: Web application) |
 | `GOOGLE_CLIENT_SECRET` | the same client's secret |
 | `APPLE_SERVICES_ID` | from Apple Developer → Identifiers → Services IDs (e.g. `com.tnllabs.signin`), with Sign in with Apple turned on |
@@ -175,6 +177,17 @@ Apple Developer account): domain `tnllabs.com`, return URL
 "Hide my email" get an @privaterelay.appleid.com address — for our emails to
 reach them, register `tnllabs.com` / the sending address under Apple's
 Private Email Relay (Certificates, Identifiers & Profiles → Services).
+
+Facebook (Meta's login for everyone — an Instagram account signs in through
+Accounts Center; Instagram-only login is for business accounts and gives no
+email, so it isn't used): in the Meta app add the product **Facebook Login**
+→ Settings → Valid OAuth Redirect URIs:
+`https://tnllabs.com/api/auth/oauth/facebook/callback`. `public_profile` and
+`email` need no review. For people without a role on the app to sign in,
+the app must be **Live** (App settings → Basic: privacy policy
+`https://tnllabs.com/privacy`, data deletion instructions
+`https://tnllabs.com/privacy#s6`, an icon, a category; then the Live switch
+at the top). Until then only the app's admins and testers can use the button.
 
 ## The Instagram inbox (optional, 2026-10-26)
 

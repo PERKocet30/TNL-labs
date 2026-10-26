@@ -75,9 +75,9 @@ app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (
     return res.status(403).json({ error: "LABS is invite-only right now." });
   }
   const { username, displayName, role, roles, password } = req.body || {};
-  /* Continue with Google / Apple (server-11-oauth): a ticket stands in for the email and password. */
+  /* Continue with Google / Apple / Facebook (server-11-oauth): a ticket stands in for the email and password. */
   const tk = req.body?.oauth ? oauthTicket(req.body.oauth) : null;
-  if (req.body?.oauth && !tk) return res.status(410).json({ error: "That sign-in expired. Tap Continue with Google or Apple again." });
+  if (req.body?.oauth && !tk) return res.status(410).json({ error: "That sign-in expired. Tap Continue with Google, Apple or Facebook again." });
   const email = tk ? tk.email : req.body?.email;
   const roleList = Array.isArray(roles) ? roles.filter(r=>typeof r==="string"&&r.trim()).slice(0,5) : (role ? [role] : []);
   if (!/^[a-z0-9._]{2,20}$/.test(username || "") || username.endsWith(".")) return res.status(400).json({ error: "bad username" });
