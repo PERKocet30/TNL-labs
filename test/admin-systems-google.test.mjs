@@ -69,6 +69,9 @@ const fake = createServer((req, res) => {
         itemLevelIssues: [{ code: "image_link_broken", severity: "DISAPPROVED", resolution: "MERCHANT_ACTION", attribute: "image_link", reportingContext: "FREE_LISTINGS", description: "Invalid image", detail: "The picture couldn't be loaded" }] } },
       { offerId: "labs-9", productAttributes: { title: "Poster" }, productStatus: { destinationStatuses: [{ reportingContext: "FREE_LISTINGS", pendingCountries: ["US"] }],
         itemLevelIssues: [{ code: "pending_initial_policy_review", severity: "NOT_IMPACTED", resolution: "PENDING_PROCESSING", reportingContext: "FREE_LISTINGS", description: "Pending initial review" }] } }] });
+    if (u.includes("/developerRegistration:registerGcp")) { seen.register = { url: u, body: JSON.parse(body || "{}") };
+      return seen.registerAdmin ? json(200, { name: "accounts/413920275/developerRegistration", gcpIds: ["1055774819971"] }) : json(403, { error: { message: "The caller does not have permission" } }); }
+    if (u.includes("/products/v1/accounts/2/")) return json(403, { error: { message: "GCP project with id labs-123 and number 1055774819971 is not registered with the merchant account. Please follow these steps https://developers.google.com/merchant/api/guides/quickstart/registration" } });
     if (u.includes("/products/v1/accounts/")) return json(403, { error: { message: "The caller does not have permission" } });
     json(404, { error: { message: "nope" } });
   });
@@ -138,6 +141,20 @@ try {
   srv = start({ MERCHANT_ID: "1" }); await ready();
   const nomc = await (await get("/api/admin/systems/google", "boss")).json();
   t("Merchant Center refusing is one line on that card; Search still comes", /no access/.test(nomc.shopping.error) && nomc.search.totals.clicks === 60);
+
+  console.log("\nLINKING THE PROJECT TO MERCHANT CENTER (ONCE)");
+  srv.kill(); await new Promise((r) => setTimeout(r, 300));
+  srv = start({ MERCHANT_ID: "2" }); await ready();
+  const unreg = await (await get("/api/admin/systems/google", "boss")).json();
+  t("Google's 'not registered' comes through so the page can offer the Link", /not registered with the merchant account/.test(unreg.shopping.error));
+  const post = (who) => fetch(B + "/api/admin/systems/google/register", { method: "POST", headers: { authorization: "Bearer tok-" + who } });
+  t("only admins can link", (await post("ana")).status === 403);
+  const noAdmin = await post("boss"), na = await noAdmin.json();
+  t("while the service account isn't Admin there: says exactly what to do", noAdmin.status === 400 && /Admin in Merchant Center/.test(na.error));
+  t("…and asks Google for this account, with the admin's own email as the developer", seen.register.url.includes("/accounts/v1/accounts/2/developerRegistration:registerGcp") && seen.register.body.developerEmail === "boss@x.com");
+  seen.registerAdmin = true;
+  const ok = await post("boss");
+  t("once it's Admin: linked", ok.status === 200 && (await ok.json()).ok === true);
 
   console.log("\nTHE PAGE");
   const page = readFileSync(join(ROOT, "public/admin-app/7-systems2-google.js"), "utf8"), html = readFileSync(join(ROOT, "public/admin.html"), "utf8");

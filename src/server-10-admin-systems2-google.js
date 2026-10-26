@@ -1,5 +1,5 @@
 /* ================================================================
-   ADMIN · SYSTEMS · GOOGLE v1.0 — 2026-10-26. Part 2 of "integrate our admin
+   ADMIN · SYSTEMS · GOOGLE v1.1 — 2026-10-26 (v1.1: a one-time "Link to Merchant Center" — POST /api/admin/systems/google/register). v1.0 — 2026-10-26. Part 2 of "integrate our admin
    dashboard with Google…", "fully integrated to maximize reach": how people
    find LABS on Google Search, and how the market's pieces do on Google
    Shopping — with the moves that would get more of both.
@@ -184,4 +184,25 @@ app.get("/api/admin/systems/google", auth, admin, rateLimit({ max: 10, windowMs:
   GG_CACHE.at = now;
   GG_CACHE.body = { on: true, at: now, account: key.email, search, shopping, todo: ggTodo(search, shopping) };
   res.json(GG_CACHE.body);
+});
+
+/* Link the Cloud project to Merchant Center, once (v1.1, 2026-10-26). The Merchant API answers "GCP project … is not
+   registered with the merchant account" until the project is registered, and Google only takes that from an account
+   with Admin in Merchant Center: give the service account Admin, tap the button, then set it back to Standard.
+   Nothing from the page goes to Google but the tap; the developer email is the admin's own, from their account. */
+app.post("/api/admin/systems/google/register", auth, admin, rateLimit({ max: 5, windowMs: 600000, key: "user" }), async (req, res) => {
+  const key = ggKey();
+  if (!key || key.bad) return res.status(400).json({ error: "The Google key isn't set." });
+  const id = GG.merchant();
+  if (!id) return res.status(400).json({ error: "MERCHANT_ID isn't a number." });
+  try {
+    const token = await ggToken(key);
+    const email = /^[^@\s]+@(gmail\.com|googlemail\.com|[a-z0-9.-]+\.[a-z]{2,})$/i.test(String(req.user.email || "")) && !/gserviceaccount\.com$/i.test(req.user.email) ? req.user.email : "";
+    await ggFetch(token, `${GG.merchantUrl()}/accounts/v1/accounts/${id}/developerRegistration:registerGcp`, email ? { developerEmail: email } : {});
+    GG_CACHE.body = null; GG_CACHE.at = 0;
+    res.json({ ok: true });
+  } catch (e) {
+    const m = ggLine(e.message);
+    res.status(400).json({ error: e.status === 403 || /permission|admin/i.test(m) ? "Google needs the service account to be an Admin in Merchant Center for this one step. Set it to Admin, tap again, then set it back." : m });
+  }
 });

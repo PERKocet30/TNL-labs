@@ -1,4 +1,4 @@
-/* LABS admin · Systems · Google v1.0 — 2026-10-26. Part 2: how people find LABS on Google Search and how the
+/* LABS admin · Systems · Google v1.1 — 2026-10-26 (v1.1: the one-time Link to Merchant Center). v1.0 — 2026-10-26. Part 2: how people find LABS on Google Search and how the
    market's pieces do on Google Shopping, with the moves that get more of both (server-10-admin-systems2-google.js).
    Rendered under the Railway/GitHub cards by 7-systems.js. */
 LOADERS.systemsGoogle = async () => { D.sysGoogle = await req("/api/admin/systems/google" + (D.systemsFresh ? "?fresh=1" : "")); };
@@ -38,6 +38,9 @@ function sysGoogleHTML() {
     </div>`;
   };
   const shopping = () => {
+    if (P && P.error && /not registered with the merchant account/i.test(P.error)) return `<div class="panel"><div class="set"><div class="t"><b>One step left: link this Google project to Merchant Center</b>
+      <span>Google only takes it from an Admin. In Merchant Center → Access and services, set ${esc(G.account || "the service account")} to <b>Admin</b>, tap Link, then set it back to Standard.</span></div>
+      <button class="btn sm" id="ggreg">Link</button></div></div>`;
     if (!P || P.error) return `<div class="panel">${sysErr(P ? P.error : "No answer.")}</div>`;
     const c = P.counts, sev = { DISAPPROVED: ["warn", "not shown"], DEMOTED: ["wait", "shown less"], NOT_IMPACTED: ["", "note"] };
     return `<div class="grid g2 g3">
@@ -56,3 +59,7 @@ function sysGoogleHTML() {
   <h2 class="sec">Google Shopping <span class="mono">Merchant Center ${esc(P && P.merchantId || "")} · free listings</span></h2>${shopping()}
   <p class="dim" style="font-size:12px;margin:10px 0 0">Read as ${esc(G.account || "")}${G.cached ? " · numbers from the last ten minutes" : ""}.</p>`;
 }
+
+const ggWire = () => { const b = $("#ggreg"); if (b) b.onclick = async () => { b.disabled = true;
+  try { await req("/api/admin/systems/google/register", { method: "POST" }); toast("Linked — reading Merchant Center"); D.systemsFresh = true; D.sysGoogle = null; paint(); load(); }
+  catch (e) { toast(e.message); b.disabled = false; } }; };
