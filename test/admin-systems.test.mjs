@@ -45,8 +45,8 @@ const fake = createServer((req, res) => {
       { number: 149, title: "Google feed", merged_at: new Date(now - 3700000).toISOString(), merge_commit_sha: LIVE, html_url: "https://github.com/x/pull/149" },
       { number: 148, title: "Closed, never merged", merged_at: null, merge_commit_sha: "dead", html_url: "https://github.com/x/pull/148" },
       { number: 147, title: "Earlier", merged_at: new Date(now - 90000000).toISOString(), merge_commit_sha: "bbbbbbb1", html_url: "javascript:alert(1)" }]);
-    if (req.url.startsWith("/repos/PERKocet30/TNL-labs/commits/1111111abc/check-runs")) return json(200, { check_runs: [{ status: "completed", conclusion: "success" }, { status: "completed", conclusion: "success" }] });
-    if (req.url.startsWith("/repos/PERKocet30/TNL-labs/commits/2222222abc/check-runs")) return json(200, { check_runs: [{ status: "completed", conclusion: "success" }, { status: "in_progress", conclusion: null }] });
+    if (req.url.startsWith("/repos/PERKocet30/TNL-labs/actions/runs?head_sha=1111111abc")) return json(200, { workflow_runs: [{ name: "Tests", status: "completed", conclusion: "success" }, { name: "After deploy", status: "completed", conclusion: "failure" }] });
+    if (req.url.startsWith("/repos/PERKocet30/TNL-labs/actions/runs?head_sha=2222222abc")) return json(200, { workflow_runs: [{ name: "Tests", status: "in_progress", conclusion: null }] });
     if (req.url.startsWith("/repos/PERKocet30/TNL-labs/actions/runs")) return json(200, { workflow_runs: [
       { name: "Tests", status: "completed", conclusion: "success", html_url: "https://github.com/x/runs/1", created_at: new Date(now - 3600000).toISOString(), head_sha: LIVE },
       { name: "After deploy", status: "completed", conclusion: "success", html_url: "https://github.com/x/runs/2", created_at: new Date(now - 3500000).toISOString(), head_sha: LIVE }] });
@@ -84,7 +84,7 @@ try {
   t("knows the live deploy and the one in motion", S.railway.current.id === "d2" && S.railway.busy.id === "d3" && S.railway.failed === null && S.railway.behind === false);
 
   console.log("\nGITHUB");
-  t("open PRs with their checks: green, and one still running", S.github.on && S.github.prs.length === 2 && S.github.prs[0].number === 151 && S.github.prs[0].checks === "green"
+  t("open PRs with their tests (from Actions; the after-deploy check doesn't count): green, and one still running", S.github.on && S.github.prs.length === 2 && S.github.prs[0].number === 151 && S.github.prs[0].checks === "green"
     && S.github.prs[1].checks === "running" && S.github.prs[1].draft === true);
   t("the branch and a link, for the Push", S.github.prs[0].branch === "claude/admin-systems" && S.github.prs[0].url.includes("/pull/151"));
   t("merged PRs only — closed-unmerged left out — and which one is live", S.github.merges.length === 2 && S.github.merges[0].number === 149 && S.github.merges[0].live === true

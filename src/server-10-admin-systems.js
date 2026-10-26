@@ -11,7 +11,8 @@
               Railway sets on every deploy (RAILWAY_PROJECT_ID etc.);
               override with RAILWAY_SYSTEMS_* to watch another service.
      GitHub   GITHUB_TOKEN (a fine-grained token: this repo, read-only on
-              Contents, Pull requests and Checks) + GITHUB_REPO
+              Actions, Contents and Pull requests; a PR's tests come from
+              its Actions runs, since personal tokens can't have Checks) + GITHUB_REPO
               (owner/name, default PERKocet30/TNL-labs).
    The keys never leave the server: the page gets numbers and names, never a
    token, and an error from a service is reported as one plain line.
@@ -70,8 +71,9 @@ async function sysGithub(liveCommit) {
     return r.json();
   };
   const ghUrl = (u) => /^https:\/\/github\.com\//.test(String(u || "")) ? u : "";   // a link the page may follow: GitHub's own, nothing else
+  /* a PR's tests: its workflow runs (Actions: read — personal tokens can't have Checks) */
   const checksOf = (runs) => {
-    const list = runs?.check_runs || [];
+    const list = (runs?.workflow_runs || []).filter((w) => !/after deploy/i.test(w.name || ""));
     if (!list.length) return "none";
     if (list.some((c) => c.status !== "completed")) return "running";
     return list.every((c) => ["success", "skipped", "neutral"].includes(c.conclusion)) ? "green" : "red";
@@ -80,7 +82,7 @@ async function sysGithub(liveCommit) {
     const [open, closed] = await Promise.all([gh("/pulls?state=open&per_page=10&sort=updated&direction=desc"),
       gh("/pulls?state=closed&sort=updated&direction=desc&per_page=12")]);
     const prs = await Promise.all(open.map(async (p) => {
-      let checks = "none"; try { checks = checksOf(await gh(`/commits/${p.head.sha}/check-runs?per_page=20`)); } catch {}
+      let checks = "none"; try { checks = checksOf(await gh(`/actions/runs?head_sha=${encodeURIComponent(p.head.sha)}&per_page=20`)); } catch {}
       return { number: p.number, title: sysLine(p.title), branch: p.head.ref, sha: String(p.head.sha).slice(0, 7), url: ghUrl(p.html_url),
         updatedAt: sysWhen(p.updated_at), draft: !!p.draft, checks };
     }));

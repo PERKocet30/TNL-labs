@@ -185,7 +185,7 @@ Read-only; each card says "isn't connected yet" until its key is here.
 | Variable | Value |
 | --- | --- |
 | `RAILWAY_PROJECT_TOKEN` | Railway → this project → Settings → Tokens → New token (environment: production). It can only see this project. The project, service and environment ids come from the variables Railway already sets. (`RAILWAY_API_TOKEN`, an account token from Account settings → Tokens, works too.) |
-| `GITHUB_TOKEN` | GitHub → Settings → Developer settings → Fine-grained tokens → Generate: repository **PERKocet30/TNL-labs** only; permissions **Contents: read, Pull requests: read, Checks: read, Actions: read**; expiry 1 year. |
+| `GITHUB_TOKEN` | GitHub → Settings → Developer settings → Fine-grained tokens → Generate: repository **PERKocet30/TNL-labs** only; permissions **Actions, Contents, Pull requests: Read-only** (Metadata comes with them; there is no Checks option for personal tokens, and none is needed); expiry 1 year. |
 | `GITHUB_REPO` | only if it ever changes — default `PERKocet30/TNL-labs` |
 
 Both tokens stay on the server. The page gets names and numbers, never a key.
