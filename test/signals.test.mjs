@@ -41,8 +41,9 @@ const srv = spawn(process.execPath, ["--experimental-sqlite", "--no-warnings", "
 const IPHONE_IG = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22H374 Instagram 452.0.1.39.54 (iPhone11,8; iOS 18_7_10; en_US)";
 const ANDROID = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36";
 const HEADLESS = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/120.0.0.0 Safari/537.36";
-const call = async (path, { body, tok, ip = "1.1.1.1", country = "US", ua = ANDROID } = {}) => {
+const call = async (path, { body, tok, ip = "1.1.1.1", country = "US", ua = ANDROID, city = "", region = "", tz = "" } = {}) => {
   const r = await fetch(B + path, { method: body ? "POST" : "GET", headers: { "Content-Type": "application/json", "cf-connecting-ip": ip, "cf-ipcountry": country, "user-agent": ua,
+    ...(city ? { "cf-ipcity": city } : {}), ...(region ? { "cf-region": region } : {}), ...(tz ? { "x-tz": tz } : {}),
     ...(tok ? { Authorization: "Bearer " + tok } : {}) }, body: body ? JSON.stringify(body) : undefined });
   return { s: r.status, j: await r.json().catch(() => ({})) };
 };
@@ -55,9 +56,9 @@ try {
   await seedEvent();
 
   console.log("\nJOINING");
-  const k1 = await join_("kat", { ip: "86.19.105.225", country: "GB", ua: IPHONE_IG });
+  const k1 = await join_("kat", { ip: "86.19.105.225", country: "GB", ua: IPHONE_IG, city: "Leeds", region: "England", tz: "Europe/London" });
   const k2 = await join_("tracy", { ip: "86.19.105.225", country: "GB", ua: ANDROID });
-  const k3 = await join_("zed", { ip: "203.0.113.9", country: "DE", ua: HEADLESS, secs: 6, domain: "mailinator.com" });
+  const k3 = await join_("zed", { ip: "203.0.113.9", country: "DE", ua: HEADLESS, secs: 6, domain: "mailinator.com", city: "Frankfurt am Main", region: "Hesse", tz: "America/New_York" });
   await settle();
   t("three people join (the routes behave as before)", k1.s === 200 && k2.s === 200 && k3.s === 200);
   let s = await sig("kat");
@@ -70,8 +71,13 @@ try {
   const z = await sig("zed");
   t("a bot-shaped join is called out: seconds on Join, a throwaway inbox, an automated browser", z.flags.some((f) => /Joined in 6 seconds/.test(f)) && z.flags.some((f) => /throwaway/.test(f)) && z.flags.some((f) => /automated/.test(f)) && z.joined.device === "Linux · Chrome · automated");
   t("someone different stands alone", z.sharing.length === 0);
+  t("location: the city and region Cloudflare names, and the phone's own time zone", s.joined.place === "Leeds, England" && s.joined.tz === "Europe/London" && z.joined.place === "Frankfurt am Main, Hesse");
+  t("a phone clock on another continent from its network is called out (VPN or proxy)", z.flags.some((f) => /America\/New_York.*network is in DE/.test(f)) && !s.flags.some((f) => /clock/.test(f)));
+  const odd = await join_("odd", { ip: "198.51.100.7", country: "FR", tz: "not a zone<script>", city: "<b>Paris</b>" }); await settle();
+  const o = await sig("odd");
+  t("a made-up time zone or odd city text isn't stored as given", odd.s === 200 && o.joined.tz === "" && o.joined.place === "bParisb");
   const raw = (await import("node:sqlite")).DatabaseSync; let d = new raw(join(DATA, "tnl.db"));
-  t("the database holds a hash, not the address", !JSON.stringify(d.prepare(`SELECT * FROM join_signals`).all()).includes("86.19.105.225") && d.prepare(`SELECT COUNT(DISTINCT net) n FROM join_signals`).get().n === 2);
+  t("the database holds a hash, not the address", !JSON.stringify(d.prepare(`SELECT * FROM join_signals`).all()).includes("86.19.105.225") && d.prepare(`SELECT COUNT(DISTINCT net) n FROM join_signals`).get().n === 3);
   t("a refused join (bad email) records nothing", (await call("/api/auth/register", { body: { username: "nope", displayName: "n", email: "x", password: "p" } })).s === 400 && !d.prepare(`SELECT 1 FROM join_signals js JOIN users u ON u.id = js.user_id WHERE u.username = 'nope'`).get());
   d.close();
 
@@ -87,10 +93,10 @@ try {
 
   console.log("\nVOTING");
   d = new raw(join(DATA, "tnl.db")); d.prepare(`UPDATE users SET email_verified = 1`).run(); d.close();   // they confirmed their emails
-  const v1 = await call("/api/events/art/vote", { body: { entryId: entA }, tok: k1.j.token, ip: "86.19.105.225", country: "GB", ua: IPHONE_IG });
+  const v1 = await call("/api/events/art/vote", { body: { entryId: entA }, tok: k1.j.token, ip: "86.19.105.225", country: "GB", ua: IPHONE_IG, city: "Leeds", region: "England", tz: "Europe/London" });
   const v2 = await call("/api/events/art/vote", { body: { entryId: entA }, tok: k2.j.token, ip: "86.19.105.225", country: "GB" });
   const v3 = await call("/api/events/art/vote", { body: { entryId: entB }, tok: "tok-boss", ip: "5.5.5.5", country: "US" });
-  const v4 = await call("/api/events/art/vote", { body: { entryId: entB }, tok: k3.j.token, ip: "203.0.113.9", country: "DE" });
+  const v4 = await call("/api/events/art/vote", { body: { entryId: entB }, tok: k3.j.token, ip: "203.0.113.9", country: "DE", tz: "America/New_York" });
   await settle();
   t("votes go through as before", [v1, v2, v3, v4].every((v) => v.s === 200));
   const again = await call("/api/events/art/vote", { body: { entryId: entB }, tok: k1.j.token, ip: "86.19.105.225", country: "GB" }); await settle();
@@ -99,7 +105,8 @@ try {
   const ea = c.entries.find((e) => e.entryId === entA), eb = c.entries.find((e) => e.entryId === entB);
   t("each piece: its votes, voters, new accounts and countries", ea.votes === 2 && ea.voters === 2 && ea.fresh === 2 && ea.countries.GB === 2 && ea.author === "ana" && eb.votes === 2 && eb.fresh === 1);
   t("two voters for one piece from one network are counted", ea.shared === 2 && eb.shared === 0);
-  t("the network is listed with who and what for", c.clusters.length === 1 && c.clusters[0].voters.sort().join() === "kat,tracy" && c.clusters[0].entries[0].author === "ana" && c.clusters[0].countries[0] === "GB");
+  t("…the towns its votes came from, and a VPN-looking vote", ea.places["Leeds, England"] === 1 && eb.offClock === 1 && ea.offClock === 0);
+  t("the network is listed with who, where and what for", c.clusters.length === 1 && c.clusters[0].voters.sort().join() === "kat,tracy" && c.clusters[0].entries[0].author === "ana" && c.clusters[0].countries[0] === "GB" && c.clusters[0].places[0] === "Leeds, England");
   t("a voter's record shows the vote and that they voted within a week of joining", (await sig("kat")).seen.some((x) => x.kind === "vote" && x.event === "Art") && (await sig("kat")).flags.some((f) => /Voted within a week/.test(f)));
   await call("/api/events/art/vote", { body: { entryId: entA, on: false }, tok: k1.j.token, ip: "86.19.105.225" }); await settle();
   t("taking a vote back isn't noted as a vote", (await call(`/api/admin/events/${evId}/vote-check`, { tok: "tok-boss" })).j.total === 4);
@@ -114,6 +121,7 @@ try {
 
 console.log("\nTHE APP AND THE PAGES");
 const read = (f) => readFileSync(join(ROOT, f), "utf8");
+t("every request from the app carries the phone's time zone", /h\["X-TZ"\]=Intl\.DateTimeFormat\(\)\.resolvedOptions\(\)\.timeZone/.test(read("src/app-07-theme-labs-api.js")));
 t("the app keeps the first link once and sends it with Join", /localStorage\.getItem\("tnl-landed"\)/.test(read("src/app-08-landed.js")) && /src:landedSrc\(G\)/.test(read("src/app-11-gate-logic.js")) && /t0:Date\.now\(\)/.test(read("src/app-11-gate-screens.js")));
 t("the privacy policy says so", /Keeping accounts real/.test(read("src/server-12-policies.js")));
 t("admin loads the record card and the vote check", /3-person-signals\.js\?v=/.test(read("public/admin.html")) && /sigCard\(\)/.test(read("public/admin-app/3-person.js")) && /evCheckHTML\(\)/.test(read("public/admin-app/8-events.js")));
