@@ -190,6 +190,36 @@ Read-only; each card says "isn't connected yet" until its key is here.
 
 Both tokens stay on the server. The page gets names and numbers, never a key.
 
+### Google (Search Console + Merchant Center), 2026-10-26
+
+The Systems page also shows how people find LABS on Google Search and how the
+market's pieces do on Google Shopping (`server-10-admin-systems2-google.js`).
+One Google **service account** reads both, read-only. About 10 minutes:
+
+1. **Make the service account.** console.cloud.google.com → the LABS project →
+   IAM & Admin → Service accounts → **Create service account**: name
+   `labs-admin`, no roles → Done. Open it → **Keys** → Add key → Create new
+   key → **JSON**. A file downloads: that's the key.
+2. **Let it read Search Console.** search.google.com/search-console →
+   tnllabs.com → Settings → Users and permissions → **Add user**: the
+   account's email (`labs-admin@….iam.gserviceaccount.com`), permission
+   **Restricted**.
+3. **Let it read Merchant Center.** merchants.google.com → Settings (gear) →
+   People and access → **Add person**: the same email, access **Standard**
+   (there's no read-only level; the app only ever reads).
+4. **Enable the two APIs** in the Cloud project: APIs & Services → Library →
+   **Google Search Console API** → Enable; **Merchant API** → Enable.
+5. **Put the key in Railway.** Open the JSON file, copy the whole thing, and add
+   it as one variable:
+
+| Variable | Value |
+| --- | --- |
+| `GOOGLE_SERVICE_ACCOUNT` | the whole JSON key file, pasted as-is (Railway keeps the line breaks; base64 of it also works) |
+| `GSC_SITE` | only if it ever changes — default `sc-domain:tnllabs.com` (a URL-prefix property would be `https://tnllabs.com/`) |
+| `MERCHANT_ID` | only if it ever changes — default `413920275` |
+
+The key signs a short-lived token on the server; neither reaches the page.
+
 ## The whole list, to paste in
 
 ```
