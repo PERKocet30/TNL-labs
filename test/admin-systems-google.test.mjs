@@ -54,7 +54,9 @@ const fake = createServer((req, res) => {
       if (dims[0] === "page") return json(200, { rows: [
         { keys: ["https://tnllabs.com/"], clicks: 25, impressions: 300, ctr: 0.083, position: 3 },
         { keys: ["https://tnllabs.com/e/art-tournament"], clicks: 2, impressions: 600, ctr: 0.0033, position: 9 },
-        { keys: ["https://evil.example/phish"], clicks: 1, impressions: 80, ctr: 0.0125, position: 20 }] });
+        { keys: ["https://evil.example/phish"], clicks: 1, impressions: 80, ctr: 0.0125, position: 20 },
+        { keys: ["https://tnllabs.com//evil.example/x"], clicks: 1, impressions: 70, ctr: 0.01, position: 20 },
+        { clicks: 9, impressions: 9 }] });
       if (dims[0] === "device") return json(200, { rows: [{ keys: ["MOBILE"], clicks: 50, impressions: 2500 }, { keys: ["DESKTOP"], clicks: 10, impressions: 500 }] });
       if (dims[0] === "country") return json(200, { rows: [{ keys: ["usa"], clicks: 55, impressions: 2800 }, { keys: ["gbr"], clicks: 5, impressions: 200 }] });
     }
@@ -98,7 +100,8 @@ try {
   t("a line per day, the searches and the pages", S.days.length === 28 && S.queries[0].query === "tnl labs" && S.pages[0].path === "/");
   t("close to page 1: seen a lot, ranked 5–20, biggest first; the tiny one left out", S.closeToTop.map((x) => x.query).join("|") === "dmv streetwear brands|labs art tournament");
   t("shown a lot, rarely clicked: the tournament page", S.lowClicks.length === 1 && S.lowClicks[0].path === "/e/art-tournament");
-  t("a page off tnllabs.com gets no link (text only)", S.pages.find((p) => /evil/.test(p.url)).path === "");
+  t("a page off tnllabs.com gets no link (text only) — nor a //host path that would leave the site; a row with no key is skipped",
+    S.pages.filter((p) => /evil/.test(p.url)).every((p) => p.path === "") && S.pages.length === 4);
   t("phones vs computers, countries, and the sitemap Google has", S.devices[0].device === "mobile" && S.countries[0].country === "USA" && S.sitemaps[0].submitted === 212 && S.sitemaps[0].errors === 0);
 
   console.log("\nGOOGLE SHOPPING");

@@ -68,8 +68,8 @@ async function ggToken(key) {
   Object.assign(GG_TOKEN, { value: j.access_token, exp: now + (Number(j.expires_in) || 3600), key: key.email });
   return j.access_token;
 }
-async function ggFetch(token, url, body) {
-  const r = await fetch(url, { method: body ? "POST" : "GET", signal: AbortSignal.timeout(12000),
+async function ggFetch(token, url, body, ms = 12000) {
+  const r = await fetch(url, { method: body ? "POST" : "GET", signal: AbortSignal.timeout(ms),
     headers: { Authorization: `Bearer ${token}`, ...(body ? { "Content-Type": "application/json" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
@@ -83,7 +83,7 @@ const ggDay = (d) => new Date(d).toISOString().slice(0, 10);
 const ggPct = (a, b) => (b ? Math.round(((a - b) / b) * 1000) / 10 : null);
 const ggRound = (n, p = 1) => Math.round((Number(n) || 0) * 10 ** p) / 10 ** p;
 /* A page on tnllabs.com, as a path the admin can open; anything else stays as Google gave it, shown as text only. */
-const ggPath = (u) => { try { const x = new URL(u); return /(^|\.)tnllabs\.com$/.test(x.hostname) ? x.pathname + x.search : ""; } catch { return ""; } };
+const ggPath = (u) => { try { const x = new URL(u); return /(^|\.)tnllabs\.com$/.test(x.hostname) && /^\/(?![\/\\])/.test(x.pathname) ? x.pathname + x.search : ""; } catch { return ""; } };   // one slash: "//evil.com" would leave the site
 
 async function ggSearch(token) {
   const site = GG.site(), base = `${GG.gscUrl()}/webmasters/v3/sites/${encodeURIComponent(site)}`;
@@ -96,18 +96,19 @@ async function ggSearch(token) {
     ggFetch(token, `${base}/sitemaps`).catch(() => ({ sitemap: [] })) ]);
   const t = (tot.rows || [])[0] || {}, p = (totPrev.rows || [])[0] || {};
   const row = (r) => ({ clicks: r.clicks || 0, impressions: r.impressions || 0, ctr: ggRound((r.ctr || 0) * 100), position: ggRound(r.position || 0) });
-  const Q = (queries.rows || []).map((r) => ({ query: String(r.keys[0]).slice(0, 120), ...row(r) }));
-  const P = (pages.rows || []).map((r) => ({ url: String(r.keys[0]).slice(0, 300), path: ggPath(r.keys[0]), ...row(r) }));
+  const key0 = (r) => String((r.keys || [])[0] || "");
+  const Q = (queries.rows || []).filter((r) => key0(r)).map((r) => ({ query: key0(r).slice(0, 120), ...row(r) }));
+  const P = (pages.rows || []).filter((r) => key0(r)).map((r) => ({ url: key0(r).slice(0, 300), path: ggPath(key0(r)), ...row(r) }));
   return {
     site, range: cur,
     totals: { ...row(t), prev: row(p), change: { clicks: ggPct(t.clicks || 0, p.clicks || 0), impressions: ggPct(t.impressions || 0, p.impressions || 0) } },
-    days: (days.rows || []).map((r) => ({ day: r.keys[0], clicks: r.clicks || 0, impressions: r.impressions || 0 })),
+    days: (days.rows || []).filter((r) => key0(r)).map((r) => ({ day: key0(r), clicks: r.clicks || 0, impressions: r.impressions || 0 })),
     queries: Q.slice(0, 25), pages: P.slice(0, 15),
     /* the reach moves: searches already seen, just off page 1; pages seen a lot but rarely chosen */
     closeToTop: Q.filter((x) => x.position >= 5 && x.position <= 20 && x.impressions >= 10).sort((a, b) => b.impressions - a.impressions).slice(0, 10),
     lowClicks: P.filter((x) => x.path && x.impressions >= 50 && x.ctr < 2).sort((a, b) => b.impressions - a.impressions).slice(0, 8),
-    devices: (devices.rows || []).map((r) => ({ device: String(r.keys[0]).toLowerCase(), clicks: r.clicks || 0, impressions: r.impressions || 0 })),
-    countries: (countries.rows || []).map((r) => ({ country: String(r.keys[0]).toUpperCase().slice(0, 3), clicks: r.clicks || 0, impressions: r.impressions || 0 })),
+    devices: (devices.rows || []).filter((r) => key0(r)).map((r) => ({ device: key0(r).toLowerCase(), clicks: r.clicks || 0, impressions: r.impressions || 0 })),
+    countries: (countries.rows || []).filter((r) => key0(r)).map((r) => ({ country: key0(r).toUpperCase().slice(0, 3), clicks: r.clicks || 0, impressions: r.impressions || 0 })),
     sitemaps: (maps.sitemap || []).map((m) => ({ path: String(m.path || "").slice(0, 200), lastDownloaded: Date.parse(m.lastDownloaded || "") || null,
       errors: Number(m.errors) || 0, warnings: Number(m.warnings) || 0, pending: !!m.isPending,
       submitted: (m.contents || []).reduce((n, c) => n + (Number(c.submitted) || 0), 0) })),
@@ -128,7 +129,7 @@ async function ggShopping(token) {
   const products = [];
   let page = "";
   for (let i = 0; i < 4; i++) {   // up to 1,000 pieces
-    const j = await ggFetch(token, `${GG.merchantUrl()}/products/v1/accounts/${id}/products?pageSize=250${page ? "&pageToken=" + encodeURIComponent(page) : ""}`);
+    const j = await ggFetch(token, `${GG.merchantUrl()}/products/v1/accounts/${id}/products?pageSize=250${page ? "&pageToken=" + encodeURIComponent(page) : ""}`, null, 6000);
     products.push(...(j.products || []));
     if (!j.nextPageToken) break; page = j.nextPageToken;
   }
@@ -140,7 +141,7 @@ async function ggShopping(token) {
     for (const is of p.productStatus?.itemLevelIssues || []) {
       if (is.reportingContext && !/FREE_LISTINGS/i.test(is.reportingContext) && issues.has(is.code)) continue;
       const k = String(is.code || is.description || "issue");
-      const g = issues.get(k) || { code: k.slice(0, 80), severity: String(is.severity || "").toUpperCase(), description: ggLine(is.description), detail: ggLine(is.detail),
+      const g = issues.get(k) || { code: k.slice(0, 80), severity: ["DISAPPROVED", "DEMOTED", "NOT_IMPACTED"].includes(String(is.severity || "").toUpperCase()) ? String(is.severity).toUpperCase() : "", description: ggLine(is.description), detail: ggLine(is.detail),
         attribute: String(is.attribute || "").slice(0, 60), fixBy: is.resolution === "MERCHANT_ACTION" ? "you" : is.resolution ? "google" : "", pieces: [] };
       if (!g.pieces.some((x) => x.offerId === piece.offerId)) g.pieces.push(piece);
       issues.set(k, g);

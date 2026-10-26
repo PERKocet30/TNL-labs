@@ -205,8 +205,9 @@ One Google **service account** reads both, read-only. About 10 minutes:
    account's email (`labs-admin@….iam.gserviceaccount.com`), permission
    **Restricted**.
 3. **Let it read Merchant Center.** merchants.google.com → Settings (gear) →
-   People and access → **Add person**: the same email, access **Standard**
-   (there's no read-only level; the app only ever reads).
+   People and access → **Add person**: the same email, access **Standard**,
+   never Admin (there's no read-only level and Google's Merchant scope can
+   write, so the role is the limit; the app only ever reads).
 4. **Enable the two APIs** in the Cloud project: APIs & Services → Library →
    **Google Search Console API** → Enable; **Merchant API** → Enable.
 5. **Put the key in Railway.** Open the JSON file, copy the whole thing, and add

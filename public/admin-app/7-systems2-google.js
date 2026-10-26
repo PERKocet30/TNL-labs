@@ -46,7 +46,7 @@ function sysGoogleHTML() {
       ${kpiHTML("Not shown", ggNum(c.notShown), { share: c.notShown ? "fix below" : "nothing to fix" })}
     </div>
     <h2 class="sec">What's holding pieces back <span class="mono">grouped by fix</span></h2>
-    <div class="panel">${P.issues.length ? `<div class="list">${P.issues.map((g) => { const [cls, word] = sev[g.severity] || ["", g.severity.toLowerCase()];
+    <div class="panel">${P.issues.length ? `<div class="list">${P.issues.map((g) => { const [cls, word] = sev[g.severity] || ["", "note"];
       return `<div class="li" style="align-items:flex-start"><span class="b"><b style="font-weight:500;font-size:13px;white-space:normal">${esc(g.description)}${g.detail ? ` — <span style="font-weight:400">${esc(g.detail)}</span>` : ""}</b>
         <span style="white-space:normal">${g.count} piece${g.count === 1 ? "" : "s"}${g.attribute ? ` · ${esc(g.attribute)}` : ""} · ${g.fixBy === "you" ? "fix it in the listing" : g.fixBy === "google" ? "Google's side" : ""}: ${g.pieces.map((p) => p.path ? `<a href="${esc(p.path)}" target="_blank" rel="noopener">${esc(p.title)}</a>` : esc(p.title)).join(", ")}${g.count > g.pieces.length ? "…" : ""}</span></span><span class="tag ${cls}">${word}</span></div>`; }).join("")}</div>`
       : `<div class="empty">${P.total ? "Every piece is clean." : "No pieces in Merchant Center yet — link the feed under Products."}</div>`}</div>`;
