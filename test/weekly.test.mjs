@@ -78,6 +78,8 @@ try {
   const src = readFileSync(join(ROOT, "src/server-10-weekly.js"), "utf8"), mail = readFileSync(join(ROOT, "src/mail.js"), "utf8");
   t("the schedule: Monday 13:00 UTC, once a week, and the first run right away", /getUTCDay\(\) === 1 && d\.getUTCHours\(\) >= 13/.test(src) && /!prev \|\|/.test(src));
   t("the email uses the one LABS layout", /export function weeklyEmail/.test(mail) && /renderEmail\(/.test(mail.split("export function weeklyEmail")[1]));
+  t("the email's title is the three numbers, its button opens Systems, plurals read right",
+    /title: subject\.replace\(\/\^LABS this week:\\s\*\/, ""\)/.test(mail) && /"#systems"/.test(src) && /"ies"/.test(src) && /Next worst/.test(src));
   t("the page shows the week with a send-now button", /wkmail/.test(readFileSync(join(ROOT, "public/admin-app/7-systems.js"), "utf8")));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);

@@ -27,7 +27,7 @@ const wkN = (sql, ...p) => Number(db.prepare(sql).get(...p)?.n) || 0;
 const wkPct = (a, b) => (b ? Math.round(((a - b) / b) * 100) : a ? null : 0);
 const wkCmp = (a, b) => { const c = wkPct(a, b); return c === null ? "new" : c === 0 ? "same as the week before" : `${c > 0 ? "up" : "down"} ${Math.abs(c)}%`; };
 const wkMoney = (c) => "$" + (Math.round(c / 100)).toLocaleString();
-const wkS = (n, w) => `${n.toLocaleString()} ${w}${n === 1 ? "" : w.endsWith("h") ? "es" : "s"}`;
+const wkS = (n, w) => `${n.toLocaleString()} ${n === 1 ? w : /[^aeiou]y$/.test(w) ? w.slice(0, -1) + "ies" : w.endsWith("h") ? w + "es" : w + "s"}`;
 
 function weeklyApp(now) {
   const a = now - WK, b = now - 2 * WK;
@@ -131,7 +131,7 @@ function weeklyLines(A, R) {
   }
   H("how it felt");
   L.push(`${wkS(A.errors[0], "error")} (${wkCmp(A.errors[0], A.errors[1])}), ${wkS(A.glitches[0], "glitch")} (${wkCmp(A.glitches[0], A.glitches[1])}).${A.topErr ? ` Most often: ${A.topErr.n}× ${A.topErr.message}.` : ""}`);
-  for (const w of A.worst) L.push(`Worst spot: ${w.n}× ${w.kind.replace(/_/g, " ")} at ${w.place}${w.detail ? " — " + w.detail : ""}.`);
+  for (const [i, w] of A.worst.entries()) L.push(`${i ? "Next worst" : "Worst spot"}: ${w.n}× ${w.kind.replace(/_/g, " ")} at ${w.place}${w.detail ? " — " + w.detail : ""}.`);
   H("what to do this week");
   const todo = [];
   if (A.joined[0] && A.finished < A.confirmed / 2) todo.push("Half of new members never finish their page. Shorten it: a photo and one line, the rest later.");
@@ -156,7 +156,7 @@ async function weeklyReport(now = Date.now()) {
 const weeklyTo = () => (process.env.ADMIN_EMAIL || "").trim();
 async function weeklySend(to, rep) {
   const { sendWeeklyEmail } = await import("./mail.js");   // boot's import line is full (24KB) — loaded here instead
-  const r = await sendWeeklyEmail(to, rep.subject, rep.lines, adminLink());
+  const r = await sendWeeklyEmail(to, rep.subject, rep.lines, adminLink().replace(/#.*$/, "#systems"));   // the week lives on Systems (#system is the old Settings alias)
   if (!r.sent && r.reason !== "no_key") logError("mail", "weekly report not sent: " + (r.error || "?"), rep.subject, "weekly", "");
   return r;
 }
