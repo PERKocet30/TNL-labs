@@ -1,8 +1,9 @@
-/* LABS admin · Systems v1.0 — 2026-10-26. The services LABS runs on, read-only, in one place
+/* LABS admin · Systems v1.1 — 2026-10-26 (v1.1: Google, 7-systems2-google.js). v1.0 — 2026-10-26. The services LABS runs on, read-only, in one place
    (server-10-admin-systems.js). Part 1: Railway (what's live, what's building, what failed) and
    GitHub (what's waiting for a Push, what went in lately, did the live check pass). Each card says
    plainly when its key isn't set yet; RAILWAY.md says where the keys go. */
-LOADERS.systems = async () => { D.systems = await req("/api/admin/systems" + (D.systemsFresh ? "?fresh=1" : "")); D.systemsFresh = false; };
+LOADERS.systems = async () => { await Promise.all([(async () => { D.systems = await req("/api/admin/systems" + (D.systemsFresh ? "?fresh=1" : "")); })(),
+  typeof LOADERS.systemsGoogle === "function" ? LOADERS.systemsGoogle().catch(() => { D.sysGoogle = { on: true, error: "Couldn't load." }; }) : null]); D.systemsFresh = false; };
 const SYS_STATUS = { SUCCESS: ["on", "live"], BUILDING: ["wait", "building"], DEPLOYING: ["wait", "going live"], INITIALIZING: ["wait", "starting"],
   QUEUED: ["wait", "queued"], WAITING: ["wait", "waiting"], FAILED: ["warn", "failed"], CRASHED: ["warn", "crashed"], REMOVED: ["", "replaced"],
   SKIPPED: ["", "skipped"], SLEEPING: ["", "asleep"], NEEDS_APPROVAL: ["wait", "needs approval"] };
@@ -50,13 +51,14 @@ VIEWS.systems = () => {
     return `<div class="set"><div class="t"><b>Live-site check after the last merge</b><span>GitHub opens tnllabs.com after each merge and waits for the new version${c.sha ? ` · ${esc(c.sha)}` : ""} · ${ago(c.at)} ago</span></div>
       <a class="tag ${ok ? "on" : bad ? "warn" : "wait"}" href="${esc(c.url)}" target="_blank" rel="noopener">${ok ? "passed" : bad ? "failed" : "running"}</a></div>`;
   };
-  return `${pageHead("Systems", "What LABS runs on, read-only: what's live, what's building, what's waiting for a Push",
+  return `${pageHead("Systems", "What LABS runs on, read-only: what's live, what's waiting for a Push, how people find LABS on Google",
     `<div class="row wrapx" style="gap:6px">${headTag}<button class="btn ghost sm" id="sysfresh">Look again</button></div>`)}
   <div class="panel" style="margin-bottom:14px"><div class="set"><div class="t"><b>${esc(headline)}</b><span>Node ${esc(L.node)}${S.cached ? " · numbers from the last minute" : ""}</span></div></div>${check()}</div>
   <div class="split">
     <div><h2 class="sec">Railway <span class="mono">deploys, newest first</span></h2><div class="panel">${railway()}</div></div>
     <div><h2 class="sec">Waiting for a Push <span class="mono">open pull requests</span></h2><div class="panel">${prs()}</div>
       ${G.on && !G.error ? `<h2 class="sec">Went in lately <span class="mono">merged</span></h2><div class="panel">${merges()}</div>` : ""}</div>
-  </div>`;
+  </div>
+  ${typeof sysGoogleHTML === "function" ? sysGoogleHTML() : ""}`;
 };
 WIRES.systems = () => { const b = $("#sysfresh"); if (b) b.onclick = () => { D.systemsFresh = true; D.systems = null; paint(); load(); }; };
