@@ -216,7 +216,7 @@ export async function sendAlertEmail(to, subject, heading, lines, url) {
     as their own lines, the rest as sentences — same layout as every email. */
 export function weeklyEmail(subject, lines, url) {
   return renderEmail({
-    eyebrow: "This week", title: subject.replace(/^LABS this week:\s*/, "This week on LABS"), lines, cta: "Open Admin", url,
+    eyebrow: "This week", title: subject.replace(/^LABS this week:\s*/, "")   /* the eyebrow says "This week"; the title is the three numbers */, lines, cta: "Open Admin", url,
     note: "Every Monday morning. Counts and patterns only — never a member's name.", preheader: lines.find((l) => !l.startsWith("—")) || subject,
   });
 }
