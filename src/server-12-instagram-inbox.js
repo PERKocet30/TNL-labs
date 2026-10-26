@@ -113,8 +113,30 @@ function igStore(acc, m, convId, via) {
 const igTooBig = (e) => /reduce the amount of data/i.test(e?.message || "") || e?.code === 1 || e?.name === "TimeoutError" || /aborted due to timeout/i.test(e?.message || "");   // too slow is too big too
 async function igGetLess(path, paramsFor, token, sizes = [25, 10, 5]) {
   let last;
-  for (const n of sizes) { try { return await igGet(path, paramsFor(n), token); } catch (e) { last = e; if (!igTooBig(e)) throw e; } }
+  for (const n of sizes) { try { return await igRetry(() => igGet(path, paramsFor(n), token), n === sizes.at(-1) ? 3 : 1); } catch (e) { last = e; if (!igTooBig(e)) throw e; } }
   throw last;
+}
+/* Meta's messaging reads are flaky: the same call fails, then works a second later. Twice more, briefly. */
+async function igRetry(fn, tries = 3) {
+  for (let i = 1; ; i++) { try { return await fn(); } catch (e) { if (i >= tries || !(igTooBig(e) || e?.code === 2)) throw e; await new Promise((ok) => globalThis.setTimeout(ok, IG_RETRY_MS * i)); } }
+}
+/* The conversation list, newest first. A busy inbox refuses any page bigger than one (Meta code 1 at every
+   limit above 1 — github.com/Extra-Chill/data-machine-socials/issues/267), so it's walked one at a time,
+   up to IG_WALK_MAX, stopping at the first conversation that hasn't moved since last time. */
+const IG_RETRY_MS = Math.max(0, Number(process.env.IG_RETRY_MS ?? 1200));
+const IG_WALK_MAX = Math.max(1, Number(process.env.IG_WALK_MAX) || 15);
+async function igListConvs(token, moved) {
+  try { return (await igRetry(() => igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: 25 }, token), 1)).data || []; }
+  catch (e) { if (!igTooBig(e)) throw e; }
+  const out = []; let after = null;
+  while (out.length < IG_WALK_MAX) {
+    const d = await igRetry(() => igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: 1, after }, token));
+    const c = (d.data || [])[0]; if (!c) break;
+    out.push(c);
+    if (!moved(c)) break;   // everything after this is older and already read
+    after = d.paging?.cursors?.after; if (!after) break;
+  }
+  return out;
 }
 /* ── polling: what moved since last time ── */
 let IG_SYNCING = false;
@@ -122,17 +144,17 @@ async function igSync(reason = "tick") {
   const acc = igAccount(); if (!acc || IG_SYNCING) return { ok: false, skipped: true };
   IG_SYNCING = true; let fresh = 0, convs = 0;
   try {
-    const list = await igGetLess("/me/conversations", (n) => ({ platform: "instagram", fields: "id,updated_time", limit: n }), acc.token);
+    const moved = (c) => { const k = db.prepare(`SELECT synced_updated_at FROM ig_conversations WHERE id = ?`).get(String(c.id)); return !k || k.synced_updated_at < igTime(c.updated_time); };
+    const list = await igListConvs(acc.token, moved);
     let skipped = 0;
-    for (const c of list.data || []) {
+    for (const c of list) {
       const id = String(c.id), up = igTime(c.updated_time);
-      const known = db.prepare(`SELECT synced_updated_at FROM ig_conversations WHERE id = ?`).get(id);
-      if (known && known.synced_updated_at >= up) continue;
+      if (!moved(c)) continue;
       convs++;
       let d;
       try {
-        try { d = await igGetLess("/" + id, (n) => ({ fields: `messages.limit(${n}){${IG_MSG_FIELDS}}` }), acc.token, [20, 10, 5]); }
-        catch (e) { if (e.code === 100 || igTooBig(e)) d = await igGetLess("/" + id, (n) => ({ fields: `messages.limit(${n}){id,created_time,from,to,message}` }), acc.token, [20, 10, 5]); else throw e; }   // plain text only: attachments are what makes it too big
+        try { d = await igGetLess("/" + id, (n) => ({ fields: `messages.limit(${n}){${IG_MSG_FIELDS}}` }), acc.token, [20, 10, 5, 1]); }
+        catch (e) { if (e.code === 100 || igTooBig(e)) d = await igGetLess("/" + id, (n) => ({ fields: `messages.limit(${n}){id,created_time,from,to,message}` }), acc.token, [20, 10, 5, 1]); else throw e; }   // plain text only: attachments are what makes it too big
       } catch (e) { if (!igTooBig(e)) throw e; skipped++; console.error("[instagram] conversation skipped:", e.message); continue; }   // one heavy conversation doesn't stop the rest
       igPutConv.run(id, "", "", up);
       for (const m of d.messages?.data || []) if (igStore(acc, m, id, "poll")) fresh++;
