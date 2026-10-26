@@ -276,7 +276,7 @@ PLATFORM_FEE_PCT     ← dead. Replaced by per-level rates.
 ## Priority
 
 1. **`TNL_DATA` + the volume** — everything else is pointless if data vanishes
-2. **`ADMIN_EMAIL`** — so you can see what's actually happening
+2. **`ADMIN_EMAIL`** — so you can see what's actually happening (alerts, the morning digest, and the Monday week-in-review email)
 3. **`PUBLIC_URL`** — so links work
 4. **Resend** — before anyone but you signs up
 5. **Stripe** — before anyone sells anything real

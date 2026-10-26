@@ -1924,6 +1924,8 @@ console.log("\nMEMBER · COMPUTER");
     await fast(p, 6000, () => p.locator(".pg-hd h1", { hasText: "Systems" }).waitFor(), "the Systems page");
     ok((await p.locator(".empty", { hasText: "isn't connected yet" }).count()) === 4, "Systems doesn't say its keys aren't set yet (Railway, GitHub, Google, Meta)");
     ok(await p.locator("#sysfresh").count() === 1, "no Look again on Systems");
+    // 2026-10-26: the week's report sits at the top of Systems with a button that emails it now
+    ok(await p.locator(".sec", { hasText: "This week" }).count() === 1 && await p.locator("#wkmail").count() === 1, "Systems doesn't show the week with an Email-me-now button");
     await p.locator(".side .nv[data-tab=home]").click(); await p.waitForTimeout(400);
     ok(await p.locator(".side .grp").count() === 4, "the side menu isn't grouped");
     await p.locator("#gq").fill("tester");
