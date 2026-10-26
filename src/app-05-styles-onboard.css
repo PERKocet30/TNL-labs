@@ -28,4 +28,3 @@
 .gx-coll b{display:block;font-size:16px;margin-bottom:3px}
 .gx-coll span{display:block;font-size:13px;color:var(--tx2);line-height:1.35}
 .gx-coll.on{border-color:var(--tx)}
-.gx-or{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx2);margin:16px 0 10px}

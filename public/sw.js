@@ -26,7 +26,7 @@ async function mediaPut(c, req, res) {
 }
 /* Only things that definitely exist. If addAll() 404s on ANY entry the whole
    install rejects and the worker never activates — a silent failure. */
-const SHELL = ["/", "/manifest.webmanifest"];
+const SHELL = ["/", "/manifest.webmanifest", "/mark-96.png"];   // the mark on the door and Join (app-11-gate-screens)
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

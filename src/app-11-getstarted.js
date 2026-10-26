@@ -67,7 +67,8 @@ async function gsLoad(force){
 }
 function gsPaint(){
   const sr=$("#showroom"),slot=$("#gs-slot");if(!sr||!slot)return;
-  const before=slot.offsetHeight;slot.innerHTML=gsHTML();gsWire();
+  const h=gsHTML();if(h===slot.dataset.gs&&slot.firstElementChild)return;slot.dataset.gs=h;   // nothing changed: leave it (a repaint can nudge the feed)
+  const before=slot.offsetHeight;slot.innerHTML=h;gsWire();
   const d=slot.offsetHeight-before;if(d&&sr.scrollTop>0)sr.scrollTop+=d;   // reading further down: stay put
 }
 function gsWire(){

@@ -1215,7 +1215,8 @@ console.log("\nMEMBER · PHONE");
       const v = document.querySelector("#e2eG video");
       v.play = function () { return this.muted ? HTMLMediaElement.prototype.play.call(this) : new Promise(() => {}); };   // iOS: holds it, never answers
       wireVideos(); }, vid);
-    await p.locator("#e2eG video").scrollIntoViewIfNeeded(); await p.waitForTimeout(2600);
+    // the middle of the screen, wherever the feed starts (a Get started card above it moves it down — 2026-10-26)
+    await p.evaluate(() => document.querySelector("#e2eG video").scrollIntoView({ block: "center" })); await p.waitForTimeout(2600);
     const g = await p.evaluate(() => { const v = document.querySelector("#e2eG video"); return { muted: v.muted, paused: v.paused, session: navigator.audioSession.type }; });
     ok(g.muted && !g.paused, "the video sat waiting for sound instead of playing muted: " + JSON.stringify(g));
     ok(g.session === "playback", "sound wasn't asked for as playback (the silent switch mutes it): " + g.session);
