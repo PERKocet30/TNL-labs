@@ -23,3 +23,9 @@
   .gate .gx{border-radius:var(--rad);padding:8px 44px 28px;min-height:min(640px,calc(100dvh - 64px))}
   .gate .gx-body{flex:1}
 }
+/* the Collector door above "what you make" (2026-10-26, app-11-gate-kind) */
+.gx-coll{display:block;width:100%;max-width:420px;margin:4px auto 0;padding:14px 18px;text-align:left;font:inherit;color:var(--tx);background:var(--el);border:2px solid transparent;border-radius:var(--rad);cursor:pointer}
+.gx-coll b{display:block;font-size:16px;margin-bottom:3px}
+.gx-coll span{display:block;font-size:13px;color:var(--tx2);line-height:1.35}
+.gx-coll.on{border-color:var(--tx)}
+.gx-or{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx2);margin:16px 0 10px}

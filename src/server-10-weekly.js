@@ -35,6 +35,7 @@ function weeklyApp(now) {
   const joined = both(`SELECT COUNT(*) n FROM users WHERE created_at >= ? AND created_at < ?`);
   const confirmed = wkN(`SELECT COUNT(*) n FROM users WHERE created_at >= ? AND created_at < ? AND email_verified = 1`, a, now);
   const finished = wkN(`SELECT COUNT(*) n FROM users WHERE created_at >= ? AND created_at < ? AND COALESCE(avatar_url,'') <> '' AND COALESCE(bio,'') <> ''`, a, now);
+  const collectors = wkN(`SELECT COUNT(*) n FROM users WHERE created_at >= ? AND created_at < ? AND roles = '["Collector"]'`, a, now);   // here for the art (2026-10-26)
   const firstPost = wkN(`SELECT COUNT(DISTINCT u.id) n FROM users u JOIN posts p ON p.author_id = u.id WHERE u.created_at >= ? AND u.created_at < ?`, a, now);
   const posted = both(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE created_at >= ? AND created_at < ?`);
   /* came back: members who joined the week before last and did something (post, like, comment, follow) last week */
@@ -68,7 +69,7 @@ function weeklyApp(now) {
   const glitches = both(`SELECT COUNT(*) n FROM glitch_events WHERE created_at >= ? AND created_at < ?`);
   const worst = typeof worstSpots === "function" ? worstSpots(a, null, 2) : [];
   const topErr = db.prepare(`SELECT message, COUNT(*) n FROM error_log WHERE created_at >= ? GROUP BY message ORDER BY n DESC LIMIT 1`).get(a);
-  return { joined, confirmed, finished, firstPost, posted, cohort, back, posts, byLab, likes, comments, follows, collabs, plays, dms,
+  return { joined, collectors, confirmed, finished, firstPost, posted, cohort, back, posts, byLab, likes, comments, follows, collabs, plays, dms,
     listings, views, offers, sales, gross, lookedNotBought: lookedNotBought.map((l) => ({ id: l.id, title: String(l.title).slice(0, 60), n: l.n })),
     event, errors, glitches, worst, topErr: topErr ? { message: String(topErr.message || "").slice(0, 100), n: topErr.n } : null };
 }
@@ -94,6 +95,7 @@ function weeklyLines(A, R) {
   const L = [], H = (t) => L.push(`— ${t.toUpperCase()} —`);
   H("the people");
   L.push(`${wkS(A.joined[0], "new member")} (${wkCmp(A.joined[0], A.joined[1])}). ${A.confirmed} confirmed their email, ${A.finished} finished their page, ${A.firstPost} posted something.`);
+  if (A.collectors) L.push(`Of them, ${A.collectors} joined as collector${A.collectors === 1 ? "" : "s"} (here for the art) and ${A.joined[0] - A.collectors} as maker${A.joined[0] - A.collectors === 1 ? "" : "s"}.`);
   if (A.joined[0]) {
     const stop = A.joined[0] - A.confirmed > A.confirmed - A.finished && A.joined[0] - A.confirmed > A.finished - A.firstPost ? "confirming their email" : A.confirmed - A.finished >= A.finished - A.firstPost ? "finishing their page (a photo and a line)" : "making a first post";
     L.push(`Where new people stop most: ${stop}.`);

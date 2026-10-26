@@ -119,7 +119,7 @@ document.addEventListener("click",e=>{
   const s=$("#showroom");if(s)s.scrollTo({top:0,behavior:mvReduced()?"auto":"smooth"});
 });
 async function loadShowroom(force){
-  if(typeof gsFlag==="function"&&gsFlag("new"))gsLoad();   // a new member's Get started list (app-11-getstarted)
+  if(typeof gsWant==="function"&&gsWant())gsLoad();   // a new member's Get started list (app-11-getstarted)
   if(!force && SRAT && Date.now()-SRAT<8000 && SRPOSTS.length) return; // grid paints from cache
   SRAT=Date.now();
   try{

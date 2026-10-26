@@ -21,6 +21,7 @@
    Server: server-10-places.js. Styles: app-05-styles-places.css.
 ================================================================ */
 const ROLE_LABS={
+  "Collector":["pharmacy","culture","fashion"],
   "Graphic Designer":["pharmacy"],"Illustrator":["pharmacy","akatsuki"],"3D Artist":["pharmacy"],"Motion Designer":["pharmacy"],
   "Animator":["pharmacy","akatsuki"],"Art Director":["pharmacy","fashion"],"Painter":["pharmacy"],"Sculptor":["pharmacy"],
   "Artist":["pharmacy"],"Muralist":["pharmacy"],"Printmaker":["pharmacy"],"Mixed Media Artist":["pharmacy"],

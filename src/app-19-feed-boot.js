@@ -301,7 +301,7 @@ function paintVerifyBar(){
   try{const d=await api.levels();LEVELS=d.levels;if(d.accents)ACCENTS=d.accents;if(d.site)SITE=d.site}catch(e){/* offline default */}
   if(!studioOn()){const m=LABS.find(l=>l.id==="culture");if(m)m.channels=m.channels.filter(c=>!c.beatlab)}
   if(TOKEN)await refreshMe();          // invalid token just leaves ME null -> guest
-  if(ME&&gsFlag("new"))await gsLoad(true);   // Get started's numbers before the first paint: nothing moves (app-11-getstarted)
+  if(ME&&gsWant())await gsLoad(true);   // Get started's numbers before the first paint: nothing moves (app-11-getstarted)
   if(ME&&ME.accentHex)applyAccent(ME.accentHex);
   if(ME){
     startStream();refreshBadges();loadUnreads();

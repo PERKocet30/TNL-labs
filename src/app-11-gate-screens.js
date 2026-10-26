@@ -103,13 +103,15 @@ function gateHTML(){
         <div class="gx-sugg" id="unsugg">${(G.un.sugg||[]).map(s=>`<button class="chip" data-sugg="${esc(s)}">${esc(s)}</button>`).join("")}</div>
         ${err}${next("Next",G.un.state==="ok")}`;
     }else{
-      body=`<h1 class="gx-h">What do you make?</h1><p class="gx-p">Pick up to 5. It's how people find you.</p>
-        <div class="gx-roles">${ROLES.map(r=>`<button class="chip ${f.roles.includes(r)?"on":""}" data-r="${esc(r)}">${esc(r)}</button>`).join("")}</div>
-        <div class="gx-count" id="rcount">${f.roles.length} of 5 selected</div>
+      const coll=f.roles.includes(COLLECTOR);   // 2026-10-26: a door for people here for the art (app-11-gate-kind)
+      body=`<h1 class="gx-h">What brings you to LABS?</h1><p class="gx-p">Pick up to 5. It's how people find you.</p>
+        ${collectorCardHTML(coll)}
+        <div class="gx-roles">${ROLES.filter(r=>r!==COLLECTOR).map(r=>`<button class="chip ${f.roles.includes(r)?"on":""}" data-r="${esc(r)}">${esc(r)}</button>`).join("")}</div>
+        <div class="gx-count" id="rcount">${coll?"Collector":f.roles.length+" of 5 selected"}</div>
         ${err}<div class="gx-stick"><p class="gx-legal">By creating an account you agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy policy</a>.</p>${next("Create account",f.roles.length>0)}</div>`;
     }
   }else{
-    const skip=G.step!=="welcome"?`<button class="gx-skip" id="gxskip">Skip</button>`:"<span></span>";
+    const skip=G.step!=="welcome"&&G.step!=="photo"?`<button class="gx-skip" id="gxskip">Skip</button>`:"<span></span>";   // a photo isn't optional (2026-10-26)
     center=G.step!=="follow";
     top=`<span></span>${skip}`;
     const av=(cls)=>`<div class="gx-av ${cls||""}">${ME&&ME.avatarUrl?`<img src="${esc(ME.avatarUrl)}" alt="">`:GX_PERSON}</div>`;
@@ -121,7 +123,7 @@ function gateHTML(){
     }else if(G.step==="photo"){
       const has=!!(ME&&ME.avatarUrl);
       body=`<div class="gx-mid">${av()}<h1 class="gx-h">Add a profile photo</h1>
-        <p class="gx-p">So people know whose work they're looking at.</p></div>
+        <p class="gx-p">${esc(kindCopy().photo)}</p></div>
         <input type="file" id="gxfile" accept="image/*" hidden>
         ${err}<button class="gx-btn" id="gxnext"${G.busy?" disabled":""}>${G.busy?"Uploading…":has?"Next":"Add a photo"}</button>
         ${has?`<button class="gx-link" id="gxchange">Change photo</button>`:""}`;
@@ -132,8 +134,9 @@ function gateHTML(){
         <div class="gx-sw">${Object.entries(ACCENTS).filter(([k,a])=>!a.legacy||cur===k).map(([k,a])=>`<button class="pe-dot ${cur===k?"on":""}" data-gxacc="${esc(k)}" title="${esc(a.name)}" aria-label="${esc(a.name)}"><span style="background:${esc(a.hex)}"></span></button>`).join("")}</div>
         ${err}<div class="gx-stick"><button class="gx-btn" id="gxnext">Next</button></div>`;
     }else if(G.step==="bio"){
-      body=`<h1 class="gx-h">Tell people what you make</h1><p class="gx-p">A line or two. It sits under your name on your page.</p>
-        <textarea class="gxf-ta" id="gxbio" maxlength="150" rows="3" placeholder="Illustrator. Posters, zines and album art.">${esc(f.bio)}</textarea>
+      const kc=kindCopy();
+      body=`<h1 class="gx-h">${esc(kc.bioH)}</h1><p class="gx-p">${esc(kc.bioP)}</p>
+        <textarea class="gxf-ta" id="gxbio" maxlength="150" rows="3" placeholder="${esc(kc.ph)}">${esc(f.bio)}</textarea>
         <div class="gx-count" id="biocount">${f.bio.length} / 150</div>
         ${gxField("gxig","Instagram username (optional)",{value:f.ig,attrs:'autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="31"'})}
         ${err}<div class="gx-stick"><button class="gx-btn" id="gxnext"${G.busy?" disabled":""}>${G.busy?"Saving…":"Next"}</button></div>`;

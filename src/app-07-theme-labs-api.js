@@ -35,6 +35,7 @@ let TOKEN = localStorage.getItem("tnl-token") || null;
 let ME = null;
 let LEVELS = [{id:1,name:"Entry",at:0},{id:2,name:"Verified",at:40},{id:3,name:"Collaborator",at:120},{id:4,name:"Core",at:280},{id:5,name:"Leadership",at:560}];
 const ROLES = [
+  "Collector",   // here for the art, not making it (2026-10-26) — its own card at sign-up, app-11-gate-kind
   // visual
   "Graphic Designer","Illustrator","3D Artist","Motion Designer","Animator","Art Director",
   "Painter","Sculptor","Tattoo Artist","Curator","Manga Artist","Character Designer",

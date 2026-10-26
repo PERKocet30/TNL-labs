@@ -177,6 +177,8 @@ export const NUDGE_ITEMS = {
   music:  { title: "Upload your music", line: "Your page says {role}, but there's no music on it yet. One track is enough to start.", cta: "Upload a track" },
   piece:  { title: "Post your first piece", line: "Your page is empty until you post. One piece is enough.", cta: "Post a piece" },
   bio:    { title: "Say what you make", line: "One line under your name tells people why to follow you.", cta: "Write your line" },
+  love:   { title: "Say what you love", line: "One line under your name tells artists what you're into.", cta: "Write your line" },
+  support: { title: "Like 3 pieces you love", line: "Every like counts for the artist who made it. Three is a start.", cta: "Find pieces" },
   colour: { title: "Pick your colour", line: "Every member has one. It wraps your avatar and colours your page.", cta: "Pick a colour" },
   follow: { title: "Follow 3 people", line: "Your feed is built from who you follow. Three is a start.", cta: "Find people" },
   market: { title: "List a piece in the Market", line: "Your page says {role}. List one piece and it's on your page and in the Market.", cta: "List a piece" },

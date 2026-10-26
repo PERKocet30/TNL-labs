@@ -54,7 +54,10 @@ function wireGate(){
   document.querySelectorAll("[data-sugg]").forEach(b=>b.onclick=()=>{f.username=b.dataset.sugg;if(un)un.value=f.username;gxCheck()});
 
   /* ── roles: toggled in place so the long list keeps its scroll ── */
+  /* Collector is its own door: on its own, never mixed in with what you make (they can add that later) */
+  on("[data-collector]",()=>{f.roles=f.roles.includes(COLLECTOR)?[]:[COLLECTOR];render()});
   document.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{const r=b.dataset.r;
+    if(f.roles.includes(COLLECTOR)){f.roles=[];const c=$("[data-collector]");if(c){c.classList.remove("on");c.setAttribute("aria-pressed","false")}}
     if(f.roles.includes(r))f.roles=f.roles.filter(x=>x!==r);
     else if(f.roles.length<5)f.roles=[...f.roles,r];
     else{toast("Up to 5");return}
