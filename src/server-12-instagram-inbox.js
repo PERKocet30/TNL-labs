@@ -60,6 +60,7 @@ CREATE INDEX IF NOT EXISTS idx_ig_messages_conv ON ig_messages(conv_id, created_
 
 const IG_APP_ID = (process.env.IG_APP_ID || "").trim(), IG_APP_SECRET = (process.env.IG_APP_SECRET || "").trim();
 const IG_GRAPH = "https://graph.instagram.com/v24.0";
+const IG_WAIT_MS = Math.max(1000, Number(process.env.IG_WAIT_MS) || 30000);   // a busy inbox: Meta can take 15s+ to list it (2026-10-26)
 const IG_SCOPE = "instagram_business_basic,instagram_business_manage_messages";
 const IG_POLL_MS = Math.max(30000, Number(process.env.IG_POLL_MS) || 180000);
 const IG_MSG_FIELDS = "id,created_time,from,to,message,attachments";
@@ -76,7 +77,7 @@ async function igGet(path, params, token) {
   const u = new URL(IG_GRAPH + path);
   for (const [k, v] of Object.entries(params || {})) if (v !== undefined && v !== null) u.searchParams.set(k, v);
   if (token) u.searchParams.set("access_token", token);
-  const r = await fetch(u, { signal: AbortSignal.timeout(12000) });
+  const r = await fetch(u, { signal: AbortSignal.timeout(IG_WAIT_MS) });
   const d = await r.json().catch(() => ({}));
   if (!r.ok || d.error) { const e = new Error(d.error?.message || `Instagram said ${r.status}`); e.code = d.error?.code; e.status = r.status; throw e; }
   return d;
@@ -109,7 +110,7 @@ function igStore(acc, m, convId, via) {
 
 /* "Please reduce the amount of data you're asking for" (2026-10-26, the first real connect): Meta caps
    how much one call returns, so ask again for less — 25, then 10, then 5 — before giving up. */
-const igTooBig = (e) => /reduce the amount of data/i.test(e?.message || "") || e?.code === 1;
+const igTooBig = (e) => /reduce the amount of data/i.test(e?.message || "") || e?.code === 1 || e?.name === "TimeoutError" || /aborted due to timeout/i.test(e?.message || "");   // too slow is too big too
 async function igGetLess(path, paramsFor, token, sizes = [25, 10, 5]) {
   let last;
   for (const n of sizes) { try { return await igGet(path, paramsFor(n), token); } catch (e) { last = e; if (!igTooBig(e)) throw e; } }
