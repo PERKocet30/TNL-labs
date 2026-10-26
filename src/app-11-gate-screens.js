@@ -13,7 +13,7 @@ const GX_NO=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke=
 const GX_PERSON=`<svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>`;
 
 function gxNew(){const tour=GATE==="tour";   // ≡ → How LABS works: the walkthrough on its own (app-11-gate-tour)
-  return {src:GATE,mode:tour?"tour":GATE==="login"?"login":"register",step:tour?"tour":"email",ti:0,
+  return {src:GATE,t0:Date.now(),mode:tour?"tour":GATE==="login"?"login":"register",step:tour?"tour":"email",ti:0,
   f:{displayName:"",username:"",email:"",password:"",roles:[],bio:"",ig:""},
   err:"",un:{state:"",msg:"",sugg:[]},made:null,people:null,peopleP:null,following:{},
   sent:false,resetUrl:null,busy:false,showpw:false,focused:"",depth:0}}

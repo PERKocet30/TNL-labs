@@ -13,6 +13,10 @@ async function openPerson(username) {
   PERSON = { username, data: null, tab: "overview" }; paintPerson();
   try { PERSON.data = await req("/api/admin/people/" + encodeURIComponent(username)); } catch (e) { toast(e.message); PERSON = null; }
   paintPerson();
+  if (PERSON && PERSON.username === username) {   // how they joined (3-person-signals.js)
+    const sig = await req("/api/admin/people/" + encodeURIComponent(username) + "/signals").catch(() => null);
+    if (PERSON && PERSON.username === username) { PERSON.sig = sig; paintPerson(); }
+  }
 }
 function closePerson() { PERSON = null; paintPerson(); }
 function paintPerson() {
@@ -63,6 +67,7 @@ function recOverview(d) {
   if (s.listings && !p.payouts) flags.push("Selling, but payouts aren't set up — they can't be paid.");
   if (!p.lastSeen || p.lastSeen < Date.now() - 30 * ADAY_MS) flags.push("Hasn't opened the app in 30+ days.");
   return `${flags.length ? card("Needs a look", `<ul class="flags">${flags.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>`) : ""}
+    ${sigCard()}
     ${card("Reputation", `<div class="mts">${met("Rep", num(p.rep))}${met("Level", "L" + p.level, esc(p.levelName))}${met("Commission", p.fee + "%", "on their sales")}</div>`)}
     ${card("Community", `<div class="mts">${met("Followers", num(s.followers))}${met("Following", num(s.following))}${met("Collabs", num(s.collabs), s.pendingCollabs ? s.pendingCollabs + " pending" : "")}</div>`)}
     ${card("Contribution", `<div class="mts">${met("Posts", num(s.posts), num(s.work) + " published work")}${met("Feedback received", num(s.likesGot + s.commentsGot), num(s.likesGot) + " likes · " + num(s.commentsGot) + " comments")}
@@ -108,6 +113,7 @@ function recNotes(d) {
 function wirePerson(el) {
   const u = PERSON && PERSON.username;
   $("[data-close]", el).onclick = closePerson;
+  $$("[data-person]", el).forEach((b) => b.onclick = (e) => { e.stopPropagation(); openPerson(b.dataset.person); });   // an account on the same network
   $$("[data-ptab]", el).forEach((b) => b.onclick = () => { PERSON.tab = b.dataset.ptab; paintPerson(); });
   $$("[data-copy]", el).forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast("Copied"); } catch (e) { toast(b.dataset.copy); } });
   $$("[data-dm]", el).forEach((b) => b.onclick = () => window.open("/?dm=" + encodeURIComponent(b.dataset.dm), "_blank"));

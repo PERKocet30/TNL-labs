@@ -76,7 +76,8 @@ app.get("/privacy", (_req, res) => policyPage(res, {
     ["What we collect", `<ul><li><b>Account:</b> email, password (stored only as a one-way hash), name, username, and what you add to your profile.</li>
 <li><b>What you make:</b> posts, images, audio, comments, messages, listings, offers, votes and event entries.</li>
 <li><b>Orders:</b> what you bought or sold, and the shipping address you enter at checkout, which goes to the seller so they can ship. Card details go to Stripe and never reach us.</li>
-<li><b>Running the app:</b> your IP address and basic request logs (for security and rate limits), and error reports when something breaks.</li></ul>`],
+<li><b>Running the app:</b> your IP address and basic request logs (for security and rate limits), and error reports when something breaks.</li>
+<li><b>Keeping accounts real:</b> when you join, sign in or vote, we note the network you used (kept as a code, not the address itself), the country it's in, your device and browser, and the link that first brought you to LABS. Only LABS admins see it, to spot fake accounts and vote rigging.</li></ul>`],
     ["Why", `<p>To run your account and show your work, process orders, send the emails you need (verification, password reset, and order updates), keep the app safe from spam and abuse, and fix bugs.</p>`],
     ["Who else processes it", `<ul><li><b>Stripe</b> — card payments and seller payouts.</li><li><b>Resend</b> — sending email.</li>
 <li><b>Railway</b> — hosting; our database and uploads live there.</li><li><b>Cloudflare</b> — delivering the site and blocking attacks.</li>

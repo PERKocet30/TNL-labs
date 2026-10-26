@@ -12,6 +12,7 @@ let EVID = null, EVFORM = null;
 LOADERS.events = async () => {
   D.events = await req("/api/admin/events");
   if (EVID) D.event = await req("/api/admin/events/" + EVID);
+  if (EVID) D.evcheck = await req("/api/admin/events/" + EVID + "/vote-check").catch(() => null);   // 3-person-signals.js
 };
 const EVPH = { upcoming: "Not open yet", submit: "Entries open", qualify: "Voting", round: "Round", final: "Final", results: "Results" };
 const phName = (p) => (p.phase === "round" ? "Round " + p.round : EVPH[p.phase] || p.phase);
@@ -93,6 +94,7 @@ function evDetailHTML(d) {
   <div class="pg-hd" style="margin-top:16px"><div><h1>${esc(e.title)} ${e.published ? `<span class="tag on">live</span>` : `<span class="tag">draft</span>`}</h1></div></div>
   <p class="dim" style="font-size:13px;margin-top:4px">${e.format === "bracket" ? `Bracket of up to ${e.bracketSize}` : e.format === "poll" ? `Poll · ${e.picks} vote${e.picks === 1 ? "" : "s"} a day · board freezes ${e.freezeHours}h before each close · top ${e.finalists} to the final` : `Simple · top ${e.finalists} to the final`}${e.format === "poll" ? "" : ` · ${e.picks} picks`} · final ${e.judgeWeight ? e.judgeWeight + "% judges" : "votes only"}${e.requireVerified ? " · confirmed emails" : ""}${e.minAccountDays ? ` · voters ${e.minAccountDays}+ days old` : ""} · ${d.voters} people have voted${e.prize ? " · " + esc(e.prize) : ""}</p>
   ${evLinkHTML(e)}
+  ${evCheckHTML()}
   ${e.format === "poll" ? `<h2 class="sec">Instagram <span class="mono">every link leads back to the app — only votes there count</span></h2>
   <div class="panel"><div class="row wrapx" style="gap:6px">
     <a class="btn ghost sm" href="/e/${esc(e.slug)}/board" target="_blank">Scoreboard page</a>

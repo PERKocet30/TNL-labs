@@ -1,22 +1,7 @@
-/* ── CONTINUE WITH GOOGLE, APPLE OR FACEBOOK · v1.1 · 2026-10-26 ────────
-   (v1.0 2026-10-20.) "Sign up with Google or Apple like most apps." / "…with
-   Meta/Instagram too": Continue with Facebook is Meta's login for everyone,
-   an Instagram account included (Accounts Center). On Log in and the first
-   Join screen, above the email: one tap each, shown only when that
-   provider is switched on (SITE.oauth, server-11-oauth.js). The provider
-   sends people back with a one-use code in the address bar:
-     ?signin=…  → traded for a session: you're in
-     ?signup=…  → Join opens on your name (email confirmed, no password),
-                  then username and what you make, then the usual
-                  photo → colour → bio → people → walkthrough
-     ?oauth_error=… → a line saying what happened
-   Each start carries this browser's own random mark (?b=, kept in
-   localStorage) and the code only counts if it comes back with the same
-   one: a ?signin= link someone sends you can't sign you into their
-   account, nor a ?signup= one start an account they could enter.
-   Google won't sign in inside Instagram's browser (it refuses embedded
-   browsers), so there the Google button opens LABS in Safari, which
-   starts it (?oauth=google). */
+/* Continue with Google, Apple or Facebook (v1.1, 2026-10-26) — the whole flow is described in server-11-oauth.js.
+   ?signin= → signed in · ?signup= → Join on your name · ?oauth_error= → a line. Each start carries this
+   browser's own mark (?b=), so a code in someone else's link is refused. Google refuses Instagram's
+   browser, so there its button opens Safari first (?oauth=google). */
 const OA_G=`<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.4-.2-2H12v3.9h6c-.1 1-.8 2.5-2.3 3.5v2.9h3.7c2.2-2 3.2-5 3.2-8.3z"/><path fill="#34A853" d="M12 23c3 0 5.6-1 7.4-2.7l-3.7-2.9c-1 .7-2.3 1.2-3.7 1.2-2.9 0-5.3-1.9-6.2-4.5H2v3C3.8 20.7 7.6 23 12 23z"/><path fill="#FBBC05" d="M5.8 14.1c-.2-.7-.4-1.4-.4-2.1s.1-1.4.4-2.1v-3H2C1.2 8.5.8 10.2.8 12s.4 3.5 1.2 5l3.8-2.9z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2C17.6 2.1 15 1 12 1 7.6 1 3.8 3.3 2 7l3.8 2.9C6.7 7.3 9.1 5.4 12 5.4z"/></svg>`;
 const OA_A=`<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M16.4 12.7c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2.1-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1zM13.9 5.1c.7-.9 1.2-2 1.1-3.1-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1.1 3 1.1.1 2.2-.6 2.9-1.4z"/></svg>`;
 const OA_F=`<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.6 1.6-1.6h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.2H7.3V14h2.8v8h3.4z"/></svg>`;
