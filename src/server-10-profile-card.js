@@ -231,7 +231,7 @@ function profileCardMeta(u, base) {
 app.get("/u/:username/card.jpg", rateLimit({ max: 120, windowMs: 60000 }), async (req, res) => {
   const u = q.userByName.get(req.params.username);
   if (!u) return res.status(404).end();
-  const fallback = () => res.redirect(302, u.avatar_url || "/icon-white-512.png");
+  const fallback = () => res.redirect(302, u.avatar_url || "/icon-white-512.png?v=2");
   if (!FFMPEG) return fallback();
   try {
     const file = await buildProfileCard(u.id, profileCardTiles(u));

@@ -33,7 +33,7 @@ function outHelp(url){
 function inappCardHTML(){
   return `<div class="installc"><div class="installc-in">
     <button class="installc-x" data-installx aria-label="Close">${DI.x}</button>
-    <div class="installc-h"><img src="/icon-white-512.png" alt=""><div>
+    <div class="installc-h"><img src="/icon-white-512.png?v=2" alt=""><div>
       <b>You're in ${esc(INAPP)}'s browser</b>
       <span>Open LABS in ${outBrowser()} to stay signed in, share to your Story and keep it on your home screen.</span>
     </div></div>

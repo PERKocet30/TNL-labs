@@ -83,7 +83,7 @@ ${head}
 <style>${paletteCss()}
 ${LOOK_CSS}</style></head>
 <body${center ? ' class="center"' : ""}><main class="wrap">
-<a class="top" href="/"><img src="/icon-white-512.png" alt="">LABS &reg;</a>
+<a class="top" href="/"><img src="/icon-white-512.png?v=2" alt="">LABS &reg;</a>
 ${body}
 ${lookFoot()}
 </main></body></html>`;

@@ -243,7 +243,7 @@ function installCardHTML(){
        because there's no button we can press for them. */
     return `<div class="installc"><div class="installc-in">
       <button class="installc-x" data-installx aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-      <div class="installc-h"><img src="/icon-white-512.png" alt=""><div>
+      <div class="installc-h"><img src="/icon-white-512.png?v=2" alt=""><div>
         <b>Keep LABS on your home screen</b>
         <span>Opens full-screen, like an app. No download.</span>
       </div></div>
@@ -257,7 +257,7 @@ function installCardHTML(){
   if(st==="android"){
     return `<div class="installc"><div class="installc-in">
       <button class="installc-x" data-installx aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-      <div class="installc-h"><img src="/icon-white-512.png" alt=""><div>
+      <div class="installc-h"><img src="/icon-white-512.png?v=2" alt=""><div>
         <b>Add LABS to your home screen</b>
         <span>Opens full-screen, like an app. No download.</span>
       </div></div>
