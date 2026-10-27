@@ -39,6 +39,10 @@ try {
     t(`${ua} is turned away`, blocked(txt, ua));
   for (const ua of ["Googlebot", "Bingbot", "facebookexternalhit", "Twitterbot", "Slackbot"])
     t(`${ua} still gets in (search and link previews)`, !blocked(txt, ua));
+  // 2026-10-27: Meta AI may read the front page (what LABS is), nothing else
+  const meta = txt.split(/\n\s*\n/).find((b) => /^User-agent: meta-externalagent$/mi.test(b)) || "";
+  t("meta-externalagent: the front page only — every other page stays closed", /^Allow: \/\$$/m.test(meta) && /^Disallow: \/$/m.test(meta)
+    && (meta.match(/^Allow:/gm) || []).length === 1 && (meta.match(/^User-agent:/gm) || []).length === 1);
 
   console.log("\nHEADERS ON EVERYTHING");
   for (const path of ["/", "/uploads/work.jpg", "/api/feed/showroom"]) {
