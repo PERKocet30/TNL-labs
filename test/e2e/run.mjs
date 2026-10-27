@@ -82,6 +82,7 @@ const server = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"
     // no boot backfill: its AAC copies of the seeded WAVs land mid-run, and this Chromium plays no AAC
     TNL_NO_VIDEO_FIX: "1",
     // the Systems page is walked with no keys (a GITHUB_TOKEN in the runner's own environment must not count)
+    EV_NEW_VOTE_WAIT_MS: "0",   /* the 5-minute wait for new accounts is tested in honest.test.mjs; here the member who just joined votes */
     GITHUB_TOKEN: "", RAILWAY_API_TOKEN: "", RAILWAY_PROJECT_TOKEN: "", GOOGLE_SERVICE_ACCOUNT: "", META_ACCESS_TOKEN: "" }, stdio: ["ignore", "pipe", "pipe"] });
 let serverLog = ""; server.stdout.on("data", (d) => (serverLog += d)); server.stderr.on("data", (d) => (serverLog += d));
 const stop = () => { try { server.kill(); } catch {} };

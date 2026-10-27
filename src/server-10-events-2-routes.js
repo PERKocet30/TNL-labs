@@ -26,10 +26,15 @@ function evEntryShape(e) {
    order doesn't jump around on refresh. */
 const evShuffle = (list, salt) => list.slice().sort((a, b) => ((Math.imul(a.id ^ salt, 2654435761) >>> 0) - (Math.imul(b.id ^ salt, 2654435761) >>> 0)));
 
+const EV_NEW_VOTE_WAIT_MS = Math.max(0, Number(process.env.EV_NEW_VOTE_WAIT_MS ?? 5 * 60000));
 /* Who may vote on what, right now. null = yes; otherwise the reason. */
 function evVoteBlock(ev, user, stage, entryId) {
   if (!user) return "Sign in to vote.";
   if (ev.require_verified && !user.email_verified) return "Confirm your email to vote — the link is in your inbox.";
+  /* 2026-10-27: "New accounts can't instantly vote — 5 minute wait… while they set up account." A real person spends it on
+     the joining steps (photo, colour, bio, people) and barely notices; a burst of accounts made to vote has to sit. */
+  const waitLeft = EV_NEW_VOTE_WAIT_MS - (Date.now() - user.created_at);
+  if (waitLeft > 0) { return "Finish setting up your account to vote."; }   // no timer shown (2026-10-27)
   const days = Math.max(0, ev.min_account_days || 0);
   if (Date.now() - user.created_at < days * EV_DAY) return `Accounts need to be ${days} day${days === 1 ? "" : "s"} old to vote.`;
   if (stage === "final" && evJudges(ev.id).some((j) => j.id === user.id)) return "Judges score the final instead of voting.";

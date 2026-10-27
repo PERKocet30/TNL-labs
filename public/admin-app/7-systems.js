@@ -1,11 +1,12 @@
-/* LABS admin · Systems v1.3 — 2026-10-26 (v1.3: This week — the Monday email, and a button to send it now; v1.2: Meta, 7-systems3-meta.js; v1.1: Google, 7-systems2-google.js). v1.0 — 2026-10-26. The services LABS runs on, read-only, in one place
+/* LABS admin · Systems v1.4 — 2026-10-27 (v1.4: Claude connector, 7-systems4-connectors.js; v1.3: This week — the Monday email, and a button to send it now; v1.2: Meta, 7-systems3-meta.js; v1.1: Google, 7-systems2-google.js). v1.0 — 2026-10-26. The services LABS runs on, read-only, in one place
    (server-10-admin-systems.js). Part 1: Railway (what's live, what's building, what failed) and
    GitHub (what's waiting for a Push, what went in lately, did the live check pass). Each card says
    plainly when its key isn't set yet; RAILWAY.md says where the keys go. */
 LOADERS.systems = async () => { await Promise.all([(async () => { D.systems = await req("/api/admin/systems" + (D.systemsFresh ? "?fresh=1" : "")); })(),
   (async () => { D.weekly = await req("/api/admin/weekly").catch(() => null); })(),
   typeof LOADERS.systemsGoogle === "function" ? LOADERS.systemsGoogle().catch(() => { D.sysGoogle = { on: true, error: "Couldn't load." }; }) : null,
-  typeof LOADERS.systemsMeta === "function" ? LOADERS.systemsMeta().catch(() => { D.sysMeta = { on: true, error: "Couldn't load." }; }) : null]); D.systemsFresh = false; };
+  typeof LOADERS.systemsMeta === "function" ? LOADERS.systemsMeta().catch(() => { D.sysMeta = { on: true, error: "Couldn't load." }; }) : null,
+  typeof LOADERS.systemsConnectors === "function" ? LOADERS.systemsConnectors().catch(() => { D.sysConn = { error: "Couldn't load." }; }) : null]); D.systemsFresh = false; };
 const SYS_STATUS = { SUCCESS: ["on", "live"], BUILDING: ["wait", "building"], DEPLOYING: ["wait", "going live"], INITIALIZING: ["wait", "starting"],
   QUEUED: ["wait", "queued"], WAITING: ["wait", "waiting"], FAILED: ["warn", "failed"], CRASHED: ["warn", "crashed"], REMOVED: ["", "replaced"],
   SKIPPED: ["", "skipped"], SLEEPING: ["", "asleep"], NEEDS_APPROVAL: ["wait", "needs approval"] };
@@ -69,7 +70,8 @@ VIEWS.systems = () => {
       ${G.on && !G.error ? `<h2 class="sec">Went in lately <span class="mono">merged</span></h2><div class="panel">${merges()}</div>` : ""}</div>
   </div>
   ${typeof sysGoogleHTML === "function" ? sysGoogleHTML() : ""}
-  ${typeof sysMetaHTML === "function" ? sysMetaHTML() : ""}`;
+  ${typeof sysMetaHTML === "function" ? sysMetaHTML() : ""}
+  ${typeof sysConnectorsHTML === "function" ? sysConnectorsHTML() : ""}`;
 };
-WIRES.systems = () => { const b = $("#sysfresh"); if (b) b.onclick = () => { D.systemsFresh = true; D.systems = null; paint(); load(); }; if (typeof ggWire === "function") ggWire();
+WIRES.systems = () => { const b = $("#sysfresh"); if (b) b.onclick = () => { D.systemsFresh = true; D.systems = null; paint(); load(); }; if (typeof ggWire === "function") ggWire(); if (typeof sysConnWire === "function") sysConnWire();
   const m = $("#wkmail"); if (m) m.onclick = async () => { m.disabled = true; try { const r = await req("/api/admin/weekly/send", { method: "POST" }); toast(r.sent ? "Sent — check your inbox" : r.reason === "no_key" ? "Email isn't set up on this server" : "Couldn't send"); } catch (e) { toast(e.message); } m.disabled = false; }; };
