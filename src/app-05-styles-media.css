@@ -197,7 +197,7 @@ input, textarea, select, .in, .search { font-size: 16px !important; }
 .gx-out .gx-link{padding:0;margin:0;font-size:13px;color:var(--tx);font-weight:700;text-decoration:underline}
 .gx-body.center .gx-why{text-align:center}
 .gx-brand{display:flex;flex-direction:column;align-items:center;gap:14px;margin:0 0 32px}
-.gx-mark{height:68px;width:auto}
+
 .gx-word{font-size:22px;font-weight:700;letter-spacing:-.02em}
 .gxf{position:relative;display:flex;align-items:center;width:100%;background:var(--el);border:1px solid var(--line2);border-radius:999px;margin:0 0 10px;transition:border-color .15s;box-sizing:border-box}
 .gxf:focus-within{border-color:var(--tx)}
