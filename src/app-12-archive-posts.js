@@ -1,4 +1,4 @@
-/* v2026-10-21: the archive is a browse, not a search (no box — pictures aren't labelled); the lab head's Share is Invite. v2026-10-20: the head comes from the screen kit */
+/* v2026-10-27: the lab message box keeps line breaks (a growing box, like DMs). v2026-10-21: the archive is a browse, not a search (no box — pictures aren't labelled); the lab head's Share is Invite. v2026-10-20: the head comes from the screen kit */
 /* ── THE ARCHIVE ─────────────────────────────────────────────────────
    //.JPEG PHARMACY has 226 people posting reference and every image
    scrolls into the void within a day. Nobody can find it again. This is
@@ -88,7 +88,7 @@ function labsHTML(){
     <div class="composer">
       <input type="file" id="filein" accept="image/*,video/*" multiple hidden>
       <button class="attach" id="attachb" title="Attach image or video" aria-label="Attach image or video">${UI_IC.plus}</button>
-      <input class="in" id="draft" placeholder="${EDITID?"Edit your message…":"Message "+esc(labMark(LAB.name))}" value="${EDITID?"":esc(LABDRAFT)}" autocomplete="off">
+      <textarea class="in c-in" id="draft" rows="1" enterkeyhint="send" placeholder="${EDITID?"Edit your message…":"Message "+esc(labMark(LAB.name))}" autocomplete="off">${EDITID?"":esc(LABDRAFT)}</textarea>
       ${EDITID?`<button class="send ghostsend" id="canceledit" aria-label="Close"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`:""}
       <button class="send" id="sendb" aria-label="Send">${EDITID?DI.check:UI_IC.arrow}</button>
     </div>`}
