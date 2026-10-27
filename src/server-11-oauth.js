@@ -60,7 +60,8 @@ const OAUTH = {
     me: env("FACEBOOK_ME_URL", "https://graph.facebook.com/v24.0/me"),
   },
 };
-const oauthOn = (p) => !!(OAUTH[p] && OAUTH[p].id && (p === "apple" || OAUTH[p].secret));
+const OA_SWITCH = { google: "signinGoogle", apple: "signinApple", facebook: "signinFacebook" };   // Admin → Settings can turn a button off without touching its keys
+const oauthOn = (p) => !!(OAUTH[p] && OAUTH[p].id && (p === "apple" || OAUTH[p].secret) && settingBool(OA_SWITCH[p]));
 const oauthSite = () => ({ google: oauthOn("google"), apple: oauthOn("apple"), facebook: oauthOn("facebook") });   // /api/levels → site.oauth
 
 /* Short-lived, one-use things, in memory (one server; a restart just means "try again"). */

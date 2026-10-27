@@ -658,6 +658,9 @@ export const SETTING_DEFAULTS = {
   autoVerify:     "0",     // "1" skips email verification — use if mail breaks
   announcement:   "",      // a banner across the top of the app
   nudgeMail:      "1",     // the weekly "finish your page" email (server-11-nudge); "0" stops it
+  signinGoogle:   "1",     // Continue with Google / Apple / Facebook: "0" hides that button even with its keys set (2026-10-26)
+  signinApple:    "1",
+  signinFacebook: "0",     // off until the Meta app is published (business verification, Oct 26)
 
 
   /* Distribution. A real promise with a real cost, so it's a setting: you
