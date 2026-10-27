@@ -4,12 +4,16 @@
    (tracks, newest first, with their covers) — its own Music tab.
    v1.2 — 2026-10-10: and which song they pinned to the top.
    v1.3 — 2026-10-11: /api/health reports db, members, volume, uploads, backup.
+   v1.4 — 2026-10-27: one follow notification per person — a repeat follow replaces it, an unfollow removes it.
 ================================================================ */
+const dropFollowNotif = db.prepare(`DELETE FROM notifications WHERE user_id = ? AND actor_id = ? AND kind = 'follow'`);
 app.post("/api/users/:username/follow", auth, (req, res) => {
   const target = q.userByName.get(req.params.username);
   if (!target) return res.status(404).json({ error: "no such user" });
   if (target.id === req.user.id) return res.status(400).json({ error: "cannot follow yourself" });
   const already = q.followExists.get(req.user.id, target.id);
+  // One "started following you" per person: unfollowing takes it back, following again makes it new (2026-10-27)
+  dropFollowNotif.run(target.id, req.user.id);
   if (already) { q.unfollow.run(req.user.id, target.id); return res.json({ following: false }); }
   q.follow.run(req.user.id, target.id, Date.now());
   notify(target.id, req.user.id, "follow", null, "followed you");

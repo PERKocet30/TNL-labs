@@ -39,6 +39,13 @@ try {
   await fetch(`${B}/api/users/ana/follow`, { method: "POST", headers: { Authorization: "Bearer tok-me" } });
   N = await get();
   t("…and after Follow back, that you do", N.find((n) => n.kind === "follow").actor.youFollow === true);
+  // 2026-10-27: someone who followed, unfollowed and followed again showed up twice
+  const benFollow = () => fetch(`${B}/api/users/me/follow`, { method: "POST", headers: { Authorization: "Bearer tok-ben" } });
+  const benN = async () => (await get()).filter((n) => n.kind === "follow" && n.actor.username === "ben").length;
+  await benFollow(); await benFollow(); await benFollow();
+  t("follow, unfollow, follow again: one 'started following you', not two", await benN() === 1);
+  await benFollow();
+  t("unfollowing takes the follow notification back", await benN() === 0);
 
   console.log("\nHOW THE APP SHOWS THEM");
   const src = readFileSync(join(ROOT, "src/app-17-notifs.js"), "utf8");
