@@ -346,6 +346,7 @@ function paintVerifyBar(){
   else if(mm){TAB="market";MKTVIEW="detail";
     try{const d=await api.mktOne(mm[1]);MKTONE=d.listing;MKTOFFERS=d.offers||[]}catch(e){}}
   render();
+  window.LABS_UP=1;   // up: from here an error is reported, never a crash screen over a working app (app-06-body)
   initHistory();
   if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
 })();
