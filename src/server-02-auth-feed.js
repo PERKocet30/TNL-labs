@@ -1,5 +1,5 @@
 /* ================================================================
-   AUTH
+   AUTH  (connector keys accepted 2026-10-27)
 ================================================================ */
 /* Checked on EVERY authenticated request. A suspension that only removes
    sessions is worthless the moment they log back in. */
@@ -7,7 +7,9 @@ function auth(req, res, next) {
   const header = req.get("authorization") || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
   if (!token) return res.status(401).json({ error: "no token" });
-  const s = q.sessionByToken.get(token);
+  /* A connector key (server-12-mcp-1-oauth.js) stands in for its admin on GET +
+     the allowed admin routes only; mcpSession() answers null for anything else. */
+  const s = q.sessionByToken.get(token) || mcpSession(token, req);
   if (!s) return res.status(401).json({ error: "invalid token" });
   req.user = q.userById.get(s.user_id);
   req.token = token;
