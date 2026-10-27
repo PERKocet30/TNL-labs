@@ -73,7 +73,7 @@ try {
   { const { DatabaseSync } = await import("node:sqlite"); const w2 = new DatabaseSync(join(DATA, "tnl.db")); w2.prepare(`UPDATE users SET email = 'zed@mailinator.com' WHERE username = 'zed'`).run(); w2.close(); }
   const z = await sig("zed");
   t("a bot-shaped join is called out: seconds on Join, a throwaway inbox, an automated browser", z.flags.some((f) => /Joined in 6 seconds/.test(f)) && z.flags.some((f) => /throwaway/.test(f)) && z.flags.some((f) => /automated/.test(f)) && z.joined.device === "Linux · Chrome · automated");
-  { const { DatabaseSync } = await import("node:sqlite"); const w2 = new DatabaseSync(join(DATA, "tnl.db")); w2.prepare(`UPDATE users SET email = 'zed@protonmail.com' WHERE username = 'zed'`).run(); w2.close(); }   // back to a real one: a throwaway can't vote (server-01-honest)
+  { const { DatabaseSync } = await import("node:sqlite"); const w2 = new DatabaseSync(join(DATA, "tnl.db")); w2.prepare(`UPDATE users SET email = 'zed@protonmail.com' WHERE username = 'zed'`).run(); w2.prepare(`UPDATE users SET created_at = created_at - 600000 WHERE username IN ('kat','tracy','zed')`).run(); w2.close(); }   // …and ten minutes on: new accounts wait 5 to vote (2026-10-27)   // back to a real one: a throwaway can't vote (server-01-honest)
   t("someone different stands alone", z.sharing.length === 0);
   t("location: the city and region Cloudflare names, and the phone's own time zone", s.joined.place === "Leeds, England" && s.joined.tz === "Europe/London" && z.joined.place === "Frankfurt am Main, Hesse");
   t("a phone clock on another continent from its network is called out (VPN or proxy)", z.flags.some((f) => /America\/New_York.*network is in DE/.test(f)) && !s.flags.some((f) => /clock/.test(f)));
