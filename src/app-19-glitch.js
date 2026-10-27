@@ -80,12 +80,15 @@ window.fetch=async function(input,init){
   const url=typeof input==="string"?input:(input&&input.url)||"";
   const m=String((init&&init.method)||"GET").toUpperCase();
   const watch=/\/api\//.test(url)&&!/\/api\/(stream|glitch|client-error|upload)/.test(url);
+  /* checks the app makes on its own in the background aren't a screen anyone waits on (2026-10-27: "/api/auth/status
+     42.8s" was a new member gone to their inbox to confirm; the server answered every one in under 0.1s) */
+  const poll=/\/api\/(auth\/status|notifications|unreads)(\?|$)/.test(glPath(url));
   const t=Date.now(),h=GLHID;
   try{
     const r=await GLFETCH(input,init);
     if(watch){
       const took=Date.now()-t;
-      if(m==="GET"&&took>3000&&glSeen(t,h))glitch("slow_screen",glPath(url)+" "+(took/1000).toFixed(1)+"s");
+      if(m==="GET"&&!poll&&took>3000&&glSeen(t,h))glitch("slow_screen",glPath(url)+" "+(took/1000).toFixed(1)+"s");
       if(m!=="GET"&&r.status>=500)glitch("action_failed",m+" "+glPath(url)+" → "+r.status);
     }
     return r;

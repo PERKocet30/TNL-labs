@@ -29,8 +29,11 @@ run(win, doc, { now: () => clock }, () => 0, () => {}, undefined,
   null, null, null, null, null, null, null, "showroom", "", "", () => false, "x", { onLine: true });
 const call = async (path, during) => { const p = win.fetch(path); const begun = clock; await during?.(); clock = begun + 9000; answer(); await p; };
 reports = [];
-await call("/api/notifications");
-t("a call that took 9s with the screen on is a slow screen", reports.length === 1 && /slow_screen \/api\/notifications 9\.0s/.test(reports[0]));
+await call("/api/feed/showroom");
+t("a call that took 9s with the screen on is a slow screen", reports.length === 1 && /slow_screen \/api\/feed\/showroom 9\.0s/.test(reports[0]));
+reports = [];
+await call("/api/auth/status"); await call("/api/notifications"); await call("/api/unreads");
+t("…but not the app's own background checks (nobody is waiting on them)", reports.length === 0);
 reports = [];
 await call("/api/dm", async () => { flip(true); clock += 4000; flip(false); });
 t("…but not if the phone locked or switched apps while it waited", reports.length === 0);
