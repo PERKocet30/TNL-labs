@@ -1576,6 +1576,13 @@ console.log("\nMEMBER · PHONE");
     await p.waitForFunction(() => TAGVIEW && TAGVIEW.tag === "e2etag" && TAGVIEW.d && TAGVIEW.d.count === 1, null, { timeout: 5000 });
     await p.evaluate(() => history.back());
     await p.waitForFunction(() => !TAGVIEW && LAB && LAB.id === "pharmacy" && LABVIEW === "talk", null, { timeout: 4000 });
+    // 2026-10-27: a pasted welcome came out as one run-on line — the box was one line and the row ignored breaks
+    await p.locator("#draft").fill("Welcome e2elines\n\n• one\n• two"); await p.locator("#sendb").tap();
+    await p.waitForFunction(() => [...document.querySelectorAll("#feed .msg-b")].some(b => b.textContent.includes("e2elines")), null, { timeout: 6000 });
+    const lines = await p.evaluate(() => { const b = [...document.querySelectorAll("#feed .msg-b")].find(x => x.textContent.includes("e2elines"));
+      return { text: b.textContent, ws: getComputedStyle(b).whiteSpace, h: b.getBoundingClientRect().height, lh: parseFloat(getComputedStyle(b).lineHeight) }; });
+    ok(lines.text.includes("\n\n• one\n• two"), "line breaks in a lab message should survive sending: " + JSON.stringify(lines.text));
+    ok(lines.ws === "pre-wrap" && lines.h > lines.lh * 3, `a lab message should show its line breaks (white-space ${lines.ws}, ${Math.round(lines.h)}px tall)`);
     await p.locator("#labback").tap(); await p.waitForSelector(".lx-list");
     await p.evaluate(() => { TAB = "showroom"; render(); });
   });

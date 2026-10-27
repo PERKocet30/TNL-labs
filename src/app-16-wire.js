@@ -1,3 +1,4 @@
+/* WIRE v1.1 — 2026-10-27: the lab message box grows and keeps line breaks; Enter sends on a keyboard, makes a new line on a phone (like DMs). */
 function wire(){
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=async()=>{
     if(PCOMPOSE&&b.dataset.tab!=="post"&&!await pcLeave())return;
@@ -174,9 +175,10 @@ function wire(){
   };
   sendb.onclick=go;
     const dr=$("#draft");
-    dr.onkeydown=e=>{if(e.key==="Enter"&&!MENTIONS)go()};
+    fitDraft(dr);
+    dr.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing&&!MENTIONS&&window.matchMedia("(hover:hover)").matches){e.preventDefault();go()}};
     let mt=null;
-    dr.oninput=async()=>{
+    dr.oninput=async()=>{fitDraft(dr);
       const upto=dr.value.slice(0,dr.selectionStart||dr.value.length);
       const m=/@([a-z0-9._]*)$/i.exec(upto);
       if(!m){if(MENTIONS){MENTIONS=null;render()}return}
