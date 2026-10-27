@@ -47,7 +47,7 @@ function nfRowHTML(r,i){
     :P.length===1?`<b data-u="${esc(a.username)}">${esc(a.displayName)}</b>`
     :`<b data-u="${esc(a.username)}">${esc(a.displayName)}</b>${P.length===2?" and ":", "}<b data-u="${esc(P[1].username)}">${esc(P[1].displayName)}</b>${P.length>2?` and ${P.length-2} other${P.length>3?"s":""}`:""}`;
   const pic=P.length>1?`<span class="nf-av two">${avHTML(P[1],"")}${avHTML(a,"")}</span>`
-    :`<span class="nf-av"${a?` data-u="${esc(a.username)}"`:""}>${a?avHTML(a,""):`<img class="av nf-sys" src="/icon-512.png" alt="">`}</span>`;
+    :`<span class="nf-av"${a?` data-u="${esc(a.username)}"`:""}>${a?avHTML(a,""):`<img class="av nf-sys" src="/icon-512.png?v=2" alt="">`}</span>`;
   const side=n.kind==="follow"&&a?(a.youFollow?`<button class="btn sm ghost nf-follow" disabled>Following</button>`:`<button class="btn sm nf-follow" data-nffollow="${esc(a.username)}">Follow back</button>`)
     :n.thumb?`<img class="nf-th" src="${esc(n.thumb)}" alt="" loading="lazy">`:"";
   return `<div class="nf-row${r.unread?" unread":""}" role="button" tabindex="0" data-nf="${i}"${n.kind==="event"&&!n.postId?` data-nev="1"`:""}>

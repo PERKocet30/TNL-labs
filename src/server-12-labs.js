@@ -115,5 +115,5 @@ function labCard(id, base) {
 app.get("/l/:slug/card.jpg", rateLimit({ max: 120, windowMs: 60000 }), (req, res) => {
   const id = LAB_BY_SLUG[String(req.params.slug || "").toLowerCase()];
   if (!id) return res.status(404).end();
-  evSendCard(res, labCard(id, baseUrl(req)), "/og-cover-v3-2026-09-23.jpg");
+  evSendCard(res, labCard(id, baseUrl(req)), "/labs-og.png");
 });
