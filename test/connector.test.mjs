@@ -107,7 +107,11 @@ try {
   t("a key can't open a member's messages", (await call("/api/admin/instagram", { token: KEY })).status === 401);
   t("a key can't read the mail log, backups or settings", (await Promise.all(["/api/admin/mail-log", "/api/admin/backups", "/api/admin/settings", "/api/admin/members.csv"].map((p) => call(p, { token: KEY })))).every((r) => r.status === 401));
   t("a key can't change anything", (await call("/api/admin/connectors/1", { method: "DELETE", token: KEY })).status === 401 && (await call("/api/admin/members/ana/suspend", { method: "POST", token: KEY })).status === 401);
-  t("a key can open an allowed admin route directly", (await call("/api/admin/overview", { token: KEY })).status === 200);
+  t("a key used straight from outside opens nothing, not even an allowed route", (await call("/api/admin/overview", { token: KEY })).status === 401 && (await call("/api/admin/people?q=ana", { token: KEY })).status === 401);
+  const evil = await call(`/oauth/authorize?client_id=${reg.client_id}&redirect_uri=${encodeURIComponent(CB)}&state=${encodeURIComponent("</script><script>alert(1)</script>")}&code_challenge=${challenge}&code_challenge_method=S256&response_type=code`);
+  const evilHtml = await evil.text();
+  t("a hostile state can't break out of the allow page's script", !evilHtml.includes("</script><script>alert(1)"));
+  t("the allow page can't be framed", evil.headers.get("x-frame-options") === "DENY");
 
   /* refresh rotates; revoke cuts off */
   const re = await (await call("/oauth/token", { method: "POST", form: true, body: { grant_type: "refresh_token", refresh_token: tok.refresh_token, client_id: reg.client_id } })).json();

@@ -67,7 +67,7 @@ async function mcpCall(key, name, args) {
   const a = args && typeof args === "object" ? args : {};
   let path;
   try { path = typeof tool[3] === "function" ? tool[3](a) : tool[3]; } catch (e) { return { content: [{ type: "text", text: e.message }], isError: true }; }
-  const r = await fetch(`http://127.0.0.1:${PORT}/api/admin/${path}`, { headers: { Authorization: "Bearer " + key.token, Accept: "application/json" }, signal: AbortSignal.timeout(25000) });
+  const r = await fetch(`http://127.0.0.1:${PORT}/api/admin/${path}`, { headers: { Authorization: "Bearer " + key.token, "X-LABS-MCP": MCP_INNER, Accept: "application/json" }, signal: AbortSignal.timeout(25000) });
   const body = await r.json().catch(() => ({ error: "not json" }));
   if (!r.ok) return { content: [{ type: "text", text: `LABS said ${r.status}: ${body.error || "no detail"}` }], isError: true };
   if (name === "admin_log" && Array.isArray(body.log)) body.log = body.log.map(({ detail, ...rest }) => rest);   // what was done, not what was typed

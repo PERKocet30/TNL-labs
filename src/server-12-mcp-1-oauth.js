@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · sign-in  v1.0 — 2026-10-27
+   LABS CONNECTOR · sign-in  v1.1 — 2026-10-27 (v1.1: a key only works from /mcp itself; the allow page escapes its data and can't be framed)
    Claude (and any other MCP client) reads the admin dashboard through
    /mcp (server-12-mcp-2-tools.js). This part is the key cabinet:
 
@@ -72,8 +72,13 @@ function mcpPathAllowed(path) {
 
 /* Called by auth() when a bearer token isn't a member session. A connector key
    stands in for its admin on GET + allowed admin paths only. */
+/* A key only opens admin routes when /mcp itself makes the call (mcpCall sends this
+   per-boot secret from inside the server), so every answer passes through mcpScrub.
+   A key used straight from the internet gets nothing. */
+const MCP_INNER = randomBytes(32).toString("hex");
 function mcpSession(token, req) {
   if (!/^labs_mcp_[0-9a-f]{64}$/.test(token || "")) return null;
+  if (req.get("x-labs-mcp") !== MCP_INNER) return null;
   if (req.method !== "GET" || !mcpPathAllowed(req.path)) return null;
   const t = db.prepare(`SELECT * FROM mcp_tokens WHERE hash = ? AND revoked = 0 AND expires_at > ?`).get(mcpHash(token), Date.now());
   if (!t) return null;
@@ -125,14 +130,16 @@ app.get("/oauth/authorize", mcpLimit, (req, res) => {
   const bad = !client ? "Unknown app." : !uris.includes(String(redirect_uri)) ? "That app's callback doesn't match." :
     response_type !== "code" ? "Only the code flow is supported." : code_challenge_method !== "S256" || !/^[A-Za-z0-9_-]{43,128}$/.test(String(code_challenge || "")) ? "PKCE (S256) is required." : "";
   if (bad) return res.status(400).send(lookPage({ title: "Can't connect — LABS", center: true, body: `${lookEyebrow("Connect")}<h1>Can't connect</h1><p class="p">${lookEsc(bad)}</p>` }));
+  res.set("X-Frame-Options", "DENY"); res.set("Content-Security-Policy", "frame-ancestors 'none'");
   const params = { client_id: String(client_id), redirect_uri: String(redirect_uri), state: String(state).slice(0, 500), code_challenge: String(code_challenge) };
   res.send(lookPage({ title: "Connect — LABS", center: true, body: `${lookEyebrow("Connect")}
 <h1>Let ${lookEsc(client.name)} read the admin dashboard?</h1>
 <p class="p">Read only. Numbers, orders, reports, systems. Never messages, emails or anything that could expose a member. You can disconnect it any time in Admin → Systems.</p>
+<p class="p"><b>Only allow if you just pressed Connect in your own Claude.</b></p>
 <div id="who" class="p"></div>
 <p><button id="ok" class="btn" style="display:none">Allow</button> <a id="in" class="btn" href="/admin" style="display:none">Sign in to LABS first</a></p>
 <script>
-(function(){var P=${JSON.stringify(params)};var tok=null;try{tok=localStorage.getItem("tnl-token")}catch(e){}
+(function(){var P=${JSON.stringify(params).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029")};var tok=null;try{tok=localStorage.getItem("tnl-token")}catch(e){}
 var ok=document.getElementById("ok"),inn=document.getElementById("in"),who=document.getElementById("who");
 if(!tok){inn.style.display="";who.textContent="Sign in to LABS as the admin in this browser, then come back to this page.";return}
 fetch("/api/me",{headers:{Authorization:"Bearer "+tok}}).then(function(r){return r.ok?r.json():null}).then(function(d){var me=d&&d.user;
