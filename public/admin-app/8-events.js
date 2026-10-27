@@ -1,4 +1,4 @@
-/* LABS admin — Events v1.8, 2026-10-15 (v1.8: entries go into a lab, named as the app names it; v1.7: a cover picture for shared links, or TNL's card; v1.6: the shared page header, events listed in a card; v1.5: the scoreboard picture buttons wait for voting instead of opening a dead page; v1.4: "Link to send people" up top —
+/* LABS admin — Events v1.9, 2026-10-27 (v1.9: the showcase pictures, every piece in one; v1.8: entries go into a lab, named as the app names it; v1.7: a cover picture for shared links, or TNL's card; v1.6: the shared page header, events listed in a card; v1.5: the scoreboard picture buttons wait for voting instead of opening a dead page; v1.4: "Link to send people" up top —
    tnllabs.com/tournament for the one on now, with Copy).
    Events v1.3, 2026-10-12 (the Tournament tab; v1.2: named for it;
    v1.3: the "entries are open" email to every member — its switch, a
@@ -102,6 +102,8 @@ function evDetailHTML(d) {
     ${stage ? `<a class="btn ghost sm" href="/e/${esc(e.slug)}/board.jpg?t=${Date.now()}" target="_blank">Scoreboard post (1080×1350)</a>
     <a class="btn ghost sm" href="/e/${esc(e.slug)}/board.jpg?size=story&t=${Date.now()}" target="_blank">Scoreboard Story (1080×1920)</a>`
     : `<button class="btn ghost sm" disabled title="The scoreboard pictures are made from votes">Scoreboard pictures — ready when voting opens</button>`}
+    <a class="btn ghost sm" href="/e/${esc(e.slug)}/showcase.png?t=${Date.now()}" target="_blank">Showcase post (1080×1350)</a>
+    <a class="btn ghost sm" href="/e/${esc(e.slug)}/showcase.png?size=story&t=${Date.now()}" target="_blank">Showcase Story (1080×1920)</a>
     <button class="btn ghost sm" data-evcopy="${esc(location.origin + "/e/" + e.slug)}">Copy event link</button></div>
     <p class="dim" style="font-size:12px;margin-top:10px">Post the scoreboard daily with a link sticker to the event. Entrants get their own Story card and vote link in the app (Share to Instagram); theirs are below too.</p></div>` : ""}
   ${evMailHTML(d.mail, e)}

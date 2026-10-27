@@ -215,6 +215,7 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 | `/e/:slug/board` · `/e/:slug/:entry` | a poll's public scoreboard, and one entry's vote link (its preview is the piece; Vote opens `/?e=slug&v=entry` in the app) |
 | `/e/:slug/card.jpg` | the tournament's link preview (1080×1080, square for Instagram's previews): its name, prize and stage over the latest entry, redrawn as the stage changes. `/e/:slug` uses it unless an admin chose a **Cover picture** in Admin → Tournament |
 | `/e/:slug/board.jpg` · `/e/:slug/:entry/story.jpg` | Instagram pictures: the scoreboard (1080×1350, `?size=story` 1080×1920) and an entrant's "Vote for my piece" Story |
+| `/e/:slug/showcase.png` | The showcase: every piece in the event in one picture, entry order, no votes (1080×1350, `?size=story` 1080×1920) — `server-10-events-4b-showcase.js` |
 | `/` | the app; its link preview uses `og-cover-v3-2026-09-23.jpg` |
 
 ---

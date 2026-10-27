@@ -215,12 +215,17 @@ try {
     j = await jpeg("/e/art/board.jpg?size=story");
     t("…and as a Story: 1080×1920", j.s === 200 && j.jpg && j.w === 1080 && j.h === 1920);
     t("the scoreboard and the entrant's Story wear the Story cards' look, not a white sheet", notWhite(j.b) && notWhite((await jpeg(`/e/art/${pu.h}/story.jpg`)).b));
+    j = await jpeg("/e/art/showcase.png");
+    t("the showcase: every piece in one lossless 1080×1350 picture", j.s === 200 && j.png && j.w === 1080 && j.h === 1350 && notWhite(j.b));
+    j = await jpeg("/e/art/showcase.png?size=story");
+    t("…and as a Story: 1080×1920", j.s === 200 && j.png && j.w === 1080 && j.h === 1920);
     t("no card has an empty spot where text failed", !/event card/.test(log));
   } else {
     const j = await jpeg(`/e/art/${pu.h}/story.jpg`);
     t("no ffmpeg here: the Story link falls back to the piece itself", j.s === 302);
   }
   t("cards only for real entries", (await jpeg("/e/art/99999/story.jpg")).s === 404 && (await jpeg("/e/poster/board.jpg")).s === 404);
+  t("no showcase for an event that isn't there", (await jpeg("/e/nope/showcase.png")).s === 404);
   r = await call("boss", "PATCH", `/api/admin/events/${pId}`, { freezeHours: 72 });
   v = await view("b", "art");
   t("the freeze: the board stops where it was, votes still count", v.board.frozen && v.board.total === 1 && (await vote("b", pu.k, true, "art")).s === 200 && (await view("b", "art")).board.total === 1);
