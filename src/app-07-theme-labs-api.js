@@ -195,6 +195,7 @@ async function req(path,opts={}){
   const h={"Content-Type":"application/json"};
   if(TOKEN)h.Authorization="Bearer "+TOKEN;
   try{h["X-TZ"]=Intl.DateTimeFormat().resolvedOptions().timeZone||""}catch(e){}
+  const dv=devId();if(dv)h["X-Device"]=dv;
   const r=await fetch(API+path,{method:opts.method||"GET",headers:h,body:opts.body?JSON.stringify(opts.body):undefined});
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(d.error||("HTTP "+r.status));
@@ -205,6 +206,7 @@ const api={
   usernameCheck:u=>req("/api/auth/username?u="+encodeURIComponent(u)),
   login:b=>req("/api/auth/login",{method:"POST",body:b}),
   me:()=>req("/api/me"),
+  setEmail:(email)=>req("/api/auth/email",{method:"POST",body:{email}}),
   updateMe:b=>req("/api/me",{method:"PATCH",body:b}),
   resend:()=>req("/api/auth/resend",{method:"POST"}),
   authStatus:()=>req("/api/auth/status"),

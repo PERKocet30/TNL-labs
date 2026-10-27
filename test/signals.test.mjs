@@ -58,7 +58,7 @@ try {
   console.log("\nJOINING");
   const k1 = await join_("kat", { ip: "86.19.105.225", country: "GB", ua: IPHONE_IG, city: "Leeds", region: "England", tz: "Europe/London" });
   const k2 = await join_("tracy", { ip: "86.19.105.225", country: "GB", ua: ANDROID });
-  const k3 = await join_("zed", { ip: "203.0.113.9", country: "DE", ua: HEADLESS, secs: 6, domain: "mailinator.com", city: "Frankfurt am Main", region: "Hesse", tz: "America/New_York" });
+  const k3 = await join_("zed", { ip: "203.0.113.9", country: "DE", ua: HEADLESS, secs: 6, domain: "protonmail.com", city: "Frankfurt am Main", region: "Hesse", tz: "America/New_York" });
   await settle();
   t("three people join (the routes behave as before)", k1.s === 200 && k2.s === 200 && k3.s === 200);
   let s = await sig("kat");
@@ -68,8 +68,12 @@ try {
   t("and how long Join took", s.joined.joinSecs === 95 && s.joined.firstSeen === now - 600000);
   t("the address itself is never shown — a network label instead", /^Network [0-9a-f]{4}$/.test(s.joined.network) && !JSON.stringify(s).includes("86.19.105.225"));
   t("someone on the same network is listed, and it's a reason to look", s.sharing.length === 1 && s.sharing[0].username === "tracy" && s.flags.some((f) => /Shares a network with 1 other account/.test(f)));
+  // 2026-10-27: a throwaway inbox can't join any more (server-01-honest); one from before the rule is still flagged
+  t("a throwaway inbox is refused at Join", (await join_("zed2", { ip: "203.0.113.10", domain: "mailinator.com" })).s === 400);
+  { const { DatabaseSync } = await import("node:sqlite"); const w2 = new DatabaseSync(join(DATA, "tnl.db")); w2.prepare(`UPDATE users SET email = 'zed@mailinator.com' WHERE username = 'zed'`).run(); w2.close(); }
   const z = await sig("zed");
   t("a bot-shaped join is called out: seconds on Join, a throwaway inbox, an automated browser", z.flags.some((f) => /Joined in 6 seconds/.test(f)) && z.flags.some((f) => /throwaway/.test(f)) && z.flags.some((f) => /automated/.test(f)) && z.joined.device === "Linux · Chrome · automated");
+  { const { DatabaseSync } = await import("node:sqlite"); const w2 = new DatabaseSync(join(DATA, "tnl.db")); w2.prepare(`UPDATE users SET email = 'zed@protonmail.com' WHERE username = 'zed'`).run(); w2.close(); }   // back to a real one: a throwaway can't vote (server-01-honest)
   t("someone different stands alone", z.sharing.length === 0);
   t("location: the city and region Cloudflare names, and the phone's own time zone", s.joined.place === "Leeds, England" && s.joined.tz === "Europe/London" && z.joined.place === "Frankfurt am Main, Hesse");
   t("a phone clock on another continent from its network is called out (VPN or proxy)", z.flags.some((f) => /America\/New_York.*network is in DE/.test(f)) && !s.flags.some((f) => /clock/.test(f)));
