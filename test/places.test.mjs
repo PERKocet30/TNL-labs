@@ -115,7 +115,7 @@ try {
   t("Visual is every visual art: painting, drawing, illustration, sculpture, digital art, design, photo, film", ["painting", "drawing", "illustration", "sculpture", "digitalart", "graphicdesign", "photography", "film"].every((x) => r.j.tags.pharmacy.includes(x)));
   t("then what people actually use there (#poster in Visual, #zine in General)", r.j.tags.pharmacy.includes("poster") && r.j.tags.hq.includes("zine"));
   t("old room names that say nothing (#creators, #chat) aren't shown as a genre's tags", !r.j.tags.pharmacy.includes("creators") && !r.j.tags.culture.includes("chat"));
-  t("an empty lab still says what it's for (Fashion)", JSON.stringify(r.j.tags.fashion.slice(0, 3)) === JSON.stringify(["streetwear", "clothingdesign", "drops"]));
+  t("an empty lab still says what it's for (Fashion)", JSON.stringify(r.j.tags.fashion.slice(0, 5)) === JSON.stringify(["streetwear", "clothingdesign", "styling", "modeling", "drops"]));
   t("for members, like the labs", (await call(null, "GET", "/api/labs/tags")).s === 401);
   t("Open and Pulse are gone for now", (await call("dee", "GET", "/api/labs/pharmacy/open")).s === 404 && (await call("dee", "GET", "/api/labs/pharmacy/pulse")).s === 404);
 

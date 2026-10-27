@@ -1,6 +1,6 @@
 
 /* ================================================================
-   PLACES (Work pages back in time, 2026-10-21) v1.4 — 2026-10-12 (v1.4: the tournament lives in its lab — Work
+   PLACES v1.5 — 2026-10-27 (Fashion #tags add styling and modeling). (Work pages back in time, 2026-10-21) v1.4 — 2026-10-12 (v1.4: the tournament lives in its lab — Work
    gets a Tournament chip with every entry, no #tag needed, and each entry
    is marked; "make it so the art event gets posted in visuals so you
    don't need a specific hashtag").
@@ -155,7 +155,7 @@ app.get("/api/labs/:lab/work", auth, (req, res) => {
    there. Generic room names don't count as tags here. (v1.1, 2026-10-09) */
 const GENRE_TAGS = {
   hq: ["collab", "intro", "wip"], pharmacy: ["painting", "graphicdesign", "photography", "illustration", "drawing", "digitalart", "sculpture", "film"], culture: ["beats", "feedback", "tracks"],
-  fashion: ["streetwear", "clothingdesign", "drops"], akatsuki: ["manga", "anime", "ideas"], casino: ["news", "magazine", "promos"],
+  fashion: ["streetwear", "clothingdesign", "styling", "modeling", "drops"], akatsuki: ["manga", "anime", "ideas"], casino: ["news", "magazine", "promos"],
   tna: ["opportunities", "coding", "finance"],
 };
 const PLAIN_TAGS = new Set(["chat", "general", "creators"]);

@@ -1,5 +1,5 @@
 /* ================================================================
-   LAB PAGES v1.2 — 2026-10-15 (v1.2: each lab's link shows its own card, /l/:slug/card.jpg). v1.1 (links name the lab: /l/visual, /l/music; old /l/<id> links forward).
+   LAB PAGES v1.3 — 2026-10-27 (Fashion's line covers modeling and styling). v1.2 — 2026-10-15 (v1.2: each lab's link shows its own card, /l/:slug/card.jpg). v1.1 (links name the lab: /l/visual, /l/music; old /l/<id> links forward).
    v1.0 — 2026-10-15. "Every lab to have a share button with
    captions that describe what to do inside each lab… a brief explanation
    I can send to people."
@@ -15,7 +15,7 @@ const LAB_PITCH = {
   hq: "Say hi, show what you're working on and find people to make things with.",
   pharmacy: "Upload your art: painting, drawing, design, photography, film and edits. Get seen and get feedback.",
   culture: "Upload your songs and beats, build playlists, and get ears on your works in progress.",
-  fashion: "Post your designs and drops: concepts, finished pieces and what's releasing next.",
+  fashion: "Post your designs, styling and modeling: fits, shoots, finished pieces and what's dropping next.",
   akatsuki: "Share your anime and manga art, panels and ideas, and talk about what you're watching.",
   casino: "Post what's happening: news, features, and promos for your next release.",
   tna: "Find gigs and open calls, talk rates and money, and show the sites and apps you build.",
