@@ -88,7 +88,7 @@ try {
   const fresh = { s: 200, j: { token: "tok-fresh1" } };
   const r5 = await fetch(B + "/api/events/art/vote", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + fresh.j.token, "X-Device": "abcdefabcdefabcdefab" }, body: JSON.stringify({ entryId, on: true }) });
   const j5 = await r5.json();
-  t("a brand-new account can't vote yet, and is told to set up meanwhile", fresh.s === 200 && r5.status === 403 && /^Set up your account first — photo, colour, a line about you\. Voting opens for you in 5 minutes\.$/.test(j5.error));
+  t("a brand-new account can't vote yet, and is just told to finish its account", fresh.s === 200 && r5.status === 403 && j5.error === "Finish setting up your account to vote.");
   { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db")); w.prepare(`UPDATE users SET created_at = created_at - 301000, email_verified = 1 WHERE username = 'fresh1'`).run(); w.close(); }
   const r6 = await fetch(B + "/api/events/art/vote", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + fresh.j.token, "X-Device": "abcdefabcdefabcdefab" }, body: JSON.stringify({ entryId, on: true }) });
   t("five minutes on, the vote goes through", r6.status === 200);
