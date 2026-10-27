@@ -64,7 +64,7 @@ try {
   t("…the cover, as a full address", /^http:\/\/[^/]+\/uploads\/cover1\.jpg$/.test(meta(sp.html, "og:image") || ""));
   t("it plays right there", sp.html.includes('<audio controls preload="none" src="/uploads/NightDrive.mp3"'));
   t("Open in the app → their Music tab, this song", sp.html.includes(`href="/?u=sky&amp;s=${older}"`));
-  t("no cover: their photo or the LABS icon instead", /icon-white-512\.png|\/uploads\//.test(meta((await page(`/s/${newer}`)).html, "og:image") || ""));
+  t("no cover: their photo or the LABS logo instead", /labs-logo\.png|\/uploads\//.test(meta((await page(`/s/${newer}`)).html, "og:image") || ""));
   t("a missing song, or a suspended member's: not found", (await page("/s/999999")).s === 404 && (await page(`/s/${goneSong}`)).s === 404);
 
   console.log("\nTHE APP DRAWS IT — ITS OWN MUSIC TAB, NOT THE VISUAL GRID (v1.1)");

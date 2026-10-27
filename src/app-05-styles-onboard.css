@@ -10,7 +10,7 @@
 .gx-body.center{justify-content:flex-start;text-align:center}
 .gx-body.center::before,.gx-body.center::after{content:"";flex:1 1 0;min-height:12px}
 .gx-body.long{text-align:center}
-.gx-mk{display:block;height:28px;width:auto;margin:0 auto 14px}
+.gx-mk{display:block;height:34px;width:auto;margin:0 auto 14px}
 .gx-h{font-size:24px;margin:4px 0 8px}
 .gx-p{max-width:330px;margin-left:auto;margin-right:auto}
 .gxf-in,.gx-out,.gx-people,.gxf-ta{text-align:left}
