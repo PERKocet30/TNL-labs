@@ -34,7 +34,7 @@ function evVoteBlock(ev, user, stage, entryId) {
   /* 2026-10-27: "New accounts can't instantly vote — 5 minute wait… while they set up account." A real person spends it on
      the joining steps (photo, colour, bio, people) and barely notices; a burst of accounts made to vote has to sit. */
   const waitLeft = EV_NEW_VOTE_WAIT_MS - (Date.now() - user.created_at);
-  if (waitLeft > 0) { const m = Math.ceil(waitLeft / 60000); return `Set up your account first — photo, colour, a line about you. Voting opens for you in ${m} minute${m === 1 ? "" : "s"}.`; }
+  if (waitLeft > 0) { return "Finish setting up your account to vote."; }   // no timer shown (2026-10-27)
   const days = Math.max(0, ev.min_account_days || 0);
   if (Date.now() - user.created_at < days * EV_DAY) return `Accounts need to be ${days} day${days === 1 ? "" : "s"} old to vote.`;
   if (stage === "final" && evJudges(ev.id).some((j) => j.id === user.id)) return "Judges score the final instead of voting.";
