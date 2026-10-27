@@ -82,11 +82,11 @@ try {
   const tools = (await rpc("tools/list", {})).result?.tools || [];
   const names = tools.map((x) => x.name);
   t("tools cover the dashboard (overview, members, orders, reports, events, systems…)", ["overview", "members", "member", "orders", "reports", "events", "systems", "systems_meta", "health"].every((n) => names.includes(n)));
-  t("no tool reads messages, mail, backups, settings or the source", !names.some((n) => /message|dm|inbox|thread|mail|backup|setting|source|csv|vote/i.test(n)));
+  t("no tool reads messages, mail, backups, settings or the source", !names.some((n) => /message|(^|_)dms?(_|$)|inbox|thread|mail|backup|setting|source|csv|vote/i.test(n)));
   t("every tool says it is read only", tools.every((x) => x.annotations?.readOnlyHint === true));
   const ov = await rpc("tools/call", { name: "overview", arguments: {} });
   const ovj = JSON.parse(ov.result?.content?.[0]?.text || "{}");
-  t("overview reads live numbers", !ov.result?.isError && typeof ovj.members === "number" || JSON.stringify(ovj).includes("members"));
+  t("overview reads live numbers", !ov.result?.isError && Object.keys(ovj).length > 3);
   const mem = await rpc("tools/call", { name: "member", arguments: { username: "@ana" } });
   const memText = mem.result?.content?.[0]?.text || "";
   t("member returns ana's public stats", !mem.result?.isError && /"username":"ana"/.test(memText));

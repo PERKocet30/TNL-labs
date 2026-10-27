@@ -130,17 +130,17 @@ app.get("/oauth/authorize", mcpLimit, (req, res) => {
 <h1>Let ${lookEsc(client.name)} read the admin dashboard?</h1>
 <p class="p">Read only. Numbers, orders, reports, systems. Never messages, emails or anything that could expose a member. You can disconnect it any time in Admin → Systems.</p>
 <div id="who" class="p"></div>
-<p><button id="ok" class="btn" hidden>Allow</button> <a id="in" class="btn" href="/admin" hidden>Sign in to LABS first</a></p>
+<p><button id="ok" class="btn" style="display:none">Allow</button> <a id="in" class="btn" href="/admin" style="display:none">Sign in to LABS first</a></p>
 <script>
 (function(){var P=${JSON.stringify(params)};var tok=null;try{tok=localStorage.getItem("tnl-token")}catch(e){}
 var ok=document.getElementById("ok"),inn=document.getElementById("in"),who=document.getElementById("who");
-if(!tok){inn.hidden=false;who.textContent="Sign in to LABS as the admin in this browser, then come back to this page.";return}
+if(!tok){inn.style.display="";who.textContent="Sign in to LABS as the admin in this browser, then come back to this page.";return}
 fetch("/api/me",{headers:{Authorization:"Bearer "+tok}}).then(function(r){return r.ok?r.json():null}).then(function(d){var me=d&&d.user;
-if(!me||!me.isAdmin){inn.hidden=false;who.textContent="This needs the admin account.";return}
-who.textContent="Signed in as @"+me.username+".";ok.hidden=false;
+if(!me||!me.isAdmin){inn.style.display="";who.textContent="This needs the admin account.";return}
+who.textContent="Signed in as @"+me.username+".";ok.style.display="";
 ok.onclick=function(){ok.disabled=true;fetch("/oauth/approve",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+tok},body:JSON.stringify(P)})
 .then(function(r){return r.json()}).then(function(d){if(d.redirect)location.href=d.redirect;else{who.textContent=d.error||"Something went wrong.";ok.disabled=false}})}})
-.catch(function(){inn.hidden=false;who.textContent="Couldn't check who's signed in."})})();
+.catch(function(){inn.style.display="";who.textContent="Couldn't check who's signed in."})})();
 </script>` }));
 });
 app.post("/oauth/approve", auth, admin, mcpLimit, (req, res) => {
