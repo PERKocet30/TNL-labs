@@ -55,13 +55,27 @@ function wireEvent(){
   wireEvPoll();
 }
 
-async function evPick(id,btn){
+/* A brand-new account's vote is held, not refused (2026-10-27): the watch saw new members tap Vote again and again
+   at "Finish setting up your account to vote." — one had already added a photo, a bio and a piece, and left without
+   voting. The message stays the same (no timer); the vote waits on the button and goes in by itself once allowed. */
+let EVWAIT=null;
+async function evPick(id,btn,held){
   if(!ME){if(!EVFOCUS)EVFOCUS=id;evRemember();return needAccount("Join to vote.")}
+  if(!held&&(EVWAIT&&EVWAIT.id===id||btn&&btn.classList.contains("busy")))return;   // already on its way: more taps do nothing
   const on=!EV.me.myVotes.includes(id);
   if(btn)btn.classList.add("busy");
-  try{const d=await evApi.vote(EVSLUG,id,on);EV.me.myVotes=d.myVotes;if(d.board)EV.board=d.board;render();if(on&&navigator.vibrate)navigator.vibrate(8)}
-  catch(e){toast(e.message);if(/confirm your email/i.test(e.message||"")){if(!EVFOCUS)EVFOCUS=id;evRemember()}if(btn)btn.classList.remove("busy")}
+  try{const d=await evApi.vote(EVSLUG,id,on);const was=EVWAIT;EVWAIT=null;EV.me.myVotes=d.myVotes;if(d.board)EV.board=d.board;render();if(on&&navigator.vibrate)navigator.vibrate(8);if(was)loadEvent()}
+  catch(e){
+    if(on&&/finish setting up/i.test(e.message||"")){
+      const n=held&&EVWAIT?EVWAIT.n+1:1;if(!held)toast(e.message);
+      clearTimeout(EVWAIT&&EVWAIT.t);EVWAIT=n>14?null:{id,slug:EVSLUG,n,t:setTimeout(()=>{const w=EVWAIT;
+        if(w&&TAB==="event"&&EVSLUG===w.slug)evPick(w.id,document.querySelector('[data-evpick="'+w.id+'"]'),true);else EVWAIT=null},EV_HOLD_MS)};
+      if(!EVWAIT&&btn)btn.classList.remove("busy");
+      return}
+    if(held)EVWAIT=null;
+    toast(e.message);if(/confirm your email/i.test(e.message||"")){if(!EVFOCUS)EVFOCUS=id;evRemember()}if(btn)btn.classList.remove("busy")}
 }
+let EV_HOLD_MS=30000;   // let: the tap-through shortens it
 async function evScore(id,n){
   try{await evApi.score(EVSLUG,id,n);EV.me.myScores[id]=n;render()}catch(e){toast(e.message)}
 }

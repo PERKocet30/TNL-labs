@@ -1665,8 +1665,21 @@ console.log("\nMEMBER · PHONE");
     await p.waitForSelector(".ev-focus [data-evpick]", { timeout: 6000 });
     ok(await p.evaluate(() => EVFOCUS && location.search === ""), "the vote link didn't open that piece");
     const y0 = await p.evaluate(() => document.querySelector("#evscroll").scrollTop);
+    /* 2026-10-27: a brand-new account is told "Finish setting up your account to vote." — new members tapped Vote
+       again and again, and one left without voting. The vote now waits on the button and goes in by itself. */
+    let posts = 0, held = 2;
+    await p.route("**/api/events/e2e-art/vote", (r) => { posts++;
+      if (held-- > 0) return r.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ error: "Finish setting up your account to vote." }) });
+      return r.continue(); });
+    await p.evaluate(() => { EV_HOLD_MS = 400; });
     await p.locator(".ev-focus [data-evpick]").tap();
-    await p.waitForFunction((id) => EV.me.myVotes.includes(id) && EV.board.rows.find((r) => r.entryId === id).votes === 1, fid, { timeout: 4000 });
+    await p.waitForTimeout(150);
+    ok(await p.locator(".ev-focus .ev-vote.busy").count() === 1, "the held vote doesn't show it's on its way");
+    for (let k = 0; k < 4; k++) await p.locator(".ev-focus [data-evpick]").tap({ force: true });
+    await p.waitForFunction((id) => EV.me.myVotes.includes(id) && EV.board.rows.find((r) => r.entryId === id).votes === 1, fid, { timeout: 6000 });
+    ok(posts === 3, `${posts} vote calls: more taps should do nothing while it waits (1 tap + 2 quiet tries)`);
+    await p.unroute("**/api/events/e2e-art/vote"); await p.evaluate(() => { EV_HOLD_MS = 30000; });
+    await p.waitForTimeout(300);
     ok(await p.locator(".ev-focus .ev-vote.on").count() === 1 && await p.locator(`.ev-row .ev-vote.on`).count() === 1, "the button and the board row should both say Voted");
     ok(await p.evaluate(() => document.querySelector("#evscroll").scrollTop) === y0, "voting jumped the screen");
     ok(await p.locator(".ev-row .ev-mine-s").count() === 1, "your own piece should say Yours, not Vote");

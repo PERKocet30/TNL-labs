@@ -61,7 +61,7 @@ function evThumb(e,opts={}){
   const mine=EV.me.entry&&EV.me.entry.id===e.id, picked=EV.me.myVotes.includes(e.id);
   return `<div class="ev-th ${picked?"on":""} ${opts.big?"big":""}">
     <img ${imgAttrs({url:e.imageUrl,thumb:e.thumbUrl,w:e.w,h:e.h,tw:e.tw,sm:e.sm,sw:e.sw},!!opts.big)} alt="" ${opts.big?`style="aspect-ratio:${e.w&&e.h?e.w+"/"+e.h:"4/5"}"`:`loading="lazy"`} data-evzoom="${esc(e.imageUrl)}">
-    ${opts.pick&&!mine?`<button class="ev-pick" data-evpick="${e.id}" aria-label="${picked?"Take back":"Pick"}">${picked?DI.check:DI.plus}</button>`:""}
+    ${opts.pick&&!mine?`<button class="ev-pick${EVWAIT&&EVWAIT.id===e.id?" busy":""}" data-evpick="${e.id}" aria-label="${picked?"Take back":"Pick"}">${picked?DI.check:DI.plus}</button>`:""}
     ${mine?`<span class="ev-mine">Yours</span>`:""}
     ${opts.seed&&e.seed?`<span class="ev-seed">${e.seed}</span>`:`<button class="ev-shr" data-evshr="${e.id}" aria-label="Share @${esc(e.author.username)}'s piece">${DI.out}</button>`}
     <div class="ev-by" data-u="${esc(e.author.username)}">@${esc(e.author.username)}</div></div>`;
