@@ -42,7 +42,7 @@ app.get("/api/admin/people/:username/signals", auth, admin, (req, res) => {
   const domain = String(u.email || "").split("@")[1]?.toLowerCase() || "";
   const flags = [];
   if (j && j.join_secs != null && j.join_secs < 25) flags.push(`Joined in ${j.join_secs} seconds — faster than a person usually types.`);
-  if (SIG_THROWAWAY.has(domain)) flags.push(`Email from a throwaway inbox service (${domain}).`);
+  if (SIG_THROWAWAY.has(domain) || emailThrowaway(u.email)) flags.push(`Email from a throwaway inbox service (${domain}).`);
   if (/automated/.test(j?.device || "") || seen.some((s) => /automated/.test(s.device))) flags.push("Used an automated browser or a script, not a phone or a normal browser.");
   if (sharing.length) flags.push(`Shares a network with ${sharing.length} other account${sharing.length === 1 ? "" : "s"}.`);
   const off = [j, ...seen].find((r) => r && sigTzOff(r.country, r.tz));

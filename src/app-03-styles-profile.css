@@ -65,6 +65,7 @@ textarea.in{resize:vertical;line-height:1.5}
 /* verification + publish */
 .verifybar{display:flex;align-items:center;gap:9px;background:color-mix(in srgb, var(--accent-fill) 10%, transparent);border-bottom:1px solid color-mix(in srgb, var(--accent-fill) 30%, transparent);padding:9px 15px;font-size:12px;color:var(--tx2);flex-wrap:wrap}
 .verifybar b{color:var(--tx)}
+.vb-in{flex:1 1 160px;min-width:0;font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--tx)}
 /* guest mode */
 .wall{padding:44px 22px 60px;max-width:520px;margin:0 auto;text-align:center}
 .wall-mark{font-size:40px;font-weight:700;letter-spacing:-.06em;color:var(--green);line-height:1;margin-bottom:10px}

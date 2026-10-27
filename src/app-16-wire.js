@@ -51,6 +51,8 @@ function wire(){
   ["#joinBtn","#joinBtn2","#joinBtn3"].forEach(id=>{const b=$(id);if(b)b.onclick=()=>{GATE="join";GATEWHY="";render()}});
   ["#loginBtn","#loginBtn2","#loginBtn3"].forEach(id=>{const b=$(id);if(b)b.onclick=()=>{GATE="login";GATEWHY="";render()}});
   wirePanels();
+  const fx=$("#fixemailb");if(fx)fx.onclick=async()=>{const v=($("#fixemail")?.value||"").trim();if(!v)return toast("Enter your email");
+    try{const d=await api.setEmail(v);await refreshMe();if(d.verifyUrl)VERIFYURL=d.verifyUrl;toast("Saved — check "+v+" to confirm it");render()}catch(e){toast(e.message)}};
   const rs=$("#resendb");if(rs)rs.onclick=async()=>{
     try{const d=await api.resend();
       if(d.already){await refreshMe();toast("Already verified — you're good");return render()}

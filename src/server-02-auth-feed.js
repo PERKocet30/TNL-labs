@@ -18,6 +18,10 @@ function auth(req, res, next) {
     db.prepare(`DELETE FROM sessions WHERE user_id = ?`).run(req.user.id);
     return res.status(403).json({ error: "This account is suspended.", suspended: true });
   }
+  /* 2026-10-27: an account on a throwaway email (server-01-honest) can look, but not post, vote, like or
+     message until it has a real one — "any accounts not meeting standards have to update". */
+  if (req.method !== "GET" && emailThrowaway(req.user.email) && !/^\/api\/auth\/(email|logout|resend)$/.test(req.path))
+    return res.status(403).json({ error: "Add a real email address first — temporary inboxes can't post, vote or like.", fixEmail: true });
   next();
 }
 // optional auth: attaches req.user if a valid token is present, else continues
@@ -83,6 +87,7 @@ app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (
   if (!/^[a-z0-9._]{2,20}$/.test(username || "") || username.endsWith(".")) return res.status(400).json({ error: "bad username" });
   if (!displayName?.trim()) return res.status(400).json({ error: "display name required" });
   if (!/^\S+@\S+\.\S+$/.test(email || "")) return res.status(400).json({ error: "bad email" });
+  if (emailThrowaway(email)) return res.status(400).json({ error: "Use a real email address — temporary inboxes can't join." });   // server-01-honest
   if (!tk) { const pwBad = pwProblem(password, { username, email }); if (pwBad) return res.status(400).json({ error: pwBad }); }   // server-01-passwords
   if (q.userByName.get(username)) return res.status(409).json({ error: "username taken" });
   if (db.prepare(`SELECT 1 FROM users WHERE email = ?`).get(email.trim()))
@@ -200,7 +205,19 @@ app.post("/api/auth/logout", auth, (req, res) => {
   res.json({ ok: true });
 });
 
-app.get("/api/me", auth, (req, res) => res.json({ user: publicUser(req.user) }));
+app.get("/api/me", auth, (req, res) => res.json({ user: { ...publicUser(req.user), fixEmail: emailThrowaway(req.user.email) } }));
+/* A real email in place of a throwaway one (or any change of address): confirmed again from the new inbox. */
+app.post("/api/auth/email", auth, rateLimit({ max: 4, windowMs: 900000, key: "user" }), async (req, res) => {
+  const email = String(req.body?.email || "").trim();
+  if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: "Enter a valid email address." });
+  if (emailThrowaway(email)) return res.status(400).json({ error: "Use a real email address — temporary inboxes can't join." });
+  if (email.toLowerCase() === String(req.user.email).toLowerCase()) return res.status(400).json({ error: "That's already your email." });
+  if (db.prepare(`SELECT 1 FROM users WHERE email = ? COLLATE NOCASE AND id != ?`).get(email, req.user.id)) return res.status(409).json({ error: "There's already an account with this email." });
+  db.prepare(`UPDATE users SET email = ?, email_verified = 0 WHERE id = ?`).run(email, req.user.id);
+  const mail = await issueVerification({ ...req.user, email }, req);
+  console.log(`[auth] @${req.user.username} changed email`);
+  res.json({ ok: true, email, mailSent: mail.sent, verifyUrl: mail.url });
+});
 
 // Look around unverified; contribute only once the email is confirmed.
 /* An account is full access. Confirmation mail still goes out and still

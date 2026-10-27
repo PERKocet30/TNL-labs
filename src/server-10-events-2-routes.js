@@ -196,6 +196,13 @@ app.delete("/api/events/:slug/entry", auth, (req, res) => {
   res.json(evPublic(ev, req.user));
 });
 
+try { db.exec(`ALTER TABLE event_votes ADD COLUMN device TEXT NOT NULL DEFAULT ''`); } catch {}   // 2026-10-27: which phone cast it (server-01-honest)
+/* One vote per phone per piece per day: another account on this same phone already voted for this piece today. */
+function evSamePhone(ev, stage, entryId, userId, device) {
+  if (!device) return false;
+  return !!db.prepare(`SELECT 1 FROM event_votes WHERE event_id = ? AND stage = ? AND entry_id = ? AND device = ? AND voter_id != ? AND created_at > ?`)
+    .get(ev.id, stage, entryId, device, userId, Date.now() - EV_DAY);
+}
 app.post("/api/events/:slug/vote", auth, rateLimit({ max: 120, windowMs: 60000, key: "user" }), (req, res) => {
   const ev = evOr404(req, res); if (!ev) return;
   tickEvent(ev);
@@ -206,8 +213,10 @@ app.post("/api/events/:slug/vote", auth, rateLimit({ max: 120, windowMs: 60000, 
   if (block) return res.status(403).json({ error: block });
   const play = evInPlay(ev, stage);
   if (!play.ids.has(entryId)) return res.status(400).json({ error: "That piece isn't in this round." });
+  const device = deviceOf(req);
+  if (on && evSamePhone(ev, stage, entryId, req.user.id, device)) return res.status(403).json({ error: "This phone already voted for this piece today. One vote per phone." });
   const del = db.prepare(`DELETE FROM event_votes WHERE event_id = ? AND stage = ? AND voter_id = ? AND entry_id = ?`);
-  const add = db.prepare(`INSERT OR IGNORE INTO event_votes (event_id, stage, matchup, entry_id, voter_id, created_at) VALUES (?,?,?,?,?,?)`);
+  const add = db.prepare(`INSERT OR IGNORE INTO event_votes (event_id, stage, matchup, entry_id, voter_id, created_at, device) VALUES (?,?,?,?,?,?,?)`);
   db.exec("BEGIN");
   try {
     if (ev.format === "poll") {
@@ -218,7 +227,7 @@ app.post("/api/events/:slug/vote", auth, rateLimit({ max: 120, windowMs: 60000, 
         const today = db.prepare(`SELECT entry_id FROM event_votes WHERE event_id = ? AND stage = ? AND matchup = ? AND voter_id = ?`).all(ev.id, stage, day, req.user.id).map((r) => r.entry_id);
         if (!today.includes(entryId)) {
           if (today.length >= ev.picks) { db.exec("ROLLBACK"); return res.status(400).json({ error: ev.picks === 1 ? "You've voted today. Come back tomorrow — it resets at midnight ET." : `You've used today's ${ev.picks} votes. They reset at midnight ET.` }); }
-          add.run(ev.id, stage, day, entryId, req.user.id, Date.now());
+          add.run(ev.id, stage, day, entryId, req.user.id, Date.now(), device);
         }
       }
     } else if (!on) del.run(ev.id, stage, req.user.id, entryId);
@@ -226,14 +235,14 @@ app.post("/api/events/:slug/vote", auth, rateLimit({ max: 120, windowMs: 60000, 
       const used = db.prepare(`SELECT COUNT(*) n FROM event_votes WHERE event_id = ? AND stage = ? AND voter_id = ?`).get(ev.id, stage, req.user.id).n;
       const already = db.prepare(`SELECT 1 FROM event_votes WHERE event_id = ? AND stage = ? AND voter_id = ? AND entry_id = ?`).get(ev.id, stage, req.user.id, entryId);
       if (!already && used >= ev.picks) { db.exec("ROLLBACK"); return res.status(400).json({ error: `You've used all ${ev.picks} picks. Take one back first.` }); }
-      add.run(ev.id, stage, 0, entryId, req.user.id, Date.now());
+      add.run(ev.id, stage, 0, entryId, req.user.id, Date.now(), device);
     } else if (stage === "final") {
       db.prepare(`DELETE FROM event_votes WHERE event_id = ? AND stage = 'final' AND voter_id = ?`).run(ev.id, req.user.id);
-      add.run(ev.id, stage, 0, entryId, req.user.id, Date.now());
+      add.run(ev.id, stage, 0, entryId, req.user.id, Date.now(), device);
     } else {
       const slot = play.slotOf.get(entryId);
       db.prepare(`DELETE FROM event_votes WHERE event_id = ? AND stage = ? AND voter_id = ? AND matchup = ?`).run(ev.id, stage, req.user.id, slot);
-      add.run(ev.id, stage, slot, entryId, req.user.id, Date.now());
+      add.run(ev.id, stage, slot, entryId, req.user.id, Date.now(), device);
     }
     db.exec("COMMIT");
   } catch (e) { db.exec("ROLLBACK"); throw e; }

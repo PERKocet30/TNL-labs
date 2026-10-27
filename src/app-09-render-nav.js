@@ -23,7 +23,9 @@ function render(){
   app.innerHTML=`
     ${W?`<aside class="side">${topHTML()}${navHTML()}</aside>`:topHTML()}
     ${SITE.announcement?`<div class="announce">${rich(SITE.announcement)}</div>`:""}
-    ${(ME&&!ME.emailVerified)?`<div class="verifybar">
+    ${(ME&&ME.fixEmail)?`<div class="verifybar"><span>Your email is a temporary inbox. Add a real one to post, vote and like.</span>
+      <input class="vb-in" id="fixemail" type="email" placeholder="you@email.com" autocomplete="email"><button class="vb-btn" id="fixemailb">Save</button></div>`
+    :(ME&&!ME.emailVerified)?`<div class="verifybar">
       <span>Check <b>${esc(ME.email)}</b> to confirm your account. You can look around meanwhile.</span>
       <button class="vb-btn" id="resendb">Resend</button>
       ${VERIFYURL?`<a class="vb-btn" href="${esc(VERIFYURL)}" target="_blank">Open link</a>`:""}
