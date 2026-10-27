@@ -1,5 +1,5 @@
 /* ================================================================
-   PLACES v1.9 — 2026-10-21 (the Work grid is the archive: month markers, Older; the archive is a chip, no search); v1.8 — 2026-10-20 (the #tag page's head from the screen kit); v1.7 — 2026-10-15 (v1.7: links name the lab — /l/visual, LAB_SLUG). v1.6: each lab says what to do there, and has
+   PLACES v1.10 — 2026-10-27 (Fashion covers modeling and styling too); v1.9 — 2026-10-21 (the Work grid is the archive: month markers, Older; the archive is a chip, no search); v1.8 — 2026-10-20 (the #tag page's head from the screen kit); v1.7 — 2026-10-15 (v1.7: links name the lab — /l/visual, LAB_SLUG). v1.6: each lab says what to do there, and has
    a Share — LAB_PITCH, shareLab; a shared /l/ link lands in the lab).
    v1.5 — 2026-10-12 (v1.5: the tournament running in a lab is a
    chip in its Work — every entry, no #tag needed — and entries are marked).
@@ -53,7 +53,7 @@ const LAB_PITCH={
   hq:"Say hi, show what you're working on and find people to make things with.",
   pharmacy:"Upload your art: painting, drawing, design, photography, film and edits. Get seen and get feedback.",
   culture:"Upload your songs and beats, build playlists, and get ears on your works in progress.",
-  fashion:"Post your designs and drops: concepts, finished pieces and what's releasing next.",
+  fashion:"Post your designs, styling and modeling: fits, shoots, finished pieces and what's dropping next.",
   akatsuki:"Share your anime and manga art, panels and ideas, and talk about what you're watching.",
   casino:"Post what's happening: news, features, and promos for your next release.",
   tna:"Find gigs and open calls, talk rates and money, and show the sites and apps you build."};

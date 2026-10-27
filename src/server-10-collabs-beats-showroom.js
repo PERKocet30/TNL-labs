@@ -1,5 +1,5 @@
 /* ================================================================
-   COLLABORATION — two-sided. Invite, then the invitee accepts.
+   COLLABORATION — two-sided. (v2026-10-27: Fashion blurb covers modeling and styling) Invite, then the invitee accepts.
    On accept, BOTH parties earn rep. This is the cross-lab engine.
 ================================================================ */
 app.post("/api/posts/:id/collab", auth, verified, (req, res) => {
@@ -35,7 +35,7 @@ app.post("/api/posts/:id/collab/accept", auth, verified, (req, res) => {
 const KINDS = {
   visual:   { tag: "VISUAL",  work: "WORK",     blurb: "Visual art — paintings, drawings, design, photo and film." },
   lens:     { tag: "LENS",    work: "SHOTS",    blurb: "Photography and film." },
-  fashion:  { tag: "FASHION", work: "PIECES",   blurb: "Garments, styling and drops." },
+  fashion:  { tag: "FASHION", work: "PIECES",   blurb: "Design, styling, modeling and drops." },
   music:    { tag: "SOUND",   work: "TRACKS",   blurb: "Beats, records, and the people on them." },
   word:     { tag: "WORD",    work: "WRITING",  blurb: "Words, stories and features." },
   build:    { tag: "BUILD",   work: "PROJECTS", blurb: "Sites, apps and tools." },
