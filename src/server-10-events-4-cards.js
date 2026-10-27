@@ -16,7 +16,7 @@
    drawn — a new rank is a new file. Instagram covers the top ~250px and
    bottom ~250px of a Story, so nothing that matters goes there.
 ================================================================ */
-const EVC = { version: 4, w: 1080, pad: 72 };   // 3: the Story cards' look — the work blurred behind white type (2026-10-11)
+const EVC = { version: 5, w: 1080, pad: 72 };   // 5: the // LABS logo (2026-10-27)   // 3: the Story cards' look — the work blurred behind white type (2026-10-11)
 
 /* An ASS script of positioned lines. at(text, x, y, size, bold, colour, align) */
 function evAss(dir, w, h) {
@@ -54,8 +54,7 @@ function evGraph(w, h) {
 }
 /* The same, in white — for the cards on a dark or coloured ground. */
 function evMarkWhite(g, t, x, y) {
-  if (existsSync(CARD_MARK)) { const i = g.input(CARD_MARK); g.f.push(`[${i}:v]scale=56:56,negate,format=rgba,colorkey=0x000000:0.3:0.2[mkw]`); g.lay("mkw", x, y); }
-  t.at("LABS ®", x + 70, y + 28, 34, true, SCK.ink, 4);
+  if (existsSync(CARD_WORD)) { const i = g.input(CARD_WORD); g.f.push(`[${i}:v]scale=-2:44,negate,format=rgba,colorkey=0x000000:0.3:0.2[mkw]`); g.lay("mkw", x, y + 6); }   // the // LABS logo
 }
 const evUpper = (s, max) => { const c = cardClean(s).toUpperCase(); return c.length > max ? c.slice(0, max - 1) + "…" : c; };
 const evHost = (base) => base.replace(/^https?:\/\//, "");

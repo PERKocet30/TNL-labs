@@ -96,8 +96,7 @@ export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader, 
 <tr><td align="center" style="padding:32px 16px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px">
     <tr><td style="padding:0 4px 18px;font-family:${FONT}">
-      <img src="${origin}/icon-white-512.png?v=2" width="28" height="28" alt="LABS" style="vertical-align:middle;border-radius:50%;border:0">
-      <span class="t1" style="vertical-align:middle;margin-left:8px;color:${C.ink};font-size:15px;font-weight:700;letter-spacing:.04em">LABS &reg;</span>
+      <img src="${origin}/labs-wordmark-ink.png" width="91" height="22" alt="LABS" style="display:block;border:0">
     </td></tr>
     <tr><td class="card" style="background:${C.card};border:1px solid ${C.line};padding:32px 28px;font-family:${FONT}">
       <div class="t2" style="margin:0 0 14px;color:${C.ink2};font-size:12px;line-height:16px;font-weight:700;letter-spacing:.08em;text-transform:uppercase"><span class="mk" style="color:${C.mark}">//</span> ${escapeHtml(eyebrow)}</div>

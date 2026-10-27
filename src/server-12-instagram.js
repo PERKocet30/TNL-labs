@@ -23,7 +23,7 @@ function listingPage(req, res) {
   const price = "$" + (l.price_cents / 100).toFixed(l.price_cents % 100 ? 2 : 0);
   const title = `${l.title} — ${price}${l.status === "sold" ? " · Sold" : ""}`;
   const desc = [`Sold by @${u.username} on LABS`, l.size, l.condition, (l.description || "").slice(0, 120)].filter(Boolean).join(" · ").slice(0, 200);
-  const img = abs(first) || `${base}/og-cover-v3-2026-09-23.jpg`, url = `${base}/m/${l.id}`, e = lookEsc;
+  const img = abs(first) || `${base}/labs-og.png`, url = `${base}/m/${l.id}`, e = lookEsc;
   const tags = `<title>${e(title)} — LABS</title>
 <link rel="canonical" href="${e(url)}">
 <meta property="og:type" content="product">

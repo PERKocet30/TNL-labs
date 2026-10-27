@@ -27,7 +27,7 @@ const SCK = { ink: ffc(PALETTE.dark.tx), ink2: ffc(PALETTE.dark.dim), shade: ffc
 /* c: { prefix, head, sub, art?, bg?, avatar?, tiles?, quote?, cover?, lead?, music?, count?, tag, handle, cta?, url, accent }
    The tournament's entry Story is one of these too (server-10-events-4-cards). */
 function storyCard(c) {
-  const hash = createHash("sha1").update(JSON.stringify([10, c])).digest("hex").slice(0, 12);
+  const hash = createHash("sha1").update(JSON.stringify([11, c])).digest("hex").slice(0, 12);
   const make = (out, dir) => {
     const W = SC.w, H = SC.h, P = SC.pad, g = evGraph(W, H), t = evAss(dir, W, H), bw = W - 2 * P, by = SC.by, bh = SC.bh;
     const fill = accentFill(c.accent, "dark"), acc = ffc(fill), onAcc = ffc(onAccent(fill));   // the cards are dark: Black wears white
@@ -90,12 +90,11 @@ function storyCard(c) {
     if (c.handle) t.at(c.handle, W - P, ty + 42, 40, true, ink, 6);
     if (c.cta) t.at(c.cta, P, ty + 124, 36, false, ink);
     /* the mark — white on the work, its own black where that reads better */
-    if (existsSync(CARD_MARK)) {
-      const m = g.input(CARD_MARK), white = ink === SCK.ink;
-      g.f.push(`[${m}:v]scale=56:56,${white ? "negate," : ""}format=rgba,colorkey=${white ? "0x000000" : "0xFFFFFF"}:0.3:0.2[mk2]`);
-      g.lay("mk2", P, H - 200);
+    if (existsSync(CARD_WORD)) {   // the // LABS logo (2026-10-27)
+      const m = g.input(CARD_WORD), white = ink === SCK.ink;
+      g.f.push(`[${m}:v]scale=-2:44,${white ? "negate," : ""}format=rgba,colorkey=${white ? "0x000000" : "0xFFFFFF"}:0.3:0.2[mk2]`);
+      g.lay("mk2", P, H - 194);
     }
-    t.at("LABS ®", P + 70, H - 172, 34, true, ink, 4);
     t.at(c.url, W - P, H - 172, 28, false, ink2, 6);
     g.filter(t.write());
     return g.out(out);

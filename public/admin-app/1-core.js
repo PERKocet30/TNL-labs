@@ -164,7 +164,7 @@ function paint() {
      doesn't share the home-screen app's sign-in (iOS keeps them apart) —
      so Log in opens the app's log-in straight away and comes back here. */
   if (!ME) { const back = "/?login=1&next=" + encodeURIComponent("/admin" + location.hash);
-    app.innerHTML = `<div class="gate"><div><div class="brand">LABS <i>//</i> Admin</div>
+    app.innerHTML = `<div class="gate"><div><div class="brand"><img class="bwm" src="/labs-wordmark-ink.png" alt="LABS"> Admin</div>
     <h1>Admins only</h1><p>${TOKEN ? "This account isn't an admin. Log in with one and you'll come straight back here."
       : "This browser isn't signed in — LABS on your home screen keeps its own sign-in, so email links open here signed out. Log in once and it'll remember you."}</p><a class="btn" id="adminlogin" href="${esc(back)}">Log in</a></div></div>`; return; }
   const n = (k) => (D.pulse && k === "home" && D.pulse.inbox.length) || (D.pulse && k === "content" && (D.pulse.inbox.find((i) => i.kind === "reports") || {}).n) || (k === "instagram" && D.instagram?.unread) || 0;
@@ -179,9 +179,9 @@ function paint() {
   const bar = PHONE_BAR.map((k) => item(k, "bb")).join("") + `<button class="bb ${!inBar || MORE ? "on" : ""}" data-more>${NAVI.more}<span>${!inBar && !MORE ? name(TAB) : "More"}</span></button>`;
   const theme = `<button class="ib thm" aria-label="Switch theme">${document.documentElement.dataset.theme === "dark" ? I.sun : I.moon}</button>`;
   app.innerHTML = `<div class="shell">
-    <aside class="side" aria-label="Admin sections"><div class="brand">LABS <i>//</i> Admin</div><nav class="side-nav">${side}</nav>
+    <aside class="side" aria-label="Admin sections"><div class="brand"><img class="bwm" src="/labs-wordmark-ink.png" alt="LABS"> Admin</div><nav class="side-nav">${side}</nav>
       <div class="side-ft"><span class="mono">Signed in as @${esc(ME.username)}</span><div class="row">${theme}<a class="btn ghost sm" href="/">Open the app ${I.out}</a></div></div></aside>
-    <div class="mainc"><header class="top"><div class="bar1"><div class="brand ph">LABS <i>//</i> Admin</div>
+    <div class="mainc"><header class="top"><div class="bar1"><div class="brand ph"><img class="bwm" src="/labs-wordmark-ink.png" alt="LABS"> Admin</div>
       ${TAB === "people" ? "" : `<div class="gsrch" role="search">${di('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>', 16)}<input id="gq" placeholder="Search members" value="${esc(GQ)}" autocomplete="off" aria-label="Search members"><div class="gres" id="gres" hidden></div></div>`}
       <span class="ph">${theme}</span></div></header>
     <main class="wrap" id="main">${VIEWS[TAB]()}</main>

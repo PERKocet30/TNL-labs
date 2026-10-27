@@ -20,13 +20,15 @@
 ================================================================ */
 const ffc = (hex) => "0x" + hex.replace("#", "").toUpperCase();   // #RRGGBB → ffmpeg colour
 const CARD = { w: 1200, h: 630, gap: 6, bg: ffc(PALETTE.light.bg), el: ffc(PALETTE.light.el), ink: ffc(PALETTE.light.tx), ink2: ffc(PALETTE.light.dim),
-  version: 6, panel: 440, pad: 48, avatar: 128, mark: 40 };
+  version: 7, panel: 440, pad: 48, avatar: 128, mark: 40 };   // 7: the // LABS logo (2026-10-27)
 /* v6 (2026-10-11): one look with the Story cards — their first piece, blurred
    behind the panel, white type, the mark in white. */
 const CARDW = { ink: ffc(PALETTE.dark.tx), shade: ffc(PALETTE.dark.bg), el: ffc(PALETTE.dark.el) };
 const CARD_DIR = join(DATA_DIR, "og");
 const CARD_FONT = { bold: join(__dirname, "..", "assets", "fonts", "Archivo-Bold.ttf"), reg: join(__dirname, "..", "assets", "fonts", "Archivo-Regular.ttf") };
 const CARD_MARK = join(__dirname, "..", "public", "icon-white-512.png");
+/* the // LABS logo, black on white like the mark (2026-10-27): the cards stamp it the same way, in place of mark + "LABS ®" */
+const CARD_WORD = join(__dirname, "..", "public", "labs-wordmark-black.png");
 
 /* The grid to the right of the panel, by how much work there is: [columns, rows]. */
 const cardShape = (n) => (n >= 6 ? [3, 2] : n >= 4 ? [2, 2] : n >= 1 ? [Math.min(n, 3), 1] : null);
@@ -132,14 +134,14 @@ function profileCardArgs(card, out, textDir) {
     f.push(`color=c=${CARDW.el}:s=${gw}x${h}:d=1[g]`); lay("g", gx, 0);
   }
   // the mark, bottom-left (and big in the middle of an empty grid)
-  const hasMark = existsSync(CARD_MARK);
+  const hasMark = existsSync(CARD_WORD);
   if (hasMark) {
-    args.push("-i", CARD_MARK); const mi = k++;
+    args.push("-i", CARD_WORD); const mi = k++;
     // the mark is black on solid white: key the white out so it sits on the card, not in a box
     // black on white: turned white and the black keyed out, so it sits on the work in white
-    f.push(`[${mi}:v]negate,split=2[m0][m1]`, `[m0]scale=${M}:${M},format=rgba,colorkey=0x000000:0.3:0.2[m]`, `[m1]scale=160:160,format=rgba,colorkey=0x000000:0.3:0.2[mb]`);
-    lay("m", pad, h - pad - M);
-    if (!card.shape) lay("mb", gx + Math.round((gw - 160) / 2), Math.round((h - 160) / 2));
+    f.push(`[${mi}:v]negate,split=2[m0][m1]`, `[m0]scale=-2:${Math.round(M * 0.7)},format=rgba,colorkey=0x000000:0.3:0.2[m]`, `[m1]scale=360:-2,format=rgba,colorkey=0x000000:0.3:0.2[mb]`);
+    lay("m", pad, h - pad - Math.round(M * 0.85));
+    if (!card.shape) lay("mb", gx + Math.round((gw - 360) / 2), Math.round((h - 88) / 2));
     else f.push(`[mb]nullsink`);
   }
   if (textDir) {
@@ -167,7 +169,6 @@ function profileCardArgs(card, out, textDir) {
     T.bio.forEach((line) => { at(line, pad, y, 30, false, CARDW.ink); y += 35; });
     if (T.bio.length) y += 12;
     at(T.stats, pad, y, 27, true, CARDW.ink);
-    if (hasMark) at("LABS ®", pad + M + 12, h - pad - M / 2, 30, true, CARDW.ink, 4);
     const script = join(textDir, "card.ass");
     writeFileSync(script, [
       "[Script Info]", "ScriptType: v4.00+", `PlayResX: ${w}`, `PlayResY: ${h}`, "WrapStyle: 2", "ScaledBorderAndShadow: yes", "",

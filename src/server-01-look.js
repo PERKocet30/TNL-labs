@@ -17,7 +17,7 @@ body.center{min-height:100vh;display:flex;align-items:center}
 body.center .wrap{max-width:400px}
 a{color:inherit}
 .top{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--tx);font-weight:700;letter-spacing:.04em}
-.top img{width:28px;height:28px;border-radius:50%}
+.top img{height:22px;width:auto}
 [data-theme="dark"] .top img{filter:invert(1)}
 .eyebrow{font-size:12px;line-height:16px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:32px 0 12px}
 .mk{color:var(--green)}
@@ -83,7 +83,7 @@ ${head}
 <style>${paletteCss()}
 ${LOOK_CSS}</style></head>
 <body${center ? ' class="center"' : ""}><main class="wrap">
-<a class="top" href="/"><img src="/icon-white-512.png?v=2" alt="">LABS &reg;</a>
+<a class="top" href="/"><img src="/labs-wordmark-ink.png" alt="LABS"></a>
 ${body}
 ${lookFoot()}
 </main></body></html>`;
