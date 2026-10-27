@@ -1,6 +1,6 @@
 # Railway setup — running checklist
 
-Everything TNL LABS needs, in the order that matters. The **values** are
+Everything LABS needs, in the order that matters. The **values** are
 secret; they live in Railway's Variables tab and never in this repo.
 
 ---
@@ -64,7 +64,7 @@ Sign up at **resend.com** (free, 3,000/month) → API Keys → create.
 | Variable | Value |
 | --- | --- |
 | `RESEND_API_KEY` | `re_xxxxxxxx` |
-| `MAIL_FROM` | `TNL LABS <onboarding@resend.dev>` |
+| `MAIL_FROM` | `LABS <onboarding@resend.dev>` |
 | `SUPPORT_EMAIL` | `support@tnllabs.com` — the inbox shown on /terms, /privacy, /policies, /contact and every public page footer. Must be one you read. |
 
 `onboarding@resend.dev` is Resend's test sender — works with no domain
@@ -72,7 +72,7 @@ setup, but **only delivers to the address you signed up to Resend with**.
 Fine for testing on yourself, useless for your artists.
 
 To email anyone else: verify `tnllabs.com` in Resend (they hand you DNS
-records), then switch to `MAIL_FROM=TNL LABS <noreply@tnllabs.com>`.
+records), then switch to `MAIL_FROM=LABS <noreply@tnllabs.com>`. Members read the name before the address, so it says LABS, never TNL.
 
 **Without this the app still works** — it shows the verification link on
 screen rather than pretending it sent mail.
@@ -295,7 +295,7 @@ TNL_DATA=/app/data
 ADMIN_EMAIL=Jorgemfuentes001@gmail.com
 PUBLIC_URL=https://tnllabs.com
 RESEND_API_KEY=re_xxxxxxxx
-MAIL_FROM=TNL LABS <onboarding@resend.dev>
+MAIL_FROM=LABS <onboarding@resend.dev>
 STRIPE_SECRET_KEY=sk_test_xxxxx
 ```
 
@@ -320,7 +320,7 @@ PLATFORM_FEE_PCT     ← dead. Replaced by per-level rates.
 The boot log now prints exactly what's on. Look for this block:
 
 ```
-┌─ TNL LABS ─────────────────────────────────
+┌─ LABS ─────────────────────────
 │ listening   :8080
 │ data        /app/data
 │ public url  https://tnl-labs.up.railway.app

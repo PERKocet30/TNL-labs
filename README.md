@@ -1,8 +1,8 @@
-# TNL LABS
+# LABS
 
-**v2.2 · 2026-10-12** · live at [tnllabs.com](https://tnllabs.com)
+**v2.3 · 2026-10-27** (v2.3: named LABS throughout; the look is CLAUDE.md → Design language) · live at [tnllabs.com](https://tnllabs.com)
 
-Social media by creatives, for creatives. TNL LABS is where creatives post their work, find each other across scenes, make things together and sell what they make. Standing here is earned only from what other people do with your work — likes, shares, collabs both sides confirm, sales — so the people who build the most rise, not the people who post the most.
+Social media by creatives, for creatives. LABS is where creatives post their work, find each other across scenes, make things together and sell what they make. Standing here is earned only from what other people do with your work — likes, shares, collabs both sides confirm, sales — so the people who build the most rise, not the people who post the most.
 
 Labs are places, one per genre, each explained by its #tags. The tournament, the Market and the rep system all run on the same rule: what counts happens inside LABS. Instagram is where people find it; every share card and public page leads back into LABS, where they take part. TNL NYC sells in the Market on the same terms as everyone else.
 
@@ -256,7 +256,7 @@ Three layers: stop glitches before they ship, notice the ones that get through, 
 **Once it's live**
 - **After every merge** (`.github/workflows/after-deploy.yml`): it waits until `/api/health` reports the new commit, then runs the scientist against the live site. A failure (or a deploy that never lands) turns the run red, and GitHub emails whoever merged.
 - **Daily at 18:45 UTC**, the same workflow runs the scientist again (GitHub emails a red run to whoever last edited its cron line). About 27 read-only checks: the shell loads and its scripts compile; `/api/health` reports the database answering, members present (not a fresh empty volume), `TNL_DATA` set, uploads there and a backup in the last 36 hours (yes/no only); `/api/me` and `/api/admin/*` refuse a stranger and `/api` is never cached; the Showroom has work in it; a real profile and post preview with their images, and the profile card renders; missing things 404; the service worker, manifest, palette, door script and icon; each answer under 8s; the certificate has 14+ days left. `test/scientist.test.mjs` runs it against a local copy, full (green) and empty (red).
-- **Sentry** receives server and browser errors. The alert *New or returning error in TNL LABS* emails on any first-seen, regressed or reappearing issue, at most every 30 minutes.
+- **Sentry** receives server and browser errors. The alert *New or returning error in TNL LABS* (its name in Sentry; rename it to LABS there) emails on any first-seen, regressed or reappearing issue, at most every 30 minutes.
 - **Glitch signals** (`src/app-19-glitch.js` → `src/server-10-glitch.js`): members' own screens report rage taps, screen jumps, slow screens (over 3s) and failed saves. Admin → System shows the 24-hour count and the week's hotspots.
 - **Watch emails** (`src/server-10-watch.js`, to `ADMIN_EMAIL` via Resend): an email when something spikes within an hour (3 server errors, 10 app crashes, 3 failed saves, or 8 rage taps / screen jumps / slow screens), at most once per rule per 6 hours. There's also a morning digest at 13:00 UTC with yesterday's members, posts, errors, glitches and worst spots.
 - **The week** (`src/server-10-weekly.js`, 2026-10-26): every Monday at 13:00 UTC an email to `ADMIN_EMAIL` with last week against the week before — new members and where they stop, who came back, posts by lab, likes/comments/follows/collabs/plays/messages, pieces/views/offers/sales and the money, the tournament, Google Search + Shopping and Instagram/Facebook when connected, errors and glitches and the worst spot, and a short what-to-do list. Counts and patterns only, never a member's name. The first run goes out ~90s after the deploy that adds it. Admin → Systems shows the same report with an "Email me this now" button (`GET /api/admin/weekly`, `POST /api/admin/weekly/send`).
