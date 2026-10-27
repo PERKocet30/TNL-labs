@@ -35,6 +35,8 @@ VIEWS.settings = (only) => {
     settings: () => `<div class="split"><div><h2 class="sec">Who can get in</h2>
   <div class="panel">${tog("signupsOpen", "Signups open", "Off makes LABS invite-only.")}${tog("guestAccess", "Guests can look around", "The Showroom, Market and profiles without an account.")}
     ${tog("autoVerify", "Skip email confirmation", "Only while email is broken — anyone could sign up with an address they don't own.")}</div>
+  <h2 class="sec">Sign in with</h2>
+  <div class="panel">${tog("signinGoogle", "Google", "Shows once its keys are in Railway.")}${tog("signinApple", "Apple", "Shows once its keys are in Railway.")}${tog("signinFacebook", "Facebook", "Shows once its keys are in Railway.")}</div>
   <h2 class="sec">What's open</h2>
   <div class="panel">${tog("marketOpen", "Market", "Buying and selling.")}${tog("studioOpen", "Studio", "The beat maker.")}${g.studioOpen === "1" ? `<div class="set"><div class="t"><span>Studio is on.</span></div><button class="btn ghost sm" data-studio>Studio stats ${I.chev}</button></div>` : ""}${tog("loopsOpen", "Loop market", "Producers selling sounds.")}
     <div class="set"><div class="t"><b>Rep needed to sell</b><span>0 lets anyone list.</span></div><input class="in" id="minrep" type="number" min="0" max="1000" value="${esc(g.minRepToSell)}" style="width:90px"></div>

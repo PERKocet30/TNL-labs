@@ -20,6 +20,7 @@ const now = Date.now(), hash = bcrypt.hashSync("violet-kiln-27", 4);
 const mk = (u, email, verified = 1, extra = "") => { const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified${extra ? ", suspended" : ""}) VALUES (?,?,?,?,?,?${extra ? ",1" : ""})`).run(u, u, email, hash, now, verified).lastInsertRowid);
   db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?,?,?)`).run("tok-" + u, id, now); return id; };
 mk("boss", "boss@x.test"); mk("ana", "ana@x.test"); mk("squatter", "victim@x.test", 0); mk("banned", "banned@x.test", 1, "s");
+db.prepare(`INSERT INTO settings (key, value, updated_at) VALUES ('signinFacebook','1',?)`).run(Date.now());   // Facebook starts off in Settings (2026-10-26); this suite tests it on
 db.close();
 
 /* the pretend provider */
