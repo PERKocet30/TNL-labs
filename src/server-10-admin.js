@@ -109,7 +109,7 @@ app.get("/api/admin/pulse", auth, admin, (req, res) => {
     now: windowStats(start, now), before: windowStats(prevStart, start),
     seen: aone(`SELECT COUNT(*) n FROM users WHERE last_seen_at >= ?`, start),
     totals: {
-      members: aone(`SELECT COUNT(*) n FROM users`),
+      members: aone(`SELECT COUNT(*) n FROM users WHERE suspended = 0`),   // suspended (spam) accounts aren't members (2026-10-27)
       collabs: aone(`SELECT COUNT(*) n FROM collaborators WHERE status = 'accepted'`),
       gmv: aone(`SELECT COALESCE(SUM(amount_cents + shipping_cents), 0) n FROM orders WHERE status IN ${PAID}`),
     },
@@ -176,7 +176,7 @@ app.get("/api/admin/people", auth, admin, (req, res) => {
         (SELECT COALESCE(SUM(o.amount_cents), 0) FROM orders o WHERE o.seller_id = u.id AND o.status IN ${PAID}) gross,
         (SELECT 1 FROM admin_notes n WHERE n.user_id = u.id AND n.body != '') has_note
       FROM users u ${where.length ? "WHERE " + where.join(" AND ") : ""}
-    ) u ${F ? "WHERE " + F[0] : ""}
+    ) u WHERE ${filter === "suspended" ? F[0] : ["u.suspended = 0", F && F[0]].filter(Boolean).join(" AND ")}
     ORDER BY ${req.query.sort === "active" ? PEOPLE_SORT.joined : PEOPLE_SORT[req.query.sort] || PEOPLE_SORT.joined} LIMIT ${all ? 20000 : 500}`).all(...params, ...(F ? F[1] : []));
   // last activity for everyone in one pass, not one scan per person
   const last = new Map(db.prepare(`SELECT u, MAX(t) t FROM (${ACTIVITY}) GROUP BY u`).all().map((r) => [r.u, r.t]));
@@ -184,7 +184,7 @@ app.get("/api/admin/people", auth, admin, (req, res) => {
   let list = rows;
   if (filter === "quiet") list = list.filter((r) => (r.last_active || 0) < now - 14 * ADAY);
   if (req.query.sort === "active") list = [...list].sort((a, b) => (b.last_active || 0) - (a.last_active || 0));
-  res.json({ total: aone(`SELECT COUNT(*) n FROM users`), people: (all ? list : list.slice(0, 300)).map((r) => ({
+  res.json({ total: aone(`SELECT COUNT(*) n FROM users WHERE suspended = 0`), people: (all ? list : list.slice(0, 300)).map((r) => ({
     id: r.id, username: r.username, displayName: r.display_name, email: r.email, avatarUrl: r.avatar_url || "", role: r.role,
     rep: r.rep, level: levelFor(r.rep).id, levelName: levelFor(r.rep).name,
     verified: !!r.email_verified, isAdmin: !!r.is_admin, suspended: !!r.suspended, payouts: !!r.stripe_ready,
