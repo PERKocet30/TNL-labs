@@ -4,7 +4,7 @@
    State lives in GFLOW, not in the DOM, so a background render() (SSE,
    badges) redraws the same step with what was typed instead of resetting. */
 let GFLOW=null, GXT=null;
-const GX_MARK="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cpath%20d%3D%22M35%2014h14L31%2082H17zM65%2014h14L61%2082H47z%22%20fill%3D%22white%22%2F%3E%3C%2Fsvg%3E";
+const GX_MARK="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cpath%20d%3D%22M39.5%2014h10.8L37.4%2082H26.6zM58.6%2014h10.8L56.5%2082H45.7z%22%20fill%3D%22white%22%2F%3E%3C%2Fsvg%3E";
 const GX_STEPS=["email","password","name","username","roles"];
 const GX_X=`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
 const GX_BACK=`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>`;

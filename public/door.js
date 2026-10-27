@@ -25,7 +25,7 @@
   var QUICK_MS = 420;     // repeat visit: snap it
   var STEPS = ["Initializing", "Loading the labs", "Reading the network", "Ready"];
   var done = false;
-  var MARK = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cpath%20d%3D%22M35%2014h14L31%2082H17zM65%2014h14L61%2082H47z%22%20fill%3D%22white%22%2F%3E%3C%2Fsvg%3E";
+  var MARK = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cpath%20d%3D%22M39.5%2014h10.8L37.4%2082H26.6zM58.6%2014h10.8L56.5%2082H45.7z%22%20fill%3D%22white%22%2F%3E%3C%2Fsvg%3E";
 
   var CSS = [
     ".enter-vial{width:min(56vw,220px);height:4px;border-radius:999px;background:#E6E6E6;overflow:hidden;margin:4px 0 0;display:block}",
