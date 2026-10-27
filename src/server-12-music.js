@@ -29,7 +29,7 @@ app.get("/s/:id", (req, res) => {
   const len = t.durationMs ? `${Math.floor(t.durationMs / 60000)}:${String(Math.round(t.durationMs / 1000) % 60).padStart(2, "0")}` : "";
   const title = `${t.title} — ${row.display_name}`;
   const desc = [`A song by @${row.username} on LABS`, len, t.plays ? lookCount(t.plays, "play") : null].filter(Boolean).join(" · ");
-  const img = abs(t.artworkUrl) || abs(row.avatar_url) || `${base}/icon-white-512.png`;
+  const img = abs(t.artworkUrl) || abs(row.avatar_url) || `${base}/labs-logo.png`;
   const url = `${base}/s/${t.id}`;
   res.send(lookPage({
     title: e(title),

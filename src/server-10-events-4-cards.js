@@ -220,7 +220,7 @@ function evLinkCard(ev, base) {
 }
 app.get("/e/:slug/card.jpg", rateLimit({ max: 120, windowMs: 60000 }), (req, res) => {
   const ev = evPublished(req.params.slug); if (!ev) return res.status(404).end();
-  evSendCard(res, evLinkCard(ev, baseUrl(req)), "/icon-512.png");
+  evSendCard(res, evLinkCard(ev, baseUrl(req)), "/labs-logo.png");
 });
 
 const evPublished = (slug) => { const ev = evRow(slug); return ev && ev.published ? ev : null; };

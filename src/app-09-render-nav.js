@@ -54,7 +54,7 @@ function render(){
 function topHTML(){
   if(guest())return `
   <div class="top">
-    <div class="brand"><img class="mark" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cpath%20d%3D%22M39.5%2014h10.8L37.4%2082H26.6zM58.6%2014h10.8L56.5%2082H45.7z%22%20fill%3D%22white%22%2F%3E%3C%2Fsvg%3E" alt="LABS"><span class="bt">LABS</span></div>
+    <div class="brand"><img class="mark wm" src="/labs-wordmark.png" alt="LABS"></div>
     <div class="topact">
       <button class="ib" id="searchBtn" aria-label="Search">${UI_IC.search}</button>
       ${/* The only theme switch lived in Edit profile, behind an account. A
@@ -69,7 +69,7 @@ function topHTML(){
   </div>`;
   const l=levelFor(ME.rep);return `
   <div class="top">
-    <div class="brand"><img class="mark" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cpath%20d%3D%22M39.5%2014h10.8L37.4%2082H26.6zM58.6%2014h10.8L56.5%2082H45.7z%22%20fill%3D%22white%22%2F%3E%3C%2Fsvg%3E" alt="LABS"><span class="bt">LABS</span></div>
+    <div class="brand"><img class="mark wm" src="/labs-wordmark.png" alt="LABS"></div>
     <div class="topact">
       <button class="ib" id="searchBtn" aria-label="Search">${UI_IC.search}</button>
       ${/* Glyphs, matching the nav and the lab list. Kept SEMANTIC rather than

@@ -59,10 +59,9 @@ function searchPanelHTML(){return `<div class="sheet" id="sbg"><div class="sheet
    it's the gesture that unlocks sound on iOS. tnl-intro-seen is still
    written — door.js reads it to pour the vial slowly once, then snap. */
 function enterHTML(){
-  const mark = (document.querySelector(".mark")||{}).src || "";
   return `<div class="enter quick" id="enterOv">
     <div class="enter-c" id="enterC">
-      ${mark?`<img class="enter-m" src="${mark}" alt="LABS">`:""}
+      <img class="enter-m" src="/labs-wordmark.png" alt="LABS">
       <button class="enter-b" id="enterBtn">Enter the lab</button>
     </div>
   </div>`;

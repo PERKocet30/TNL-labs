@@ -15,8 +15,8 @@
  *
  * THE MARK. enterHTML() copies the logo from the header's .mark, but the
  * header hasn't rendered on first load, so the door usually arrived with
- * no logo at all. This carries its own white mark (the labs' //, the
- * LABS logo since 2026-10-27) and puts it on top of the door every time.
+ * no logo at all. This carries the // LABS logo (2026-10-27) and puts it on
+ * top of the door every time.
  */
 (function () {
   "use strict";
@@ -25,7 +25,7 @@
   var QUICK_MS = 420;     // repeat visit: snap it
   var STEPS = ["Initializing", "Loading the labs", "Reading the network", "Ready"];
   var done = false;
-  var MARK = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2096%2096%22%3E%3Cpath%20d%3D%22M39.5%2014h10.8L37.4%2082H26.6zM58.6%2014h10.8L56.5%2082H45.7z%22%20fill%3D%22white%22%2F%3E%3C%2Fsvg%3E";
+  var MARK = "/labs-wordmark.png";   // the // LABS logo, white (inverted to black here)
 
   var CSS = [
     ".enter-vial{width:min(56vw,220px);height:4px;border-radius:999px;background:#E6E6E6;overflow:hidden;margin:4px 0 0;display:block}",
@@ -37,7 +37,7 @@
     ".enter-c.vialed .enter-b{opacity:0;transform:translateY(6px);",
     "transition:opacity .45s ease,transform .45s ease}",
     ".enter-c.vialed.ready .enter-b{opacity:1;transform:none}",
-    ".enter-c.vialed .enter-m{height:auto;width:min(32vw,128px);display:block;"
+    ".enter-c.vialed .enter-m{height:auto;width:min(52vw,200px);display:block;"
     + "margin:0 auto 6px;filter:invert(1)}",
     "@media (prefers-reduced-motion:reduce){",
     ".enter-c.vialed .enter-b{opacity:1;transform:none;transition:none}}"
