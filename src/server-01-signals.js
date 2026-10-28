@@ -1,5 +1,5 @@
 /* ================================================================
-   REAL PEOPLE OR BOTS v1.0 — 2026-10-26. "I don't trust all these new
+   REAL PEOPLE OR BOTS v1.1 — 2026-10-27 (address from clientIp, server-01-guard); v1.0 — 2026-10-26. "I don't trust all these new
    accounts. I want to collect more data on them to make sure they're
    real accounts, not bots." (The tournament's voting opened that day.)
 
@@ -52,7 +52,7 @@ const SIG_SALT = (() => {
   return s;
 })();
 /* Cloudflare's CF-Connecting-IP is the only address header it guarantees (see rateLimit, server-01-boot). */
-const sigIp = (req) => String(req.get("cf-connecting-ip") || req.ip || "").replace(/^::ffff:/, "");
+const sigIp = (req) => clientIp(req);
 const sigNet = (req) => { const ip = sigIp(req); return ip ? createHmac("sha256", SIG_SALT).update(ip).digest("hex").slice(0, 16) : ""; };
 const sigCountry = (req) => { const c = String(req.get("cf-ipcountry") || "").toUpperCase(); return /^[A-Z]{2}$/.test(c) && c !== "XX" ? c : ""; };
 /* City and region come from Cloudflare's "Add visitor location headers" (Rules → Settings → Managed Transforms);

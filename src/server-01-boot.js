@@ -39,10 +39,8 @@ if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
 const buckets = new Map();
 function rateLimit({ max, windowMs, key = "ip" }) {
   return (req, res, next) => {
-    /* Cloudflare puts the real visitor in CF-Connecting-IP. It's the only
-       one CF guarantees and strips from client-supplied headers, so it
-       can't be spoofed the way X-Forwarded-For can. */
-    const ip = req.get("cf-connecting-ip") || req.ip;
+    /* clientIp (server-01-guard): CF-Connecting-IP, only when Cloudflare sent it. */
+    const ip = clientIp(req);
     const who = key === "user" && req.user ? `u${req.user.id}` : ip;
     const id = `${req.route?.path || req.path}:${who}`;
     const now = Date.now();
@@ -393,7 +391,7 @@ function shapePost(row, side) {
     id: row.id,
     channel: row.channel,
     body: row.body,
-    beat: row.beat_json ? JSON.parse(row.beat_json) : null,
+    beat: row.beat_json ? cleanBeat(JSON.parse(row.beat_json)) : null,
     imageUrl: row.image_url || null,
     thumbUrl: row.thumb_url || row.image_url || null,
     mediaW: row.media_w || null,

@@ -90,7 +90,7 @@ app.get("/u/:username", (req, res) => {
       ${p.imageUrl ? `<img class="media" src="${esc(p.imageUrl)}" alt="" loading="lazy">` : ""}
       ${p.videoUrl ? `<video class="media" src="${esc(p.videoUrl)}" controls playsinline preload="metadata"></video>` : ""}
       ${p.body ? `<div class="body">${esc(p.body)}</div>` : ""}
-      ${p.beat ? `<div class="body"><b>${esc(p.beat.name || "untitled loop")}</b> <span class="cap">${p.beat.bpm} BPM</span></div>` : ""}
+      ${p.beat ? `<div class="body"><b>${esc(p.beat.name || "untitled loop")}</b> <span class="cap">${Number(p.beat.bpm) || 120} BPM</span></div>` : ""}
       <div class="cap meta">${lookCount(p.likeCount, "like")} · ${lookCount(p.shareCount, "share")}${w.length ? ` · <span class="mk">//</span> with ${w.join(", ")}` : ""}</div>
     </div>`;
   }).join("");

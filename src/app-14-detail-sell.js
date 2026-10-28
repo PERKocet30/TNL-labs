@@ -193,7 +193,7 @@ function ordersHTML(){
           ${ORDTAB==="selling"&&o.status!=="complete"&&(o.shipName||o.shipAddress)?`<div class="mono dim ordaddr">${[o.shipName,o.shipAddress].filter(Boolean).map(esc).join(" — ")}</div>`:""}
         </div>
         <div class="obtns">
-          ${ORDTAB==="selling"&&(o.status==="pending"||o.status==="paid")?`<button class="btn sm green" data-ship="${o.id}">Mark shipped</button>`:""}
+          ${ORDTAB==="selling"&&o.canShip?`<button class="btn sm green" data-ship="${o.id}">Mark shipped</button>`:""}
           ${ORDTAB==="buying"&&o.status==="shipped"?`<button class="btn sm green" data-recv="${o.id}">Received</button>`:""}
           ${ORDTAB==="buying"&&o.status==="complete"&&!o.reviewed?`<button class="btn sm green" data-review="${o.id}">Leave a review</button>`:""}
           ${ORDTAB==="buying"&&o.reviewed?`<span class="mono dim">${DI.check} reviewed</span>`:""}

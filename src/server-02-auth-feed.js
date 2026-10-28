@@ -53,8 +53,8 @@ async function issueVerification(user, req) {
   q.makeVerifyToken.run(token, user.id, ttl, Date.now());
   const url = `${baseUrl(req)}/api/auth/verify?token=${token}`;
   const result = await sendVerifyEmail(user.email, user.display_name, url);
-  // If mail isn't configured, hand the link back so the flow is still testable.
-  return { ...result, url: result.sent ? undefined : url };
+  // Link on screen only on a laptop with no mail set up (mailLinkOk, server-01-guard).
+  return { ...result, url: mailLinkOk(result) ? url : undefined };
 }
 
 /* Live username check for the sign-up flow. Same rule as register below;
@@ -180,7 +180,8 @@ function usersByEmail(email) {
 /* Sign in with a username or an email. Usernames can't contain "@"
    (see register), so anything shaped like an address is an email;
    a leading "@" on a handle is just how people type it. */
-app.post("/api/auth/login", rateLimit({ max: 8, windowMs: 900000 }), async (req, res) => {
+app.post("/api/auth/login", rateLimit({ max: 8, windowMs: 900000 }),
+  rateLimitBy((req) => String(req.body?.identifier ?? req.body?.username ?? "").replace(/^@/, ""), { max: 10, windowMs: 900000 }), async (req, res) => {
   const body = req.body || {};
   const id = String(body.identifier ?? body.username ?? "").trim();
   const password = String(body.password || "");
@@ -257,7 +258,9 @@ app.get("/api/feed", auth, (req, res) => {
 });
 
 app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
-  const { channel, body, beat, mediaW, mediaH, isWork, images, audioTrackId } = req.body || {};
+  const { channel, body, beat: rawBeat, mediaW, mediaH, isWork, images, audioTrackId } = req.body || {};
+  const beat = cleanBeat(rawBeat);   // server-01-guard: { name, bpm, data, remixOf } and nothing else
+  if (beat && JSON.stringify(beat).length > 400000) return res.status(413).json({ error: "that beat is too big to post" });
   // Media must be a file uploaded here — never someone else's URL.
   const up = (v) => (typeof v === "string" && /^\/uploads\/[A-Za-z0-9._-]+$/.test(v) ? v : null);
   const imageUrl = up(req.body?.imageUrl), videoUrl = up(req.body?.videoUrl), thumbUrl = up(req.body?.thumbUrl);

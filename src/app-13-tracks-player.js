@@ -1,4 +1,4 @@
-/* MUSIC LAB · TRACKS v1.5 — 2026-10-20 (a song's Story plays 15 seconds of it; Market and loop heads from the screen kit); v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
+/* MUSIC LAB · TRACKS v1.6 — 2026-10-27 (a paid loop plays its preview); v1.5 — 2026-10-20 (a song's Story plays 15 seconds of it; Market and loop heads from the screen kit); v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
 /* A lab's Talk with nothing in it yet, by its home channel (2026-10-15: in
    TNL's own words — no rooms, no "the network"). */
 const EMPTY={
@@ -289,7 +289,7 @@ function loopDetailHTML(l){
         ${l.images[0]?`<img src="${esc(l.images[0])}" alt="">`:`<div class="loopglyph">${DI.music}</div>`}
         <button class="loopplay" id="loopplay" aria-label="Play">${DI.play}</button>
       </div>
-      <audio id="loopaudio" src="${esc(l.audioUrl||"")}" preload="none"></audio>
+      <audio id="loopaudio" src="${esc(l.audioUrl||l.previewUrl||"")}" preload="none"></audio>
 
       <div class="dhead">
         <div>
