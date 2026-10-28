@@ -38,6 +38,7 @@ function wireEvent(){
   }
   if(TAB!=="event")return;
   const on=(sel,fn)=>{const el=$(sel);if(el)el.onclick=fn};
+  on("#evaddphoto",()=>{evRemember();gsEdit()});   // no photo yet: straight to Edit profile, and back to the piece after (2026-10-28)
   // nothing to step back to (the app was opened right here): the Showroom, where the banner is
   on("#evinvite",()=>{const e=EV.event;shareOut({title:e.title,text:e.title+" — enter and vote on LABS",url:evLink(e)})});
   on("#evback",()=>navBack(()=>{TAB="showroom";EVENTER=null;EVSHARE=null;EVFOCUS=null}));

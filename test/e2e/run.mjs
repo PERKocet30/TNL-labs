@@ -61,7 +61,7 @@ process.env.TNL_DATA=${JSON.stringify(DATA)};
 const { db } = await import(${JSON.stringify(pathToFileURL(join(ROOT, "src", "db.js")).href)});
 const bcrypt = (await import("bcryptjs")).default;
 const h = bcrypt.hashSync(${JSON.stringify(PASS)}, 4), now = Date.now();
-const ins = db.prepare("INSERT INTO users (username,display_name,email,role,roles,password_hash,email_verified,created_at) VALUES (?,?,?,?,?,?,1,?)");
+const ins = db.prepare("INSERT INTO users (username,display_name,email,role,roles,password_hash,email_verified,created_at,avatar_url) VALUES (?,?,?,?,?,?,1,?,'/uploads/e2e-p0.png')");   // a photo: voting needs one (2026-10-28)
 const me = Number(ins.run("tester","Tester","tester@example.com","Producer",'["Producer"]',h,now).lastInsertRowid);
 const friend = Number(ins.run("friend","Friend","friend@example.com","Graphic Designer",'["Graphic Designer"]',h,now).lastInsertRowid);
 const post = db.prepare("INSERT INTO posts (author_id,channel,body,image_url,thumb_url,media_w,media_h,is_work,created_at) VALUES (?,?,?,?,?,?,?,1,?)");

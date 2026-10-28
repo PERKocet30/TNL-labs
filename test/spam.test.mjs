@@ -15,15 +15,15 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "�
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const { db } = await import("../src/db.js");
 const now = Date.now(), D = 86400000, M = 60000;
-const mk = (u, { admin = 0, ago = 30 * D, photo = "" } = {}) => {
+const mk = (u, { admin = 0, ago = 30 * D, photo = "/uploads/p.jpg" } = {}) => {   // everyone has a photo: a vote needs one (2026-10-28)
   const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, avatar_url) VALUES (?,?,?,?,?,1,?)`).run(u, u, u + "@gmail.com", "x", now - ago, photo).lastInsertRowid);
   if (admin) db.prepare(`UPDATE users SET is_admin = 1 WHERE id = ?`).run(id);
   db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?,?,?)`).run("tok-" + u, id, now);
   return id;
 };
 mk("boss", { admin: 1 }); mk("artist", { photo: "/uploads/a.jpg" }); mk("rival", { photo: "/uploads/b.jpg" });
-// a burst: four accounts minutes apart, no photos, no posts
-for (let i = 0; i < 4; i++) mk("burst" + i, { ago: 3 * 3600000 - i * 5 * M });
+// a burst: four accounts minutes apart, no posts (with a photo each — a vote needs one since 2026-10-28, and a bot farm can upload a picture too)
+for (let i = 0; i < 4; i++) mk("burst" + i, { ago: 3 * 3600000 - i * 5 * M, photo: "/uploads/bot.jpg" });
 // a real family on one home network, joined weeks apart, with photos
 mk("mum", { ago: 40 * D, photo: "/uploads/m.jpg" }); mk("son", { ago: 20 * D, photo: "/uploads/s.jpg" });
 mk("loner", { ago: 10 * D });
@@ -71,7 +71,7 @@ try {
   let S = (await call("boss", `/api/admin/events/${ev.id}/spam`)).j;
   const burst = S.groups.find((g) => g.people.some((p) => p.username === "burst0")), fam = S.groups.find((g) => g.people.some((p) => p.username === "mum"));
   t("the burst is one group of 4, linked by phone and network", burst && burst.size === 4 && burst.reasons.includes("Same phone") && burst.reasons.includes("Same network"));
-  t("…with the reasons a person would look at", burst.reasons.some((r) => /^Joined within \d+ min of each other$/.test(r)) && burst.reasons.includes("None of them has posted") && burst.reasons.includes("No photos"));
+  t("…with the reasons a person would look at", burst.reasons.some((r) => /^Joined within \d+ min of each other$/.test(r)) && burst.reasons.includes("None of them has posted") && !burst.reasons.includes("No photos"));   // a voter always has a photo now, so that reason can't be one
   t("…and who they voted for", burst.votedFor[0]?.author === "artist" && burst.votedFor[0].n === 3 && burst.votedFor[1]?.author === "rival");
   t("the family is a group too, but with fewer reasons (weeks apart, photos)", fam && fam.size === 2 && fam.reasons.includes("Same network") && !fam.reasons.some((r) => /phone|Joined within|No photos/.test(r)));
   t("strongest first", S.groups[0] === burst || S.groups[0].people.some((p) => p.username === "burst0"));

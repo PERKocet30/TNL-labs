@@ -31,6 +31,7 @@ const EV_NEW_VOTE_WAIT_MS = Math.max(0, Number(process.env.EV_NEW_VOTE_WAIT_MS ?
 function evVoteBlock(ev, user, stage, entryId) {
   if (!user) return "Sign in to vote.";
   if (ev.require_verified && !user.email_verified) return "Confirm your email to vote — the link is in your inbox.";
+  if (ev.require_avatar && !user.avatar_url) return "Add a profile photo to vote.";   // 2026-10-28: a face (or a mark) behind every vote
   /* 2026-10-27: "New accounts can't instantly vote — 5 minute wait… while they set up account." A real person spends it on
      the joining steps (photo, colour, bio, people) and barely notices; a burst of accounts made to vote has to sit. */
   const waitLeft = EV_NEW_VOTE_WAIT_MS - (Date.now() - user.created_at);
@@ -113,7 +114,7 @@ function evPublic(ev, viewer) {
   return {
     event: { slug: ev.slug, title: ev.title, brief: ev.brief, prize: ev.prize, coverUrl: ev.cover_url, channel: ev.channel,
       format: ev.format, picks: ev.picks, judgeWeight: ev.judge_weight, minAccountDays: ev.min_account_days,
-      freezeHours: ev.freeze_hours, requireVerified: !!ev.require_verified,
+      freezeHours: ev.freeze_hours, requireVerified: !!ev.require_verified, requireAvatar: !!ev.require_avatar,
       bracketSize: ev.bracket_size, finalistsCount: ev.finalists,
       schedule: sched, phase: cur, stage, void: !!st.void, entryCount: [...shaped.values()].filter((e) => !e.dq).length,
       current: evCurrent()?.id === ev.id,   // the one /tournament opens (2026-10-12)

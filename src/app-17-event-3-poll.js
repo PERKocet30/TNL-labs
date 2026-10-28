@@ -14,7 +14,7 @@ function evVoteBtn(e){
 }
 function evPollNote(){
   const me=EV.me, B=EV.board, n=EV.event.picks, left=Math.max(0,n-me.myVotes.length);
-  if(me.voteBlock)return esc(me.voteBlock);
+  if(me.voteBlock)return evBlockHTML(me.voteBlock);
   const day=left?(n===1?"You have <b>1 vote</b> today.":`<b>${left} of ${n}</b> votes left today.`):(n===1?"You've voted today.":"You've used today's votes.");
   return `${day} Votes reset at midnight ET.${B&&B.frozen?` <b>The board froze for the last ${EV.event.freezeHours} hours</b> — votes still count, the rest is a surprise.`:""}`;
 }

@@ -96,7 +96,7 @@ try {
   t("a failed sign-in records nothing", !(await sig("ana")).seen.some((x) => x.network && x.kind === "login" && x.country === "US"));
 
   console.log("\nVOTING");
-  d = new raw(join(DATA, "tnl.db")); d.prepare(`UPDATE users SET email_verified = 1`).run(); d.close();   // they confirmed their emails
+  d = new raw(join(DATA, "tnl.db")); d.prepare(`UPDATE users SET email_verified = 1, avatar_url = '/uploads/av.jpg'`).run(); d.close();   // they confirmed their emails and added a photo
   const v1 = await call("/api/events/art/vote", { body: { entryId: entA }, tok: k1.j.token, ip: "86.19.105.225", country: "GB", ua: IPHONE_IG, city: "Leeds", region: "England", tz: "Europe/London" });
   const v2 = await call("/api/events/art/vote", { body: { entryId: entA }, tok: k2.j.token, ip: "86.19.105.225", country: "GB" });
   const v3 = await call("/api/events/art/vote", { body: { entryId: entB }, tok: "tok-boss", ip: "5.5.5.5", country: "US" });

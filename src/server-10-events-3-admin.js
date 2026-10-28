@@ -21,6 +21,7 @@ function evClean(b, ev = {}) {
   if (o.minAccountDays !== undefined) { o.min_account_days = o.minAccountDays; delete o.minAccountDays; }
   if (b.freezeHours !== undefined) o.freeze_hours = Math.min(72, Math.max(0, Math.round(Number(b.freezeHours) || 0)));
   if (b.requireVerified !== undefined) o.require_verified = b.requireVerified ? 1 : 0;
+  if (b.requireAvatar !== undefined) o.require_avatar = b.requireAvatar ? 1 : 0;
   if (b.published !== undefined) o.published = b.published ? 1 : 0;
   return o;
 }
@@ -49,7 +50,7 @@ function evAdminView(ev) {
   return {
     event: { id: ev.id, slug: ev.slug, title: ev.title, brief: ev.brief, rules: ev.rules, prize: ev.prize, coverUrl: ev.cover_url, channel: ev.channel,
       format: ev.format, bracketSize: ev.bracket_size, finalists: ev.finalists, judgeWeight: ev.judge_weight, picks: ev.picks,
-      minAccountDays: ev.min_account_days, freezeHours: ev.freeze_hours, requireVerified: !!ev.require_verified, published: !!ev.published, plan: evJSON(ev.plan, {}), schedule: sched, phase: phaseAt(sched), state: st,
+      minAccountDays: ev.min_account_days, freezeHours: ev.freeze_hours, requireVerified: !!ev.require_verified, requireAvatar: !!ev.require_avatar, published: !!ev.published, plan: evJSON(ev.plan, {}), schedule: sched, phase: phaseAt(sched), state: st,
       current: evCurrent()?.id === ev.id },
     judges: evJudges(ev.id).map((j) => ({ username: j.username, displayName: j.display_name })),
     entries: entries.map((e) => ({ ...evEntryShape(e), userId: e.user_id, dqReason: e.dq_reason,
@@ -179,7 +180,7 @@ function evDefaultRules(ev) {
       : `Members vote for their favourites; the top ${ev.finalists} go to the final.`} ${ev.judge_weight > 0
       ? `In the final, judges score each finalist from 1 to 10 for originality, craft and response to the brief. The winner is decided ${ev.judge_weight}% by the judges' scores and ${100 - ev.judge_weight}% by member votes.`
       : `In the final, members vote again and the most votes wins.`}`,
-    `Fair voting. One account per person.${ev.require_verified ? " You need a confirmed email to vote." : ""}${ev.min_account_days ? ` Accounts must be at least ${ev.min_account_days} days old to vote.` : ""} You can't vote for yourself. LABS may remove votes, and disqualify entries, that come from fake, bought or coordinated accounts.`,
+    `Fair voting. One account per person.${ev.require_verified ? " You need a confirmed email to vote." : ""}${ev.require_avatar ? " You need a profile photo to vote." : ""}${ev.min_account_days ? ` Accounts must be at least ${ev.min_account_days} days old to vote.` : ""} You can't vote for yourself. LABS may remove votes, and disqualify entries, that come from fake, bought or coordinated accounts.`,
     `Prize. ${ev.prize ? ev.prize : "The prize will be announced before entries open."} The winner will be contacted through the app within 7 days of the final and must reply within 14 days, or a runner-up may be named instead. The prize can't be transferred. The winner is responsible for any taxes, and LABS may ask for tax forms (such as a W-9) where the law requires.`,
     `Your work stays yours. You keep all rights to your entry. By entering, you let LABS show your entry, your name and your username in the app and in promotion of this event, without further payment.`,
     `General. LABS may change, pause or cancel the event if something outside its control affects it, and will tell entrants in the app. By entering you agree to these rules and to LABS' decisions, which are final.`,
