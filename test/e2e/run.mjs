@@ -1435,6 +1435,27 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#sheetx").tap(); await p.waitForTimeout(400);
     await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
   });
+  // 2026-10-28: "make the app fit the size of the phone — the profile grid fills up the edges like Instagram"
+  await step(d, "a profile's grid runs edge to edge in 3:4 tiles, three across", async () => {
+    await p.evaluate(() => openProfile("friend")); await p.waitForSelector(".pig .worklist.asgrid .work-img", { timeout: 6000 });
+    await p.waitForTimeout(300);
+    const g = await p.evaluate(() => { const r = document.querySelector(".pig .worklist.asgrid").getBoundingClientRect(), t = document.querySelector(".pig .worklist.asgrid .work-img").getBoundingClientRect();
+      return { l: r.left, r: r.right, w: innerWidth, tw: t.width, th: t.height }; });
+    ok(Math.abs(g.l) < 1 && Math.abs(g.r - g.w) < 1, `the grid sits inside margins: ${Math.round(g.l)}px to ${Math.round(g.r)}px of ${g.w}px`);
+    ok(Math.abs(g.th / g.tw - 4 / 3) < 0.02 && g.tw > g.w / 3 - 3, `tiles are ${Math.round(g.tw)}×${Math.round(g.th)}, not three-across 3:4`);
+    // an iPad upright: the profile is the whole screen, not a 390px panel over a dimmed page
+    await p.setViewportSize({ width: 820, height: 1180 }); await p.waitForTimeout(300);
+    const tab = await p.evaluate(() => { const c = document.querySelector(".sheetc.pig").getBoundingClientRect(), r = document.querySelector(".pig .worklist.asgrid").getBoundingClientRect(); return { cw: c.width, l: r.left, r: r.right }; });
+    // …and Messages is the whole screen too (it sat in a 440px column beside a blank white half)
+    await p.evaluate(() => { PROFILE = null; render(); openMessages(); }); await p.waitForSelector(".cx-in", { timeout: 4000 }); await p.waitForTimeout(300);
+    const cxw = await p.evaluate(() => Math.round(document.querySelector(".cx-in").getBoundingClientRect().width));
+    await p.evaluate(() => closeMessages()); await p.waitForTimeout(300);
+    ok(cxw === 820, `on an iPad Messages is ${cxw}px wide`);
+    await p.evaluate(() => openProfile("friend")); await p.waitForSelector(".pig .worklist.asgrid", { timeout: 4000 });
+    await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(200);
+    ok(Math.abs(tab.cw - 820) < 1 && Math.abs(tab.l) < 1 && Math.abs(tab.r - 820) < 1, `on an iPad the profile is ${Math.round(tab.cw)}px wide, grid ${Math.round(tab.l)}–${Math.round(tab.r)}px`);
+    await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
+  });
   /* ---- profile v2 (2026-10-07) ---- */
   await step(d, "edit profile: plain rows; a half-typed bio survives the Links screen; Done saves pronouns, bio, links", async () => {
     await p.evaluate(() => { DMOPENPANEL = false; CHAT = null; paintLayer(); });
@@ -1699,6 +1720,11 @@ console.log("\nMEMBER · PHONE");
     await p.unroute("**/api/events/e2e-art/vote"); await p.evaluate(() => { EV_HOLD_MS = 30000; });
     await p.waitForTimeout(300);
     ok(await p.locator(".ev-focus .ev-vote.on").count() === 1 && await p.locator(`.ev-row .ev-vote.on`).count() === 1, "the button and the board row should both say Voted");
+    // 2026-10-28: on a small phone (360px) Share and Vote ran off the right edge
+    await p.setViewportSize({ width: 360, height: 780 }); await p.waitForTimeout(250);
+    const fr = await p.evaluate(() => Math.max(...[...document.querySelectorAll(".ev-focus .ev-fbar button")].map((b) => b.getBoundingClientRect().right)));
+    await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(200);
+    ok(fr <= 360, `on a 360px phone the tournament's buttons reach ${Math.round(fr)}px`);
     ok(await p.evaluate(() => document.querySelector("#evscroll").scrollTop) === y0, "voting jumped the screen");
     ok(await p.locator(".ev-row .ev-mine-s").count() === 1, "your own piece should say Yours, not Vote");
     const srv = await api("/api/events/e2e-art", token);
