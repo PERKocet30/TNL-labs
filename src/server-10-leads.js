@@ -1,5 +1,5 @@
 /* ================================================================
-   LAB LEADS v1.0 — 2026-10-28. "A lab lead under mod. Leaders of a
+   LAB LEADS v1.1 — 2026-10-28 (a new Lead is emailed). v1.0 — 2026-10-28. "A lab lead under mod. Leaders of a
    specific scene … they're quality control."
    A Lead runs one or more labs (PLACES ids: hq, pharmacy, culture,
    fashion, akatsuki, casino, tna). Inside those labs only, and only in the
@@ -96,7 +96,8 @@ app.post("/api/admin/members/:username/lead", auth, admin, (req, res) => {
   if (t.is_admin || t.is_mod) return res.status(400).json({ error: "The owner and Mods already curate every lab." });
   const on = !!req.body?.on;
   if (on && t.suspended) return res.status(400).json({ error: "Restore their account before making them a Lead." });
-  if (on) db.prepare(`INSERT OR IGNORE INTO lab_leads (user_id, lab, appointed_by, created_at) VALUES (?,?,?,?)`).run(t.id, lab, req.user.id, Date.now());
+  if (on) { const added = db.prepare(`INSERT OR IGNORE INTO lab_leads (user_id, lab, appointed_by, created_at) VALUES (?,?,?,?)`).run(t.id, lab, req.user.id, Date.now()).changes;
+    if (added) mailRole(req, t, "lead", lab); }   // emailed once, when it's new (server-04-admin-0-mods.js)
   else db.prepare(`DELETE FROM lab_leads WHERE user_id = ? AND lab = ?`).run(t.id, lab);
   res.json({ ok: true, leads: leadsOf(t.id) });
 });
