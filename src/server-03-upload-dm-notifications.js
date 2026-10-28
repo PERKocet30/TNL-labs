@@ -1,5 +1,5 @@
 /* ================================================================
-   UPLOAD
+   UPLOAD (v1.1 2026-10-28: a lab's Lead or a Mod can take down comments in that lab — mayTakeDown, server-10-leads.js)
    Two paths, deliberately:
 
    /api/upload        — small stuff (avatars, beat audio) as base64 JSON.
@@ -267,7 +267,7 @@ app.delete("/api/comments/:id", auth, (req, res) => {
   const c = db.prepare(`SELECT * FROM comments WHERE id = ?`).get(Number(req.params.id));
   if (!c) return res.status(404).json({ error: "no comment" });
   const post = q.postById.get(c.post_id);
-  const allowed = c.author_id === req.user.id || post?.author_id === req.user.id || req.user.is_admin;
+  const allowed = c.author_id === req.user.id || post?.author_id === req.user.id || req.user.is_admin || mayTakeDown(req.user, post, c.author_id);
   if (!allowed) return res.status(403).json({ error: "not yours" });
   db.prepare(`DELETE FROM comments WHERE id = ?`).run(c.id);
   broadcast("comment", { postId: c.post_id });

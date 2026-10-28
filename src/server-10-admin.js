@@ -1,5 +1,5 @@
 /* ================================================================
-   ADMIN v2.3 — 2026-10-28 (record says Mod; private notes owner-only). v2.2 — 2026-10-14 (People rows carry the member ID). What the dashboard runs on.
+   ADMIN v2.4 — 2026-10-28 (record lists the labs they lead). v2.3 — 2026-10-28 (record says Mod; private notes owner-only). v2.2 — 2026-10-14 (People rows carry the member ID). What the dashboard runs on.
    - /api/admin/pulse: the numbers that matter for a date range, each
      against the range before it, plus daily series and "needs you".
      (v2.1: labs, #tags, the tournament and how people take part moved
@@ -202,7 +202,7 @@ app.get("/api/admin/people/:username", auth, admin, (req, res) => {
     person: {
       username: u.username, displayName: u.display_name, email: u.email, avatarUrl: u.avatar_url || "", role: u.role, bio: u.bio || "",
       rep: u.rep, level: levelFor(u.rep).id, levelName: levelFor(u.rep).name, fee: feeForSeller(u.rep, u.is_admin),
-      verified: !!u.email_verified, isAdmin: !!u.is_admin, isMod: !!u.is_mod, suspended: !!u.suspended, payouts: !!u.stripe_ready,
+      verified: !!u.email_verified, isAdmin: !!u.is_admin, isMod: !!u.is_mod, leads: leadsOf(u.id), suspended: !!u.suspended, payouts: !!u.stripe_ready,
       joined: u.created_at, lastSeen: u.last_seen_at || null,
       /* account information (2026-10-12) — never the password hash, a session token or the Stripe account id */
       id: u.id, roles: jsonList(u.roles), pronouns: u.pronouns || "", link: u.link || "", links: jsonList(u.links),

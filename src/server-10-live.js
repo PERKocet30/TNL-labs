@@ -1,5 +1,5 @@
 /* ================================================================
-   LIVE — 2026-09-29 v2.0. Server-Sent Events, typing, presence,
+   LIVE — v2.1 2026-10-28 (pins: the owner, Mods and the lab's Leads — curator(), server-10-leads.js). 2026-09-29 v2.0. Server-Sent Events, typing, presence,
    lab reactions and pins.
 
    The stream used to be open to anyone and every event went to every
@@ -158,15 +158,15 @@ app.post("/api/posts/:id/react", auth, verified, rateLimit({ max: 60, windowMs: 
   res.json({ reactions });
 });
 
-/* Pins: up to 3 per lab, newest first. Admins only — checked here, not
-   just hidden in the app. */
+/* Pins: up to 3 per lab, newest first. The owner, Mods and that lab's
+   Leads — checked here (curator), not just hidden in the app. */
 function pinsFor(channel) {
   const ids = db.prepare(`SELECT post_id FROM channel_pins WHERE channel = ? ORDER BY created_at DESC LIMIT 3`).all(channel).map((r) => r.post_id);
   const rows = ids.map((id) => feedRows({ postId: id, limit: 1 })[0]).filter(Boolean);
   return shapePosts(rows);
 }
 
-app.post("/api/posts/:id/pin", auth, admin, (req, res) => {
+app.post("/api/posts/:id/pin", auth, curator, (req, res) => {
   const post = q.postById.get(Number(req.params.id));
   if (!post) return res.status(404).json({ error: "no post" });
   if (!post.channel || post.channel === "profile") return res.status(400).json({ error: "Only lab posts can be pinned" });

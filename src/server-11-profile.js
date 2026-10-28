@@ -1,5 +1,5 @@
 /* ================================================================
-   PROFILE v2 · 2026-10-07 — what Instagram-era profiles have that ours
+   PROFILE v2.1 · 2026-10-28 (profiles say which labs someone leads, and Mod — Mod is shown only to themselves). v2 · 2026-10-07 — what Instagram-era profiles have that ours
    didn't: pronouns, several links, pinned posts, followers / following
    you can open, a Tagged tab, and "Followed by …" on someone else's page.
 ================================================================ */
@@ -23,7 +23,7 @@ function cleanLinks(list) {
 function profileExtras(u) {
   let links = jsonList(u.links);
   if (!links.length && u.link) links = cleanLinks([{ url: u.link }]);   // the old single link
-  return { pronouns: u.pronouns || "", links, pinned: jsonList(u.pinned).map(Number).filter(Number.isInteger).slice(0, 3) };
+  return { pronouns: u.pronouns || "", links, pinned: jsonList(u.pinned).map(Number).filter(Number.isInteger).slice(0, 3), leads: typeof leadsOf === "function" ? leadsOf(u.id) : [], isMod: !!(u.is_mod && !u.is_admin) };
 }
 
 /* Followers / following, newest first, without anyone blocked either way. */

@@ -40,7 +40,7 @@ const L = P.cleanLinks([{ title: "Music", url: "music.example.com/artist/x" }, {
 t("https added; javascript:, data: and junk dropped", L[0].url === "https://music.example.com/artist/x" && !L.some((x) => /javascript|data:|nohost/.test(x.url)));
 t("titles kept, at most 5", L[0].title === "Music" && L.length === 5);
 t("an old single link still shows", P.profileExtras({ link: "tnllabs.com", links: "[]" }).links[0].url === "https://tnllabs.com/");
-t("pronouns and pins shape cleanly", JSON.stringify(P.profileExtras({ pronouns: "she/her", links: "[]", pinned: '[3,"4",5,6]' })) === JSON.stringify({ pronouns: "she/her", links: [], pinned: [3, 4, 5] }));
+t("pronouns and pins shape cleanly", JSON.stringify(P.profileExtras({ pronouns: "she/her", links: "[]", pinned: '[3,"4",5,6]' })) === JSON.stringify({ pronouns: "she/her", links: [], pinned: [3, 4, 5], leads: [], isMod: false }));   // leads + isMod: 2026-10-28 (Lab Leads, Mods)
 
 console.log("\nFOLLOWERS / FOLLOWING");
 follow(amy, me, now - 3); follow(bob, me, now - 2); follow(gone, me, now - 1); follow(me, amy); follow(me, bob);

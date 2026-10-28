@@ -1,10 +1,11 @@
-/* LABS admin v1.1 — 2026-10-28 (Mods: the owner makes or removes one under Access; a Mod sees no Notes,
+/* LABS admin v1.2 — 2026-10-28 (Lab Leads: the owner or a Mod picks the labs someone leads, under Access). v1.1 — 2026-10-28 (Mods: the owner makes or removes one under Access; a Mod sees no Notes,
    sign-out or delete, and no member tools on the owner or another Mod). v1.0 — 2026-10-14. One member's record (split from 3-people.js v2.2).
    A header that says who and where they
    stand, the everyday actions in one bar, and the rest in tabs —
    Overview (the numbers, grouped, and anything that needs a look),
    Account (every field, grouped into cards; sign-out and suspend kept
    apart at the bottom), Activity (posts, the rep log with dates) and Notes. */
+const LEAD_LABS = [["hq", "General"], ["pharmacy", "Visual"], ["culture", "Music"], ["fashion", "Fashion"], ["akatsuki", "Anime"], ["casino", "News"], ["tna", "Business"]];
 const PTABS = [["overview", "Overview"], ["account", "Account"], ["activity", "Activity"], ["notes", "Notes"]];
 const REPKIND = { like_received: "Like on their work", share_received: "Their work was shared", collab_accepted: "Collab accepted", sale_made: "Made a sale",
   delivery_confirmed: "Delivery confirmed", feature: "Featured by an admin", sound_used: "Their sound was used", pinned: "Saved to a board",
@@ -48,7 +49,7 @@ function personHTML() {
   if (!owner && PERSON.tab === "notes") PERSON.tab = "overview";
   const head = `<div class="rec-hd">${av(p, "lg")}<div class="rec-id"><h2>${esc(p.displayName)}</h2>
       <span class="dim">@${esc(p.username)} · Member #${p.id}${p.role ? " · " + esc(p.role) : ""}</span>
-      <div class="rec-tags">${badge(pstatus({ ...p, lastActive: p.lastSeen }))}${p.isAdmin ? `<span class="tag on">Admin</span>` : ""}${p.isMod ? `<span class="tag on">Mod</span>` : ""}
+      <div class="rec-tags">${badge(pstatus({ ...p, lastActive: p.lastSeen }))}${p.isAdmin ? `<span class="tag on">Admin</span>` : ""}${p.isMod ? `<span class="tag on">Mod</span>` : ""}${(p.leads || []).length ? `<span class="tag on">Lead · ${p.leads.map((l) => "// " + ((LEAD_LABS.find(([k]) => k === l) || [l, l])[1])).join(" ")}</span>` : ""}
         ${p.verified ? `<span class="tag">Email confirmed</span>` : `<span class="tag warn">Email not confirmed</span>`}${p.payouts ? `<span class="tag">Payouts on</span>` : ""}</div></div></div>
     <div class="acts">
       <button class="btn sm" data-dm="${esc(p.username)}">${I.msg} Message</button>
@@ -94,7 +95,9 @@ function recAccount(d) {
       ${fld("Commission", `${p.fee}% <span class="dim">· set by level L${p.level} ${esc(p.levelName)}</span>`)}${fld("Sales to date", money(s.gross))}</dl>`)
     + card("Access", `<dl class="fds">${fld("Admin access", p.isAdmin ? "Owner — everything" : p.isMod ? "Mod — sees the dashboard and member records, moderates, runs events and adjusts members" : "None — a member")}${fld("Account status", p.suspended ? `<span class="tag warn">Suspended</span>` : "Active")}</dl>
       ${owner && !p.isAdmin ? `<div class="dz"><div><b>${p.isMod ? "Remove Mod" : "Make Mod"}</b><span>${p.isMod ? "They go back to a regular member. Nothing they did is undone." : "A level below you: they see the dashboard and member records (emails included), handle reports, take down posts and listings, run events (you publish) and adjust rep, feature, confirm and suspend members. Never backups, settings, systems, the Instagram inbox, your notes, deleting accounts — and never you or another Mod."}</span></div>
-        <button class="btn ${p.isMod ? "ghost" : ""} sm" data-pa="mod">${p.isMod ? "Remove Mod" : "Make Mod"}</button></div>` : ""}`)
+        <button class="btn ${p.isMod ? "ghost" : ""} sm" data-pa="mod">${p.isMod ? "Remove Mod" : "Make Mod"}</button></div>` : ""}
+      ${!staff && !p.suspended ? `<div class="dz"><div><b>Lab Lead</b><span>Quality control for a scene: in the labs they lead they can pin the best work and take down posts and comments that don't meet the bar — never yours, a Mod's or another Lead's. In the app only; no admin access. Tap a lab to switch it.</span></div></div>
+        <div class="row wrapx" style="gap:6px;padding:0 16px 14px">${LEAD_LABS.map(([k, n]) => `<button class="btn ${(p.leads || []).includes(k) ? "" : "ghost"} sm" data-lead="${k}" aria-pressed="${(p.leads || []).includes(k)}">// ${n}</button>`).join("")}</div>` : ""}`)
     + (!owner && staff ? "" : `<section class="rc danger"><header><h3>Sign-in and suspension</h3></header>
       ${owner ? `<div class="dz"><div><b>Sign out everywhere</b><span>Every device they're signed in on (${s.sessions}). They can sign straight back in.</span></div><button class="btn ghost sm" data-pa="signout">Sign out</button></div>` : ""}
       ${p.isAdmin ? "" : `<div class="dz"><div><b>${p.suspended ? "Restore account" : "Suspend account"}</b><span>${p.suspended ? "They can sign in again." : "Signs them out and stops them signing back in. Their work stays up."}</span></div>
@@ -124,6 +127,11 @@ function wirePerson(el) {
   $$("[data-ptab]", el).forEach((b) => b.onclick = () => { PERSON.tab = b.dataset.ptab; paintPerson(); });
   $$("[data-copy]", el).forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast("Copied"); } catch (e) { toast(b.dataset.copy); } });
   $$("[data-dm]", el).forEach((b) => b.onclick = () => window.open("/?dm=" + encodeURIComponent(b.dataset.dm), "_blank"));
+  $$("[data-lead]", el).forEach((b) => b.onclick = async () => {
+    const lab = b.dataset.lead, on = b.getAttribute("aria-pressed") !== "true", n = (LEAD_LABS.find(([k]) => k === lab) || [lab, lab])[1];
+    if (!(await confirmIt(on ? `Make @${u} a Lead of // ${n}?` : `Remove @${u} as Lead of // ${n}?`, on ? "They can pin and take down posts and comments in // " + n + ". It shows on their profile and in the lab." : "They go back to a regular member in this lab.", { ok: on ? "Make Lead" : "Remove", danger: !on }))) return;
+    return act(() => req("/api/admin/members/" + encodeURIComponent(u) + "/lead", { method: "POST", body: { lab, on } }), on ? `@${u} leads // ${n}` : `@${u} no longer leads // ${n}`).then(refreshPerson);
+  });
   $$("[data-pa]", el).forEach((b) => b.onclick = async () => {
     const a = b.dataset.pa, base = "/api/admin/members/" + encodeURIComponent(u), p = PERSON.data.person;
     if (a === "note") return act(() => req("/api/admin/people/" + encodeURIComponent(u) + "/note", { method: "POST", body: { body: $("#pnote").value } }), "Note saved").then(refreshPerson);

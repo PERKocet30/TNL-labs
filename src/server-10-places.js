@@ -1,6 +1,6 @@
 
 /* ================================================================
-   PLACES v1.5 — 2026-10-27 (Fashion #tags add styling and modeling). (Work pages back in time, 2026-10-21) v1.4 — 2026-10-12 (v1.4: the tournament lives in its lab — Work
+   PLACES v1.6 — 2026-10-28 (Work says who leads the lab, server-10-leads.js). v1.5 — 2026-10-27 (Fashion #tags add styling and modeling). (Work pages back in time, 2026-10-21) v1.4 — 2026-10-12 (v1.4: the tournament lives in its lab — Work
    gets a Tournament chip with every entry, no #tag needed, and each entry
    is marked; "make it so the art event gets posted in visuals so you
    don't need a specific hashtag").
@@ -147,7 +147,7 @@ app.get("/api/labs/:lab/work", auth, (req, res) => {
   const more = !evOn && ids.length > WORK_PAGE; if (more) ids = ids.slice(0, WORK_PAGE);
   const recent = db.prepare(`SELECT body, channel, created_at FROM posts WHERE channel IN (${inList(P.channels)}) ORDER BY created_at DESC LIMIT 400`).all();
   res.json({ lab: req.params.lab, tag: evOn ? null : tag || null, posts: placePosts(ids, req), more, tags: topTags(recent, 16).filter((t) => !PLAIN_TAGS.has(t.tag)),
-    event: lev ? { slug: lev.slug, title: lev.title, n: lev.n } : null, eventOn: evOn ? lev.slug : null });
+    event: lev ? { slug: lev.slug, title: lev.title, n: lev.n } : null, eventOn: evOn ? lev.slug : null, leads: leadsFor(req.params.lab) });
 });
 
 /* The labs list: each genre explained by its #tags — its own first (so a

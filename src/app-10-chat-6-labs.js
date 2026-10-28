@@ -1,4 +1,4 @@
-/* MESSAGES v2.0 — 2026-09-29. Lab rooms as chat.
+/* MESSAGES v2.1 — 2026-10-28 (a lab's Leads and Mods pin and take down in the lab — curates(); the server checks). v2.0 — 2026-09-29. Lab rooms as chat.
    Oldest at the top, newest by the composer, the way every chat reads.
    Hold a message for reactions, reply, copy, send, edit, pin (admins),
    delete. Swipe right to reply, double-tap for ❤️. Pinned messages sit
@@ -107,20 +107,24 @@ function paintPins(){
     PINIDX++;setTimeout(paintPins,900)};
 }
 
+/* Who looks after this post's lab: the owner, Mods, and that lab's Leads (server-10-leads.js). */
+const curates=p=>!!(ME&&p&&p.channel&&p.channel!=="profile"&&(ME.isAdmin||ME.isMod||(ME.leads||[]).includes((labOfCh(p.channel)||{}).id)));
+const takeDown=(p,mine)=>mine?api.delPost(p.id):ME.isAdmin?req("/api/admin/posts/"+p.id,{method:"DELETE"}):req("/api/labs/posts/"+p.id,{method:"DELETE"});
+const asWho=()=>ME.isAdmin?"an admin":ME.isMod?"a Mod":"this lab's lead";
 function labMenu(id){
   const p=roomPost(id);if(!p||p.pending||p.failed)return;
-  const mine=p.author.username===myName(),admin=!!(ME&&ME.isAdmin),acts=[];
+  const mine=p.author.username===myName(),admin=!!(ME&&ME.isAdmin),cur=curates(p),acts=[];
   const pinned=(LABPINS||[]).some(x=>x.id===p.id);
   acts.push({icon:CI.reply,label:"Reply",run:()=>{LABREPLY=p;paintLabBar();$("#draft")?.focus()}});
   if(p.body)acts.push({icon:CI.copy,label:"Copy",run:()=>copyText(p.body)});
   acts.push({icon:CI.fwd,label:"Send to…",run:()=>sendPostSheet(p.id)});
   acts.push({icon:CI.open,label:"Open with comments",run:()=>openPost(p)});
   if(mine)acts.push({icon:CI.edit,label:"Edit",run:()=>{EDITID=p.id;LABREPLY=null;render();const d=$("#draft");if(d){d.value=p.body||"";d.focus()}}});
-  if(admin)acts.push({icon:CI.pin,label:pinned?"Unpin":"Pin",run:async()=>{
+  if(admin||cur)acts.push({icon:CI.pin,label:pinned?"Unpin":"Pin",run:async()=>{
     try{const r=await capi.pin(p.id,!pinned);LABPINS=r.pins;PINIDX=0;paintPins();toast(pinned?"Unpinned":"Pinned for everyone in "+(LAB?labMark(LAB.name):"this lab"))}catch(e){toast(e.message)}}});
-  if(mine||admin)acts.push({icon:CI.trash,label:"Delete",danger:true,run:async()=>{
-    if(!(await uiConfirm("Delete this message?",mine?"":"You're removing someone else's message as an admin.",{okLabel:"Delete",danger:true})))return;
-    try{mine?await api.delPost(p.id):await req("/api/admin/posts/"+p.id,{method:"DELETE"});POSTS=POSTS.filter(x=>x.id!==p.id);renderRoomFeed()}catch(e){toast(e.message)}}});
+  if(mine||admin||cur)acts.push({icon:CI.trash,label:mine?"Delete":"Take down",danger:true,run:async()=>{
+    if(!(await uiConfirm(mine?"Delete this message?":"Take this down?",mine?"":"You're removing someone else's message as "+asWho()+". They'll be told.",{okLabel:mine?"Delete":"Take down",danger:true})))return;
+    try{await takeDown(p,mine);POSTS=POSTS.filter(x=>x.id!==p.id);renderRoomFeed()}catch(e){toast(e.message)}}});
   const me=(p.reactions||[]).find(r=>r.username===myName());
   openMenu({react:true,mine:me&&me.emoji,preview:(p.author.displayName+": "+(p.body||"")).slice(0,120)+" · "+clock(p.createdAt),actions:acts,onReact:e=>reactTo("post:"+p.id,e)});
 }
@@ -135,7 +139,7 @@ async function openPost(p){POSTOPEN=p;OPENCOMMENTS=p.id;COMMENTS=[];render();try
 function postMenu(id){
   if(TAB==="labs"&&!POSTOPEN&&!PROFILE&&roomPost(id))return labMenu(id);
   const p=findAnyPost(id);if(!p||!ME)return;
-  const mine=p.author.username===myName(),admin=!!ME.isAdmin,acts=[];
+  const mine=p.author.username===myName(),admin=!!ME.isAdmin,cur=curates(p),acts=[];
   if(p.body)acts.push({icon:CI.copy,label:"Copy text",run:()=>copyText(p.body)});
   acts.push({icon:CI.fwd,label:"Send to…",run:()=>sendPostSheet(p.id)});
   if(mine)acts.push({icon:CI.edit,label:"Edit caption",run:async()=>{
@@ -154,9 +158,9 @@ function postMenu(id){
       try{const r=await req("/api/me/pins",{method:"POST",body:{postId:p.id,pin:!pinned}});ME.pinned=r.pinned;
         if(PROFILE&&PROFILE.user.username===myName()){PROFILE.user.pinned=r.pinned;PROFCACHE.delete(myName());render()}
         toast(pinned?"Unpinned":"Pinned to your profile")}catch(e){toast(e.message)}}})}
-  if(mine||admin)acts.push({icon:CI.trash,label:"Delete",danger:true,run:async()=>{
-    if(!(await uiConfirm("Delete this post?",mine?"":"You're removing someone else's post as an admin.",{okLabel:"Delete",danger:true})))return;
-    try{mine?await api.delPost(p.id):await req("/api/admin/posts/"+p.id,{method:"DELETE"});
+  if(mine||admin||cur)acts.push({icon:CI.trash,label:mine?"Delete":"Take down",danger:true,run:async()=>{
+    if(!(await uiConfirm(mine?"Delete this post?":"Take this post down?",mine?"":"You're removing someone else's post as "+asWho()+". They'll be told.",{okLabel:mine?"Delete":"Take down",danger:true})))return;
+    try{await takeDown(p,mine);
       const drop=a=>a&&a.filter(x=>x.id!==p.id);POSTS=drop(POSTS);SRPOSTS=drop(SRPOSTS)||[];
       if(PROFILE){PROFILE.posts=drop(PROFILE.posts);PROFILE.collabs=drop(PROFILE.collabs)}
       if(POSTOPEN&&POSTOPEN.id===p.id)POSTOPEN=null;render();toast("Deleted")}catch(e){toast(e.message)}}});
