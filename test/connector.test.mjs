@@ -20,6 +20,7 @@ const U = (n, admin) => { const id = Number(db.prepare(`INSERT INTO users (usern
 const boss = U("boss", true), ana = U("ana", false);
 db.exec(`CREATE TABLE IF NOT EXISTS admin_notes (user_id INTEGER PRIMARY KEY, body TEXT NOT NULL DEFAULT '', updated_by INTEGER, updated_at INTEGER NOT NULL)`);
 db.prepare(`INSERT INTO admin_notes (user_id, body, updated_by, updated_at) VALUES (?,?,?,?)`).run(ana, "PRIVATE NOTE about ana", boss, now);
+const SONG = Number(db.prepare(`INSERT INTO tracks (user_id, title, url, artwork_url, duration_ms, created_at) VALUES (?,?,?,?,?,?)`).run(ana, "NOT IT vfinal", "/uploads/song-abc.m4a", "", 131000, now).lastInsertRowid);
 db.close();
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
@@ -92,6 +93,14 @@ try {
   t("member returns ana's public stats", !mem.result?.isError && /"username":"ana"/.test(memText));
   t("…without her email", !/secret\.example|"email"/.test(memText));
   t("…or the admin's note about her", !/PRIVATE NOTE/.test(memText));
+  /* 2026-10-28: a member's song, to cut into a LABS reel */
+  const sg = await rpc("tools/call", { name: "songs", arguments: { id: SONG } });
+  const sgj = JSON.parse(sg.result?.content?.[0]?.text || "{}").songs || [];
+  t("songs: one song by its number, with its audio link and who made it", !sg.result?.isError && sgj.length === 1 && sgj[0].title === "NOT IT vfinal" && sgj[0].by === "ana"
+    && sgj[0].audio === B + "/uploads/song-abc.m4a" && sgj[0].page === B + "/s/" + SONG);
+  t("…and by search", (JSON.parse((await rpc("tools/call", { name: "songs", arguments: { q: "not it" } })).result?.content?.[0]?.text || "{}").songs || []).length === 1);
+  t("…without anyone's email", !/secret\.example/.test(sg.result?.content?.[0]?.text || ""));
+  t("a member can't list the songs' files", (await call("/api/admin/songs", { token: "tok-ana" })).status === 403);
   const people = await rpc("tools/call", { name: "members", arguments: { q: "ana" } });
   t("members list never carries an email", !/secret\.example|"email"/.test(people.result?.content?.[0]?.text || ""));
   const dm = await rpc("tools/call", { name: "instagram", arguments: {} });
