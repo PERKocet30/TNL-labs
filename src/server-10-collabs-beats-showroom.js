@@ -228,7 +228,9 @@ app.get("/api/feed/showroom", maybeAuth, (req, res) => {
   const pos = new Map(order.map((id, i) => [id, i]));
   const rows = feedRows({ ids: order, viewerId: req.user?.id, limit: 60 }).sort((a, b) => pos.get(a.id) - pos.get(b.id));
   const hidden = req.user ? blockedIds(req.user.id) : new Set();
-  res.json({ posts: shapePosts(rows.filter((r) => !hidden.has(r.author_username))) });
+  /* Only work you can see: a picture or a video (2026-10-28 — a text post
+     showed as a loop card, then as a bare text card). */
+  res.json({ posts: shapePosts(rows.filter((r) => !hidden.has(r.author_username) && (r.image_url || r.video_url))) });
 });
 
 /* Who's building. Names and faces only — it isn't a scoreboard. */

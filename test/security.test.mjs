@@ -34,7 +34,8 @@ t("old posts never send their beat", /^\s*beat: null,/m.test(boot) && !/JSON\.pa
 const beatUi = readdirSync(join(ROOT, "src")).filter((f) => /\.(js|html|css)$/.test(f) && f !== "server.runtime.js")
   .filter((f) => /sr-beat|beatmsg|work-beat|untitled loop|BPM beat|made in the LABS studio/.test(read(f)));
 t("no screen or page draws a loop card", beatUi.length === 0 || (console.log("     still in: " + beatUi.join(", ")), false));
-t("the Showroom only shows work with a picture or video", /\(!workOnly \|\| r\.image_url \|\| r\.video_url\)/.test(feed));
+t("the Showroom only shows work with a picture or video (both feeds)", /\(!workOnly \|\| r\.image_url \|\| r\.video_url\)/.test(feed)
+  && /!hidden\.has\(r\.author_username\) && \(r\.image_url \|\| r\.video_url\)/.test(read("server-10-collabs-beats-showroom.js")));
 t("a card with no media shows its words, not a player", /<div class="sr-txt">\$\{esc\(p\.body\|\|""\)\}<\/div>/.test(read("app-11-showroom.js")));
 
 console.log("\n2 · A RESET LINK NEVER GOES TO WHOEVER ASKED");
