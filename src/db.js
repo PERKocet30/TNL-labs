@@ -538,6 +538,8 @@ if (!cols.includes("stripe_kind")) db.exec(`ALTER TABLE users ADD COLUMN stripe_
 if (!cols.includes("accent")) db.exec(`ALTER TABLE users ADD COLUMN accent TEXT NOT NULL DEFAULT 'lab'`);
 if (!cols.includes("stripe_ready")) db.exec(`ALTER TABLE users ADD COLUMN stripe_ready INTEGER NOT NULL DEFAULT 0`);
 if (!cols.includes("is_admin")) db.exec(`ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0`);
+/* 2026-10-28: Mods — a tier below the owner (server-04-admin-0-mods.js). Only the owner sets it. */
+if (!cols.includes("is_mod")) db.exec(`ALTER TABLE users ADD COLUMN is_mod INTEGER NOT NULL DEFAULT 0`);
 /* Suspension, not deletion. Deleting a member cascades their work out of
    everyone else's collabs and threads — that punishes the wrong people. */
 if (!cols.includes("suspended")) db.exec(`ALTER TABLE users ADD COLUMN suspended INTEGER NOT NULL DEFAULT 0`);

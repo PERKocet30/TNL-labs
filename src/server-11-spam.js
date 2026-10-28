@@ -1,5 +1,5 @@
 /* ================================================================
-   SPAM CHECK v1.0 — 2026-10-27. "Any account with multiple linked
+   SPAM CHECK v1.1 — 2026-10-28 (a Mod can't remove the owner or another Mod). v1.0 — 2026-10-27. "Any account with multiple linked
    accounts needs to be deleted and their vote disregarded. Spam
    accounts… I'll manually do. I don't like my member count being filled
    with bots." Admin-only, enforced here.
@@ -97,7 +97,7 @@ app.post("/api/admin/spam/remove", auth, admin, rateLimit({ max: 60, windowMs: 6
     for (const n of names) {
       const u = q.userByName.get(n);
       if (!u) continue;
-      if (u.is_admin || u.id === req.user.id) { skipped.push(n); continue; }
+      if (u.is_admin || u.id === req.user.id || (u.is_mod && !req.user.is_admin)) { skipped.push(n); continue; }
       const moved = db.prepare(`INSERT INTO removed_votes (event_id, stage, matchup, entry_id, voter_id, created_at, device, removed_at, removed_by)
         SELECT event_id, stage, matchup, entry_id, voter_id, created_at, COALESCE(device, ''), ?, ? FROM event_votes WHERE voter_id = ?`).run(now, req.user.id, u.id).changes;
       db.prepare(`DELETE FROM event_votes WHERE voter_id = ?`).run(u.id);

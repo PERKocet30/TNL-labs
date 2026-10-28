@@ -1,5 +1,5 @@
 /* ================================================================
-   MODERATION — block, report, admin removal.
+   MODERATION v1.1 — 2026-10-28 (admin() lets Mods through modMay()). Block, report, admin removal.
 ================================================================ */
 app.post("/api/users/:username/block", auth, (req, res) => {
   const target = q.userByName.get(req.params.username);
@@ -25,8 +25,13 @@ app.post("/api/report", auth, rateLimit({ max: 10, windowMs: 3600000, key: "user
   res.json({ ok: true });
 });
 
+/* v1.1 — 2026-10-28: the owner passes; a Mod passes only where modMay()
+   says so (server-04-admin-0-mods.js); everyone else is turned away. */
 function admin(req, res, next) {
-  if (!req.user.is_admin) return res.status(403).json({ error: "admins only" });
+  if (req.user.is_admin) return next();
+  if (!req.user.is_mod) return res.status(403).json({ error: "admins only" });
+  const no = modMay(req);
+  if (no) return res.status(403).json({ error: no });
   next();
 }
 
