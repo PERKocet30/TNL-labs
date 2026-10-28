@@ -220,7 +220,6 @@ img.post-img,img.sr-img{height:auto}
 .worklist.asgrid .work-img{max-height:none;aspect-ratio:1/1;border-radius:0}
 .worklist.asgrid .work-body{padding:0 9px;font-size:11.5px;-webkit-line-clamp:2}
 
-.worklist.asgrid .work-beat{padding:9px}
 /* market: trust + filters + similar */
 .trust{font-size:11px;letter-spacing:.02em;margin-top:3px;color:var(--dim)}
 .star{color:#FBBF24}

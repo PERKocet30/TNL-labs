@@ -21,7 +21,7 @@
 :root{--rad:16px;--rad-m:12px;--rad-s:8px}
 
 /* cards and panels */
-.ui-card,.beat,.beatmsg,.bcard,.lx,.lx:last-child,.ev-banner,.ev-invite,.ev-link,.ev-note,.ev-cap,
+.ui-card,.beat,.bcard,.lx,.lx:last-child,.ev-banner,.ev-invite,.ev-link,.ev-note,.ev-cap,
 .crung,.soldbar,.acceptbar,.paybar,.failbar,.ratebar,.dseller,.lcard,.simcard,.pickc,.revitem,
 .installc-in,.c-post,.pf-card,.sk-card,.distro,.pcmus-list,.st-privacy,.gx-out,.bag-g,.sst,
 .pe-link,.pq,.pc-ment,.lpage .lbar{border-radius:var(--rad)}

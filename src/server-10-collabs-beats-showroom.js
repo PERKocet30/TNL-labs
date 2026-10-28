@@ -86,11 +86,10 @@ app.get("/u/:username", (req, res) => {
   const work = posts.map((p) => {
     const w = p.collaborators.filter((c) => c.status === "accepted").map((c) => esc(c.display_name || c.username));
     return `<div class="card">
-      <div class="cap">${p.beat ? "Beat" : p.videoUrl ? "Video" : p.imageUrl ? "Image" : "Post"} · #${esc(p.channel)}</div>
+      <div class="cap">${p.videoUrl ? "Video" : p.imageUrl ? "Image" : "Post"} · #${esc(p.channel)}</div>
       ${p.imageUrl ? `<img class="media" src="${esc(p.imageUrl)}" alt="" loading="lazy">` : ""}
       ${p.videoUrl ? `<video class="media" src="${esc(p.videoUrl)}" controls playsinline preload="metadata"></video>` : ""}
       ${p.body ? `<div class="body">${esc(p.body)}</div>` : ""}
-      ${p.beat ? `<div class="body"><b>${esc(p.beat.name || "untitled loop")}</b> <span class="cap">${Number(p.beat.bpm) || 120} BPM</span></div>` : ""}
       <div class="cap meta">${lookCount(p.likeCount, "like")} · ${lookCount(p.shareCount, "share")}${w.length ? ` · <span class="mk">//</span> with ${w.join(", ")}` : ""}</div>
     </div>`;
   }).join("");

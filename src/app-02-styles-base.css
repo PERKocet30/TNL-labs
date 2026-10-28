@@ -203,8 +203,6 @@ h1,h2,h3{letter-spacing:-.02em}
 .cell.on{background:var(--tx);border-color:var(--tx)}
 .cell.now{outline:2px solid var(--accent-fill);outline-offset:-1px}
 
-.beatmsg{display:flex;align-items:center;gap:10px;background:var(--el);border:1px solid var(--line);border-radius:0;padding:8px 10px;margin-top:8px}
-.beatmsg .nm{font-weight:700;font-size:12px}
 /* market */
 .shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:0 22px 28px}
 .was{text-decoration:line-through;color:var(--dim);margin-right:6px}

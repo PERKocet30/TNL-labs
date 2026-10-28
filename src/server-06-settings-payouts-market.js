@@ -178,7 +178,7 @@ app.get("/api/market/connect/dashboard", auth, async (req, res) => {
 
 app.get("/api/market", maybeAuth, (req, res) => {
   const { category, size, condition, brand, q: term, sort, seller, max, min, kind, key, bpm, free, type } = req.query;
-  const where = [`l.status = 'active'`];
+  const where = [`l.status = 'active'`, `l.kind != 'loop'`];   // loops are gone (2026-10-28)
   const params = [];
   if (kind) { where.push(`l.kind = ?`); params.push(kind); }
   if (type) { where.push(`l.sell_type = ?`); params.push(String(type)); }
@@ -205,7 +205,7 @@ app.get("/api/market", maybeAuth, (req, res) => {
 app.get("/api/market/:id", maybeAuth, (req, res, next) => {
   if (!/^\d+$/.test(req.params.id)) return next();
   const r = db.prepare(`${LISTING_SELECT} WHERE l.id = ?`).get(Number(req.params.id));
-  if (!r) return res.status(404).json({ error: "no listing" });
+  if (!r || r.kind === "loop") return res.status(404).json({ error: "no listing" });
   if (!req.user || req.user.id !== r.seller_id) {
     db.prepare(`UPDATE listings SET views = views + 1 WHERE id = ?`).run(r.id);
     if (req.user) db.prepare(
@@ -236,7 +236,8 @@ app.get("/api/market/:id", maybeAuth, (req, res, next) => {
 
 app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, key: "user" }), (req, res) => {
   const body = req.body || {};
-  const isLoop = body.kind === "loop";
+  if (body.kind === "loop") return res.status(400).json({ error: "Loops aren't sold on LABS." });
+  const isLoop = false;
   const cents = Math.round(Number(body.price) * 100) || 0;
   const free = isLoop && cents === 0;
 
