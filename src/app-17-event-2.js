@@ -9,9 +9,10 @@ function openEvent(slug){
   TAB="event"; EVSLUG=slug; PROFILE=null; POSTOPEN=null; NOTIFOPEN=false; SEARCHOPEN=false; EVENTER=null; EVSHARE=null; EVFOCUS=null;
   render(); loadEvent();
 }
+let EVPRE=null;   // the tournament asked for at boot, before the rest (app-19-feed-boot)
 async function loadEvent(){
-  const want=EVSLUG;
-  try{const d=await evApi.one(want);if(want!==EVSLUG)return;EV=d;if(TAB==="event")render()}
+  const want=EVSLUG,pre=EVPRE&&EVPRE.slug===want?EVPRE.p:null;EVPRE=null;
+  try{const d=await(pre||evApi.one(want));if(want!==EVSLUG)return;EV=d;if(TAB==="event")render()}
   catch(e){toast(e.message||"Couldn't open that event");if(TAB==="event"&&!EV){TAB="showroom";render()}}
 }
 /* The Showroom banner. Painted in place, so loading it never repaints the feed. */

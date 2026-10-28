@@ -298,6 +298,11 @@ function paintVerifyBar(){
      else boot fetches, and waited for — up to 1.5s, never longer — before the
      first paint. */
   const evReady=Promise.race([loadEvents(),new Promise(r=>setTimeout(r,1500))]);
+  /* Asked for together, not one after another (2026-10-27): on a phone on slow data every round trip is
+     half a second or more, and a vote link from Instagram waited for six of them before it even asked for
+     the tournament. The tournament (?e=) and the Market's numbers now set off with everything else. */
+  {const s0=new URLSearchParams(location.search).get("e");if(s0){const p0=evApi.one(s0);p0.catch(()=>{});EVPRE={slug:s0,p:p0}}}
+  const mktP=api.mktMeta();mktP.catch(()=>{});
   try{const d=await api.levels();LEVELS=d.levels;if(d.accents)ACCENTS=d.accents;if(d.site)SITE=d.site}catch(e){/* offline default */}
   if(!studioOn()){const m=LABS.find(l=>l.id==="culture");if(m)m.channels=m.channels.filter(c=>!c.beatlab)}
   if(TOKEN)await refreshMe();          // invalid token just leaves ME null -> guest
@@ -321,7 +326,7 @@ function paintVerifyBar(){
    if(lq.get("login")==="1"){const nx=gxNext(lq.get("next"));history.replaceState({},"","/");
      if(ME&&nx&&(ME.isAdmin||!nx.startsWith("/admin")))return location.replace(nx);
      if(!ME||nx){GNEXT=nx;ENTER=false;GATE="login";GATEWHY=nx&&nx.startsWith("/admin")?"Log in to open Admin.":""}}}
-  try{MKTMETA=await api.mktMeta()}catch(e){}   // public — guests see the Market too
+  try{MKTMETA=await mktP}catch(e){}   // public — guests see the Market too
   await evReady;
   // deep links — a shared /u/ or /m/ URL should land where it says
   let path=location.pathname;try{path=decodeURIComponent(path)}catch(e){}   // /u/xstart%2E → /u/xstart.

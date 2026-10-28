@@ -1731,9 +1731,16 @@ console.log("\nMEMBER · PHONE");
     await p.waitForFunction(() => TAB === "event" && !PROFILE, null, { timeout: 4000 });
     await p.locator("#evback").tap();
     await p.waitForFunction(() => TAB === "showroom", null, { timeout: 4000 });
+    // 2026-10-27: a vote link on slow phone data waited for six round trips before asking for the tournament —
+    // it now goes out at the start, alongside the rest
+    const asked = []; const note = (r) => { const u = new URL(r.url()); if (u.pathname.startsWith("/api/")) asked.push(u.pathname); };
+    p.on("request", note);
     await settledGoto(p, B + "/?e=e2e-poster");
     await throughDoor(p);
     await p.waitForSelector(".ev-h", { timeout: 6000 });
+    p.off("request", note);
+    const at = asked.indexOf("/api/events/e2e-poster"), me = asked.indexOf("/api/me");
+    ok(at >= 0 && (me < 0 || at < me), "the tournament was asked for after the rest of the start-up: " + asked.slice(0, 8).join(" "));
     await p.locator("#evback").tap();
     await p.waitForFunction(() => TAB === "showroom" && location.pathname === "/", null, { timeout: 4000 });
   });
