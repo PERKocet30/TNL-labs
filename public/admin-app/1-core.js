@@ -1,4 +1,4 @@
-/* LABS admin v4.0 — 2026-10-20. "Make it more like Shopify's admin, with
+/* LABS admin v4.1 — 2026-10-28 (charts: readable dates and numbers, round scale); v4.0 — 2026-10-20. "Make it more like Shopify's admin, with
    graphs; one tailored for mobile and one for computer; compare against
    Instagram analytics." Ten sections named by what you manage — Home ·
    Orders · Listings · Sellers · Members · Content · Events · Analytics ·
@@ -104,19 +104,28 @@ function barsHTML(values, { labels = [], fmt = num, h = 150 } = {}) {
 const sparkHTML = (values) => { const max = Math.max(1, ...values); return `<div class="spark" aria-hidden="true">${values.slice(-30).map((v) => `<i style="height:${Math.max(4, Math.round((v / max) * 100))}%"></i>`).join("")}</div>`; };
 /* A line chart in the app's hand: this period in ink, the one before faint
    behind, the last point in reagent, three gridlines, dates underneath.
-   Plain SVG — no library. values/prev: numbers per day. */
+   Plain SVG — no library. values/prev: numbers per day.
+   v2 2026-10-28: the dates and numbers are real text over the drawing, not
+   inside it — inside, they shrank to ~6px on a phone and the last date hung
+   off the edge ("Oct 2" for Oct 28). Five evenly spaced dates, first and
+   last kept inside the frame; the scale is a round number (0 · 50 · 100). */
+const niceMax = (v) => { const p = 10 ** Math.floor(Math.log10(Math.max(1, v))), m = v / p;
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p; };
+const dayText = (l) => /^\d\d-\d\d$/.test(l) ? new Date(2000, +l.slice(0, 2) - 1, +l.slice(3)).toLocaleDateString([], { month: "short", day: "numeric" }) : String(l ?? "");
 function lineHTML(values, prev, { labels = [], fmt = num, h = 200 } = {}) {
-  const W = 600, P = { l: 34, r: 10, t: 10, b: 24 }, n = Math.max(2, values.length);
-  const mx = Math.max(1, ...values, ...(prev || [])) * 1.08;
+  const W = 600, P = { l: 0, r: 0, t: 10, b: 4 }, n = Math.max(2, values.length);
+  const mx = niceMax(Math.max(1, ...values, ...(prev || [])));
   const px = (i) => P.l + i * ((W - P.l - P.r) / (n - 1)), py = (v) => h - P.b - (v / mx) * (h - P.t - P.b);
+  const pc = (x, of) => (x / of * 100).toFixed(2) + "%";
   const pl = (s) => s.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
-  const grid = [0, .5, 1].map((f) => `<line x1="${P.l}" x2="${W - P.r}" y1="${py(mx * f).toFixed(1)}" y2="${py(mx * f).toFixed(1)}" class="gl"/><text x="${P.l - 6}" y="${(py(mx * f) + 4).toFixed(1)}" class="gt" text-anchor="end">${esc(fmt(Math.round(mx * f)))}</text>`).join("");
-  const step = Math.max(1, Math.round(n / 6));
-  const xs = labels.map((l, i) => (i % step === 0 || i === n - 1) && !(i === n - 1 && (n - 1) % step < step / 2 && n > 8) ? `<text x="${px(i).toFixed(1)}" y="${h - 6}" class="gt" text-anchor="middle">${esc(l)}</text>` : "").join("");
-  const dots = values.map((v, i) => `<circle cx="${px(i).toFixed(1)}" cy="${py(v).toFixed(1)}" r="9" class="hit" data-tip="${esc((labels[i] || "") + " · " + fmt(v) + (prev && prev[i] != null ? " (before: " + fmt(prev[i]) + ")" : ""))}"/>`).join("");
-  return `<div class="line" data-plot><svg viewBox="0 0 ${W} ${h}" preserveAspectRatio="none">${grid}
-    ${prev && prev.length ? `<polyline points="${pl(prev)}" class="pv"/>` : ""}<polyline points="${pl(values)}" class="nw"/>
-    <circle cx="${px(n - 1).toFixed(1)}" cy="${py(values[n - 1] || 0).toFixed(1)}" r="4.5" class="end"/>${xs}${dots}</svg><div class="tip" hidden></div></div>`;
+  const grid = [0, .5, 1].map((f) => `<line x1="0" x2="${W}" y1="${py(mx * f).toFixed(1)}" y2="${py(mx * f).toFixed(1)}" class="gl"/>`).join("");
+  const ys = [0, .5, 1].map((f) => `<span style="top:${pc(py(mx * f), h)}">${esc(fmt(mx * f))}</span>`).join("");
+  const k = Math.min(n, [5, 4, 3].find((c) => (n - 1) % (c - 1) === 0) || 5), at = [...new Set(Array.from({ length: k }, (_, j) => Math.round(j * (n - 1) / (k - 1))))];   // evenly spaced, never two side by side
+  const xs = labels.length ? at.map((i, j) => `<span class="${j === 0 ? "a0" : j === at.length - 1 ? "a1" : ""}" style="left:${pc(px(i), W)}">${esc(dayText(labels[i]))}</span>`).join("") : "";
+  const dots = values.map((v, i) => `<circle cx="${px(i).toFixed(1)}" cy="${py(v).toFixed(1)}" r="9" class="hit" data-tip="${esc(dayText(labels[i] || "") + " · " + fmt(v) + (prev && prev[i] != null ? " (before: " + fmt(prev[i]) + ")" : ""))}"/>`).join("");
+  return `<div class="line" data-plot><div class="lyx" style="height:${h}px">${ys}</div><div class="lpl"><div class="lsv"><svg viewBox="0 0 ${W} ${h}" preserveAspectRatio="none" style="height:${h}px">${grid}
+    ${prev && prev.length ? `<polyline points="${pl(prev)}" class="pv"/>` : ""}<polyline points="${pl(values)}" class="nw"/>${dots}</svg>
+    <i class="ldot" style="left:${pc(px(n - 1), W)};top:${pc(py(values[n - 1] || 0), h)}"></i></div><div class="lxx">${xs}</div></div><div class="tip" hidden></div></div>`;
 }
 /* horizontal bars with a label and a number each — a breakdown (by lab, by role, by source) */
 const breakHTML = (rows, fmt = num) => { const mx = Math.max(1, ...rows.map((r) => r.n));
