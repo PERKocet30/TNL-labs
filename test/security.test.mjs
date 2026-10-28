@@ -1,4 +1,5 @@
-// SECURITY v1.0 — 2026-10-27. The five holes from the security review, each
+// SECURITY v1.1 — 2026-10-28 (loops are gone: 1 and 4 now check that).
+// v1.0 — 2026-10-27. The five holes from the security review, each
 // with a check that fails on the old code:
 // 1. a beat post could carry code in its BPM and run it in every viewer's app
 // 2. "forgot password" handed the reset link to whoever asked when mail failed
@@ -6,7 +7,7 @@
 // 4. a paid loop's file went to everyone who looked at the listing
 // 5. rate limits believed a CF-Connecting-IP header anyone can type
 import { fileURLToPath } from "node:url";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import { mkdirSync, rmSync, readFileSync, readdirSync } from "node:fs";
 import { BlockList, isIP } from "node:net";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -21,26 +22,20 @@ const read = (f) => readFileSync(join(ROOT, "src", f), "utf8");
 // The guard part, run on its own (its one import is handed in).
 const buckets = new Map();
 const guardSrc = read("server-01-guard.js").replace(/^import .*$/m, "");
-const loadGuard = (env) => new Function("BlockList", "isIP", "db", "buckets", "process", "pathResolve",
-  guardSrc + "\nreturn { clientIp, rateLimitBy, cleanBeat, mailLinkOk, canShip, canReceive, loopAudio };")(
-  BlockList, isIP, db, buckets, { env }, resolve);
+const loadGuard = (env) => new Function("BlockList", "isIP", "db", "buckets", "process",
+  guardSrc + "\nreturn { clientIp, rateLimitBy, mailLinkOk, canShip, canReceive, loopAudio };")(
+  BlockList, isIP, db, buckets, { env });
 const G = loadGuard({});
 
-console.log("\n1 · BEATS CARRY A NUMBER, NOT CODE");
-const evil = "<img src=x onerror=alert(1)>";
-let b = G.cleanBeat({ name: "x", bpm: evil, data: { tracks: [] }, remixOf: { postId: "7", username: "kenzuu", name: "og", extra: evil }, script: evil });
-t("a BPM that isn't a number becomes 120", b.bpm === 120);
-t("anything outside { name, bpm, data, remixOf } is dropped", !("script" in b) && !("extra" in b.remixOf));
-t("the remix link keeps a numeric post id", b.remixOf.postId === 7 && b.remixOf.username === "kenzuu");
-t("a real BPM survives", G.cleanBeat({ bpm: 140 }).bpm === 140 && G.cleanBeat({ bpm: "92.4" }).bpm === 92);
-t("out-of-range BPM is reset", G.cleanBeat({ bpm: 9999 }).bpm === 120 && G.cleanBeat({ bpm: -5 }).bpm === 120);
-t("names are capped at 60", G.cleanBeat({ name: "a".repeat(500) }).name.length === 60);
-t("not an object → no beat", G.cleanBeat("hi") === null && G.cleanBeat([1]) === null && G.cleanBeat(null) === null);
+console.log("\n1 · NO BEATS IN, NONE OUT (loops are gone, 2026-10-28)");
 const feed = read("server-02-auth-feed.js"), boot = read("server-01-boot.js");
-t("posting cleans the beat before it's saved", /const beat = cleanBeat\(rawBeat\)/.test(feed));
-t("reading cleans it too, so older posts are safe", /cleanBeat\(JSON\.parse\(row\.beat_json\)\)/.test(boot));
-const raw = readdirSync(join(ROOT, "src")).filter((f) => /\.(js|html)$/.test(f)).filter((f) => /\$\{p\.beat\??\.bpm\}|\$\{p\.beat\??\.bpm\|\|/.test(read(f)));
-t("no page prints a BPM without Number()", raw.length === 0 || (console.log("     raw in: " + raw.join(", ")), false));
+t("a beat in a new post is ignored", /const beat = null;/.test(feed) && !/beat: rawBeat|cleanBeat/.test(feed));
+t("old posts never send their beat", /^\s*beat: null,/m.test(boot) && !/JSON\.parse\(row\.beat_json\)/.test(boot));
+const beatUi = readdirSync(join(ROOT, "src")).filter((f) => /\.(js|html|css)$/.test(f) && f !== "server.runtime.js")
+  .filter((f) => /sr-beat|beatmsg|work-beat|untitled loop|BPM beat|made in the LABS studio/.test(read(f)));
+t("no screen or page draws a loop card", beatUi.length === 0 || (console.log("     still in: " + beatUi.join(", ")), false));
+t("the Showroom only shows work with a picture or video", /\(!workOnly \|\| r\.image_url \|\| r\.video_url\)/.test(feed));
+t("a card with no media shows its words, not a player", /<div class="sr-txt">\$\{esc\(p\.body\|\|""\)\}<\/div>/.test(read("app-11-showroom.js")));
 
 console.log("\n2 · A RESET LINK NEVER GOES TO WHOEVER ASKED");
 t("no mail set up, on a laptop → the link is shown (for testing)", G.mailLinkOk({ sent: false, reason: "no_key" }) === true);
@@ -90,23 +85,17 @@ t("someone else's order: still refused", hit("/api/orders/:id/ship", O("paid", "
 t("the seller's button only shows when shipping is allowed", /canShip: canShip\(r\)/.test(orders) && /ORDTAB==="selling"&&o\.canShip/.test(read("app-14-detail-sell.js")));
 t("the test-order guard is untouched (order-void suite)", (orders.match(/if \(o\.status === "void"\) return res\.status\(400\)/g) || []).length === 2);
 
-console.log("\n4 · A PAID LOOP'S FILE ONLY REACHES ITS BUYERS");
+console.log("\n4 · NO LOOPS IN THE MARKET (2026-10-28)");
 const L = (price) => db.prepare(`SELECT * FROM listings WHERE id=?`).get(Number(db.prepare(`INSERT INTO listings (seller_id,title,price_cents,images,kind,audio_url,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`).run(seller, "loop", price, "[]", "loop", "/uploads/k-1.wav", now, now).lastInsertRowid));
 const paidLoop = L(500), freeLoop = L(0);
-t("a stranger gets the preview, not the file", G.loopAudio(paidLoop, stranger).audioUrl === null && G.loopAudio(paidLoop, stranger).previewUrl === `/api/market/${paidLoop.id}/preview.mp3`);
-t("a guest too", G.loopAudio(paidLoop, undefined).audioUrl === null);
-t("the seller gets the file", G.loopAudio(paidLoop, seller).audioUrl === "/uploads/k-1.wav");
-t("an admin gets the file", G.loopAudio(paidLoop, boss).audioUrl === "/uploads/k-1.wav");
-db.prepare(`INSERT INTO orders (listing_id,buyer_id,seller_id,amount_cents,shipping_cents,status,payment_ref,created_at,updated_at) VALUES (?,?,?,500,0,'pending','cs_l',?,?)`).run(paidLoop.id, buyer, seller, now, now);
-t("an unpaid order doesn't unlock it", G.loopAudio(paidLoop, buyer).audioUrl === null);
-db.prepare(`UPDATE orders SET status='paid' WHERE listing_id=?`).run(paidLoop.id);
-t("a paid one does", G.loopAudio(paidLoop, buyer).audioUrl === "/uploads/k-1.wav");
-t("free loops: the file for everyone, as before", G.loopAudio(freeLoop, undefined).audioUrl === "/uploads/k-1.wav");
-t("listings use it", /\.\.\.loopAudio\(r, viewerId\)/.test(read("server-06-settings-payouts-market.js")) && !/audioUrl: r\.audio_url/.test(read("server-06-settings-payouts-market.js")));
-const pv = read("server-08-loop-preview.js");
-t("the preview is cut by ffmpeg with an argument list (no shell)", /execFile\(FFMPEG, \[/.test(pv) && !/exec\(/.test(pv));
-t("…from a checked upload name only", /\^\\\/uploads\\\/\(\[A-Za-z0-9\._-\]\+\)\$/.test(pv));
-t("the player falls back to the preview", /l\.audioUrl\|\|l\.previewUrl/.test(read("app-13-tracks-player.js")));
+t("an old loop's file goes to nobody", G.loopAudio(paidLoop).audioUrl === null && G.loopAudio(freeLoop).audioUrl === null);
+t("other listings keep their file", G.loopAudio({ kind: "physical", audio_url: "/uploads/x.mp3" }).audioUrl === "/uploads/x.mp3");
+const mk = read("server-06-settings-payouts-market.js");
+t("a new loop listing is refused", /if \(body\.kind === "loop"\) return res\.status\(400\)/.test(mk));
+t("the market never lists one", /`l\.kind != 'loop'`/.test(mk));
+t("and a loop's own page is gone", /if \(!r \|\| r\.kind === "loop"\) return res\.status\(404\)/.test(mk));
+t("listings use loopAudio", /\.\.\.loopAudio\(r, viewerId\)/.test(mk) && !/audioUrl: r\.audio_url/.test(mk));
+t("the preview route is gone", !readdirSync(join(ROOT, "src")).includes("server-08-loop-preview.js"));
 
 console.log("\n5 · RATE LIMITS KNOW WHO'S REALLY ASKING");
 const req = (h, sock = "10.0.0.5") => ({ get: (k) => h[k.toLowerCase()], socket: { remoteAddress: sock } });

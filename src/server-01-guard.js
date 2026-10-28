@@ -1,14 +1,13 @@
-/* ── GUARDS · v1.0 · 2026-10-27 ───────────────────────────────────────
+/* ── GUARDS · v1.1 · 2026-10-28 (loops are gone: no cleanBeat, no preview) · v1.0 · 2026-10-27 ───────────────────────────────────────
    Checks several routes share, from the security review of 2026-10-27.
    1. clientIp      who is really asking (rate limits, signals)
    2. rateLimitBy   a limit on the account being tried, not the address
-   3. cleanBeat     a beat post reduced to the shape the studio makes
+   3. (cleanBeat — removed 2026-10-28 with loops)
    4. mailLinkOk    when a reset / confirm link may be shown on screen
    5. canShip /     an order only moves forward once it's paid
       canReceive
-   6. loopAudio     a paid loop's file only reaches people who bought it
+   6. loopAudio     a loop listing's file never leaves the server
    BlockList and isIP come from the import in server-10-links (one module). */
-import { resolve as pathResolve } from "node:path";
 
 /* 1 ── Cloudflare's published ranges (cloudflare.com/ips). CF-Connecting-IP
    is only true when Cloudflare sent it; anyone reaching Railway directly
@@ -54,23 +53,6 @@ function rateLimitBy(pick, { max, windowMs }) {
   };
 }
 
-/* 3 ── A beat is { name, bpm, data, remixOf } (public/studio.js publish).
-   Anything else is dropped, bpm is a number, text is capped. Applied when a
-   beat is posted AND when one is read, so older rows are safe too. */
-function cleanBeat(b) {
-  if (!b || typeof b !== "object" || Array.isArray(b)) return null;
-  const bpm = Math.round(Number(b.bpm));
-  const out = { name: String(b.name ?? "untitled loop").slice(0, 60), bpm: bpm >= 40 && bpm <= 300 ? bpm : 120 };
-  if (b.data && typeof b.data === "object") out.data = b.data;
-  const r = b.remixOf;
-  if (r && typeof r === "object") {
-    const postId = Math.trunc(Number(r.postId));
-    out.remixOf = { name: String(r.name ?? "").slice(0, 60), username: String(r.username ?? "").slice(0, 40) };
-    if (postId > 0) out.remixOf.postId = postId;
-  }
-  return out;
-}
-
 /* 4 ── A reset or confirm link on screen is a shortcut for testing on a
    laptop with no mail set up. Anywhere else, a failed send (quota, outage)
    must not hand the link to whoever asked — that's anyone's account. */
@@ -83,17 +65,8 @@ const mailLinkOk = (result) => !ON_RAILWAY && !!result && !result.sent && result
 const canShip = (o) => o.status === "paid" || (o.status === "pending" && !o.payment_ref);
 const canReceive = (o) => o.status === "paid" || o.status === "shipped";
 
-/* 6 ── Free loops and everything else: the file, as before. A paid loop's
-   file: its seller, an admin, or someone with a paid order. Everyone else
-   gets the preview (server-08-loop-preview). */
-function loopAudio(r, viewerId) {
-  const preview = r.kind === "loop" && r.audio_url ? `/api/market/${r.id}/preview.mp3` : null;
-  if (!r.audio_url || r.kind !== "loop" || !(r.price_cents > 0)) return { audioUrl: r.audio_url || null, previewUrl: preview };
-  let mine = false;
-  if (viewerId) {
-    mine = viewerId === r.seller_id
-      || !!db.prepare(`SELECT is_admin FROM users WHERE id = ?`).get(viewerId)?.is_admin
-      || !!db.prepare(`SELECT 1 FROM orders WHERE listing_id = ? AND buyer_id = ? AND status IN ('paid','shipped','complete')`).get(r.id, viewerId);
-  }
-  return { audioUrl: mine ? r.audio_url : null, previewUrl: preview };
+/* 6 ── Loops are gone from LABS (2026-10-28): none can be listed and none
+   are shown. If an old loop row ever surfaces, its file stays put. */
+function loopAudio(r) {
+  return { audioUrl: r.kind === "loop" ? null : r.audio_url || null };
 }

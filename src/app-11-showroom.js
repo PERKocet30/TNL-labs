@@ -11,7 +11,7 @@ function showroomHTML(){return `<div class="scroll" id="showroom">
   <div class="sr-gridwrap">${galNavHTML()}<div class="sr-grid${galOn()?" sr-wall":""}" id="sr-grid">${SRPOSTS.length?SRPOSTS.map(srCardHTML).join(""):skel("cards")}</div></div>
 </div>`}
 
-/* SHOWROOM CARD v1.1 — 2026-10-14: the first card's picture loads right away
+/* SHOWROOM CARD v1.2 — 2026-10-28: no loops — a card with no picture or video shows its words (the server keeps those off the wall anyway); v1.1 — 2026-10-14: the first card's picture loads right away
    (it's the first thing anyone sees); every other picture waits until it's near. */
 function srCardHTML(p,i){
   const ld=i===0?'loading="eager" fetchpriority="high"':'loading="lazy"';
@@ -34,8 +34,7 @@ function srCardHTML(p,i){
       :p.videoUrl?`<div class="vwrap">
         ${pxVideo(p,"sr-img")}
       </div>`
-      :`<div class="sr-beat"><button class="circle" style="width:34px;height:34px;font-size:12px" data-beatplay='${esc(JSON.stringify(p.beat))}' aria-label="Play">${DI.play}</button>
-         <div><div class="sr-beatname">${esc(p.beat?.name||"untitled loop")}</div><div class="mono dim">${Number(p.beat?.bpm)||120} BPM${p.beat?.remixOf?` · from @${esc(p.beat.remixOf.username||"?")}`:" · LOOP"}</div></div>${studioOn()?`<button class="act" data-remix="${p.id}" style="margin-left:auto">${IC_REMIX_SM} Remix</button>`:""}</div>`}
+      :`<div class="sr-txt">${esc(p.body||"")}</div>`}
     </div>
     ${pxShopHTML(p)}
     <div class="sr-meta">

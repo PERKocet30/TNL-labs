@@ -251,16 +251,19 @@ app.get("/api/feed", auth, (req, res) => {
     limit: workOnly ? 120 : 50,
   });
   const hidden = req.user ? blockedIds(req.user.id) : new Set();
+  /* The Showroom is a wall of work you can see: a picture or a video. A
+     text-only post lives on its profile and in its lab (2026-10-28: "Hi"
+     showed up as an empty loop card). */
+  const shown = (r) => !hidden.has(r.author_username) && (!workOnly || r.image_url || r.video_url);
   res.json({
-    posts: shapePosts(rows.filter((r) => !hidden.has(r.author_username))),
+    posts: shapePosts(rows.filter(shown)),
     pins: req.query.channel ? pinsFor(String(req.query.channel)).filter((p) => !hidden.has(p.author.username)) : undefined,
   });
 });
 
 app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
-  const { channel, body, beat: rawBeat, mediaW, mediaH, isWork, images, audioTrackId } = req.body || {};
-  const beat = cleanBeat(rawBeat);   // server-01-guard: { name, bpm, data, remixOf } and nothing else
-  if (beat && JSON.stringify(beat).length > 400000) return res.status(413).json({ error: "that beat is too big to post" });
+  const { channel, body, mediaW, mediaH, isWork, images, audioTrackId } = req.body || {};
+  const beat = null;   // loops are gone from LABS (2026-10-28): a "beat" in the request is ignored
   // Media must be a file uploaded here — never someone else's URL.
   const up = (v) => (typeof v === "string" && /^\/uploads\/[A-Za-z0-9._-]+$/.test(v) ? v : null);
   const imageUrl = up(req.body?.imageUrl), videoUrl = up(req.body?.videoUrl), thumbUrl = up(req.body?.thumbUrl);

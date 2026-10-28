@@ -41,8 +41,6 @@
 .work-vid{width:100%;aspect-ratio:1;border-radius:0;background:linear-gradient(160deg,#2a2a2e,#141416);display:block}
 .work:hover{border-color:var(--line2)}
 .work-body{font-size:13px;line-height:1.5;color:var(--tx2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.work-beat{display:flex;align-items:center;gap:8px}
-.work-beat .nm{font-size:12.5px;font-weight:700}
 textarea.in{resize:vertical;line-height:1.5}
 /* images */
 .attach{width:38px;flex-shrink:0;background:var(--el);border:1px solid var(--line);color:var(--dim);border-radius:999px;font-size:18px;font-weight:400;line-height:1}
@@ -111,8 +109,7 @@ textarea.in{resize:vertical;line-height:1.5}
 .sr-card{break-inside:avoid;margin-bottom:11px;background:var(--card);border:1px solid var(--line);border-radius:0;overflow:hidden}
 .sr-card:hover{border-color:var(--line2)}
 .sr-img{width:100%;display:block;cursor:zoom-in}
-.sr-beat{display:flex;align-items:center;gap:10px;padding:20px 14px;background:var(--el)}
-.sr-beatname{font-weight:900;font-size:13px}
+.sr-txt{padding:20px 14px;background:var(--el);font-size:15px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
 /* Instagram order: who it is on top, media, then what they said. */
 .sr-head{padding:11px 11px 9px}
 .sr-meta{padding:9px 11px 11px}

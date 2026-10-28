@@ -391,7 +391,7 @@ function shapePost(row, side) {
     id: row.id,
     channel: row.channel,
     body: row.body,
-    beat: row.beat_json ? cleanBeat(JSON.parse(row.beat_json)) : null,
+    beat: null,   // loops are gone from LABS (2026-10-28); old rows keep beat_json, nobody sees it
     imageUrl: row.image_url || null,
     thumbUrl: row.thumb_url || row.image_url || null,
     mediaW: row.media_w || null,

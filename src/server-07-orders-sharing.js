@@ -343,7 +343,6 @@ app.get("/p/:id", (req, res) => {
      Two names on one piece is more interesting than either name alone. */
   const desc = [
     p.body ? p.body.slice(0, 120) : null,
-    p.beat ? `${Number(p.beat.bpm) || 120} BPM beat, made in the LABS studio` : null,
     `#${p.channel}`,
     p.likeCount ? `${p.likeCount} ♥` : null,
   ].filter(Boolean).join(" · ").slice(0, 200);
@@ -382,7 +381,6 @@ ${ldJson({ "@context": "https://schema.org", "@type": "SocialMediaPosting", url:
 ${p.body ? `<p class="body" style="margin:0 0 14px">${esc(p.body)}</p>` : ""}
 ${p.imageUrl ? `<img class="media" src="${esc(p.imageUrl)}" alt="" style="max-height:none">` : ""}
 ${p.videoUrl ? `<video class="media" src="${esc(p.videoPlayUrl || p.videoUrl)}#t=${((p.video?.start || 0) / 1000).toFixed(2)}${p.video?.end ? "," + (p.video.end / 1000).toFixed(2) : ""}"${p.thumbUrl && p.thumbUrl !== p.imageUrl ? ` poster="${esc(p.thumbUrl)}"` : ""}${p.video?.muted ? " muted" : ""} controls playsinline preload="metadata"></video>` : ""}
-${p.beat ? `<div class="card"><b>${esc(p.beat.name || "untitled loop")}</b><div class="cap">${Number(p.beat.bpm) || 120} BPM · made in the LABS studio</div></div>` : ""}
 ${accepted.length ? `<div class="cap meta"><span class="mk">//</span> Built with ${accepted.map((c) => esc(c.display_name || c.username)).join(" + ")}</div>` : ""}
 <div class="cap meta">${lookCount(p.likeCount, "like")} · ${lookCount(p.shareCount, "share")} · #${esc(p.channel)}</div>
 <a class="btn block acc" href="/?p=${p.id}">Open in the app</a>
