@@ -1435,6 +1435,16 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#sheetx").tap(); await p.waitForTimeout(400);
     await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
   });
+  // 2026-10-28: "make the app fit the size of the phone — the profile grid fills up the edges like Instagram"
+  await step(d, "a profile's grid runs edge to edge in 3:4 tiles, three across", async () => {
+    await p.evaluate(() => openProfile("friend")); await p.waitForSelector(".pig .worklist.asgrid .work-img", { timeout: 6000 });
+    await p.waitForTimeout(300);
+    const g = await p.evaluate(() => { const r = document.querySelector(".pig .worklist.asgrid").getBoundingClientRect(), t = document.querySelector(".pig .worklist.asgrid .work-img").getBoundingClientRect();
+      return { l: r.left, r: r.right, w: innerWidth, tw: t.width, th: t.height }; });
+    ok(Math.abs(g.l) < 1 && Math.abs(g.r - g.w) < 1, `the grid sits inside margins: ${Math.round(g.l)}px to ${Math.round(g.r)}px of ${g.w}px`);
+    ok(Math.abs(g.th / g.tw - 4 / 3) < 0.02 && g.tw > g.w / 3 - 3, `tiles are ${Math.round(g.tw)}×${Math.round(g.th)}, not three-across 3:4`);
+    await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
+  });
   /* ---- profile v2 (2026-10-07) ---- */
   await step(d, "edit profile: plain rows; a half-typed bio survives the Links screen; Done saves pronouns, bio, links", async () => {
     await p.evaluate(() => { DMOPENPANEL = false; CHAT = null; paintLayer(); });

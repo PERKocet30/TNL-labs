@@ -1,4 +1,6 @@
-/* SOFT v1.2 — 2026-10-18 (v1.2: a post is a post — an opened post and its
+/* SOFT v1.3 — 2026-10-28 (v1.3: edge to edge, like Instagram — the profile grid and its tabs
+   reach both sides of the phone in 3:4 tiles, and Who's building runs off the right edge).
+   SOFT v1.2 — 2026-10-18 (v1.2: a post is a post — an opened post and its
    picture stay square again, and the Market gallery shows its whole photo;
    rounding .lgal with overflow:hidden cut the picture to its box's height).
    SOFT v1.1 — 2026-10-18 (v1.1: "make sure everything matches the design
@@ -75,3 +77,16 @@
 .bcard .av.ring{box-shadow:0 0 0 3px var(--card),0 0 0 6px var(--ring)}
 .av.xs.ring,.pc-chip .av.ring,.c-gav .av.ring{box-shadow:0 0 0 1.5px var(--bg),0 0 0 3px var(--ring)}
 .pav{border:0;box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--ring,var(--accent-fill))}   /* the profile owner's colour, not the viewer's */
+
+/* Edge to edge (v1.3, 2026-10-28: "make the app fit the size of the phone — the profile grid fills
+   up the edges like Instagram"). The grid and its tabs step out of the page's side padding (--pgx)
+   to the screen's edges; tiles are 3:4 with a 2px line between them and no border. */
+.pig{--pgx:20px}
+.sheet.astab .pig{--pgx:16px}
+.pig .ptabs,.pig .worklist.asgrid{margin-left:calc(-1 * var(--pgx));margin-right:calc(-1 * var(--pgx))}
+.pig .worklist.asgrid .work{border:0;border-radius:0;background:var(--el)}
+.pig .worklist.asgrid .work-img{aspect-ratio:3/4}
+@media(min-width:1024px){.sheet.astab .pig{--pgx:28px}}
+@media(max-width:600px){.sheetc.pig{border-left:0}}   /* on a phone the profile is the whole screen: no edge line */
+/* Who's building runs off the right edge on a phone, and starts in line with the page */
+@media(max-width:1023px){.sr-builders .brow{margin:0 -20px;padding:0 20px 8px;scroll-padding:0 20px}}
