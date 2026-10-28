@@ -1842,6 +1842,20 @@ console.log("\nMEMBER · COMPUTER");
       await fast(p, 3000, () => p.waitForSelector(sel), tab);
     }
   });
+  // 2026-10-27: the watch's "#sr-grid moved 0.15", 50+ times on computers — "Graphic Designer" wrapped to a second
+  // line in Who's building that the placeholder didn't have, and the grid dropped 14px when the people landed
+  await step(d, "Who's building is the same height before and after the people land, whatever their names and roles", async () => {
+    await p.waitForFunction(() => SRBLOADED && SRB.length, null, { timeout: 6000 });
+    const h = () => p.evaluate(() => Math.round(document.getElementById("sr-builders").getBoundingClientRect().height));
+    const real = await h();
+    await p.evaluate(() => { SRB = SRB.map((x, i) => i ? x : { ...x, display_name: "A Very Long Display Name Indeed", role: "Graphic Designer and Illustrator" });
+      document.getElementById("sr-builders").innerHTML = srBuildersHTML(); });
+    const long = await h();
+    await p.evaluate(() => { SRBLOADED = false; document.getElementById("sr-builders").innerHTML = srBuildersHTML(); });
+    const hold = await h();
+    await p.evaluate(() => { SRBLOADED = true; document.getElementById("sr-builders").innerHTML = srBuildersHTML(); wireProfileLinks(document.getElementById("sr-builders")); });
+    ok(hold === real && long === real, `placeholder ${hold}px, people ${real}px, long name and role ${long}px`);
+  });
   // 2026-10-18: "posts with music compete with others… I want it to feel like a virtual showroom" — a gallery wall, one piece in the spotlight
   // v1.1 (same day): "take the grid off computers completely… while scrolling it glitches and swipes thru multiple"
   await step(d, "a laptop: the Showroom is a gallery (no grid) — one piece in the spotlight, ← → walk along it, only that piece's song can play, one swipe is one step", async () => {
