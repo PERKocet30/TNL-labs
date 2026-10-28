@@ -24,6 +24,10 @@ let r = call("POST /api/glitch", { user: { username: "noor" }, body: { device: "
   { kind: "layout_jump", place: "labs", detail: "x".repeat(1000) },
   null] } });
 t("keeps known kinds only", r.saved === 2);
+t("drops Sentry's error report posing as a failed save (2026-10-28)", call("POST /api/glitch", { user: null, body: { events: [
+  { kind: "action_failed", place: "showroom", detail: "POST /api/:id/envelope/ → no answer" },
+  { kind: "action_failed", place: "showroom", detail: "POST /api/posts/:id/like → 500" }] } }).saved === 1);
+db.prepare("DELETE FROM glitch_events WHERE kind = 'action_failed'").run();
 const rows = db.prepare("SELECT * FROM glitch_events ORDER BY id").all();
 t("stores who, where and which device", rows[0].username === "noor" && rows[0].place === "showroom" && rows[0].device === "phone");
 t("detail is clipped", rows[1].detail.length === 240);

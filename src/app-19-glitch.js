@@ -79,7 +79,10 @@ const glPath=u=>String(u).replace(/^https?:\/\/[^/]+/,"").split("?")[0]
 window.fetch=async function(input,init){
   const url=typeof input==="string"?input:(input&&input.url)||"";
   const m=String((init&&init.method)||"GET").toUpperCase();
-  const watch=/\/api\//.test(url)&&!/\/api\/(stream|glitch|client-error|upload)/.test(url);
+  /* LABS's own calls only (2026-10-28: "3 failed saves — POST /api/:id/envelope/" was Sentry's error report, at
+     sentry.io, blocked by an ad-blocker or an in-app browser; no member's like, post or message failed) */
+  const own=!/^[a-z]+:/i.test(url)||url.indexOf(location.origin+"/")===0;
+  const watch=own&&/\/api\//.test(url)&&!/\/api\/(stream|glitch|client-error|upload)/.test(url);
   /* checks the app makes on its own in the background aren't a screen anyone waits on (2026-10-27: "/api/auth/status
      42.8s" was a new member gone to their inbox to confirm; the server answered every one in under 0.1s) */
   const poll=/\/api\/(auth\/status|notifications|unreads)(\?|$)/.test(glPath(url));

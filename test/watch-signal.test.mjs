@@ -20,7 +20,8 @@ const listeners = {};
 const doc = { hidden: false, addEventListener: (k, f) => { (listeners[k] = listeners[k] || []).push(f); } };
 const flip = (hidden) => { doc.hidden = hidden; for (const f of listeners.visibilitychange || []) f(); };
 let answer = null;   // the "network": resolves when the test says so
-const win = { fetch: (u) => u.includes("/api/glitch") ? Promise.resolve({ status: 200 }) : new Promise((r) => { answer = () => r({ status: 200 }); }) };
+let FAIL_NEXT = false;
+const win = { fetch: (u) => FAIL_NEXT ? (FAIL_NEXT = false, Promise.reject(new TypeError("Load failed"))) : u.includes("/api/glitch") ? Promise.resolve({ status: 200 }) : new Promise((r) => { answer = () => r({ status: 200 }); }) };
 const run = new Function("window", "document", "Date", "setTimeout", "clearTimeout", "PerformanceObserver",
   "GATE", "PCOMPOSE", "TRKEDIT", "CHAT", "DMOPENPANEL", "POSTOPEN", "PROFILE", "TAB", "API", "TOKEN", "isWide", "MV_MEDIA", "navigator",
   src.replace(/^function glitch\(kind,detail\)\{/m, "function glitch(kind,detail){__seen(kind,detail);") + "\nreturn null;");
@@ -34,6 +35,12 @@ t("a call that took 9s with the screen on is a slow screen", reports.length === 
 reports = [];
 await call("/api/auth/status"); await call("/api/notifications"); await call("/api/unreads");
 t("…but not the app's own background checks (nobody is waiting on them)", reports.length === 0);
+reports = [];
+globalThis.location = { origin: "https://tnllabs.com" };
+{ const p = win.fetch("https://o123.ingest.sentry.io/api/456/envelope/", { method: "GET" }); const begun = clock; clock = begun + 9000; answer(); await p; }
+FAIL_NEXT = true; await win.fetch("https://o123.ingest.sentry.io/api/456/envelope/", { method: "POST" }).catch(() => {});
+FAIL_NEXT = true; await win.fetch("https://tnllabs.com/api/posts/1/like", { method: "POST" }).catch(() => {});
+t("another site's /api/ (Sentry's error reports) is never a slow screen or a failed save", reports.length === 1 && /action_failed POST \/api\/posts/.test(reports[0]));
 reports = [];
 await call("/api/dm", async () => { flip(true); clock += 4000; flip(false); });
 t("…but not if the phone locked or switched apps while it waited", reports.length === 0);

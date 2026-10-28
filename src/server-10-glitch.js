@@ -40,6 +40,7 @@ app.post("/api/glitch", maybeAuth, rateLimit({ max: 30, windowMs: 60000 }), (req
   let n = 0;
   for (const e of list) {
     if (!e || !GLITCH_KINDS.includes(e.kind)) continue;
+    if (/\/api\/:id\/envelope\//.test(String(e.detail || ""))) continue;   // Sentry's own error report, not a member's save — pages opened before 2026-10-28 still send it
     insGlitch.run(e.kind, clip(e.place, 80), clip(e.detail, 240), device, clip(req.user?.username, 40), now);
     n++;
   }
