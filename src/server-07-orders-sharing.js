@@ -1,4 +1,4 @@
-/* ---- buying ---- ORDERS v2.0 — 2026-10-18
+/* ---- buying ---- ORDERS v2.1 — 2026-10-27 (ship / received only once paid: canShip, canReceive in server-01-guard); v2.0 — 2026-10-18
    v2.0: after paying, the buyer lands on "Order confirmed" for that order
    (?checkout=paid&o=), a payment that's still clearing says so instead of
    "failed", and paid orders settle in the background every few minutes —
@@ -175,7 +175,7 @@ app.get("/api/orders", auth, async (req, res) => {
   const reviewed = new Set(db.prepare(`SELECT order_id FROM reviews WHERE buyer_id = ?`).all(req.user.id).map((x) => x.order_id));
   const shape = (r) => ({
     id: r.id, amount: r.amount_cents, shipping: r.shipping_cents, status: r.status,
-    paid: ["paid","shipped","complete"].includes(r.status), reviewed: reviewed.has(r.id),
+    paid: ["paid","shipped","complete"].includes(r.status), reviewed: reviewed.has(r.id), canShip: canShip(r),
     tracking: r.tracking, shipName: r.ship_name, shipAddress: r.ship_address, createdAt: r.created_at,
     variant: r.variant || "", cart: r.cart_id || r.id,
     listing: { id: r.listing_id, title: r.title, images: (() => { try { return JSON.parse(r.images || "[]"); } catch { return []; } })() },
@@ -197,6 +197,7 @@ app.post("/api/orders/:id/ship", auth, (req, res) => {
   if (!o) return res.status(404).json({ error: "no order" });
   if (o.seller_id !== req.user.id) return res.status(403).json({ error: "not your sale" });
   if (o.status === "void") return res.status(400).json({ error: "that order was a test" });
+  if (!canShip(o)) return res.status(400).json({ error: o.status === "pending" ? "that order isn't paid yet" : "that order can't be marked shipped" });
   const tracking = (req.body?.tracking || "").toString().slice(0, 80);
   db.prepare(`UPDATE orders SET status='shipped', tracking=?, updated_at=? WHERE id=?`).run(tracking, Date.now(), o.id);
   notify(o.buyer_id, req.user.id, "shipped", null, tracking ? `shipped your order — ${tracking}` : "shipped your order");
@@ -208,6 +209,8 @@ app.post("/api/orders/:id/received", auth, (req, res) => {
   if (!o) return res.status(404).json({ error: "no order" });
   if (o.buyer_id !== req.user.id) return res.status(403).json({ error: "not your order" });
   if (o.status === "void") return res.status(400).json({ error: "that order was a test" });
+  if (o.status === "complete") return res.json({ ok: true });
+  if (!canReceive(o)) return res.status(400).json({ error: "that order hasn't shipped yet" });
   // Only pay rep for deliveries on orders that were actually PAID. An
   // arrange-mode order is two people clicking buttons — no evidence, no rep.
   if (o.status !== "complete" && (o.status === "shipped" || o.status === "paid") && o.payment_ref) {
@@ -340,7 +343,7 @@ app.get("/p/:id", (req, res) => {
      Two names on one piece is more interesting than either name alone. */
   const desc = [
     p.body ? p.body.slice(0, 120) : null,
-    p.beat ? `${p.beat.bpm} BPM beat, made in the LABS studio` : null,
+    p.beat ? `${Number(p.beat.bpm) || 120} BPM beat, made in the LABS studio` : null,
     `#${p.channel}`,
     p.likeCount ? `${p.likeCount} ♥` : null,
   ].filter(Boolean).join(" · ").slice(0, 200);
@@ -379,7 +382,7 @@ ${ldJson({ "@context": "https://schema.org", "@type": "SocialMediaPosting", url:
 ${p.body ? `<p class="body" style="margin:0 0 14px">${esc(p.body)}</p>` : ""}
 ${p.imageUrl ? `<img class="media" src="${esc(p.imageUrl)}" alt="" style="max-height:none">` : ""}
 ${p.videoUrl ? `<video class="media" src="${esc(p.videoPlayUrl || p.videoUrl)}#t=${((p.video?.start || 0) / 1000).toFixed(2)}${p.video?.end ? "," + (p.video.end / 1000).toFixed(2) : ""}"${p.thumbUrl && p.thumbUrl !== p.imageUrl ? ` poster="${esc(p.thumbUrl)}"` : ""}${p.video?.muted ? " muted" : ""} controls playsinline preload="metadata"></video>` : ""}
-${p.beat ? `<div class="card"><b>${esc(p.beat.name || "untitled loop")}</b><div class="cap">${p.beat.bpm} BPM · made in the LABS studio</div></div>` : ""}
+${p.beat ? `<div class="card"><b>${esc(p.beat.name || "untitled loop")}</b><div class="cap">${Number(p.beat.bpm) || 120} BPM · made in the LABS studio</div></div>` : ""}
 ${accepted.length ? `<div class="cap meta"><span class="mk">//</span> Built with ${accepted.map((c) => esc(c.display_name || c.username)).join(" + ")}</div>` : ""}
 <div class="cap meta">${lookCount(p.likeCount, "like")} · ${lookCount(p.shareCount, "share")} · #${esc(p.channel)}</div>
 <a class="btn block acc" href="/?p=${p.id}">Open in the app</a>

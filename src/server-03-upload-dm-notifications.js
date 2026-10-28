@@ -328,7 +328,7 @@ function isBlocked(aId, bId) {
 /* ================================================================
    PASSWORD RESET
 ================================================================ */
-app.post("/api/auth/forgot", rateLimit({ max: 5, windowMs: 900000 }), async (req, res) => {
+app.post("/api/auth/forgot", rateLimit({ max: 5, windowMs: 900000 }), rateLimitBy((req) => req.body?.email, { max: 5, windowMs: 3600000 }), async (req, res) => {
   const email = (req.body?.email || "").toString().trim();
   const user = usersByEmail(email)[0];
   // Always answer the same way — otherwise this endpoint tells strangers
@@ -340,7 +340,8 @@ app.post("/api/auth/forgot", rateLimit({ max: 5, windowMs: 900000 }), async (req
     .run(token, user.id, Date.now() + 3600000, Date.now());
   const url = `${baseUrl(req)}/reset?token=${token}`;
   const mail = await sendResetEmail(user.email, user.display_name, url);
-  res.json({ ok: true, mailSent: mail.sent, resetUrl: mail.sent ? undefined : url });
+  // Same answer as "no such account" unless this is a laptop with no mail (server-01-guard).
+  res.json(mailLinkOk(mail) ? { ok: true, resetUrl: url } : { ok: true });
 });
 
 app.get("/reset", (req, res) => {

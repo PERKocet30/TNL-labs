@@ -75,7 +75,7 @@ function shapeListing(r, viewerId, side) {
     images,
     shipsFrom: r.ships_from,
     kind: r.kind || "physical",
-    audioUrl: r.audio_url || null,
+    ...loopAudio(r, viewerId),   // server-01-guard
     bpm: r.bpm || null,
     musicalKey: r.musical_key || "",
     stems: !!r.stems,
