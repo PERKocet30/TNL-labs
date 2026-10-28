@@ -1,5 +1,5 @@
 /* ================================================================
-   ADMIN v2.2 — 2026-10-14 (People rows carry the member ID). What the dashboard runs on.
+   ADMIN v2.3 — 2026-10-28 (record says Mod; private notes owner-only). v2.2 — 2026-10-14 (People rows carry the member ID). What the dashboard runs on.
    - /api/admin/pulse: the numbers that matter for a date range, each
      against the range before it, plus daily series and "needs you".
      (v2.1: labs, #tags, the tournament and how people take part moved
@@ -166,7 +166,7 @@ app.get("/api/admin/people", auth, admin, (req, res) => {
   }[filter];
   const rows = db.prepare(`
     SELECT * FROM (
-      SELECT u.id, u.username, u.display_name, u.email, u.avatar_url, u.role, u.rep, u.email_verified, u.is_admin,
+      SELECT u.id, u.username, u.display_name, u.email, u.avatar_url, u.role, u.rep, u.email_verified, u.is_admin, u.is_mod,
              u.suspended, u.stripe_ready, u.created_at, u.last_seen_at,
         (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) posts,
         (SELECT COUNT(*) FROM listings l WHERE l.seller_id = u.id) listings,
@@ -187,7 +187,7 @@ app.get("/api/admin/people", auth, admin, (req, res) => {
   res.json({ total: aone(`SELECT COUNT(*) n FROM users WHERE suspended = 0`), people: (all ? list : list.slice(0, 300)).map((r) => ({
     id: r.id, username: r.username, displayName: r.display_name, email: r.email, avatarUrl: r.avatar_url || "", role: r.role,
     rep: r.rep, level: levelFor(r.rep).id, levelName: levelFor(r.rep).name,
-    verified: !!r.email_verified, isAdmin: !!r.is_admin, suspended: !!r.suspended, payouts: !!r.stripe_ready,
+    verified: !!r.email_verified, isAdmin: !!r.is_admin, isMod: !!r.is_mod, suspended: !!r.suspended, payouts: !!r.stripe_ready,
     joined: r.created_at, lastSeen: r.last_seen_at || null, lastActive: r.last_active || null,
     posts: r.posts, listings: r.listings, collabs: r.collabs, followers: r.followers, gross: r.gross, note: !!r.has_note, tournament: r.tour > 0,
   })) });
@@ -202,7 +202,7 @@ app.get("/api/admin/people/:username", auth, admin, (req, res) => {
     person: {
       username: u.username, displayName: u.display_name, email: u.email, avatarUrl: u.avatar_url || "", role: u.role, bio: u.bio || "",
       rep: u.rep, level: levelFor(u.rep).id, levelName: levelFor(u.rep).name, fee: feeForSeller(u.rep, u.is_admin),
-      verified: !!u.email_verified, isAdmin: !!u.is_admin, suspended: !!u.suspended, payouts: !!u.stripe_ready,
+      verified: !!u.email_verified, isAdmin: !!u.is_admin, isMod: !!u.is_mod, suspended: !!u.suspended, payouts: !!u.stripe_ready,
       joined: u.created_at, lastSeen: u.last_seen_at || null,
       /* account information (2026-10-12) — never the password hash, a session token or the Stripe account id */
       id: u.id, roles: jsonList(u.roles), pronouns: u.pronouns || "", link: u.link || "", links: jsonList(u.links),
@@ -236,7 +236,7 @@ app.get("/api/admin/people/:username", auth, admin, (req, res) => {
         video: !!p.video_url, isWork: !!p.is_work, createdAt: p.created_at, likes: p.likes })),
     rep: db.prepare(`SELECT kind, amount, created_at FROM rep_events WHERE user_id = ? ORDER BY created_at DESC LIMIT 12`).all(id)
       .map((r) => ({ kind: r.kind, amount: r.amount, at: r.created_at })),
-    note: note ? { body: note.body, at: note.updated_at, by: note.by_name || "" } : null,
+    note: note && req.user.is_admin ? { body: note.body, at: note.updated_at, by: note.by_name || "" } : null,   // notes are the owner's
   });
 });
 

@@ -1,4 +1,5 @@
-/* LABS admin v1.0 — 2026-10-14. One member's record (split from 3-people.js v2.2).
+/* LABS admin v1.1 — 2026-10-28 (Mods: the owner makes or removes one under Access; a Mod sees no Notes,
+   sign-out or delete, and no member tools on the owner or another Mod). v1.0 — 2026-10-14. One member's record (split from 3-people.js v2.2).
    A header that says who and where they
    stand, the everyday actions in one bar, and the rest in tabs —
    Overview (the numbers, grouped, and anything that needs a look),
@@ -42,18 +43,21 @@ function personHTML() {
     <button class="ib" data-close aria-label="Close">${I.x}</button></div>`;
   if (!d) return bar + `<div class="empty">Loading record…</div>`;
   const p = d.person, s = d.stats;
+  const owner = ACCESS === "owner", staff = p.isAdmin || p.isMod, tools = owner || !staff;   // a Mod can't act on the owner or another Mod
+  const ptabs = owner ? PTABS : PTABS.filter(([k]) => k !== "notes");
+  if (!owner && PERSON.tab === "notes") PERSON.tab = "overview";
   const head = `<div class="rec-hd">${av(p, "lg")}<div class="rec-id"><h2>${esc(p.displayName)}</h2>
       <span class="dim">@${esc(p.username)} · Member #${p.id}${p.role ? " · " + esc(p.role) : ""}</span>
-      <div class="rec-tags">${badge(pstatus({ ...p, lastActive: p.lastSeen }))}${p.isAdmin ? `<span class="tag on">Admin</span>` : ""}
+      <div class="rec-tags">${badge(pstatus({ ...p, lastActive: p.lastSeen }))}${p.isAdmin ? `<span class="tag on">Admin</span>` : ""}${p.isMod ? `<span class="tag on">Mod</span>` : ""}
         ${p.verified ? `<span class="tag">Email confirmed</span>` : `<span class="tag warn">Email not confirmed</span>`}${p.payouts ? `<span class="tag">Payouts on</span>` : ""}</div></div></div>
     <div class="acts">
       <button class="btn sm" data-dm="${esc(p.username)}">${I.msg} Message</button>
-      ${!p.verified ? `<button class="btn ghost sm" data-pa="verify">Confirm email</button>` : ""}
-      <button class="btn ghost sm" data-pa="rep">Adjust rep</button>
-      <button class="btn ghost sm" data-pa="feature">Feature +40</button>
+      ${tools && !p.verified ? `<button class="btn ghost sm" data-pa="verify">Confirm email</button>` : ""}
+      ${tools ? `<button class="btn ghost sm" data-pa="rep">Adjust rep</button>
+      <button class="btn ghost sm" data-pa="feature">Feature +40</button>` : ""}
       ${p.email ? `<button class="btn ghost sm" data-copy="${esc(p.email)}">Copy email</button>` : ""}
     </div>
-    ${subTabs(PTABS.map(([k, l]) => [k, l + (k === "notes" && d.note && d.note.body ? " ·" : "")]), PERSON.tab, "data-ptab")}`;
+    ${subTabs(ptabs.map(([k, l]) => [k, l + (k === "notes" && d.note && d.note.body ? " ·" : "")]), PERSON.tab, "data-ptab")}`;
   return bar + head + `<div class="rec-body">${({ overview: recOverview, account: recAccount, activity: recActivity, notes: recNotes })[PERSON.tab](d)}</div>`;
 }
 
@@ -77,6 +81,7 @@ function recOverview(d) {
 
 function recAccount(d) {
   const p = d.person, s = d.stats;
+  const owner = ACCESS === "owner", staff = p.isAdmin || p.isMod;
   const links = (p.links && p.links.length ? p.links.map((l) => l.url || l) : p.link ? [p.link] : [])
     .map((u) => /^https?:\/\//i.test(u) ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u.replace(/^https?:\/\//, ""))}</a>` : esc(u)).join("<br>");
   return card("Profile", `<dl class="fds">${fld("Display name", esc(p.displayName))}${fld("Username", "@" + esc(p.username))}${fld("Member ID", "#" + p.id)}
@@ -87,13 +92,15 @@ function recAccount(d) {
       ${fld("Last opened the app", p.lastSeen ? pwhen(p.lastSeen) : "", p.lastSeen ? ` <span class="dim">· ${ago(p.lastSeen)}</span>` : "")}${fld("Signed in on", s.sessions + " device" + (s.sessions === 1 ? "" : "s"))}</dl>`)
     + card("Payments", `<dl class="fds">${fld("Payouts", p.payouts ? "On — Stripe is set up" : p.stripeConnected ? "Started, not finished" : "Not set up")}
       ${fld("Commission", `${p.fee}% <span class="dim">· set by level L${p.level} ${esc(p.levelName)}</span>`)}${fld("Sales to date", money(s.gross))}</dl>`)
-    + card("Access", `<dl class="fds">${fld("Role", p.isAdmin ? "Admin" : "Member")}${fld("Account status", p.suspended ? `<span class="tag warn">Suspended</span>` : "Active")}</dl>`)
-    + `<section class="rc danger"><header><h3>Sign-in and suspension</h3></header>
-      <div class="dz"><div><b>Sign out everywhere</b><span>Every device they're signed in on (${s.sessions}). They can sign straight back in.</span></div><button class="btn ghost sm" data-pa="signout">Sign out</button></div>
+    + card("Access", `<dl class="fds">${fld("Admin access", p.isAdmin ? "Owner — everything" : p.isMod ? "Mod — sees the dashboard and member records, moderates, runs events and adjusts members" : "None — a member")}${fld("Account status", p.suspended ? `<span class="tag warn">Suspended</span>` : "Active")}</dl>
+      ${owner && !p.isAdmin ? `<div class="dz"><div><b>${p.isMod ? "Remove Mod" : "Make Mod"}</b><span>${p.isMod ? "They go back to a regular member. Nothing they did is undone." : "A level below you: they see the dashboard and member records (emails included), handle reports, take down posts and listings, run events (you publish) and adjust rep, feature, confirm and suspend members. Never backups, settings, systems, the Instagram inbox, your notes, deleting accounts — and never you or another Mod."}</span></div>
+        <button class="btn ${p.isMod ? "ghost" : ""} sm" data-pa="mod">${p.isMod ? "Remove Mod" : "Make Mod"}</button></div>` : ""}`)
+    + (!owner && staff ? "" : `<section class="rc danger"><header><h3>Sign-in and suspension</h3></header>
+      ${owner ? `<div class="dz"><div><b>Sign out everywhere</b><span>Every device they're signed in on (${s.sessions}). They can sign straight back in.</span></div><button class="btn ghost sm" data-pa="signout">Sign out</button></div>` : ""}
       ${p.isAdmin ? "" : `<div class="dz"><div><b>${p.suspended ? "Restore account" : "Suspend account"}</b><span>${p.suspended ? "They can sign in again." : "Signs them out and stops them signing back in. Their work stays up."}</span></div>
         <button class="btn ${p.suspended ? "ghost" : "danger"} sm" data-pa="suspend">${p.suspended ? "Restore" : "Suspend"}</button></div>
-      <div class="dz"><div><b>Delete account</b><span>Removes them and everything they posted, for good. Not for accounts with Market orders.</span></div>
-        <button class="btn danger sm" data-pa="delete">Delete</button></div>`}</section>`;
+      ${owner ? `<div class="dz"><div><b>Delete account</b><span>Removes them and everything they posted, for good. Not for accounts with Market orders.</span></div>
+        <button class="btn danger sm" data-pa="delete">Delete</button></div>` : ""}`}</section>`);
 }
 
 function recActivity(d) {
@@ -120,6 +127,11 @@ function wirePerson(el) {
   $$("[data-pa]", el).forEach((b) => b.onclick = async () => {
     const a = b.dataset.pa, base = "/api/admin/members/" + encodeURIComponent(u), p = PERSON.data.person;
     if (a === "note") return act(() => req("/api/admin/people/" + encodeURIComponent(u) + "/note", { method: "POST", body: { body: $("#pnote").value } }), "Note saved").then(refreshPerson);
+    if (a === "mod") {
+      const on = !p.isMod;
+      if (!(await confirmIt(on ? `Make @${u} a Mod?` : `Remove @${u}'s Mod?`, on ? "They'll see the admin dashboard and member records, and can moderate, run events and adjust members. Not backups, settings, systems, the Instagram inbox, your notes or deleting accounts — and never you or another Mod. Everything they change is in the admin log." : "They go back to a regular member straight away.", { ok: on ? "Make Mod" : "Remove Mod", danger: !on }))) return;
+      return act(() => req(base + "/mod", { method: "POST", body: { on } }), on ? `@${u} is a Mod` : `@${u} is no longer a Mod`).then(refreshPerson);
+    }
     if (a === "verify") return act(() => req(base + "/verify", { method: "POST" }), "Email confirmed").then(refreshPerson);
     if (a === "feature") { if (!(await confirmIt(`Feature @${u}?`, "+40 rep, and they're told you featured their work. Logged and permanent.", { ok: "Feature" }))) return;
       return act(() => req(base + "/feature", { method: "POST" }), "Featured — +40 rep").then(refreshPerson); }
