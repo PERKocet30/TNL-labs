@@ -1,5 +1,5 @@
 /* ================================================================
-   MAIL v2.2 — 2026-10-23. Verification and password-reset emails,
+   MAIL v2.3 — 2026-10-28 (roleEmail: "anytime someone is made a Mod or a Lab Lead they're emailed"). v2.2 — 2026-10-23. Verification and password-reset emails,
    in the app's design language (see THE LOOK below).
    v2.2: the weekly "finish your page" reminder (nudgeEmail): one email
    a week to a member whose page has gaps, saying exactly which — a
@@ -236,6 +236,30 @@ export function weeklyEmail(subject, lines, url) {
 }
 export async function sendWeeklyEmail(to, subject, lines, url) {
   return send(to, subject, weeklyEmail(subject, lines, url), `${subject} — ${lines.length} lines`);
+}
+
+/** Someone was made a Mod or a Lab Lead (2026-10-28) — server-04-admin-0-mods.js
+    and server-10-leads.js send it the moment it happens, once per new role. */
+export function roleEmail({ name, role, lab, by, url }) {
+  const hi = name ? name + ", " : "";
+  if (role === "mod") return renderEmail({
+    eyebrow: "Mod", title: "You're a Mod on LABS",
+    lines: [`${hi}${by ? "@" + by : "The owner"} made you a Mod.`,
+      "You can see the admin dashboard and member records, handle reports, take down posts and listings, run events and adjust members' rep and standing.",
+      "Everything you change is logged with your name. Member details are private — use them only to look after LABS."],
+    cta: "Open Admin", url, note: "Not expecting this? Reply to this email.", preheader: "You can now help run LABS.",
+  });
+  return renderEmail({
+    eyebrow: "Lab Lead", title: `You lead // ${lab}`,
+    lines: [`${hi}${by ? "@" + by : "The LABS team"} made you Lead of // ${lab}.`,
+      "You're quality control for the scene: pin the best work and take down posts and comments that don't meet the bar.",
+      `In // ${lab}, hold a message or tap ••• on a post to find Pin and Take down. Your profile now says you lead it.`],
+    cta: `Open // ${lab}`, url, note: "Not expecting this? Reply to this email.", preheader: `You're now Lead of // ${lab}.`,
+  });
+}
+export const roleSubject = (role, lab) => role === "mod" ? "You're a Mod on LABS" : `You lead // ${lab} — LABS`;
+export async function sendRoleEmail(to, subject, mail) {
+  return send(to, subject, mail, `${subject} — role email to ${to}`);
 }
 
 /** Password reset. Same honest fallback as verification. */

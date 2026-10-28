@@ -1,5 +1,5 @@
 /* ================================================================
-   MODS v1.1 — 2026-10-28 (Mods appoint Lab Leads). v1.0 — 2026-10-28. "A level below me … see data but not the
+   MODS v1.2 — 2026-10-28 (a new Mod is emailed — mailRole). v1.1 — 2026-10-28 (Mods appoint Lab Leads). v1.0 — 2026-10-28. "A level below me … see data but not the
    highest level of security." Two kinds of admin now:
    - Owner (users.is_admin) — everything, as before.
    - Mod (users.is_mod) — only the routes listed in MOD_MAY. Anything not
@@ -78,6 +78,20 @@ app.get("/api/admin/me", auth, admin, (req, res) => {
   res.json({ username: req.user.username, displayName: req.user.display_name, avatarUrl: req.user.avatar_url || "", access: req.user.is_admin ? "owner" : "mod" });
 });
 
+/* "Anytime someone is made an admin or lab leader they're emailed" (2026-10-28).
+   Only when the role is new to them — never on removal, never twice. Sent in the
+   background: the change doesn't wait on, or fail because of, email. */
+async function mailRole(req, t, role, lab) {
+  if (!t || !t.email || (typeof emailThrowaway === "function" && emailThrowaway(t.email))) return;
+  try {
+    const { roleEmail, roleSubject, sendRoleEmail } = await import("./mail.js");   // boot's mail import line is full (24KB)
+    const base = baseUrl(req), name = LAB_NAME[lab] || lab;
+    const r = await sendRoleEmail(t.email, roleSubject(role, name), roleEmail({ name: t.display_name || t.username, role, lab: name, by: req.user && req.user.username,
+      url: role === "mod" ? base + "/admin" : base + "/?l=" + encodeURIComponent(lab) }));
+    if (!r.sent && r.reason !== "no_key") console.warn(`[mail] role email to @${t.username} didn't send: ${r.error || "unknown"}`);
+  } catch (e) { console.warn("[mail] role email failed: " + e.message); }
+}
+
 /* the owner makes or removes a Mod. Never listed in MOD_MAY. */
 app.post("/api/admin/members/:username/mod", auth, admin, (req, res) => {
   const t = q.userByName.get(req.params.username);
@@ -86,5 +100,6 @@ app.post("/api/admin/members/:username/mod", auth, admin, (req, res) => {
   const on = !!(req.body && req.body.on);
   if (on && t.suspended) return res.status(400).json({ error: "Restore their account before making them a Mod." });
   db.prepare(`UPDATE users SET is_mod = ? WHERE id = ?`).run(on ? 1 : 0, t.id);
+  if (on && !t.is_mod) mailRole(req, t, "mod");
   res.json({ ok: true, isMod: on });
 });
