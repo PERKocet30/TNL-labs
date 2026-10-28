@@ -1,5 +1,5 @@
 /* ================================================================
-   MODS v1.0 — 2026-10-28. "A level below me … see data but not the
+   MODS v1.1 — 2026-10-28 (Mods appoint Lab Leads). v1.0 — 2026-10-28. "A level below me … see data but not the
    highest level of security." Two kinds of admin now:
    - Owner (users.is_admin) — everything, as before.
    - Mod (users.is_mod) — only the routes listed in MOD_MAY. Anything not
@@ -35,6 +35,8 @@ const MOD_MAY = new Set([
   // members
   "POST /api/admin/members/:username/rep", "POST /api/admin/members/:username/feature",
   "POST /api/admin/members/:username/verify", "POST /api/admin/members/:username/suspend",
+  // lab leads (server-10-leads.js) — Mods staff the labs
+  "POST /api/admin/members/:username/lead",
 ]);
 
 const isMod = (u) => !!(u && u.is_mod && !u.is_admin);

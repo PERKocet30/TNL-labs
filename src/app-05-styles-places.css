@@ -1,4 +1,4 @@
-/* PLACES v1.4 — 2026-10-21 (month markers, Older) · v1.3 — 2026-10-12 (v1.3: the Tournament chip and Entry marks, at the end). v1.2 — 2026-10-09 ("For you" / "More labs" on the index). Labs as places: the index (one list, each
+/* PLACES v1.5 — 2026-10-28 ("Led by" under the pitch) · v1.4 — 2026-10-21 (month markers, Older) · v1.3 — 2026-10-12 (v1.3: the Tournament chip and Entry marks, at the end). v1.2 — 2026-10-09 ("For you" / "More labs" on the index). Labs as places: the index (one list, each
    genre with its #tags), a lab's Work · Talk tabs, the #tag page, and #tags
    in text. Square grid, underline tabs, pills — in TNL's white, black
    and green. Logic: app-11-places.js. */
@@ -64,3 +64,8 @@
 /* 2026-10-21: the grid as the archive */
 .pl-month{grid-column:1/-1;padding:14px 4px 6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
 .pl-older{display:block;width:100%;text-align:center;padding:14px}
+.pl-leads{margin:0;padding:2px 16px 4px;font-size:13px;line-height:18px;color:var(--dim)}
+.pl-lead{background:none;border:0;padding:0;font:inherit;color:var(--tx);font-weight:600;cursor:pointer}
+/* a Lead's profile line (app-15-profile) */
+.pig-lead{color:var(--dim);font-size:13px;margin:0 0 4px}
+.pig-lead button{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--tx);cursor:pointer}

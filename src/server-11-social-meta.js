@@ -1,5 +1,6 @@
 /* ================================================================
    SOCIAL GRAPH — follow / unfollow / profile
+   v1.2 — 2026-10-28: isMod stays private, like isAdmin.
    v1.1 — 2026-10-09: a profile carries the music its member uploaded
    (tracks, newest first, with their covers) — its own Music tab.
    v1.2 — 2026-10-10: and which song they pinned to the top.
@@ -49,7 +50,7 @@ app.patch("/api/me", auth, (req, res) => {
    OWNER sees it (email, payouts, admin flag); this route is public — no
    sign-in needed — so until 2026-10-07 it handed every member's email to
    anyone who asked. Private fields only go to the member themself. */
-const PRIVATE_FIELDS = ["email", "emailVerified", "payoutsReady", "hasStripe", "isAdmin", "published"];
+const PRIVATE_FIELDS = ["email", "emailVerified", "payoutsReady", "hasStripe", "isAdmin", "isMod", "published"];
 function profileUser(u, viewer) {
   const pu = publicUser(u);
   if (!viewer || viewer.id !== u.id) for (const k of PRIVATE_FIELDS) delete pu[k];

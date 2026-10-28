@@ -1,5 +1,5 @@
 /* ================================================================
-   PLACES v1.10 — 2026-10-27 (Fashion covers modeling and styling too); v1.9 — 2026-10-21 (the Work grid is the archive: month markers, Older; the archive is a chip, no search); v1.8 — 2026-10-20 (the #tag page's head from the screen kit); v1.7 — 2026-10-15 (v1.7: links name the lab — /l/visual, LAB_SLUG). v1.6: each lab says what to do there, and has
+   PLACES v1.11 — 2026-10-28 (Work says who leads the lab — "Led by"); v1.10 — 2026-10-27 (Fashion covers modeling and styling too); v1.9 — 2026-10-21 (the Work grid is the archive: month markers, Older; the archive is a chip, no search); v1.8 — 2026-10-20 (the #tag page's head from the screen kit); v1.7 — 2026-10-15 (v1.7: links name the lab — /l/visual, LAB_SLUG). v1.6: each lab says what to do there, and has
    a Share — LAB_PITCH, shareLab; a shared /l/ link lands in the lab).
    v1.5 — 2026-10-12 (v1.5: the tournament running in a lab is a
    chip in its Work — every entry, no #tag needed — and entries are marked).
@@ -104,8 +104,13 @@ function openLab(id,view,tag){
   pushView("lab",l.id);
   TAB="labs";LAB=l;LABVIEW=view||"work";LABTAG=tag||null;TAGVIEW=null;ROOMOPEN=true;PLIST=null;PLADD=null;NOWFULL=false;
   PROFILE=null;POSTOPEN=null;OPENCOMMENTS=null;placeCH();
-  render();loadPlace();if(!LABTAGS)loadLabTags();
+  render();loadPlace();if(!LABTAGS)loadLabTags();loadLabLeads(l.id);
 }
+/* Who leads each lab (server-10-leads.js) — under the pitch on Work, Music's library included. */
+const LEADS={};
+async function loadLabLeads(lab){try{const r=await req("/api/labs/"+lab+"/leads");const was=JSON.stringify(LEADS[lab]||[]);LEADS[lab]=r.leads||[];
+  if(LAB&&LAB.id===lab&&JSON.stringify(LEADS[lab])!==was&&LABVIEW!=="talk")render()}catch(e){}}
+const labLeadsHTML=()=>{const L=(LAB&&LEADS[LAB.id])||[];return L.length?`<p class="pl-leads">Led by ${L.map(u=>`<button class="pl-lead" data-pllead="${esc(u.username)}">@${esc(u.username)}</button>`).join(", ")}</p>`:""};
 function setLabView(v){if(!LAB)return;LABVIEW=v;if(v!=="work")LABTAG=null;placeCH();render();loadPlace()}
 const placeKey=()=>LABVIEW+(LABVIEW==="work"?":"+(LABTAG||""):"");
 async function loadPlace(){
@@ -174,6 +179,7 @@ function plInnerHTML(){
     const ev=(d&&d.event)||(P["work:"]||{}).event||null;
     if(LABTAG&&!evOn&&!chips.includes(LABTAG))chips.unshift(LABTAG);
     return `<p class="pl-for">${esc(LAB_PITCH[LAB.id]||(LAB_ID[LAB.id]||{}).for||"")}</p>
+      ${labLeadsHTML()}
       ${chips.length||ev?`<div class="pl-tags">${plChip("",!LABTAG)}${ev?plEvChip(ev,evOn):""}${chips.map(t=>plChip(t,LABTAG===t)).join("")}${LAB.channels.some(c=>c.archive)?`<button class="pl-chip" id="plarchive">Archive</button>`:""}</div>`:""}
       ${!d?`<div class="pl-grid">${Array.from({length:9},()=>`<i class="pl-tile sk-img"></i>`).join("")}</div>`
         :d.error?plErr(d):d.posts.length?plGridHTML(d.posts,d.more)
@@ -241,6 +247,7 @@ function tagHTML(){
 let PLDELEG=false;
 function wirePlacesGlobal(){
   if(PLDELEG)return;PLDELEG=true;
+  document.addEventListener("click",e=>{const ld=e.target.closest&&e.target.closest("[data-pllead]");if(ld){e.preventDefault();openProfile(ld.dataset.pllead)}},true);
   document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-tag]");if(!t)return;
     e.preventDefault();e.stopPropagation();openTag(t.dataset.tag)},true);
   /* a genre's #tag on the labs list: that lab's work, narrowed to it */

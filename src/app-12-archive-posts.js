@@ -1,4 +1,4 @@
-/* v2026-10-27: the lab message box keeps line breaks (a growing box, like DMs). v2026-10-21: the archive is a browse, not a search (no box — pictures aren't labelled); the lab head's Share is Invite. v2026-10-20: the head comes from the screen kit */
+/* v2026-10-28: a lab's Leads and Mods get the comment delete in their lab (curates(), app-10-chat-6-labs; the server checks). v2026-10-27: the lab message box keeps line breaks (a growing box, like DMs). v2026-10-21: the archive is a browse, not a search (no box — pictures aren't labelled); the lab head's Share is Invite. v2026-10-20: the head comes from the screen kit */
 /* ── THE ARCHIVE ─────────────────────────────────────────────────────
    //.JPEG PHARMACY has 226 people posting reference and every image
    scrolls into the void within a day. Nobody can find it again. This is
@@ -181,7 +181,7 @@ function commentsHTML(p){return `<div class="cwrap">
       <span class="mono dim">${timeAgo(c.createdAt)}${c.editedAt?" · EDITED":""}</span>
       <div class="ctext">${rich(c.body)}</div>
     </div>
-    ${!guest()&&(c.author.username===myName()||p.author.username===myName())?`<div class="post-menu">
+    ${!guest()&&(c.author.username===myName()||p.author.username===myName()||curates(p))?`<div class="post-menu">
       ${c.author.username===myName()?`<button class="pm" data-cedit="${c.id}" aria-label="Edit">${DI.edit}</button>`:""}
       <button class="pm" data-cdel="${c.id}" aria-label="Delete">${DI.trash}</button></div>`:""}
   </div>`).join("")}

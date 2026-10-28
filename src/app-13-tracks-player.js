@@ -1,4 +1,4 @@
-/* MUSIC LAB · TRACKS v1.6 — 2026-10-28 (loops are gone; no preview); v1.5 — 2026-10-20 (a song's Story plays 15 seconds of it; Market and loop heads from the screen kit); v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
+/* MUSIC LAB · TRACKS v1.7 — 2026-10-28 ("Led by" under the pitch); v1.6 — 2026-10-28 (loops are gone; no preview); v1.5 — 2026-10-20 (a song's Story plays 15 seconds of it; Market and loop heads from the screen kit); v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
 /* A lab's Talk with nothing in it yet, by its home channel (2026-10-15: in
    TNL's own words — no rooms, no "the network"). */
 const EMPTY={
@@ -52,7 +52,7 @@ function trackRowHTML(t,ctx){
 function tracksHTML(){
   if(PLIST)return playlistHTML();
   return `<div class="scroll" id="trkscroll">
-    ${LAB&&LAB_PITCH[LAB.id]?`<p class="pl-for">${esc(LAB_PITCH[LAB.id])}</p>`:""}
+    ${LAB&&LAB_PITCH[LAB.id]?`<p class="pl-for">${esc(LAB_PITCH[LAB.id])}</p>`:""}${labLeadsHTML()}
     ${musTabsHTML()}
     ${MUSVIEW==="playlists"?playlistsHTML():`<div class="trk-head">
       <input class="in trk-q" id="trkq" placeholder="Search tracks or artists…" value="${esc(TRKQ)}">

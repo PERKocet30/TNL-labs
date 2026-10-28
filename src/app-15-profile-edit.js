@@ -1,4 +1,4 @@
-/* ── EDIT PROFILE v2.2 · 2026-10-20 (the form bar and Data saver's icon come from the kit) · v2 2026-10-07 ──────────────────────────────────────
+/* ── EDIT PROFILE v2.3 · 2026-10-28 (wires the "Lead · // lab" line) · v2.2 · 2026-10-20 (the form bar and Data saver's icon come from the kit) · v2 2026-10-07 ──────────────────────────────────────
    Cancel · Edit profile · Done, your
    photo in the middle, then quiet rows — name, pronouns, bio, links, what
    you make, your colour. Links and roles open their own small screens
@@ -109,6 +109,7 @@ function wireProfileV2(){
       items:["Spam","Harassment","Stolen work","Impersonation","Something else"].map(r=>({label:r,icon:DI.flag,reason:r})),
       onPick:async it=>{try{await api.report({username:u.username,reason:it.reason});toast("Reported — thank you")}catch(e){toast(e.message)}}})}]:[])]})};
   const lp=$("#lvlpill");if(lp)lp.onclick=()=>{CLIMB=true;CLIMBUSER=PROFILE.user;render()};
+  document.querySelectorAll("[data-pflab]").forEach(b=>b.onclick=()=>openLab(b.dataset.pflab));   // "Lead · // Music" (2026-10-28)
   /* followers / following, open lists */
   document.querySelectorAll("[data-flist]").forEach(b=>b.onclick=async()=>{
     const kind=b.dataset.flist,un=PROFILE.user.username;
