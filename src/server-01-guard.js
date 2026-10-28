@@ -31,9 +31,9 @@ const ipKind = (ip) => { const v = isIP(ip); return v === 4 ? "ipv4" : v === 6 ?
 function clientIp(req) {
   const hops = String(req.get("x-forwarded-for") || "").split(",").map(bareIp).filter(Boolean);
   const edge = bareIp(req.get("x-real-ip")) || hops[hops.length - 1] || bareIp(req.socket?.remoteAddress);
-  const cf = bareIp(req.get("cf-connecting-ip"));
+  const cf = bareIp(req.get("cf-connecting-ip")).slice(0, 64);   // only ever a bucket / hash key
   const viaCf = ipKind(edge) && (CF_NETS.check(edge, ipKind(edge)) || edge === "127.0.0.1" || edge === "::1");
-  return cf && ipKind(cf) && viaCf ? cf : edge || "?";
+  return cf && viaCf ? cf : edge || "?";
 }
 
 /* 2 ── Same sliding window as rateLimit (server-01-boot), keyed on what the

@@ -115,7 +115,7 @@ t("through Cloudflare (IPv4) → the visitor Cloudflare names", G.clientIp(req({
 t("through Cloudflare (IPv6) → the same", G.clientIp(req({ "cf-connecting-ip": "198.51.100.7", "x-real-ip": "2606:4700::1" })) === "198.51.100.7");
 t("no X-Real-IP: the last hop Railway added wins over a typed one", G.clientIp(req({ "cf-connecting-ip": "6.6.6.6", "x-forwarded-for": "1.1.1.1, 203.0.113.9" })) === "203.0.113.9");
 t("a laptop / the tests: the header is believed", G.clientIp(req({ "cf-connecting-ip": "10.9.0.1" }, "::ffff:127.0.0.1")) === "10.9.0.1");
-t("garbage in the CF header is ignored", G.clientIp(req({ "cf-connecting-ip": "<script>", "x-real-ip": "104.16.3.4" })) === "104.16.3.4");
+t("a typed CF header is capped (it's only ever a lookup key)", G.clientIp(req({ "cf-connecting-ip": "x".repeat(500) }, "127.0.0.1")).length === 64);
 t("the rate limiter and the bot signals both use it", /const ip = clientIp\(req\)/.test(boot) && /const sigIp = \(req\) => clientIp\(req\)/.test(read("server-01-signals.js")));
 const lim = G.rateLimitBy((r) => r.body.identifier, { max: 10, windowMs: 60000 });
 const tryAs = (who) => { let code = 0; lim({ body: { identifier: who }, path: "/api/auth/login" }, { set: () => {}, status: (c) => { code = c; return { json: () => {} }; } }, () => { code = 200; }); return code; };
