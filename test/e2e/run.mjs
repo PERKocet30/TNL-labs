@@ -1692,7 +1692,8 @@ console.log("\nMEMBER · PHONE");
     await p.locator(".ev-focus [data-evpick]").tap();
     await p.waitForTimeout(150);
     ok(await p.locator(".ev-focus .ev-vote.busy").count() === 1, "the held vote doesn't show it's on its way");
-    for (let k = 0; k < 4; k++) await p.locator(".ev-focus [data-evpick]").tap({ force: true });
+    // clicks, not taps: the guard is what's tested, and 3 real taps in a second is a rage tap the glitch check would (rightly) count
+    for (let k = 0; k < 4; k++) await p.evaluate(() => document.querySelector(".ev-focus [data-evpick]").click());
     await p.waitForFunction((id) => EV.me.myVotes.includes(id) && EV.board.rows.find((r) => r.entryId === id).votes === 1, fid, { timeout: 6000 });
     ok(posts === 3, `${posts} vote calls: more taps should do nothing while it waits (1 tap + 2 quiet tries)`);
     await p.unroute("**/api/events/e2e-art/vote"); await p.evaluate(() => { EV_HOLD_MS = 30000; });
