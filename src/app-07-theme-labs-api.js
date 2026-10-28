@@ -196,7 +196,7 @@ async function req(path,opts={}){
   if(TOKEN)h.Authorization="Bearer "+TOKEN;
   try{h["X-TZ"]=Intl.DateTimeFormat().resolvedOptions().timeZone||""}catch(e){}
   const dv=devId();if(dv)h["X-Device"]=dv;
-  const r=await fetch(API+path,{method:opts.method||"GET",headers:h,body:opts.body?JSON.stringify(opts.body):undefined});
+  const r=await reqFetch(API+path,{method:opts.method||"GET",headers:h,body:opts.body?JSON.stringify(opts.body):undefined});   // app-07-updating
   const d=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(d.error||("HTTP "+r.status));
   return d;
