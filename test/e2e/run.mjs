@@ -1446,6 +1446,12 @@ console.log("\nMEMBER · PHONE");
     // an iPad upright: the profile is the whole screen, not a 390px panel over a dimmed page
     await p.setViewportSize({ width: 820, height: 1180 }); await p.waitForTimeout(300);
     const tab = await p.evaluate(() => { const c = document.querySelector(".sheetc.pig").getBoundingClientRect(), r = document.querySelector(".pig .worklist.asgrid").getBoundingClientRect(); return { cw: c.width, l: r.left, r: r.right }; });
+    // …and Messages is the whole screen too (it sat in a 440px column beside a blank white half)
+    await p.evaluate(() => { PROFILE = null; render(); openMessages(); }); await p.waitForSelector(".cx-in", { timeout: 4000 }); await p.waitForTimeout(300);
+    const cxw = await p.evaluate(() => Math.round(document.querySelector(".cx-in").getBoundingClientRect().width));
+    await p.evaluate(() => closeMessages()); await p.waitForTimeout(300);
+    ok(cxw === 820, `on an iPad Messages is ${cxw}px wide`);
+    await p.evaluate(() => openProfile("friend")); await p.waitForSelector(".pig .worklist.asgrid", { timeout: 4000 });
     await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(200);
     ok(Math.abs(tab.cw - 820) < 1 && Math.abs(tab.l) < 1 && Math.abs(tab.r - 820) < 1, `on an iPad the profile is ${Math.round(tab.cw)}px wide, grid ${Math.round(tab.l)}–${Math.round(tab.r)}px`);
     await p.evaluate(() => { PROFILE = null; TAB = "showroom"; render(); });
