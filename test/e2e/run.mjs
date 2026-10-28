@@ -319,6 +319,23 @@ console.log("\nMEMBER · PHONE");
     const c = await card(), s = await serverPost(c.id);
     ok(c.on === s.likedByMe && Number(c.n || 0) === s.likeCount, `screen ${c.on}/${c.n} vs server ${s.likedByMe}/${s.likeCount}`);
   });
+  await step(d, "someone else's script error, or a slip once the app is up, never wipes the screen", async () => {
+    // 2026-10-27: an iPad on the tournament, working, replaced by "Something broke · Script error."
+    const sent = [];
+    await p.route("**/api/client-error", (r) => { sent.push(r.request().postDataJSON()); r.fulfill({ status: 200, body: "{}" }); });
+    await p.evaluate(() => {
+      const fire = (o) => window.dispatchEvent(new ErrorEvent("error", o));
+      fire({ message: "Script error.", filename: "", lineno: 0 });                                         // an extension / in-app browser
+      fire({ message: "TypeError: x is undefined", filename: "chrome-extension://abc/inject.js", lineno: 3 });
+      fire({ message: "TypeError: undefined is not an object (evaluating 'window._META.IABInnerFrame')", filename: location.href, lineno: 1 });
+      fire({ message: "TypeError: ours", filename: location.href, lineno: 900, error: new TypeError("ours") }); // ours, after boot
+    });
+    await p.waitForTimeout(400);
+    ok(!(await p.getByText("Something broke").count()), "the crash screen replaced the app");
+    ok(await p.locator("#sr-grid").count(), "the Showroom is gone");
+    ok(sent.length === 1 && /ours/.test(sent[0].message), "reported: " + JSON.stringify(sent.map((x) => x.message)));
+    await p.unroute("**/api/client-error");
+  });
   await step(d, "share keeps your place in the feed", async () => {
     await p.locator("#sr-grid [data-share]").nth(2).scrollIntoViewIfNeeded();
     const top = await p.evaluate(() => document.getElementById("showroom").scrollTop);

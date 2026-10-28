@@ -8,14 +8,33 @@
    without this, ANY error at load looks identical to a dead server. */
 (function(){
   var shown=false;
-  function crash(what,where){
-    if(shown)return; shown=true;
-    /* Tell the server. Otherwise a crash only exists if the person who hit
-       it bothers to screenshot it — and most people just leave. */
+  /* 2026-10-27: "This is what people see" — an iPad on the tournament,
+     already open and working, wiped by "Script error.". That message is all a
+     browser gives for an error in someone else's script (a Safari extension,
+     a wallet, Instagram's or Facebook's in-app browser injecting its own
+     code), and none of it is LABS. So: someone else's error is ignored, and
+     once the app is up (LABS_UP, end of boot in app-19-feed-boot) an error
+     of ours is reported but never replaces the screen people are using. */
+  function foreign(msg,file,line){
+    msg=String(msg||"");
+    if(/^Script error\.?$/i.test(msg))return true;
+    if(file&&!/^https?:/i.test(file))return true;                                  // chrome-extension://, iabjs://, webkit-masked-url://
+    if(file&&file.indexOf(location.origin)!==0)return true;                         // another site's script
+    if(/_META\b|webkit\.messageHandlers|Java object is gone|ethereum|evmAsk|__gCrWeb|instantSearchSDK/i.test(msg))return true;
+    return false;
+  }
+  function report(what,where){
     try{
       fetch("/api/client-error",{method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({message:String(what).slice(0,400),detail:String(where||"").slice(0,400),path:location.pathname})}).catch(function(){});
     }catch(e){}
+  }
+  function crash(what,where){
+    if(window.LABS_UP){report(what,where);return}
+    if(shown)return; shown=true;
+    /* Tell the server. Otherwise a crash only exists if the person who hit
+       it bothers to screenshot it — and most people just leave. */
+    report(what,where);
     try{
       document.getElementById("app").innerHTML=
         '<div style="padding:28px 16px;font-family:\'Helvetica Neue\',Helvetica,Archivo,Arial,sans-serif;color:var(--tx)">'+
@@ -54,10 +73,12 @@
     if(/ResizeObserver loop/i.test(String(e.message||""))) return;
     // an <img>/<video> that 404s fires error on the ELEMENT, not the window
     if(e.target && e.target !== window && e.target.tagName) return;
+    if(foreign(e.message||(e.error&&e.error.message),e.filename,e.lineno)) return;
     crash(e.message||e.error, e.filename?(e.filename.split("/").pop()+":"+e.lineno+":"+e.colno):"");
   }, true);
   window.addEventListener("unhandledrejection",function(e){
     if(benign(e.reason)) { e.preventDefault(); return; }
+    if(foreign((e.reason&&e.reason.message)||e.reason,"")) return;
     crash((e.reason&&e.reason.message)||e.reason,"unhandled promise rejection");
   });
 })();
