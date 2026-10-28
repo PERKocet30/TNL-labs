@@ -15,15 +15,15 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "�
 
 const { db } = await import("../src/db.js");
 const now = Date.now(), D = 86400000;
-const mk = (u, { admin = 0, age = 60, verified = 1 } = {}) => {
-  const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified) VALUES (?,?,?,?,?,?)`)
-    .run(u, u.toUpperCase(), u + "@x.test", "x", now - age * D, verified).lastInsertRowid);
+const mk = (u, { admin = 0, age = 60, verified = 1, photo = 1 } = {}) => {
+  const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, avatar_url) VALUES (?,?,?,?,?,?,?)`)
+    .run(u, u.toUpperCase(), u + "@x.test", "x", now - age * D, verified, photo ? "/uploads/av-" + u + ".jpg" : "").lastInsertRowid);
   if (admin) db.prepare(`UPDATE users SET is_admin = 1 WHERE id = ?`).run(id);
   db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?,?,?)`).run("tok-" + u, id, now);
   return id;
 };
 const MEMBERS = "abcdefghijkl".split("");
-mk("boss", { admin: 1 }); mk("judge"); mk("newbie", { age: 1 }); mk("unv", { verified: 0 });
+mk("boss", { admin: 1 }); mk("judge"); mk("newbie", { age: 1 }); mk("unv", { verified: 0 }); mk("nopic", { photo: 0 });
 for (const m of MEMBERS) mk(m);
 for (let i = 0; i < 14; i++) writeFileSync(join(DATA, "uploads", `e${i}.jpg`), "x");
 // real pictures for the Instagram cards, when there's an ffmpeg to draw them
@@ -82,6 +82,15 @@ try {
   const byUser = Object.fromEntries(v.entries.map((e) => [e.author.username, e.id]));
   t("brand-new accounts can't vote", (await vote("newbie", byUser.b)).s === 403);
   t("you can't vote for yourself", (await vote("b", byUser.b)).s === 403);
+  /* 2026-10-28: "make it a rule you need a profile pic to vote" */
+  const np = await vote("nopic", byUser.b);
+  t("no profile photo, no vote — and the reason says so", np.s === 403 && /profile photo/i.test(np.j.error || ""));
+  t("the app is told the rule, and what blocks this member", v.event.requireAvatar === true && /profile photo/i.test((await view("nopic", "poster")).me.voteBlock || ""));
+  const posterId = (await call("boss", "GET", "/api/admin/events")).j.events.find((e) => e.slug === "poster").id;
+  await call("boss", "PATCH", `/api/admin/events/${posterId}`, { requireAvatar: false });
+  t("an admin can switch the rule off for an event", (await vote("nopic", byUser.b)).s === 200 && (await call("boss", "GET", `/api/admin/events/${posterId}`)).j.event.requireAvatar === false);
+  await vote("nopic", byUser.b, false); await call("boss", "PATCH", `/api/admin/events/${posterId}`, { requireAvatar: true });
+  t("…and back on; the rules page says so", (await vote("nopic", byUser.b)).s === 403 && /profile photo to vote/.test(await (await fetch(`http://127.0.0.1:${PORT}/e/poster/rules`)).text()));
   t("judges can vote before the final", (await vote("judge", byUser.c)).s === 200);
   // b gets 4 votes, c 3 (incl. judge), d 2, e…g 1 each
   for (const w of ["k", "l", "c", "d"]) await vote(w, byUser.b);

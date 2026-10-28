@@ -25,7 +25,7 @@ const LAB_NAME = new Function(part.slice(part.indexOf("const LAB_NAME ="), part.
 const { db } = await import("../src/db.js");
 const now = Date.now(), D = 86400000;
 const mk = (u, { admin = 0, suspended = 0 } = {}) => {
-  const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified) VALUES (?,?,?,?,?,1)`)
+  const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, avatar_url) VALUES (?,?,?,?,?,1,'/uploads/av.jpg')`)
     .run(u, u.toUpperCase(), u + "@x.test", "x", now - 60 * D).lastInsertRowid);
   db.prepare(`UPDATE users SET is_admin = ?, suspended = ? WHERE id = ?`).run(admin, suspended, id);
   db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?,?,?)`).run("tok-" + u, id, now);

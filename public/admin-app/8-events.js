@@ -63,6 +63,7 @@ function evFormHTML() {
       ${field("freezeHours", "Poll: freeze the scoreboard for the last … hours", f.freezeHours ?? 24, 'type="number" min="0" max="72"')}
     </div>
     <label class="row" style="margin-top:12px;font-size:14px"><input type="checkbox" data-f="requireVerified" ${f.requireVerified !== false ? "checked" : ""}> Voters need a confirmed email (recommended — it stops throwaway accounts)</label>
+    <label class="row" style="margin-top:8px;font-size:14px"><input type="checkbox" data-f="requireAvatar" ${f.requireAvatar !== false ? "checked" : ""}> Voters need a profile photo (a face or a mark behind every vote)</label>
     <div>
     </div>
   </div>
@@ -169,7 +170,7 @@ function evMailHTML(m, e) {
 WIRES.events = () => {
   const reload = async () => { await LOADERS.events(); paint(); };
   const on = (s, fn) => { const el = $(s); if (el) el.onclick = fn; };
-  on("#evnew", () => { EVFORM = { format: "poll", bracketSize: 16, finalists: 5, picks: 1, judgeWeight: 0, minAccountDays: 0, freezeHours: 24, requireVerified: true, published: false, plan: { opensAt: Date.now() + 14 * 864e5, submitDays: 14, voteDays: 7, roundDays: 2, finalDays: 3, mailOnOpen: true } }; paint(); });
+  on("#evnew", () => { EVFORM = { format: "poll", bracketSize: 16, finalists: 5, picks: 1, judgeWeight: 0, minAccountDays: 0, freezeHours: 24, requireVerified: true, requireAvatar: true, published: false, plan: { opensAt: Date.now() + 14 * 864e5, submitDays: 14, voteDays: 7, roundDays: 2, finalDays: 3, mailOnOpen: true } }; paint(); });
   $$("[data-evcopy]").forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.evcopy); toast("Link copied"); } catch { toast("Couldn't copy"); } });
   $$("[data-ev]").forEach((b) => b.onclick = async () => { EVID = +b.dataset.ev; D.event = null; paint(); await reload(); });
   on("#evback", () => { EVID = null; D.event = null; paint(); });

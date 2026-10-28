@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS events (
   min_account_days INTEGER NOT NULL DEFAULT 3,
   freeze_hours INTEGER NOT NULL DEFAULT 24,
   require_verified INTEGER NOT NULL DEFAULT 1,
+  require_avatar INTEGER NOT NULL DEFAULT 1,   -- 2026-10-28: a profile photo to vote
   plan TEXT NOT NULL DEFAULT '{}',
   schedule TEXT NOT NULL DEFAULT '[]',
   state TEXT NOT NULL DEFAULT '{}',
@@ -96,6 +97,8 @@ CREATE TABLE IF NOT EXISTS event_matchups (
 const EV_DAY = 86400000;
 /* A poll's voting day: 20261120 — the calendar date in New York, so
    "resets at midnight" means midnight for the people running it. */
+/* 2026-10-28, "make it a rule you need a profile pic to vote": on for every event unless an admin switches it off. */
+if (!db.prepare(`PRAGMA table_info(events)`).all().some((c) => c.name === "require_avatar")) db.exec(`ALTER TABLE events ADD COLUMN require_avatar INTEGER NOT NULL DEFAULT 1`);
 const evDayKey = (t = Date.now()) => Number(new Date(t).toLocaleDateString("en-CA", { timeZone: "America/New_York" }).replace(/-/g, ""));
 const evJSON = (s, d) => { try { return JSON.parse(s); } catch { return d; } };
 const evRow = (idOrSlug) => typeof idOrSlug === "number"

@@ -110,9 +110,11 @@ function evSubmitHTML(){
     ${n?`<div class="ev-grid">${EV.entries.map(e=>evThumb(e)).join("")}</div>`:`<div class="dim">Be the first.</div>`}</div>`;
 }
 
+/* The reason you can't vote, and the one that's yours to fix gets a button (2026-10-28: a profile photo). */
+const evBlockHTML=b=>esc(b)+(/profile photo/i.test(b)?` <button class="btn ghost ev-fix" id="evaddphoto">Add a photo</button>`:"");
 function evQualifyHTML(){
   const me=EV.me, left=EV.event.picks-me.myVotes.length;
-  return `<div class="ev-note">${me.voteBlock?esc(me.voteBlock):`Pick your favourites — <b>${left} of ${EV.event.picks}</b> picks left. Counts stay hidden until voting closes.`}</div>
+  return `<div class="ev-note">${me.voteBlock?evBlockHTML(me.voteBlock):`Pick your favourites — <b>${left} of ${EV.event.picks}</b> picks left. Counts stay hidden until voting closes.`}</div>
     <div class="ev-grid">${EV.entries.map(e=>evThumb(e,{pick:!me.voteBlock})).join("")}</div>`;
 }
 
@@ -128,14 +130,14 @@ function evBracketHTML(){
   const B=EV.bracket;if(!B)return "";
   const cur=EV.event.phase, liveR=cur.phase==="round"?cur.round:0;
   const done=B.rounds.filter(r=>r.matchups.length&&r.round!==liveR).reverse();
-  return `${liveR?`<div class="ev-note">${EV.me.voteBlock?esc(EV.me.voteBlock):"Pick one from each pair. Results show when the round closes."}</div>
+  return `${liveR?`<div class="ev-note">${EV.me.voteBlock?evBlockHTML(EV.me.voteBlock):"Pick one from each pair. Results show when the round closes."}</div>
     ${evMatchupsHTML(B.rounds[liveR-1],true)}`:""}
     ${done.map(r=>`<div class="ev-sec"><h3>Round ${r.round}</h3>${evMatchupsHTML(r,false)}</div>`).join("")}`;
 }
 
 function evFinalHTML(){
   const me=EV.me, F=(EV.finalists||[]).map(evById).filter(Boolean);
-  return `<div class="ev-note">${me.isJudge?"Score each finalist from 1 to 10.":me.voteBlock?esc(me.voteBlock):"Pick your winner. Judges score the finalists too."}</div>
+  return `<div class="ev-note">${me.isJudge?"Score each finalist from 1 to 10.":me.voteBlock?evBlockHTML(me.voteBlock):"Pick your winner. Judges score the finalists too."}</div>
     <div class="ev-final ${F.length===2?"two":""}">${F.map(e=>`<div class="ev-fin">${evThumb(e,{big:true,pick:!me.isJudge&&!me.voteBlock})}
       ${me.isJudge?`<div class="ev-score">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="${me.myScores[e.id]===n?"on":""}" data-evscore="${e.id}" data-n="${n}">${n}</button>`).join("")}</div>`:""}
     </div>`).join("")}</div>${evBracketHTML()}`;

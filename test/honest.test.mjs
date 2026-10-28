@@ -16,7 +16,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const { db } = await import("../src/db.js");
 const now = Date.now(), D = 86400000;
 const mk = (u, { admin = 0 } = {}) => {
-  const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified) VALUES (?,?,?,?,?,1)`).run(u, u, u + "@x.test", "x", now - 30 * D).lastInsertRowid);
+  const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, avatar_url) VALUES (?,?,?,?,?,1,'/uploads/av.jpg')`).run(u, u, u + "@x.test", "x", now - 30 * D).lastInsertRowid);
   if (admin) db.prepare(`UPDATE users SET is_admin = 1 WHERE id = ?`).run(id);
   db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?,?,?)`).run("tok-" + u, id, now);
   return id;
@@ -83,7 +83,7 @@ try {
 
   console.log("\nNEW ACCOUNTS WAIT 5 MINUTES (WHILE THEY SET UP)");
   { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db"));   // joined this second (sign-up's 5-an-hour is used up above)
-    const id = Number(w.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified) VALUES ('fresh1','fresh1','fresh.person@gmail.com','x',?,1)`).run(Date.now()).lastInsertRowid);
+    const id = Number(w.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, avatar_url) VALUES ('fresh1','fresh1','fresh.person@gmail.com','x',?,1,'/uploads/av.jpg')`).run(Date.now()).lastInsertRowid);
     w.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES ('tok-fresh1', ?, ?)`).run(id, Date.now()); w.close(); }
   const fresh = { s: 200, j: { token: "tok-fresh1" } };
   const r5 = await fetch(B + "/api/events/art/vote", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + fresh.j.token, "X-Device": "abcdefabcdefabcdefab" }, body: JSON.stringify({ entryId, on: true }) });
