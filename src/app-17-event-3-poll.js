@@ -10,7 +10,7 @@ function evVoteBtn(e){
   const me=EV.me, mine=me.entry&&me.entry.id===e.id, picked=me.myVotes.includes(e.id);
   if(mine)return `<span class="ev-mine-s">Yours</span>`;
   if(me.isJudge&&EV.event.stage==="final")return "";
-  return `<button class="ev-vote ${picked?"on":""}" data-evpick="${e.id}">${picked?DI.check+" Voted":"Vote"}</button>`;
+  return `<button class="ev-vote ${picked?"on":""}${EVWAIT&&EVWAIT.id===e.id?" busy":""}" data-evpick="${e.id}">${picked?DI.check+" Voted":"Vote"}</button>`;
 }
 function evPollNote(){
   const me=EV.me, B=EV.board, n=EV.event.picks, left=Math.max(0,n-me.myVotes.length);
