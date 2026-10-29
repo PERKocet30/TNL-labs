@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · sign-in  v1.1 — 2026-10-27 (v1.1: a key only works from /mcp itself; the allow page escapes its data and can't be framed)
+   LABS CONNECTOR · sign-in  v1.2 — 2026-10-28 (v1.2: a pasted key for apps that take a key instead of signing in — Manus; owner only, shown once, 90 days, same read-only reach) · v1.1 — 2026-10-27 (v1.1: a key only works from /mcp itself; the allow page escapes its data and can't be framed)
    Claude (and any other MCP client) reads the admin dashboard through
    /mcp (server-12-mcp-2-tools.js). This part is the key cabinet:
 
@@ -195,9 +195,23 @@ app.post("/oauth/token", mcpLimit, express.urlencoded({ extended: false, limit: 
 
 /* ---- Admin → Systems: the keys, and the door to shut ---- */
 app.get("/api/admin/connectors", auth, admin, (req, res) => {
-  const rows = db.prepare(`SELECT t.id, t.name, t.created_at, t.expires_at, t.last_used_at, t.calls, u.username FROM mcp_tokens t JOIN users u ON u.id = t.user_id
+  const rows = db.prepare(`SELECT t.id, t.name, t.client_id, t.created_at, t.expires_at, t.last_used_at, t.calls, u.username FROM mcp_tokens t JOIN users u ON u.id = t.user_id
     WHERE t.revoked = 0 AND t.expires_at > ? ORDER BY t.created_at DESC LIMIT 20`).all(Date.now());
-  res.json({ url: baseUrl(req) + "/mcp", keys: rows.map((r) => ({ id: r.id, name: r.name, by: r.username, createdAt: r.created_at, expiresAt: r.expires_at, lastUsedAt: r.last_used_at, calls: r.calls })) });
+  res.json({ url: baseUrl(req) + "/mcp", keys: rows.map((r) => ({ id: r.id, name: r.name, by: r.username, pasted: r.client_id === "pasted", createdAt: r.created_at, expiresAt: r.expires_at, lastUsedAt: r.last_used_at, calls: r.calls })) });
+});
+/* A pasted key (2026-10-28, "help me connect to Manus"): some apps take a server
+   address and a key in a header instead of signing in. Owner only (not in
+   MOD_MAY), shown once and stored only as a hash, 90 days, no refresh — the same
+   key kind as a signed-in one, so it opens exactly what Claude's does: /mcp's
+   read-only tools, nothing else, and Disconnect cuts it off. */
+const MCP_PASTED_TTL = 90 * 86400000;
+app.post("/api/admin/connectors/key", auth, admin, mcpLimit, (req, res) => {
+  const name = String(req.body?.name || "").replace(/[^A-Za-z0-9 ._-]/g, "").trim().slice(0, 40);
+  if (!name) return res.status(400).json({ error: "Name it after the app, e.g. Manus." });
+  const key = mcpRandom("labs_mcp_"), now = Date.now();
+  db.prepare(`INSERT INTO mcp_tokens (hash, refresh_hash, user_id, client_id, name, created_at, expires_at) VALUES (?,?,?,?,?,?,?)`)
+    .run(mcpHash(key), mcpHash(mcpRandom("labs_norefresh_")), req.user.id, "pasted", name, now, now + MCP_PASTED_TTL);
+  res.json({ key, name, url: baseUrl(req) + "/mcp", expiresAt: now + MCP_PASTED_TTL });
 });
 app.delete("/api/admin/connectors/:id", auth, admin, (req, res) => {
   const r = db.prepare(`UPDATE mcp_tokens SET revoked = 1 WHERE id = ?`).run(Number(req.params.id));
