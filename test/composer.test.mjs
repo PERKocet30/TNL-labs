@@ -20,7 +20,7 @@ t("rows: invite collaborators, add music — and no \"Share to a lab\" (2026-10-
 // profile; a lab is where you also show it. The row says so, and the button says Post.
 t("a Posting-to row: Your profile fixed, + Add a lab, the lab as a chip you can take out",
   html.includes('class="pc-to"') && html.includes("Your profile") && html.includes("Add a lab") && html.includes("data-pclabrm") && html.includes('id="pclab"'));
-t("the main button says Post, not Share", html.includes('label:c.busy?"Posting…":"Post"') && !html.includes('"Sharing…"'));
+t("the main button says Post, not Share", html.includes('(c.busy?"Posting…":"Post")') && !html.includes('"Sharing…"'));
 t("the lab picker is called Add a lab and says it stays on your profile", wire.includes('title:"Add a lab"') && wire.includes("stays on your profile") && !wire.includes("Profile only"));
 // 2026-10-21 "Instagram level": tag people on the picture, Preview, Also share to your Story, Advanced settings (app-18-composer-ig.js)
 const ig = readFileSync(join(ROOT, "src/app-18-composer-ig.js"), "utf8");

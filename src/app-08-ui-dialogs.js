@@ -3,7 +3,8 @@
    • Typing something (uiPrompt) opens an edit screen the way Instagram does: Cancel · title · Done
      across the top, a plain full-width field under it, no pill box. Full screen on a phone (so the
      keyboard never covers it), a centred panel from 620px.
-   • Asking (uiConfirm / uiAlert) is a centred alert with the choices stacked as full-width rows.
+   • Asking (uiConfirm / uiAlert) is never a pop-up in the middle: a sheet rises from the bottom with
+     the choices stacked as full-width rows (v2.1 — "those pop-ups shouldn't exist"). Centred only on a computer.
    Classes .ui-ov / .ui-card / .ui-in / .ui-ok / .ui-cancel stay — the tap-through and other parts use them.
    Styles: app-05-styles-dialogs.css. Moved here from app-08-state-ui.js (v1). */
 function uiModal({title,body,fields,okLabel="Confirm",cancelLabel="Cancel",danger=false,okOnly=false}){

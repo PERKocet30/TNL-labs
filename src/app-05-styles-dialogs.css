@@ -1,4 +1,5 @@
-/* DIALOGS v2.0 — 2026-10-29. Edit screens and alerts the way Instagram and Spotify do them: no pill
+/* DIALOGS v2.1 — 2026-10-29 (v2.1: "those pop-ups shouldn't exist" — asking is a bottom sheet on a phone).
+   DIALOGS v2.0 — 2026-10-29. Edit screens and alerts the way Instagram and Spotify do them: no pill
    boxes, no bubble buttons. See app-08-ui-dialogs.js. Colours only through palette tokens. */
 .ui-ov .ui-btn{border:0;border-radius:0;background:transparent;padding:0;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .ui-ov .ui-btn:active{opacity:.55}
@@ -18,9 +19,12 @@
 .ui-edit .ui-in:focus{border-bottom-color:var(--tx)}
 .ui-edit .ui-body{margin-top:10px;font-size:13px}
 
-/* asking: a centred alert, choices stacked as rows */
-.ui-ov.ui-alertov{background:var(--scrim)}
-.ui-ov .ui-alert,.ui-ov .ui-choose{max-width:300px;padding:0;border:0;overflow:hidden;text-align:center}
+/* asking: no pop-up in the middle of the screen — a sheet that rises from the bottom (like the ⋯ menu),
+   the choices stacked as full-width rows. A centred panel only on a computer-sized screen. */
+.ui-ov.ui-alertov{background:var(--scrim);align-items:flex-end;padding:0}
+.ui-ov .ui-alert,.ui-ov .ui-choose{max-width:none;width:100%;padding:0 0 env(safe-area-inset-bottom);border:0;border-radius:var(--rad) var(--rad) 0 0;
+  overflow:hidden;text-align:center;background:var(--bg)}
+.ui-ov .ui-alert::before,.ui-ov .ui-choose::before{content:"";display:block;width:36px;height:4px;border-radius:2px;background:var(--line2);margin:8px auto 0}
 .ui-atext{padding:24px 20px 20px}
 .ui-alert .ui-title,.ui-choose .ui-title{font-size:18px;font-weight:700}
 .ui-alert .ui-body,.ui-choose .ui-body{margin-top:6px;font-size:14px}
@@ -33,10 +37,13 @@
 .ui-ov .ui-choose .ui-col{margin-top:20px}
 
 @media(min-width:620px){
+  .ui-ov.ui-alertov{align-items:center;padding:22px}
+  .ui-ov .ui-alert,.ui-ov .ui-choose{max-width:340px;border-radius:var(--rad);padding-bottom:0}
+  .ui-ov .ui-alert::before,.ui-ov .ui-choose::before{display:none}
   .ui-ov.ui-editov{align-items:center;padding:22px}
   .ui-ov .ui-edit{max-width:440px;height:auto;padding-top:0;border-radius:var(--rad);padding-bottom:12px}
 }
 @media(prefers-reduced-motion:no-preference) and (max-width:619px){
-  .ui-ov .ui-edit{animation:uiUp .26s cubic-bezier(.2,.8,.2,1)}
+  .ui-ov .ui-edit,.ui-ov .ui-alert,.ui-ov .ui-choose{animation:uiUp .26s cubic-bezier(.2,.8,.2,1)}
 }
 @keyframes uiUp{from{transform:translateY(100%)}to{transform:none}}

@@ -64,7 +64,7 @@ function pcomposeHTML(){
         :`<button class="pc-chip pc-add2" id="pclab">${DI.plus}<span>Add a lab</span></button>`}
     </div>`;
   return `<div class="pcmp-ov" id="pcov"><div class="pc" role="dialog" aria-label="New post">
-    ${formHead({id:"pccancel",label:"Cancel"},c.edit?"Edit info":"New post",{id:"pcgo",label:c.edit?(c.busy?"Saving…":"Done"):c.busy?"Posting…":"Post",disabled:!pcCan(c)})}
+    ${formHead({id:"pccancel",label:"Cancel"},c.edit?"Edit info":"New post",{id:"pcgo",label:c.edit?(c.busy?"Saving…":"Done"):(c.busy?"Posting…":"Post"),disabled:!pcCan(c)})}
     <div class="pc-body"><div class="pc-media">${media}</div><div class="pc-side">
       ${to}
       <div class="pc-cap">${avHTML(ME,"")}
