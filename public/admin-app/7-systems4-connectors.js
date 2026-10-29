@@ -10,6 +10,7 @@ function sysConnectorsHTML() {
   const keys = C.keys || [];
   return `${head}<div class="panel">
     <div class="set"><div class="t"><b>Add LABS to Claude</b><span>In Claude: Settings → Connectors → Add custom connector → paste <span class="mono">${esc(C.url)}</span>. Claude sends you back here to allow it, signed in as the admin.</span></div></div>
+    <div class="set" style="margin-top:8px"><div class="t"><b>Add LABS to Grok</b><span>On grok.com: Connectors → New Connector → Custom → paste <span class="mono">${esc(C.url)}</span>. Grok sends you back here to allow it, signed in as the admin — the same read-only tools as Claude.</span></div></div>
     <div class="set" style="margin-top:8px"><div class="t"><b>Add LABS to another app (Manus)</b><span>For apps that ask for a server address and a key. Name it after the app and create a key — it's shown once, lasts 90 days and reads exactly what Claude does.</span></div></div>
     ${SYSNEWKEY ? `<div class="set" style="margin-top:8px;display:block"><div class="t"><b>${esc(SYSNEWKEY.name)} key — copy it now, it won't be shown again</b>
       <span style="display:block;margin-top:4px">Server URL: <span class="mono">${esc(SYSNEWKEY.url)}</span></span><span style="display:block;margin-top:4px">Header name: <span class="mono">Authorization</span></span><span style="display:block;margin-top:4px">Header value: <span class="mono" style="word-break:break-all">Bearer ${esc(SYSNEWKEY.key)}</span></span></div>

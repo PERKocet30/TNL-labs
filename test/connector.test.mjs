@@ -48,6 +48,26 @@ try {
   t("a client with a non-Claude callback is refused", bad.status === 400);
   const reg = await (await call("/oauth/register", { method: "POST", body: { client_name: "Claude", redirect_uris: [CB] } })).json();
   t("Claude's callback registers", /^labs_client_/.test(reg.client_id || ""));
+  /* 2026-10-29: "build a connector for Grok" — Grok's custom connector signs in the same way, from its exact callback */
+  for (const g of ["https://grok.com/connectors-oauth-exchange-code/", "https://grok.com/connectors/oauth/callback"]) {
+    const gr = await (await call("/oauth/register", { method: "POST", body: { client_name: "Totally Claude", redirect_uris: [g] } })).json();
+    t("Grok's callback registers (" + g.slice(17) + "), named Grok whatever it calls itself", /^labs_client_/.test(gr.client_id || "") && gr.client_name === "Grok");
+  }
+  const lookalikes = ["https://grok.com/connectors-oauth-exchange-code", "https://grok.com/connectors-oauth-exchange-code/evil", "http://grok.com/connectors/oauth/callback",
+    "https://grok.com.evil.example/connectors/oauth/callback", "https://evil.grok.com/connectors/oauth/callback", "https://grok.com/connectors/oauth/callback?x=1"];
+  let lk = 0; for (const u of lookalikes) if ((await call("/oauth/register", { method: "POST", body: { redirect_uris: [u] } })).status === 400) lk++;
+  t("near-misses of Grok's callback are refused (no slash, another path, http, other hosts, a query)", lk === lookalikes.length);
+  t("one registration can't mix Claude's and Grok's callbacks", (await call("/oauth/register", { method: "POST", body: { redirect_uris: [CB, "https://grok.com/connectors/oauth/callback"] } })).status === 400);
+  const greg = await (await call("/oauth/register", { method: "POST", body: { redirect_uris: ["https://grok.com/connectors-oauth-exchange-code/"] } })).json();
+  const gv = "g".repeat(50), gch = createHash("sha256").update(gv).digest("base64url");
+  const gpage = await (await call(`/oauth/authorize?client_id=${greg.client_id}&redirect_uri=${encodeURIComponent("https://grok.com/connectors-oauth-exchange-code/")}&state=s&code_challenge=${gch}&code_challenge_method=S256&response_type=code`)).text();
+  t("the allow page names Grok and says to allow only if you pressed Connect in your own Grok", /Let Grok read the admin dashboard/.test(gpage) && /your own Grok/.test(gpage));
+  const gap = await (await call("/oauth/approve", { method: "POST", token: "tok-boss", body: { client_id: greg.client_id, redirect_uri: "https://grok.com/connectors-oauth-exchange-code/", state: "s", code_challenge: gch } })).json();
+  const gcode = new URL(gap.redirect || "https://x/").searchParams.get("code");
+  const gtok = await (await call("/oauth/token", { method: "POST", form: true, body: { grant_type: "authorization_code", code: gcode || "", client_id: greg.client_id, redirect_uri: "https://grok.com/connectors-oauth-exchange-code/", code_verifier: gv } })).json();
+  t("Grok gets a read-only key the same way, back on its own callback", gap.redirect && gap.redirect.startsWith("https://grok.com/connectors-oauth-exchange-code/?code=") && /^labs_mcp_/.test(gtok.access_token || ""));
+  const gtools = await (await call("/mcp", { method: "POST", token: gtok.access_token, body: { jsonrpc: "2.0", id: 1, method: "tools/list" } })).json();
+  t("…and sees the same tools", (gtools.result?.tools || []).length > 5);
 
   /* authorize + approve */
   const verifier = "v".repeat(50), challenge = createHash("sha256").update(verifier).digest("base64url");
@@ -128,7 +148,7 @@ try {
   t("…and the old key stops working", (await call("/mcp", { method: "POST", token: KEY, body: { jsonrpc: "2.0", id: 9, method: "ping" } })).status === 401);
   t("…and the old refresh key is spent", (await call("/oauth/token", { method: "POST", form: true, body: { grant_type: "refresh_token", refresh_token: tok.refresh_token } })).status === 400);
   const list = await (await call("/api/admin/connectors", { token: "tok-boss" })).json();
-  t("Admin → Systems lists the connected key with the address to paste", list.url === B + "/mcp" && list.keys.length === 1 && list.keys[0].by === "boss");
+  t("Admin → Systems lists the connected keys (Claude's and Grok's, each by name) with the address to paste", list.url === B + "/mcp" && list.keys.length === 2 && list.keys.every((k) => k.by === "boss") && list.keys.some((k) => k.name === "Grok") && list.keys.some((k) => k.name === "Claude"));
   t("a member can't see the keys", (await call("/api/admin/connectors", { token: "tok-ana" })).status === 403);
   const rv = await (await call("/api/admin/connectors/" + list.keys[0].id, { method: "DELETE", token: "tok-boss" })).json();
   t("the admin can disconnect it", rv.ok === true);

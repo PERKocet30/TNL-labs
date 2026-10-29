@@ -54,9 +54,18 @@ const MCP_REFRESH_TTL = 90 * 86400000;    // the refresh key itself lives 90 day
 const MCP_CODE_TTL = 10 * 60000;          // an approval code must be exchanged within 10 minutes
 const mcpHash = (s) => createHash("sha256").update(String(s)).digest("hex");
 const mcpRandom = (pre) => pre + randomBytes(32).toString("hex");
-/* Only Claude's own callback hosts may receive a code. Anyone else can register a
-   client, but their redirect would never be accepted, so the registration is inert. */
-const mcpRedirectOk = (u) => { try { const x = new URL(u); return x.protocol === "https:" && ["claude.ai", "claude.com"].includes(x.hostname) && x.pathname === "/api/mcp/auth_callback"; } catch (e) { return false; } };
+/* Only Claude's and Grok's own callbacks may receive a code. Anyone else is refused at registration. */
+/* Which apps may sign in, by their exact callback (2026-10-29: "build a connector for Grok"). Grok's custom
+   connectors (grok.com → Connectors → New → Custom) sign in the same way Claude does — discovery, registration,
+   PKCE. xAI doesn't publish its callback; these are the two strings it's been seen to use, matched exactly
+   (no other path, host or lookalike). The app's name comes from here, never from what it calls itself. */
+const MCP_GROK = new Set(["https://grok.com/connectors-oauth-exchange-code/", "https://grok.com/connectors/oauth/callback"]);
+function mcpAppFor(u) {
+  if (MCP_GROK.has(String(u))) return "Grok";
+  try { const x = new URL(u); if (x.protocol === "https:" && ["claude.ai", "claude.com"].includes(x.hostname) && x.pathname === "/api/mcp/auth_callback") return "Claude"; } catch (e) {}
+  return null;
+}
+const mcpRedirectOk = (u) => !!mcpAppFor(u);;
 const mcpLimit = rateLimit({ max: 30, windowMs: 600000 });
 
 /* The admin GET routes a connector key may open. Everything that could expose a
@@ -114,9 +123,11 @@ app.get(["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-
 app.post("/oauth/register", mcpLimit, (req, res) => {
   const b = req.body || {};
   const uris = Array.isArray(b.redirect_uris) ? b.redirect_uris.map(String).slice(0, 5) : [];
-  if (!uris.length || !uris.every(mcpRedirectOk)) return res.status(400).json({ error: "invalid_redirect_uri", error_description: "Only Claude's callback is accepted." });
+  if (!uris.length || !uris.every(mcpRedirectOk)) return res.status(400).json({ error: "invalid_redirect_uri", error_description: "Only Claude's or Grok's callback is accepted." });
+  const apps = new Set(uris.map(mcpAppFor));
+  if (apps.size > 1) return res.status(400).json({ error: "invalid_redirect_uri", error_description: "One app per registration." });
   const id = mcpRandom("labs_client_");
-  const name = String(b.client_name || "Claude").slice(0, 60);
+  const name = [...apps][0];   // Claude or Grok, from the callback — not from client_name
   db.prepare(`INSERT INTO mcp_clients (id, name, redirect_uris, created_at) VALUES (?,?,?,?)`).run(id, name, JSON.stringify(uris), Date.now());
   res.status(201).json({ client_id: id, client_name: name, redirect_uris: uris, token_endpoint_auth_method: "none",
     grant_types: ["authorization_code", "refresh_token"], response_types: ["code"] });
@@ -135,7 +146,7 @@ app.get("/oauth/authorize", mcpLimit, (req, res) => {
   res.send(lookPage({ title: "Connect — LABS", center: true, body: `${lookEyebrow("Connect")}
 <h1>Let ${lookEsc(client.name)} read the admin dashboard?</h1>
 <p class="p">Read only. Numbers, orders, reports, systems. Never messages, emails or anything that could expose a member. You can disconnect it any time in Admin → Systems.</p>
-<p class="p"><b>Only allow if you just pressed Connect in your own Claude.</b></p>
+<p class="p"><b>Only allow if you just pressed Connect in your own ${lookEsc(client.name)}.</b></p>
 <div id="who" class="p"></div>
 <p><button id="ok" class="btn" style="display:none">Allow</button> <a id="in" class="btn" href="/admin" style="display:none">Sign in to LABS first</a></p>
 <script>
