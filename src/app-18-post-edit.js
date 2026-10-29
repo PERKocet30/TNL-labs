@@ -1,4 +1,5 @@
-/* EDIT INFO v1.0 — 2026-10-29. "Editing a post should bring up the post composer like Instagram."
+/* EDIT INFO v1.1 — 2026-10-29 (v1.1: editing from an opened post puts the post aside, then returns to it).
+   EDIT INFO v1.0 — 2026-10-29. "Editing a post should bring up the post composer like Instagram."
    ⋯ → Edit opens the post maker on the post — the same page, headed "Edit info" with Done. Like
    Instagram, the pictures or video stay as posted (you see them, swipe them and tag people on them,
    but can't add, remove or reorder); the caption, the lab, the song and which part, people tagged,
@@ -15,6 +16,8 @@ function pceOpen(p){
     products:(p.products||[]).filter(l=>!l.sold).map(l=>({id:l.id,title:l.title,price:l.price,images:[l.image||""]})),
     location:p.location||"",alt:p.alt||"",hideLikes:!!p.hideLikes,commentsOff:!!p.commentsOff,collabs:[],idx:0};
   c.orig=pceSnap(c);
+  /* the open post sits above the page — put it aside while editing, back on it after (like Instagram) */
+  c.back=POSTOPEN;POSTOPEN=null;
   pushView("compose");render();
 }
 const pceSnap=c=>JSON.stringify([c.body,c.ch&&c.ch.id,c.track&&c.track.id,c.musStart,(c.tags||[]).map(u=>[u.username,u.x,u.y,u.i]),
@@ -35,8 +38,8 @@ async function pceSave(c){
       audioTrackId:c.track?c.track.id:null,audioStart:c.track?(c.musStart||0):0,tags:(c.tags||[]).map(u=>u.username),location:c.location||"",
       commentsOff:!!c.commentsOff,products:(c.products||[]).map(l=>l.id),...pcIgExtras(c)}});
     for(const u of c.collabs||[]){try{await api.invite(c.edit,u.username)}catch(e){}}
-    if(d&&d.post)for(const x of likeCopies(c.edit))Object.assign(x,d.post);
-    c.dead=true;pedClose();PCOMPOSE=null;render();toast("Saved");
+    if(d&&d.post){for(const x of likeCopies(c.edit))Object.assign(x,d.post);if(c.back)Object.assign(c.back,d.post)}
+    c.dead=true;pedClose();PCOMPOSE=null;POSTOPEN=c.back||null;render();toast("Saved");
   }catch(e){c.busy=false;render();toast(e.message)}
 }
 /* Cancel / back: nothing changed closes; changes ask first */
@@ -44,5 +47,5 @@ async function pceLeave(c){
   if(c.busy)return false;
   if(pceSnap(c)!==c.orig&&!await uiConfirm("Discard your changes?","",{okLabel:"Discard",cancelLabel:"Keep editing",danger:true}))return false;
   if(PCOMPOSE!==c)return false;
-  c.dead=true;pedClose();PCOMPOSE=null;return true;
+  c.dead=true;pedClose();PCOMPOSE=null;POSTOPEN=c.back||null;return true;
 }
