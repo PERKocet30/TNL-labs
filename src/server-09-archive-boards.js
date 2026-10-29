@@ -32,12 +32,13 @@ app.get("/api/labs", auth, (req, res) => {
   const byChannel = {};
   for (const r of rows) byChannel[r.channel] = r;
 
-  // the most recent image in each channel — this is what makes it a place
+  // the most recent picture in each channel — this is what makes it a place.
+  // A video counts by its cover (2026-10-29: a reel posted to Business didn't change the lab's picture).
   const art = {};
   for (const r of db.prepare(`
     SELECT p.channel, p.thumb_url, p.image_url, p.created_at, u.username, u.display_name
     FROM posts p JOIN users u ON u.id = p.author_id
-    WHERE p.image_url IS NOT NULL
+    WHERE p.image_url IS NOT NULL OR (p.video_url IS NOT NULL AND COALESCE(p.thumb_url, '') != '')
     ORDER BY p.created_at DESC`).all()) {
     if (!art[r.channel]) art[r.channel] = {
       url: r.thumb_url || r.image_url,
