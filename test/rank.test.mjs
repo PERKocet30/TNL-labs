@@ -14,7 +14,7 @@ const { db } = await import("../src/db.js");
 for (const c of ["post_id INTEGER", "deleted_at INTEGER"]) try { db.exec(`ALTER TABLE dm_messages ADD COLUMN ${c}`); } catch {}
 db.exec(`CREATE TABLE IF NOT EXISTS reactions (kind TEXT, target_id INTEGER, user_id INTEGER, emoji TEXT, created_at INTEGER, PRIMARY KEY (kind, target_id, user_id))`);
 const src = readFileSync(join(ROOT, "src/server-10-rank.js"), "utf8");
-const R = new Function("db", src + "\nreturn { rankShowroom, rankBuilders, standingWeight, RANK };")(db);
+const R = new Function("db", src + "\nreturn { rankShowroom, rankBuilders, standingWeight, RANK, rankTagLift };")(db);
 const now = Date.now(), H = 3600000, D = 24 * H;
 const users = {};
 const mk = (u, rep = 0, suspended = 0) => (users[u] = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, rep, suspended, created_at) VALUES (?,?,?,?,?,?,?)`)
@@ -32,6 +32,18 @@ for (const u of ["vet", "vet2", "fan1", "fan2", "fan3", "big", "newbie", "viewer
 mk("banned", 0, 1);
 // the veterans already have older work, so they're past the new-creator lift
 for (let i = 0; i < 4; i++) { post("vet", 300 * D); post("vet2", 300 * D); }
+
+const postB = (who, ago, body) => Number(db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, created_at) VALUES (?,?,?,?,?)`).run(users[who], "general", body, 1, now - ago).lastInsertRowid);
+
+console.log("\n#HASHTAGS LIFT A PIECE (v2.1, 2026-10-29)");
+clear(); for (let i = 0; i < 4; i++) { post("vet", 300 * D); post("vet2", 300 * D); }
+let tg = postB("vet", 5 * H, "new poster #graphicdesign #poster"), un = postB("vet2", 5 * H, "new poster");
+t("a piece with #hashtags sits above the same piece without", order().indexOf(tg) < order().indexOf(un));
+t("a little for each tag, up to three", R.rankTagLift("#a1 #b2") === 2 * R.RANK.tagLift && R.rankTagLift("#a1 #b2 #c3 #d4 #e5") === 3 * R.RANK.tagLift);
+t("the same tag twice counts once; tags inside a link don't count", R.rankTagLift("#art #ART https://x.co/#nope") === R.RANK.tagLift);
+t("stuffing a caption with tags earns nothing", R.rankTagLift(Array.from({ length: 11 }, (_, i) => "#tag" + i).join(" ")) === 0);
+like(un, "fan1"); like(un, "fan2");
+t("…and two people responding still beat three tags — the work has to land", order().indexOf(un) < order().indexOf(tg));
 
 console.log("\nONLY OTHER PEOPLE COUNT");
 clear(); for (let i = 0; i < 4; i++) { post("vet", 300 * D); post("vet2", 300 * D); }

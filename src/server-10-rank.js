@@ -1,5 +1,7 @@
 /* ================================================================
-   RANKING v2.0 — 2026-09-29. The Showroom and "Who's building".
+   RANKING v2.1 — 2026-10-29 (v2.1: #hashtags lift a piece — "people who use
+   hashtags get better exposure in our showroom because it helps define the
+   uploads"). v2.0 — 2026-09-29. The Showroom and "Who's building".
 
    On the surface this reads like any good feed: fresh work, work people
    respond to, a mix of people, a bit more of who you follow. Nothing in
@@ -21,6 +23,10 @@
    - Someone's first few pieces get a small start, so new members are seen.
    - One person can't fill the page: each extra piece of theirs in the same
      page is dampened.
+   - A piece tagged with #hashtags says what it is, so it gets a lift: a
+     little for each tag, up to three. Stuffing a caption with tags earns
+     nothing (more than ten and the lift is gone), and it's never worth
+     more than a few people responding — the work still has to land.
    Tune the numbers here; nothing else depends on them.
 ================================================================ */
 const RANK = {
@@ -37,7 +43,18 @@ const RANK = {
   seenDamp: 0.45,         // you've already responded to it
   ownDamp: 0.8,           // your own work, in your own feed
   repeatDamp: 0.55,       // each extra piece by the same person on the page
+  tagLift: 0.4,           // per #hashtag on the piece…
+  tagMax: 3,              // …counting up to three
+  tagSpam: 10,            // more than this many tags: no lift at all
 };
+/* #tags in a caption, the way the labs read them (bodyTags in server-10-places.js): 2–30 letters, numbers
+   or _, not inside a link or an HTML entity, each counted once. Kept here so the ranking stands alone. */
+const RANK_TAG_RE = /(^|[^\w&#/])#([a-z0-9_]{2,30})(?![\w])/gi;
+function rankTagLift(body) {
+  const tags = new Set();
+  for (const m of String(body || "").replace(/https?:\/\/\S+/g, " ").matchAll(RANK_TAG_RE)) tags.add(m[2].toLowerCase());
+  return tags.size > RANK.tagSpam ? 0 : RANK.tagLift * Math.min(RANK.tagMax, tags.size);
+}
 
 /* How much one person's response counts, from their standing. */
 const standingWeight = (rep) => Math.min(RANK.standingCap, 1 + 0.5 * Math.log2(1 + Math.max(0, rep || 0) / 40));
@@ -71,7 +88,7 @@ function responseQuality(postIds) {
 function rankShowroom(viewerId = 0, limit = 60) {
   const now = Date.now();
   const cands = db.prepare(`
-    SELECT p.id, p.author_id, p.created_at,
+    SELECT p.id, p.author_id, p.created_at, p.body,
       (SELECT COUNT(*) FROM posts e WHERE e.author_id = p.author_id AND e.is_work = 1 AND e.created_at <= p.created_at) nth
     FROM posts p JOIN users u ON u.id = p.author_id
     WHERE p.is_work = 1 AND p.shared_from IS NULL AND u.suspended = 0 AND p.created_at > ?
@@ -79,7 +96,7 @@ function rankShowroom(viewerId = 0, limit = 60) {
   // a quiet stretch shouldn't leave the page empty: fall back to the newest work of any age
   if (cands.length < limit) {
     const have = new Set(cands.map((c) => c.id));
-    for (const r of db.prepare(`SELECT p.id, p.author_id, p.created_at, 99 nth FROM posts p JOIN users u ON u.id = p.author_id
+    for (const r of db.prepare(`SELECT p.id, p.author_id, p.created_at, p.body, 99 nth FROM posts p JOIN users u ON u.id = p.author_id
         WHERE p.is_work = 1 AND p.shared_from IS NULL AND u.suspended = 0 ORDER BY p.created_at DESC LIMIT ?`).all(limit * 2))
       if (!have.has(r.id)) cands.push(r);
   }
@@ -88,7 +105,7 @@ function rankShowroom(viewerId = 0, limit = 60) {
   const seen = viewerId ? new Set(db.prepare(`SELECT post_id FROM likes WHERE user_id = ? UNION SELECT post_id FROM comments WHERE author_id = ?`)
     .all(viewerId, viewerId).map((r) => r.post_id)) : new Set();
   const scored = cands.map((c) => {
-    let s = (1 + quality.get(c.id) + (c.nth <= 3 ? RANK.newCreatorLift : 0))
+    let s = (1 + quality.get(c.id) + (c.nth <= 3 ? RANK.newCreatorLift : 0) + rankTagLift(c.body))
       / Math.pow(Math.max(0, now - c.created_at) / 3600000 + RANK.ageOffsetH, RANK.gravity);
     if (follows.has(c.author_id)) s *= RANK.followBoost;
     if (seen.has(c.id)) s *= RANK.seenDamp;
