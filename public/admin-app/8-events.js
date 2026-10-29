@@ -1,4 +1,4 @@
-/* LABS admin — Events v1.9, 2026-10-27 (v1.9: the showcase pictures, every piece in one; v1.8: entries go into a lab, named as the app names it; v1.7: a cover picture for shared links, or TNL's card; v1.6: the shared page header, events listed in a card; v1.5: the scoreboard picture buttons wait for voting instead of opening a dead page; v1.4: "Link to send people" up top —
+/* LABS admin — Events v2.0, 2026-10-29 (v2.0: "Voters must have posted" switch); v1.9, 2026-10-27 (v1.9: the showcase pictures, every piece in one; v1.8: entries go into a lab, named as the app names it; v1.7: a cover picture for shared links, or TNL's card; v1.6: the shared page header, events listed in a card; v1.5: the scoreboard picture buttons wait for voting instead of opening a dead page; v1.4: "Link to send people" up top —
    tnllabs.com/tournament for the one on now, with Copy).
    Events v1.3, 2026-10-12 (the Tournament tab; v1.2: named for it;
    v1.3: the "entries are open" email to every member — its switch, a
@@ -64,6 +64,7 @@ function evFormHTML() {
     </div>
     <label class="row" style="margin-top:12px;font-size:14px"><input type="checkbox" data-f="requireVerified" ${f.requireVerified !== false ? "checked" : ""}> Voters need a confirmed email (recommended — it stops throwaway accounts)</label>
     <label class="row" style="margin-top:8px;font-size:14px"><input type="checkbox" data-f="requireAvatar" ${f.requireAvatar !== false ? "checked" : ""}> Voters need a profile photo (a face or a mark behind every vote)</label>
+    <label class="row" style="margin-top:8px;font-size:14px"><input type="checkbox" data-f="requirePost" ${f.requirePost !== false ? "checked" : ""}> Voters must have posted something of their own on LABS (stops sign-up-just-to-vote accounts)</label>
     <div>
     </div>
   </div>
@@ -170,7 +171,7 @@ function evMailHTML(m, e) {
 WIRES.events = () => {
   const reload = async () => { await LOADERS.events(); paint(); };
   const on = (s, fn) => { const el = $(s); if (el) el.onclick = fn; };
-  on("#evnew", () => { EVFORM = { format: "poll", bracketSize: 16, finalists: 5, picks: 1, judgeWeight: 0, minAccountDays: 0, freezeHours: 24, requireVerified: true, requireAvatar: true, published: false, plan: { opensAt: Date.now() + 14 * 864e5, submitDays: 14, voteDays: 7, roundDays: 2, finalDays: 3, mailOnOpen: true } }; paint(); });
+  on("#evnew", () => { EVFORM = { format: "poll", bracketSize: 16, finalists: 5, picks: 1, judgeWeight: 0, minAccountDays: 0, freezeHours: 24, requireVerified: true, requireAvatar: true, requirePost: true, published: false, plan: { opensAt: Date.now() + 14 * 864e5, submitDays: 14, voteDays: 7, roundDays: 2, finalDays: 3, mailOnOpen: true } }; paint(); });
   $$("[data-evcopy]").forEach((b) => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.evcopy); toast("Link copied"); } catch { toast("Couldn't copy"); } });
   $$("[data-ev]").forEach((b) => b.onclick = async () => { EVID = +b.dataset.ev; D.event = null; paint(); await reload(); });
   on("#evback", () => { EVID = null; D.event = null; paint(); });

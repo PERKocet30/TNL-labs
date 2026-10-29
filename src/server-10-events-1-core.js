@@ -1,6 +1,6 @@
 
 /* ================================================================
-   EVENTS v1.1 — 2026-10-07. The engine behind TNL's events. The first
+   EVENTS v1.2 — 2026-10-29 (require_post: voters must have posted on LABS first). v1.1 — 2026-10-07. The engine behind TNL's events. The first
    is the graphic design / art tournament.
 
    An event runs on a schedule of phases:
@@ -99,6 +99,10 @@ const EV_DAY = 86400000;
    "resets at midnight" means midnight for the people running it. */
 /* 2026-10-28, "make it a rule you need a profile pic to vote": on for every event unless an admin switches it off. */
 if (!db.prepare(`PRAGMA table_info(events)`).all().some((c) => c.name === "require_avatar")) db.exec(`ALTER TABLE events ADD COLUMN require_avatar INTEGER NOT NULL DEFAULT 1`);
+/* 2026-10-29, "voters must have done something on LABS first": a voter needs at least one post of their own.
+   New events have it on; events that already exist get it off (column default 0), so a round in progress doesn't
+   change under anyone — the admin can switch it on. Creating an event sets it on (server-10-events-3-admin). */
+if (!db.prepare(`PRAGMA table_info(events)`).all().some((c) => c.name === "require_post")) db.exec(`ALTER TABLE events ADD COLUMN require_post INTEGER NOT NULL DEFAULT 0`);
 const evDayKey = (t = Date.now()) => Number(new Date(t).toLocaleDateString("en-CA", { timeZone: "America/New_York" }).replace(/-/g, ""));
 const evJSON = (s, d) => { try { return JSON.parse(s); } catch { return d; } };
 const evRow = (idOrSlug) => typeof idOrSlug === "number"

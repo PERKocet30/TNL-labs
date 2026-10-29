@@ -1,6 +1,6 @@
 
 /* ================================================================
-   EVENTS v1.2 — 2026-10-12 (v1.2: says which event is the current one,
+   EVENTS v1.3 — 2026-10-29 (voters must have posted, when the event asks — require_post). v1.2 — 2026-10-12 (v1.2: says which event is the current one,
    the one tnllabs.com/tournament opens).
    EVENTS v1.1 — 2026-10-07. What members see and do: the event page,
    entering, voting, judging, and the public /e/:slug pages.
@@ -32,6 +32,8 @@ function evVoteBlock(ev, user, stage, entryId) {
   if (!user) return "Sign in to vote.";
   if (ev.require_verified && !user.email_verified) return "Confirm your email to vote — the link is in your inbox.";
   if (ev.require_avatar && !user.avatar_url) return "Add a profile photo to vote.";   // 2026-10-28: a face (or a mark) behind every vote
+  /* 2026-10-29: a vote comes from someone who takes part — at least one post of their own (their tournament entry counts). */
+  if (ev.require_post && !db.prepare(`SELECT 1 FROM posts WHERE author_id = ? LIMIT 1`).get(user.id)) return "Post something of your own on LABS to vote.";
   /* 2026-10-27: "New accounts can't instantly vote — 5 minute wait… while they set up account." A real person spends it on
      the joining steps (photo, colour, bio, people) and barely notices; a burst of accounts made to vote has to sit. */
   const waitLeft = EV_NEW_VOTE_WAIT_MS - (Date.now() - user.created_at);
@@ -114,7 +116,7 @@ function evPublic(ev, viewer) {
   return {
     event: { slug: ev.slug, title: ev.title, brief: ev.brief, prize: ev.prize, coverUrl: ev.cover_url, channel: ev.channel,
       format: ev.format, picks: ev.picks, judgeWeight: ev.judge_weight, minAccountDays: ev.min_account_days,
-      freezeHours: ev.freeze_hours, requireVerified: !!ev.require_verified, requireAvatar: !!ev.require_avatar,
+      freezeHours: ev.freeze_hours, requireVerified: !!ev.require_verified, requireAvatar: !!ev.require_avatar, requirePost: !!ev.require_post,
       bracketSize: ev.bracket_size, finalistsCount: ev.finalists,
       schedule: sched, phase: cur, stage, void: !!st.void, entryCount: [...shaped.values()].filter((e) => !e.dq).length,
       current: evCurrent()?.id === ev.id,   // the one /tournament opens (2026-10-12)

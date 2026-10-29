@@ -41,7 +41,7 @@ const call = async (who, path, body, { device, ip } = {}) => {
   return { s: r.status, j: await r.json().catch(() => ({})) };
 };
 try {
-  const ev = (await call("boss", "/api/admin/events", { slug: "art", title: "Art", brief: "x", format: "poll", picks: 1, minAccountDays: 0, opensAt: now - D, submitDays: 14, voteDays: 7, finalDays: 3, published: true, mailOnOpen: false })).j.event;
+  const ev = (await call("boss", "/api/admin/events", { requirePost: false, slug: "art", title: "Art", brief: "x", format: "poll", picks: 1, minAccountDays: 0, opensAt: now - D, submitDays: 14, voteDays: 7, finalDays: 3, published: true, mailOnOpen: false })).j.event;
   const e1 = (await call("artist", "/api/events/art/enter", { imageUrl: "/uploads/e0.jpg", caption: "a", agree: true })).j;
   await call("rival", "/api/events/art/enter", { imageUrl: "/uploads/e1.jpg", caption: "b", agree: true });
   await call("boss", `/api/admin/events/${ev.id}/advance`, {});
