@@ -10,7 +10,7 @@ let PQ=[];
 /* A choice sheet on its own layer: resolves the picked value, or null. */
 function uiChoose(title,body,opts){
   return new Promise(resolve=>{
-    const ov=document.createElement("div");ov.className="ui-ov";
+    const ov=document.createElement("div");ov.className="ui-ov ui-alertov";
     ov.innerHTML=`<div class="ui-card ui-choose" role="dialog" aria-modal="true"><div class="ui-title">${esc(title)}</div>
       ${body?`<div class="ui-body">${esc(body)}</div>`:""}
       <div class="ui-col">${opts.map((o,i)=>`<button class="ui-btn${o.danger?" ui-danger":""}${o.strong?" ui-ok":""}" data-uic="${i}">${esc(o.label)}</button>`).join("")}</div></div>`;
@@ -51,6 +51,7 @@ function pdOpen(c){
 /* Cancel / back: save, discard, or keep going. */
 async function pcLeave(){
   const c=PCOMPOSE;if(!c)return true;
+  if(c.edit)return pceLeave(c);   // editing a post: discard changes or keep editing (app-18-post-edit)
   if(c.busy)return false;
   if(pcDirty()){
     const v=await uiChoose(c.draftId?"Save changes to this draft?":"Save this post as a draft?","",[

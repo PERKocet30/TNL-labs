@@ -146,7 +146,7 @@ function wireTracks(){
   document.querySelectorAll("[data-vidpick]").forEach(el=>el.onclick=async()=>{
     if(TRKEXT)return;
     const videoUrl=el.dataset.vidpick;
-    const title=prompt("Track name","");
+    const title=await uiPrompt("Name this song",{placeholder:"Track name",okLabel:"Next"});
     if(!title||!title.trim())return;
     TRKEXT=true;render();
     try{

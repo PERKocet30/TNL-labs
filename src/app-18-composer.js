@@ -1,3 +1,4 @@
+/* v2026-10-29: Edit opens this page on the post — "Edit info" · Done (app-18-post-edit).
 /* v2026-10-25: pick which part of the song plays — the bar under the picked song (pcPartHTML/pcPartWire, app-18-pc-preview).
 /* v2026-10-25: a photo takes its place in the strip the moment it's picked and uploads land into it, two at a time (pcAddPhotos, app-18-post-queue); a drag the phone turns into a scroll reorders nothing.
 /* v2026-10-21 (later the same day): tag people on the picture, Preview, Also share to your Story, Advanced settings — app-18-composer-ig.js. Posting to · Your profile · + Add a lab (one post, one place list; Share is for sending out). v2026-10-20: the bar is the kit's formHead */
@@ -27,7 +28,8 @@ function pcomposeHTML(){
   const c=PCOMPOSE; c.collabs=c.collabs||[]; c.idx=Math.min(c.idx||0,Math.max(0,c.imgs.length-1));
   const file=`<input id="pcfile" type="file" accept="image/*,video/*" multiple hidden>`;
   let media;
-  if(c.vidbusy)media=`<div class="pc-stage pc-busy"><span class="spin"></span>
+  if(c.edit)media=pceMediaHTML(c);   // Edit info: the work as posted (app-18-post-edit)
+  else if(c.vidbusy)media=`<div class="pc-stage pc-busy"><span class="spin"></span>
       <div class="pc-prog"><i id="pcvidbar" style="width:${Math.round((c.vidprog||0)*100)}%"></i></div>
       <span class="dim" id="pcvidprog">Uploading video · ${Math.round((c.vidprog||0)*100)}%</span>
       <span class="dim pc-keep">Keep LABS open until it's done</span></div>`;
@@ -61,11 +63,11 @@ function pcomposeHTML(){
       ${c.ch?`<span class="pc-chip pc-labchip"><i class="lg">//</i>${esc(c.ch.lab)}<button data-pclabrm aria-label="Take it out of ${esc(c.ch.lab)}">${PC_X}</button></span><button class="pc-chip pc-add2" id="pclab" aria-label="Change lab">${DI.edit}</button>`
         :`<button class="pc-chip pc-add2" id="pclab">${DI.plus}<span>Add a lab</span></button>`}
     </div>`;
-  return `<div class="pcmp-ov" id="pcov"><div class="pc" role="dialog" aria-label="New post">
-    ${formHead({id:"pccancel",label:"Cancel"},"New post",{id:"pcgo",label:c.busy?"Posting…":"Post",disabled:!pcCan(c)})}
+  return `<div class="pcmp-ov" id="pcov"><div class="pc${c.edit?" pce"+(c.tagMode?" pce-tag":""):""}" role="dialog" aria-label="${c.edit?"Edit info":"New post"}">
+    ${c.edit?pceHead(c):formHead({id:"pccancel",label:"Cancel"},"New post",{id:"pcgo",label:c.busy?"Posting…":"Post",disabled:!pcCan(c)})}
     <div class="pc-body"><div class="pc-media">${media}</div><div class="pc-side">
       ${to}
-      <div class="pc-cap">${avHTML(ME,"")}
+      <div class="pc-cap">${c.edit?pceThumb(c):avHTML(ME,"")}
         <textarea class="pc-ta" id="pcbody" rows="3" maxlength="${PC_CAP_MAX}" placeholder="Write a caption… #tag it so people find it">${esc(c.body||"")}</textarea></div>${pcCapCountHTML(c)}
       <div class="pc-ment" id="pcment" hidden></div>
       <div class="pc-opts">
@@ -91,7 +93,7 @@ function pcomposeHTML(){
           <button data-pcprm="${i}" aria-label="Remove">${PC_X}</button></span>`).join("")}</div>`:""}
         <button class="pc-opt" id="pcloc"><span class="pc-ic">${PC_PIN}</span><span class="pc-l">${c.location?`<b>${esc(c.location)}</b>`:"Add location"}</span>
           ${c.location?`<span class="pc-x" data-pclocx aria-label="Remove location">${PC_X}</span>`:PC_CHEV}</button>
-        ${c.vid?`<button class="pc-opt" id="pccov"><span class="pc-ic">${c.cover?`<img class="pc-covth" src="${esc(c.cover)}" alt="">`:PC_PICK.replace(/40/g,"22")}</span><span class="pc-l">Cover</span>
+        ${c.vid&&!c.edit?`<button class="pc-opt" id="pccov"><span class="pc-ic">${c.cover?`<img class="pc-covth" src="${esc(c.cover)}" alt="">`:PC_PICK.replace(/40/g,"22")}</span><span class="pc-l">Cover</span>
           <span class="pc-v">${c.cover?"Change":"First frame"}</span>${PC_CHEV}</button>
           <button class="pc-opt" id="pcved"><span class="pc-ic">${PC_EDIT}</span><span class="pc-l">Edit video</span>
           <span class="pc-v">${vedSummary(c.vedit)}</span>${PC_CHEV}</button>`:""}
@@ -265,6 +267,7 @@ function wirePCompose(){
 
   /* ── share ── */
   const go=$("#pcgo");if(go)go.onclick=async()=>{
+    if(c.edit)return pceSave(c);   // saves in place (app-18-post-edit)
     if(!pcCan(c)){if(!c.busy)toast("Add a photo, a video, or write something");return}
     pqSubmit(c);   // closes now; posts in the background (app-18-post-queue.js)
   };

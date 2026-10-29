@@ -63,8 +63,8 @@ function pcTagWire(c){
 function pcIgRowsHTML(c){
   const adv=[c.commentsOff?"Comments off":"",c.hideLikes?"Likes hidden":"",c.alt?"Alt text":""].filter(Boolean).join(" · ");
   return `<button class="pc-opt" id="pcprev"><span class="pc-ic">${PC_EYE}</span><span class="pc-l">Preview</span><span class="pc-v">As it'll look</span>${PC_CHEV}</button>
-    <label class="pc-opt pc-sw-row"><span class="pc-ic">${IG_SEND}</span><span class="pc-l">Also share to your Story<span class="dim">Instagram opens right after it's posted</span></span>
-      <input type="checkbox" class="pf-sw" id="pcstory" ${c.storyAfter?"checked":""}></label>
+    ${c.edit?"":`<label class="pc-opt pc-sw-row"><span class="pc-ic">${IG_SEND}</span><span class="pc-l">Also share to your Story<span class="dim">Instagram opens right after it's posted</span></span>
+      <input type="checkbox" class="pf-sw" id="pcstory" ${c.storyAfter?"checked":""}></label>`}
     <button class="pc-opt" id="pcadv"><span class="pc-ic">${PC_GEAR}</span><span class="pc-l">Advanced settings</span><span class="pc-v">${adv}</span>${PC_CHEV}</button>`;
 }
 const PC_EYE=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`;

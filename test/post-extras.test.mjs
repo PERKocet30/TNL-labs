@@ -20,7 +20,7 @@ const blocks = new Set([blocker + ":" + me]);
 const told = [], routes = {};
 const part = readFileSync(join(ROOT, "src/server-02-post-extras.js"), "utf8");
 const X = new Function("db", "q", "isBlocked", "notify", "app", "auth",
-  part + "\nreturn {postExtras,cleanExtras,applyExtras,commentsOff,cleanVideoEdit};")(db, q,
+  part + "\nreturn {postExtras,cleanExtras,applyExtras,commentsOff,cleanVideoEdit,editPostFull};")(db, q,
   (a, b) => blocks.has(a + ":" + b) || blocks.has(b + ":" + a), (...a) => told.push(a),
   { post: (path, _a, fn) => { routes[path] = fn; } }, null);
 const post = () => Number(db.prepare(`INSERT INTO posts (author_id,channel,body,created_at) VALUES (?,?,?,?)`).run(me, "profile", "hi", now).lastInsertRowid);
@@ -88,4 +88,28 @@ t("nothing changed → nothing stored", X.cleanVideoEdit({ start: 0, end: 0, mut
 t("junk is dropped: an end before the start, a made-up shape, a negative start", JSON.stringify(X.cleanVideoEdit({ start: -5, end: 300, ratio: "3:1", muted: "yes" })) === "null");
 const vx = JSON.parse(X.cleanExtras({ video: { end: 5000, ratio: "1:1" } }, amy).extras);
 t("…and they ride in the post's extras", vx.video.end === 5000 && vx.video.ratio === "1:1");
+console.log("\nEDIT INFO — the post maker on an existing post (2026-10-29)");
+{
+  const tr = Number(db.prepare(`INSERT INTO tracks (user_id,title,url,duration_ms,created_at) VALUES (?,?,?,?,?)`).run(amy, "Song", "/u/s.mp3", 60000, now).lastInsertRowid);
+  const ep = post();
+  X.applyExtras(ep, { tags: ["amy"], video: { end: 4000 } }, me);
+  told.length = 0;
+  const row = () => q.postById.get(ep);
+  X.editPostFull(row(), { channel: "visual", audioTrackId: tr, audioStart: 99999999, tags: ["amy", "bob"], location: "Queens", commentsOff: true }, me);
+  const r = row(), ex = JSON.parse(r.extras);
+  t("lab, song and details change", r.channel === "visual" && r.audio_track_id === tr && ex.location === "Queens" && ex.commentsOff === true);
+  t("the song start stays inside the song", r.audio_start === 59000);
+  t("the video edit isn't touched", ex.video && ex.video.end === 4000);
+  t("only the newly tagged person is told", told.length === 1 && told[0][0] === bob && told[0][2] === "tag");
+  X.editPostFull(row(), { channel: "../x", audioTrackId: null, tags: [] }, me);
+  const r2 = row();
+  t("a made-up lab is ignored", r2.channel === "visual");
+  t("taking the song off works (start back to 0)", r2.audio_track_id === null && r2.audio_start === 0);
+  X.editPostFull(row(), { audioTrackId: 999999 }, me);
+  t("a song that doesn't exist isn't attached", row().audio_track_id === null);
+  X.editPostFull(row(), { channel: "visual" }, me);
+  t("leaving the song out leaves it alone", row().audio_track_id === null);
+  const rt = readFileSync(join(ROOT, "src/server-03-upload-dm-notifications.js"), "utf8");
+  t("the full save only runs after the author check, and only when asked", /req\.body\?\.full === true\) editPostFull\(post, req\.body, req\.user\.id\)/.test(rt));
+}
 console.log(`\n  ${pass} passed, ${fail} failed`);

@@ -1113,6 +1113,46 @@ console.log("\nMEMBER · PHONE");
     await fetch(B + "/api/tracks/" + np.audioTrack.id, { method: "DELETE", headers: { authorization: "Bearer " + token } });
     await p.evaluate(() => { TRACKS = null; PQ = []; TAB = "showroom"; render(); });   // the library list loaded with the song in it; let it load fresh
   });
+  // 2026-10-29: "Editing a post should bring up the post composer like Instagram"
+  await step(d, "typing something opens an edit screen (Cancel · title · Done across the top, a plain field), not a pill-box bubble", async () => {
+    const got = p.evaluate(() => uiPrompt("Rename playlist", { value: "Late night mix", okLabel: "Save" }));
+    await p.waitForSelector(".ui-ov .ui-in", { timeout: 4000 });
+    const look = await p.evaluate(() => { const i = document.querySelector(".ui-ov .ui-in"), c = getComputedStyle(i), ok = document.querySelector(".ui-ov .ui-ok");
+      return { r: parseFloat(c.borderTopLeftRadius) || 0, top: c.borderTopWidth, head: !!ok.closest(".ui-ehead"), okBg: getComputedStyle(ok).backgroundColor }; });
+    ok(look.r === 0 && look.top === "0px", "the field is still a rounded box: " + JSON.stringify(look));
+    ok(look.head && /rgba\(0, 0, 0, 0\)|transparent/.test(look.okBg), "Save isn't a plain word in the top bar: " + JSON.stringify(look));
+    await p.locator(".ui-ov .ui-in").fill("Mix two");
+    await p.locator(".ui-ov .ui-ok").tap();
+    ok(await got === "Mix two" && await p.locator(".ui-ov").count() === 0, "Save didn't hand back what was typed");
+    const asked = p.evaluate(() => uiConfirm("Delete this post?", "This can't be undone.", { okLabel: "Delete", danger: true }));
+    await p.waitForSelector(".ui-ov .ui-alert", { timeout: 4000 }); await p.waitForTimeout(400);
+    const sh = await p.evaluate(() => { const r = document.querySelector(".ui-ov .ui-alert").getBoundingClientRect(); return { bottom: Math.round(r.bottom), w: Math.round(r.width), vh: innerHeight, vw: innerWidth }; });
+    ok(sh.vw >= 620 || (sh.bottom >= sh.vh - 1 && sh.w === sh.vw), "asking is still a pop-up in the middle, not a sheet from the bottom: " + JSON.stringify(sh));
+    await p.locator(".ui-ov .ui-cancel").tap();
+    ok(await asked === false && await p.locator(".ui-ov").count() === 0, "Cancel didn't close the sheet");
+  });
+  await step(d, "⋯ → Edit opens Edit info like Instagram (✕ · Edit info · ✓, the cover beside the caption): the pictures stay, the caption saves in place", async () => {
+    const mine = (await myPosts()).find((x) => x.images && x.images.length || x.imageUrl);
+    ok(mine, "no post of mine with a picture to edit");
+    await p.evaluate((x) => { POSTOPEN = x; render(); postMenu(x.id); }, mine);
+    await p.waitForTimeout(300);
+    ok(await p.locator(".c-ma").filter({ hasText: /^\s*Edit\s*$/ }).count() === 1, "⋯ on my own post has no Edit: " + JSON.stringify(await p.evaluate(() => [...document.querySelectorAll(".c-ma")].map((e) => e.textContent.trim()))));
+    await p.locator(".c-ma").filter({ hasText: /^\s*Edit\s*$/ }).first().tap();
+    await p.waitForSelector("#pcov", { timeout: 4000 });
+    const head = await p.evaluate(() => ({ t: document.querySelector("#pcov").textContent, go: document.querySelector("#pcgo").getAttribute("aria-label"), th: !!document.querySelector("#pcov .pc-cap .pce-th img"),
+      add: document.querySelectorAll("#pcov .pc-add,#pcov .pc-rm,#pcov .pc-pick,#pcstory").length, imgs: document.querySelectorAll("#pcov .pc-slide img").length, cap: document.querySelector("#pcbody").value }));
+    ok(head.t.includes("Edit info") && head.go === "Done" && head.th && head.add === 0 && head.imgs >= 1 && head.cap === (mine.body || ""), "the post maker didn't open on the post as Edit info: " + JSON.stringify(head));
+    await p.locator("#pccancel").tap(); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => !PCOMPOSE), "Cancel with nothing changed should just close");
+    await p.evaluate((x) => { postMenu(x.id); }, mine); await p.locator(".c-ma").filter({ hasText: /^\s*Edit\s*$/ }).first().tap(); await p.waitForSelector("#pcbody");
+    await p.locator("#pcbody").fill("Edited from the post maker #poster");
+    await p.locator("#pcgo").tap();
+    await p.waitForFunction(() => !PCOMPOSE, null, { timeout: 6000 });
+    const after = (await myPosts()).find((x) => x.id === mine.id);
+    ok(after.body === "Edited from the post maker #poster" && after.imageUrl === mine.imageUrl && !!after.editedAt, "the edit didn't save in place: " + JSON.stringify({ body: after.body, img: after.imageUrl === mine.imageUrl }));
+    ok(await p.evaluate((id) => likeCopies(id).every((x) => x.body === "Edited from the post maker #poster"), mine.id), "the post on screen still shows the old caption");
+    await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
+  });
   await step(d, "Add music: ▶ plays a song without picking it, tap again stops it; the row picks it and it keeps playing; closing the post maker stops it", async () => {
     await openCreator();
     await p.locator("[data-pcmusadd]").tap();

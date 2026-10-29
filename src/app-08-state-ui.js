@@ -194,34 +194,6 @@ function toast(t){
    to Instagram / iMessage link finders, so it's spelled %2E. */
 const profileLink=n=>location.origin+"/u/"+encodeURIComponent(n).replace(/\.+$/,m=>"%2E".repeat(m.length));
 
-/* Modern in-app dialogs — no native prompt()/confirm()/alert() anywhere. These
-   render a styled overlay and resolve a Promise, so async handlers can await them. */
-function uiModal({title,body,fields,okLabel="Confirm",cancelLabel="Cancel",danger=false,okOnly=false}){
-  return new Promise(resolve=>{
-    const ov=document.createElement("div");ov.className="ui-ov";
-    ov.innerHTML=`<div class="ui-card" role="dialog" aria-modal="true">
-      <div class="ui-title">${esc(title||"")}</div>
-      ${body?`<div class="ui-body">${esc(body)}</div>`:""}
-      ${(fields||[]).map((f,i)=>`<input class="ui-in" data-uif="${i}" type="${f.type||"text"}" inputmode="${f.inputmode||"text"}" placeholder="${esc(f.placeholder||"")}" value="${esc(f.value||"")}">`).join("")}
-      <div class="ui-btns">
-        ${okOnly?"":`<button class="ui-btn ui-cancel">${esc(cancelLabel)}</button>`}
-        <button class="ui-btn ui-ok ${danger?"ui-danger":""}">${esc(okLabel)}</button>
-      </div></div>`;
-    document.body.appendChild(ov);
-    const ins=[...ov.querySelectorAll("[data-uif]")];
-    /* Focus lands inside, so Escape / Enter work on a computer even with no field. */
-    setTimeout(()=>{if(ins[0]){ins[0].focus();ins[0].select&&ins[0].select()}else ov.querySelector(".ui-ok").focus({preventScroll:true})},50);
-    const done=v=>{ov.remove();resolve(v)};
-    ov.querySelector(".ui-cancel")?.addEventListener("click",()=>done(okOnly?true:null));
-    ov.querySelector(".ui-ok").addEventListener("click",()=>done(ins.length?ins.map(i=>i.value):true));
-    ov.addEventListener("click",e=>{if(e.target===ov)done(okOnly?true:null)});
-    ov.addEventListener("keydown",e=>{if(e.key==="Escape")done(okOnly?true:null);if(e.key==="Enter"&&ins.length<=1){e.preventDefault();ov.querySelector(".ui-ok").click()}});
-  });
-}
-const uiConfirm=(title,body,o={})=>uiModal({title,body,okLabel:o.okLabel||"Confirm",cancelLabel:o.cancelLabel||"Cancel",danger:!!o.danger}).then(v=>v===true);
-const uiAlert=(title,body)=>uiModal({title,body,okOnly:true,okLabel:"OK"});
-const uiPrompt=(title,o={})=>uiModal({title,body:o.body,fields:[{placeholder:o.placeholder,value:o.value,type:o.type,inputmode:o.inputmode}],okLabel:o.okLabel||"Done",cancelLabel:o.cancelLabel||"Cancel"}).then(v=>Array.isArray(v)?v[0]:null);
-
 /* Ask AFTER a win, never on arrival. Someone who just posted their first
    thing has felt the value — that's when "keep this on your phone" makes
    sense. Cold-open prompts are why everyone reflexively dismisses them. */
