@@ -63,8 +63,31 @@ t("names in srcset are escaped", !I.imgAttrs({ url: '/uploads/"x', thumb: "/uplo
 console.log("\nWIRED IN");
 const app = readFileSync(join(ROOT, "public/index.html"), "utf8"), rt = readFileSync(join(ROOT, "src/server.runtime.js"), "utf8");
 t("the creator uploads the original + copies", app.includes("const up=await uploadWork(file);"));
-t("feed copies are 1440 wide; grid copies 480", app.includes("drawFit(img,1440,2400),sc=drawFit(img,480,800)"));
+t("feed copies are 1440 wide; grid copies 480", app.includes("drawSure(img,1440,2400),sc=await drawSure(img,480,800)"));
 t("transparency stays transparent (PNG copies)", app.includes('const copyType=alpha?"image/png":"image/jpeg"'));
 t("Showroom and posts use srcset", (app.match(/\$\{imgAttrs\(/g) || []).length >= 4);
 t("the server keeps the copies' widths, only for files uploaded here", rt.includes("if (own(i.sm) && px(i.sw))") && rt.includes("/^\\/uploads\\/[A-Za-z0-9._-]+$/.test(i.url)"));
+
+/* 2026-10-29: a member's post and profile photo came out solid black while the smaller copies were fine — iPhone Safari
+   painted the just-loaded photo black the first time it was drawn. A fake canvas that does exactly that: */
+console.log("\nA PHOTO THAT PAINTS BLACK THE FIRST TIME");
+{
+  let firstDraws = 0;
+  const canvas = () => { const c = { width: 0, height: 0, px: 0, getContext: () => ({
+    drawImage(src) { const v = src.px ?? 200; if (src.photo && firstDraws-- > 0) { c.px = 0; return; } c.px = v; },
+    getImageData: (x, y, w, h) => { const d = new Uint8ClampedArray(w * h * 4); for (let i = 0; i < d.length; i += 4) { d[i] = d[i + 1] = d[i + 2] = c.px; d[i + 3] = 255; } return { data: d }; } }) }; return c; };
+  const doc = { createElement: () => canvas() };
+  const F = new Function("esc", "document", "setTimeout", part + "\nreturn {drawSure,looksBlank,imgWarm};")(esc, doc, (f) => f());
+  const photo = { photo: true, px: 180, naturalWidth: 1280, naturalHeight: 1555 };
+  firstDraws = 1;
+  let c = await F.drawSure(photo, 3000, 3000);
+  t("a copy that comes out black is drawn again, and the second draw is the photo", c.px === 180 && c.width === 1280);
+  firstDraws = 2; F.imgWarm(photo); c = await F.drawSure(photo, 1440, 2400);
+  t("the warm-up draw takes the first bad paint, so the real copy is right", c.px === 180);
+  const night = { px: 0, naturalWidth: 400, naturalHeight: 400 };
+  c = await F.drawSure(night, 480, 800);
+  t("a picture that really is black stays black (three tries, no endless loop)", c.px === 0);
+  t("the loader decodes and warms every photo before a copy is made; profile photos are checked too",
+    /await img\.decode\(\)[^\n]*imgWarm\(img\)/.test(readFileSync(join(ROOT, "src/app-08-state-ui.js"), "utf8")) && /await dataBlank\(r\.data\)/.test(readFileSync(join(ROOT, "src/app-08-state-ui.js"), "utf8")));
+}
 console.log(`\n  ${pass} passed, ${fail} failed`);

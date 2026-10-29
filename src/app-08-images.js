@@ -90,6 +90,23 @@ function hasAlpha(img){
     for(let i=3;i<d.length;i+=4)if(d[i]<250)return true}catch(e){}
   return false;
 }
+/* 2026-10-29: a member's post and profile photo came out solid black while
+   the smaller copies of the same photo were fine — iPhone Safari can paint a
+   just-loaded photo as black the first time it's drawn. loadImage decodes it
+   and draws it once (imgWarm); each copy is checked and drawn again if it
+   came out blank (a truly black picture stays black after three tries). */
+function imgWarm(img){try{const c=document.createElement("canvas");c.width=c.height=4;c.getContext("2d").drawImage(img,0,0,4,4)}catch(e){}}
+function looksBlank(src){
+  try{const c=document.createElement("canvas");c.width=c.height=8;const x=c.getContext("2d",{willReadFrequently:true});
+    x.drawImage(src,0,0,8,8);const d=x.getImageData(0,0,8,8).data;
+    for(let i=0;i<d.length;i+=4)if(d[i]>6||d[i+1]>6||d[i+2]>6||d[i+3]<250)return false;return true}catch(e){return false}
+}
+async function drawSure(img,maxW,maxH){
+  let c=drawFit(img,maxW,maxH);
+  for(let k=0;k<3&&looksBlank(c);k++){await new Promise(z=>setTimeout(z,150));c=drawFit(img,maxW,maxH)}
+  return c;
+}
+const dataBlank=u=>new Promise(ok=>{const i=new Image();i.onload=()=>ok(looksBlank(i));i.onerror=()=>ok(false);i.src=u});
 /* Draw to a canvas no wider than maxW (and no taller than maxH). */
 function drawFit(img,maxW,maxH){
   let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
@@ -121,10 +138,10 @@ async function uploadWork(file){
     else if(file.type==="image/png"&&file.size<=6*1024*1024)full=await cleanPng(file).catch(()=>null);
   }
   if(!full||Math.max(W,H)>FULL_MAX){
-    const c=drawFit(img,FULL_MAX,FULL_MAX),r=await canvasBlob(c,copyType,alpha?undefined:.92);
+    const c=await drawSure(img,FULL_MAX,FULL_MAX),r=await canvasBlob(c,copyType,alpha?undefined:.92);
     if(!full||r.size<full.size){full=r;fw=c.width;fh=c.height}
   }
-  const tc=drawFit(img,1440,2400),sc=drawFit(img,480,800);
+  const tc=await drawSure(img,1440,2400),sc=await drawSure(img,480,800);
   const [url,thumb,sm]=await Promise.all([upImg(full),upImg(await canvasBlob(tc,copyType,.86)),upImg(await canvasBlob(sc,copyType,.8))]);
   return {url,thumb,sm,w:fw,h:fh,tw:tc.width,sw:sc.width};
 }

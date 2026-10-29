@@ -309,7 +309,7 @@ function loadImage(file){
     fr.onload=()=>{
       const img=new Image();
       img.onerror=()=>reject(new Error("Couldn't decode that image"));
-      img.onload=()=>resolve({img,dataUrl:fr.result});
+      img.onload=async()=>{try{await img.decode()}catch(e){}imgWarm(img);resolve({img,dataUrl:fr.result})};   // decoded and drawn once before any copy (app-08-images)
       img.src=fr.result;
     };
     fr.readAsDataURL(file);
@@ -334,9 +334,11 @@ async function prepImage(file,asWork){
   return {full:full.data,thumb:thumb.data,w:full.w,h:full.h};
 }
 function compressImage(file,maxDim=1400,quality=.82){
-  return loadImage(file).then(({img,dataUrl})=>{
+  return loadImage(file).then(async({img,dataUrl})=>{
     if(file.type==="image/gif"&&file.size<4*1024*1024)return dataUrl;
-    return resize(img,maxDim,quality).data;
+    let r=resize(img,maxDim,quality);
+    for(let k=0;k<3&&await dataBlank(r.data);k++){await new Promise(z=>setTimeout(z,150));r=resize(img,maxDim,quality)}
+    return r.data;
   });
 }
 
