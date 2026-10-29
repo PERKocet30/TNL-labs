@@ -70,8 +70,8 @@ async function evPick(id,btn,held){
   try{const d=await evApi.vote(EVSLUG,id,on);const was=EVWAIT;EVWAIT=null;EV.me.myVotes=d.myVotes;if(d.board)EV.board=d.board;render();if(on&&navigator.vibrate)navigator.vibrate(8);if(was)loadEvent()}
   catch(e){
     if(on&&/finish setting up/i.test(e.message||"")){
-      const n=held&&EVWAIT?EVWAIT.n+1:1;if(!held)toast(e.message);
-      clearTimeout(EVWAIT&&EVWAIT.t);EVWAIT=n>14?null:{id,slug:EVSLUG,n,t:setTimeout(()=>{const w=EVWAIT;
+      const n=held&&EVWAIT?EVWAIT.n+1:1;   // up to 24 quiet tries (12 minutes): some new accounts wait 10 (2026-10-29)if(!held)toast(e.message);
+      clearTimeout(EVWAIT&&EVWAIT.t);EVWAIT=n>24?null:{id,slug:EVSLUG,n,t:setTimeout(()=>{const w=EVWAIT;
         if(w&&TAB==="event"&&EVSLUG===w.slug)evPick(w.id,document.querySelector('[data-evpick="'+w.id+'"]'),true);else EVWAIT=null},EV_HOLD_MS)};
       if(!EVWAIT&&btn)btn.classList.remove("busy");
       return}

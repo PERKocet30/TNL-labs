@@ -92,6 +92,21 @@ try {
   { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db")); w.prepare(`UPDATE users SET created_at = created_at - 301000, email_verified = 1 WHERE username = 'fresh1'`).run(); w.close(); }
   const r6 = await fetch(B + "/api/events/art/vote", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + fresh.j.token, "X-Device": "abcdefabcdefabcdefab" }, body: JSON.stringify({ entryId, on: true }) });
   t("five minutes on, the vote goes through", r6.status === 200);
+
+  console.log("\nA LONGER WAIT BY THE COUNTRY AN ACCOUNT JOINED FROM (2026-10-29)");
+  const newcomer = async (u, country, minsAgo) => { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db"));
+    const id = Number(w.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, avatar_url) VALUES (?,?,?,?,?,1,'/uploads/av.jpg')`).run(u, u, u + ".person@gmail.com", "x", Date.now() - minsAgo * 60000).lastInsertRowid);
+    w.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)`).run("tok-" + u, id, Date.now());
+    w.prepare(`INSERT INTO join_signals (user_id, country, created_at) VALUES (?,?,?)`).run(id, country, Date.now()); w.close(); };
+  const voteAs = async (u, dev) => { const r = await fetch(B + "/api/events/art/vote", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer tok-" + u, "X-Device": dev }, body: JSON.stringify({ entryId, on: true }) }); return { s: r.status, j: await r.json() }; };
+  await newcomer("india6", "IN", 6); await newcomer("us6", "US", 6); await newcomer("india11", "IN", 11); await newcomer("india7", "IN", 7);
+  const i6 = await voteAs("india6", "1111111111111111aaaa");
+  t("joined from India 6 minutes ago: still waiting, with the same words as everyone", i6.s === 403 && i6.j.error === "Finish setting up your account to vote.");
+  t("joined from the US 6 minutes ago: votes", (await voteAs("us6", "2222222222222222bbbb")).s === 200);
+  t("joined from India 11 minutes ago: votes", (await voteAs("india11", "3333333333333333cccc")).s === 200);
+  { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db"));
+    w.prepare(`INSERT INTO settings (key, value, updated_at) VALUES ('voteWaitCountries', '', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(Date.now()); w.close(); }
+  t("Admin clears the list: back to everyone's 5 minutes", (await voteAs("india7", "4444444444444444dddd")).s === 200);
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

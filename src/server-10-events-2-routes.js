@@ -27,6 +27,23 @@ function evEntryShape(e) {
 const evShuffle = (list, salt) => list.slice().sort((a, b) => ((Math.imul(a.id ^ salt, 2654435761) >>> 0) - (Math.imul(b.id ^ salt, 2654435761) >>> 0)));
 
 const EV_NEW_VOTE_WAIT_MS = Math.max(0, Number(process.env.EV_NEW_VOTE_WAIT_MS ?? 5 * 60000));
+/* 2026-10-29: "Accounts from India have to be on the app for 10 minutes before voting." A longer wait by the
+   country an account joined from (join_signals.country, server-01-signals), set in Admin → System → Switches
+   as voteWaitCountries: "IN:10" — country code:minutes, comma-separated, blank for none. Never longer than
+   the rule says, never shorter than everyone's wait, and the member sees the same words as everyone. */
+function evVoteWaitMs(user) {
+  let ms = EV_NEW_VOTE_WAIT_MS;
+  const rule = String(setting("voteWaitCountries") || "").toUpperCase();
+  if (!rule.trim() || !user?.id) return ms;
+  let c = "";
+  try { c = db.prepare(`SELECT country FROM join_signals WHERE user_id = ?`).get(user.id)?.country || ""; } catch {}
+  if (!c) return ms;
+  for (const part of rule.split(",")) {
+    const m = /^\s*([A-Z]{2})\s*:\s*(\d{1,4})\s*$/.exec(part);
+    if (m && m[1] === c) ms = Math.max(ms, Number(m[2]) * 60000);
+  }
+  return ms;
+}
 /* Who may vote on what, right now. null = yes; otherwise the reason. */
 function evVoteBlock(ev, user, stage, entryId) {
   if (!user) return "Sign in to vote.";
@@ -34,7 +51,7 @@ function evVoteBlock(ev, user, stage, entryId) {
   if (ev.require_avatar && !user.avatar_url) return "Add a profile photo to vote.";   // 2026-10-28: a face (or a mark) behind every vote
   /* 2026-10-27: "New accounts can't instantly vote — 5 minute wait… while they set up account." A real person spends it on
      the joining steps (photo, colour, bio, people) and barely notices; a burst of accounts made to vote has to sit. */
-  const waitLeft = EV_NEW_VOTE_WAIT_MS - (Date.now() - user.created_at);
+  const waitLeft = evVoteWaitMs(user) - (Date.now() - user.created_at);
   if (waitLeft > 0) { return "Finish setting up your account to vote."; }   // no timer shown (2026-10-27)
   const days = Math.max(0, ev.min_account_days || 0);
   if (Date.now() - user.created_at < days * EV_DAY) return `Accounts need to be ${days} day${days === 1 ? "" : "s"} old to vote.`;

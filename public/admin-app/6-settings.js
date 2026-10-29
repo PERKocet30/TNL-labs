@@ -1,4 +1,4 @@
-/* LABS admin v4.1 — 2026-10-23 (v4.1: Email → "Weekly reminders": the finish-your-page email, its numbers and a preview to yourself, server-11-nudge). v4.0 — 2026-10-20 (v4: System is two sections — Settings here: switches, email, backups, the admin log; Health is its own page, 6-health.js, built from the same loader). v2.5 — 2026-10-19. v2.5: "Email them a new confirm link" under Email — everyone unconfirmed gets a fresh link (server-05-admin-verify-nudge). v2.4 — 2026-10-15. v2.4: the landing headline and tagline fields are gone — nothing in the app showed them.
+/* LABS admin v4.2 — 2026-10-29 (v4.2: Who can get in → a longer wait to vote by country). v4.1 — 2026-10-23 (v4.1: Email → "Weekly reminders": the finish-your-page email, its numbers and a preview to yourself, server-11-nudge). v4.0 — 2026-10-20 (v4: System is two sections — Settings here: switches, email, backups, the admin log; Health is its own page, 6-health.js, built from the same loader). v2.5 — 2026-10-19. v2.5: "Email them a new confirm link" under Email — everyone unconfirmed gets a fresh link (server-05-admin-verify-nudge). v2.4 — 2026-10-15. v2.4: the landing headline and tagline fields are gone — nothing in the app showed them.
    v2.3 — 2026-10-14. v2.3: the unused archive-board field is gone.
    v2.2 — 2026-10-14. System, in tabs: Settings · Health · Backups & email · Admin log.
    v2.1 — 2026-10-09. System: switches, safety nets, and the log of who changed what.
@@ -34,7 +34,9 @@ VIEWS.settings = (only) => {
   const tabs = {
     settings: () => `<div class="split"><div><h2 class="sec">Who can get in</h2>
   <div class="panel">${tog("signupsOpen", "Signups open", "Off makes LABS invite-only.")}${tog("guestAccess", "Guests can look around", "The Showroom, Market and profiles without an account.")}
-    ${tog("autoVerify", "Skip email confirmation", "Only while email is broken — anyone could sign up with an address they don't own.")}</div>
+    ${tog("autoVerify", "Skip email confirmation", "Only while email is broken — anyone could sign up with an address they don't own.")}
+    <label class="l" for="votewait">Longer wait to vote, by country joined from</label><input class="in" id="votewait" maxlength="200" value="${esc(g.voteWaitCountries || "")}" placeholder="e.g. IN:10">
+    <span class="dim" style="font-size:12px">Country code:minutes, comma-separated. New accounts from these countries wait this long before voting; everyone else waits 5. They only see “Finish setting up your account to vote.”</span></div>
   <h2 class="sec">Sign in with</h2>
   <div class="panel">${tog("signinGoogle", "Google", "Shows once its keys are in Railway.")}${tog("signinApple", "Apple", "Shows once its keys are in Railway.")}${tog("signinFacebook", "Facebook", "Shows once its keys are in Railway.")}</div>
   <h2 class="sec">What's open</h2>
@@ -106,6 +108,7 @@ WIRES.settings = () => {
     save({ [k]: on ? "0" : "1" }, "Changed — live now");
   });
   const mr = $("#minrep"); if (mr) mr.onchange = () => save({ minRepToSell: mr.value });
+  const vw = $("#votewait"); if (vw) vw.onchange = () => save({ voteWaitCountries: vw.value.trim() });   // 2026-10-29
   const dl = $("#distrolvl"); if (dl) dl.onchange = () => save({ distroLevel: dl.value });
   const db_ = $("#distroblurb"); if (db_) db_.onchange = () => save({ distroBlurb: db_.value });
   const st = $("#savetext"); if (st) st.onclick = () => save({ announcement: $("#announce").value });
