@@ -1751,7 +1751,18 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate((id) => window.__files.length === 1 && window.__files[0].size > 1000 && window.__clip.endsWith("/e/e2e-art/" + id), fid), "Share picture to your Story didn't hand over that piece's picture and copy its link");
     await p.locator("#evshx").tap();
     ok(await p.evaluate(() => document.querySelector("#evscroll").scrollTop) === y1, "sharing jumped the screen");
-    await p.evaluate(() => { EVFOCUS = null; TAB = "showroom"; render(); });
+    /* 2026-10-29: "remind people they need to upload a profile pic in order to vote when they try to vote" */
+    const pic = await p.evaluate(() => { const a = ME.avatarUrl; ME.avatarUrl = ""; EV.me.myVotes = []; render(); return a; });
+    await p.locator(`.ev-row [data-evpick="${fid}"]`).tap();
+    await p.waitForSelector(".ui-ov", { timeout: 3000 });
+    ok(/Add a profile photo to vote/.test(await p.locator(".ui-ov").innerText()) && /Add a photo/.test(await p.locator(".ui-ok").innerText()), "tapping Vote with no photo didn't remind them to add one");
+    await p.locator(".ui-ok").tap();
+    await p.waitForFunction(() => typeof EDITING !== "undefined" && EDITING, null, { timeout: 6000 });
+    ok(await p.evaluate(() => { try { return JSON.parse(localStorage.getItem("tnl-evret")).slug === "e2e-art"; } catch (e) { return false; } }), "Add a photo didn't remember the piece to come back to");
+    await p.getByRole("button", { name: "Cancel", exact: true }).first().tap();   // out of Edit profile the way a person would
+    await p.waitForFunction(() => !EDITING, null, { timeout: 4000 });
+    await p.evaluate((a) => { ME.avatarUrl = a; localStorage.removeItem("tnl-evret"); }, pic);
+    await p.evaluate(() => { EVFOCUS = null; PROFILE = null; TAB = "showroom"; render(); });
   });
   /* "Make sure the tournament is easily navigable because I had problems going
      back" (2026-10-12): the home-screen app and Instagram's browser have no back
