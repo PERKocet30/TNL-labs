@@ -1131,7 +1131,7 @@ console.log("\nMEMBER · PHONE");
     await p.locator(".ui-ov .ui-cancel").tap();
     ok(await asked === false && await p.locator(".ui-ov").count() === 0, "Cancel didn't close the sheet");
   });
-  await step(d, "⋯ → Edit opens the post maker on the post (Edit info · Done): the pictures stay, the caption saves in place", async () => {
+  await step(d, "⋯ → Edit opens Edit info like Instagram (✕ · Edit info · ✓, the cover beside the caption): the pictures stay, the caption saves in place", async () => {
     const mine = (await myPosts()).find((x) => x.images && x.images.length || x.imageUrl);
     ok(mine, "no post of mine with a picture to edit");
     await p.evaluate((x) => { POSTOPEN = x; render(); postMenu(x.id); }, mine);
@@ -1139,9 +1139,9 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".c-ma").filter({ hasText: /^\s*Edit\s*$/ }).count() === 1, "⋯ on my own post has no Edit: " + JSON.stringify(await p.evaluate(() => [...document.querySelectorAll(".c-ma")].map((e) => e.textContent.trim()))));
     await p.locator(".c-ma").filter({ hasText: /^\s*Edit\s*$/ }).first().tap();
     await p.waitForSelector("#pcov", { timeout: 4000 });
-    const head = await p.evaluate(() => ({ t: document.querySelector("#pcov").textContent, go: document.querySelector("#pcgo").textContent.trim(),
+    const head = await p.evaluate(() => ({ t: document.querySelector("#pcov").textContent, go: document.querySelector("#pcgo").getAttribute("aria-label"), th: !!document.querySelector("#pcov .pc-cap .pce-th img"),
       add: document.querySelectorAll("#pcov .pc-add,#pcov .pc-rm,#pcov .pc-pick,#pcstory").length, imgs: document.querySelectorAll("#pcov .pc-slide img").length, cap: document.querySelector("#pcbody").value }));
-    ok(head.t.includes("Edit info") && head.go === "Done" && head.add === 0 && head.imgs >= 1 && head.cap === (mine.body || ""), "the post maker didn't open on the post as Edit info: " + JSON.stringify(head));
+    ok(head.t.includes("Edit info") && head.go === "Done" && head.th && head.add === 0 && head.imgs >= 1 && head.cap === (mine.body || ""), "the post maker didn't open on the post as Edit info: " + JSON.stringify(head));
     await p.locator("#pccancel").tap(); await p.waitForTimeout(300);
     ok(await p.evaluate(() => !PCOMPOSE), "Cancel with nothing changed should just close");
     await p.evaluate((x) => { postMenu(x.id); }, mine); await p.locator(".c-ma").filter({ hasText: /^\s*Edit\s*$/ }).first().tap(); await p.waitForSelector("#pcbody");

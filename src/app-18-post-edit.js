@@ -1,4 +1,6 @@
-/* EDIT INFO v1.1 — 2026-10-29 (v1.1: editing from an opened post puts the post aside, then returns to it).
+/* EDIT INFO v1.2 — 2026-10-29 (v1.2: laid out like Instagram's Edit info — ✕ · Edit info · ✓ across the top,
+   the cover small beside the caption, the settings as rows under it; the full picture comes back for tagging).
+   EDIT INFO v1.1 — 2026-10-29 (v1.1: editing from an opened post puts the post aside, then returns to it).
    EDIT INFO v1.0 — 2026-10-29. "Editing a post should bring up the post composer like Instagram."
    ⋯ → Edit opens the post maker on the post — the same page, headed "Edit info" with Done. Like
    Instagram, the pictures or video stay as posted (you see them, swipe them and tag people on them,
@@ -48,4 +50,13 @@ async function pceLeave(c){
   if(pceSnap(c)!==c.orig&&!await uiConfirm("Discard your changes?","",{okLabel:"Discard",cancelLabel:"Keep editing",danger:true}))return false;
   if(PCOMPOSE!==c)return false;
   c.dead=true;pedClose();PCOMPOSE=null;POSTOPEN=c.back||null;return true;
+}
+/* Instagram's Edit info header: ✕ · Edit info · ✓ (the tick in a filled circle) */
+const pceHead=c=>formHead(`<button class="kf-b pce-x" id="pccancel" aria-label="Cancel">${DI.x}</button>`,"Edit info",
+  `<button class="pce-ok" id="pcgo" aria-label="${c.busy?"Saving…":"Done"}"${c.busy?" disabled":""}>${c.busy?`<span class="spin"></span>`:DI.check}</button>`);
+/* the cover, small, beside the caption */
+function pceThumb(c){
+  const u=c.vid?c.cover:(c.imgs[0]||{}).thumb;
+  if(!u)return avHTML(ME,"");
+  return `<span class="pce-th"><img src="${esc(u)}" alt="">${c.imgs.length>1?`<i>${DI.stack}</i>`:c.vid?`<i>${DI.video}</i>`:""}</span>`;
 }
