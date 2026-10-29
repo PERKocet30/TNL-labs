@@ -84,7 +84,7 @@ app.get("/api/admin/insights/conversion", auth, admin, (req, res) => {
       follow: ttf((p) => p.kinds.follow?.first), collab: ttf((p) => collab.get(p.id)) },
     waysIn: [...ways.values()].map((g) => ({ ...g, postedPct: insPct(g.posted, g.joined), votedPct: insPct(g.voted, g.joined), cameBackPct: insPct(g.cameBack, g.joined) }))
       .sort((a, b) => b.joined - a.joined),
-    notes: ["Ways in are known for members who joined from 2026-10-26 (when LABS started noting them).", "Collab time is to the first accepted collab, either side."],
+    readMe: ["Ways in are known for members who joined from 2026-10-26 (when LABS started noting them).", "Collab time is to the first accepted collab, either side."],
   });
 });
 
@@ -107,7 +107,7 @@ app.get("/api/admin/insights/retention", auth, admin, (req, res) => {
     JOIN (SELECT author_id, MIN(id) id FROM posts GROUP BY author_id) f ON f.id = p.id`).all().map((r) => [r.author_id, r]));
   const group = (keyOf) => { const m = new Map(); for (const p of el7) { const f = firsts.get(p.id); if (!f) continue; const k = keyOf(f);
     const g = m.get(k) || { members: 0, stayed: 0 }; g.members++; if (insBack(p, 7)) g.stayed++; m.set(k, g); }
-    return [...m].map(([k, g]) => ({ key: k, ...g, stayedPct: insPct(g.stayed, g.members) })).sort((a, b) => b.members - a.members); };
+    return [...m].map(([k, g]) => ({ group: k, ...g, stayedPct: insPct(g.stayed, g.members) })).sort((a, b) => b.members - a.members); };
   const labName = { hq: "General", pharmacy: "Visual", culture: "Music", fashion: "Fashion", akatsuki: "Anime", casino: "News", tna: "Business" };
   res.json({
     windowDays: days, joined: all.length,
@@ -117,7 +117,7 @@ app.get("/api/admin/insights/retention", auth, admin, (req, res) => {
       meaning: "% of each group who did that on their first day (24 hours after joining)" },
     byFirstPostLab: group((f) => labName[LAB_OF[f.channel]] || f.channel),
     byFirstPostKind: group(insKind),
-    notes: ["Came back = did anything after that many days: opened the app signed in (noted from 2026-10-29), posted, liked, commented, followed, voted, entered, shopped or listened.",
+    readMe: ["Came back = did anything after that many days: opened the app signed in (noted from 2026-10-29), posted, liked, commented, followed, voted, entered, shopped or listened.",
       "Before 2026-10-29 a visit with no action wasn't noted, so older 'came back' numbers are a floor."],
   });
 });

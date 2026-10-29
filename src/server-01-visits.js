@@ -32,7 +32,8 @@ const slowRoute = (p) => String(p || "").slice(0, 120).replace(/\/\d+(?=\/|$)/g,
   .replace(/^(\/api\/(?:people|users|u|profile)\/)[^/]+/, "$1:name").replace(/^(\/api\/events\/)(?!:id)[^/]+/, "$1:slug");
 const slowLog = db.prepare(`INSERT INTO slow_requests (route, method, ms, status, at) VALUES (?,?,?,?,?)`);
 app.use((req, res, next) => {
-  if (!req.path.startsWith("/api/")) return next();
+  /* the live feed stays open on purpose, and an upload takes as long as the file */
+  if (!req.path.startsWith("/api/") || req.path === "/api/stream" || /upload/.test(req.path)) return next();
   const t0 = process.hrtime.bigint();
   res.on("finish", () => {
     const ms = Number((process.hrtime.bigint() - t0) / 1000000n);
