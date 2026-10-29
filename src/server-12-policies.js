@@ -54,7 +54,8 @@ app.get("/terms", (_req, res) => policyPage(res, {
     ["Who we are", `<p>LABS is a social platform and marketplace for creatives, run by LABS (“we”, “us”). Reach us any time at ${mail()}.</p>`],
     ["Your account", `<ul><li>You must be at least 13 to make an account, and at least 18 (or have a parent or guardian's permission) to buy or sell.</li>
 <li>Give a real email address you can open — temporary or throwaway inboxes can't make an account — and keep your password to yourself. You can also sign in with Google, Apple or Facebook where it's offered. You're responsible for what happens on your account.</li>
-<li>One person per account. Usernames that impersonate someone, or are only held to sell, can be reclaimed.</li></ul>`],
+<li>One person per account, and it's yours alone — don't sell, buy or hand over accounts or usernames. Usernames that impersonate someone, or are only held to sell, can be reclaimed.</li>
+<li>Be who you are: no pretending to be another person, brand or LABS, and no accounts run by bots or scripts.</li></ul>`],
     ["Your work", `<p>You own what you post. By posting it you give us a non-exclusive, worldwide, royalty-free licence to host, show, resize and share it inside LABS and in links to it (like the preview when someone shares your post), only to run the service. That licence ends when you delete the post, except for copies others already saved or bought.</p>
 <p><b>Featuring your work.</b> We may feature public posts — pictures, videos and songs — on LABS's own pages and social accounts (like @tnl.labs on Instagram) to show what's being made here, always with credit to you. Don't want your work featured? Email ${mail()} and we'll stop and take down what we can.</p>
 <p><b>No AI training.</b> We don't sell or license your work to anyone to train AI, and we tell AI crawlers to stay off members' work.</p>
@@ -66,9 +67,10 @@ app.get("/terms", (_req, res) => policyPage(res, {
     ["Events and tournaments", `<p>Each event has its own rules page, linked from the event, which add to these terms. Votes only count in the app, one account per person: each phone votes once per piece per day, and brand-new accounts wait a few minutes before they can vote. We can remove entries or votes that break the rules, suspend accounts made or used to rig a vote and remove their votes, and our judges' decisions are final.</p>`],
     ["Not allowed", `<ul><li>Stolen, infringing or counterfeit work or goods; anything on the <a href="/policies#s5">prohibited items</a> list.</li>
 <li>Harassment, hate, threats, sexual content involving minors, or doxxing.</li>
-<li>Spam, fake or duplicate accounts, scams, taking payment outside the app to dodge fees or protection, or fake reviews.</li>
+<li>Spam, fake or duplicate accounts, buying or trading likes, follows, votes or rep, scams, taking payment outside the app to dodge fees or protection, or fake reviews.</li>
+<li>Posting someone else's private information, or their photos or work without the right to.</li>
 <li>Scraping, breaking or overloading the service, or getting into accounts that aren't yours.</li></ul>
-<p>Report anything with the ⋯ menu or by email. We can remove content and suspend or close accounts that break these terms.</p>`],
+<p>Report anything with the ⋯ menu or by email. We can remove content and suspend or close accounts that break these terms. If we remove something of yours or suspend your account, email ${mail()} and we'll look at it again.</p>`],
     ["Copyright complaints", `<p>If something here infringes your copyright, email ${mail()} with the link, what work it copies, and your contact details. We'll take it down and tell the poster, who can reply if they think it's a mistake.</p>`],
     ["Ending", `<p>You can stop using LABS and ask us to delete your account at any time (see <a href="/privacy#s6">Privacy</a>). We can suspend or close an account that breaks these terms; open orders still have to be shipped or refunded.</p>`],
     ["The legal part", `<p>LABS is provided “as is”. We work hard to keep it running and safe but can't promise it will always be available or error-free. To the extent the law allows, we aren't liable for indirect or consequential losses, and our total liability to you is limited to the greater of the fees we earned from your orders in the last 12 months or $100. Nothing here limits rights you have under consumer law that can't be waived.</p>
@@ -96,7 +98,7 @@ app.get("/privacy", (_req, res) => policyPage(res, {
     ["What's public", `<p>Your profile, posts, listings and event entries are public — anyone with the link can see them, and search engines can show them. We may feature public work on LABS's own social accounts, with credit (see <a href="/terms#s3">Terms</a>). Messages are private between the people in the chat. Your email address is never shown to other members.</p>`],
     ["Cookies and storage", `<p>We don't use advertising or tracking cookies. The app stores your sign-in, your preferences (like night mode) and the voting code above on your device. We never sell your data, and we don't sell or license anyone's work for AI training.</p>`],
     ["Your choices", `<ul><li>Edit or delete your posts and profile in the app at any time.</li>
-<li>To get a copy of your data or delete your account, email ${mail()} from your account's email. We'll do it within 30 days. We keep order records the law requires (usually up to 7 years) and backups roll off within 30 days.</li></ul>`],
+<li>To get a copy of your data or delete your account — including anything that came from signing in with Google, Apple or Facebook — email ${mail()} from your account's email. We'll do it within 30 days. We keep order records the law requires (usually up to 7 years) and backups roll off within 30 days.</li></ul>`],
     ["Kids", `<p>LABS isn't for children under 13 and we don't knowingly collect their data. If you think a child has an account, email us and we'll remove it.</p>`],
     ["Changes and contact", `<p>If this policy changes in a way that matters, we'll say so in the app. Questions: ${mail()}.</p>`],
   ],
