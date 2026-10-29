@@ -199,6 +199,7 @@ app.patch("/api/posts/:id", auth, (req, res) => {
     return res.status(400).json({ error: "post can't be empty" });
   }
   db.prepare(`UPDATE posts SET body = ?, edited_at = ?, link_json = NULL WHERE id = ?`).run(body, Date.now(), post.id);
+  if (req.body?.full === true) editPostFull(post, req.body, req.user.id);   // the post maker's Edit info (server-02-post-extras, 2026-10-29)
   const row = feedRows({ postId: post.id, viewerId: req.user.id, limit: 1 })[0];
   const shaped = shapePost(row);
   broadcast("post-edit", shaped);

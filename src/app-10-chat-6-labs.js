@@ -142,9 +142,7 @@ function postMenu(id){
   const mine=p.author.username===myName(),admin=!!ME.isAdmin,cur=curates(p),acts=[];
   if(p.body)acts.push({icon:CI.copy,label:"Copy text",run:()=>copyText(p.body)});
   acts.push({icon:CI.fwd,label:"Send to…",run:()=>sendPostSheet(p.id)});
-  if(mine)acts.push({icon:CI.edit,label:"Edit caption",run:async()=>{
-    const v=await uiPrompt("Edit caption",{value:p.body||"",okLabel:"Save"});if(v==null)return;
-    try{const r=await api.editPost(p.id,v.trim());Object.assign(p,{body:r.post?r.post.body:v.trim(),editedAt:Date.now()});render();toast("Saved")}catch(e){toast(e.message)}}});
+  if(mine)acts.push({icon:CI.edit,label:"Edit",run:()=>pceOpen(p)});   // the post maker, on this post — like Instagram's Edit info (app-18-post-edit, 2026-10-29)
   /* Comments on/off after posting. The comment button and
      box go in place; nothing else repaints. */
   if(mine)acts.push({icon:IG_COMMENT,label:p.commentsOff?"Turn on commenting":"Turn off commenting",run:async()=>{

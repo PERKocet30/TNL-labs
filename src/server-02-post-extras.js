@@ -1,4 +1,5 @@
-/* ---- POST EXTRAS · v1.1 2026-10-21 (Instagram-level composer: people tagged ON the
+/* ---- POST EXTRAS · v1.2 2026-10-29 (v1.2: editing a post from the post maker changes all of it but the
+   pictures — editPostFull, below). v1.1 2026-10-21 (Instagram-level composer: people tagged ON the
    picture — pins at x,y on image i — alt text, and a hidden like count) · 2026-09-30 ----
    What the post creator adds beyond the work: people tagged (up to 20,
    real members who haven't blocked you — they get told), a place (text,
@@ -82,4 +83,31 @@ function applyExtras(postId, body, authorId) {
   if (!extras) return;
   db.prepare(`UPDATE posts SET extras = ? WHERE id = ?`).run(extras, postId);
   for (const id of tagIds) notify(id, authorId, "tag", postId, "");
+}
+
+/* ---- EDIT INFO v1.0 — 2026-10-29 ------------------------------------
+   "Editing a post should bring up the post composer like Instagram." The
+   post maker opens on the post (app-18-post-edit.js) and Done sends it all
+   back with full: true — PATCH /api/posts/:id calls this. Like Instagram's
+   Edit info, the pictures/video stay as they are; everything else can
+   change: the lab it's shown in, the song (and which part), people tagged
+   (and where on the picture), products, place, alt text, hidden likes and
+   comments. The video editor's choices are kept. Only newly tagged people
+   are told. */
+function editPostFull(post, body, authorId) {
+  const ch = String(body?.channel ?? post.channel ?? "profile");
+  if (/^[a-z0-9-]{1,40}$/.test(ch) && ch !== post.channel) db.prepare(`UPDATE posts SET channel = ? WHERE id = ?`).run(ch, post.id);
+  if ("audioTrackId" in (body || {})) {
+    const n = Number(body.audioTrackId), t = Number.isInteger(n) && n > 0 ? db.prepare(`SELECT id, duration_ms FROM tracks WHERE id = ?`).get(n) : null;
+    const max = t?.duration_ms ? Math.max(0, t.duration_ms - 1000) : Infinity;
+    const start = t ? Math.max(0, Math.min(Math.round(Number(body.audioStart) || 0), max)) : 0;
+    db.prepare(`UPDATE posts SET audio_track_id = ?, audio_start = ? WHERE id = ?`).run(t ? t.id : null, start, post.id);
+  }
+  const old = readExtras(post), before = new Set(Array.isArray(old.tags) ? old.tags : []);
+  const { extras, tagIds } = cleanExtras(body, authorId);
+  const x = extras ? JSON.parse(extras) : {};
+  if (old.video) x.video = old.video;   // the media isn't edited here
+  db.prepare(`UPDATE posts SET extras = ? WHERE id = ?`).run(Object.keys(x).length ? JSON.stringify(x) : null, post.id);
+  const names = Array.isArray(x.tags) ? x.tags : [];
+  tagIds.forEach((id, i) => { if (!before.has(names[i])) notify(id, authorId, "tag", post.id, ""); });
 }

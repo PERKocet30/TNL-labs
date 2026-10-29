@@ -51,6 +51,7 @@ function pdOpen(c){
 /* Cancel / back: save, discard, or keep going. */
 async function pcLeave(){
   const c=PCOMPOSE;if(!c)return true;
+  if(c.edit)return pceLeave(c);   // editing a post: discard changes or keep editing (app-18-post-edit)
   if(c.busy)return false;
   if(pcDirty()){
     const v=await uiChoose(c.draftId?"Save changes to this draft?":"Save this post as a draft?","",[
