@@ -8,6 +8,8 @@
        "Open in the app" → /?u=<artist>&s=<id>, which lands on their
        Music tab with that song picked out.
    The Music lab's cover (2026-10-11): the song played most this week, below.
+   v1.2 — 2026-10-29: Trending — "a trending music section for music being
+   used in the labs": GET /api/tracks/trending, at the bottom of this file.
 ================================================================ */
 app.post("/api/me/pinned-track", auth, (req, res) => {
   const raw = req.body?.trackId;
@@ -90,3 +92,30 @@ function musicLabCover(now = Date.now()) {
       WHERE t.plays > 0 AND ${ok} ORDER BY t.plays DESC, t.created_at DESC LIMIT 1`).get();
   return r ? { url: r.artwork_url, title: r.title, by: r.display_name || r.username, username: r.username, trackId: r.id, at: now } : null;
 }
+
+/* ---- TRENDING v1.0 — 2026-10-29 ------------------------------------
+   "There should be a trending music section for music being used in the labs."
+   The songs members put on their posts lately ("Add music" in the post maker):
+   the more different people using a song in the last 14 days, the higher; then
+   how many posts; then a nudge from this week's plays. A song only trends once
+   someone has used it. Suspended accounts' posts and songs don't count; a repost
+   isn't a use. Top 5 for the Music lab's Songs tab (app-13-tracks-player.js). */
+const TREND = { days: 14, limit: 5, perUser: 2, perPost: 1, perPlay: 0.05 };
+function trendingTracks(now = Date.now()) {
+  const since = now - TREND.days * 86400000, week = now - 7 * 86400000;
+  return db.prepare(`
+    SELECT t.id, t.title, t.url, t.artwork_url, t.description, t.duration_ms, t.plays, t.created_at,
+           u.username, u.display_name, u.avatar_url, u.rep,
+           COUNT(p.id) uses, COUNT(DISTINCT p.author_id) users, MAX(p.created_at) lastUse,
+           (SELECT COUNT(*) FROM track_plays tp WHERE tp.track_id = t.id AND tp.at > ?) plays7
+    FROM posts p
+    JOIN tracks t ON t.id = p.audio_track_id
+    JOIN users u ON u.id = t.user_id AND u.suspended = 0
+    JOIN users a ON a.id = p.author_id AND a.suspended = 0
+    WHERE p.audio_track_id IS NOT NULL AND p.shared_from IS NULL AND p.created_at > ?
+    GROUP BY t.id
+    ORDER BY (? * users + ? * uses + ? * plays7) DESC, lastUse DESC
+    LIMIT ?`).all(week, since, TREND.perUser, TREND.perPost, TREND.perPlay, TREND.limit)
+    .map((r) => ({ ...shapeTrack(r), uses: r.uses }));
+}
+app.get("/api/tracks/trending", auth, (req, res) => res.json({ tracks: trendingTracks() }));

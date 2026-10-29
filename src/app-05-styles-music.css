@@ -24,3 +24,6 @@
 .pmus-more{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:0;color:var(--dim);cursor:pointer;padding:0}
 .pmus-more svg{width:18px;height:18px}
 /* merch under the music */
+/* Trending (2026-10-29): the songs used in posts lately, above All songs — the headings line up with the rows */
+.lx-sec.trk-sec{padding-left:16px;padding-right:16px}
+.trk-list.trk-trend{padding-bottom:4px}

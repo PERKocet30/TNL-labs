@@ -1,4 +1,4 @@
-/* MUSIC LAB · TRACKS v1.7 — 2026-10-28 ("Led by" under the pitch); v1.6 — 2026-10-28 (loops are gone; no preview); v1.5 — 2026-10-20 (a song's Story plays 15 seconds of it; Market and loop heads from the screen kit); v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
+/* MUSIC LAB · TRACKS v1.8 — 2026-10-29 (Trending: the songs used in posts lately, above all songs); v1.7 — 2026-10-28 ("Led by" under the pitch); v1.6 — 2026-10-28 (loops are gone; no preview); v1.5 — 2026-10-20 (a song's Story plays 15 seconds of it; Market and loop heads from the screen kit); v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app-13-playlists.js) */
 /* A lab's Talk with nothing in it yet, by its home channel (2026-10-15: in
    TNL's own words — no rooms, no "the network"). */
 const EMPTY={
@@ -23,8 +23,11 @@ function emptyHTML(ch){
 
 const money=c=>"$"+(c/100).toFixed(2);
 
+let TRENDING=null;   // songs used in posts lately (GET /api/tracks/trending, server-12-music.js)
 async function loadTracks(){
+  const tr=TRKQ?null:req("/api/tracks/trending").then(d=>d.tracks||[]).catch(()=>[]);
   try{TRACKS=(await api.tracks(TRKQ)).tracks}catch(e){TRACKS=[]}
+  if(tr)TRENDING=await tr;
   if(TAB==="labs"&&CH.library)render();
 }
 
@@ -42,7 +45,7 @@ function trackRowHTML(t,ctx){
     <div class="trk-art">${t.artworkUrl?`<img src="${esc(t.artworkUrl)}" alt="" loading="lazy">`:DI.music}${on?`<span class="trk-now">${live?DI.pause:DI.play}</span>`:""}</div>
     <div class="trk-meta">
       <div class="trk-t">${esc(t.title)}</div>
-      <div class="mono dim trk-by">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}${ctx==="lib"&&t.plays?" · "+t.plays+(t.plays===1?" play":" plays"):""}</div>
+      <div class="mono dim trk-by">@${esc(t.by.username)}${t.durationMs?" · "+mmss(t.durationMs):""}${ctx==="lib"&&t.plays?" · "+t.plays+(t.plays===1?" play":" plays"):""}${ctx==="trend"&&t.uses?" · used in "+t.uses+(t.uses===1?" post":" posts"):""}</div>
     </div>
     <button class="trk-add${added?" on":""}" data-trkadd="${t.id}" aria-label="${ctx==="add"?(added?"Take out of this playlist":"Add to this playlist"):added?"In a playlist — add to another":"Add to a playlist"}">${added?PL_DONE:PL_ADD}</button>
     ${ctx==="add"?"":`<button class="trk-more" data-trkmore="${t.id}" aria-label="More">${DI.more}</button>`}
@@ -61,6 +64,9 @@ function tracksHTML(){
     </div>
     ${TRKVIDS?vidPickHTML():""}
     <input type="file" id="trkfile" accept="audio/*,.mp3,.m4a,.wav,.aac,.aiff,.aif,.flac,.ogg" hidden>
+    ${!TRKQ&&TRACKS&&TRENDING&&TRENDING.length?`<div class="lx-sec trk-sec">Trending <span>· used in posts lately</span></div>
+    <div class="trk-list trk-trend">${TRENDING.map(t=>trackRowHTML(t,"trend")).join("")}</div>
+    <div class="lx-sec trk-sec">All songs</div>`:""}
     <div class="trk-list">${
       !TRACKS?`${skel()}`
       :!TRACKS.length?`<div class="empty">No tracks yet.<br><br>Upload the first one.</div>`

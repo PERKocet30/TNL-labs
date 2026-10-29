@@ -1,5 +1,5 @@
 /* ================================================================
-   PLAYLISTS v1.1 — 2026-10-20 (head from the screen kit); v1.0 — 2026-10-12. "Make the music lab function more like
+   PLAYLISTS v1.2 — 2026-10-29 (a tap in Trending plays through Trending); v1.1 — 2026-10-20 (head from the screen kit); v1.0 — 2026-10-12. "Make the music lab function more like
    Spotify — you listen to music and build your own playlist while in the
    lab." The Music lab's Work tab is a library now:
    - Songs | Playlists along the top.
@@ -130,10 +130,10 @@ function plPlay(){
 /* Which list a tap plays through: the library, this playlist, or the search. */
 function plQueue(ctx){
   if(ctx==="pl"&&PLIST&&PLIST.d){PLQID=PLIST.d.id;return PLIST.d.tracks.slice()}
-  PLQID=null;return ctx==="add"&&PLADD&&PLADD.res?PLADD.res.slice():(TRACKS||[]).slice();
+  PLQID=null;return ctx==="add"&&PLADD&&PLADD.res?PLADD.res.slice():ctx==="trend"&&TRENDING?TRENDING.slice():(TRACKS||[]).slice();   // Trending plays through Trending
 }
 function trkFind(id){
-  return [...(TRACKS||[]),...((PLIST&&PLIST.d&&PLIST.d.tracks)||[]),...((PLADD&&PLADD.res)||[]),...(NOWPLAYING?[NOWPLAYING]:[])]
+  return [...(TRACKS||[]),...(TRENDING||[]),...((PLIST&&PLIST.d&&PLIST.d.tracks)||[]),...((PLADD&&PLADD.res)||[]),...(NOWPLAYING?[NOWPLAYING]:[])]
     .find(x=>String(x.id)===String(id));
 }
 const plOn=(sel,fn)=>{const el=$(sel);if(el)el.onclick=fn};
