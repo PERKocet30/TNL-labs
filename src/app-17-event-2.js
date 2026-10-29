@@ -63,6 +63,7 @@ function wireEvent(){
 let EVWAIT=null;
 async function evPick(id,btn,held){
   if(!ME){if(!EVFOCUS)EVFOCUS=id;evRemember();return needAccount("Join to vote.")}
+  if(!EV.me.myVotes.includes(id)&&EV.event.requireAvatar&&!ME.avatarUrl)return evPhotoAsk(id);   // 2026-10-29: the reminder, at the tap
   if(!held&&(EVWAIT&&EVWAIT.id===id||btn&&btn.classList.contains("busy")))return;   // already on its way: more taps do nothing
   const on=!EV.me.myVotes.includes(id);
   if(btn)btn.classList.add("busy");
@@ -75,7 +76,13 @@ async function evPick(id,btn,held){
       if(!EVWAIT&&btn)btn.classList.remove("busy");
       return}
     if(held)EVWAIT=null;
+    if(/profile photo/i.test(e.message||"")){if(btn)btn.classList.remove("busy");return evPhotoAsk(id)}
     toast(e.message);if(/confirm your email/i.test(e.message||"")){if(!EVFOCUS)EVFOCUS=id;evRemember()}if(btn)btn.classList.remove("busy")}
+}
+/* "Remind people they need to upload a profile pic in order to vote when they try to vote" (2026-10-29) */
+async function evPhotoAsk(id){
+  if(!EVFOCUS)EVFOCUS=id;evRemember();   // back to this piece once the photo is in
+  if(await uiConfirm("Add a profile photo to vote","Every vote on LABS has a face behind it. Add a photo, then come back to vote for this piece.",{okLabel:"Add a photo",cancelLabel:"Not now"}))gsEdit();
 }
 let EV_HOLD_MS=30000;   // let: the tap-through shortens it
 async function evScore(id,n){
