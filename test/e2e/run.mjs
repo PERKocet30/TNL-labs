@@ -2130,6 +2130,12 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await fast(p, 6000, () => p.locator("#pres .li").first().waitFor(), "People's member cards");
     ok(await p.locator("#pres .pdb").count() === 0, "a phone opened People as the sideways table");
     ok(await p.locator("#gq").count() === 0 && await p.locator("#pq").count() === 1, "People shows two search boxes");
+    /* 2026-10-29: "I can't scroll the members list" — the Table view on a phone was cut off at 70% of the screen with no scroll */
+    await p.locator("[data-pview=table]").tap();
+    await fast(p, 4000, () => p.locator("#pres .pdb").waitFor(), "People's table view");
+    ok(await p.evaluate(() => { const w = document.querySelector(".pdb-wrap"), c = getComputedStyle(w); return c.overflowY !== "hidden" && c.maxHeight === "none" && w.scrollHeight <= w.clientHeight + 1; }),
+      "the members table on a phone is cut off instead of running its full length");
+    await p.locator("[data-pview=cards]").tap();
     await p.locator("[data-tab=home]:visible").tap();
     await fast(p, 4000, () => p.locator("#gq").waitFor(), "the top-bar search on other pages");
   });

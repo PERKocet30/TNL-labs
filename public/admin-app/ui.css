@@ -119,6 +119,11 @@ h2.sec + .panel,h2.sec + .chart{border-top:1px solid var(--line)}
 :root{--rad:16px;--rad-m:12px;--rad-s:8px}
 .panel,.kpi,.chart,.card,.box,.list,.menu-b{border-radius:var(--rad)}
 .stats,.sum,.pdb-wrap,.pc{border-radius:var(--rad);overflow:hidden}
+/* 2026-10-29 ("I can't scroll the members list"): the line above clipped the Members table's own scroll box at 70% of the
+   screen with nothing to scroll. The table scrolls again: inside its box on a computer, and on a phone it runs its full
+   length with the page (a box inside a page is hard to swipe), still sliding sideways for its columns. */
+.pdb-wrap{overflow:auto}
+@media (max-width:1023px){.pdb-wrap{max-height:none}}
 /* a titled card is two pieces drawn as one: the title rounds on top, its body below */
 h2.sec:has(+ :is(.panel,.list,.chart)){border-radius:var(--rad) var(--rad) 0 0}
 h2.sec + :is(.panel,.list,.chart){border-radius:0 0 var(--rad) var(--rad)}
