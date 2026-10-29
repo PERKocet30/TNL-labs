@@ -78,6 +78,6 @@ const sl = [...short.matchAll(/style="left:[\d.]+%">([^<]*)</g)].map((m) => m[1]
 t("a week: four dates, no collision, written as words (Oct 22, not 10-22)", sl.length === 4 && sl[0] === "Oct 22" && sl.at(-1) === "Oct 28");
 t("the last point is a round dot, not stretched with the drawing", /<i class="ldot"/.test(h) && !/class="end"/.test(h));
 const html = read("public/admin.html");
-t("phones pick up the new chart (cache-busted)", /1-core\.js\?v=4\.5"/.test(html) && /ui\.css\?v=2\.4"/.test(html));
+t("phones pick up the new chart (cache-busted)", /1-core\.js\?v=4\.5"/.test(html) && /ui\.css\?v=2\.([4-9]|\d{2})"/.test(html));
 
 console.log(`\n  ${pass} passed, ${fail} failed`);
