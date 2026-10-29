@@ -242,6 +242,14 @@ try {
   await call("boss", "PATCH", `/api/admin/events/${pId}`, { freezeHours: 24 });
   r = await call(null, "GET", "/e/art/rules");
   t("the rules say how it works: a vote a day, Instagram votes don't count, most votes wins", r.text.includes("one vote a day") && r.text.includes("Votes on Instagram or anywhere else don") && r.text.includes("most votes wins") && r.text.includes("confirmed email"));
+  /* 2026-10-29: an event's own rules come first and the official rules always follow (they used to replace them) */
+  await call("boss", "PATCH", `/api/admin/events/${pId}`, { rules: "Submit one image. Top five go to the final." });
+  r = await call(null, "GET", "/e/art/rules");
+  t("custom rules keep the official ones: eligibility, no purchase, one vote per phone", r.text.includes("Top five go to the final.") && r.text.includes("NO PURCHASE OR PAYMENT NECESSARY")
+    && r.text.includes("each phone votes once per piece per day") && r.text.indexOf("Top five") < r.text.indexOf("NO PURCHASE"));
+  const ar = (await call(null, "GET", "/api/events/art/rules")).j.rules || "";
+  t("…in the app too", ar.startsWith("Submit one image.") && ar.includes("Official Rules"));
+  await call("boss", "PATCH", `/api/admin/events/${pId}`, { rules: "" });
   await call("boss", "POST", `/api/admin/events/${pId}/advance`);
   v = await view("c", "art");
   t("the top 3 by votes make the final, and its board shows just them", v.event.phase.phase === "final" && v.finalists.length === 3 && v.board.rows.length === 3 && v.finalists.includes(pu.h));

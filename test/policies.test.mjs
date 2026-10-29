@@ -27,6 +27,14 @@ try {
     t(`${p} shows the support inbox and links every policy`, r.html.includes("help@example.com") && ["/terms", "/privacy", "/policies", "/contact", "/shop"].every((h) => r.html.includes(`href="${h}"`)));
   }
   const terms = (await get("/terms")).html;
+  /* v1.1 (2026-10-29): the policies say what the app does now */
+  const priv = (await get("/privacy")).html;
+  for (const [what, page, txt] of [["signing in with Google, Apple or Facebook", priv, "sign in with Google, Apple or Facebook"], ["the phone's voting code", priv, "random code on your phone"],
+    ["event and reminder emails, with unsubscribe", priv, "one-tap unsubscribe"], ["Anthropic as a processor", priv, "Anthropic"], ["Meta and Google shop feeds only by choice", priv, "chose to show there"],
+    ["no AI training", terms, "No AI training"], ["featuring work, with credit and a way out", terms, "always with credit to you"], ["no throwaway emails", terms, "throwaway inboxes"],
+    ["one vote per phone and the new-account wait", terms, "each phone votes once per piece per day"], ["the card fee by account type", terms, "Stripe's card processing fee"]])
+    t(`policies cover ${what}`, page.includes(txt));
+  t("dated October 29, 2026", priv.includes("Last updated October 29, 2026"));
   if (FEE_BY_LEVEL) { const v = Object.values(FEE_BY_LEVEL); t("the fee range comes from FEE_BY_LEVEL", terms.includes(`${Math.min(...v)}–${Math.max(...v)}%`)); }
   t("shipping countries match checkout's", (await get("/policies")).html.includes("Canada, the UK"));
   const shop = await get("/shop");

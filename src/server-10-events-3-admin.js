@@ -180,7 +180,7 @@ function evDefaultRules(ev) {
       : `Members vote for their favourites; the top ${ev.finalists} go to the final.`} ${ev.judge_weight > 0
       ? `In the final, judges score each finalist from 1 to 10 for originality, craft and response to the brief. The winner is decided ${ev.judge_weight}% by the judges' scores and ${100 - ev.judge_weight}% by member votes.`
       : `In the final, members vote again and the most votes wins.`}`,
-    `Fair voting. One account per person.${ev.require_verified ? " You need a confirmed email to vote." : ""}${ev.require_avatar ? " You need a profile photo to vote." : ""}${ev.min_account_days ? ` Accounts must be at least ${ev.min_account_days} days old to vote.` : ""} You can't vote for yourself. LABS may remove votes, and disqualify entries, that come from fake, bought or coordinated accounts.`,
+    `Fair voting. One account per person, and each phone votes once per piece per day. New accounts wait a few minutes before they can vote.${ev.require_verified ? " You need a confirmed email to vote." : ""}${ev.require_avatar ? " You need a profile photo to vote." : ""}${ev.min_account_days ? ` Accounts must be at least ${ev.min_account_days} days old to vote.` : ""} You can't vote for yourself. LABS may remove votes, and disqualify entries, that come from fake, bought or coordinated accounts.`,
     `Prize. ${ev.prize ? ev.prize : "The prize will be announced before entries open."} The winner will be contacted through the app within 7 days of the final and must reply within 14 days, or a runner-up may be named instead. The prize can't be transferred. The winner is responsible for any taxes, and LABS may ask for tax forms (such as a W-9) where the law requires.`,
     `Your work stays yours. You keep all rights to your entry. By entering, you let LABS show your entry, your name and your username in the app and in promotion of this event, without further payment.`,
     `General. LABS may change, pause or cancel the event if something outside its control affects it, and will tell entrants in the app. By entering you agree to these rules and to LABS' decisions, which are final.`,
@@ -223,15 +223,18 @@ ${ev.brief ? `<p class="body" style="margin:0 0 8px">${esc(ev.brief)}</p>` : ""}
 app.get("/e/:slug/rules", (req, res) => {
   const ev = evRow(req.params.slug);
   if (!ev || !ev.published) return res.status(404).send(lookNotFound("This event doesn't exist."));
-  const text = (ev.rules || evDefaultRules(ev)).split(/\n{2,}/);
+  /* 2026-10-29: an event's own rules no longer replace the official ones (the art tournament's short text left out
+     eligibility, the prize terms and fair voting) — they come first, the official rules always follow. */
+  const own = ev.rules ? ev.rules.split(/\n{2,}/) : [], off = evDefaultRules(ev).split(/\n{2,}/).slice(1);
+  const para = (t) => `<p class="body" style="margin:0 0 14px">${lookEsc(t)}</p>`;
   res.send(lookPage({
     title: `Rules — ${lookEsc(ev.title)} — LABS`,
-    body: `${lookEyebrow("Official rules")}<h1>${lookEsc(ev.title)}</h1>${text.slice(ev.rules ? 0 : 1).map((t) => `<p class="body" style="margin:0 0 14px">${lookEsc(t)}</p>`).join("")}
+    body: `${lookEyebrow("Official rules")}<h1>${lookEsc(ev.title)}</h1>${own.map(para).join("")}${own.length ? `<h2 style="margin:22px 0 12px">Official rules</h2>` : ""}${off.map(para).join("")}
 <a class="btn" href="/e/${lookEsc(ev.slug)}">Back to the event</a>`,
   }));
 });
 app.get("/api/events/:slug/rules", (req, res) => {
   const ev = evRow(req.params.slug);
   if (!ev || !ev.published) return res.status(404).json({ error: "No such event." });
-  res.json({ rules: ev.rules || evDefaultRules(ev) });
+  res.json({ rules: ev.rules ? ev.rules + "\n\n" + evDefaultRules(ev) : evDefaultRules(ev) });   // the event's own words, then the official rules (2026-10-29)
 });
