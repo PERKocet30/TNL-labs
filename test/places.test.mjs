@@ -132,7 +132,7 @@ try {
   console.log("\nTHE TOURNAMENT LIVES IN ITS LAB — NO #TAG NEEDED (v1.4)");
   let w = await call("dee", "GET", "/api/labs/pharmacy/work");
   t("no tournament: no Tournament chip", w.j.event === null);
-  const ev = (await call("boss", "POST", "/api/admin/events", { slug: "art", title: "LABS ART TOURNAMENT", format: "poll", published: true, opensAt: now - 1000, submitDays: 14, channel: "graphic-design" })).j;
+  const ev = (await call("boss", "POST", "/api/admin/events", { requirePost: false, slug: "art", title: "LABS ART TOURNAMENT", format: "poll", published: true, opensAt: now - 1000, submitDays: 14, channel: "graphic-design" })).j;
   t("open, but nobody has entered yet: still no chip", (await call("dee", "GET", "/api/labs/pharmacy/work")).j.event === null);
   const e1 = (await call("ana", "POST", "/api/events/art/enter", { imageUrl: "/uploads/a.jpg", agree: true, caption: "oil on canvas" })).j.me.entry;
   await call("ben", "POST", "/api/events/art/enter", { imageUrl: "/uploads/a.jpg", agree: true });

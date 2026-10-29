@@ -64,7 +64,7 @@ try {
   let d = await dir();
   t("none yet → it says so, under Needs you", d.tournament === null && d.needs.some((n) => n.kind === "tournament" && /No tournament/.test(n.text)));
   const plan = { opensAt: now - 1000, submitDays: 1, voteDays: 1, finalDays: 1 };
-  const ev = (await call("boss", "POST", "/api/admin/events", { slug: "art-poll", title: "Art Tournament", format: "poll", prize: "TBD", ...plan })).j.event;
+  const ev = (await call("boss", "POST", "/api/admin/events", { requirePost: false, slug: "art-poll", title: "Art Tournament", format: "poll", prize: "TBD", ...plan })).j.event;
   d = await dir();
   t("a draft → “still a draft — members can't see it”", d.tournament.id === ev.id && !d.tournament.published && d.needs.some((n) => /still a draft/.test(n.text) && n.event === ev.id));
   await call("boss", "PATCH", `/api/admin/events/${ev.id}`, { published: true });

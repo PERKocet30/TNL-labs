@@ -1,5 +1,5 @@
 /* ================================================================
-   EVENT SCREEN v1.2 — 2026-10-12 (wiring; v1.2: the ‹ back bar, and "Every entry is in // Visual"). Opening an event, the
+   EVENT SCREEN v1.3 — 2026-10-29 (v1.3: "post something to vote" asks at the tap and opens the composer). v1.2 — 2026-10-12 (wiring; v1.2: the ‹ back bar, and "Every entry is in // Visual"). Opening an event, the
    Showroom banner, picks, judging, entering and withdrawing. Every
    change goes to the server and the screen shows what it says back.
 ================================================================ */
@@ -77,12 +77,18 @@ async function evPick(id,btn,held){
       return}
     if(held)EVWAIT=null;
     if(/profile photo/i.test(e.message||"")){if(btn)btn.classList.remove("busy");return evPhotoAsk(id)}
+    if(/post something of your own/i.test(e.message||"")){if(btn)btn.classList.remove("busy");return evPostAsk(id)}
     toast(e.message);if(/confirm your email/i.test(e.message||"")){if(!EVFOCUS)EVFOCUS=id;evRemember()}if(btn)btn.classList.remove("busy")}
 }
 /* "Remind people they need to upload a profile pic in order to vote when they try to vote" (2026-10-29) */
 async function evPhotoAsk(id){
   if(!EVFOCUS)EVFOCUS=id;evRemember();   // back to this piece once the photo is in
   if(await uiConfirm("Add a profile photo to vote","Every vote on LABS has a face behind it. Add a photo, then come back to vote for this piece.",{okLabel:"Add a photo",cancelLabel:"Not now"}))gsEdit();
+}
+/* 2026-10-29: votes come from people who take part — one post of your own first. */
+async function evPostAsk(id){
+  if(!EVFOCUS)EVFOCUS=id;evRemember();
+  if(await uiConfirm("Post something to vote","Votes on LABS come from people who share their own work. Post a piece — anything you made — then come back to vote.",{okLabel:"Post something",cancelLabel:"Not now"}))gsPost();
 }
 let EV_HOLD_MS=30000;   // let: the tap-through shortens it
 async function evScore(id,n){

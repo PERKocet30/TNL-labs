@@ -45,7 +45,7 @@ try {
   t("a real address at an unusual domain is fine", (await join_("real2", "ana@btopenworld.com")).s === 200);
 
   console.log("\nONE VOTE PER PHONE");
-  const ev = (await call("boss", "/api/admin/events", { slug: "art", title: "Art", brief: "x", format: "poll", picks: 1, minAccountDays: 0, opensAt: now - D, submitDays: 14, voteDays: 7, finalDays: 3, published: true, mailOnOpen: false })).j;
+  const ev = (await call("boss", "/api/admin/events", { requirePost: false, slug: "art", title: "Art", brief: "x", format: "poll", picks: 1, minAccountDays: 0, opensAt: now - D, submitDays: 14, voteDays: 7, finalDays: 3, published: true, mailOnOpen: false })).j;
   const en = (await call("art", "/api/events/art/enter", { imageUrl: "/uploads/e0.jpg", caption: "mine", agree: true })).j;
   const entryId = (en.entries || en.event?.entries || [])[0]?.id || en.myEntry?.id;
   t("an entry is in", !!entryId);

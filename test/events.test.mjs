@@ -51,7 +51,7 @@ try {
   console.log("\nSETTING IT UP (admin only)");
   const plan = { opensAt: now - 1000, submitDays: 1, voteDays: 1, roundDays: 1, finalDays: 1 };
   t("members can't create events", (await call("a", "POST", "/api/admin/events", { slug: "x-1", title: "x" })).s === 403);
-  let r = await call("boss", "POST", "/api/admin/events", { slug: "poster", title: "Poster Tournament", brief: "A poster for the lab.", format: "bracket", bracketSize: 8, judgeWeight: 50, picks: 3, minAccountDays: 3, published: true, ...plan });
+  let r = await call("boss", "POST", "/api/admin/events", { requirePost: false, slug: "poster", title: "Poster Tournament", brief: "A poster for the lab.", format: "bracket", bracketSize: 8, judgeWeight: 50, picks: 3, minAccountDays: 3, published: true, ...plan });
   const evId = r.j.event?.id;
   t("an admin creates a bracket event; it opens in the submit phase", r.s === 200 && r.j.event.phase.phase === "submit");
   t("its schedule: submit, vote, 2 rounds for an 8-bracket, final, results", r.j.event.schedule.map((p) => p.phase + (p.round || "")).join(",") === "submit,qualify,round1,round2,final,results");
@@ -160,7 +160,7 @@ try {
   t("/api/events lists it for the Showroom", cur.events.some((e) => e.slug === "poster"));
 
   console.log("\nSIMPLE FORMAT, AND A CANCELLED ONE");
-  r = await call("boss", "POST", "/api/admin/events", { slug: "simple", title: "Simple", format: "simple", finalists: 2, published: true, ...plan });
+  r = await call("boss", "POST", "/api/admin/events", { requirePost: false, slug: "simple", title: "Simple", format: "simple", finalists: 2, published: true, ...plan });
   const sId = r.j.event.id;
   t("simple: submit, vote, final, results", r.j.event.schedule.map((p) => p.phase).join(",") === "submit,qualify,final,results");
   for (const [w, i] of [["k", 0], ["l", 1], ["h", 2]]) await call(w, "POST", "/api/events/simple/enter", { imageUrl: `/uploads/e${i}.jpg`, agree: true });
@@ -170,13 +170,13 @@ try {
   await call("boss", "POST", `/api/admin/events/${sId}/advance`);
   const sf = await view("a", "simple");
   t("the top 2 by votes are the finalists", sf.event.phase.phase === "final" && sf.finalists.length === 2 && sf.finalists.includes(su.h) && sf.finalists.includes(su.l));
-  r = await call("boss", "POST", "/api/admin/events", { slug: "lonely", title: "Lonely", published: true, ...plan });
+  r = await call("boss", "POST", "/api/admin/events", { requirePost: false, slug: "lonely", title: "Lonely", published: true, ...plan });
   await call("k", "POST", "/api/events/lonely/enter", { imageUrl: "/uploads/e1.jpg", agree: true });
   await call("boss", "POST", `/api/admin/events/${r.j.event.id}/advance`);
   t("one entry when entries close: the event is called off, not run", (await view("k", "lonely")).event.void === true);
 
   console.log("\nTHE POLL: DAILY VOTES, A LIVE SCOREBOARD");
-  r = await call("boss", "POST", "/api/admin/events", { slug: "art", title: "Art Tournament", format: "poll", picks: 1, finalists: 3, judgeWeight: 0, minAccountDays: 0, freezeHours: 24, published: true, opensAt: now - 1000, submitDays: 1, voteDays: 3, finalDays: 2 });
+  r = await call("boss", "POST", "/api/admin/events", { requirePost: false, slug: "art", title: "Art Tournament", format: "poll", picks: 1, finalists: 3, judgeWeight: 0, minAccountDays: 0, freezeHours: 24, published: true, opensAt: now - 1000, submitDays: 1, voteDays: 3, finalDays: 2 });
   const pId = r.j.event.id;
   t("poll: submit, vote, final, results", r.j.event.schedule.map((p) => p.phase).join(",") === "submit,qualify,final,results" && r.j.event.format === "poll");
   for (const [w, i] of [["k", 0], ["l", 1], ["h", 2], ["i", 3]]) await call(w, "POST", "/api/events/art/enter", { imageUrl: `/uploads/p${i}.jpg`, thumbUrl: `/uploads/p${i}.jpg`, agree: true });

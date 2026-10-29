@@ -47,7 +47,7 @@ async function evvEmail(ev, u) {
   const start = evvStart(ev);
   return voteOpenEmail({
     name: u.display_name || u.username, title: ev.title, at: evvAt(start), entries: liveEntries(ev.id).length, picks: ev.picks,
-    rules: ev.min_account_days ? `Accounts need to be ${ev.min_account_days} day${ev.min_account_days === 1 ? "" : "s"} old to vote.` : "",
+    rules: [ev.min_account_days ? `Accounts need to be ${ev.min_account_days} day${ev.min_account_days === 1 ? "" : "s"} old to vote.` : "", ev.require_post ? "You need to have posted something of your own on LABS to vote." : ""].filter(Boolean).join(" "),
     url: `${evmBase()}/?e=${encodeURIComponent(ev.slug)}`, unsub: evmUnsub(u),
   });
 }
