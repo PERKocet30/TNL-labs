@@ -1,4 +1,4 @@
-/* ── POST EXTRAS on the card · v1.2 2026-10-30 (who liked it) · v1.1 2026-10-21 (pins on the picture) · 2026-09-30 ── people tagged ("with …"), the
+/* ── POST EXTRAS on the card · v1.3 2026-10-30 (who liked it, on every post) · v1.1 2026-10-21 (pins on the picture) · 2026-09-30 ── people tagged ("with …"), the
    video's chosen cover, comments switched off. */
 /* Shoppable posts: the pieces in the work, under it — tap to buy. */
 function pxShopHTML(p){
@@ -95,14 +95,17 @@ function capHTML(body){
 }
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest(".capmore");if(!b)return;
   e.stopPropagation();const c=b.closest(".sr-body,.post-cap");if(c)c.classList.add("open")});
-/* WHO LIKED IT (2026-10-30): "see who liked your post." Under the buttons on
-   your own post (or one you're credited on) — "12 likes", always there so the
-   card never jumps — a tap lists them, newest first. Nobody else sees the list. */
+/* WHO LIKED IT (2026-10-30): "see who liked your post", then "I still can't see
+   who liked other people's post". Under the buttons on every post — "12 likes",
+   a tap lists them, newest first. Its place is kept even at 0 likes (grey "No
+   likes yet" on yours, blank on others') so the card never jumps when one comes
+   in. A post whose maker hid its likes has no line for anyone else. */
 const pxLikersText=n=>n?n+(n===1?" like":" likes"):"No likes yet";
 function pxLikersHTML(p){
   if(p.pending||p.failed||!myName())return "";
   const me=p.author.username===myName()||(p.collaborators||[]).some(c=>c.username===myName()&&c.status==="accepted");
-  return me?`<button type="button" class="px-likers${p.likeCount?"":" zero"}" data-likers="${p.id}">${pxLikersText(p.likeCount||0)}</button>`:"";
+  if(!me&&p.hideLikes)return "";
+  return `<button type="button" class="px-likers${me?"":" theirs"}${p.likeCount?"":" zero"}" data-likers="${p.id}">${pxLikersText(p.likeCount||0)}</button>`;
 }
 document.addEventListener("click",async e=>{
   const b=e.target.closest("[data-likers]");if(!b)return;
