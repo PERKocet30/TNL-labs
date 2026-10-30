@@ -1,5 +1,5 @@
 /* ================================================================
-   AUTH  (connector keys accepted 2026-10-27)
+   AUTH  (connector keys accepted 2026-10-27; visit days 2026-10-29)
 ================================================================ */
 /* Checked on EVERY authenticated request. A suspension that only removes
    sessions is worthless the moment they log back in. */
@@ -24,6 +24,7 @@ function auth(req, res, next) {
      message until it has a real one — "any accounts not meeting standards have to update". */
   if (req.method !== "GET" && emailThrowaway(req.user.email) && !/^\/api\/auth\/(email|logout|resend)$/.test(req.path))
     return res.status(403).json({ error: "Add a real email address first — temporary inboxes can't post, vote or like.", fixEmail: true });
+  if (!req.mcp) memberDay(req.user.id);   // "came back today" (server-01-visits)
   next();
 }
 // optional auth: attaches req.user if a valid token is present, else continues

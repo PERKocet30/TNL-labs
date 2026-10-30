@@ -1,6 +1,7 @@
 
 /* ================================================================
-   THE POLICIES · v1.1 — 2026-10-29 (v1.1: caught up with the app — signing in
+   THE POLICIES · v1.2 — 2026-10-29 (v1.2: the days you use the app, slow-request
+   logs, xAI's Grok beside Claude. v1.1: caught up with the app — signing in
    with Google/Apple/Facebook, no throwaway emails, one vote per phone and the
    new-account wait, spam removal, the phone's vote code, glitch reports, event
    and reminder emails, featuring members' work on LABS's own accounts, the
@@ -86,7 +87,7 @@ app.get("/privacy", (_req, res) => policyPage(res, {
     ["What we collect", `<ul><li><b>Account:</b> email, password (stored only as a one-way hash), name, username, and what you add to your profile. If you sign in with Google, Apple or Facebook, we get your name, email and an account ID from them — never your password.</li>
 <li><b>What you make:</b> posts, images, audio, comments, messages, listings, offers, votes and event entries.</li>
 <li><b>Orders:</b> what you bought or sold, and the shipping address you enter at checkout, which goes to the seller so they can ship. Card details go to Stripe and never reach us.</li>
-<li><b>Running the app:</b> your IP address and basic request logs (for security and rate limits), error reports when something breaks, and reports of screens that load slowly, jump or don't respond to a tap, so we can fix them.</li>
+<li><b>Running the app:</b> your IP address and basic request logs (for security and rate limits), the days you use the app signed in (just the date — so we know who comes back), requests that are slow or fail, error reports when something breaks, and reports of screens that load slowly, jump or don't respond to a tap, so we can fix them.</li>
 <li><b>Keeping accounts real:</b> when you join, sign in or vote, we note the network you used (kept as a code, not the address itself), the country and city it's in, the time zone your phone is set to, your device and browser, and the link that first brought you to LABS. The app also saves a random code on your phone (it isn't your name, number or phone ID) so each phone counts once per piece when voting. Only LABS admins see this, to spot fake accounts and vote rigging.</li>
 <li><b>Instagram messages:</b> if you message @tnl.labs on Instagram, LABS admins read and answer it in our admin, through Meta's tools.</li></ul>`],
     ["Why", `<p>To run your account and show your work, process orders, send email (verification, password reset and order updates, plus event announcements and reminders — those have a one-tap unsubscribe), keep the app safe from spam and abuse, and fix bugs.</p>`],
@@ -94,7 +95,7 @@ app.get("/privacy", (_req, res) => policyPage(res, {
 <li><b>Railway</b> — hosting; our database and uploads live there.</li><li><b>Cloudflare</b> — delivering the site and blocking attacks.</li>
 <li><b>Sentry</b> — error reports, so we can fix crashes.</li>
 <li><b>Google, Apple and Meta</b> — signing in, if you choose them. Meta also runs our Instagram account and shop, and Google shows shop listings in Google Shopping; both only get listings their sellers chose to show there.</li>
-<li><b>Anthropic</b> — Claude, an AI assistant our admins use to read the app's numbers and help build LABS. It never sees messages, emails, addresses or passwords.</li></ul><p>Each only gets what its job needs. We share data with authorities only when the law requires it.</p>`],
+<li><b>Anthropic and xAI</b> — Claude and Grok, AI assistants our admins use to read the app's numbers and help build LABS. They never see messages, emails, addresses or passwords.</li></ul><p>Each only gets what its job needs. We share data with authorities only when the law requires it.</p>`],
     ["What's public", `<p>Your profile, posts, listings and event entries are public — anyone with the link can see them, and search engines can show them. LABS can use public uploads, including music, to promote LABS (see <a href="/terms#s3">Terms</a>). Messages are private between the people in the chat. Your email address is never shown to other members.</p>`],
     ["Cookies and storage", `<p>We don't use advertising or tracking cookies. The app stores your sign-in, your preferences (like night mode) and the voting code above on your device. We never sell your data, and we don't sell or license anyone's work for AI training.</p>`],
     ["Your choices", `<ul><li>Edit or delete your posts and profile in the app at any time.</li>
