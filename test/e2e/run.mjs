@@ -1434,6 +1434,23 @@ console.log("\nMEMBER · PHONE");
     ok(await card.locator(".px-pins").count() === 0, "tapping again didn't hide the pins");
     await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
   });
+  /* 2026-10-30: "see who liked your post" — on your own post "1 like" (never on someone else's); a tap lists who */
+  await step(d, "who liked it: your own post says how many likes, and a tap lists who; someone else's post doesn't", async () => {
+    const mine = (await myPosts())[0];
+    await api("/api/posts/" + mine.id + "/like", "e2e-friend-session", { liked: true });
+    const fresh = (await myPosts()).find((x) => x.id === mine.id);
+    await p.evaluate((pp) => openPost(pp), fresh); await p.waitForSelector(".po-ov [data-likers]", { timeout: 8000 });
+    const line = p.locator(".po-ov [data-likers]").first();
+    ok((await line.innerText()).trim() === "1 like", "your own post doesn't say 1 like: " + await line.innerText());
+    const y = await p.evaluate(() => (document.querySelector(".po-ov .po-scroll, .po-ov") || {}).scrollTop || 0);
+    await line.tap(); await p.waitForSelector(".pick .pickrow", { timeout: 5000 });
+    ok(/Likes/.test(await p.locator(".pick h2").innerText()) && /@friend/.test(await p.locator(".pick .pickrow").first().innerText()), "the list doesn't show who liked it");
+    await p.locator("#pickx").tap(); await p.waitForTimeout(250);
+    ok(await p.locator(".pick").count() === 0 && await p.evaluate(() => (document.querySelector(".po-ov .po-scroll, .po-ov") || {}).scrollTop || 0) === y, "closing the list didn't land back on the post where it was");
+    await p.evaluate(() => openPost((SRPOSTS || []).find((x) => x.author.username === "friend"))); await p.waitForSelector(".po-ov [data-like]", { timeout: 8000 });
+    ok(await p.locator(".po-ov [data-likers]").count() === 0, "someone else's post shows its likes list");
+    await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
+  });
   /* 2026-10-21 "fix all the labs": every post lives on your profile; a lab is where you also show it */
   await step(d, "labs: + inside // Visual opens New post already posting to Your profile · // Visual (take it out → Add a lab); the lab's head says Invite; the archive has no search box", async () => {
     await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#labshare");

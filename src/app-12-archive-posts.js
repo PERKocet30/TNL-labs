@@ -168,6 +168,7 @@ function postHTML(p){const mine=p.author.username===myName();
     ${myPending?`<button class="igpill" data-accept="${p.id}">Accept collab</button>`:""}
     ${!mine?`<button class="igact igflag" data-report="${p.id}" aria-label="Report" title="Report">${IG_FLAG}</button>`:""}
   </div>
+  ${pxLikersHTML(p)}
   ${media?cap:""}
   ${p.pending||p.failed?"":`<div class="post-when">${igAgo(p.createdAt)}${p.editedAt?" · Edited":""}</div>`}
   <div class="cslot" data-cslot="${p.id}">${cslotHTML(p)}</div>

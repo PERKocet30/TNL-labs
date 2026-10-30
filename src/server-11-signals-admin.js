@@ -1,5 +1,5 @@
 /* ================================================================
-   REAL PEOPLE OR BOTS — what the admin sees (2026-10-26). The data is
+   REAL PEOPLE OR BOTS — what the admin sees (2026-10-26; who voted for each piece 2026-10-30). The data is
    written by server-01-signals. Admin-only, on the server.
    · GET /api/admin/people/:username/signals — how they joined, where
      they've signed in and voted from, the accounts that share a network
@@ -94,4 +94,27 @@ app.get("/api/admin/events/:id/vote-check", auth, admin, (req, res) => {
       voters: [...g.voters.values()], entries: [...g.entries].map(([id, v]) => ({ entryId: id, author: author.get(id) || null, votes: v })).sort((a, b) => b.votes - a.votes) }))
       .sort((a, b) => b.voters.length - a.voters.length).slice(0, 40),
   });
+});
+
+/* WHO VOTED FOR EACH PIECE (2026-10-30): "see who voted for you specifically, and who keeps voting."
+   Admin only, never members, never the connector. From the votes themselves (every vote, not just since
+   Oct 26): each piece's voters, how many days they voted for it, and whether they've come back every day
+   since their first vote — the regulars. */
+app.get("/api/admin/events/:id/voters", auth, admin, (req, res) => {
+  const ev = db.prepare(`SELECT id, format FROM events WHERE id = ?`).get(Number(req.params.id) || 0);
+  if (!ev) return res.status(404).json({ error: "No such event." });
+  const rounds = db.prepare(`SELECT stage || ':' || matchup k, MIN(created_at) at FROM event_votes WHERE event_id = ? GROUP BY k ORDER BY at`).all(ev.id).map((r) => r.k);
+  const rows = db.prepare(`SELECT v.entry_id, u.username, u.avatar_url, u.created_at joined, COUNT(*) votes, GROUP_CONCAT(DISTINCT v.stage || ':' || v.matchup) ks, MIN(v.created_at) first, MAX(v.created_at) last
+    FROM event_votes v JOIN users u ON u.id = v.voter_id WHERE v.event_id = ? GROUP BY v.entry_id, v.voter_id`).all(ev.id);
+  const entries = new Map(db.prepare(`SELECT e.id, e.post_id, u.username FROM event_entries e JOIN users u ON u.id = e.user_id WHERE e.event_id = ?`).all(ev.id)
+    .map((e) => [e.id, { entryId: e.id, postId: e.post_id, author: e.username, voters: [] }]));
+  for (const r of rows) {
+    const e = entries.get(r.entry_id); if (!e) continue;
+    const ks = String(r.ks || "").split(","), from = Math.min(...ks.map((k) => rounds.indexOf(k)).filter((i) => i >= 0));
+    e.voters.push({ username: r.username, photo: !!r.avatar_url, joinedAt: r.joined, votes: r.votes, rounds: ks.length, firstAt: r.first, lastAt: r.last,
+      regular: ks.length > 1 && ks.length >= rounds.length - from });
+  }
+  const list = [...entries.values()].map((e) => ({ ...e, votes: e.voters.reduce((s, v) => s + v.votes, 0), regulars: e.voters.filter((v) => v.regular).length,
+    voters: e.voters.sort((a, b) => b.rounds - a.rounds || b.lastAt - a.lastAt) })).sort((a, b) => b.votes - a.votes);
+  res.json({ rounds: rounds.length, entries: list });
 });

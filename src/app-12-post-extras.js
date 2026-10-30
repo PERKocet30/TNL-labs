@@ -1,4 +1,4 @@
-/* ── POST EXTRAS on the card · v1.1 2026-10-21 (pins on the picture) · 2026-09-30 ── people tagged ("with …"), the
+/* ── POST EXTRAS on the card · v1.2 2026-10-30 (who liked it) · v1.1 2026-10-21 (pins on the picture) · 2026-09-30 ── people tagged ("with …"), the
    video's chosen cover, comments switched off. */
 /* Shoppable posts: the pieces in the work, under it — tap to buy. */
 function pxShopHTML(p){
@@ -95,3 +95,21 @@ function capHTML(body){
 }
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest(".capmore");if(!b)return;
   e.stopPropagation();const c=b.closest(".sr-body,.post-cap");if(c)c.classList.add("open")});
+/* WHO LIKED IT (2026-10-30): "see who liked your post." Under the buttons on
+   your own post (or one you're credited on) — "12 likes", always there so the
+   card never jumps — a tap lists them, newest first. Nobody else sees the list. */
+const pxLikersText=n=>n?n+(n===1?" like":" likes"):"No likes yet";
+function pxLikersHTML(p){
+  if(p.pending||p.failed||!myName())return "";
+  const me=p.author.username===myName()||(p.collaborators||[]).some(c=>c.username===myName()&&c.status==="accepted");
+  return me?`<button type="button" class="px-likers${p.likeCount?"":" zero"}" data-likers="${p.id}">${pxLikersText(p.likeCount||0)}</button>`:"";
+}
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-likers]");if(!b)return;
+  e.stopPropagation();const id=+b.dataset.likers;
+  openPicker({title:"Likes",loading:true,empty:"No likes yet.",onPick:it=>openProfile(it.username)});
+  try{const d=await api.likers(id);if(!PICKER||PICKER.title!=="Likes")return;
+    PICKER.items=(d.likers||[]).map(u=>({label:u.displayName||u.username,sub:"@"+u.username,username:u.username,avatar:u.avatarUrl||"",person:u}));
+    PICKER.loading=false;render()}
+  catch(x){if(PICKER&&PICKER.title==="Likes")closePicker();toast(x.message)}
+},true);
