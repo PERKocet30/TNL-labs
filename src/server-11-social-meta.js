@@ -1,5 +1,6 @@
 /* ================================================================
    SOCIAL GRAPH — follow / unfollow / profile
+   v1.3 — 2026-10-30: who liked a post — its maker sees the list (below).
    v1.2 — 2026-10-28: isMod stays private, like isAdmin.
    v1.1 — 2026-10-09: a profile carries the music its member uploaded
    (tracks, newest first, with their covers) — its own Music tab.
@@ -207,3 +208,16 @@ process.on("SIGTERM", () => {
    and log everyone out. Log it and keep serving. */
 process.on("unhandledRejection", (e) => console.error("[unhandled rejection]", e?.message || e));
 process.on("uncaughtException", (e) => console.error("[uncaught]", e?.message || e));
+
+/* ---- WHO LIKED IT · 2026-10-30 ----
+   "See who liked your post." The person who posted it (and anyone credited
+   on it, and admins) can open the list; nobody else. Newest first. */
+app.get("/api/posts/:id/likers", auth, (req, res) => {
+  const post = q.postById.get(Number(req.params.id));
+  if (!post) return res.status(404).json({ error: "no post" });
+  const credited = db.prepare(`SELECT 1 FROM collaborators WHERE post_id = ? AND user_id = ? AND status = 'accepted'`).get(post.id, req.user.id);
+  if (post.author_id !== req.user.id && !credited && !req.user.is_admin) return res.status(403).json({ error: "Only the person who posted it can see who liked it." });
+  const rows = db.prepare(`SELECT u.username, u.display_name, u.avatar_url, u.accent, l.created_at FROM likes l JOIN users u ON u.id = l.user_id
+    WHERE l.post_id = ? AND COALESCE(u.suspended, 0) = 0 ORDER BY l.created_at DESC LIMIT 500`).all(post.id);
+  res.json({ likers: rows.map((u) => ({ username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url || "", accent: u.accent || "lab", accentHex: accentHex(u.accent), at: u.created_at })) });
+});
