@@ -1173,6 +1173,25 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { PCOMPOSE = null; render(); }); await p.waitForTimeout(300);
     ok(await p.evaluate(() => !PCPV), "closing the post maker left the song playing");
   });
+  /* 2026-10-30: "I tried uploading a carousel with a video in the middle of it and it didn't work" */
+  await step(d, "a carousel with a video in the middle: photo, video, photo post together in that order, and the video plays in the carousel", async () => {
+    await openCreator();
+    await p.locator("#pcfile").setInputFiles([UPLOAD_PNG, UPLOAD_WEBM, UPLOAD_PNG2]);
+    await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 3 && !PCOMPOSE.upN, null, { timeout: 30000 });
+    const kinds = await p.evaluate(() => PCOMPOSE.imgs.map((im) => (im.video ? "video" : "photo")).join(","));
+    ok(kinds === "photo,video,photo", "the picks didn't keep their order with the video in the middle: " + kinds);
+    ok(await p.locator(".pc-strip .pc-th").nth(1).locator(".pc-vmark").count() === 1, "the video's thumbnail has no play mark");
+    await p.locator("#pcbody").fill("mixed carousel");
+    await p.locator("#pcgo").tap();
+    await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 15000 });
+    const np = (await myPosts()).find((x) => /mixed carousel/.test(x.body || ""));
+    ok(np && np.images && np.images.length === 3 && np.images[1].video && /\.jpg$/.test(np.images[1].url) && !np.videoUrl, "the post isn't a 3-slide carousel with a video slide: " + JSON.stringify(np && np.images));
+    await p.evaluate((pp) => openPost(pp), np); await p.waitForSelector(".po-ov .caro video.caro-v", { state: "attached", timeout: 8000 });
+    await p.locator(".po-ov .caro-t").first().evaluate((t) => { t.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })); t.scrollLeft = t.clientWidth; });   // a swipe, as a finger makes one
+    const played = await p.waitForFunction(() => { const v = document.querySelector(".po-ov video.caro-v"); return v && !v.paused; }, null, { timeout: 8000 }).then(() => true, () => false);
+    ok(played, "the video slide didn't play when swiped to");
+    await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
+  });
   /* "Update the post maker to simple video editing, cover etc" (2026-10-08). */
   await step(d, "video editor: a cover arrives by itself; trim, sound off and 4:5 ride on the post and the feed honours them", async () => {
     await openCreator();

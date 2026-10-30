@@ -1,3 +1,4 @@
+/* v2026-10-30: photos and videos in one carousel — picking goes to pcPick (app-18-post-mixed).
 /* v2026-10-29: Edit opens this page on the post — "Edit info" · Done (app-18-post-edit).
 /* v2026-10-25: pick which part of the song plays — the bar under the picked song (pcPartHTML/pcPartWire, app-18-pc-preview).
 /* v2026-10-25: a photo takes its place in the strip the moment it's picked and uploads land into it, two at a time (pcAddPhotos, app-18-post-queue); a drag the phone turns into a scroll reorders nothing.
@@ -39,19 +40,19 @@ function pcomposeHTML(){
       <button class="pc-edit pc-edit-top" data-pcvedit aria-label="Edit video">${PC_EDIT}<span>Edit</span></button></div>`}
   else if(c.imgs.length||c.upN)media=`
     <div class="pc-stage">
-      <div class="pc-track ${c.tagMode?"tagging":""}" id="pctrack">${c.imgs.map((im,i)=>`<div class="pc-slide"><img src="${esc(im.url||im.thumb)}" alt="">${pcPinsHTML(c,i)}</div>`).join("")}
+      <div class="pc-track ${c.tagMode?"tagging":""}" id="pctrack">${c.imgs.map((im,i)=>`<div class="pc-slide"><img src="${esc(im.url||im.thumb)}" alt="">${pcVidMark(im)}${pcPinsHTML(c,i)}</div>`).join("")}
         ${c.upN&&!c.imgs.length?`<div class="pc-slide pc-busy"><span class="spin"></span></div>`:""}</div>
       ${c.imgs.length>1?`<span class="pc-count" id="pccount">${c.idx+1}/${c.imgs.length}</span>`:""}
-      ${c.imgs.length&&!(c.imgs[c.idx]||{}).gif&&!(c.imgs[c.idx]||{}).busy?`<button class="pc-edit" data-pcedit aria-label="Edit photo">${PC_EDIT}<span>Edit</span></button>`:""}
+      ${c.imgs.length&&!(c.imgs[c.idx]||{}).gif&&!(c.imgs[c.idx]||{}).busy&&!(c.imgs[c.idx]||{}).video?`<button class="pc-edit" data-pcedit aria-label="Edit photo">${PC_EDIT}<span>Edit</span></button>`:""}
     </div>
     <div class="pc-strip">
-      ${c.imgs.map((im,i)=>`<div class="pc-th ${i===c.idx?"on":""}${im.busy?" pc-busy":""}" data-pci="${i}"><button class="pc-thb" data-pcgo="${i}" aria-label="Photo ${i+1}"><img src="${esc(im.thumb)}" alt="" draggable="false"></button>
+      ${c.imgs.map((im,i)=>`<div class="pc-th ${i===c.idx?"on":""}${im.busy?" pc-busy":""}" data-pci="${i}"><button class="pc-thb" data-pcgo="${i}" aria-label="${im.video||im.isv?"Video":"Photo"} ${i+1}"><img src="${esc(im.thumb)}" alt="" draggable="false">${pcVidMark(im)}</button>
         ${im.busy?`<span class="spin"></span>`:`<button class="pc-rm sm" data-pcrm="${i}" aria-label="Remove photo">${PC_X}</button>`}</div>`).join("")}
-      ${c.imgs.length<10?`<label class="pc-th pc-add" aria-label="Add photos">${UI_IC.plus}${file}</label>`:""}
+      ${c.imgs.length<10?`<label class="pc-th pc-add" aria-label="Add photos or videos">${UI_IC.plus}${file}</label>`:""}
     </div>`;
   else if(pcCover(c))media=`<div class="pc-stage"><img class="pc-cov" src="${esc(pcCover(c))}" alt="${esc(c.track.title)} — cover"><span class="pc-covtag">${UI_IC.music} Song cover</span></div>
     <label class="pc-pick pc-pick-sm">${file}<b>Add photos or video instead</b></label>`;
-  else media=`${pdRowHTML(c)}<label class="pc-pick">${file}${PC_PICK}<b>Add photos or video</b><span>Up to 10 photos, or 1 video</span></label>`;
+  else media=`${pdRowHTML(c)}<label class="pc-pick">${file}${PC_PICK}<b>Add photos or video</b><span>Up to 10 photos and videos</span></label>`;
   const tags=c.tags||[];
 
   /* Where people see it (2026-10-21, "make sharing into labs and posting on profiles
@@ -119,34 +120,8 @@ function wirePCompose(){
   const syncGo=()=>{const g=$("#pcgo");if(g)g.disabled=!pcCan(c)};
 
   /* ── media ── */
-  const fi=$("#pcfile");if(fi)fi.onchange=async()=>{
-    const files=[...fi.files];fi.value="";
-    /* iPadOS Files picks can arrive with an empty type — fall back to the
-       extension; the server sniffs magic bytes either way. */
-    const isVid=f=>f.type.startsWith("video/")||(!f.type&&/\.(mp4|m4v|mov|webm)$/i.test(f.name));
-    const vids=files.filter(isVid), rest=files.filter(f=>!isVid(f));
-    if(vids.length){
-      const f=vids[0];
-      if(vids.length>1)toast("One video per post");
-      if(f.size>650*1024*1024){toast(f.name+" is over 650MB");return}
-      if(c.imgs.length){c.imgs=[];toast("Video posts stand alone — photos cleared")}
-      c.vid=null;c.cover=null;c.vedit=null;c.vidbusy=true;c.vidprog=0;render();
-      /* Its size, so the feed can hold the space before it loads. */
-      try{const v=document.createElement("video");v.preload="metadata";v.muted=true;const u=URL.createObjectURL(f);
-        v.onloadedmetadata=()=>{c.vw=v.videoWidth||undefined;c.vh=v.videoHeight||undefined;URL.revokeObjectURL(u)};v.src=u}catch(e){}
-      try{
-        const up=await uploadStream(f,pr=>{if(c.dead)return;c.vidprog=pr;
-          const t=$("#pcvidprog"),b=$("#pcvidbar");if(t)t.textContent="Uploading video · "+Math.round(pr*100)+"%";if(b)b.style.width=Math.round(pr*100)+"%";
-          if(c.queued)pqPaint()});
-        if(c.dead)return;   // discarded mid-upload
-        if(up.kind!=="video")throw new Error("That file isn't a video");
-        c.vid={url:up.url};if(!c.cover&&up.poster)c.cover=up.poster;   // the server's frame from 1s in, until they pick one
-      }catch(e){if(c.dead)return;toast(e.message)}
-      c.vidbusy=false;pcRepaint(c);return;
-    }
-    if(c.vid||c.vidbusy){toast("Video posts stand alone");return}
-    pcAddPhotos(c,rest);   // each gets its place at once, then uploads land into it (app-18-post-queue)
-  };
+  /* photos, a video, or both in one carousel (app-18-post-mixed) */
+  const fi=$("#pcfile");if(fi)fi.onchange=()=>{const files=[...fi.files];fi.value="";pcPick(c,files)};
   const tr=$("#pctrack");
   if(tr){
     pcRaf(()=>{tr.scrollLeft=(c.idx||0)*tr.clientWidth});

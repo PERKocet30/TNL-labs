@@ -59,6 +59,8 @@ async function fixOldVideos() {
   if (moved || covered) console.log(`[videos] old uploads fixed — ${moved} made quick to start, ${covered} given a cover`);
   // …and every posted video without a feed copy gets one, one at a time.
   for (const r of db.prepare(`SELECT DISTINCT video_url u FROM posts WHERE video_url LIKE '/uploads/%' ORDER BY id DESC`).all()) queueFeedVideo(r.u);
+  /* …and the videos inside carousels (2026-10-30) */
+  for (const r of db.prepare(`SELECT images FROM posts WHERE images LIKE '%"video":%' ORDER BY id DESC`).all()) { try { for (const g of JSON.parse(r.images)) if (g.video) queueFeedVideo(g.video); } catch (e) {} }
   for (const r of db.prepare(`SELECT DISTINCT url u FROM tracks WHERE url LIKE '/uploads/%'`).all()) queueListenCopy(r.u);
 }
 if (!process.env.TNL_NO_VIDEO_FIX) setTimeout(() => fixOldVideos().catch((e) => console.error("[videos]", e.message)), Number(process.env.TNL_VIDEO_FIX_DELAY_MS || 60000)).unref();

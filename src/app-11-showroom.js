@@ -24,7 +24,7 @@ function srCardHTML(p,i){
     </div>
     <div class="post-media">${pxTagBtn(p)}
     ${(p.images&&p.images.length>1)?`<div class="caro" data-caro="s${p.id}">
-      <div class="caro-t" style="aspect-ratio:${caroRatio(p.images)}">${p.images.map((im,k)=>`<img class="caro-i" ${imgAttrs(im)} data-u="${esc(p.author.username)}" alt="" ${k===0?ld:'loading="lazy"'} decoding="async">`).join("")}</div>
+      <div class="caro-t" style="aspect-ratio:${caroRatio(p.images)}">${p.images.map((im,k)=>caroSlide(im,`${imgAttrs(im)} data-u="${esc(p.author.username)}" alt="" ${k===0?ld:'loading="lazy"'} decoding="async"`)).join("")}</div>
       <div class="caro-d">${p.images.map((_,i)=>`<span class="${i===0?"on":""}"></span>`).join("")}</div>
       <span class="caro-n mono">1/${p.images.length}</span>
     </div>`

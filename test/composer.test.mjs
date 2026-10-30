@@ -13,7 +13,7 @@ console.log("\nPOST CREATOR — LAYOUT");
 t("large swipeable preview with a counter", html.includes('id="pctrack"') && html.includes('id="pccount"'));
 t("thumbnail strip with remove and add", html.includes('class="pc-strip"') && html.includes("data-pcrm") && html.includes('class="pc-th pc-add"'));
 t("drag a thumbnail to reorder (2026-09-30)", src.includes("function pcDragWire(c)") && wire.includes("pcDragWire(c);") && html.includes('data-pci="${i}"'));
-t("a photo still uploading holds its place in the strip, with a spinner (2026-10-25)", html.includes('${im.busy?`<span class="spin"></span>`') && src.includes("const im={busy:true,thumb:local,url:local,local};c.imgs.push(im)"));
+t("a photo still uploading holds its place in the strip, with a spinner (2026-10-25)", html.includes('${im.busy?`<span class="spin"></span>`') && src.includes(":{busy:true,thumb:local,url:local,local};c.imgs.push(im)"));
 t("rows: invite collaborators, add music — and no \"Share to a lab\" (2026-10-21: Share is for sending out)",
   html.includes("Invite collaborators") && html.includes("Add music") && !html.includes("Share to a lab"));
 // 2026-10-21 "make sharing into labs and posting on profiles cohesive": every post lives on your
@@ -44,8 +44,9 @@ t("no photos + a song with a cover → the cover is the picture, and it can be s
 t("lab picker lists the places (each lab's home channel), not sub-channels — your labs first", wire.includes("for(const l of labsOrdered()){const ch=labHome(l);"));
 t("# in the caption suggests tags people already use", wire.includes("papi.tags(") && wire.includes("data-pctag"));
 t("@ in the caption asks the server for people", wire.includes("api.mentionable(m[2])"));
-t("10 photos max, one video that stands alone", wire.includes("pcAddPhotos(c,rest)") && fn("pcAddPhotos").includes("const room=10-c.imgs.length;") && wire.includes('toast("Video posts stand alone")'));
-t("uploads run two at a time and land into their own place; a cancelled drag reorders nothing (2026-10-25)", src.includes("const PC_UP_AT_ONCE=2;") && fn("pcAddPhotos").includes("delete im.busy;Object.assign(im,up)") && fn("pcDragWire").includes("th.onpointercancel=()=>{clearTimeout(hold);if(!d)return;const was=d;d=null;if(was.on)drop()}"));
+t("10 photos and videos max, in one carousel; one video on its own stays a video post (2026-10-30)", wire.includes("pcPick(c,files)") && fn("pcAddMixed").includes("const room=10-c.imgs.length;")
+  && fn("pcPick").includes("vids.length===1&&files.length===1)return pcPickVideo(c,vids[0])") && !wire.includes("Video posts stand alone"));
+t("uploads run two at a time and land into their own place; a cancelled drag reorders nothing (2026-10-25)", src.includes("const PC_UP_AT_ONCE=2;") && fn("pcAddMixed").includes("delete im.busy;Object.assign(im,up)") && fn("pcDragWire").includes("th.onpointercancel=()=>{clearTimeout(hold);if(!d)return;const was=d;d=null;if(was.on)drop()}"));
 t("an in-progress upload, invite or lab choice counts as a draft", /const pcDirty=\(\)=>[^\n]*PCOMPOSE\.upN[^\n]*PCOMPOSE\.collabs[^\n]*PCOMPOSE\.ch/.test(src));
 
 console.log("\nSHARE BUTTON — runs the real rule");
