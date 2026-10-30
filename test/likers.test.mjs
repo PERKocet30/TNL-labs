@@ -1,6 +1,7 @@
 // Who liked it, and who voted (2026-10-30). "I need an update where you can see
 // who liked your post, and where I can see who voted for you specifically and
-// keeps voting." The maker sees their post's likers — nobody else does; the admin
+// keeps voting." Then: "I still can't see who liked other people's post." Anyone
+// signed in sees a post's likers (unless its maker hid them); the admin
 // sees each tournament piece's voters and the regulars — members never do.
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -42,7 +43,16 @@ try {
   t("a suspended account isn't listed", !d.likers.some((x) => x.username === "sus"));
   t("someone credited on the work sees it too", (await get(`/api/posts/${post}/likers`, "tok-dee")).status === 200);
   t("an admin sees it", (await get(`/api/posts/${post}/likers`, "tok-boss")).status === 200);
-  t("anyone else is turned away", (await get(`/api/posts/${post}/likers`, "tok-ben")).status === 403);
+  const other = await get(`/api/posts/${post}/likers`, "tok-ben");
+  t("anyone signed in sees who liked someone else's post", other.status === 200 && (await other.json()).likers.length === 2);
+  db.prepare(`INSERT INTO blocks (blocker_id, blocked_id, created_at) VALUES (?,?,?)`).run(cat, dee, now);
+  const blk = await (await get(`/api/posts/${post}/likers`, "tok-dee")).json();
+  t("someone you've a block with isn't listed for you", blk.likers.map((x) => x.username).join(",") === "ben");
+  db.prepare(`INSERT INTO blocks (blocker_id, blocked_id, created_at) VALUES (?,?,?)`).run(ana, cat, now);
+  t("a post whose maker blocked you doesn't open", (await get(`/api/posts/${post}/likers`, "tok-cat")).status === 403);
+  db.prepare(`UPDATE posts SET extras = ? WHERE id = ?`).run(JSON.stringify({ hideLikes: true }), post);
+  t("hidden likes: nobody else sees them", (await get(`/api/posts/${post}/likers`, "tok-ben")).status === 403);
+  t("hidden likes: the maker and someone credited still do", (await get(`/api/posts/${post}/likers`, "tok-ana")).status === 200 && (await get(`/api/posts/${post}/likers`, "tok-dee")).status === 200);
   t("signed out is turned away", (await fetch(B + `/api/posts/${post}/likers`)).status === 401);
 
   const vr = await get(`/api/admin/events/${ev}/voters`, "tok-boss"), v = await vr.json();
