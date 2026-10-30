@@ -15,12 +15,12 @@ const imgPath=im=>{try{return new URL(im.currentSrc||im.src,location.href).pathn
 /* Take the dead slides out of one carousel; with none left, a quiet box. */
 function caroPrune(c){
   const track=c.querySelector(".caro-t");if(!track)return;
-  const slides=[...track.querySelectorAll("img.caro-i")],dots=[...c.querySelectorAll(".caro-d span")];
+  const slides=[...track.querySelectorAll(".caro-i")],dots=[...c.querySelectorAll(".caro-d span")];
   let gone=0;
-  slides.forEach((im,i)=>{if(BADIMG.has(imgPath(im))){im.remove();if(dots[i])dots[i].remove();gone++}});
+  slides.forEach((im,i)=>{if(im.tagName==="IMG"&&BADIMG.has(imgPath(im))){im.remove();if(dots[i])dots[i].remove();gone++}});
   if(!gone)return;
-  const left=track.querySelectorAll("img.caro-i").length;
-  if(!left){c.replaceWith(imgMissingBox(slides[0]));return}
+  const left=track.querySelectorAll(".caro-i").length;   // a video slide counts too (2026-10-30)
+  if(!left){c.replaceWith(imgMissingBox(slides.find(x=>x.tagName==="IMG")));return}
   if(left===1){c.querySelector(".caro-d")?.remove();c.querySelector(".caro-n")?.remove()}
   const d=c.querySelectorAll(".caro-d span");d.forEach((s,i)=>s.classList.toggle("on",i===0));
   const n=c.querySelector(".caro-n");if(n)n.textContent="1/"+left;

@@ -126,27 +126,7 @@ addEventListener("beforeunload",e=>{if(PQ.some(c=>c.state==="waiting"||c.state==
    slot — so eight photos don't wait in a line with nothing to show, and
    the order you picked is the order you get. A photo that fails leaves. */
 const PC_UP_AT_ONCE=2;
-function pcAddPhotos(c,files){
-  const room=10-c.imgs.length;
-  if(files.length>room)toast("10 photos max");
-  const take=files.slice(0,Math.max(0,room));if(!take.length)return;
-  const slots=take.map(file=>{let local="";try{local=URL.createObjectURL(file)}catch(e){}
-    const im={busy:true,thumb:local,url:local,local};c.imgs.push(im);return {im,file}});
-  c.upN=(c.upN||0)+slots.length;render();
-  let next=0;
-  const run=async()=>{
-    while(next<slots.length){
-      const {im,file}=slots[next++];
-      try{const up=await uploadWork(file);   // the original + feed and grid copies (app-08-images.js)
-        if(c.dead)return;
-        delete im.busy;Object.assign(im,up)}
-      catch(e){if(c.dead)return;const k=c.imgs.indexOf(im);if(k>=0){c.imgs.splice(k,1);c.idx=Math.min(c.idx||0,Math.max(0,c.imgs.length-1))}toast(e.message)}
-      try{if(im.local)URL.revokeObjectURL(im.local)}catch(e){}delete im.local;
-      c.upN--;pcRepaint(c);
-    }
-  };
-  for(let k=0;k<Math.min(PC_UP_AT_ONCE,slots.length);k++)run();
-}
+/* Picking photos (and videos, together): pcAddMixed, app-18-post-mixed. */
 
 /* ── drag a thumbnail to reorder (hold on a phone, drag with a mouse) ──
    2026-10-25 ("rearranging images glitches"): a drag that the phone turns

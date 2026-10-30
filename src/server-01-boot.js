@@ -398,7 +398,7 @@ function shapePost(row, side) {
     mediaH: row.media_h || null,
     /* The rest of the gallery, if there is one. Null for every post ever
        made before this existed — the client falls back to imageUrl. */
-    images: (() => { try { return row.images ? JSON.parse(row.images) : null; } catch { return null; } })(),
+    images: (() => { try { return row.images ? JSON.parse(row.images).map((g) => (g.video ? { ...g, play: videoPlayUrl(g.video) } : g)) : null; } catch { return null; } })(),
     videoUrl: row.video_url || null,
     /* What players load: the light feed copy once it's made (server-12-video). */
     videoPlayUrl: row.video_url ? videoPlayUrl(row.video_url) : null,

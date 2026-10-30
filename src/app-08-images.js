@@ -145,3 +145,8 @@ async function uploadWork(file){
   const [url,thumb,sm]=await Promise.all([upImg(full),upImg(await canvasBlob(tc,copyType,.86)),upImg(await canvasBlob(sc,copyType,.8))]);
   return {url,thumb,sm,w:fw,h:fh,tw:tc.width,sw:sc.width};
 }
+/* a carousel slide: a picture, or a video (2026-10-30) */
+function caroSlide(im,attrs){
+  if(!im.video)return `<img class="caro-i" ${attrs}>`;
+  return `<div class="caro-i caro-vw"><video class="caro-v" src="${esc(im.play||im.video)}#t=0.1" poster="${esc(im.thumb||im.url)}" muted loop playsinline preload="none" data-auto></video><button class="vmute" data-vmute aria-label="Sound">${DI.soundOff}</button></div>`;
+}

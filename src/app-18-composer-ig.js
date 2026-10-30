@@ -106,7 +106,7 @@ function pcAdvWire(){
 /* Preview: the post as the Showroom will show it */
 let PCPREV=null;
 function pcPreviewOpen(c){
-  const now=Date.now(),imgs=c.imgs.map(im=>({url:im.url||im.thumb,thumb:im.thumb||im.url,w:im.w||800,h:im.h||1000}));
+  const now=Date.now(),imgs=c.imgs.map(im=>({url:im.url||im.thumb,thumb:im.thumb||im.url,w:im.w||800,h:im.h||1000,video:im.video}));
   PCPREV={id:-1,author:{...ME,level:levelFor(ME.rep).id},body:c.body||"",createdAt:now,images:imgs.length>1?imgs:null,imageUrl:imgs[0]?imgs[0].url:null,thumbUrl:imgs[0]?imgs[0].thumb:null,
     mediaW:imgs[0]?imgs[0].w:null,mediaH:imgs[0]?imgs[0].h:null,videoUrl:c.vid?c.vid.url:null,videoPlayUrl:c.vid?c.vid.url:null,audioTrack:c.track||null,
     isWork:true,likeCount:0,commentCount:0,likedByMe:false,collaborators:[],tags:(c.tags||[]).map(u=>u.username),location:c.location||"",products:[],channel:c.ch?c.ch.id:"profile",hideLikes:!!c.hideLikes};

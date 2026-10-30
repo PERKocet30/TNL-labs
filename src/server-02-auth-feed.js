@@ -267,7 +267,8 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
   const beat = null;   // loops are gone from LABS (2026-10-28): a "beat" in the request is ignored
   // Media must be a file uploaded here — never someone else's URL.
   const up = (v) => (typeof v === "string" && /^\/uploads\/[A-Za-z0-9._-]+$/.test(v) ? v : null);
-  const imageUrl = up(req.body?.imageUrl), videoUrl = up(req.body?.videoUrl), thumbUrl = up(req.body?.thumbUrl);
+  let mw = mediaW, mh = mediaH;
+  let imageUrl = up(req.body?.imageUrl), videoUrl = up(req.body?.videoUrl), thumbUrl = up(req.body?.thumbUrl);
 
   /* Music rides on the post — the id must point at a real library track
      (Instagram model: pick a sound from the catalog, never a raw file). */
@@ -293,9 +294,12 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
         const g = { url: i.url, thumb: own(i.thumb) || i.url, w: px(i.w), h: px(i.h) };
         if (own(i.thumb) && px(i.tw)) g.tw = px(i.tw);
         if (own(i.sm) && px(i.sw)) { g.sm = own(i.sm); g.sw = px(i.sw); }
+        if (own(i.video)) g.video = own(i.video);   // a video slide (2026-10-30): url/thumb are its still frame
         return g;
       })
     : [];
+  /* One slide left and it's a video: that's a video post, its frame the cover. */
+  if (gallery.length === 1 && gallery[0].video && !videoUrl) { const v = gallery.pop(); videoUrl = v.video; thumbUrl = v.url; mw = v.w; mh = v.h; }
   const first = gallery[0];
 
   if (!body?.trim() && !beat && !imageUrl && !videoUrl && !first) return res.status(400).json({ error: "empty post" });
@@ -306,7 +310,7 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
     beat ? JSON.stringify(beat) : null,
     (first ? first.url : imageUrl) || null, videoUrl || null,
     (first ? first.thumb : thumbUrl) || null,
-    Number(first ? first.w : mediaW) || null, Number(first ? first.h : mediaH) || null,
+    Number(first ? first.w : mw) || null, Number(first ? first.h : mh) || null,
     work, null,
     /* Kept for one picture too since 2026-10-07: it carries the copies'
        widths. The client still only makes a carousel from 2 or more. */
@@ -316,7 +320,7 @@ app.post("/api/posts", auth, verified, rateLimit({ max: 20, windowMs: 60000, key
   );
   if (astart) db.prepare(`UPDATE posts SET audio_start = ? WHERE id = ?`).run(astart, Number(info.lastInsertRowid));   // which part of the song
   applyExtras(Number(info.lastInsertRowid), req.body, req.user.id);   // tags, place, comments off
-  if (videoUrl) queueFeedVideo(videoUrl);   // a light copy for the feed, in the background
+  for (const v of [videoUrl, ...gallery.map((g) => g.video)]) if (v) queueFeedVideo(v);   // a light copy for the feed, in the background
   const row = feedRows({ authorId: req.user.id, viewerId: req.user.id, limit: 1 })
     .find((r) => r.id === Number(info.lastInsertRowid));
   /* A reply in a lab quotes a message from the same room. */
