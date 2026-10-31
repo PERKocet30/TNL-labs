@@ -1,0 +1,71 @@
+/* PLACES v1.5 — 2026-10-28 ("Led by" under the pitch) · v1.4 — 2026-10-21 (month markers, Older) · v1.3 — 2026-10-12 (v1.3: the Tournament chip and Entry marks, at the end). v1.2 — 2026-10-09 ("For you" / "More labs" on the index). Labs as places: the index (one list, each
+   genre with its #tags), a lab's Work · Talk tabs, the #tag page, and #tags
+   in text. Square grid, underline tabs, pills — in TNL's white, black
+   and green. Logic: app/labs/places.js. */
+
+/* ── the index: one list, each genre with its #tags (v1.1) ── */
+.lx-name .lx-new{margin-left:8px;vertical-align:3px}
+.lx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.lx-tag{border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--tx);padding:4px 10px;font-family:inherit;font-size:12px;line-height:16px;font-weight:700;cursor:pointer}
+.lx-tag:active{background:var(--el)}
+
+.lx-sec{grid-column:1/-1;padding:18px 0 8px;font-size:13px;line-height:18px;font-weight:700;color:var(--tx)}
+.lx-sec span{font-weight:400;color:var(--dim)}
+.lx-sec:first-child{padding-top:2px}
+
+/* ── inside a lab: Work · Talk, underlined like a profile ── */
+.pl-tabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px}
+.pl-tab{flex:1;position:relative;background:none;border:0;padding:12px 4px 11px;font-family:inherit;font-size:14px;line-height:18px;font-weight:700;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.pl-tab.on{color:var(--tx);border-bottom-color:var(--tx)}
+.pl-tab .lr-dot{position:absolute;top:10px;margin-left:4px}
+.pl-body{flex:1;display:flex;flex-direction:column;min-height:0}
+.pl-scroll{flex:1;overflow-y:auto;padding-bottom:110px}
+.pl-for{margin:0;padding:14px 16px 4px;font-size:15px;line-height:20px;font-weight:700}
+
+/* tags: a scrolling row of pills; .wrap lets them wrap */
+.pl-tags{display:flex;gap:6px;overflow-x:auto;padding:6px 16px 12px;scrollbar-width:none}
+.pl-tags::-webkit-scrollbar{display:none}
+.pl-tags.wrap{flex-wrap:wrap;overflow:visible;padding:0}
+.pl-chip{flex:none;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 13px;border-radius:999px;border:1px solid var(--line2);background:var(--card);color:var(--tx);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.pl-chip span{font-weight:400;color:var(--dim);font-variant-numeric:tabular-nums}
+.pl-chip.on{background:var(--tx);border-color:var(--tx);color:var(--bg)}
+.pl-chip.on span{color:var(--bg)}
+.pl-link{display:block;background:none;border:0;padding:4px 16px 12px;font-family:inherit;font-size:13px;color:var(--tx);text-decoration:underline;cursor:pointer;text-align:left}
+.pl-link svg{width:14px;height:14px;vertical-align:-2px}
+.pl-back{padding-top:10px;text-decoration:none;font-weight:700}
+
+/* the work: a tight square grid, like a profile */
+.pl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.pl-tile{position:relative;display:block;aspect-ratio:4/5;padding:0;border:0;background:var(--el);overflow:hidden;cursor:pointer}
+.pl-tile img{display:block;width:100%;height:100%;object-fit:cover}
+.pl-txt{display:block;height:100%;padding:10px;font-size:12px;line-height:16px;text-align:left;color:var(--tx);overflow:hidden}
+.pl-multi{position:absolute;top:7px;right:7px;width:11px;height:11px;border:2px solid var(--bg);box-shadow:3px -3px 0 -1px var(--bg)}
+.pl-vid{position:absolute;top:6px;right:6px;display:flex;color:var(--bg)}
+.pl-vid svg{width:16px;height:16px}
+@media(min-width:720px){.pl-grid{gap:4px}}
+
+/* the #tag page */
+.pl-tagpage{padding-bottom:110px}
+.pl-tagh{padding:4px 16px 14px;font-size:14px;line-height:20px}
+.pl-tagh b{font-size:17px}
+.pl-tagh .pl-tags{margin-top:10px}
+
+/* #tags in any text, and in the caption's suggestions */
+.htag{font-weight:700;color:var(--tx);cursor:pointer}
+.pc-trow .pc-hash{flex:none;width:32px;height:32px;border-radius:50%;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-weight:700}
+
+/* 2026-10-12: the tournament in its lab — a chip with every entry, and each entry marked. */
+.pl-chip.ev::before{content:"";width:8px;height:8px;background:var(--accent-fill)}
+.pl-chip.ev.on{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
+.pl-chip.ev.on::before{background:var(--on-accent)}
+.pl-chip.ev.on span{color:var(--on-accent)}
+.pl-entry{position:absolute;left:6px;bottom:6px;padding:3px 7px;border-radius:999px;background:var(--accent-fill);color:var(--on-accent);font-size:10px;line-height:12px;font-weight:700;font-style:normal;letter-spacing:.05em;text-transform:uppercase}
+
+/* 2026-10-21: the grid as the archive */
+.pl-month{grid-column:1/-1;padding:14px 4px 6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.pl-older{display:block;width:100%;text-align:center;padding:14px}
+.pl-leads{margin:0;padding:2px 16px 4px;font-size:13px;line-height:18px;color:var(--dim)}
+.pl-lead{background:none;border:0;padding:0;font:inherit;color:var(--tx);font-weight:600;cursor:pointer}
+/* a Lead's profile line (app/profile/profile) */
+.pig-lead{color:var(--dim);font-size:13px;margin:0 0 4px}
+.pig-lead button{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--tx);cursor:pointer}

@@ -1,6 +1,6 @@
 /* LABS admin — MODS v1.0 — 2026-10-28. Loads right after 1-core.js.
    Two kinds of admin: the owner (everything) and Mods (a tier below,
-   server-04-admin-0-mods.js). This page only decides what to SHOW a Mod —
+   server/admin/mods.js). This page only decides what to SHOW a Mod —
    the server is what actually stops them; hiding a button is not access
    control. A Mod sees Home · Orders · Listings · Sellers · Members ·
    Content · Events · Analytics. Instagram (the inbox), Health, Systems and

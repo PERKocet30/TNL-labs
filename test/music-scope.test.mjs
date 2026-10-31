@@ -1,6 +1,6 @@
 // Music scope v1.1 (2026-09-29): the lab player stays in the labs; a post's
 // sound plays anywhere, but only while you're on the post. Runs the real
-// player scope code (lifted from src/app-13-player.js and app-18-media.js)
+// player scope code (lifted from src/app/music/player.js and app/media/media.js)
 // against a stubbed audio element and app state.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -9,8 +9,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
-const player = readFileSync(join(ROOT, "src/app-13-player.js"), "utf8");
-const media = readFileSync(join(ROOT, "src/app-18-media.js"), "utf8");
+const player = readFileSync(join(ROOT, "src/app/music/player.js"), "utf8");
+const media = readFileSync(join(ROOT, "src/app/media/media.js"), "utf8");
 const grab = (src, name) => { const i = src.indexOf("function " + name + "("); let d = 0, j = src.indexOf("{", i);
   for (let k = j; k < src.length; k++) { if (src[k] === "{") d++; else if (src[k] === "}" && --d === 0) return src.slice(i, k + 1); } };
 

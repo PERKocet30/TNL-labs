@@ -46,13 +46,13 @@ t("the logo comes from the link's own site", v.html.includes('src="https://labs.
 
 console.log("\nNO OLD STYLE LEFT ANYWHERE THE SERVER BUILDS HTML");
 const src = (f) => readFileSync(new URL("../src/" + f, import.meta.url), "utf8");
-const serverParts = readdirSync(new URL("../src/", import.meta.url)).filter((f) => /^server-\d.*\.js$/.test(f));
+const serverParts = (await import("../src/server/order.mjs")).SERVER.map((f) => "server/" + f);
 const old = serverParts.filter((f) => /font-family:monospace|TNLLABS &#129514;|border-radius:9px/.test(src(f)));
 t("no monospace, emoji wordmark or old buttons in any server part" + (old.length ? " (" + old.join(", ") + ")" : ""), !old.length);
 t("mail.js has none either", !/font-family:monospace|&#129514;|border-radius:9px|#0A0A0A/.test(src("mail.js")));
 t("every alert goes through the shared layout", /send\(to, subject, alertEmail\(/.test(src("mail.js")));
-const pages = serverParts.filter((f) => /<!doctype html>/i.test(src(f)) && f !== "server-01-look.js");
+const pages = serverParts.filter((f) => /<!doctype html>/i.test(src(f)) && f !== "server/core/look.js");
 t("no server page builds its own <!doctype> — they all use lookPage()" + (pages.length ? " (" + pages.join(", ") + ")" : ""), !pages.length);
-t("the app's crash screen follows the theme", !/color:#fff|monospace/.test(src("app-06-body.html").slice(0, 4000)));
+t("the app's crash screen follows the theme", !/color:#fff|monospace/.test(src("app/shell/body.html").slice(0, 4000)));
 
 console.log(`\n  ${pass} passed, ${fail} failed`);

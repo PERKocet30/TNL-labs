@@ -226,7 +226,7 @@ export async function sendAlertEmail(to, subject, heading, lines, url) {
   return send(to, subject, alertEmail(heading, lines, url), `${subject} — ${lines.join(" / ")}`);
 }
 
-/** The week, to the admin (server-10-weekly.js, 2026-10-26): section headings
+/** The week, to the admin (server/admin/weekly.js, 2026-10-26): section headings
     as their own lines, the rest as sentences — same layout as every email. */
 export function weeklyEmail(subject, lines, url) {
   return renderEmail({
@@ -238,8 +238,8 @@ export async function sendWeeklyEmail(to, subject, lines, url) {
   return send(to, subject, weeklyEmail(subject, lines, url), `${subject} — ${lines.length} lines`);
 }
 
-/** Someone was made a Mod or a Lab Lead (2026-10-28) — server-04-admin-0-mods.js
-    and server-10-leads.js send it the moment it happens, once per new role. */
+/** Someone was made a Mod or a Lab Lead (2026-10-28) — server/admin/mods.js
+    and server/labs/leads.js send it the moment it happens, once per new role. */
 export function roleEmail({ name, role, lab, by, url }) {
   const hi = name ? name + ", " : "";
   if (role === "mod") return renderEmail({

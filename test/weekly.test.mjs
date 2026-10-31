@@ -39,7 +39,7 @@ for (const u of [n1, n2, n3, o1, o2, boss]) db.prepare(`INSERT INTO listing_view
 db.prepare(`INSERT INTO listing_views (listing_id, user_id, viewed_at) VALUES (?,?,?)`).run(tee, n1, now - 1 * D);
 db.prepare(`INSERT INTO orders (listing_id, buyer_id, seller_id, amount_cents, shipping_cents, status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)`).run(tee, n1, boss, 4500, 800, "paid", now - 1 * D, now - 1 * D);
 db.prepare(`INSERT INTO error_log (kind, message, path, created_at) VALUES (?,?,?,?)`).run("server", "boom at /api/x", "/api/x", now - 1 * D);
-db.exec(`CREATE TABLE IF NOT EXISTS glitch_events (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, place TEXT NOT NULL DEFAULT '', detail TEXT NOT NULL DEFAULT '', device TEXT NOT NULL DEFAULT '', username TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL)`);   // the server makes it at boot (server-10-glitch.js); here it's seeded first
+db.exec(`CREATE TABLE IF NOT EXISTS glitch_events (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, place TEXT NOT NULL DEFAULT '', detail TEXT NOT NULL DEFAULT '', device TEXT NOT NULL DEFAULT '', username TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL)`);   // the server makes it at boot (server/core/glitch.js); here it's seeded first
 for (let i = 0; i < 3; i++) db.prepare(`INSERT INTO glitch_events (kind, place, detail, created_at) VALUES (?,?,?,?)`).run("rage_tap", "showroom", "#post", now - 1 * D);
 db.close();
 let pass = 0, fail = 0;
@@ -97,7 +97,7 @@ try {
   console.log("\nSENDING");
   const s = await (await get("/api/admin/weekly/send", "boss", "POST")).json();
   t("send-now goes to the admin's own address; with no mail key it says so instead of failing", s.sent === false && s.reason === "no_key");
-  const src = readFileSync(join(ROOT, "src/server-10-weekly.js"), "utf8"), mail = readFileSync(join(ROOT, "src/mail.js"), "utf8");
+  const src = readFileSync(join(ROOT, "src/server/admin/weekly.js"), "utf8"), mail = readFileSync(join(ROOT, "src/mail.js"), "utf8");
   t("the schedule: Monday 13:00 UTC, once a week, and the first run right away", /getUTCDay\(\) === 1 && d\.getUTCHours\(\) >= 13/.test(src) && /!prev \|\|/.test(src));
   t("the email uses the one LABS layout", /export function weeklyEmail/.test(mail) && /renderEmail\(/.test(mail.split("export function weeklyEmail")[1]));
   t("the email's title is the three numbers, its button opens Systems, plurals read right",

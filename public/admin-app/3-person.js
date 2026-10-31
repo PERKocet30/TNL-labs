@@ -154,7 +154,7 @@ function wirePerson(el) {
     }
     if (a === "signout") { if (!(await confirmIt(`Sign @${u} out everywhere?`, "Every device they're signed in on. They can sign straight back in.", { ok: "Sign out" }))) return;
       return act(() => req("/api/admin/people/" + encodeURIComponent(u) + "/signout", { method: "POST" }), (r) => `Signed out of ${r.sessions} device${r.sessions === 1 ? "" : "s"}`).then(refreshPerson); }
-    if (a === "delete") {   // 2026-10-19 (server-11-delete-account.js)
+    if (a === "delete") {   // 2026-10-19 (server/auth/delete-account.js)
       const t = await promptIt(`Delete @${u} for good?`, { body: "Their work, comments, messages and follows go with it. This can't be undone. Type their username to confirm.", placeholder: u, ok: "Delete" });
       if (t == null) return;
       if (t.trim().replace(/^@/, "").toLowerCase() !== u.toLowerCase()) return toast("The username didn't match — nothing was deleted");

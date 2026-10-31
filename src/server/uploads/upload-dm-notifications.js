@@ -1,0 +1,421 @@
+/* ================================================================
+   UPLOAD (v1.1 2026-10-28: a lab's Lead or a Mod can take down comments in that lab — mayTakeDown, server/labs/leads.js)
+   Two paths, deliberately:
+
+   /api/upload        — small stuff (avatars, beat audio) as base64 JSON.
+                        Convenient, capped low, memory-safe.
+   /api/upload/stream — everything real. The raw file is the request body
+                        and gets piped to disk in chunks, so memory stays
+                        FLAT no matter how big the file is. This is what
+                        makes 650MB video possible at all: the old base64
+                        path held ~1.5GB in RAM for a 650MB clip and would
+                        take the container down.
+
+   We still sniff magic bytes — but from the FIRST CHUNK, before we agree
+   to write the rest. A liar gets one chunk, not a whole file.
+================================================================ */
+const MAGIC = [
+  { ext: "jpg", kind: "image", bytes: [0xff, 0xd8, 0xff] },
+  { ext: "png", kind: "image", bytes: [0x89, 0x50, 0x4e, 0x47] },
+  { ext: "gif", kind: "image", bytes: [0x47, 0x49, 0x46, 0x38] },
+  { ext: "webp", kind: "image", bytes: [0x52, 0x49, 0x46, 0x46] }, // RIFF....WEBP
+];
+function sniff(buf) {
+  for (const m of MAGIC) {
+    if (m.bytes.every((b, i) => buf[i] === b)) {
+      if (m.ext === "webp" && buf.slice(8, 12).toString("ascii") !== "WEBP") continue;
+      if (m.ext === "webp" && buf.slice(8, 12).toString("ascii") === "WAVE") continue;
+      return m;
+    }
+  }
+  if (buf.slice(0, 4).toString("ascii") === "RIFF" && buf.slice(8, 12).toString("ascii") === "WAVE") {
+    return { ext: "wav", kind: "audio" };
+  }
+  /* AIFF is Logic's native format — a Mac producer's kit is full of them,
+     and rejecting it would make the sound library useless to half of them.
+     FLAC turns up in sample packs. */
+  if (buf.slice(0, 4).toString("ascii") === "FORM" && /^AIF[FC]$/.test(buf.slice(8, 12).toString("ascii"))) {
+    return { ext: "aiff", kind: "audio" };
+  }
+  if (buf.slice(0, 4).toString("ascii") === "fLaC") return { ext: "flac", kind: "audio" };
+  if (buf.slice(0, 3).toString("ascii") === "ID3") return { ext: "mp3", kind: "audio" };
+  if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return { ext: "mp3", kind: "audio" };
+  if (buf.slice(0, 4).toString("ascii") === "OggS") return { ext: "ogg", kind: "audio" };
+  const brand = buf.slice(4, 8).toString("ascii");
+  if (brand === "ftyp") {
+    const sub = buf.slice(8, 12).toString("ascii");
+    if (/^M4A/.test(sub)) return { ext: "m4a", kind: "audio" };
+    if (/^(qt| )/.test(sub)) return { ext: "mov", kind: "video" };
+    return { ext: "mp4", kind: "video" };
+  }
+  if (buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3) {
+    return { ext: "webm", kind: "video" };
+  }
+  return null;
+}
+
+/* Instagram: 650MB Reels, 30MB photos. We match on video and beat them on
+   images, because a designer's poster is the whole point here. */
+const LIMITS = { image: 30 * 1024 * 1024, video: 650 * 1024 * 1024, audio: 100 * 1024 * 1024 };
+const B64_LIMIT = 8 * 1024 * 1024; // the JSON path stays small on purpose
+
+/* 10 photos = 30 files now (original + feed + grid copies). */
+/* Uploads still coming in — a deploy waits for these before it stops the
+   old server (the SIGTERM handler in server/profile/social-meta). */
+let UPLOADS_IN_FLIGHT = 0;
+app.post("/api/upload/stream", auth, verified, rateLimit({ max: 120, windowMs: 300000, key: "user" }), (req, res) => {
+  UPLOADS_IN_FLIGHT++;
+  res.once("close", () => { UPLOADS_IN_FLIGHT--; });
+  const declared = Number(req.get("content-length") || 0);
+  if (declared > LIMITS.video) {
+    return res.status(413).json({ error: `That file's too big — ${LIMITS.video / 1048576}MB max` });
+  }
+
+  const tmp = join(UPLOAD_DIR, `.part-${randomBytes(10).toString("hex")}`);
+  const out = createWriteStream(tmp);
+  let head = Buffer.alloc(0), type = null, written = 0, done = false;
+
+  const fail = (code, msg) => {
+    if (done) return; done = true;
+    req.unpipe?.(out);
+    out.destroy();
+    rm(tmp, { force: true }, () => {});
+    if (!res.headersSent) res.status(code).json({ error: msg });
+    req.destroy();
+  };
+
+  req.on("data", (chunk) => {
+    if (done) return;
+    written += chunk.length;
+    if (written > LIMITS.video) return fail(413, "file too big");
+
+    // decide what this is from the first 16 bytes, then hold it to that limit
+    if (!type) {
+      head = Buffer.concat([head, chunk]);
+      if (head.length < 16) return;
+      type = sniff(head);
+      if (!type) return fail(400, "unsupported file type");
+      if (written > LIMITS[type.kind]) {
+        return fail(413, `That ${type.kind} is too big — ${LIMITS[type.kind] / 1048576}MB max`);
+      }
+    } else if (written > LIMITS[type.kind]) {
+      return fail(413, `That ${type.kind} is too big — ${LIMITS[type.kind] / 1048576}MB max`);
+    }
+  });
+
+  req.pipe(out);
+
+  req.on("aborted", () => fail(499, "upload cancelled"));
+  out.on("error", () => fail(500, "write failed"));
+
+  out.on("finish", () => {
+    if (done) return;
+    if (!type) { done = true; rm(tmp, { force: true }, () => {}); return res.status(400).json({ error: "empty file" }); }
+    done = true;
+    const name = `${Date.now()}-${randomBytes(8).toString("hex")}.${type.ext}`;
+    const land = () => rename(tmp, join(UPLOAD_DIR, name), (err) => {
+      if (err) return res.status(500).json({ error: "couldn't save" });
+      if (type.kind !== "video") return res.json({ url: `/uploads/${name}`, kind: type.kind, bytes: written });
+      videoPoster(name, (poster) => res.json({ url: `/uploads/${name}`, kind: type.kind, bytes: written, poster }));
+    });
+    if (type.kind === "video" && /^(mov|mp4|m4v)$/.test(type.ext)) videoFaststart(tmp, type.ext, land);
+    else land();
+  });
+});
+
+/* ── A video that shows up at once (2026-10-08) ─────────────────────
+   An iPhone writes a .mov with its index (the "moov") at the END, so a
+   phone has to fetch the tail of a 50MB file before it can show frame
+   one — on a weak signal the post sat as a grey box. Rewrite it with the
+   index first: the same streams copied byte for byte (no re-encode, same
+   quality, same container and codec tags, so HEVC still plays), about a
+   second for a big clip. And pull a cover from 1s in, used when the
+   poster doesn't pick one. Either step failing leaves the upload as it
+   was — never worse than before. */
+function videoFaststart(tmp, ext, done) {
+  if (!FFMPEG) return done();
+  const out = `${tmp}.fs.${ext}`;
+  execFile(FFMPEG, ["-nostdin", "-y", "-i", tmp, "-map", "0", "-c", "copy", "-movflags", "+faststart", "-f", ext === "mov" ? "mov" : "mp4", out],
+    { timeout: 180000, maxBuffer: 1024 * 1024 }, (err) => {
+      if (err) { rm(out, { force: true }, () => {}); return done(); }
+      rename(out, tmp, (e) => { if (e) rm(out, { force: true }, () => {}); done(); });
+    });
+}
+function videoPoster(name, done) {
+  if (!FFMPEG) return done(null);
+  const jpg = name.replace(/\.[^.]+$/, "") + "-poster.jpg";
+  const grab = (at, next) => execFile(FFMPEG, ["-nostdin", "-y", ...(at ? ["-ss", at] : []), "-i", join(UPLOAD_DIR, name),
+    "-frames:v", "1", "-vf", "scale='min(1080,iw)':-2", "-q:v", "3", join(UPLOAD_DIR, jpg)],
+    { timeout: 60000, maxBuffer: 1024 * 1024 }, (err) => (err || !existsSync(join(UPLOAD_DIR, jpg)) ? next() : done(`/uploads/${jpg}`)));
+  grab("1", () => grab(null, () => done(null)));   // a clip under a second: its first frame
+}
+
+app.post("/api/upload", auth, verified, rateLimit({ max: 30, windowMs: 300000, key: "user" }), (req, res) => {
+  const { data } = req.body || {};
+  if (typeof data !== "string") return res.status(400).json({ error: "no file data" });
+  const m = /^data:(image|video|audio)\/[a-z0-9+.-]+;base64,(.+)$/i.exec(data);
+  if (!m) return res.status(400).json({ error: "not a base64 image, video or audio file" });
+
+  let buf;
+  try { buf = Buffer.from(m[2], "base64"); }
+  catch { return res.status(400).json({ error: "bad encoding" }); }
+
+  const type = sniff(buf);
+  if (!type) return res.status(400).json({ error: "unsupported file type" });
+  if (buf.length > B64_LIMIT) {
+    return res.status(413).json({ error: "too big for this route — use the streaming upload" });
+  }
+
+  const name = `${Date.now()}-${randomBytes(8).toString("hex")}.${type.ext}`;
+  writeFileSync(join(UPLOAD_DIR, name), buf);
+  res.json({ url: `/uploads/${name}`, kind: type.kind });
+});
+
+/* Profile picture — same validation, images only, kept square-ish by the client. */
+app.post("/api/me/avatar", auth, (req, res) => {
+  const { data } = req.body || {};
+  if (typeof data !== "string") return res.status(400).json({ error: "no image" });
+  const m = /^data:image\/[a-z0-9+.-]+;base64,(.+)$/i.exec(data);
+  if (!m) return res.status(400).json({ error: "not an image" });
+  let buf;
+  try { buf = Buffer.from(m[1], "base64"); } catch { return res.status(400).json({ error: "bad encoding" }); }
+  const type = sniff(buf);
+  if (!type || type.kind !== "image") return res.status(400).json({ error: "unsupported image type" });
+  if (buf.length > 4 * 1024 * 1024) return res.status(413).json({ error: "avatar too large (4MB max)" });
+  const name = `av-${req.user.id}-${randomBytes(6).toString("hex")}.${type.ext}`;
+  writeFileSync(join(UPLOAD_DIR, name), buf);
+  db.prepare(`UPDATE users SET avatar_url = ? WHERE id = ?`).run(`/uploads/${name}`, req.user.id);
+  res.json({ user: publicUser(q.userById.get(req.user.id)) });
+});
+
+/* Edit your own message. Body only — you can't swap the media out from
+   under people who already validated it. Marked as edited. */
+app.patch("/api/posts/:id", auth, (req, res) => {
+  const post = q.postById.get(Number(req.params.id));
+  if (!post) return res.status(404).json({ error: "no post" });
+  if (post.author_id !== req.user.id) return res.status(403).json({ error: "not your post" });
+  const body = (req.body?.body ?? "").toString().trim();
+  if (!body && !post.image_url && !post.video_url && !post.beat_json) {
+    return res.status(400).json({ error: "post can't be empty" });
+  }
+  db.prepare(`UPDATE posts SET body = ?, edited_at = ?, link_json = NULL WHERE id = ?`).run(body, Date.now(), post.id);
+  if (req.body?.full === true) editPostFull(post, req.body, req.user.id);   // the post maker's Edit info (server/posts/extras, 2026-10-29)
+  const row = feedRows({ postId: post.id, viewerId: req.user.id, limit: 1 })[0];
+  const shaped = shapePost(row);
+  broadcast("post-edit", shaped);
+  if (!post.image_url && !post.video_url && !post.beat_json) previewLater("post", post.id, body);
+  res.json({ post: shaped });
+});
+
+app.delete("/api/posts/:id", auth, (req, res) => {
+  const post = q.postById.get(Number(req.params.id));
+  if (!post) return res.status(404).json({ error: "no post" });
+  if (post.author_id !== req.user.id) return res.status(403).json({ error: "not your post" });
+  db.prepare(`DELETE FROM posts WHERE id = ?`).run(post.id);
+  db.prepare(`DELETE FROM reactions WHERE kind = 'post' AND target_id = ?`).run(post.id);
+  broadcast("post-delete", { id: post.id });
+  res.json({ ok: true });
+});
+
+/* /api/posts/:id/work removed in 063. A post is a post by origin (060);
+   there is nothing to promote or demote, and leaving the endpoint up
+   meant lab chat could still reach the Showroom via curl. */
+/* ================================================================
+   COMMENTS — where feedback lives. This is the workshop conversation.
+================================================================ */
+app.get("/api/posts/:id/comments", maybeAuth, (req, res) => {
+  const rows = db.prepare(`
+    SELECT c.id, c.body, c.created_at, c.edited_at,
+           u.username, u.display_name, u.avatar_url, u.role, u.rep, u.accent
+    FROM comments c JOIN users u ON u.id = c.author_id
+    WHERE c.post_id = ? ORDER BY c.created_at ASC LIMIT 200`).all(Number(req.params.id));
+  const hidden = req.user ? blockedIds(req.user.id) : new Set();
+  res.json({
+    comments: rows.filter((r) => !hidden.has(r.username)).map((r) => ({
+      id: r.id, body: r.body, createdAt: r.created_at, editedAt: r.edited_at,
+      author: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", role: r.role, level: levelFor(r.rep).id, accentHex: accentHex(r.accent) },
+    })),
+  });
+});
+
+app.post("/api/posts/:id/comments", auth, verified, rateLimit({ max: 20, windowMs: 60000, key: "user" }), (req, res) => {
+  const post = q.postById.get(Number(req.params.id));
+  if (!post) return res.status(404).json({ error: "no post" });
+  if (commentsOff(post)) return res.status(403).json({ error: "Comments are off on this post" });
+  const body = (req.body?.body || "").toString().trim();
+  if (!body) return res.status(400).json({ error: "empty comment" });
+  if (body.length > 1000) return res.status(400).json({ error: "comment too long" });
+  const info = db.prepare(`INSERT INTO comments (post_id, author_id, body, created_at) VALUES (?,?,?,?)`)
+    .run(post.id, req.user.id, body, Date.now());
+  notify(post.author_id, req.user.id, "comment", post.id, body.slice(0, 80));
+  notifyMentions(body, req.user.id, post.id, "mention");
+  broadcast("comment", { postId: post.id });
+  res.json({ id: Number(info.lastInsertRowid) });
+});
+
+app.patch("/api/comments/:id", auth, (req, res) => {
+  const c = db.prepare(`SELECT * FROM comments WHERE id = ?`).get(Number(req.params.id));
+  if (!c) return res.status(404).json({ error: "no comment" });
+  if (c.author_id !== req.user.id) return res.status(403).json({ error: "not yours" });
+  const body = (req.body?.body || "").toString().trim();
+  if (!body) return res.status(400).json({ error: "empty" });
+  db.prepare(`UPDATE comments SET body = ?, edited_at = ? WHERE id = ?`).run(body, Date.now(), c.id);
+  broadcast("comment", { postId: c.post_id });
+  res.json({ ok: true });
+});
+
+app.delete("/api/comments/:id", auth, (req, res) => {
+  const c = db.prepare(`SELECT * FROM comments WHERE id = ?`).get(Number(req.params.id));
+  if (!c) return res.status(404).json({ error: "no comment" });
+  const post = q.postById.get(c.post_id);
+  const allowed = c.author_id === req.user.id || post?.author_id === req.user.id || req.user.is_admin || mayTakeDown(req.user, post, c.author_id);
+  if (!allowed) return res.status(403).json({ error: "not yours" });
+  db.prepare(`DELETE FROM comments WHERE id = ?`).run(c.id);
+  broadcast("comment", { postId: c.post_id });
+  res.json({ ok: true });
+});
+
+/* ================================================================
+   NOTIFICATIONS
+================================================================ */
+app.get("/api/notifications", auth, (req, res) => {
+  /* 2026-10-12: each row carries the picture of what it's
+     about (the post, or the listing's first photo), the listing it points
+     at, and whether you follow the person back. */
+  const rows = db.prepare(`
+    SELECT n.id, n.kind, n.body, n.post_id, n.listing_id, n.read_at, n.created_at,
+           u.username, u.display_name, u.avatar_url, u.id AS actor_id, u.accent AS actor_accent,
+           COALESCE(p.thumb_url, p.image_url) AS post_thumb, l.images AS listing_images,
+           (SELECT 1 FROM follows f WHERE f.follower_id = n.user_id AND f.followee_id = n.actor_id) AS you_follow
+    FROM notifications n LEFT JOIN users u ON u.id = n.actor_id
+    LEFT JOIN posts p ON p.id = n.post_id LEFT JOIN listings l ON l.id = n.listing_id
+    WHERE n.user_id = ? ORDER BY n.created_at DESC LIMIT 80`).all(req.user.id);
+  const unread = db.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND read_at IS NULL`).get(req.user.id).n;
+  const first = (j) => { try { const a = JSON.parse(j || "[]"); return a[0] || null; } catch { return null; } };
+  res.json({
+    unread,
+    notifications: rows.map((r) => ({
+      id: r.id, kind: r.kind, body: r.body, postId: r.post_id, listingId: r.listing_id || null, read: !!r.read_at, createdAt: r.created_at,
+      thumb: r.post_thumb || first(r.listing_images) || null,
+      actor: r.username ? { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", youFollow: !!r.you_follow, accentHex: accentHex(r.actor_accent) } : null,
+    })),
+  });
+});
+
+app.post("/api/notifications/read", auth, (req, res) => {
+  db.prepare(`UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL`).run(Date.now(), req.user.id);
+  res.json({ ok: true });
+});
+
+/* ================================================================
+   DIRECT MESSAGES — moved to server/messages/*.js in messaging v2
+   (groups, requests, replies, reactions…). The block checks stay here:
+   the whole app uses them.
+================================================================ */
+function blockedIds(userId) {
+  // usernames this person shouldn't see (they blocked, or were blocked by)
+  const rows = db.prepare(`
+    SELECT u.username FROM blocks b JOIN users u ON u.id = b.blocked_id WHERE b.blocker_id = ?
+    UNION
+    SELECT u.username FROM blocks b JOIN users u ON u.id = b.blocker_id WHERE b.blocked_id = ?`).all(userId, userId);
+  return new Set(rows.map((r) => r.username));
+}
+function isBlocked(aId, bId) {
+  return !!db.prepare(
+    `SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)`
+  ).get(aId, bId, bId, aId);
+}
+
+/* ================================================================
+   PASSWORD RESET
+================================================================ */
+app.post("/api/auth/forgot", rateLimit({ max: 5, windowMs: 900000 }), rateLimitBy((req) => req.body?.email, { max: 5, windowMs: 3600000 }), async (req, res) => {
+  const email = (req.body?.email || "").toString().trim();
+  const user = usersByEmail(email)[0];
+  // Always answer the same way — otherwise this endpoint tells strangers
+  // which emails have accounts.
+  if (!user) return res.json({ ok: true });
+  db.prepare(`DELETE FROM reset_tokens WHERE user_id = ?`).run(user.id);
+  const token = randomBytes(24).toString("hex");
+  db.prepare(`INSERT INTO reset_tokens (token, user_id, expires_at, created_at) VALUES (?,?,?,?)`)
+    .run(token, user.id, Date.now() + 3600000, Date.now());
+  const url = `${baseUrl(req)}/reset?token=${token}`;
+  const mail = await sendResetEmail(user.email, user.display_name, url);
+  // Same answer as "no such account" unless this is a laptop with no mail (server/core/guard).
+  res.json(mailLinkOk(mail) ? { ok: true, resetUrl: url } : { ok: true });
+});
+
+app.get("/reset", (req, res) => {
+  const token = String(req.query.token || "");
+  res.send(lookPage({
+    title: "New password — LABS", center: true,
+    body: `${lookEyebrow("Account")}
+${lookIcon("lock")}
+<h1>New password</h1>
+<p class="p">At least 8 characters, with a letter and a number.</p>
+<input class="in" id="p" type="password" placeholder="New password" autocomplete="new-password">
+<div class="msg" id="m"></div>
+<button class="btn block" id="go" style="margin-top:0">Set password</button>
+<script>
+document.getElementById("go").onclick=async()=>{
+  const p=document.getElementById("p").value,m=document.getElementById("m");
+  m.className="msg";
+  if(p.length<8||!/[a-z]/i.test(p)||!/[0-9]/.test(p)){m.textContent="At least 8 characters, with a letter and a number.";return}
+  const r=await fetch("/api/auth/reset",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({token:${JSON.stringify(token).replace(/</g, "\\u003c")},password:p})});
+  const d=await r.json();
+  if(!r.ok){m.textContent=d.error||"That didn't work.";return}
+  m.className="msg ok";m.textContent="Password updated. Taking you in…";
+  setTimeout(()=>location.href="/",1200);
+};
+</script>`,
+  }));
+});
+
+app.post("/api/auth/reset", rateLimit({ max: 10, windowMs: 900000 }), async (req, res) => {
+  const { token, password } = req.body || {};
+  const row = db.prepare(`SELECT * FROM reset_tokens WHERE token = ?`).get(String(token || ""));
+  if (!row) return res.status(400).json({ error: "invalid or used link" });
+  if (row.expires_at < Date.now()) return res.status(400).json({ error: "link expired — request a new one" });
+  { const u = q.userById.get(row.user_id) || {}, pwBad = pwProblem(password, { username: u.username, email: u.email });
+    if (pwBad) return res.status(400).json({ error: pwBad }); }   // server/auth/passwords
+  const hash = await bcrypt.hash(password, 10);
+  db.prepare(`UPDATE users SET password_hash = ? WHERE id = ?`).run(hash, row.user_id);
+  db.prepare(`DELETE FROM reset_tokens WHERE user_id = ?`).run(row.user_id);
+  // a reset should boot every existing session
+  db.prepare(`DELETE FROM sessions WHERE user_id = ?`).run(row.user_id);
+  res.json({ ok: true });
+});
+
+/* ================================================================
+   SEARCH — people first, since the point is finding collaborators.
+================================================================ */
+app.get("/api/search", maybeAuth, (req, res) => {
+  const term = (req.query.q || "").toString().trim().slice(0, 40);
+  const role = (req.query.role || "").toString().trim();
+  if (!term && !role) return res.json({ people: [], posts: [] });
+  const hidden = req.user ? blockedIds(req.user.id) : new Set();
+  const like = `%${term}%`;
+  const people = db.prepare(`
+    SELECT username, display_name, avatar_url, role, roles, rep, bio, accent FROM users
+    WHERE (? = '' OR display_name LIKE ? OR username LIKE ? OR bio LIKE ?)
+      AND (? = '' OR roles LIKE ? OR role = ?)
+    ORDER BY rep DESC LIMIT 24`).all(term, like, like, like, role, `%"${role}"%`, role);
+  const posts = term ? db.prepare(`
+    SELECT p.*, u.username AS author_username, u.display_name AS author_name, u.role AS author_role,
+           u.avatar_url AS author_avatar, u.accent AS author_accent, u.rep AS author_rep,
+      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
+      (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) AS share_count,
+      0 AS liked_by_me
+    FROM posts p JOIN users u ON u.id = p.author_id
+    WHERE p.is_work = 1 AND p.body LIKE ? ORDER BY p.created_at DESC LIMIT 20`).all(like) : [];
+  res.json({
+    people: people.filter((p) => !hidden.has(p.username)).map((p) => ({
+      username: p.username, displayName: p.display_name, avatarUrl: p.avatar_url || "", accentHex: accentHex(p.accent),
+      role: p.role, roles: (() => { try { return JSON.parse(p.roles || "[]"); } catch { return [p.role]; } })(),
+      rep: p.rep, level: levelFor(p.rep).id, bio: p.bio,
+    })),
+    posts: shapePosts(posts.filter((p) => !hidden.has(p.author_username))),
+  });
+});
+

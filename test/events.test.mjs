@@ -218,7 +218,7 @@ try {
     t("an entrant's Instagram Story card: a real 1080×1920 picture, lossless", j.s === 200 && j.png && j.w === 1080 && j.h === 1920);
     const jt = await jpeg(`/e/art/${pu.h}/story.jpg?for=them`);
     t("someone else sharing it gets its own card (\"Vote for this piece\", not \"for my piece\"), same size", jt.s === 200 && jt.w === 1080 && jt.h === 1920 && Buffer.compare(jt.b, j.b) !== 0
-      && /"Vote for my piece": "Vote for this piece"/.test(readFileSync(join(ROOT, "src/server-10-events-4-cards.js"), "utf8")));
+      && /"Vote for my piece": "Vote for this piece"/.test(readFileSync(join(ROOT, "src/server/events/cards.js"), "utf8")));
     j = await jpeg("/e/art/board.jpg");
     t("TNL's scoreboard post: 1080×1350", j.s === 200 && j.jpg && j.w === 1080 && j.h === 1350);
     j = await jpeg("/e/art/board.jpg?size=story");

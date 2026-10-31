@@ -1,0 +1,116 @@
+/* ================================================================
+   EVENT SCREEN v1.2 — 2026-10-12 (wiring; v1.2: the ‹ back bar, and "Every entry is in // Visual"). Opening an event, the
+   Showroom banner, picks, judging, entering and withdrawing. Every
+   change goes to the server and the screen shows what it says back.
+================================================================ */
+function openEvent(slug){
+  if(!slug)return;
+  pushView("event",slug);
+  TAB="event"; EVSLUG=slug; PROFILE=null; POSTOPEN=null; NOTIFOPEN=false; SEARCHOPEN=false; EVENTER=null; EVSHARE=null; EVFOCUS=null;
+  render(); loadEvent();
+}
+let EVPRE=null;   // the tournament asked for at boot, before the rest (app/feed/feed-boot)
+async function loadEvent(){
+  const want=EVSLUG,pre=EVPRE&&EVPRE.slug===want?EVPRE.p:null;EVPRE=null;
+  try{const d=await(pre||evApi.one(want));if(want!==EVSLUG)return;EV=d;if(TAB==="event")render()}
+  catch(e){toast(e.message||"Couldn't open that event");if(TAB==="event"&&!EV){TAB="showroom";render()}}
+}
+/* The Showroom banner. Painted in place, so loading it never repaints the feed. */
+async function loadEvents(){
+  try{EVLIST=await evApi.list()}catch(e){return}
+  const w=document.getElementById("ev-bannerwrap");if(w)w.innerHTML=eventBannerHTML();
+}
+
+let EVDELEG=false;
+function wireEvent(){
+  if(!EVDELEG){EVDELEG=true;
+    // anywhere in the app: the banner, and event notifications
+    document.addEventListener("click",e=>{
+      const b=e.target.closest("[data-evopen]");if(b){e.preventDefault();openEvent(b.dataset.evopen);return}
+      const n=e.target.closest("[data-nev]");if(n&&EVLIST&&EVLIST.current){e.preventDefault();openEvent(EVLIST.current.slug)}
+    },true);
+    // the countdown ticks; when a phase ends, the screen catches up
+    setInterval(()=>{
+      if(TAB!=="event"||!EV||document.hidden)return;
+      document.querySelectorAll(".ev-left").forEach(el=>{el.textContent=evLeft(Number(el.dataset.end))});
+      const end=EV.event.phase.end;if(end&&Date.now()>end+2000)loadEvent();
+    },30000);
+  }
+  if(TAB!=="event")return;
+  const on=(sel,fn)=>{const el=$(sel);if(el)el.onclick=fn};
+  on("#evaddphoto",()=>{evRemember();gsEdit()});   // no photo yet: straight to Edit profile, and back to the piece after (2026-10-28)
+  // nothing to step back to (the app was opened right here): the Showroom, where the banner is
+  on("#evinvite",()=>{const e=EV.event;shareOut({title:e.title,text:e.title+" — enter and vote on LABS",url:evLink(e)})});
+  on("#evback",()=>navBack(()=>{TAB="showroom";EVENTER=null;EVSHARE=null;EVFOCUS=null}));
+  // every entry, in the lab it posts into, on its Tournament chip (a step on the back trail)
+  on("[data-evlab]",e=>{e.preventDefault();if(!ME)return needAccount("Join to step into the labs.");EVENTER=null;EVSHARE=null;openLab(e.currentTarget.dataset.evlab,"work","event:"+EVSLUG)});
+  document.querySelectorAll("#evscroll [data-evzoom], #evscroll .ev-cover").forEach(el=>el.onclick=()=>{LIGHTBOX=el.dataset.evzoom;render()});
+  document.querySelectorAll("#evscroll [data-u]").forEach(el=>el.onclick=ev=>{ev.stopPropagation();openProfile(el.dataset.u)});
+  document.querySelectorAll("[data-evpick]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();evPick(Number(b.dataset.evpick),b)});
+  document.querySelectorAll("[data-evscore]").forEach(b=>b.onclick=()=>evScore(Number(b.dataset.evscore),Number(b.dataset.n)));
+  on("#eventer",()=>{if(!ME)return needAccount("Join to enter the event.");EVENTER={caption:"",agree:false};render()});
+  on("#evwithdraw",async()=>{
+    if(!(await uiConfirm("Withdraw your entry?","Your post stays on your profile. You can enter again until entries close.",{okLabel:"Withdraw",danger:true})))return;
+    try{EV=await evApi.withdraw(EVSLUG);toast("Withdrawn");render()}catch(e){toast(e.message)}
+  });
+  if(EVENTER)wireEvEnter();
+  wireEvPoll();
+}
+
+/* A brand-new account's vote is held, not refused (2026-10-27): the watch saw new members tap Vote again and again
+   at "Finish setting up your account to vote." — one had already added a photo, a bio and a piece, and left without
+   voting. The message stays the same (no timer); the vote waits on the button and goes in by itself once allowed. */
+let EVWAIT=null;
+async function evPick(id,btn,held){
+  if(!ME){if(!EVFOCUS)EVFOCUS=id;evRemember();return needAccount("Join to vote.")}
+  if(!EV.me.myVotes.includes(id)&&EV.event.requireAvatar&&!ME.avatarUrl)return evPhotoAsk(id);   // 2026-10-29: the reminder, at the tap
+  if(!held&&(EVWAIT&&EVWAIT.id===id||btn&&btn.classList.contains("busy")))return;   // already on its way: more taps do nothing
+  const on=!EV.me.myVotes.includes(id);
+  if(btn)btn.classList.add("busy");
+  try{const d=await evApi.vote(EVSLUG,id,on);const was=EVWAIT;EVWAIT=null;EV.me.myVotes=d.myVotes;if(d.board)EV.board=d.board;render();if(on&&navigator.vibrate)navigator.vibrate(8);if(was)loadEvent()}
+  catch(e){
+    if(on&&/finish setting up/i.test(e.message||"")){
+      const n=held&&EVWAIT?EVWAIT.n+1:1;   // up to 24 quiet tries (12 minutes): some new accounts wait 10 (2026-10-29)if(!held)toast(e.message);
+      clearTimeout(EVWAIT&&EVWAIT.t);EVWAIT=n>24?null:{id,slug:EVSLUG,n,t:setTimeout(()=>{const w=EVWAIT;
+        if(w&&TAB==="event"&&EVSLUG===w.slug)evPick(w.id,document.querySelector('[data-evpick="'+w.id+'"]'),true);else EVWAIT=null},EV_HOLD_MS)};
+      if(!EVWAIT&&btn)btn.classList.remove("busy");
+      return}
+    if(held)EVWAIT=null;
+    if(/profile photo/i.test(e.message||"")){if(btn)btn.classList.remove("busy");return evPhotoAsk(id)}
+    toast(e.message);if(/confirm your email/i.test(e.message||"")){if(!EVFOCUS)EVFOCUS=id;evRemember()}if(btn)btn.classList.remove("busy")}
+}
+/* "Remind people they need to upload a profile pic in order to vote when they try to vote" (2026-10-29) */
+async function evPhotoAsk(id){
+  if(!EVFOCUS)EVFOCUS=id;evRemember();   // back to this piece once the photo is in
+  if(await uiConfirm("Add a profile photo to vote","Every vote on LABS has a face behind it. Add a photo, then come back to vote for this piece.",{okLabel:"Add a photo",cancelLabel:"Not now"}))gsEdit();
+}
+let EV_HOLD_MS=30000;   // let: the tap-through shortens it
+async function evScore(id,n){
+  try{await evApi.score(EVSLUG,id,n);EV.me.myScores[id]=n;render()}catch(e){toast(e.message)}
+}
+
+function wireEvEnter(){
+  const s=EVENTER;
+  const close=()=>{if(s.busy)return;EVENTER=null;render()};
+  const x=$("#evx");if(x)x.onclick=close;
+  const bg=$("#evsheet");if(bg)bg.onclick=e=>{if(e.target===bg)close()};
+  const f=$("#evfile");if(f)f.onchange=async()=>{
+    const file=f.files&&f.files[0];f.value="";if(!file)return;
+    if(!/^image\//.test(file.type))return toast("Images only");
+    /* A preview straight away; the real upload (the original + sharp
+       copies, app/media/images.js) happens on Enter. */
+    if(s.prep&&s.prep.local)URL.revokeObjectURL(s.prep.thumb);
+    s.file=file;s.prep={thumb:URL.createObjectURL(file),local:true};render()
+  };
+  const cap=$("#evcap");if(cap)cap.oninput=()=>{s.caption=cap.value};
+  const ag=$("#evagree");if(ag)ag.onchange=()=>{s.agree=ag.checked;const b=$("#evsend");if(b)b.disabled=!(s.prep&&s.agree&&!s.busy)};
+  const go=$("#evsend");if(go)go.onclick=async()=>{
+    if(!s.prep||!s.agree||s.busy)return;
+    s.busy=true;s.pct=0;render();
+    try{
+      const im=await uploadWork(s.file);
+      EV=await evApi.enter(EVSLUG,{imageUrl:im.url,thumbUrl:im.thumb,w:im.w,h:im.h,tw:im.tw,sm:im.sm,sw:im.sw,caption:s.caption,agree:true});
+      EVENTER=null;toast("You're in");render();
+    }catch(e){s.busy=false;toast(e.message||"Couldn't enter");render()}
+  };
+}

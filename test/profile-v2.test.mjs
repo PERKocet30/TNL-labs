@@ -22,7 +22,7 @@ const q = {
 };
 const blocks = new Set();
 const routes = {};
-const part = readFileSync(join(ROOT, "src/server-11-profile.js"), "utf8");
+const part = readFileSync(join(ROOT, "src/server/profile/profile.js"), "utf8");
 const { accentHex } = await import("../src/palette.js");   // followers carry their colour (2026-10-18)
 const P = new Function("db", "q", "app", "auth", "maybeAuth", "blockedIds", "feedRows", "shapePosts", "accentHex",
   part + "\nreturn {cleanLinks,profileExtras,followedBy};")(db, q,
@@ -74,7 +74,7 @@ r = await call("POST /api/me/pins", { user: me, body: { postId: p4 } });
 t("a deleted post drops out of the pins", r.out.pinned.join() === [p4, p3].join());
 
 console.log("\nNO TAGGED TAB (2026-10-18: \"no need for tag section\")");
-{ const app = readFileSync(join(ROOT, "src/app-15-profile.js"), "utf8"), srv = readFileSync(join(ROOT, "src/server-11-profile.js"), "utf8");
+{ const app = readFileSync(join(ROOT, "src/app/profile/profile.js"), "utf8"), srv = readFileSync(join(ROOT, "src/server/profile/profile.js"), "utf8");
   t("a profile has no Tagged tab, and its list route is gone", !app.includes('data-ptab="tagged"') && !srv.includes("/api/users/:username/tagged")); }
 
 console.log("\nWIRED IN");

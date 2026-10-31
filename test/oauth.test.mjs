@@ -78,7 +78,7 @@ async function facebook(me, tweak = {}) {
   FB.set(code, me);
   return { st, loc: (await go(`/api/auth/oauth/facebook/callback?code=${tweak.code || code}&state=${tweak.state || p.get("state")}${tweak.q || ""}`)).headers.get("location") || "" };
 }
-const MARK = "0123456789abcdef0123456789abcdef";   // the browser's own mark (app-11-gate-oauth)
+const MARK = "0123456789abcdef0123456789abcdef";   // the browser's own mark (app/gate/oauth)
 const code = (loc, k) => new URL(loc, B).searchParams.get(k);
 try {
   for (let i = 0; i < 100; i++) { try { if ((await fetch(B + "/api/health")).ok) break; } catch {} await new Promise((r) => setTimeout(r, 100)); }
@@ -93,7 +93,7 @@ try {
   const a = await google({ sub: "g-111", email: "new@x.test", email_verified: true, name: "Nova Maker" });
   const up = code(a.loc, "signup");
   t("lands on Join with a one-use code, no token in the address", !!up && !/token/i.test(a.loc));
-  t("…and the browser's own mark comes back with it, so a code in someone else's link is refused in the app", code(a.loc, "b") === MARK && read("src/app-11-gate-oauth.js").includes("if(!mark||mark!==mine)"));
+  t("…and the browser's own mark comes back with it, so a code in someone else's link is refused in the app", code(a.loc, "b") === MARK && read("src/app/gate/oauth.js").includes("if(!mark||mark!==mine)"));
   const cl = await json("/api/auth/oauth/claim", { code: up });
   t("the code says who they are (confirmed email, their name)", cl.j.signup && cl.j.signup.email === "new@x.test" && cl.j.signup.name === "Nova Maker");
   const r1 = await json("/api/auth/register", { oauth: up, username: "nova", displayName: "Nova Maker", roles: ["Painter"], email: "evil@x.test", password: "x" });

@@ -22,13 +22,13 @@ t("a Posting-to row: Your profile fixed, + Add a lab, the lab as a chip you can 
   html.includes('class="pc-to"') && html.includes("Your profile") && html.includes("Add a lab") && html.includes("data-pclabrm") && html.includes('id="pclab"'));
 t("the main button says Post, not Share", html.includes('label:c.busy?"Posting…":"Post"') && !html.includes('"Sharing…"'));
 t("the lab picker is called Add a lab and says it stays on your profile", wire.includes('title:"Add a lab"') && wire.includes("stays on your profile") && !wire.includes("Profile only"));
-// 2026-10-21 "Instagram level": tag people on the picture, Preview, Also share to your Story, Advanced settings (app-18-composer-ig.js)
-const ig = readFileSync(join(ROOT, "src/app-18-composer-ig.js"), "utf8");
+// 2026-10-21 "Instagram level": tag people on the picture, Preview, Also share to your Story, Advanced settings (app/compose/composer-ig.js)
+const ig = readFileSync(join(ROOT, "src/app/compose/composer-ig.js"), "utf8");
 t("Tag people places them on the picture (pins drawn on the slide; the tap lands on the drawn picture, not the letterbox)", wire.includes("pcTagStart(c)") && html.includes("pcPinsHTML(c,i)") && ig.includes("function pcDrawn(img)") && ig.includes("tapped the letterbox"));
 t("Preview, Also share to your Story, Advanced settings rows", html.includes("pcIgRowsHTML(c)") && ig.includes('id="pcprev"') && ig.includes('id="pcstory"') && ig.includes('id="pcadv"'));
 t("Advanced: comments, hide like count, alt text (200)", ig.includes('id="pccoff"') && ig.includes('id="pchide"') && ig.includes('id="pcalt"') && ig.includes('maxlength="200"'));
 t("the preview is the Showroom's own card", ig.includes("srCardHTML(PCPREV,0)"));
-t("the post carries pins, alt and hideLikes; the Story sheet opens after if asked", readFileSync(join(ROOT, "src/app-18-post-queue.js"), "utf8").includes("...pcIgExtras(c)") && readFileSync(join(ROOT, "src/app-18-post-queue.js"), "utf8").includes("pcAfterPosted(c,pid)"));
+t("the post carries pins, alt and hideLikes; the Story sheet opens after if asked", readFileSync(join(ROOT, "src/app/compose/queue.js"), "utf8").includes("...pcIgExtras(c)") && readFileSync(join(ROOT, "src/app/compose/queue.js"), "utf8").includes("pcAfterPosted(c,pid)"));
 t("a caption counter near the 2,200 limit", html.includes('maxlength="${PC_CAP_MAX}"') && ig.includes("PC_CAP_MAX=2200"));
 t("no explanation note under the caption", !html.includes("pcmp-note") && !/Showroom, where collabs rank highest/.test(src));
 

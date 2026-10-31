@@ -17,7 +17,7 @@ t("the ResizeObserver warning isn't reported", /ResizeObserver loop[^\n]*return/
 t("…nor does it bring up the crash screen", /if\(\/ResizeObserver loop\/i\.test\(String\(e\.message\|\|""\)\)\) return;/.test(app));
 // 2026-10-08: only the real site reports to Sentry; test browsers and dev
 // servers used to fill it with noise. The admin Health mirror still gets all.
-const boot = readFileSync(join(ROOT, "src/server-01-boot.js"), "utf8");
+const boot = readFileSync(join(ROOT, "src/server/core/boot.js"), "utf8");
 const sent = [], mirrored = [];
 const run = (host) => { sent.length = 0; mirrored.length = 0;
   const f = new Function("location", "fetch", "API", "navigator", "window",

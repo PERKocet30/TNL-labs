@@ -61,8 +61,8 @@ try {
   const total = JSON.stringify(sb).match(/"votes":(\d+)/g) || [];
   t("the scoreboard counts 3, not 4", total.some((m) => m === '"votes":3'));
   t("taking a vote back from the same phone is allowed (it's hers)", (await call("ana", "/api/events/art/vote", { entryId, on: false }, { device: PHONE })).s === 200);
-  const src = readFileSync(join(ROOT, "src/server-01-honest.js"), "utf8"), app = readFileSync(join(ROOT, "src/app-07-theme-labs-api.js"), "utf8");
-  t("the app sends its mark with every request", /h\["X-Device"\]=dv/.test(app) && /tnl-dev/.test(readFileSync(join(ROOT, "src/app-07-device.js"), "utf8")));
+  const src = readFileSync(join(ROOT, "src/server/trust/honest.js"), "utf8"), app = readFileSync(join(ROOT, "src/app/core/theme-labs-api.js"), "utf8");
+  t("the app sends its mark with every request", /h\["X-Device"\]=dv/.test(app) && /tnl-dev/.test(readFileSync(join(ROOT, "src/app/core/device.js"), "utf8")));
   t("a mark is random hex, nothing about the person", /\^\[a-f0-9\]\{16,32\}\$/.test(src));
   const fn = new Function("process", src + "\nreturn emailThrowaway;")({ env: {} });
   t("the check itself: capitals, spaces and deep subdomains don't get around it", fn("  A@MAILINATOR.COM ") && fn("a@sub.deep.dpdns.org") && !fn("ana@gmail.com") && !fn("x@notmailinator.com"));

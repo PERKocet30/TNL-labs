@@ -1,6 +1,6 @@
 // Profile card v2.0 (2026-09-29): a shared profile previews as a card —
 // picture, name, bio and the work.
-// Runs the real code from src/server-10-profile-card.js against a throwaway
+// Runs the real code from src/server/profile/card.js against a throwaway
 // database and upload folder. Builds a real card when an ffmpeg is around —
 // set FFMPEG_TEST_BIN to try a specific build (production's is npm's
 // ffmpeg-static 5.3 = ffmpeg 7.0.2, which has libass but no drawtext).
@@ -21,7 +21,7 @@ let FFMPEG = process.env.FFMPEG_TEST_BIN || null;
 if (!FFMPEG) try { FFMPEG = (await import("ffmpeg-static")).default || null; } catch {}
 if (!FFMPEG) try { execFileSync("ffmpeg", ["-version"], { stdio: "ignore" }); FFMPEG = "ffmpeg"; } catch {}
 
-const src = readFileSync(join(ROOT, "src/server-10-profile-card.js"), "utf8").replace(/app\.get\([\s\S]*$/, "");
+const src = readFileSync(join(ROOT, "src/server/profile/card.js"), "utf8").replace(/app\.get\([\s\S]*$/, "");
 const UPLOAD_DIR = join(DATA, "uploads");
 const errors = [];
 const C = new Function("db", "PALETTE", "accentHex", "join", "dirname", "existsSync", "mkdirSync", "readdirSync", "writeFileSync", "rename", "rm", "createHash", "execFile", "logError", "DATA_DIR", "UPLOAD_DIR", "__dirname", "FFMPEG",
@@ -101,7 +101,7 @@ t("the fallback build is the grid alone, full width", !/drawtext/.test(bareGraph
 t("the fonts ship with the app, with their licence", existsSync(join(ROOT, "assets/fonts/Archivo-Bold.ttf")) && existsSync(join(ROOT, "assets/fonts/Archivo-Regular.ttf")) && existsSync(join(ROOT, "assets/fonts/OFL-Archivo.txt")));
 
 console.log("\nTHE PAGE");
-const page = readFileSync(join(ROOT, "src/server-10-collabs-beats-showroom.js"), "utf8");
+const page = readFileSync(join(ROOT, "src/server/posts/collabs-showroom.js"), "utf8");
 t("the profile page's preview is the card", /const card = profileCardMeta\(u, baseUrl\(req\)\)/.test(page) && /ogImage = card \? card\.url/.test(page));
 t("…and says it's 1200×630", /ogW = card \? card\.w/.test(page) && C.CARD.w === 1200 && C.CARD.h === 630);
 

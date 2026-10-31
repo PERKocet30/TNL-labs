@@ -14,7 +14,7 @@ const { db } = await import(ROOT + "/src/db.js");
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
-const part = readFileSync(join(ROOT, "src/server-06-market-stock.js"), "utf8");
+const part = readFileSync(join(ROOT, "src/server/market/stock.js"), "utf8");
 const S = new Function("db", "randomBytes", part + "\nreturn {variantLabel,parseVariants,stockOf,cleanVariants,pickVariant,takeStock,SIZE_MATCH};")(db, randomBytes);
 
 const now = Date.now();

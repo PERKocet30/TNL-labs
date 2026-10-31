@@ -8,7 +8,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const part = readFileSync(join(ROOT, "src/app-08-images.js"), "utf8");
+const part = readFileSync(join(ROOT, "src/app/media/images.js"), "utf8");
 const I = new Function("esc", part + "\nreturn {imgAttrs,pxImgs,imgSmall,cleanJpeg,cleanPng,jpegOrientation};")(esc);
 
 const seg = (m, body) => { const b = Buffer.from(body); const h = Buffer.from([0xff, m, (b.length + 2) >> 8, (b.length + 2) & 255]); return Buffer.concat([h, b]); };
@@ -88,6 +88,6 @@ console.log("\nA PHOTO THAT PAINTS BLACK THE FIRST TIME");
   c = await F.drawSure(night, 480, 800);
   t("a picture that really is black stays black (three tries, no endless loop)", c.px === 0);
   t("the loader decodes and warms every photo before a copy is made; profile photos are checked too",
-    /await img\.decode\(\)[^\n]*imgWarm\(img\)/.test(readFileSync(join(ROOT, "src/app-08-state-ui.js"), "utf8")) && /await dataBlank\(r\.data\)/.test(readFileSync(join(ROOT, "src/app-08-state-ui.js"), "utf8")));
+    /await img\.decode\(\)[^\n]*imgWarm\(img\)/.test(readFileSync(join(ROOT, "src/app/state/state-ui.js"), "utf8")) && /await dataBlank\(r\.data\)/.test(readFileSync(join(ROOT, "src/app/state/state-ui.js"), "utf8")));
 }
 console.log(`\n  ${pass} passed, ${fail} failed`);

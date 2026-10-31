@@ -54,10 +54,10 @@ try {
   t("signed out: not available", (await get("/api/tracks/trending")).s === 401);
 
   console.log("\nTHE MUSIC LAB");
-  const app = readFileSync(join(ROOT, "src/app-13-tracks-player.js"), "utf8");
+  const app = readFileSync(join(ROOT, "src/app/music/tracks.js"), "utf8");
   t("Trending sits above All songs, not while searching", /!TRKQ&&TRACKS&&TRENDING&&TRENDING\.length\?`<div class="lx-sec trk-sec">Trending/.test(app) && app.includes("All songs"));
   t("rows say how many posts use the song", app.includes('" · used in "+t.uses'));
-  t("a tap in Trending plays through Trending", /ctx==="trend"&&TRENDING\?TRENDING\.slice\(\)/.test(readFileSync(join(ROOT, "src/app-13-playlists.js"), "utf8")));
+  t("a tap in Trending plays through Trending", /ctx==="trend"&&TRENDING\?TRENDING\.slice\(\)/.test(readFileSync(join(ROOT, "src/app/music/playlists.js"), "utf8")));
 } catch (e) { t("no exception: " + e.message, false); console.log(log.slice(-800)); }
 finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);

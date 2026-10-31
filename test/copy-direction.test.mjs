@@ -34,7 +34,7 @@ for (const [re, label] of banned) {
   t(`nothing ${label}${hits.length ? " — found in " + hits.join(", ") : ""}`, !hits.length);
 }
 
-const head = readFileSync(join(ROOT, "src/app-01-head.html"), "utf8");
+const head = readFileSync(join(ROOT, "src/app/shell/head.html"), "utf8");
 console.log("\nCOPY — LINK PREVIEW");
 t("link preview leads with the positioning line", head.includes('og:description" content="Social media by creatives, for creatives.'));
 

@@ -16,15 +16,15 @@ const part = (f) => readFileSync(join(ROOT, "src", f), "utf8");
 const pitch = (src) => (/const MARKET_PITCH\s*=\s*"([^"]+)"/.exec(src) || [])[1];
 
 console.log("\nTHE LINE");
-const appPitch = pitch(part("app-17-market-share.js")), srvPitch = pitch(part("server-12-policies.js"));
+const appPitch = pitch(part("app/market/share.js")), srvPitch = pitch(part("server/pages/policies.js"));
 t("the Market says what it's for", !!appPitch && appPitch.length < 140);
 t("…in the same words the link preview uses", appPitch === srvPitch);
-t("it sits under the Market's name", part("app-13-tracks-player.js").includes('title:"Market",sub:MARKET_PITCH'));
+t("it sits under the Market's name", part("app/music/tracks.js").includes('title:"Market",sub:MARKET_PITCH'));
 
 console.log("\nSHARE");
-t("a Share button beside the bag", part("app-13-tracks-player.js").includes('id="mktshare" aria-label="Share the Market"') && part("app-17-market.js").includes("msh.onclick=shareMarket"));
+t("a Share button beside the bag", part("app/music/tracks.js").includes('id="mktshare" aria-label="Share the Market"') && part("app/market/market.js").includes("msh.onclick=shareMarket"));
 // shareMarket, run against a pretend phone
-const src = part("app-17-market-share.js");
+const src = part("app/market/share.js");
 const run = (nav, sink) => new Function("navigator", "location", "toast", "uiPrompt", src + "\nreturn shareMarket;")(nav, { origin: "https://tnllabs.com" }, sink.toast, sink.prompt);
 let shared = null;
 await run({ share: async (d) => { shared = d; } }, {})();

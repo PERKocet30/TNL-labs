@@ -58,7 +58,7 @@ try {
   await v("burst2", RIV, "bbbbbbbbbbbbbbbbbbbbbbbb");   // the other piece, same phone: allowed, and it links them
   await v("burst3", ART, "dddddddddddddddddddddddd");
   await v("mum", RIV, "eeeeeeeeeeeeeeeeeeeeeeee"); await v("son", RIV, "ffffffffffffffffffffffff"); await v("loner", RIV, "0000000000000000aaaa0000");
-  // networks: the burst shares one, the family another (as server-01-signals writes them)
+  // networks: the burst shares one, the family another (as server/trust/signals writes them)
   const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db"));
   const uid = (u) => w.prepare(`SELECT id FROM users WHERE username = ?`).get(u).id;
   const cols = w.prepare(`PRAGMA table_info(member_signals)`).all().map((c) => c.name);
@@ -100,7 +100,7 @@ try {
   d = new R(join(DATA, "tnl.db"));
   t("…counted again on the scoreboard; the rest stay off", d.prepare(`SELECT COUNT(*) n FROM event_votes WHERE entry_id = ?`).get(RIV).n === 4 && d.prepare(`SELECT COUNT(*) n FROM event_votes WHERE entry_id = ?`).get(ART).n === 0 && d.prepare(`SELECT suspended, spam_at FROM users WHERE username = 'burst2'`).get().suspended === 0);
   d.close();
-  const src = readFileSync(join(ROOT, "src/server-11-spam.js"), "utf8");
+  const src = readFileSync(join(ROOT, "src/server/trust/spam.js"), "utf8");
   t("suspended, never deleted", !/DELETE FROM users/.test(src));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);

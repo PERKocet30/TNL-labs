@@ -14,8 +14,8 @@ let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
 // the app's labs, as the app defines them
-const app07 = readFileSync(join(ROOT, "src/app-07-theme-labs-api.js"), "utf8");
-const appPlaces = readFileSync(join(ROOT, "src/app-11-places.js"), "utf8");
+const app07 = readFileSync(join(ROOT, "src/app/core/theme-labs-api.js"), "utf8");
+const appPlaces = readFileSync(join(ROOT, "src/app/labs/places.js"), "utf8");
 const LABS = new Function(app07.slice(app07.indexOf("const LABS = ["), app07.indexOf("];", app07.indexOf("const LABS = [")) + 2) + "\nreturn LABS;")();
 const LAB_HOME = new Function(appPlaces.slice(appPlaces.indexOf("const LAB_HOME="), appPlaces.indexOf(";", appPlaces.indexOf("const LAB_HOME=")) + 1) + "\nreturn LAB_HOME;")();
 
@@ -157,11 +157,11 @@ try {
   await call("boss", "PATCH", `/api/admin/events/${ev.event.id}`, { published: false });
   g = await go("/tournament");
   t("no tournament on: /tournament goes to the app instead of a dead page", g.s === 302 && g.to === "/");
-  t("the tournament page has Invite people (share, or copy where there's no share sheet); admin shows the link to send", readFileSync(join(ROOT, "src/app-17-event-1.js"), "utf8").includes('id="evinvite"')
-    && readFileSync(join(ROOT, "src/app-17-event-2.js"), "utf8").includes('on("#evinvite",()=>{const e=EV.event;shareOut(') && readFileSync(join(ROOT, "public/admin-app/8-events.js"), "utf8").includes("function evLinkHTML(e)"));
+  t("the tournament page has Invite people (share, or copy where there's no share sheet); admin shows the link to send", readFileSync(join(ROOT, "src/app/events/screen.js"), "utf8").includes('id="evinvite"')
+    && readFileSync(join(ROOT, "src/app/events/wire.js"), "utf8").includes('on("#evinvite",()=>{const e=EV.event;shareOut(') && readFileSync(join(ROOT, "public/admin-app/8-events.js"), "utf8").includes("function evLinkHTML(e)"));
   t("unpublished: no chip, no marks", (await call("dee", "GET", "/api/labs/pharmacy/work")).j.event === null && !(await call("dee", "GET", "/api/labs/pharmacy/work")).j.posts.some((p) => p.entry));
   t("the app draws the chip and the mark, and the tournament page links to its lab", appPlaces.includes('data-pltag="event:${esc(ev.slug)}"') && appPlaces.includes('<i class="pl-entry"')
-    && readFileSync(join(ROOT, "src/app-17-event-1.js"), "utf8").includes("Every entry is in ${esc(labMark(evLab(e).name))}"));
+    && readFileSync(join(ROOT, "src/app/events/screen.js"), "utf8").includes("Every entry is in ${esc(labMark(evLab(e).name))}"));
   console.log("\nWORK PAGES BACK IN TIME (2026-10-21: the grid is the archive)");
   let p1 = await call("dee", "GET", "/api/labs/pharmacy/work");
   t("the first page is 60 pieces and says there are more", p1.j.posts.length === 60 && p1.j.more === true);

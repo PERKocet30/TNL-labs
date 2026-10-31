@@ -1,6 +1,0 @@
-/* UPDATING · v1.0 · 2026-10-28 — the pill shown while a release restarts the app (app-07-updating.js) */
-.upd{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:90;
-  background:var(--tx);color:var(--bg);font-weight:700;font-size:13px;border-radius:999px;padding:9px 16px;
-  white-space:nowrap;pointer-events:none;animation:updIn .2s ease-out}
-@keyframes updIn{from{opacity:0;transform:translate(-50%,-6px)}to{opacity:1;transform:translateX(-50%)}}
-@media (prefers-reduced-motion:reduce){.upd{animation:none}}

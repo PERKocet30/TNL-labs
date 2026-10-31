@@ -12,7 +12,7 @@ process.env.TNL_DATA = TMP;
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 const read = (f) => readFileSync(join(ROOT, f), "utf8");
-const pv = read("src/app-14-sell-variants.js");
+const pv = read("src/app/market/sell-variants.js");
 const V = new Function("money", "esc", "sellSizes", pv.slice(0, pv.indexOf("function pvHTML(")) + pv.slice(pv.indexOf("function sellCompareHTML("), pv.indexOf("function pvRefreshEarn(")) +
   "\nreturn {pvSync, pvOut, pvTotal, sellCompareHint, sellKeepCents};")((c) => "$" + (c / 100).toFixed(2), (s) => String(s), (f) => f.sizes || ["XS", "S", "M", "L", "XL", "XXL"]);
 
@@ -47,7 +47,7 @@ t("not above the price: says why it won't show", /has to be above the price/.tes
 t("empty: nothing", V.sellCompareHint({ price: "65" }) === "");
 
 const { db } = await import(join(ROOT, "src/db.js"));
-const stock = read("src/server-06-market-stock.js");
+const stock = read("src/server/market/stock.js");
 const S = new Function("db", "notify", stock + "\nreturn {setCompare, priceDrop, setSellType};")(db, () => {});
 const now = Date.now();
 const uid = Number(db.prepare(`INSERT INTO users (username,display_name,email,role,password_hash,created_at) VALUES ('s','s','s@x','Model','h',?)`).run(now).lastInsertRowid);
@@ -65,7 +65,7 @@ S.setCompare(lid, "0", 9000);
 t("0 clears it", row().compare_cents === null);
 
 console.log("\nCATEGORIES AND THEIR DETAILS");
-const tax = read("src/server-06-market-taxonomy.js");
+const tax = read("src/server/market/taxonomy.js");
 const X = new Function("db", tax + "\nreturn {TAX_CATS, TAXONOMY_META, cleanSpecs, setSpecs, specRows, SIZE_SETS};")(db);
 const old = ["Tops", "Bottoms", "Outerwear", "Footwear", "Accessories", "Headwear", "Bags", "Jewellery", "Art / Prints", "Other"];
 t("every category listings already use is still there (values never change)", old.every((c) => X.TAX_CATS.has(c)));
@@ -85,7 +85,7 @@ X.setSpecs(lid, { medium: "Acrylic", dims: "24 × 36 in", year: "2026", framed: 
 t("the listing page gets them as plain rows, in the category's order", JSON.stringify(X.specRows(row())) === JSON.stringify([["Medium", "Acrylic"], ["Dimensions", "24 × 36 in"], ["Year made", "2026"], ["Framed", "Yes"]]));
 X.setSpecs(lid, undefined, "Original art");
 t("an edit that doesn't send them leaves them alone", X.specRows(row()).length === 4);
-const meta = read("src/server-06-settings-payouts-market.js");
+const meta = read("src/server/admin/settings-payouts-market.js");
 t("the server's categories ARE the taxonomy's, and the app is sent it", meta.includes("const CATEGORIES = [...TAX_CATS.keys()];") && meta.includes("taxonomy: TAXONOMY_META"));
 t("create and edit save the details for the listing's category", meta.includes("setSpecs(Number(info.lastInsertRowid), body.specs, cat)") && meta.includes("setSpecs(l.id, req.body?.specs, next.category)"));
 
@@ -103,7 +103,7 @@ S.setSellType(l2, undefined);
 t("an edit that doesn't say leaves it alone", r2().sell_type === "custom");
 S.setSellType(l2, "dropshipper");
 t("anything else is saved as not said", r2().sell_type === "");
-const pvSrc = read("src/app-14-sell-variants.js");
+const pvSrc = read("src/app/market/sell-variants.js");
 let SELLFORM;
 const TT = new Function("stashSell", "render", "ME", "box", pvSrc.slice(pvSrc.indexOf("const SELLTYPES="), pvSrc.indexOf("/* Read the form back")).replace(/SELLFORM/g, "box.f") + "\nreturn {sellTypeSet, sellTypeTag};")(() => {}, () => {}, { displayName: "TNL NYC" }, (SELLFORM = { f: { size: "M", colour: "Black", quantity: 3, condition: "Good", acceptsOffers: true } }));
 TT.sellTypeSet("brand");
@@ -115,11 +115,11 @@ t("switching to One of one: New, no brand", SELLFORM.f.condition === "New" && SE
 t("tags: Vintage, 1 of 1, nothing for a brand (its name shows instead)", TT.sellTypeTag({ sellType: "vintage" }) === "Vintage" && TT.sellTypeTag({ sellType: "custom" }) === "1 of 1" && TT.sellTypeTag({ sellType: "brand" }) === "");
 
 console.log("\nWIRED IN");
-t("create and edit both save who's selling; the Market filters by it", read("src/server-06-settings-payouts-market.js").includes("setSellType(Number(info.lastInsertRowid), body.sellType)") && read("src/server-06-settings-payouts-market.js").includes("setSellType(l.id, req.body?.sellType)") && read("src/server-06-settings-payouts-market.js").includes("where.push(`l.sell_type = ?`)"));
-t("a brand's stock can be New", read("src/server-06-settings-payouts-market.js").includes('const CONDITIONS = ["New",'));
-const srv = read("src/server-06-settings-payouts-market.js"), mk = read("src/app-17-market.js");
+t("create and edit both save who's selling; the Market filters by it", read("src/server/admin/settings-payouts-market.js").includes("setSellType(Number(info.lastInsertRowid), body.sellType)") && read("src/server/admin/settings-payouts-market.js").includes("setSellType(l.id, req.body?.sellType)") && read("src/server/admin/settings-payouts-market.js").includes("where.push(`l.sell_type = ?`)"));
+t("a brand's stock can be New", read("src/server/admin/settings-payouts-market.js").includes('const CONDITIONS = ["New",'));
+const srv = read("src/server/admin/settings-payouts-market.js"), mk = read("src/app/market/market.js");
 t("create and edit both save it (not on sounds)", srv.includes("if (!isLoop) { setCompare(Number(info.lastInsertRowid), body.compareAt, cents);") && srv.includes("if (!isLoop) { setCompare(l.id, req.body?.compareAt, next.price_cents);"));
-t("the listing says when it's the seller's own sale", srv.includes("compareAt: r.compare_cents || null, sale: r.compare_cents > r.price_cents") && read("src/app-13-tracks-player.js").includes('l.sale?"Sale":"Price drop"'));
+t("the listing says when it's the seller's own sale", srv.includes("compareAt: r.compare_cents || null, sale: r.compare_cents > r.price_cents") && read("src/app/music/tracks.js").includes('l.sale?"Sale":"Price drop"'));
 t("an edit sends it, and the form opens with it", mk.includes("compareAt:isLoop?undefined:(body.compareAt||0)") && mk.includes('compareAt:l.compareAt?(l.compareAt/100).toFixed(2):""'));
 t("publishing sends the rows, without never-sold zeros or the option lists", mk.includes("pvOut(SELLFORM.variants)") && mk.includes("delete body.optSizes;delete body.optColours;"));
 console.log(`\n  ${pass} passed, ${fail} failed`);
