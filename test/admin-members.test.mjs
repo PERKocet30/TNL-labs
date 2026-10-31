@@ -69,7 +69,7 @@ try {
     && rec.includes('class="rc danger"') && rec.includes('data-pa="suspend"'));
   t("a phone starts People in Cards, a computer in Table; People has one search box", js.includes('(pwide() ? "table" : "cards")')
     && readFileSync(join(ROOT, "public/admin-app/1-core.js"), "utf8").includes('${TAB === "people" ? "" : `<div class="gsrch"'));
-  t("…and /admin loads both", html.includes('src="/admin-app/3-people.js?v=4.0"') && /src="\/admin-app\/3-person\.js\?v=1\.[0-9]+"/.test(html));
+  t("…and /admin loads both", /src="\/admin-app\/3-people\.js\?v=4\.[0-9]+"/.test(html) && /src="\/admin-app\/3-person\.js\?v=1\.[0-9]+"/.test(html));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -1,4 +1,6 @@
-/* LABS admin v3.1 — 2026-10-14. People: the member directory.
+/* LABS admin v3.2 — 2026-10-31. People: the member directory.
+   v3.2: "they should be most recent to old" — it always opens newest first; a heading you tap sorts
+   until you leave, it isn't remembered (a tap on Member once kept the table A→Z for good).
    v3.1: a phone starts in Cards; the top bar's member search steps aside here (this page has its own).
    v2.1: who's in the tournament; posts say which lab they're in.
    v2.2: "a database of all members and account information" — List | Database, Download CSV.
@@ -10,6 +12,7 @@
 let PQ = "", PFILTER = "all", PERSON = null, PPAGE = 0;
 let PPREF = { size: 50, dense: false, cols: null, k: "joined", up: false };
 try { Object.assign(PPREF, JSON.parse(localStorage.getItem("tnl-admin-people") || "{}")); } catch (e) {}
+PPREF.k = "joined"; PPREF.up = false;   // newest first, every time (v3.2)
 /* v3.1: Table or Cards is remembered per screen size — a phone starts in Cards
    (a member's key details without swiping sideways), a computer in Table */
 const pwide = () => matchMedia("(min-width:1024px)").matches;
