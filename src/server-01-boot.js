@@ -80,6 +80,7 @@ const app = express();
    The hop count is 2: Cloudflare → Railway → us. Trusting blindly (true)
    would let anyone spoof their IP by sending the header themselves. */
 app.set("trust proxy", 2);
+app.use(browserHeaders);   // HSTS, nosniff, referrer — first, so every answer has them (server-01-headers)
 
 /* Every admin change is written down (admin_log, server-10-admin.js). */
 app.use("/api/admin", (req, res, next) => {

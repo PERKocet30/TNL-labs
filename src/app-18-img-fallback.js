@@ -19,7 +19,7 @@ function caroPrune(c){
   let gone=0;
   slides.forEach((im,i)=>{if(im.tagName==="IMG"&&BADIMG.has(imgPath(im))){im.remove();if(dots[i])dots[i].remove();gone++}});
   if(!gone)return;
-  const left=track.querySelectorAll(".caro-i").length;   // a video slide counts too (2026-10-30)
+  const left=track.querySelectorAll(".caro-i").length;
   if(!left){c.replaceWith(imgMissingBox(slides.find(x=>x.tagName==="IMG")));return}
   if(left===1){c.querySelector(".caro-d")?.remove();c.querySelector(".caro-n")?.remove()}
   const d=c.querySelectorAll(".caro-d span");d.forEach((s,i)=>s.classList.toggle("on",i===0));

@@ -136,10 +136,14 @@ function gxCheck(){
     paint()},350);
 }
 
+/* person check, public/human.js */
+const gxHuman=()=>new Promise(ok=>{const go=()=>window.labsHuman(SITE.turnstile).then(ok,()=>ok(""));if(window.labsHuman)return go();
+  const s=document.createElement("script");s.src="/human.js?v=1";s.onload=go;s.onerror=()=>ok("");document.head.appendChild(s)});
 async function gxCreate(){
   const G=GFLOW,f=G.f;G.busy=true;G.err="";render();
-  try{const d=await api.register(G.oauth?{displayName:f.displayName,username:f.username,roles:f.roles,oauth:G.oauth,src:landedSrc(G)}   // Google / Apple: the ticket stands in
-      :{displayName:f.displayName,username:f.username,email:f.email,password:f.password,roles:f.roles,src:landedSrc(G)});
+  try{const ts=!G.oauth&&SITE&&SITE.turnstile?await gxHuman():"";
+    const d=await api.register(G.oauth?{displayName:f.displayName,username:f.username,roles:f.roles,oauth:G.oauth,src:landedSrc(G)}   // Google / Apple: the ticket stands in
+      :{displayName:f.displayName,username:f.username,email:f.email,password:f.password,roles:f.roles,src:landedSrc(G),turnstile:ts||undefined});
     TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;if(d.verifyUrl)VERIFYURL=d.verifyUrl;
     G.made={mailSent:!!d.mailSent};G.busy=false;
     G.step=d.mailSent&&!(ME&&ME.emailVerified)?"verify":"photo";   // confirm your email first (2026-10-19), then the profile

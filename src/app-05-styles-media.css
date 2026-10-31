@@ -286,6 +286,5 @@ video.vfill{object-fit:cover}
 .gx-pwr li i{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .gx-pwr li i::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--line2)}
 .gx-mail svg{width:48px;height:48px}
-/* a video slide in a carousel (app-08-images caroSlide) — fills its slide like a picture */
 .caro-vw{position:relative;cursor:default}
 .caro-v{width:100%;height:100%;object-fit:contain;display:block;background:var(--el)}
