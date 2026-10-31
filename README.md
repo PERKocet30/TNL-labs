@@ -57,7 +57,7 @@ scripts/scientist.mjs               read-only checks against the live site (afte
 test/                               the test suites — run with npm test
 ```
 
-App features: `shell` (page markup) · `styles` · `core` (theme, API client, kit, dialogs, icons, wiring) · `state` · `nav` (back, motion, top bar) · `gate` (join, log in, onboarding) · `showroom` · `labs` · `feed` · `posts` · `compose` (the post maker and editors) · `media` · `music` · `market` · `profile` · `messages` · `notifications` · `events` · `instagram`.
+App features: `shell` (page markup) · `styles` · `state` (`state.js`, the register of every shared variable — loads first) · `core` (theme, API client, kit, dialogs, icons, wiring) · `nav` (back, motion, top bar) · `gate` (join, log in, onboarding) · `showroom` · `labs` · `feed` · `posts` · `compose` (the post maker and editors) · `media` · `music` · `market` · `profile` · `messages` · `notifications` · `events` · `instagram`.
 Server features: `core` (boot, guards, headers, live stream) · `auth` · `trust` (signals, spam, honest accounts, Turnstile) · `uploads` · `posts` · `labs` · `profile` · `messages` · `market` · `orders` · `music` · `events` · `instagram` · `shop-feeds` · `connector` (Claude, Grok) · `admin` · `mail` · `pages` (policies, search).
 
 **Edit the parts, never the built files.** A new file goes in its feature folder *and* in that group's `order.mjs`, where it belongs: the parts share one scope, so a `const` must come before its first use and later CSS wins. Keep a file to one topic and readable (under ~25KB is a good guide; it's no longer a hard cap). `public/index.html` and `src/server.runtime.js` are regenerated on every boot and ignored by git.

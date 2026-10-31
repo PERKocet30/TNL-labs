@@ -80,7 +80,6 @@ function pcIgPaint(){
   l.innerHTML=pcAdvHTML()+pcPreviewHTML();
   pcAdvWire();pcPreviewWire();
 }
-let PCADV=null;
 function pcAdvHTML(){
   const c=PCADV;if(!c)return "";
   return `<div class="sheet" id="pcadvbg"><div class="sheetc" style="max-width:440px">
@@ -103,8 +102,6 @@ function pcAdvWire(){
   const hi=$("#pchide");if(hi)hi.onchange=()=>{c.hideLikes=hi.checked};
   const al=$("#pcalt");if(al)al.oninput=()=>{c.alt=al.value.slice(0,200);const s=al.previousElementSibling&&al.previousElementSibling.querySelector(".dim");if(s)s.textContent=s.textContent.replace(/\d+\/200/,c.alt.length+"/200")};
 }
-/* Preview: the post as the Showroom will show it */
-let PCPREV=null;
 function pcPreviewOpen(c){
   const now=Date.now(),imgs=c.imgs.map(im=>({url:im.url||im.thumb,thumb:im.thumb||im.url,w:im.w||800,h:im.h||1000,video:im.video}));
   PCPREV={id:-1,author:{...ME,level:levelFor(ME.rep).id},body:c.body||"",createdAt:now,images:imgs.length>1?imgs:null,imageUrl:imgs[0]?imgs[0].url:null,thumbUrl:imgs[0]?imgs[0].thumb:null,

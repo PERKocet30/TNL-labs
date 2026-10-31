@@ -10,7 +10,6 @@
 const VED_RATIOS=[["orig","Original"],["1:1","Square"],["4:5","4:5"],["9:16","9:16"],["16:9","16:9"]];
 const VED_STRIP=8;
 const vedNew=()=>({start:0,end:0,muted:false,ratio:"orig"});
-let VED=null;
 const vedT=ms=>{const s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
 
 function vedHTML(){

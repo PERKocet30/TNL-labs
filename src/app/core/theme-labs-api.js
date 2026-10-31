@@ -13,7 +13,6 @@ function applyTheme(t){
   if(m){ let bg=""; try{ bg=getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() }catch(e){}   // palette.js decides
     m.setAttribute("content", bg || (light ? "#FFFFFF" : "#000000")); }
 }
-let THEME = localStorage.getItem("tnl-theme") || "light";
 applyTheme(THEME);
 function setTheme(t){ THEME=t; localStorage.setItem("tnl-theme",t); applyTheme(t); applyAccent(ACCENTHEX); }
 /* Every day/night switch (top bar moon/sun, profile Day/Night) is a
@@ -31,9 +30,6 @@ document.addEventListener("click",e=>{
   if(group){group.querySelectorAll("[data-theme-set]").forEach(x=>x.classList.toggle("on",x===b));return}
   render();
 });
-let TOKEN = localStorage.getItem("tnl-token") || null;
-let ME = null;
-let LEVELS = [{id:1,name:"Entry",at:0},{id:2,name:"Verified",at:40},{id:3,name:"Collaborator",at:120},{id:4,name:"Core",at:280},{id:5,name:"Leadership",at:560}];
 const ROLES = [
   // visual
   "Graphic Designer","Illustrator","3D Artist","Motion Designer","Animator","Art Director",
@@ -159,6 +155,7 @@ const LABS = [
     {id:"coding",label:"coding",desc:"Sites, apps and tools members build."},
     {id:"finance",label:"finance",desc:"Money, rates, and not getting taken advantage of."}]},
 ];
+CH=LABS[0].channels[0];   // the channel you start in (CH lives in app/state/state.js; LABS is only known here)
 const levelFor=r=>LEVELS.reduce((a,l)=>r>=l.at?l:a,LEVELS[0]);
 /* An avatar wears its member's colour as a ring (2026-10-18, "to promote
    individualism"). Only a real #rrggbb from the server is used. */

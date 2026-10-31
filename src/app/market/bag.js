@@ -6,7 +6,6 @@
    Instagram shop feed, sent by /checkout, server/shop-feeds/meta.js). It makes
    the bag exactly those pieces, as Shopify's checkout links do: Checkout on
    Instagram means "buy these", and Meta's checkout test wants only them. */
-let MKTBAG=null, MKTRECENT=null, SHOPSTATS=null;
 const bagKey=()=>"tnl-bag:"+(myName()||"guest");
 function bagList(){try{const a=JSON.parse(localStorage.getItem(bagKey())||"[]");return Array.isArray(a)?a:[]}catch(e){return []}}
 function bagPut(a){try{localStorage.setItem(bagKey(),JSON.stringify(a.slice(0,40)))}catch(e){}paintBagCount()}

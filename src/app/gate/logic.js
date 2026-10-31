@@ -163,8 +163,6 @@ async function gxCreate(){
     render();
   }
 }
-/* Confirm your email: "I've confirmed it" asks; the timer asks quietly every few seconds. */
-let GXPOLL=0;
 async function gxVerified(asked){
   const G=GFLOW;if(!G||G.step!=="verify")return;
   try{const d=await api.authStatus();if(GFLOW!==G||G.step!=="verify")return;
@@ -190,5 +188,4 @@ async function gxAfterBio(){
 /* Sent here just to log in (2026-10-11): /?login=1&next=/admin#system from
    Admin's "Log in". No door, the log-in form at once, and back to next after.
    Only a path on this site — never "//elsewhere" or a full address. */
-let GNEXT=null;
 const gxNext=n=>typeof n==="string"&&/^\/(?![\/\\])[\w\-./#?=&%]*$/.test(n)?n:null;

@@ -75,13 +75,11 @@ async function shareLab(l){
   try{await navigator.clipboard.writeText(all);toast("Copied: the caption and the link. Paste it anywhere.");return}catch(e){}
   await uiPrompt("Copy and send this",{value:all,okLabel:"Done"});
 }
-let LABNEXT=null;   // a shared /l/ link opened before joining: step into that lab once you're in
 function labNext(){if(!LABNEXT||!ME)return false;const id=LABNEXT;LABNEXT=null;openLab(id);return true}
 const LAB_HOME={hq:"general",pharmacy:"creators",culture:"music-chat",fashion:"clothing-design",akatsuki:"anime-chat",casino:"news",tna:"opportunities"};
 const labHome=l=>l?(l.channels.find(c=>c.id===LAB_HOME[l.id])||l.channels[0]):null;
 const labOfCh=id=>LABS.find(l=>l.channels.some(c=>c.id===id))||null;
 const labUnread=l=>l.channels.reduce((n,c)=>n+(UNREADS[c.id]||0),0);
-let LABVIEW="work", LABTAG=null, PLACE={}, TAGVIEW=null, LABTAGS=null;
 const PLV=[["work","Work"],["talk","Talk"]];
 const papi={
   feed:l=>req("/api/labs/"+l+"/feed"),
@@ -153,7 +151,6 @@ const plEmpty=(h,p)=>`<div class="empty estate"><div class="eh">${esc(h)}</div><
 const plErr=d=>d&&d.error?plEmpty("Couldn't load this.",d.error):"";
 /* A genre's tags: its own (the ones that explain it) first, then
    whatever else people tag their work with here. */
-let LABTAGSBUSY=false;
 async function loadLabTags(){if(LABTAGSBUSY)return;LABTAGSBUSY=true;
   try{LABTAGS=(await papi.labTags()).tags;
     if(TAB==="labs"&&!LAB&&$("#lxlist"))render();
@@ -206,8 +203,6 @@ function wirePlace(){
     document.querySelectorAll("[data-taglab]").forEach(b=>b.onclick=()=>openLab(b.dataset.taglab,"work",TAGVIEW.tag))}
 }
 
-/* The next page of older pieces, appended to what's shown (2026-10-21). */
-let PLOLDERBUSY=false;
 async function plOlder(){
   if(PLOLDERBUSY||!LAB||LABVIEW!=="work")return;const lab=LAB.id,key=placeKey(),P=PLACE[lab]||{},d=P[key];
   if(!d||!d.more||!d.posts.length)return;
@@ -243,8 +238,6 @@ function tagHTML(){
         return l?`<button class="pl-chip" data-taglab="${id}">${esc(labMark(l.name))}<span>${n}</span></button>`:""}).join("")}</div></div>
       ${d.posts.length?plGridHTML(d.posts):plEmpty("Nothing tagged #"+T.tag+" yet.","Be the first — add #"+T.tag+" to your caption.")}`}</div>`;
 }
-/* Any #tag anywhere opens its page. */
-let PLDELEG=false;
 function wirePlacesGlobal(){
   if(PLDELEG)return;PLDELEG=true;
   document.addEventListener("click",e=>{const ld=e.target.closest&&e.target.closest("[data-pllead]");if(ld){e.preventDefault();openProfile(ld.dataset.pllead)}},true);

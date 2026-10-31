@@ -5,7 +5,6 @@
    Posted · View. If it fails nothing is lost — it's kept as a draft.
    Cancel asks Save draft / Discard / Keep editing; drafts live on this
    phone (the photos are already uploaded, so a draft is just the list). */
-let PQ=[];
 
 /* A choice sheet on its own layer: resolves the picked value, or null. */
 function uiChoose(title,body,opts){

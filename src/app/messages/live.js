@@ -2,7 +2,6 @@
    The server only streams to a signed-in member, so the app trades its
    token for a one-use ticket first (EventSource can't send headers). If
    the stream drops it reconnects with a fresh ticket, backing off. */
-let es=null, ESTRY=0, ESTIMER=null;
 async function startStream(){
   if(es){es.close();es=null}
   clearTimeout(ESTIMER);
@@ -43,7 +42,6 @@ async function startStream(){
    phone waits a random 0.5–2.5s so a busy moment doesn't have every open
    Showroom asking at the same instant. Several posts in that window are one
    refresh. The "New work" pill does the rest. */
-let SRSOON=null;
 function srSoon(){if(SRSOON)return;SRSOON=setTimeout(()=>{SRSOON=null;if(TAB==="showroom")loadShowroom(true)},500+Math.random()*2000)}
 function retryStream(){
   clearTimeout(ESTIMER);if(!ME)return;

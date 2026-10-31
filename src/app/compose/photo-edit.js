@@ -10,7 +10,6 @@ const PED_ADJ=[["b","Brightness"],["c","Contrast"],["s","Saturation"],["w","Warm
 const PED_FILTERS={none:{n:"Original"},mono:{n:"Mono",s:-100},noir:{n:"Noir",s:-100,c:35},fade:{n:"Fade",fade:60,c:-15,s:-15},
   warm:{n:"Warm",w:40,s:10},cool:{n:"Cool",w:-40,s:-5},punch:{n:"Punch",c:30,s:35},lab:{n:"Lab",g:18,c:10}};
 const pedNew=()=>({aspect:"orig",zoom:1,px:0,py:0,filter:"none",b:0,c:0,s:0,w:0});
-let PED=null;
 
 /* The crop box, in source pixels. */
 function pedBox(img,e){
@@ -61,7 +60,6 @@ function pedHTML(){
     <button class="ped-reset" id="pedreset">Reset</button>
   </div>`}
 
-let pedRaf=0;
 function pedDraw(){cancelAnimationFrame(pedRaf);pedRaf=requestAnimationFrame(()=>{
   const cv=$("#pedc"),st=$("#pedstage");if(!cv||!PED)return;
   pedRender(cv,PED.img,PED.e,Math.min(1200,st.clientWidth*(devicePixelRatio||1)))})}

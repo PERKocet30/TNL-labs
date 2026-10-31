@@ -13,7 +13,6 @@ const NF_SAY={like:"liked your post.",comment:"commented:",reply:"replied:",ment
   feature:"featured your work.",dm:"sent you a message."};
 /* Shop rows with no listing to open land on your orders, on the right side. */
 const NF_ORDERS={sale:"selling",order_complete:"selling",review:"selling",download:"selling",shipped:"buying",offer_accepted:"buying",offer_declined:"buying"};
-let NFROWS=[];
 function nfText(n){
   const s=NF_SAY[n.kind];
   if(n.kind==="comment"||n.kind==="reply"||n.kind==="mention")return s+(n.body?` ${esc(n.body)}`:"");

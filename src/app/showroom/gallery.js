@@ -15,7 +15,6 @@
    piece's own shape (galFit), no grey bars beside a tall one. Phones keep the
    feed as it is. Styles: app/styles/wide.css.
 ================================================================ */
-let GALI=0, GALRAF=0, GALCLICK=false, GALSTEER=0, GALLAST=0, GALACC=0, GALLOCK=false;
 const galOn=()=>typeof isWide==="function"&&isWide();
 
 /* the band a post's song plays in: the middle of the screen; on a

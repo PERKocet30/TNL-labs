@@ -45,12 +45,9 @@ function renderSearchOnly(){
   const sq=$("#sq");if(sq){sq.value=val;sq.focus();sq.setSelectionRange(val.length,val.length)}
   wirePanels();
 }
-/* openDM → app/messages/wire.js (messaging v2) */
-let UPPROG=null, UPLOADXHR=null;
 
 /* The Studio is 80KB+ and most visits never open it, so it no longer blocks
    the first paint: it loads in the background after boot, or on first use. */
-let STUDIOLOAD=null;
 /* Admin → Settings → Studio. Off (the default) hides the beat maker: its room,
    its button and Remix. Beats already posted still play. */
 const studioOn=()=>SITE.studioOpen===true;
@@ -88,7 +85,6 @@ function mountStudio(){
 
    One observer, rebuilt each render (the DOM is replaced wholesale), and
    disconnected first so observers don't pile up on every repaint. */
-let VOBS=null;
 /* Carousels. CSS scroll-snap does the swiping — no library, no drag maths,
    and it inherits momentum scrolling for free. This just keeps the dots and
    the counter honest about where you are. */

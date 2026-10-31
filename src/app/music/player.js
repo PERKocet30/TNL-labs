@@ -13,7 +13,6 @@
      while you're looking at the post: it autoplays when the post is centred
      and stops when you scroll off it, leave the page, or open a chat or
      drawer over it. It never gets the bar. */
-let AUDIO=null, PLAYERBAR=null, PLAYQ=[];
 function audioEl(){
   if(AUDIO)return AUDIO;
   AUDIO=new Audio();

@@ -113,7 +113,6 @@ document.addEventListener("click",e=>{
    artist's profile, a beat later (that's the wait for a second tap). Lab
    chat rows have their own double-tap (a ❤️ reaction) and no like button,
    so they're left alone. */
-let MVDT={card:null,t:0,timer:null};
 const MV_MEDIA=".sr-img,.caro-i,.post-img,.gimg";
 document.addEventListener("click",e=>{
   const m=e.target&&e.target.closest?e.target.closest(MV_MEDIA):null;

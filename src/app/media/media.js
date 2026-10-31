@@ -13,7 +13,6 @@ function wireInstall(){
    rebuilds the screen. The position is put back as images load until you
    touch it, so a re-layout can't leave it on a random slide. */
 const CAROIDX=new Map();   // key → slide, for the screen you're on
-let CAROVIEW="";
 function caroKey(c){return (c.closest("#poov")?"po:":"")+c.dataset.caro}
 function wireCaros(){
   const view=MV.key+"|"+(PROFILE&&!MYPAGE()&&PROFILE.user?PROFILE.user.username:"")+"|"+(POSTOPEN?POSTOPEN.id:"");   // screen (app/nav/motion) + any profile/post on top
@@ -81,7 +80,6 @@ function vRestore(root,m){
    decoder and buffer (it shows its cover, and loads again on the way
    back) — the way Instagram keeps only the players near you alive. */
 const VDWELL=220;
-let VFAR=null;
 /* Sound stays on (2026-10-08). A phone's volume buttons never reach a web
    page, so "raise the volume to unmute" can't be done here; instead,
    unmute one video and every video after it
@@ -101,7 +99,6 @@ function vPlayBtn(v){
   b.onclick=(ev)=>{ev.stopPropagation();vReload(v);v.play().then(()=>b.remove()).catch(()=>{})};
   w.appendChild(b);
 }
-let VSOUND=(()=>{try{return sessionStorage.getItem("tnl-vsound")==="1"}catch(e){return false}})();
 function setVSound(on){VSOUND=on;try{sessionStorage.setItem("tnl-vsound",on?"1":"0")}catch(e){}}
 const vIcon=v=>{const b=v.parentElement&&v.parentElement.querySelector("[data-vmute]");if(b)b.innerHTML=v.muted?DI.soundOff:DI.soundOn};
 /* This one has the sound: quiet every other video, and the post music. */
@@ -188,12 +185,9 @@ function musChipHTML(p){
    someone pauses on purpose — without it, the next scroll would restart the
    track they just silenced. MUSAUTOID marks a track that autoplay started, so
    scrolling away only stops music the reader didn't ask for. */
-let MUSOK=false, MUSMUTE=null, MUSAUTOID=null, MOBS=null, MUSDWELL=0;
 /* Post ids whose card has actually ENTERED the centre band. "Stops the
    instant it leaves" requires having been in — a Set, not element state,
    because render() rebuilds the DOM and the observer with it. */
-let MUSBAND=new Set();
-let MUSPRIMED=false;
 /* A zero-length WAV. Playing it inside a real tap is what unlocks the audio
    element on iOS; nothing is audible. */
 const SILENT="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
@@ -226,7 +220,6 @@ function primeAudio(skipWire){
   }catch(e){}
   if(!skipWire)wireMusAuto();
 }
-let MUSDELEG=false;
 (function wireMusChips(){
   if(MUSDELEG)return;MUSDELEG=true;
   /* One capture-phase delegate for every surface — stops the tap before a

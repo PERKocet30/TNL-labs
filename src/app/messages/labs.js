@@ -3,7 +3,6 @@
    Hold a message for reactions, reply, copy, send, edit, pin (admins),
    delete. Swipe right to reply, double-tap for ❤️. Pinned messages sit
    under the channel tabs; typing shows above the composer. */
-let LABDRAFT="", POSTSCH=null, PINIDX=0, ROOMSTICK=true, ROOMSEEN=null, LABUNSEEN=0;
 
 function roomRowsHTML(){
   const list=[...POSTS].sort((a,b)=>a.createdAt-b.createdAt);

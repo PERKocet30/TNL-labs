@@ -17,8 +17,6 @@
    the trail; only the sign-up door, the post maker and Edit profile still
    do (they own their back: a draft asks first, the door steps back).
 ================================================================ */
-let HISTINIT=false, POPPING=false;
-let NAVS=[], NAVD=0, NAVPREV=null, NAVSWALLOW=0;
 function navSnap(){return {TAB,PROFILE,PTAB,POSTOPEN,NOTIFOPEN,SEARCHOPEN,LAB,ROOMOPEN,LABVIEW,LABTAG,TAGVIEW,
   MKTVIEW,MKTONE,MKTOFFERS,MKTSELLER,MKTSIMILAR,ORDTAB,EVSLUG,EVENTER,EVSHARE,REVIEWING,PFTOP,MUSVIEW,PLIST,NOWFULL,LB:!!LIGHTBOX,PK:!!PICKER}}
 /* What makes one screen a different screen. Switching Work/Talk inside a
@@ -38,11 +36,9 @@ function navEntry(s){NAVS[NAVD]=s;NAVS.length=NAVD+1;NAVD++;
    opening the next in the same tap would push before the back lands. So
    backs gather into one history.go(-n) on the next tick, and anything
    opened meanwhile waits (NAVWAIT) until it has landed. */
-let NAVGO=0, NAVBUSY=false, NAVWAIT=[];
 /* A profile opened from an open post comes up on top of it (it used to
    open underneath — tapping the artist looked like nothing happened); a
    post opened from a profile goes on top of that. Whichever came last. */
-let PFTOP=false, NAVPF="", NAVPO=null;
 function navLayer(){
   const u=PROFILE&&PROFILE.user?PROFILE.user.username:"",po=POSTOPEN?POSTOPEN.id:null;
   if(!POPPING){if(!u||!po)PFTOP=false;else if(u!==NAVPF)PFTOP=true;else if(po!==NAVPO)PFTOP=false}

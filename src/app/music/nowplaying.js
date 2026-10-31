@@ -10,7 +10,6 @@
    Its own layer outside #app, like the bar, so a repaint never touches it;
    paintPlayer() paints both, paintProgress() moves both scrubbers.
 ================================================================ */
-let NOWFULL=false, NPFEL=null, REPEAT="off", PLQORIG=null;   // REPEAT: off → all → one
 const NPF_DOWN=di('<path d="M6 9l6 6 6-6"/>',24);
 const NPF_REP=di('<path d="M4 12V8h14M15 5l3 3-3 3M20 12v4H6M9 19l-3-3 3-3"/>',22);
 function npfFrom(){

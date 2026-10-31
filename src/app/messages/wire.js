@@ -1,7 +1,6 @@
 /* MESSAGES v2.1 — 2026-10-14 (search your chats; keeps its place in the list).
    v2.0 — 2026-09-29. What the inbox and chat screen do. */
 const CHATDRAFTS={};
-let CHATSTICK=true;   // reading the newest message? then late-loading media keeps you there
 const isMine=x=>!!(x&&x.from&&ME&&x.from.username===ME.username);
 
 /* ---- opening and closing ---- */
@@ -69,8 +68,6 @@ function chatPop(){
   return false;
 }
 
-/* searching your chats (2026-10-14): rows hide in place, nothing repaints */
-let CXQ="";
 function filterInbox(){const t=CXQ.trim().toLowerCase();
   document.querySelectorAll("#chatlayer .cx-row").forEach(r=>{r.hidden=!!t&&!(r.dataset.q||"").includes(t)})}
 /* ---- painting without losing your place ---- */
@@ -194,8 +191,6 @@ function wireMenu(){
   L.querySelectorAll("[data-cma]").forEach(b=>b.onclick=()=>{const a=CMENU.actions[+b.dataset.cma];closeMenu();a.run()});
 }
 
-/* ---- composer ---- */
-let TYPINGSENT=0;
 function wireComposer(){
   const L=chatLayer(),d=L.querySelector("#cxdraft");
   if(d){

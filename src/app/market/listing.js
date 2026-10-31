@@ -3,7 +3,6 @@
    pinch in the viewer), title and price, size and colour picked like a
    shop (sold-out ones crossed through), the seller, and a Buy bar pinned
    to the bottom so the price and the button are always in reach. */
-let LPICK={id:0,size:"",colour:""}, LGIDX={};
 
 /* The buyer's pick against the listing's variants. match is the variant
    they've chosen (or null); need says what's still missing. */

@@ -39,7 +39,6 @@ function glFlush(){
    a pocketed phone — the server answered them in milliseconds). So a call
    only counts as slow if the screen was showing the whole time, and not just
    waking up (the network takes a moment to come back). */
-let GLHID=0,GLSHOW=0;
 document.addEventListener("visibilitychange",()=>{if(document.hidden){GLHID++;glFlush()}else GLSHOW=Date.now()});
 const glSeen=(t,h)=>h===GLHID&&!document.hidden&&t-GLSHOW>2000;
 
@@ -55,7 +54,6 @@ function glTarget(el){
 }
 const glName=b=>{const k=b.dataset?Object.keys(b.dataset)[0]:null;
   return (b.id?"#"+b.id:k?"["+k.replace(/[A-Z]/g,c=>"-"+c.toLowerCase())+"]":String(b.getAttribute("aria-label")||b.className||b.tagName)).slice(0,48)};
-let GLRT={el:null,n:0,t0:0};
 document.addEventListener("pointerdown",e=>{
   const b=glTarget(e.target);if(!b)return;
   const now=Date.now();

@@ -40,6 +40,9 @@ export const APP = [
   // shell
   "shell/body.html",
 
+  // state — first, so every screen's variables exist before any script runs
+  "state/state.js",
+
   // core
   "core/device.js",
   "core/icons.js",

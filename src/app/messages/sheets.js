@@ -7,7 +7,6 @@ async function openPeopleSheet(kind,extra={}){
   if(kind==="fwd"&&!INBOX)loadInbox().then(()=>{if(CHATSHEET&&CHATSHEET.kind==="fwd")paintLayer()});
   searchPeople("");
 }
-let PSEQ=0;
 async function searchPeople(q){
   const s=CHATSHEET,n=++PSEQ;
   try{const r=await api.mentionable(q);if(CHATSHEET!==s||n!==PSEQ)return;s.results=r.people;paintSheetKeep()}catch(e){}

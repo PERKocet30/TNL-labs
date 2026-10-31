@@ -3,7 +3,6 @@
    username check, then photo → people → welcome once the account exists.
    State lives in GFLOW, not in the DOM, so a background render() (SSE,
    badges) redraws the same step with what was typed instead of resetting. */
-let GFLOW=null, GXT=null;
 const GX_STEPS=["email","password","name","username","roles"];
 const GX_X=`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
 const GX_BACK=`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>`;

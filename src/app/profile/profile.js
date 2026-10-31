@@ -35,7 +35,6 @@ function workCardHTML(p, collab, K, pinned) {
    while the list is on screen and stops when you leave it.
    A /s/:id page's "Open in the app" lands here with that song picked out
    (PFSONG). Server: server/music/music.js. Styles: app/styles/music.css. */
-let PFSONG=null;
 const trkOn=t=>MUSAUTOID==="trk"+t.id&&NOWPLAYING&&NOWPLAYING.id===t.id&&AUDIO&&!AUDIO.paused;
 /* The songs in the order they show: the pinned one first, then newest. */
 function profileSongs(){

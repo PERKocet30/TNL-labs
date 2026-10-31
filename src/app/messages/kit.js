@@ -11,7 +11,6 @@
    message every time something else happens.
 ================================================================ */
 const REACTS=["❤️","😂","😮","😢","🔥","👏"];
-let INBOX=null, INBOXTAB="chats", CHAT=null, CHATSHEET=null, CMENU=null, TYPING={}, LABREPLY=null, LABPINS=[], LABMUTED=new Set(), RECORD=null, CHATZOOM=null;
 
 const capi={
   inbox:()=>req("/api/chats"),
@@ -101,8 +100,6 @@ function typingNames(key){
   return Object.entries(t).filter(([u,v])=>v.until>now&&u!==myName()).map(([,v])=>v.name);
 }
 
-/* ---- one shared audio element for voice notes ---- */
-let VNAUDIO=null, VNURL=null;
 function playVoice(el){
   const url=el.dataset.vn;
   if(VNAUDIO&&VNURL===url&&!VNAUDIO.paused){VNAUDIO.pause();return}
@@ -127,8 +124,7 @@ function chatLayer(){
   if(!l){l=document.createElement("div");l.id="chatlayer";document.body.appendChild(l)}
   return l;
 }
-/* phone ↔ computer: the screen's shape changes with the window */
-let CXWIDE=null;if(typeof addEventListener==="function")addEventListener("resize",()=>{const w=typeof isWide==="function"&&isWide();if(CXWIDE!==null&&w!==CXWIDE&&DMOPENPANEL)paintLayer();CXWIDE=w});
+if(typeof addEventListener==="function")addEventListener("resize",()=>{const w=typeof isWide==="function"&&isWide();if(CXWIDE!==null&&w!==CXWIDE&&DMOPENPANEL)paintLayer();CXWIDE=w});
 function paintLayer(){
   const l=chatLayer();
   const keep=chatKeep();
@@ -147,7 +143,6 @@ function paintLayer(){
    history entry: back closes the innermost thing (zoom, menu, sheet, chat,
    inbox) and re-arms if something is still open. Closing from a button
    consumes the entry quietly, so the app's own back handling never sees it. */
-let CHATHIST=false, CHATSWALLOW=false;
 const layerOpen=()=>!!(DMOPENPANEL||CHATSHEET||CMENU||CHATZOOM);
 function syncChatHistory(){
   if(!CHATHIST&&layerOpen()){CHATHIST=true;try{history.pushState({kind:"chat",tab:TAB},"",location.pathname)}catch(e){}}

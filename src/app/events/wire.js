@@ -9,7 +9,6 @@ function openEvent(slug){
   TAB="event"; EVSLUG=slug; PROFILE=null; POSTOPEN=null; NOTIFOPEN=false; SEARCHOPEN=false; EVENTER=null; EVSHARE=null; EVFOCUS=null;
   render(); loadEvent();
 }
-let EVPRE=null;   // the tournament asked for at boot, before the rest (app/feed/feed-boot)
 async function loadEvent(){
   const want=EVSLUG,pre=EVPRE&&EVPRE.slug===want?EVPRE.p:null;EVPRE=null;
   try{const d=await(pre||evApi.one(want));if(want!==EVSLUG)return;EV=d;if(TAB==="event")render()}
@@ -21,7 +20,6 @@ async function loadEvents(){
   const w=document.getElementById("ev-bannerwrap");if(w)w.innerHTML=eventBannerHTML();
 }
 
-let EVDELEG=false;
 function wireEvent(){
   if(!EVDELEG){EVDELEG=true;
     // anywhere in the app: the banner, and event notifications
@@ -60,7 +58,6 @@ function wireEvent(){
 /* A brand-new account's vote is held, not refused (2026-10-27): the watch saw new members tap Vote again and again
    at "Finish setting up your account to vote." — one had already added a photo, a bio and a piece, and left without
    voting. The message stays the same (no timer); the vote waits on the button and goes in by itself once allowed. */
-let EVWAIT=null;
 async function evPick(id,btn,held){
   if(!ME){if(!EVFOCUS)EVFOCUS=id;evRemember();return needAccount("Join to vote.")}
   if(!EV.me.myVotes.includes(id)&&EV.event.requireAvatar&&!ME.avatarUrl)return evPhotoAsk(id);   // 2026-10-29: the reminder, at the tap
@@ -84,7 +81,6 @@ async function evPhotoAsk(id){
   if(!EVFOCUS)EVFOCUS=id;evRemember();   // back to this piece once the photo is in
   if(await uiConfirm("Add a profile photo to vote","Every vote on LABS has a face behind it. Add a photo, then come back to vote for this piece.",{okLabel:"Add a photo",cancelLabel:"Not now"}))gsEdit();
 }
-let EV_HOLD_MS=30000;   // let: the tap-through shortens it
 async function evScore(id,n){
   try{await evApi.score(EVSLUG,id,n);EV.me.myScores[id]=n;render()}catch(e){toast(e.message)}
 }

@@ -1,14 +1,7 @@
 /* ---- state ---- */
-// LAB=null means you're standing outside looking at the labs, not in one
-let TAB="showroom", LAB=null, CH=LABS[0].channels[0], ROOMOPEN=false, POSTS=[], PROFILE=null, TOASTT=null;
 /* Showroom renders straight into the DOM; keep the post objects too, so a
    card's share/like can find its post. Without this, a Showroom share falls
    through to the "not published work" branch and hides every share option. */
-let SRPOSTS=[];
-let PTAB="work", EDITING=false, LIGHTBOX=null, VERIFYURL=null;
-let PROFLISTINGS=null;
-let PCOMPOSE=null;
-let FEEDAT={}, SRAT=0;  // freshness stamps — render() must not hammer the network on every tap
 /* ── SENTRY (client) ─────────────────────────────────────────────────
    When a member's phone breaks, the error reports itself with a stack —
    no more debugging from dark screen recordings. DSNs are public by design. */
@@ -43,25 +36,18 @@ window.addEventListener("error",e=>{if(e.target&&e.target!==window)return;   // 
   if(/^Script error\.?$/i.test(String(e.message||""))&&!e.error)return;      // someone else's script (Instagram's browser, an extension): the browser hides what broke, so there's nothing to fix
   sentryClient(e.message,e.error&&e.error.stack,"error")});
 window.addEventListener("unhandledrejection",e=>{const r=e.reason||{};sentryClient(r.message||String(r),r.stack,"promise")});      // profile-first composer: {body,imgs:[{url,thumb,w,h}],busy}   // a profile's active market listings (lazy-loaded when the SHOP tab opens)
-let CLIMB=false, CLIMBOPENRUNG=0; // THE CLIMB — the one screen where the whole progression system is legible
-/* Several files at once. Each posts separately. */
-let QUEUE=[];
 /* Add-to-home-screen. Two completely different worlds:
    - Android/Chrome fires `beforeinstallprompt` and lets us trigger a real
      install dialog. We catch and defer it.
    - iOS Safari has NO API. The only way onto the home screen is Share →
      Add to Home Screen, by hand. So on iOS we can only SHOW people how.
    Either way: never nag. Once dismissed, it stays gone. */
-let INSTALLEVT=null, INSTALLCARD=false;
 /* Overwritten by /api/levels on boot. Declared here with a sane default so
    that a failed call — or an offline start — can't take the app down. */
-let SITE={};   // headline, tagline, announcement, feature switches — set by /api/levels
-let ACCENTS={lab:{name:"Lab",hex:"#98FC68"}};
 /* Repaints the app in someone's colour. Every green thing in the CSS reads
    var(--green), so this one line is the whole theme.
    Defensive on purpose: it runs at boot, at login, on every profile open —
    if it throws, nothing renders at all. */
-let ACCENTHEX = "#98FC68";
 /* The same maths as inkFor() in src/palette.js (v2, 2026-10-14): darker or
    lighter in OKLCH until it reads, so lime stays green and gold stays gold. */
 function inkFor(hex){
@@ -101,40 +87,27 @@ function applyAccent(hex){
     document.documentElement.style.setProperty("--on-accent", onAccent(f));
   }catch(e){/* never worth taking the app down over a colour */}
 }
-let EDITID=null;
 /* A post is a post because of what it IS, not because someone ticked a
    box before sending it. Media, a beat, a track, or a post sent in from
    outside renders as a card; plain talk renders as a chat line. The lab
    composer no longer has a say, so nothing in a lab can promote itself
    out of the lab. */
 const isCard=p=>!!(p&&(p.imageUrl||p.videoUrl||(p.images&&p.images.length)||p.beat||p.audioTrack||p.audioTrackId||p.sharedFrom));
-let TRACKS=null, TRKQ="", TRKUP=false, NOWPLAYING=null;
 /* The edit sheet doubles as the naming step on the way in: the upload lands,
    the sheet opens pre-filled, and the same sheet reopens from the row later. */
-let TRKEDIT=null;   // {id,title,artworkUrl,busy,fresh}
 /* The post a grid tile opens into. Holds the post object, not an id, so the
    overlay paints instantly from what the profile already loaded. */
-let POSTOPEN=null;
-let TRKVIDS=null, TRKEXT=false;
-let NOTIFS=null, UNREAD=0, DMUNREAD=0, SEARCHQ="", SEARCHROLE="", SEARCHRES=null;
-let OPENCOMMENTS=null, COMMENTS=[], CEDIT=null;
-let NOTIFOPEN=false, DMOPENPANEL=false, SEARCHOPEN=false;
-let SEARCHING=false, UNREADS={}, PICKER=null, MENTIONS=null, MENTIONQ="";
-let LABACT=null;   // per-lab life: what got made, who was in, what's unread
 /* The archive. 226 people have been posting reference into the PHARMACY
    for months and none of it can be found again — this is the fix. */
-let ARCHIVE=null, ARCHFILT={}, ARCHT=null;
 /* Guest mode: you can see the Showroom, the Market and anyone's portfolio
    without an account. The labs are members-only — that's where people
    actually talk, and it isn't a marketing surface. */
-let GATE=null;                       // null = browsing, "join"/"login" = the door
 const guest=()=>!ME;
 /* The door. Its real job is not decoration: a deliberate tap is the ONLY
    thing iOS accepts as permission to start audio, so ENTER is where sound
    gets unlocked for the session. 023 primes a silent WAV on "first tap
    anywhere" precisely because there was no door to hang this on.
    Guests only, once per browser session, and every exit path is guarded. */
-let ENTER = false;
 /* The door is the audio unlock, so it stands on EVERY page load. MUSOK and
    MUSPRIMED live in memory and reset with the page, which means a reload
    needs a fresh gesture — and the old sessionStorage suppression hid the
@@ -169,20 +142,13 @@ function needAccount(why){
   GATE="join"; GATEWHY=why||"";
   render();
 }
-let GATEWHY="";
-let MKT=null, MKTMETA={categories:[],conditions:[],paymentsEnabled:false}, MKTFILT={}, MKTVIEW="browse";
-let MKTONE=null, MKTOFFERS=[], SELLFORM=null, SELLIMGS=[], ORDERS=null, ORDTAB="buying", SELLUP=false, MKTFILTOPEN=false;
 /* MKTEDIT holds the id of the listing being edited, or null when the seller
    is listing something new. The edit screen IS the sell form — same fields,
    same validation, same muscle memory. A separate edit form would drift
    from the sell form within two patches. */
-let MKTEDIT=null;
-let MKTSELLER=null, MKTSIMILAR=[], SAVED=null, REVIEWING=null, REVSTARS=5;
-let SELLKIND="physical", SELLAUDIO=null, SELLAUDIONAME="";
 const $=sel=>document.querySelector(sel);
 /* A message on its own layer. It used to repaint the whole app twice (on
    and off) — every "Saved" rebuilt the page under your thumb. */
-let TOASTH=0;
 function toast(t){
   TOASTT=t;clearTimeout(TOASTH);
   let el=document.getElementById("toastl");

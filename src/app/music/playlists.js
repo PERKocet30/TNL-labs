@@ -11,7 +11,6 @@
      delete. Each song's … takes it out.
    Yours only (server/music/playlists.js). Back walks it (app/nav/back: PLIST).
 ================================================================ */
-let MUSVIEW="songs", PLISTS=null, PLLOADING=false, PLIST=null, PLADD=null, PLSHUF=false, PLQID=null;
 const plapi={
   list:()=>req("/api/playlists"),
   one:id=>req("/api/playlists/"+id),

@@ -15,9 +15,6 @@
    app/events/wire.js. The poll + scoreboard: app/events/poll.js.
    Engine: server/events/*.js.
 ================================================================ */
-let EVLIST=null;          // {current, events} — for the Showroom banner
-let EV=null, EVSLUG=null; // the open event, as the server shapes it
-let EVENTER=null;         // the enter sheet: {prep, caption, agree, busy, pct}
 const evApi={
   list:()=>req("/api/events"),
   one:s=>req("/api/events/"+encodeURIComponent(s)),

@@ -5,7 +5,6 @@
    what it cost, where it's going, and what happens next. A payment that's
    still clearing (some banks) says so instead of "failed".
    ?checkout=paid&o=<order or bag id> → MKTVIEW "confirmed" (boot, app-19). */
-let DONEID=null, DONESTATE="paid";
 async function orderDoneOpen(id,state){
   DONEID=Number(id)||null;DONESTATE=state==="processing"?"processing":"paid";
   TAB="market";MKTVIEW="confirmed";ORDERS=null;render();

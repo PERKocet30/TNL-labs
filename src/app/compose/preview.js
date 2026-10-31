@@ -7,7 +7,6 @@
    audio element — the lab player is paused while you're posting
    (musicScope), and this mustn't fight it. Stops when you pick another
    song, take the music off, or close the post maker. */
-let PCPV=null;   // {id, a: Audio}
 const pcPvOn=id=>!!(PCPV&&PCPV.id===id&&!PCPV.a.paused);
 function pcPrevBtn(t){const on=pcPvOn(t.id);
   return `<button type="button" class="pcmus-pp${on?" on":""}" data-pcprev="${t.id}" aria-label="${on?"Stop":"Listen to"} ${esc(t.title)}">${on?DI.pause:DI.play}</button>`}

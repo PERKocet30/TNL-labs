@@ -18,6 +18,11 @@ https://tnllabs.com. README.md is the full reference; this file is the rules.
   before its first use and later CSS wins. Boot stops if the order file and
   the disk disagree. One topic per file; under ~25KB is a good guide, not a
   cap (the 24KB cap ended with the flatten, 2026-10-31).
+- **Shared app state lives in `src/app/state/state.js`**, the register (first
+  script). Every top-level `let` the app has is there, under the feature that
+  owns it; `test/state.test.mjs` fails on one anywhere else. A screen that
+  sits over another puts the other aside and brings it back after
+  (`pceOpen` / `pceLeave` is the pattern) — never leaves it underneath.
 - **Never touch member data.** The database, uploads and backups live on the
   Railway volume at `/app/data` (`TNL_DATA`), never in git. No seed, reset or
   wipe scripts — that is deliberate.

@@ -53,7 +53,6 @@ function srCardHTML(p,i){
 
 /* Kept between paints: render() rebuilds the page, and the row used to
    vanish until the next fetch. */
-let SRB=[], SRBLOADED=false;
 function srBuildersHTML(){
   /* Until the list has arrived, hold its exact space with placeholder cards
      built from the same parts, so the feed below doesn't drop ~150px when
@@ -74,7 +73,6 @@ function srBuildersHTML(){
    keeps its order: numbers update in place, a post that's gone is dropped,
    and genuinely new work waits behind the "New work" pill. Tapping it takes
    the fresh order and glides to the top. */
-let SRNEW=null, SRBNEXT=null;
 /* "Who's building" sits above the feed: if it appears or disappears under a
    reader, everything below jumps by its height. So a background refresh
    only swaps the people in it when the strip stays the same size; a change

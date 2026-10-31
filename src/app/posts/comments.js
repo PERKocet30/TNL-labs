@@ -7,7 +7,6 @@
 /* While a post is open on top, its comments live in the opened post only —
    the same card behind it would otherwise carry a second, hidden #cdraft
    and a send could read the wrong box. */
-let CSLOTPO=false;   // true while the opened post (#poov) is being drawn
 function cslotHTML(p){
   if(p.commentsOff)return p.commentCount?`<div class="px-off dim">Comments are off</div>`:"";
   const here=OPENCOMMENTS===p.id&&(!POSTOPEN||Number(POSTOPEN.id)!==Number(p.id)||CSLOTPO);

@@ -52,5 +52,4 @@ function wireTour(G){
     if(e.key==="ArrowRight"){e.preventDefault();$("#tournext")&&$("#tournext").click()}
     else if(e.key==="ArrowLeft"&&(g.ti||0)>0){e.preventDefault();g.ti--;render()}})}
 }
-let TOURKEYS=false;
 const openTour=()=>{GATE="tour";render()};

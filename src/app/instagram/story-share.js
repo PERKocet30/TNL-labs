@@ -8,7 +8,6 @@
    is open, so the tap goes straight to navigator.share — iOS only allows
    the share sheet inside the tap itself, not after a download. Its own
    layer: nothing behind it repaints. */
-let IGS=null;
 /* img: the card's address (/p/1/story.jpg, /u/x/story.jpg, /m/1/…, /tr/1/…); link: what the sticker opens.
    video (2026-10-11): a post with a song also has /p/1/story.mp4 — the card with
    15 seconds of the song. That's what's shared; the picture stands in while it's

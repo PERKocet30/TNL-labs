@@ -1,7 +1,6 @@
 /* v2026-10-20: the share sheet's head comes from the screen kit */
 /* EVENT POLL (2026-10-07): a scoreboard you vote from. EVFOCUS — the piece a link opened (/?e=slug&v=id);
    EVSHARE — the share sheet for any piece (2026-10-26; was the entrant's own only); tnl-evret — back to the piece after confirming email. */
-let EVFOCUS=null, EVSHARE=null;
 
 const evVoteUrl=id=>`${location.origin}/e/${EVSLUG}/${id}`;
 /* places moved in the last 24 hours — arrows, so it never reads as "+2 votes" */

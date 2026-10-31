@@ -9,7 +9,6 @@
    closed (✕), on the device they joined on ("new", set as the walkthrough
    ends). Its numbers (/api/me/start) arrive before the Showroom first
    paints (app/feed/feed-boot), so it never appears under a reader. */
-let GS=null, GSAT=0, GSFORCE=false;
 const GS_DAYS=30;
 const gsFlag=k=>{try{return !!localStorage.getItem("tnl-gs-"+k)}catch(e){return false}};
 const gsMark=k=>{try{localStorage.setItem("tnl-gs-"+k,"1")}catch(e){}};

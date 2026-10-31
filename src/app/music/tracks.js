@@ -23,7 +23,6 @@ function emptyHTML(ch){
 
 const money=c=>"$"+(c/100).toFixed(2);
 
-let TRENDING=null;   // songs used in posts lately (GET /api/tracks/trending, server/music/music.js)
 async function loadTracks(){
   const tr=TRKQ?null:req("/api/tracks/trending").then(d=>d.tracks||[]).catch(()=>[]);
   try{TRACKS=(await api.tracks(TRKQ)).tracks}catch(e){TRACKS=[]}
