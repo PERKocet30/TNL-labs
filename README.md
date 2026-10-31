@@ -127,7 +127,8 @@ Requires **Node 22.5+** (built-in SQLite).
 ```bash
 npm install
 npm start      # http://localhost:8787
-npm test       # assembles, then runs every suite
+npm test       # assembles, type-checks the money code, then runs every suite
+npm run typecheck   # just the types: src/pay.js, db.js, mail.js, palette.js (dev-only TypeScript, reads the JSDoc)
 ```
 
 **Deploying:** push to `main`. Railway rebuilds and restarts in about 80 seconds. The deploy log should show:

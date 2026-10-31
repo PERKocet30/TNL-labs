@@ -67,7 +67,8 @@ const L = PALETTE.light, D = PALETTE.dark;
 const C = { paper: L.bg, card: L.card, ink: L.tx, ink2: L.dim, line: L.line, mark: inkFor(PALETTE.accent, "light") };
 const FONT = `'Helvetica Neue',Helvetica,Archivo,Arial,sans-serif`; // single quotes: it sits inside style="…"
 
-/** One layout for every email. Returns { html, text }. */
+/** One layout for every email. Returns { html, text }.
+ *  @param {{ eyebrow: string, title: string, lines: string[], cta: string, url: string, note: string, preheader: string, unsub?: string }} o */
 export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader, unsub }) {
   const origin = (() => { try { return new URL(url).origin; } catch { return "https://tnllabs.com"; } })();
   const href = escapeHtml(url);
@@ -267,6 +268,7 @@ export async function sendResetEmail(to, name, url) {
   return send(to, "Reset your password — LABS", resetEmail(name, url), `reset link: ${url}`);
 }
 
+/** @param {Record<string, string> | null} [headers] extra mail headers (List-Unsubscribe for the event mails) */
 async function send(to, subject, { html, text }, logLine, headers = null) {
   if (!KEY) {
     console.log(`\n[mail] NOT CONFIGURED — no email sent to ${to}`);
@@ -297,6 +299,7 @@ async function send(to, subject, { html, text }, logLine, headers = null) {
       console.error(`[mail]   the link, since they won't get it: ${logLine}`);
       return { sent: false, error: why, status: res.status, raw: body.slice(0, 300) };
     }
+    /** @type {any} */
     const out = await res.json().catch(() => ({}));
     console.log(`[mail] sent -> ${to} (resend id ${out.id || "?"})`);
     return { sent: true, id: out.id };

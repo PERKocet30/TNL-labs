@@ -478,7 +478,7 @@ if (!cols.includes("email_verified")) {
   db.exec(`ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`);
   // Grandfather anyone who signed up before verification existed — locking
   // out current members to introduce a new rule would be hostile.
-  const n = db.prepare(`SELECT COUNT(*) n FROM users`).get().n;
+  const n = Number(/** @type {any} */ (db.prepare(`SELECT COUNT(*) n FROM users`).get()).n);
   if (n > 0) {
     db.exec(`UPDATE users SET email_verified = 1`);
     console.log(`[db] grandfathered ${n} existing account(s) as verified`);
@@ -692,7 +692,7 @@ export function setSetting(key, value, byUserId) {
 }
 export function allSettings() {
   const out = { ...SETTING_DEFAULTS };
-  for (const r of db.prepare(`SELECT key, value FROM settings`).all()) {
+  for (const r of /** @type {{ key: string, value: string }[]} */ (db.prepare(`SELECT key, value FROM settings`).all())) {
     if (r.key in out) out[r.key] = r.value;
   }
   return out;
@@ -717,7 +717,7 @@ export function ensureAdmin() {
     }
     if (owner) return; // the named owner is the admin; don't also promote user #1
   }
-  const has = db.prepare(`SELECT COUNT(*) n FROM users WHERE is_admin = 1`).get().n;
+  const has = /** @type {any} */ (db.prepare(`SELECT COUNT(*) n FROM users WHERE is_admin = 1`).get()).n;
   if (has) return;
   const first = db.prepare(`SELECT id, username FROM users ORDER BY id LIMIT 1`).get();
   if (!first) return; // no accounts yet — runs again after the first signup

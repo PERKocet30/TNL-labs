@@ -23,7 +23,10 @@ https://tnllabs.com. README.md is the full reference; this file is the rules.
   wipe scripts — that is deliberate.
 - **No secrets in the repo.** Keys live in Railway → Variables (see RAILWAY.md).
 - **No new dependencies or external services** without asking. The app runs
-  with four dependencies and nothing else required.
+  with four dependencies and nothing else required. (TypeScript is a dev-only
+  tool, 2026-10-31: `npm run typecheck` reads the JSDoc on `pay.js`, `db.js`,
+  `mail.js`, `palette.js`; it never ships. Keep those four clean — annotate
+  with JSDoc, don't convert files to .ts.)
 
 ## Commands
 
