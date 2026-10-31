@@ -157,6 +157,21 @@ check runs in, as the environment variable `TNL_REPORT_KEY`. Without the
 variable the route doesn't exist (404). Change it the same way in both
 places if it ever leaks.
 
+## Are you a person? — Cloudflare Turnstile at Join (optional, 2026-10-30)
+
+Off until both are set (`server-01-turnstile.js`). Then an email join carries
+a Turnstile token that LABS checks with Cloudflare before the account is made;
+Google / Apple / Facebook joins skip it. Most people never see a thing.
+
+| Variable | Value |
+| --- | --- |
+| `TURNSTILE_SITE_KEY` | Cloudflare dashboard → Turnstile → Add widget: name LABS, hostname `tnllabs.com`, mode **Managed** → the Site Key |
+| `TURNSTILE_SECRET` | the same widget's Secret Key |
+
+To switch it off again, delete either variable. If Cloudflare can't be
+reached, joins go through (Railway logs say `[turnstile] … unreachable`);
+refusals log `[turnstile] refused a join`.
+
 ## Continue with Google / Apple / Facebook (optional, 2026-10-20; Facebook 2026-10-26)
 
 Each button stays hidden until its variables are set (`server-11-oauth.js`).

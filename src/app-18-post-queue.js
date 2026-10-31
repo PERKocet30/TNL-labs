@@ -126,8 +126,6 @@ addEventListener("beforeunload",e=>{if(PQ.some(c=>c.state==="waiting"||c.state==
    slot — so eight photos don't wait in a line with nothing to show, and
    the order you picked is the order you get. A photo that fails leaves. */
 const PC_UP_AT_ONCE=2;
-/* Picking photos (and videos, together): pcAddMixed, app-18-post-mixed. */
-
 /* ── drag a thumbnail to reorder (hold on a phone, drag with a mouse) ──
    2026-10-25 ("rearranging images glitches"): a drag that the phone turns
    into a scroll (pointercancel) now drops nothing — it used to reorder on

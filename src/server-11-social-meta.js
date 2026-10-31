@@ -1,5 +1,6 @@
 /* ================================================================
    SOCIAL GRAPH — follow / unfollow / profile
+   v1.5 — 2026-10-30: /api/levels says the Turnstile site key, when it's on.
    v1.4 — 2026-10-30: anyone signed in sees who liked a post, unless its maker hid the likes.
    v1.3 — 2026-10-30: who liked a post — its maker sees the list (below).
    v1.2 — 2026-10-28: isMod stays private, like isAdmin.
@@ -110,6 +111,7 @@ app.get("/api/levels", (_req, res) => res.json({
     announcement: setting("announcement"),
     signupsOpen: settingBool("signupsOpen"),
     oauth: oauthSite(),   // which of Continue with Google / Apple / Facebook are switched on (server-11-oauth)
+    turnstile: tsSiteKey() || undefined,   // the person check at Join, when its keys are set (server-01-turnstile)
     distro: settingBool("distroOn") ? {
       level: Number(setting("distroLevel")) || 4,
       levelName: (LEVELS.find((l) => l.id === (Number(setting("distroLevel")) || 4)) || {}).name || "Core",

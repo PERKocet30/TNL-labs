@@ -1,4 +1,3 @@
-/* v2026-10-30: photos and videos in one carousel — picking goes to pcPick (app-18-post-mixed).
 /* v2026-10-29: Edit opens this page on the post — "Edit info" · Done (app-18-post-edit).
 /* v2026-10-25: pick which part of the song plays — the bar under the picked song (pcPartHTML/pcPartWire, app-18-pc-preview).
 /* v2026-10-25: a photo takes its place in the strip the moment it's picked and uploads land into it, two at a time (pcAddPhotos, app-18-post-queue); a drag the phone turns into a scroll reorders nothing.

@@ -95,11 +95,7 @@ function capHTML(body){
 }
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest(".capmore");if(!b)return;
   e.stopPropagation();const c=b.closest(".sr-body,.post-cap");if(c)c.classList.add("open")});
-/* WHO LIKED IT (2026-10-30): "see who liked your post", then "I still can't see
-   who liked other people's post". Under the buttons on every post — "12 likes",
-   a tap lists them, newest first. Its place is kept even at 0 likes (grey "No
-   likes yet" on yours, blank on others') so the card never jumps when one comes
-   in. A post whose maker hid its likes has no line for anyone else. */
+/* who liked it (2026-10-30) */
 const pxLikersText=n=>n?n+(n===1?" like":" likes"):"No likes yet";
 function pxLikersHTML(p){
   if(p.pending||p.failed||!myName())return "";

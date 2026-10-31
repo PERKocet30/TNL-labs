@@ -27,7 +27,6 @@
 .c-quick button{background:none;border:0;font-size:24px;line-height:1;padding:4px;cursor:pointer}
 /* a picture that can't load (app-18-img-fallback.js) keeps its space */
 .img-gone{width:100%;display:flex;align-items:center;justify-content:center;background:var(--el);color:var(--dim);font-size:13px}
-/* who liked it — "12 likes" under the buttons, on every post (app-12-post-extras) */
 .px-likers{display:block;margin-top:8px;padding:0;border:0;background:none;color:inherit;font:inherit;font-size:14px;line-height:18px;font-weight:700;text-align:left;cursor:pointer}
 .px-likers.zero{font-weight:400;color:var(--dim)}
-.px-likers.theirs.zero{visibility:hidden}   /* someone else's post at 0: the place is kept, nothing shows */
+.px-likers.theirs.zero{visibility:hidden}
