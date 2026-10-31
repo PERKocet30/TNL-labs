@@ -2216,6 +2216,12 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await fast(p, 4000, () => p.locator("#pres .pdb").waitFor(), "People's table view");
     ok(await p.evaluate(() => { const w = document.querySelector(".pdb-wrap"), c = getComputedStyle(w); return c.overflowY !== "hidden" && c.maxHeight === "none" && w.scrollHeight <= w.clientHeight + 1; }),
       "the members table on a phone is cut off instead of running its full length");
+    /* 2026-10-31: "the members are out of place, they should be most recent to old" — a tapped Member heading kept the table A→Z for good */
+    await p.locator('#pres [data-pdbk="name"]').tap(); await p.waitForTimeout(200);
+    ok(await p.evaluate(() => PPREF.k === "name" && PPREF.up === true), "tapping Member didn't sort A→Z");
+    await p.reload(); await fast(p, 8000, () => p.locator("#pres .pdb").waitFor(), "People's table after opening Admin again");
+    ok(await p.evaluate(() => { const th = document.querySelector('#pres th [data-pdbk="joined"]').closest("th");
+      return th.getAttribute("aria-sort") === "descending" && PPREF.k === "joined" && !PPREF.up; }), "opening Admin again kept the old A→Z sort instead of newest first");
     await p.locator("[data-pview=cards]").tap();
     await p.locator("[data-tab=home]:visible").tap();
     await fast(p, 4000, () => p.locator("#gq").waitFor(), "the top-bar search on other pages");
