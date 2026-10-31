@@ -12,7 +12,7 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "âœ“" : "â
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/<!--[\s\S]*?-->/g, "").split("\n").map((l) => /^\s*\/\//.test(l) ? "" : l.replace(/(^|[^:"'`\\])\/\/[^"'`]*$/, "$1")).join("\n");
 const WORD = /(?<![\w.@/-])TNL(?![\w])/g;
 const files = [
-  ...readdirSync(join(ROOT, "src")).filter((f) => /^(app|server)-/.test(f) && !f.includes("runtime")).map((f) => "src/" + f),
+  ...(await import("../src/app/order.mjs")).APP.map((f) => "src/app/" + f), ...(await import("../src/server/order.mjs")).SERVER.map((f) => "src/server/" + f),
   "src/mail.js", ...readdirSync(join(ROOT, "public/admin-app")).map((f) => "public/admin-app/" + f),
   "public/admin.html", "public/studio.js", "public/door.js", "public/manifest.webmanifest",
 ];

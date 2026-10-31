@@ -9,7 +9,7 @@ let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 const GLYPHS = /[✎🗑🔇🔊▶❚⧉✉↗＋♫★✕🔒◫⚐]/u;
 console.log("\nNO GLYPH ICONS IN THE APP");
-for (const f of readdirSync(join(ROOT, "src")).filter((f) => /^app-.*\.js$/.test(f)).sort()) {
+for (const f of (await import("../src/app/order.mjs")).APP.filter((f) => f.endsWith(".js")).map((f) => "app/" + f)) {
   // comments may talk about glyphs; code may not (block comments blanked, line numbers kept)
   const code = readFileSync(join(ROOT, "src", f), "utf8").replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "));
   const hits = code.split("\n").map((l, i) => [i + 1, l]).filter(([, l]) => GLYPHS.test(l.replace(/(^|[^:"'`])\/\/.*$/, "$1")));

@@ -31,7 +31,8 @@ console.log("\n1 · NO BEATS IN, NONE OUT (loops are gone, 2026-10-28)");
 const feed = read("server/auth/auth-feed.js"), boot = read("server/core/boot.js");
 t("a beat in a new post is ignored", /const beat = null;/.test(feed) && !/beat: rawBeat|cleanBeat/.test(feed));
 t("old posts never send their beat", /^\s*beat: null,/m.test(boot) && !/JSON\.parse\(row\.beat_json\)/.test(boot));
-const beatUi = readdirSync(join(ROOT, "src")).filter((f) => /\.(js|html|css)$/.test(f) && f !== "server.runtime.js")
+const { APP: APP_PARTS } = await import("../src/app/order.mjs"), { SERVER: SERVER_PARTS } = await import("../src/server/order.mjs");
+const beatUi = [...APP_PARTS.map((f) => "app/" + f), ...SERVER_PARTS.map((f) => "server/" + f), "db.js", "mail.js", "pay.js", "palette.js"]
   .filter((f) => /sr-beat|beatmsg|work-beat|untitled loop|BPM beat|made in the LABS studio/.test(read(f)));
 t("no screen or page draws a loop card", beatUi.length === 0 || (console.log("     still in: " + beatUi.join(", ")), false));
 t("the Showroom only shows work with a picture or video (both feeds)", /\(!workOnly \|\| r\.image_url \|\| r\.video_url\)/.test(feed)

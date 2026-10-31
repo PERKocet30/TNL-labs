@@ -26,6 +26,12 @@ t("every listed file sits in a feature folder (feature/name.ext)", [...APP, ...S
 const html = readFileSync(join(ROOT, "public/index.html"), "utf8");
 t("parts are joined with nothing between them", html.startsWith(readFileSync(join(ROOT, "src/app/shell/head.html"), "utf8")) && html.endsWith(readFileSync(join(ROOT, "src/app/shell/tail.html"), "utf8")));
 t("the colours went in where the marker was", !html.includes("/*@palette*/") && /--bg:/.test(html));
+/* v2.1: a part's opening comment block (its version history) stays out of the page */
+const opener = (f) => { const m = /^\s*(\/\*[\s\S]*?\*\/)/.exec(readFileSync(join(ROOT, "src/app", f), "utf8")); return m && m[1]; };
+const openers = APP.filter((f) => /\.(js|css)$/.test(f)).map(opener).filter((x) => x && x.length > 40 && !x.includes("@palette"));
+t("the parts' opening doc blocks are not in the page (" + openers.length + " of them)", openers.length > 50 && !openers.some((o) => html.includes(o)));
+t("…but the first line of code after them is", html.includes("function uiModal(") && html.includes(".ui-ov .ui-btn{"));
+t("the page is well under its gzipped budget", (await import("node:zlib")).gzipSync(html, { level: 9 }).length < 245 * 1024);
 
 console.log("\nTHE ORDER FILE AND THE DISK MUST AGREE");
 writeFileSync(join(TMP, "a", "one.js"), "const ONE=1;\n"); writeFileSync(join(TMP, "b", "two.js"), "const TWO=2;\n");

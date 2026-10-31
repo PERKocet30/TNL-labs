@@ -12,7 +12,9 @@ https://tnllabs.com. README.md is the full reference; this file is the rules.
   `src/app/<feature>/*.{html,css,js}` → `public/index.html` and
   `src/server/<feature>/*.js` → `src/server.runtime.js` on every boot, byte
   for byte, in the order `src/app/order.mjs` / `src/server/order.mjs` say.
-  The built files are gitignored and overwritten.
+  One exception: a part's opening comment block (its version history) is
+  left out of the page members download. The built files are gitignored
+  and overwritten.
 - **A new file goes in its feature folder and in that group's `order.mjs`**,
   at the right place: the parts share one scope, so a `const` must come
   before its first use and later CSS wins. Boot stops if the order file and

@@ -14,7 +14,7 @@ let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
 console.log("\nEVERY MOD ROUTE IS A REAL ROUTE (no typos letting nothing through, or the wrong thing)");
-const src = readdirSync(join(ROOT, "src")).filter((f) => /^server-.*\.js$/.test(f)).map((f) => readFileSync(join(ROOT, "src", f), "utf8")).join("\n");
+const src = (await import("../src/server/order.mjs")).SERVER.map((f) => readFileSync(join(ROOT, "src/server", f), "utf8")).join("\n");
 const real = new Set([...src.matchAll(/app\.(get|post|patch|delete|put)\("(\/api\/admin[^"]*)"/g)].map((m) => m[1].toUpperCase() + " " + m[2]));
 const modSrc = readFileSync(join(ROOT, "src/server/admin/mods.js"), "utf8");
 const listed = [...modSrc.slice(modSrc.indexOf("MOD_MAY"), modSrc.indexOf("]);")).matchAll(/"((?:GET|POST|PATCH|DELETE) \/api\/admin[^"]*)"/g)].map((m) => m[1]);
