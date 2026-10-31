@@ -1,16 +1,7 @@
-/* THE APP'S SHARED STATE — v1.0 · 2026-10-31 (the flatten).
-   Every top-level `let` the app has, in one place. The parts share one script scope, so these
-   are the variables any screen can read or change; this file is the register of them. A new
-   piece of shared state goes HERE (test/state.test.mjs fails on a top-level `let` anywhere
-   else), under the feature that owns it, with a word on what it holds and who resets it.
-   Rules of thumb:
-   · One owner. The feature named in the heading sets and clears it; other features only read.
-   · Screens must not step on each other: opening a screen that sits over another (the post
-     maker over an opened post, say) puts the other aside and brings it back after
-     (pceOpen / pceLeave in app/compose/post-edit.js is the pattern).
-   · Nothing here runs code at load except reading storage — this file is the first script,
-     before app/core/theme-labs-api.js (which needs THEME on load) and before LABS exists. */
-
+/* THE APP'S SHARED STATE — v1.0 · 2026-10-31. Every top-level `let` the app has, in one place,
+   under the feature that owns it (sets and clears it; others only read). The first script: nothing
+   here runs at load but reading storage. New shared state goes HERE (test/state.test.mjs). A screen
+   over another puts it aside and brings it back (pceOpen / pceLeave, app/compose/post-edit.js). */
 /* ── THE APP · session, theme, who you are ── */
 // core/theme-labs-api.js
 let THEME = localStorage.getItem("tnl-theme") || "light";
@@ -21,7 +12,7 @@ let LEVELS = [{id:1,name:"Entry",at:0},{id:2,name:"Verified",at:40},{id:3,name:"
 /* ── SCREENS · which screen is up, what each one holds ── */
 // state/state-ui.js
 // LAB=null means you're standing outside looking at the labs, not in one
-let TAB="showroom", LAB=null, CH=null, ROOMOPEN=false, POSTS=[], PROFILE=null, TOASTT=null;   // CH is set to LABS[0]'s first channel in app/core/theme-labs-api.js, where LABS is defined
+let TAB="showroom", LAB=null, CH=null, ROOMOPEN=false, POSTS=[], PROFILE=null, TOASTT=null;   // CH: set beside LABS (app/core/theme-labs-api.js)
 let SRPOSTS=[];
 let PTAB="work", EDITING=false, LIGHTBOX=null, VERIFYURL=null;
 let PROFLISTINGS=null;
