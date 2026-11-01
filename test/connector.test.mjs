@@ -1,7 +1,7 @@
 // LABS connector (2026-10-27): Claude reads the admin dashboard through /mcp.
 // "Full access to my admin dashboard, read only, besides members' messages and
 // things that might violate member privacy." These checks pin that down: the
-// sign-in only works for an admin and only for Claude's callback, a key opens
+// sign-in only works for an admin and accepts only exact approved Claude/Manus callback URIs; a key opens
 // GET on the allowed admin routes and nothing else, nothing personal comes out,
 // and a key can be cut off from Admin → Systems.
 import { spawn } from "node:child_process";
@@ -34,6 +34,7 @@ const call = (path, { method = "GET", token, body, form } = {}) => fetch(B + pat
   headers: { ...(token ? { Authorization: "Bearer " + token } : {}), "Content-Type": form ? "application/x-www-form-urlencoded" : "application/json" },
   body: body ? (form ? new URLSearchParams(body).toString() : JSON.stringify(body)) : undefined });
 const CB = "https://claude.ai/api/mcp/auth_callback";
+const MANUS_CB = "https://manus.im/api/webhook/mcp/callback";
 
 try {
   /* discovery */
@@ -45,7 +46,16 @@ try {
 
   /* registration */
   const bad = await call("/oauth/register", { method: "POST", body: { client_name: "Evil", redirect_uris: ["https://evil.example/cb"] } });
-  t("a client with a non-Claude callback is refused", bad.status === 400);
+  t("a client with an unapproved callback is refused", bad.status === 400);
+  const badManusPath = await call("/oauth/register", { method: "POST", body: { client_name: "Manus", redirect_uris: ["https://manus.im/api/mcp/auth_callback"] } });
+  t("a similar but unapproved Manus callback path is refused", badManusPath.status === 400);
+  const badManusQuery = await call("/oauth/register", { method: "POST", body: { client_name: "Manus", redirect_uris: [MANUS_CB + "?next=https://evil.example"] } });
+  t("an added query string on Manus's callback is refused", badManusQuery.status === 400);
+  const manusRegResponse = await call("/oauth/register", { method: "POST", body: { client_name: "Manus", redirect_uris: [MANUS_CB] } });
+  const manusReg = await manusRegResponse.json();
+  t("Manus's exact callback registers", manusRegResponse.status === 201 && /^labs_client_/.test(manusReg.client_id || ""));
+  const claudeCom = await call("/oauth/register", { method: "POST", body: { client_name: "Claude", redirect_uris: ["https://claude.com/api/mcp/auth_callback"] } });
+  t("the existing claude.com callback remains supported", claudeCom.status === 201);
   const reg = await (await call("/oauth/register", { method: "POST", body: { client_name: "Claude", redirect_uris: [CB] } })).json();
   t("Claude's callback registers", /^labs_client_/.test(reg.client_id || ""));
 
@@ -61,6 +71,13 @@ try {
   const ap = await (await call("/oauth/approve", { method: "POST", token: "tok-boss", body: approveBody })).json();
   const red = new URL(ap.redirect || "https://x/");
   t("the admin's approval sends Claude back with a code and the state", red.origin + red.pathname === CB && /^labs_code_/.test(red.searchParams.get("code") || "") && red.searchParams.get("state") === "xyz");
+  const manusAuthQ = `client_id=${manusReg.client_id}&redirect_uri=${encodeURIComponent(MANUS_CB)}&state=manus-state&code_challenge=${challenge}&code_challenge_method=S256&response_type=code`;
+  const manusPage = await call("/oauth/authorize?" + manusAuthQ);
+  t("Manus receives the same admin approval page", manusPage.status === 200 && /Let Manus read the admin dashboard/.test(await manusPage.text()));
+  const manusApproveBody = { client_id: manusReg.client_id, redirect_uri: MANUS_CB, state: "manus-state", code_challenge: challenge };
+  const manusApproval = await (await call("/oauth/approve", { method: "POST", token: "tok-boss", body: manusApproveBody })).json();
+  const manusRedirect = new URL(manusApproval.redirect || "https://x/");
+  t("admin approval redirects exactly to Manus with a code and state", manusRedirect.origin + manusRedirect.pathname === MANUS_CB && /^labs_code_/.test(manusRedirect.searchParams.get("code") || "") && manusRedirect.searchParams.get("state") === "manus-state");
 
   /* token */
   const code = red.searchParams.get("code");

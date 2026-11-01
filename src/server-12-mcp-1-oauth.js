@@ -1,9 +1,9 @@
 /* ================================================================
-   LABS CONNECTOR · sign-in  v1.1 — 2026-10-27 (v1.1: a key only works from /mcp itself; the allow page escapes its data and can't be framed)
-   Claude (and any other MCP client) reads the admin dashboard through
+   LABS CONNECTOR · sign-in  v1.2 — 2026-10-28 (adds Manus with an exact callback allowlist)
+   Manus and Claude read the admin dashboard through
    /mcp (server-12-mcp-2-tools.js). This part is the key cabinet:
 
-     • OAuth 2.1 the way claude.ai expects it — discovery, dynamic client
+     • OAuth 2.1 — discovery, dynamic client
        registration, authorize (a LABS page the admin approves while
        signed in), token with PKCE, refresh. No outside service, no new
        dependency: node:crypto and SQLite.
@@ -54,9 +54,11 @@ const MCP_REFRESH_TTL = 90 * 86400000;    // the refresh key itself lives 90 day
 const MCP_CODE_TTL = 10 * 60000;          // an approval code must be exchanged within 10 minutes
 const mcpHash = (s) => createHash("sha256").update(String(s)).digest("hex");
 const mcpRandom = (pre) => pre + randomBytes(32).toString("hex");
-/* Only Claude's own callback hosts may receive a code. Anyone else can register a
-   client, but their redirect would never be accepted, so the registration is inert. */
-const mcpRedirectOk = (u) => { try { const x = new URL(u); return x.protocol === "https:" && ["claude.ai", "claude.com"].includes(x.hostname) && x.pathname === "/api/mcp/auth_callback"; } catch (e) { return false; } };
+/* Only these exact HTTPS callbacks can receive an authorization code. Do not widen
+   this to a host suffix or arbitrary path: codes are bearer credentials. */
+const MCP_REDIRECTS = new Set(["https://claude.ai/api/mcp/auth_callback", "https://claude.com/api/mcp/auth_callback",
+  "https://manus.im/api/webhook/mcp/callback"]);
+const mcpRedirectOk = (u) => typeof u === "string" && MCP_REDIRECTS.has(u);
 const mcpLimit = rateLimit({ max: 30, windowMs: 600000 });
 
 /* The admin GET routes a connector key may open. Everything that could expose a
@@ -114,9 +116,9 @@ app.get(["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-
 app.post("/oauth/register", mcpLimit, (req, res) => {
   const b = req.body || {};
   const uris = Array.isArray(b.redirect_uris) ? b.redirect_uris.map(String).slice(0, 5) : [];
-  if (!uris.length || !uris.every(mcpRedirectOk)) return res.status(400).json({ error: "invalid_redirect_uri", error_description: "Only Claude's callback is accepted." });
+  if (!uris.length || !uris.every(mcpRedirectOk)) return res.status(400).json({ error: "invalid_redirect_uri", error_description: "Only the exact approved Claude or Manus callbacks are accepted." });
   const id = mcpRandom("labs_client_");
-  const name = String(b.client_name || "Claude").slice(0, 60);
+  const name = String(b.client_name || "MCP client").slice(0, 60);
   db.prepare(`INSERT INTO mcp_clients (id, name, redirect_uris, created_at) VALUES (?,?,?,?)`).run(id, name, JSON.stringify(uris), Date.now());
   res.status(201).json({ client_id: id, client_name: name, redirect_uris: uris, token_endpoint_auth_method: "none",
     grant_types: ["authorization_code", "refresh_token"], response_types: ["code"] });
@@ -135,7 +137,7 @@ app.get("/oauth/authorize", mcpLimit, (req, res) => {
   res.send(lookPage({ title: "Connect — LABS", center: true, body: `${lookEyebrow("Connect")}
 <h1>Let ${lookEsc(client.name)} read the admin dashboard?</h1>
 <p class="p">Read only. Numbers, orders, reports, systems. Never messages, emails or anything that could expose a member. You can disconnect it any time in Admin → Systems.</p>
-<p class="p"><b>Only allow if you just pressed Connect in your own Claude.</b></p>
+<p class="p"><b>Only allow if you just started this connection in your own Manus or Claude account.</b></p>
 <div id="who" class="p"></div>
 <p><button id="ok" class="btn" style="display:none">Allow</button> <a id="in" class="btn" href="/admin" style="display:none">Sign in to LABS first</a></p>
 <script>
@@ -181,7 +183,7 @@ app.post("/oauth/token", mcpLimit, express.urlencoded({ extended: false, limit: 
     const verifier = String(b.code_verifier || "");
     if (createHash("sha256").update(verifier).digest("base64url") !== row.challenge) return fail("invalid_grant", "PKCE check failed.");
     const client = db.prepare(`SELECT name FROM mcp_clients WHERE id = ?`).get(row.client_id);
-    return res.json(mcpIssue(row.user_id, row.client_id, client?.name || "Claude"));
+    return res.json(mcpIssue(row.user_id, row.client_id, client?.name || "MCP client"));
   }
   if (b.grant_type === "refresh_token") {
     const old = db.prepare(`SELECT * FROM mcp_tokens WHERE refresh_hash = ? AND revoked = 0`).get(mcpHash(String(b.refresh_token || "")));

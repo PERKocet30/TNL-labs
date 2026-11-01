@@ -1,6 +1,6 @@
 /* ================================================================
-   LABS CONNECTOR · tools  v1.0 — 2026-10-27
-   /mcp speaks MCP (JSON-RPC over HTTP, stateless) so Claude can read the
+   LABS CONNECTOR · tools  v1.1 — 2026-10-28
+   /mcp speaks MCP (JSON-RPC over HTTP, stateless) so Manus and Claude can read the
    admin dashboard like it reads GitHub or Railway. Each tool is one of
    the admin GET routes, fetched in-process with the connector key, then
    scrubbed: no emails, addresses, IPs, admin notes or keys ever leave,
@@ -80,7 +80,7 @@ function mcpNoStore(res) { res.set("Cache-Control", "private, no-store"); res.se
 function mcpUnauthorized(req, res) {
   mcpNoStore(res);
   res.set("WWW-Authenticate", `Bearer resource_metadata="${baseUrl(req)}/.well-known/oauth-protected-resource/mcp"`);
-  res.status(401).json({ error: "unauthorized", error_description: "Connect LABS in Claude's connector settings." });
+  res.status(401).json({ error: "unauthorized", error_description: "Connect LABS in your MCP connector settings." });
 }
 app.get("/mcp", (req, res) => { mcpNoStore(res); res.status(405).json({ error: "Use POST. This server doesn't stream." }); });
 app.delete("/mcp", (req, res) => { mcpNoStore(res); res.status(204).end(); });

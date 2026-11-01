@@ -1,7 +1,7 @@
 /* ================================================================
-   LABS CONNECTOR · songs  v1.0 — 2026-10-28
+   LABS CONNECTOR · songs  v1.1 — 2026-10-28
    "Add this song from the labs to the video at this specific time." To
-   cut a member's song into a LABS reel, Claude needs the audio file. Songs
+   cut a member's song into a LABS reel, an authorized MCP client needs the audio file. Songs
    already play from public /uploads/ addresses (the same link every
    member's player uses), so this hands over that address and nothing
    more: title, who made it, length, plays, the cover and the audio link.

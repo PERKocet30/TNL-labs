@@ -1,5 +1,5 @@
 /* ================================================================
-   MODS v1.2 — 2026-10-28 (a new Mod is emailed — mailRole). v1.1 — 2026-10-28 (Mods appoint Lab Leads). v1.0 — 2026-10-28. "A level below me … see data but not the
+   MODS v1.3 — 2026-10-28 (MCP connector wording). v1.2 — 2026-10-28 (a new Mod is emailed — mailRole). v1.1 — 2026-10-28 (Mods appoint Lab Leads). v1.0 — 2026-10-28. "A level below me … see data but not the
    highest level of security." Two kinds of admin now:
    - Owner (users.is_admin) — everything, as before.
    - Mod (users.is_mod) — only the routes listed in MOD_MAY. Anything not
@@ -11,7 +11,7 @@
    not tied to a role, a level or leading a lab.
    A Mod can never act on the owner or another Mod, can't take down their
    posts or listings, and can't publish an event (publishing emails every
-   member). Mods sell at the normal fee and don't get the Claude connector.
+   member). Mods sell at the normal fee and don't get the admin MCP connector.
    admin() (server-04-admin-dashboard.js) asks modMay(); every Mod change
    goes in the admin log with their name, same as the owner's.
 ================================================================ */
