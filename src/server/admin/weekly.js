@@ -1,6 +1,6 @@
 /* ================================================================
    THE WEEK · v1.1 — 2026-11-01 ("update my weekly notifications to match the
-   current app"): who opened the app (visits, server-01-visits), came back by
+   current app"): who opened the app (visits, server/trust/visits), came back by
    visit as well as by action, #tags and the song most used in posts, Lab
    Leads instead of "generals", Instagram messages waiting for a reply, slow
    requests. v1.0 — 2026-10-26. "A weekly report of all the data we
@@ -74,7 +74,7 @@ function weeklyApp(now) {
   const event = ev ? { title: ev.title, entries: wkN(`SELECT COUNT(*) n FROM event_entries WHERE event_id = ? AND created_at >= ?`, ev.id, a),
     votes: wkN(`SELECT COUNT(*) n FROM event_votes WHERE event_id = ? AND created_at >= ?`, ev.id, a),
     voters: wkN(`SELECT COUNT(DISTINCT voter_id) n FROM event_votes WHERE event_id = ? AND created_at >= ?`, ev.id, a) } : null;
-  /* #tags (they lift a post in the Showroom, server-10-rank) and the song most used in posts */
+  /* #tags (they lift a post in the Showroom, server/posts/rank) and the song most used in posts */
   const bodies = db.prepare(`SELECT body FROM posts WHERE created_at >= ? AND created_at < ? AND shared_from IS NULL`).all(a, now);
   const tagCount = {}; let tagged = 0;
   for (const r of bodies) { const seen = new Set(); for (const m of String(r.body || "").replace(/https?:\/\/\S+/g, " ").matchAll(/(^|[^\w&#/])#([a-z0-9_]{2,30})(?![\w])/gi)) seen.add(m[2].toLowerCase());
@@ -88,7 +88,7 @@ function weeklyApp(now) {
   /* Instagram messages: new ones last week, and conversations whose last word isn't ours */
   const ig = wkHas("ig_messages") ? { inbound: wkN(`SELECT COUNT(*) n FROM ig_messages WHERE mine = 0 AND created_at >= ?`, a),
     waiting: wkN(`SELECT COUNT(*) n FROM (SELECT conv_id, MAX(created_at) at FROM ig_messages GROUP BY conv_id) l JOIN ig_messages m ON m.conv_id = l.conv_id AND m.created_at = l.at WHERE m.mine = 0`) } : null;
-  /* slow or failed requests (server-01-visits keeps 14 days) */
+  /* slow or failed requests (server/trust/visits keeps 14 days) */
   const slow = wkHas("slow_requests") ? { n: wkN(`SELECT COUNT(*) n FROM slow_requests WHERE at >= ?`, a),
     top: db.prepare(`SELECT method, route, COUNT(*) n, MAX(ms) ms FROM slow_requests WHERE at >= ? GROUP BY method, route ORDER BY n DESC LIMIT 1`).get(a) || null } : null;
   const errors = both(`SELECT COUNT(*) n FROM error_log WHERE created_at >= ? AND created_at < ?`);
