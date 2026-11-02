@@ -23,6 +23,10 @@ const o1 = U("old1", 10 * D), o2 = U("old2", 11 * D);
 const P = (who, ago, ch = "tracks") => Number(db.prepare(`INSERT INTO posts (author_id, body, channel, created_at) VALUES (?,?,?,?)`).run(who, "Secret caption by " + who, ch, now - ago).lastInsertRowid);
 const p1 = P(n1, 1 * D), p2 = P(boss, 2 * D, "photography"), p3 = P(boss, 3 * D); P(boss, 9 * D); P(boss, 10 * D); P(boss, 11 * D);
 db.prepare(`INSERT INTO likes (post_id, user_id, created_at) VALUES (?,?,?)`).run(p1, o1, now - 2 * D);   // old1 came back
+/* v1.1: #tags on two posts, and a song on one */
+db.prepare(`UPDATE posts SET body = body || ' #poster #nyc' WHERE id = ?`).run(p1); db.prepare(`UPDATE posts SET body = body || ' #Poster' WHERE id = ?`).run(p2);
+const song = Number(db.prepare(`INSERT INTO tracks (user_id, title, url, created_at) VALUES (?,?,?,?)`).run(boss, "Night Shift", "/uploads/s.mp3", now - 20 * D).lastInsertRowid);
+db.prepare(`UPDATE posts SET audio_track_id = ? WHERE id = ?`).run(song, p1);
 db.prepare(`INSERT INTO likes (post_id, user_id, created_at) VALUES (?,?,?)`).run(p2, n2, now - 1 * D);
 db.prepare(`INSERT INTO comments (post_id, author_id, body, created_at) VALUES (?,?,?,?)`).run(p1, n3, "nice", now - 1 * D);
 db.prepare(`INSERT INTO follows (follower_id, followee_id, created_at) VALUES (?,?,?)`).run(n2, boss, now - 1 * D);
@@ -47,6 +51,16 @@ const srv = spawn(process.execPath, ["--experimental-sqlite", "--no-warnings", "
 const get = (path, who, method = "GET") => fetch(B + path, { method, headers: who ? { authorization: "Bearer tok-" + who } : {} });
 try {
   for (let i = 0; i < 100; i++) { try { if ((await fetch(B + "/api/health")).ok) break; } catch {} await new Promise((r) => setTimeout(r, 100)); }
+  /* v1.1: the tables later parts make exist now — visits, Lab Leads, the Instagram inbox, slow requests */
+  { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db")), today = Math.floor(now / D);
+    for (const u of [n1, n2, o1]) w.prepare(`INSERT OR IGNORE INTO member_days (user_id, day) VALUES (?, ?)`).run(u, today - 1);
+    w.prepare(`INSERT OR IGNORE INTO member_days (user_id, day) VALUES (?, ?)`).run(o2, today - 9);
+    w.prepare(`INSERT INTO lab_leads (user_id, lab, appointed_by, created_at) VALUES (?,?,?,?)`).run(n1, "culture", boss, now - D);
+    w.prepare(`INSERT INTO ig_messages (mid, conv_id, mine, text, created_at) VALUES (?,?,?,?,?)`).run("m1", "c1", 0, "is the hoodie still up", now - 2 * D);
+    w.prepare(`INSERT INTO ig_messages (mid, conv_id, mine, text, created_at) VALUES (?,?,?,?,?)`).run("m2", "c2", 0, "collab?", now - 3 * D);
+    w.prepare(`INSERT INTO ig_messages (mid, conv_id, mine, text, created_at) VALUES (?,?,?,?,?)`).run("m3", "c2", 1, "yes", now - 2 * D);
+    for (let i = 0; i < 12; i++) w.prepare(`INSERT INTO slow_requests (route, method, ms, status, at) VALUES (?,?,?,?,?)`).run("/api/feed/showroom", "GET", 1600 + i * 70, 200, now - D);
+    w.close(); }
   console.log("\nADMINS ONLY");
   t("signed out: nothing", (await get("/api/admin/weekly")).status === 401);
   t("a member: nothing", (await get("/api/admin/weekly", "ana")).status === 403);
@@ -56,20 +70,28 @@ try {
   console.log("\nTHE PEOPLE");
   t("new members against the week before; who confirmed, finished, posted", /4 new members \(up 100%\)\. 3 confirmed their email, 1 finished their page, 1 posted something\./.test(txt));
   t("where new people stop most", /Where new people stop most: finishing their page/.test(txt));
-  t("who came back from the week before", /Of the 2 who joined the week before, 1 came back and did something \(50%\)/.test(txt));
+  t("who came back from the week before (by a visit or an action)", /Of the 2 who joined the week before, 1 came back \(50%\)/.test(txt));
+  { const m = /(\d+) members opened the app \(up \d+%\); 2 posted \(up 100%\)/.exec(txt);
+    t("who opened the app (visits), against the week before, and who posted", !!m && Number(m[1]) >= 3); }
   console.log("\nTHE WORK");
   t("posts by lab, against the week before", /3 posts \(same as the week before\): 2 in music, 1 in visual/.test(txt));
   t("likes, comments, follows, collabs accepted (pending don't count)", /2 likes, 1 comments, 1 follows, 1 collabs accepted/.test(txt));
+  t("#tags: how many posts used them and the top ones (case doesn't split a tag)", /2 of 3 posts used #tags — most: #poster \(2\), #nyc \(1\)\./.test(txt));
+  t("the song used most in posts", /Song used most in posts: "Night Shift" \(1 post\)\./.test(txt));
+  t("Lab Leads, not generals", /1 Lab Lead across 1 lab \(1 new this week\)\./.test(txt) && !/general/i.test(txt));
   console.log("\nTHE MARKET");
   t("pieces, views, sales and the money, against the week before", /1 new piece, 7 views \(new\), 0 offers, 1 sale for \$45 \(new\)/.test(txt));
   t("looked at a lot, not bought", /Looked at 6 times, not bought: "Sashiko Hoodie"/.test(txt));
   console.log("\nREACH AND HOW IT FELT");
   t("Google and Meta say not connected when their keys aren't set", /Google: not connected\./.test(txt) && /Instagram and Facebook: not connected\./.test(txt));
+  t("Instagram messages: new ones, and conversations waiting for a reply", /Instagram messages: 2 new messages this week; 1 conversation waiting for a reply\./.test(txt));
+  t("slow requests, the slowest route", /12 slow or failed requests — most often GET \/api\/feed\/showroom \(12×, slowest 2\.4s\)/.test(txt));
   t("errors and glitches, the worst spot", /1 error \(new\), 3 glitches \(new\)\. Most often: 1× boom at \/api\/x\./.test(txt) && /Worst spot: 3× rage tap at showroom/.test(txt));
   console.log("\nWHAT TO DO");
-  t("the moves the numbers point at", /Half of new members never finish their page/.test(txt) && /A few people make most of the posts/.test(txt));
+  t("the moves the numbers point at", /Half of new members never finish their page/.test(txt) && /A few people make most of the posts\. Ask each Lab Lead/.test(txt));
+  t("…and the new ones: reply on Instagram, look at the slow route", /1 Instagram conversation waiting for a reply — answer in Admin → Instagram/.test(txt) && /GET \/api\/feed\/showroom was slow 12 times/.test(txt));
   console.log("\nNEVER A NAME");
-  t("no member's name, email or caption in the report", !/new1|new2|ana@|boss@|Secret caption/.test(txt));
+  t("no member's name, email, caption or message in the report", !/new1|new2|ana@|boss@|Secret caption|hoodie still|collab\?/.test(txt));
   t("a subject line with the week's three numbers", W.subject === "LABS this week: 4 joined · 3 posts · 1 sale" && W.week.from && W.week.to);
 
   console.log("\nSENDING");
