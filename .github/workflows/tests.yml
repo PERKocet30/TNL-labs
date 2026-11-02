@@ -1,5 +1,6 @@
 # Every pull request, and every push to main, runs both test layers:
-#   unit     — npm test (every test/*.test.mjs)
+#   unit     — npm run typecheck (src/pay.js, db.js, mail.js, palette.js — dev-only
+#              TypeScript reading the JSDoc; nothing ships), then npm test
 #   tap-through — npm run e2e: a real browser walks the app at phone and
 #                 computer size (test/e2e/run.mjs). Playwright is installed
 #                 here only; it is not an app dependency.
@@ -22,6 +23,7 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
+      - run: npm run typecheck   # the money and rep code, typed from JSDoc (tsconfig.json) — dev-only
       - run: npm test
   tap-through:
     runs-on: ubuntu-latest

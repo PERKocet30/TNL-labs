@@ -50,7 +50,7 @@ try {
   const before = asked.length;
   const oa = await join_({ oauth: "not-a-real-ticket" });
   t("Google / Apple / Facebook joins skip the check (their own expiry answers, not ours)", oa.status === 410 && asked.length === before);
-  /* the browser safety headers that ride with every answer (server-01-headers) */
+  /* the browser safety headers that ride with every answer (server/core/headers) */
   const h = await fetch(B + "/", { headers: { "X-Forwarded-Proto": "https" } });
   t("over https: HSTS for a year, this host only", h.headers.get("strict-transport-security") === "max-age=31536000");
   t("no type sniffing, and other sites only see our name", h.headers.get("x-content-type-options") === "nosniff" && h.headers.get("referrer-policy") === "strict-origin-when-cross-origin");

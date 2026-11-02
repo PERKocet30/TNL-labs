@@ -7,6 +7,11 @@ cd "$(dirname "$0")/.."
 rm -rf test/.tmp; mkdir -p test/.tmp
 node src/assemble.mjs >/dev/null || { echo "  assemble failed"; exit 1; }
 fail=0
+# types on the money and rep code (tsconfig.json) — when the dev tool is installed (CI always; a laptop after npm install)
+if [ -x node_modules/.bin/tsc ]; then
+  tc=$(node_modules/.bin/tsc -p tsconfig.json 2>&1)
+  if [ $? -eq 0 ]; then printf "  PASS  %-22s %s\n" "typecheck" "pay · db · mail · palette"; else printf "  FAIL  typecheck\n"; echo "$tc" | head -12 | sed 's/^/        /'; [ -n "$GITHUB_ACTIONS" ] && echo "::error title=typecheck failed::$(echo "$tc" | head -5 | awk '{printf "%s%%0A", $0}')"; fail=1; fi
+else printf "  SKIP  %-22s %s\n" "typecheck" "npm install to run it here"; fi
 # the parts share one scope: a name declared twice is a bug (scripts/lint-scope.mjs)
 lint=$(node scripts/lint-scope.mjs 2>&1)
 if [ $? -eq 0 ]; then printf "  PASS  %-22s %s\n" "lint-scope" "$(echo "$lint" | tail -1)"; else printf "  FAIL  lint-scope\n"; echo "$lint" | sed 's/^/        /'; [ -n "$GITHUB_ACTIONS" ] && echo "::error title=lint-scope failed::$(echo "$lint" | head -5 | awk '{printf "%s%%0A", $0}')"; fail=1; fi

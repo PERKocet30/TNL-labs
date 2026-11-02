@@ -1,0 +1,20 @@
+{
+  "// what this is": "Type checking for the money and rep code (2026-10-31). Dev-only: `npm run typecheck` runs on every pull request. The code stays plain JavaScript; types are read from the code itself and from JSDoc notes. Nothing here ships to members or runs on Railway.",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "skipLibCheck": true
+  },
+  "files": ["src/pay.js", "src/db.js", "src/mail.js", "src/palette.js"]
+}

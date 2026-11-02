@@ -48,7 +48,7 @@ try {
   const copy = sh.post || sh;
   t("a share of it plays the same part", copy && copy.audioStart === 42000 && copy.audioTrack && copy.audioTrack.id === song);
   console.log("\nTHE APP PLAYS FROM THERE");
-  const media = readFileSync(join(ROOT, "src/app-18-media.js"), "utf8"), player = readFileSync(join(ROOT, "src/app-13-player.js"), "utf8"), q = readFileSync(join(ROOT, "src/app-18-post-queue.js"), "utf8");
+  const media = readFileSync(join(ROOT, "src/app/media/media.js"), "utf8"), player = readFileSync(join(ROOT, "src/app/music/player.js"), "utf8"), q = readFileSync(join(ROOT, "src/app/compose/queue.js"), "utf8");
   t("the chip and the feed's autoplay start the song at the post's point", media.includes("playTrack(p.audioTrack,false,p.audioStart)") && media.includes("playTrack(p.audioTrack,true,p.audioStart)") && media.includes("a.currentTime=(p.audioStart||0)/1000;"));
   t("the player seeks there once the song is known", player.includes("function playTrack(t,silent,startMs)") && player.includes('a.addEventListener("loadedmetadata",seek,{once:true})'));
   t("the post maker sends it, and drafts keep it", q.includes("audioStart:c.track?(c.musStart||0):undefined") && /PD_KEEP=\[[^\]]*"musStart"/.test(q));

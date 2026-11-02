@@ -1,0 +1,124 @@
+/* ── COMPUTER LAYOUT v1.8 · 2026-10-20 (the Labs head is the kit's) · v1.7 · 2026-10-18 (each gallery piece's frame hugs its own shape; v1.6: the gallery is the only Showroom; v1.5: Showroom gallery; v1.4: two-pane post maker; v1.3: two-across Showroom, full-width bars; v1.2: one-column Showroom, square lab cards, centred log-in); v1.1 · 2026-10-14; v1.0 · 2026-09-29 ─────────────────────────────────
+   Phones keep the app as it is. From 1024px the top bar and bottom nav
+   become one left sidebar (render() builds .side only when wide), content
+   sits at a reading width beside it, and a mouse gets hover states. Same
+   paper, same ink, same one green. Loads last, so it wins ties. */
+@media(min-width:1024px){
+  :root{--side:244px}
+  .app{padding-left:var(--side)}
+  .side{position:fixed;left:0;top:0;bottom:0;width:var(--side);z-index:50;display:flex;flex-direction:column;
+    background:var(--card);border-right:1px solid var(--line);padding-bottom:14px}
+  .side .top{flex-direction:column;align-items:stretch;gap:16px;border-bottom:0;padding:24px 18px 14px}
+  .side .brand{font-size:16px}
+  .side .topact{flex-wrap:wrap;gap:8px}
+  .side .ib{width:38px;height:38px}
+  .side .nav{flex:1;flex-direction:column;gap:2px;border-top:0;background:none;padding:6px 12px}
+  .side .navb{flex:none;flex-direction:row;justify-content:flex-start;gap:14px;padding:11px 14px;border-radius:999px;
+    color:var(--tx2);font-size:15px;letter-spacing:0}
+  .side .navb::after{content:attr(aria-label)}
+  .side .navb .ic{width:26px;min-height:0}
+  .side .navb.on{color:var(--tx);font-weight:700;background:var(--el)}
+  /* Post: the one green action, full width at the foot of the list */
+  .side .navb[data-tab="post"]{order:9;margin-top:14px;justify-content:center;background:var(--accent-fill);color:var(--on-accent);font-weight:700}
+  .side .navb[data-tab="post"] .ic{background:none;padding:0;width:auto}
+  .side .navb[data-tab="post"].on{background:var(--accent-fill)}
+
+  /* The Showroom on a computer (v1.3, 2026-10-18): two pieces across at a size you can look at — not
+     a wall of three ("too many images, can't focus"), not one at a time ("maybe 2 at a time"). The
+     tournament bar and Who's building keep the full width. */
+  #showroom .sr-builders,#showroom .whatis,#showroom #ev-bannerwrap{max-width:1000px;margin-left:auto;margin-right:auto}
+  /* the gallery (app/showroom/gallery.js): one piece under the spotlight, the
+     neighbours smaller and dimmed either side, a wall you walk along */
+  .gal-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:1000px;margin:6px auto 14px;padding:0 16px;box-sizing:border-box}
+  .gal-bar .mono{color:var(--dim)}
+  .sr-gridwrap{position:relative}
+  #showroom .sr-grid.sr-wall{columns:auto;display:flex;align-items:flex-start;gap:32px;max-width:none;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;
+    padding:12px calc(50% - 180px) 48px;overscroll-behavior-x:contain}
+  #showroom .sr-grid.sr-wall::-webkit-scrollbar{display:none}
+  #showroom .sr-grid.sr-wall .sr-card{flex:0 0 var(--galw,min(520px,46vw));margin:0;scroll-snap-align:center;scroll-snap-stop:always;border:1px solid var(--line);background:var(--card);
+    transform:scale(.84);transform-origin:50% 0;opacity:.38;transition:transform .35s cubic-bezier(.2,.7,.2,1),opacity .35s;cursor:pointer}
+  #showroom .sr-grid.sr-wall .sr-card.on{transform:none;opacity:1;cursor:auto;box-shadow:0 34px 60px -44px var(--tx)}
+  #showroom .sr-grid.sr-wall .sr-card:not(.on) *{pointer-events:none}
+  #showroom .sr-grid.sr-wall .post-media img,#showroom .sr-grid.sr-wall .post-media video{max-height:calc(100vh - 300px);width:100%;height:auto;object-fit:contain;background:var(--el)}
+  #showroom .sr-grid.sr-wall .caro-t{max-height:calc(100vh - 300px)}
+  .gal-nav{position:absolute;top:calc(50% - 34px);z-index:3;width:48px;height:48px;display:flex;align-items:center;justify-content:center;
+    background:var(--card);color:var(--tx);border:1px solid var(--line);cursor:pointer}
+  .gal-nav.prev{left:24px}.gal-nav.next{right:24px}
+  .gal-nav:disabled{opacity:0;pointer-events:none}
+  .gal-nav svg{width:22px;height:22px}
+  @media(prefers-reduced-motion:reduce){#showroom .sr-grid.sr-wall .sr-card{transition:none}}
+
+  /* Labs are big square cards on a computer (v1.2: "make labs bigger, more square"): the lab's latest
+     work across the top, its name and #tags under it — about as tall as wide. Three across. */
+  .lx-list{max-width:1080px}
+  .lx-list{grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
+  .lx,.lx:last-child{flex-direction:column;align-items:stretch;gap:0;padding:0;border:1px solid var(--line);overflow:hidden}
+  .lx-media{flex:none;width:100%;height:auto;aspect-ratio:4/3;border:0;border-bottom:1px solid var(--line)}
+  .lx-media.bare{background:var(--el);border-color:var(--line)}
+  .lx-media .lx-ic svg{width:64px;height:64px;stroke-width:1.5}
+  .lx-body{padding:14px 16px 16px;gap:4px}
+  .lx-name{font-size:22px}
+  .lx-for{white-space:normal}
+  .lx-go{display:none}
+  .lx-sec{padding:22px 0 0}
+
+  /* Log in and sign up: a card in the middle of the whole screen — the sidebar isn't there when you're
+     signed out, so the page mustn't leave room for it (v1.2: "login isn't centered") */
+  .gate{position:fixed;inset:0;z-index:60;align-items:center;padding:32px 16px;box-sizing:border-box}
+  .gx{min-height:0;max-width:440px;margin:auto 0;background:var(--card);border:1px solid var(--line);padding:4px 40px 32px}
+  .gx-body{flex:none}
+  .gx-foot{padding-top:22px}
+
+  /* The post maker on a computer (v1.4, 2026-10-18: "a full post composer only for computers —
+     reorganize everything to fit the page"): one screen, no page scroll. The picture fills the left
+     (thumbnails under it), the caption and every option sit in a column on the right that scrolls
+     on its own; New post · Share across the top. */
+  .pcmp-ov{min-height:0;padding:24px 32px;box-sizing:border-box;align-items:center}
+  .pc{max-width:1180px;height:min(100%,860px);flex:1;border:1px solid var(--line)}
+  .kform{padding:12px 20px}
+  .pc-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 400px;padding-bottom:0;overflow:hidden}
+  .pc-media{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--el);border-right:1px solid var(--line);overflow:hidden}
+  .pc-side{display:flex;flex-direction:column;min-height:0;overflow-y:auto}
+  .pc-media .pc-stage{flex:1;min-height:0;border-bottom:0;display:flex;align-items:center;justify-content:center}
+  .pc-media .pc-track{width:100%;height:100%}
+  .pc-media .pc-slide{aspect-ratio:auto;max-height:none;height:100%}
+  .pc-media .pc-stage video{height:100%;max-height:100%;object-fit:contain}
+  .pc-media .pc-cov{width:auto;height:100%;max-width:100%;object-fit:contain}
+  .pc-media .pc-pick{flex:1;height:auto;margin:28px;max-width:none}
+  .pc-media .pc-pick.pc-pick-sm{flex:none;margin:0 28px 20px}
+  .pc-media .pc-strip{flex-shrink:0;background:var(--bg);border-top:1px solid var(--line);border-bottom:0;padding:12px 20px}
+  .pc-side .pc-cap{padding:18px 20px}
+  .pc-side .pc-ta{min-height:150px}
+  .pc-side .pc-opt{padding:8px 20px}
+
+  /* reading widths beside the sidebar */
+  .shop-head,.mkt-grid,.mktfoot{padding-left:max(24px,calc((100% - 1200px) / 2));padding-right:max(24px,calc((100% - 1200px) / 2))}
+  .sheet.astab .sheetc{max-width:935px;margin:0 auto;padding-left:28px;padding-right:28px}
+  .announce,.verifybar{justify-content:center}
+
+  /* an opened post is a column beside the sidebar, not a phone screen stretched */
+  .po-ov{left:var(--side)}
+  .po-top,.po-body>*{width:100%;max-width:680px;margin-left:auto;margin-right:auto}
+  .po-top{border-bottom:0}
+  .po-body{border-top:1px solid var(--line)}
+
+  /* no bottom nav: bars and toasts come down to the edge, clear of the sidebar */
+  .nowbar{left:var(--side);bottom:0}
+  body.now-dock .nowbar{left:var(--side)}
+  .toast{bottom:28px;left:calc(50% + var(--side) / 2)}
+  body.has-now .toast{bottom:84px}
+  .installc{left:var(--side)}
+  .pick{padding-left:var(--side)}
+}
+/* A mouse can hover; a thumb can't. Only pointer devices get these. */
+@media(hover:hover) and (pointer:fine){
+  .navb:hover{color:var(--tx)}
+  .side .navb:not([data-tab="post"]):hover{background:var(--el)}
+  .side .navb[data-tab="post"]:hover{filter:brightness(.96)}
+  .lx:hover,.trk:hover{background:var(--el)}
+  .chip:not(.on):hover,.btn.ghost:hover,.lr-tool:hover{border-color:var(--tx);color:var(--tx)}
+  .btn:not(.ghost):not(:disabled):hover,.trk-up:hover,.now-pp:hover,.circle:hover{opacity:.88}
+  .now-sk:not(:disabled):hover,.now-x:hover,.trk-more:hover,.po-x:hover,.pcmp-x:hover{color:var(--tx);opacity:1}
+  .sr-card img,.lx-media img{transition:opacity .15s}
+  .sr-card:hover img{opacity:.92}
+}

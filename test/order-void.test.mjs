@@ -26,7 +26,7 @@ const rep = () => db.prepare(`SELECT rep FROM users WHERE id=?`).get(seller).rep
 const before = rep();
 
 const routes = {};
-const src = read("server-07-orders-void.js");
+const src = read("server/orders/void.js");
 new Function("app", "auth", "admin", "db", "revokeRep", src)({ post: (p, ...h) => { routes[p] = h; } }, "AUTH", "ADMIN", db, revokeRep);
 const route = routes["/api/admin/orders/:id/void"];
 const call = async (id) => { let out; await route.at(-1)({ params: { id: String(id) } }, { json: (x) => { out = x; }, status: () => ({ json: (x) => { out = x; } }) }); return out; };
@@ -49,10 +49,10 @@ t("says when a real payment was involved (refund it in Stripe)", r.wasPaid === t
 t("an unknown order is a 404", (await call(9999)).error === "no order");
 
 console.log("\nOFF THE LISTS AND NUMBERS");
-const os = read("server-07-orders-sharing.js");
+const os = read("server/orders/orders-sharing.js");
 t("both people's order lists leave it out", (os.match(/AND o\.status != 'void'/g) || []).length === 2);
 t("it can't be marked shipped or received", (os.match(/if \(o\.status === "void"\) return res\.status\(400\)/g) || []).length === 2);
-t("sales numbers only ever count paid / shipped / delivered", read("server-07-cart.js").includes("const paid = `status IN ('paid','shipped','complete')`"));
+t("sales numbers only ever count paid / shipped / delivered", read("server/orders/cart.js").includes("const paid = `status IN ('paid','shipped','complete')`"));
 const adm = readFileSync(join(ROOT, "public/admin-app/5-orders.js"), "utf8");
 t("admin: Test order… on each order, with a filter for voided ones", adm.includes("data-voidorder") && adm.includes('void: "Test (voided)"') && readFileSync(join(ROOT, "public/admin.html"), "utf8").includes("5-orders.js?v=4.0"));
 console.log(`\n  ${pass} passed, ${fail} failed`);

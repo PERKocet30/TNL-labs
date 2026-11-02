@@ -122,7 +122,7 @@ async function step(d, title, fn) {
   }
 }
 const ok = (cond, msg) => { if (!cond) throw new Error(msg); };
-/* The app's ✕ and ‹ are a back (app-09-nav): the step lands a moment
+/* The app's ✕ and ‹ are a back (app/nav/back): the step lands a moment
    later. A page load fired in that moment is cut short (net::ERR_ABORTED),
    so every load here waits for the back to land first. */
 async function settledGoto(p, url) {
@@ -422,7 +422,7 @@ console.log("\nMEMBER · PHONE");
     ok(o.i === 0 && o.n.startsWith("1/"), `the opened post didn't start on slide 1 (${JSON.stringify(o)})`);
     await p.evaluate(() => { POSTOPEN = null; render(); });
   });
-  /* Fluid (app-09-motion.js): places are kept, the tab glides you up,
+  /* Fluid (app/nav/motion.js): places are kept, the tab glides you up,
      double-tap likes, screens move. */
   const srTop = () => p.evaluate(() => document.getElementById("showroom")?.scrollTop ?? -1);
   /* "Glitches etc" (Jorge's recording, 2026-10-13): a carousel of differently shaped pictures landed
@@ -1644,7 +1644,7 @@ console.log("\nMEMBER · PHONE");
     await p.waitForFunction(() => MUSAUTOID === null && (!AUDIO || AUDIO.paused), null, { timeout: 4000 });
   });
 
-  /* Glitch signals (app-19-glitch.js). Everything above is normal use, so it
+  /* Glitch signals (app/core/glitch.js). Everything above is normal use, so it
      must have recorded nothing: no jumps, no slow screens, no failed saves. */
   const glitches = async () => { await p.evaluate(() => glFlush()); await p.waitForTimeout(600); return api("/api/admin/glitches", token); };
   await step(d, "event: the Showroom banner opens the tournament, its gallery and the enter sheet", async () => {
@@ -2298,7 +2298,7 @@ console.log("\nINSIDE INSTAGRAM · PHONE");
     await p.evaluate(() => { localStorage.removeItem("tnl-token"); });
     await settledGoto(p, B + "/"); await throughDoor(p);
   });
-  /* 2026-10-23: the weekly reminder email's button lands on that step (server-11-nudge, app-11-getstarted) */
+  /* 2026-10-23: the weekly reminder email's button lands on that step (server/mail/nudge, app/gate/getstarted) */
   await step(d, "the reminder email's button: /?start=photo opens Edit profile, /?start=music your Music tab, through log in", async () => {
     await p.evaluate(() => localStorage.setItem("tnl-token", "e2e-friend-session"));   // signed in, as the email's reader would be
     await settledGoto(p, B + "/?login=1&next=%2F%3Fstart%3Dphoto"); await throughDoor(p);

@@ -10,8 +10,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
+const { APP } = await import("../src/app/order.mjs"), { SERVER } = await import("../src/server/order.mjs");
 const files = [
-  ...readdirSync(join(ROOT, "src")).filter((f) => /^(app|server)-.*\.(js|html)$/.test(f)).map((f) => join("src", f)),
+  ...APP.filter((f) => /\.(js|html)$/.test(f)).map((f) => "src/app/" + f), ...SERVER.map((f) => "src/server/" + f),
   "src/mail.js", "public/studio.js",
 ];
 const all = files.map((f) => [f, readFileSync(join(ROOT, f), "utf8")]);
@@ -34,12 +35,12 @@ for (const [re, label] of banned) {
   t(`nothing ${label}${hits.length ? " — found in " + hits.join(", ") : ""}`, !hits.length);
 }
 
-const head = readFileSync(join(ROOT, "src/app-01-head.html"), "utf8");
+const head = readFileSync(join(ROOT, "src/app/shell/head.html"), "utf8");
 console.log("\nCOPY — LINK PREVIEW");
 t("link preview leads with the positioning line", head.includes('og:description" content="Social media by creatives, for creatives.'));
 
 console.log("\nCOPY — COLLAB IS STILL THERE TO USE");
-const app = all.filter(([f]) => f.includes("app-")).map(([, s]) => s).join("\n");
+const app = all.filter(([f]) => f.startsWith("src/app/")).map(([, s]) => s).join("\n");
 t("invite a collaborator still exists", app.includes('title:"Invite a collaborator"'));
 t("accept collab still exists", app.includes("Accept collab"));
 /* 2026-10-12: the credit moved into the name line — "tnl.labs and xstart22" — on every post and Showroom card. */

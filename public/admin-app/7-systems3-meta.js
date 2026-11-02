@@ -1,5 +1,5 @@
 /* LABS admin · Systems · Meta v1.0 — 2026-10-26. Part 3: Instagram and Facebook in the Systems page, read-only,
-   with the moves that get more reach (server-10-admin-systems3-meta.js). Rendered under Google by 7-systems.js. */
+   with the moves that get more reach (server/admin/systems-meta.js). Rendered under Google by 7-systems.js. */
 LOADERS.systemsMeta = async () => { D.sysMeta = await req("/api/admin/systems/meta" + (D.systemsFresh ? "?fresh=1" : "")); };
 const mtChg = (a, b) => { if (!b) return ""; const c = Math.round(((a - b) / b) * 1000) / 10; return `<i class="${c > 0 ? "up" : c < 0 ? "dn" : ""}">${c > 0 ? "+" : ""}${c}% vs the 28 days before</i>`; };
 const MT_KIND = { reel: "Reel", carousel: "Carousel", video: "Video", photo: "Photo" };

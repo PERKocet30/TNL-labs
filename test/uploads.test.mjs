@@ -155,7 +155,7 @@ t("a whole upload gets 30 minutes, not Node's 5", rt.includes("server.requestTim
 t("the alert's Open Admin link is trimmed", rt.includes('process.env.PUBLIC_URL || "https://tnllabs.com").trim()'));
 
 console.log("\nTHE APP RETRIES A DROPPED UPLOAD");
-const src = readFileSync(join(ROOT, "src/app-08-upload.js"), "utf8");
+const src = readFileSync(join(ROOT, "src/app/media/upload.js"), "utf8");
 const run = (plan) => {
   const log = { toasts: [], glitches: [], sends: 0, progress: [] };
   class XHR { constructor() { this.upload = {}; } open() {} setRequestHeader() {}
