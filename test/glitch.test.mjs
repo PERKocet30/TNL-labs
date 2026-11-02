@@ -7,7 +7,7 @@ import { DatabaseSync } from "node:sqlite";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
-const src = readFileSync(join(ROOT, "src/server-10-glitch.js"), "utf8");
+const src = readFileSync(join(ROOT, "src/server/core/glitch.js"), "utf8");
 const db = new DatabaseSync(":memory:");
 const routes = {};
 const reg = (m) => (path, ...fns) => { routes[m + " " + path] = fns.at(-1); };

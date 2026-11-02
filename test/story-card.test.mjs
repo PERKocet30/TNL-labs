@@ -67,7 +67,7 @@ try {
   const w = join(DATA, "words.jpg"); writeFileSync(w, Buffer.from(await (await fetch(`${B}/p/${words}/story.jpg`)).arrayBuffer()));
   t("its words go on the maker's colour, edge to edge", near(px(w, 20, 20), [0x98, 0xFC, 0x68], 30));
   console.log("\nTHE SONG");
-  const src = (await import("node:fs")).readFileSync(join(ROOT, "src/server-12-story.js"), "utf8");
+  const src = (await import("node:fs")).readFileSync(join(ROOT, "src/server/instagram/story.js"), "utf8");
   t("a post with a song credits it on the card", src.includes("music: tr ?") && src.includes('t.at("MUSIC"'));
   console.log("\nA STORY WITH THE SONG");
   const probe2 = (file) => { try { execFileSync(FF, ["-i", file], { stdio: ["ignore", "pipe", "pipe"] }); } catch (e) { return String(e.stderr); } return ""; };
@@ -104,7 +104,7 @@ try {
   t("a song has a Story video: its card, 15 seconds of it", trr.status === 200 && /Video: h264[^\n]*1080x1920/.test(tp) && /Audio: aac/.test(tp) && /Duration: 00:00:15\.0/.test(tp));
   const tvol = String(spawnSync(FF, ["-i", tf, "-af", "volumedetect", "-f", "null", "-"]).stderr);
   t("…and you can hear it", Number((/mean_volume: (-?[\d.]+) dB/.exec(tvol) || [])[1]) > -40);
-  t("the Music lab's share asks for it", readFileSync(join(ROOT, "src/app-13-tracks-player.js"), "utf8").includes("video:`/tr/${t.id}/story.mp4`"));
+  t("the Music lab's share asks for it", readFileSync(join(ROOT, "src/app/music/tracks.js"), "utf8").includes("video:`/tr/${t.id}/story.mp4`"));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

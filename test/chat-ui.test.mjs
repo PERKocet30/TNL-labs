@@ -9,7 +9,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 const part = (f) => readFileSync(join(ROOT, "src", f), "utf8");
-const api = part("app-07-theme-labs-api.js");
+const api = part("app/core/theme-labs-api.js");
 const escSrc = api.match(/^const esc=.*$/m)[0];
 const richSrc = api.slice(api.indexOf("function rich(t){"), api.indexOf("\n}\n", api.indexOf("function rich(t){")) + 3);
 const ctx = vm.createContext({ console, Date, Math, JSON, Object, Array, Set, Map, String, Number, CSS: { escape: (s) => s } });
@@ -20,7 +20,7 @@ vm.runInContext(`
   ${escSrc}
   ${richSrc}
 `, ctx);
-vm.runInContext(part("app-10-chat-1-kit.js") + part("app-10-chat-2-dm.js"), ctx);
+vm.runInContext(part("app/messages/kit.js") + part("app/messages/inbox.js"), ctx);
 const run = (js) => vm.runInContext(js, ctx);
 
 const m = (id, from, body, at, extra = {}) => ({ id, kind: "msg", from: { username: from, displayName: from }, body, reactions: [], createdAt: at, ...extra });
@@ -49,7 +49,7 @@ const rx = run(`reactsHTML([{emoji:"🔥",username:"ben"},{emoji:"🔥",username
 t("grouped by emoji with a count", (rx.match(/class="c-rxp/g) || []).length === 2 && rx.includes("🔥<b>2</b>"));
 t("yours is marked on", /c-rxp on" data-rx="🔥"/.test(rx) && !/c-rxp on" data-rx="❤️"/.test(rx));
 t("nothing when there are none", run(`reactsHTML([],"dm:1")`) === "");
-t("six fixed reactions — same set the server allows", run("REACTS.join('')") === "❤️😂😮😢🔥👏" && /EMOJI = \["❤️", "😂", "😮", "😢", "🔥", "👏"\]/.test(part("server-10-dm-core.js")));
+t("six fixed reactions — same set the server allows", run("REACTS.join('')") === "❤️😂😮😢🔥👏" && /EMOJI = \["❤️", "😂", "😮", "😢", "🔥", "👏"\]/.test(part("server/messages/core.js")));
 
 console.log("\nQUOTES");
 t("quoting yourself says You", run(`quoteHTML({id:1,from:"ana",text:"x"})`).includes("<b>You</b>"));
@@ -65,7 +65,7 @@ t("display name escaped", !evil.includes("<img src=x"));
 t("quote escaped", !evil.includes("<svg onload"));
 t("a javascript: link never becomes a card", !evil.includes("javascript:"));
 t("a web link does, title escaped", run(`linkPrevHTML({url:"https://x.test/a",title:"<b>t</b>",site:"x"})`).includes("&lt;b&gt;t&lt;/b&gt;"));
-t("server only stores https preview images", /if \(!\/\^https:\\\/\\\/\/i\.test\(image\)\) image = "";/.test(part("server-10-links.js")));
+t("server only stores https preview images", /if \(!\/\^https:\\\/\\\/\/i\.test\(image\)\) image = "";/.test(part("server/posts/links.js")));
 
 console.log("\nCOMPOSER");
 run(`RECORD=null;CHAT={id:9,draft:"",messages:[]}`);
@@ -92,7 +92,7 @@ t("an unnamed group is titled by its people", g.includes("<b>Ben, Cam</b>"));
 t("group previews say who spoke", g.includes("Cam: call at 3"));
 
 console.log("\nLIVE STREAM — signed in, re-ticketed");
-const live = part("app-10-chat-5-live.js");
+const live = part("app/messages/live.js");
 t("asks for a ticket before connecting", /capi\.ticket\(\)/.test(live) && /api\/stream\?ticket=/.test(live));
 t("never the old open stream", !/new EventSource\(API\+"\/api\/stream"\)/.test(live));
 t("reconnects with a fresh ticket, backing off to 30s", /retryStream\(\)/.test(live) && /Math\.min\(30000/.test(live));

@@ -1,5 +1,5 @@
 /* LABS admin · Systems v1.4 — 2026-10-27 (v1.4: Claude connector, 7-systems4-connectors.js; v1.3: This week — the Monday email, and a button to send it now; v1.2: Meta, 7-systems3-meta.js; v1.1: Google, 7-systems2-google.js). v1.0 — 2026-10-26. The services LABS runs on, read-only, in one place
-   (server-10-admin-systems.js). Part 1: Railway (what's live, what's building, what failed) and
+   (server/admin/systems.js). Part 1: Railway (what's live, what's building, what failed) and
    GitHub (what's waiting for a Push, what went in lately, did the live check pass). Each card says
    plainly when its key isn't set yet; RAILWAY.md says where the keys go. */
 LOADERS.systems = async () => { await Promise.all([(async () => { D.systems = await req("/api/admin/systems" + (D.systemsFresh ? "?fresh=1" : "")); })(),
@@ -54,7 +54,7 @@ VIEWS.systems = () => {
     return `<div class="set"><div class="t"><b>Live-site check after the last merge</b><span>GitHub opens tnllabs.com after each merge and waits for the new version${c.sha ? ` · ${esc(c.sha)}` : ""} · ${ago(c.at)} ago</span></div>
       <a class="tag ${ok ? "on" : bad ? "warn" : "wait"}" href="${esc(c.url)}" target="_blank" rel="noopener">${ok ? "passed" : bad ? "failed" : "running"}</a></div>`;
   };
-  /* the week, as the Monday email reads it (server-10-weekly.js, 2026-10-26) */
+  /* the week, as the Monday email reads it (server/admin/weekly.js, 2026-10-26) */
   const W = D.weekly;
   const week = () => !W ? "" : `<h2 class="sec">This week <span class="mono">${esc(W.week.from)} → ${esc(W.week.to)} · the Monday email${W.lastSentAt ? " · last sent " + ago(W.lastSentAt) + " ago" : ""}</span></h2>
     <div class="panel"><div class="list">${W.lines.map((l) => l.startsWith("— ") ? `<div class="li" style="padding-top:14px"><span class="b"><b class="mono" style="font-size:11px;letter-spacing:.08em;color:var(--dim)">${esc(l.replace(/^— | —$/g, ""))}</b></span></div>`

@@ -36,81 +36,87 @@ Design language: Helvetica, `//` marks the labs, true white by day and black by 
 
 ## How the code is laid out
 
-The app and the API used to be two single files of 359KB and 216KB. They now live in `src/` as numbered parts of 24KB or less, which are small enough to review and push one at a time. On every boot, `src/assemble.mjs` joins them byte for byte, in filename order.
+The app and the API used to be two single files of 359KB and 216KB. They now live in `src/` in **feature folders** (the flatten, 2026-10-31): each file holds one topic and is small enough to review on its own. On every boot, `src/assemble.mjs` joins them byte for byte, in the order two manifests say — nothing else decides the order.
 
 ```
-src/app-NN-*.{html,css,js}      the app (37 parts) → built into public/index.html
-src/server-NN-*.js              the API (18 parts) → built into src/server.runtime.js
-src/server.js                   entry point: assemble, then start
-src/assemble.mjs                the joiner
-src/db.js                       schema, migrations, rep engine, levels, fees
-src/pay.js                      Stripe Connect
-src/mail.js                     email via Resend
-public/studio.js                the Studio (beat maker; off by default, loads only when used)
-public/admin.html               the admin dashboard (shell; app in public/admin-app/)
-public/door.js                  the door's vial loader and mark
-public/sw.js                    service worker (installable app, offline shell)
-scripts/scientist.mjs           read-only checks against the live site (after each merge + daily)
-test/                           51 test suites — run with npm test
+src/app/<feature>/*.{html,css,js}   the app → built into public/index.html
+src/app/order.mjs                   the app's files, in build order
+src/server/<feature>/*.js           the API → built into src/server.runtime.js
+src/server/order.mjs                the API's files, in build order
+src/server.js                       entry point: assemble, then start
+src/assemble.mjs                    the joiner (stops the boot if the order file and the disk disagree)
+src/db.js                           schema, migrations, rep engine, levels, fees
+src/pay.js                          Stripe Connect
+src/mail.js                         email via Resend
+src/palette.js                      every colour
+public/studio.js                    the Studio (beat maker; off by default, loads only when used)
+public/admin.html                   the admin dashboard (shell; app in public/admin-app/)
+public/door.js                      the door's vial loader and mark
+public/sw.js                        service worker (installable app, offline shell)
+scripts/scientist.mjs               read-only checks against the live site (after each merge + daily)
+test/                               the test suites — run with npm test
 ```
 
-**Edit the parts, never the built files.** Parts join in filename order, so two parts can share a number (`app-11-gate-logic`, `app-11-gate-screens`, `app-11-showroom`). `public/index.html` and `src/server.runtime.js` are regenerated on every boot and ignored by git.
+App features: `shell` (page markup) · `styles` · `state` (`state.js`, the register of every shared variable — loads first) · `core` (theme, API client, kit, dialogs, icons, wiring) · `nav` (back, motion, top bar) · `gate` (join, log in, onboarding) · `showroom` · `labs` · `feed` · `posts` · `compose` (the post maker and editors) · `media` · `music` · `market` · `profile` · `messages` · `notifications` · `events` · `instagram`.
+Server features: `core` (boot, guards, headers, live stream) · `auth` · `trust` (signals, spam, honest accounts, Turnstile) · `uploads` · `posts` · `labs` · `profile` · `messages` · `market` · `orders` · `music` · `events` · `instagram` · `shop-feeds` · `connector` (Claude, Grok) · `admin` · `mail` · `pages` (policies, search).
+
+**Edit the parts, never the built files.** A new file goes in its feature folder *and* in that group's `order.mjs`, where it belongs: the parts share one scope, so a `const` must come before its first use and later CSS wins. Keep a file to one topic and readable (under ~25KB is a good guide; it's no longer a hard cap). `public/index.html` and `src/server.runtime.js` are regenerated on every boot and ignored by git.
 
 | Part | Holds |
 |---|---|
-| `app-01-head` · `app-06-body` · `app-20-tail` | page markup, meta/OG tags, script tags |
-| `app-02…05-styles-*` | styles: base, profile, studio/UI, chat, post creator (`compose`), icons, media, listing editor (`sell`), the listing page (`listing`), and the computer layout (`wide`, loads last) |
-| `app-07-theme-labs-api` | theme, labs and channels, API client |
-| `app-08-images` | image quality (posts and tournament entries): the original kept up to 3000px (hidden data stripped), 1440px feed and 480px grid copies, `srcset` so screens get the sharp one |
-| `app-08-state-ui` · `app-09-render-nav` | app state, toasts/modals, routing, top bar; `render()` picks the phone or computer frame and keeps your scroll place across repaints |
-| `server-12-report` | `/api/report/daily` — the morning check's locked summary (key: `TNL_REPORT_KEY` in Railway; counts only, nothing personal; `test/report.test.mjs`) |
-| `server-12-labs` | `/l/:slug`, a lab's shareable page (`LAB_SLUG`: links name the lab), and `LAB_PITCH` — the line on what to do in each lab (the same lines head each lab in the app, `app-11-places.js`; `test/lab-share.test.mjs` checks) |
-| `server-12-seo` | search: `/sitemap.xml` (every public page, nothing private) and `ldJson()` — schema.org structured data on the public pages (profile, post, song, listing, event) |
-| `app-09-nav` | back: one trail of screens — every screen change joins it, and the phone's back, swipe-back, ‹ and ✕ all walk it |
-| `app-08-upload` | uploads: the streaming upload, retried twice when the connection drops or the server is restarting (502–504), failures reported to Glitches with size, time and reason |
-| `app-10-chat-1…6` | Messages v2.1 (2026-10-14: a screen of its own — two columns on a computer, chat search): chat kit, inbox + chat screen, composer/voice notes, sheets (new chat, group, forward, mute), the signed-in live stream, lab rooms as chat |
-| `app-10-dm-search` | search, the door |
-| `app-11-gate-screens` · `app-11-gate-logic` | sign-up and log-in screens and their logic |
-| `app-11-places` | Labs as places (2026-10-08; v1.1 2026-10-09: one list of genres with their #tags, Work · Talk only): a lab's tabs, its home channel (`LAB_HOME`), the #tag page, tag suggestions; styles in `app-05-styles-places` |
-| `server-01-passwords` | `pwProblem()`: a new password (joining, reset) needs 8+ characters, a letter and a number, and can't be a well-known one or the member's username/email name (2026-10-19; the join screen shows the same list live, `pwRules`) |
-| `app-11-gate-tour` · `app-11-getstarted` · `server-11-start` | Onboarding (2026-10-18): after joining, confirm your email → photo → colour → bio → people → How LABS works (one card per part of the app; ≡ on your profile reopens it), then a Get started list on the Showroom for 30 days (`GET /api/me/start`: own posts and follows) |
-| `app-11-gallery` | The Showroom on a computer as a gallery wall (2026-10-18): one piece in the spotlight, ← → / ‹ › / wheel / a click walk along it, only the spotlit piece's song plays (`musBand()`, used by the music observer in `app-18-media`), one swipe or wheel flick = one step; the computer's only Showroom (no grid); styles in `app-05-styles-wide` |
-| `app-11-showroom` · `app-12…13` (`app-12-post-extras`: tags, place, comments off and "Shop this post" on a card) | Showroom, lab index, archive/posts; the Music lab (`app-13-tracks-player`), its playlists (`app-13-playlists`: Songs · Playlists, ⊕ on every song and on the bar), the full-screen song (`app-13-nowplaying`: tap a song or the bar) and the player bar and queue (`app-13-player`) |
-| `app-14-detail-sell` · `app-14-listing` · `app-14-sell-variants` | orders and the listing editor (v3, Shopify-style: Photos · Pricing with a compare-at "was" price and what you keep after the TNL and card fees · Size & stock · Shipping · Details with category and condition pickers); the listing page (photos, size/colour picker, the pinned Buy bar, the pinch-zoom photo viewer); the editor's options — tap sizes, add colours, every combination gets its own stock |
-| `app-14-sell-specs` · `server-06-market-taxonomy` | who's selling (a brand, vintage, one of one — the form shapes itself; listings say "Vintage" / "1 of 1"; Market filter **Seller**) and the taxonomy: departments → categories, each with its own size buttons (shoe sizes, waists, print sizes, ring sizes) and details (fit and measurements, size system, metal, medium / edition / signed / framed…), saved as `specs` and shown on the listing as a list |
-| `app-15-profile` · `app-15-profile-edit` · `app-16` | profile v2 (≡ / ⋯ menus, followers/following, pinned, tagged), the edit page (one quiet row per field), wiring |
-| `app-17-bag` | the bag (one checkout per seller), recently viewed, price-drop tags, listing drafts, Duplicate, your shop's numbers |
-| `app-17-order-done` · `app-05-styles-shop` | "Order confirmed" — back from Stripe the buyer lands on that order (`?checkout=paid&o=`): items, total, where it's going, what happens next; a payment still clearing says "Payment processing" |
-| `app-17-event-1` · `app-17-event-2` · `app-17-event-3-poll` | Events (2026-10-06, poll 2026-10-07): the tournament screen — brief, enter sheet, gallery, picks, bracket, judges' scores, results — the Showroom banner, and the poll's scoreboard, Instagram vote-link landing (`EVFOCUS`) and Share to Instagram sheet; styles in `app-05-styles-event` |
-| `app-17-market` · `app-17-panels` | market wiring and the listing editor's logic; panels, DMs, Studio mount |
-| `app-18-composer` · `app-18-media` · `app-18-photo-edit` · `app-18-post-mixed` · `app-18-post-queue` · `app-18-video-edit` | the post creator; carousels, video autoplay, music and the audio unlock; the photo editor (crop, filters, adjust — on the phone); photos and videos picked together into one carousel (2026-10-30: a video slide is `{video, url: its still}` in `posts.images`, played by `caroSlide`; one video alone stays a video post); posting in the background, drafts, drag to reorder; the video editor (trim, cover from a frame or the camera roll, sound on/off, frame shape — kept as instructions on the post in `extras.video`, never re-encoded) |
-| `app-19-feed-boot` | feed, badges, boot |
-| `server-01-boot` | setup, compression, caching rules, Sentry, prepared queries |
-| `server-01-json` | the JSON body parser (moved out of boot 2026-10-26); keeps the raw bytes for Meta's signed webhook only |
-| `server-01-signals` · `server-11-signals-admin` · `app-08-landed` · admin `3-person-signals` | Real people or bots (2026-10-26): joining, signing in and voting note the network (a salted hash of the IP), country (Cloudflare), device, how they joined, the first link and how long Join took. Admin-only: a member's record shows "How they joined" with accounts on the same network and reasons to look; a tournament shows a vote check per piece and the networks with more than one voter. Named in the privacy policy. |
-| `server-02…11` | auth/feed, uploads/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/beats/Showroom, social/meta |
-| `server-11-nudge` | The weekly reminder (2026-10-23): a member whose page has gaps gets one tailored email a week — photo, music for a music role, first piece, bio, colour, 3 follows, a listing for a fashion role — until it's done or 4 have gone; 3 days after joining at the earliest; at most 40 a day. Admin → Settings → Email switches it and previews it; `?start=<gap>` opens that step in the app. Words in `mail.js` (`NUDGE_ITEMS`); unsubscribe shared with the tournament email |
-| `server-11-profile` | profile v2: links, pronouns, pins (`/api/me/pins`), followers/following lists, the Tagged tab, "Followed by" |
-| `server-12-policies` | the public policy pages Stripe reviews: `/terms`, `/privacy`, `/policies` (shipping, returns, disputes, prohibited items), `/contact`, `/shop`, and `lookFoot()` — the footer on every server-built page. `SUPPORT_EMAIL` sets the inbox |
-| `server-12-video` | old videos fixed on boot (index-first copy, a cover where none); and the light copies made in the background one at a time: for video, 720p/30fps/~1.3 Mbps (`video_feed` → `videoPlayUrl`; the original stays `videoUrl`); for music, 128 kbps AAC (`audio_play` → a track's `url`; the upload stays `fileUrl`) |
-| `server-12-story` · `app-18-story-share` | anything on LABS as an Instagram Story: 1080×1920 cards for a post (`/p/:id/story.jpg`, a text post as a quote), a profile (`/u/:name/story.jpg`), a listing (`/m/:id/story.jpg`) and a track (`/tr/:id/story.jpg`); `shareMenu()` — Instagram Story, Send off the app, Copy link — on profiles, listings and tracks, and the post menu's "Instagram Story" sheet: one tap shares the picture and copies the link for a Link sticker |
-| `server-12-instagram` · `app-18-instagram` | LABS alongside Instagram: `/m/:id` hands over the app with the listing's own preview (photo, title, price, seller) for Instagram DMs and link stickers (`listingPage()`); inside Instagram's, Facebook's or TikTok's browser (`INAPP`) the home-screen card becomes "Open in Safari", Log in / Join say so, and the Story sheet opens Safari — `openOutside()` tries `x-safari-` / Android `intent://`, then shows ••• → Open in external browser |
-| `server-12-instagram-inbox` · admin `7-instagram` | The Instagram inbox (2026-10-26): messages sent to the LABS Instagram account, read in **Admin → Instagram**. Connect once through Instagram's own sign-in (Instagram API with Instagram Login; `IG_APP_ID`, `IG_APP_SECRET`); the long-lived key stays on the server and is refreshed daily. New messages come by polling (`/me/conversations`, every `IG_POLL_MS`, 3 min) and by signed webhook (`/api/instagram/webhook`) once Meta marks the app Live. Read only — Reply opens the conversation in Instagram (`ig.me/m/<username>`). Nothing here is shown to members. |
-| `server-12-mcp-1-oauth` · `server-12-mcp-2-tools` · admin `7-systems4-connectors` | The LABS connector (2026-10-27): Claude reads the admin dashboard through `/mcp` (MCP over HTTP, no streaming) like it reads GitHub or Railway. Sign-in is OAuth 2.1 with PKCE, done by hand with `node:crypto` — discovery under `/.well-known/`, `/oauth/register` (only Claude's callback is accepted), `/oauth/authorize` (a LABS page the signed-in admin allows), `/oauth/token`. A connector key (`labs_mcp_…`, `mcp_tokens`, 30 days, refreshed) is not a session: `mcpSession()` in `auth()` lets it open GET on the allowed admin routes and nothing else. Each tool is one admin route, scrubbed (`mcpScrub`: no emails, addresses, IPs, notes, keys); messages, the mail log, backups, settings, source and the CSV have no tool. Admin → Systems shows the address to paste, the connected keys and a Disconnect button (`test/connector.test.mjs`). Grok connects the same way from its exact callbacks (2026-10-29). |
-| `server-01-turnstile` · `server-01-headers` · `public/human.js` | Cloudflare (2026-10-30): the Turnstile person check on email joins (off until `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET` are set; fails open if Cloudflare can't be reached; `human.js` loads only at Join), and HSTS / nosniff / Referrer-Policy on every answer (`browserHeaders`, first middleware in server-01-boot) (`test/turnstile.test.mjs`). |
-| `server-01-visits` · `server-12-mcp-4-insights` · `server-12-mcp-5-insights` | Connector insights (2026-10-29), asked for by Grok: `member_days` notes one row per member per day they use the app signed in (from `auth()`), `slow_requests` notes /api requests over 1.5s or 5xx (14 days). Six admin routes under `/api/admin/insights/` — conversion (drop-offs, time to first post/vote/collab, ways in), retention (back after 1/7/30 days, first-day habits, labs that keep people), market (looked/saved vs bought, Stripe vs listed), collabs (sent/accepted/ignored, after a collab), tournament (voters vs entrants, round-to-round, who reached out after votes), tech (errors marked ours or not, slow routes) — each a connector tool (`test/insights.test.mjs`). |
-| `server-02-post-extras` | a post's people tagged, place, comments on/off and products from your own shop (`posts.extras`) |
-| `server-05-admin-verify-nudge` | Admin → System → Data → Email → **Email them a new confirm link**: everyone who hasn't confirmed (not suspended) gets the sign-up email again with a fresh 24-hour link; nobody twice in a day (`users.verify_nudged_at`) |
-| `server-07-cart` | the bag checkout (several items from one seller, one payment, shipping combined — `sessionFits()` binds a paid session to its whole group), `/api/shop/stats` |
-| `server-07-orders-sharing` (orders) | buying one item, the checkout return, and settling: `settlePaidOrder()` is the one path; `reconcileAll()` re-checks pending checkouts every 5 minutes, so a buyer who pays and closes the tab still gets their order settled. Checkout (`pay.js` v2.0) offers the seller's own payment methods — Apple Pay, Google Pay, Cash App Pay, Klarna, Link — minus slow bank debits, with cards as the fallback |
-| `server-06-market-stock` | sizes and colours: every unit sold goes through `takeStock()` (the size picked, the listing closes at zero) |
-| `server-10-dm-core` · `-dm-groups` · `-dm-routes` | Messages v2: schema migration (groups; backup first), requests, replies, reactions, edit/unsend, forward, mute |
-| `server-10-links` · `server-10-live` | link previews behind a DNS-level SSRF guard; the signed-in live stream, typing, presence, lab reactions and pins |
-| `server-10-places` | Labs as places: `PLACES` (each lab's channels and home), #tags read from captions plus the old channel's tag for posts from before the cutover, and the lab feed / work / tags and #tag routes; pins from any of the lab's channels |
-| `server-10-pulse-labs` | Admin · the direction: `/api/admin/direction` — each lab's work, talk and #tags, trending #tags, the tournament and what needs you about it, how people take part. `LAB_NAME` must match `LABS` |
-| `server-10-weekly` | The week: `/api/admin/weekly` (+ `/send`) and the Monday 13:00 UTC email to `ADMIN_EMAIL` — last week against the week before, every table, counts only, never a name. Uses `labName` from pulse-labs and `worstSpots` from watch |
-| `server-10-admin-v4` | Admin v4 (2026-10-20): the per-day series behind the charts with the period before, top work, the audience breakdown, every seller and every listing |
-| `server-10-events-1-core` · `-2-routes` · `-3-admin` · `-4-cards` · `-5-pages` · `-6-mail` | Events: the schema and state machine (`tickEvent()`: submit → vote → bracket rounds → judged final → results, idempotent, runs every minute), entering/voting/judging, the poll's scoreboard (`evBoard`), admin, the Instagram cards (entry Story, scoreboard post/Story) and the public `/e/:slug`, `/rules`, `/board` and `/e/:slug/:entry` pages; `-6-mail`: the "entries are open" email to every member, and `/mail/off` |
+| `app/shell/head` · `app/shell/body` · `app/shell/tail` | page markup, meta/OG tags, script tags |
+| `app/styles/*` | styles: base, profile, studio/UI, chat, post creator (`compose`), icons, media, listing editor (`sell`), the listing page (`listing`), and the computer layout (`wide`, loads last) |
+| `app/core/theme-labs-api` | theme, labs and channels, API client |
+| `app/media/images` | image quality (posts and tournament entries): the original kept up to 3000px (hidden data stripped), 1440px feed and 480px grid copies, `srcset` so screens get the sharp one |
+| `app/state/state-ui` · `app/nav/render-nav` | app state, toasts/modals, routing, top bar; `render()` picks the phone or computer frame and keeps your scroll place across repaints |
+| `server/admin/report` | `/api/report/daily` — the morning check's locked summary (key: `TNL_REPORT_KEY` in Railway; counts only, nothing personal; `test/report.test.mjs`) |
+| `server/labs/pages` | `/l/:slug`, a lab's shareable page (`LAB_SLUG`: links name the lab), and `LAB_PITCH` — the line on what to do in each lab (the same lines head each lab in the app, `app/labs/places.js`; `test/lab-share.test.mjs` checks) |
+| `server/pages/seo` | search: `/sitemap.xml` (every public page, nothing private) and `ldJson()` — schema.org structured data on the public pages (profile, post, song, listing, event) |
+| `app/nav/back` | back: one trail of screens — every screen change joins it, and the phone's back, swipe-back, ‹ and ✕ all walk it |
+| `app/media/upload` | uploads: the streaming upload, retried twice when the connection drops or the server is restarting (502–504), failures reported to Glitches with size, time and reason |
+| `app/messages/*` | Messages v2.1 (2026-10-14: a screen of its own — two columns on a computer, chat search): chat kit, inbox + chat screen, composer/voice notes, sheets (new chat, group, forward, mute), the signed-in live stream, lab rooms as chat |
+| `app/messages/search` | search, the door |
+| `app/gate/screens` · `app/gate/logic` | sign-up and log-in screens and their logic |
+| `app/labs/places` | Labs as places (2026-10-08; v1.1 2026-10-09: one list of genres with their #tags, Work · Talk only): a lab's tabs, its home channel (`LAB_HOME`), the #tag page, tag suggestions; styles in `app/styles/places` |
+| `server/auth/passwords` | `pwProblem()`: a new password (joining, reset) needs 8+ characters, a letter and a number, and can't be a well-known one or the member's username/email name (2026-10-19; the join screen shows the same list live, `pwRules`) |
+| `app/gate/tour` · `app/gate/getstarted` · `server/auth/start` | Onboarding (2026-10-18): after joining, confirm your email → photo → colour → bio → people → How LABS works (one card per part of the app; ≡ on your profile reopens it), then a Get started list on the Showroom for 30 days (`GET /api/me/start`: own posts and follows) |
+| `app/showroom/gallery` | The Showroom on a computer as a gallery wall (2026-10-18): one piece in the spotlight, ← → / ‹ › / wheel / a click walk along it, only the spotlit piece's song plays (`musBand()`, used by the music observer in `app/media/media`), one swipe or wheel flick = one step; the computer's only Showroom (no grid); styles in `app/styles/wide` |
+| `app/showroom/showroom` · `app/posts/*` · `app/music/*` (`app/posts/extras`: tags, place, comments off and "Shop this post" on a card) | Showroom, lab index, archive/posts; the Music lab (`app/music/tracks`), its playlists (`app/music/playlists`: Songs · Playlists, ⊕ on every song and on the bar), the full-screen song (`app/music/nowplaying`: tap a song or the bar) and the player bar and queue (`app/music/player`) |
+| `app/market/detail-sell` · `app/market/listing` · `app/market/sell-variants` | orders and the listing editor (v3, Shopify-style: Photos · Pricing with a compare-at "was" price and what you keep after the TNL and card fees · Size & stock · Shipping · Details with category and condition pickers); the listing page (photos, size/colour picker, the pinned Buy bar, the pinch-zoom photo viewer); the editor's options — tap sizes, add colours, every combination gets its own stock |
+| `app/market/sell-specs` · `server/market/taxonomy` | who's selling (a brand, vintage, one of one — the form shapes itself; listings say "Vintage" / "1 of 1"; Market filter **Seller**) and the taxonomy: departments → categories, each with its own size buttons (shoe sizes, waists, print sizes, ring sizes) and details (fit and measurements, size system, metal, medium / edition / signed / framed…), saved as `specs` and shown on the listing as a list |
+| `app/profile/profile` · `app/profile/edit` · `app/core/wire` | profile v2 (≡ / ⋯ menus, followers/following, pinned, tagged), the edit page (one quiet row per field), wiring |
+| `app/market/bag` | the bag (one checkout per seller), recently viewed, price-drop tags, listing drafts, Duplicate, your shop's numbers |
+| `app/market/order-done` · `app/styles/shop` | "Order confirmed" — back from Stripe the buyer lands on that order (`?checkout=paid&o=`): items, total, where it's going, what happens next; a payment still clearing says "Payment processing" |
+| `app/events/screen` · `app/events/wire` · `app/events/poll` | Events (2026-10-06, poll 2026-10-07): the tournament screen — brief, enter sheet, gallery, picks, bracket, judges' scores, results — the Showroom banner, and the poll's scoreboard, Instagram vote-link landing (`EVFOCUS`) and Share to Instagram sheet; styles in `app/styles/event` |
+| `app/market/market` · `app/core/panels` | market wiring and the listing editor's logic; panels, DMs, Studio mount |
+| `app/compose/composer` · `app/media/media` · `app/compose/photo-edit` · `app/compose/post-mixed` · `app/compose/queue` · `app/compose/video-edit` | the post creator; carousels, video autoplay, music and the audio unlock; the photo editor (crop, filters, adjust — on the phone); photos and videos picked together into one carousel (2026-10-30: a video slide is `{video, url: its still}` in `posts.images`, played by `caroSlide`; one video alone stays a video post); posting in the background, drafts, drag to reorder; the video editor (trim, cover from a frame or the camera roll, sound on/off, frame shape — kept as instructions on the post in `extras.video`, never re-encoded) |
+| `app/feed/feed-boot` | feed, badges, boot |
+| `server/core/boot` | setup, compression, caching rules, Sentry, prepared queries |
+| `server/core/json` | the JSON body parser (moved out of boot 2026-10-26); keeps the raw bytes for Meta's signed webhook only |
+| `server/trust/signals` · `server/trust/signals-admin` · `app/core/landed` · admin `3-person-signals` | Real people or bots (2026-10-26): joining, signing in and voting note the network (a salted hash of the IP), country (Cloudflare), device, how they joined, the first link and how long Join took. Admin-only: a member's record shows "How they joined" with accounts on the same network and reasons to look; a tournament shows a vote check per piece and the networks with more than one voter. Named in the privacy policy. |
+| `server/auth` · `server/uploads` · `server/admin` · `server/orders` · `server/trust` · `server/labs` · `server/posts` · `server/profile` | auth/feed, uploads/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/Showroom, social/meta |
+| `server/mail/nudge` | The weekly reminder (2026-10-23): a member whose page has gaps gets one tailored email a week — photo, music for a music role, first piece, bio, colour, 3 follows, a listing for a fashion role — until it's done or 4 have gone; 3 days after joining at the earliest; at most 40 a day. Admin → Settings → Email switches it and previews it; `?start=<gap>` opens that step in the app. Words in `mail.js` (`NUDGE_ITEMS`); unsubscribe shared with the tournament email |
+| `server/profile/profile` | profile v2: links, pronouns, pins (`/api/me/pins`), followers/following lists, the Tagged tab, "Followed by" |
+| `server/pages/policies` | the public policy pages Stripe reviews: `/terms`, `/privacy`, `/policies` (shipping, returns, disputes, prohibited items), `/contact`, `/shop`, and `lookFoot()` — the footer on every server-built page. `SUPPORT_EMAIL` sets the inbox |
+| `server/uploads/video` | old videos fixed on boot (index-first copy, a cover where none); and the light copies made in the background one at a time: for video, 720p/30fps/~1.3 Mbps (`video_feed` → `videoPlayUrl`; the original stays `videoUrl`); for music, 128 kbps AAC (`audio_play` → a track's `url`; the upload stays `fileUrl`) |
+| `server/instagram/story` · `app/instagram/story-share` | anything on LABS as an Instagram Story: 1080×1920 cards for a post (`/p/:id/story.jpg`, a text post as a quote), a profile (`/u/:name/story.jpg`), a listing (`/m/:id/story.jpg`) and a track (`/tr/:id/story.jpg`); `shareMenu()` — Instagram Story, Send off the app, Copy link — on profiles, listings and tracks, and the post menu's "Instagram Story" sheet: one tap shares the picture and copies the link for a Link sticker |
+| `server/instagram/alongside` · `app/instagram/inapp` | LABS alongside Instagram: `/m/:id` hands over the app with the listing's own preview (photo, title, price, seller) for Instagram DMs and link stickers (`listingPage()`); inside Instagram's, Facebook's or TikTok's browser (`INAPP`) the home-screen card becomes "Open in Safari", Log in / Join say so, and the Story sheet opens Safari — `openOutside()` tries `x-safari-` / Android `intent://`, then shows ••• → Open in external browser |
+| `server/instagram/inbox` · admin `7-instagram` | The Instagram inbox (2026-10-26): messages sent to the LABS Instagram account, read in **Admin → Instagram**. Connect once through Instagram's own sign-in (Instagram API with Instagram Login; `IG_APP_ID`, `IG_APP_SECRET`); the long-lived key stays on the server and is refreshed daily. New messages come by polling (`/me/conversations`, every `IG_POLL_MS`, 3 min) and by signed webhook (`/api/instagram/webhook`) once Meta marks the app Live. Read only — Reply opens the conversation in Instagram (`ig.me/m/<username>`). Nothing here is shown to members. |
+| `server/connector/oauth` · `server/connector/tools` · admin `7-systems4-connectors` | The LABS connector (2026-10-27): Claude reads the admin dashboard through `/mcp` (MCP over HTTP, no streaming) like it reads GitHub or Railway. Sign-in is OAuth 2.1 with PKCE, done by hand with `node:crypto` — discovery under `/.well-known/`, `/oauth/register` (only Claude's callback is accepted), `/oauth/authorize` (a LABS page the signed-in admin allows), `/oauth/token`. A connector key (`labs_mcp_…`, `mcp_tokens`, 30 days, refreshed) is not a session: `mcpSession()` in `auth()` lets it open GET on the allowed admin routes and nothing else. Each tool is one admin route, scrubbed (`mcpScrub`: no emails, addresses, IPs, notes, keys); messages, the mail log, backups, settings, source and the CSV have no tool. Admin → Systems shows the address to paste, the connected keys and a Disconnect button (`test/connector.test.mjs`). Grok connects the same way from its exact callbacks (2026-10-29). |
+| `server/trust/turnstile` · `server/core/headers` · `public/human.js` | Cloudflare (2026-10-30): the Turnstile person check on email joins (off until `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET` are set; fails open if Cloudflare can't be reached; `human.js` loads only at Join), and HSTS / nosniff / Referrer-Policy on every answer (`browserHeaders`, first middleware in server/core/boot) (`test/turnstile.test.mjs`). |
+| `server/trust/visits` · `server/connector/insights-people` · `server/connector/insights-shop` | Connector insights (2026-10-29), asked for by Grok: `member_days` notes one row per member per day they use the app signed in (from `auth()`), `slow_requests` notes /api requests over 1.5s or 5xx (14 days). Six admin routes under `/api/admin/insights/` — conversion (drop-offs, time to first post/vote/collab, ways in), retention (back after 1/7/30 days, first-day habits, labs that keep people), market (looked/saved vs bought, Stripe vs listed), collabs (sent/accepted/ignored, after a collab), tournament (voters vs entrants, round-to-round, who reached out after votes), tech (errors marked ours or not, slow routes) — each a connector tool (`test/insights.test.mjs`). |
+| `server/posts/extras` | a post's people tagged, place, comments on/off and products from your own shop (`posts.extras`) |
+| `server/admin/verify-nudge` | Admin → System → Data → Email → **Email them a new confirm link**: everyone who hasn't confirmed (not suspended) gets the sign-up email again with a fresh 24-hour link; nobody twice in a day (`users.verify_nudged_at`) |
+| `server/orders/cart` | the bag checkout (several items from one seller, one payment, shipping combined — `sessionFits()` binds a paid session to its whole group), `/api/shop/stats` |
+| `server/orders/orders-sharing` (orders) | buying one item, the checkout return, and settling: `settlePaidOrder()` is the one path; `reconcileAll()` re-checks pending checkouts every 5 minutes, so a buyer who pays and closes the tab still gets their order settled. Checkout (`pay.js` v2.0) offers the seller's own payment methods — Apple Pay, Google Pay, Cash App Pay, Klarna, Link — minus slow bank debits, with cards as the fallback |
+| `server/market/stock` | sizes and colours: every unit sold goes through `takeStock()` (the size picked, the listing closes at zero) |
+| `server/messages/core` · `groups` · `routes` | Messages v2: schema migration (groups; backup first), requests, replies, reactions, edit/unsend, forward, mute |
+| `server/posts/links` · `server/core/live` | link previews behind a DNS-level SSRF guard; the signed-in live stream, typing, presence, lab reactions and pins |
+| `server/labs/places` | Labs as places: `PLACES` (each lab's channels and home), #tags read from captions plus the old channel's tag for posts from before the cutover, and the lab feed / work / tags and #tag routes; pins from any of the lab's channels |
+| `server/admin/pulse-labs` | Admin · the direction: `/api/admin/direction` — each lab's work, talk and #tags, trending #tags, the tournament and what needs you about it, how people take part. `LAB_NAME` must match `LABS` |
+| `server/admin/weekly` | The week: `/api/admin/weekly` (+ `/send`) and the Monday 13:00 UTC email to `ADMIN_EMAIL` — last week against the week before, every table, counts only, never a name. Uses `labName` from pulse-labs and `worstSpots` from watch |
+| `server/admin/v4` | Admin v4 (2026-10-20): the per-day series behind the charts with the period before, top work, the audience breakdown, every seller and every listing |
+| `server/events/core` · `routes` · `admin` · `cards` · `pages` · `mail` | Events: the schema and state machine (`tickEvent()`: submit → vote → bracket rounds → judged final → results, idempotent, runs every minute), entering/voting/judging, the poll's scoreboard (`evBoard`), admin, the Instagram cards (entry Story, scoreboard post/Story) and the public `/e/:slug`, `/rules`, `/board` and `/e/:slug/:entry` pages; `-6-mail`: the "entries are open" email to every member, and `/mail/off` |
 
 ---
 
@@ -121,14 +127,15 @@ Requires **Node 22.5+** (built-in SQLite).
 ```bash
 npm install
 npm start      # http://localhost:8787
-npm test       # assembles, then runs every suite
+npm test       # assembles, type-checks the money code, then runs every suite
+npm run typecheck   # just the types: src/pay.js, db.js, mail.js, palette.js (dev-only TypeScript, reads the JSDoc)
 ```
 
 **Deploying:** push to `main`. Railway rebuilds and restarts in about 80 seconds. The deploy log should show:
 
 ```
-[assemble] public/index.html: 37 parts, …
-[assemble] src/server.runtime.js: 18 parts, …
+[assemble] public/index.html: 96 parts, …
+[assemble] src/server.runtime.js: 79 parts, …
 [db] using /app/data/tnl.db
 │ in the lab  N members · N posts · N confirmed collabs
 ```
@@ -212,19 +219,19 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 | `/p/:id` | a single post, with its own link preview |
 | `/m/:id` | a Market listing |
 | `/l/:slug/card.jpg` | a lab's link preview (1080×1080): `// VISUAL`, what to do there, its #tags and "Join at …/l/visual", over the lab's latest work blurred (Music: the newest song cover) |
-| `/l/:slug` | a lab, by name — `/l/general`, `/l/visual`, `/l/music`, `/l/fashion`, `/l/anime`, `/l/news`, `/l/business` (`LAB_SLUG`; an old `/l/<id>` link forwards): its name, what to do there (`LAB_PITCH`), its #tags, recent work and "Join and step in" → `/?l=slug` (members land in the lab; everyone else joins first, then lands in it). What a lab's **Share** sends (`server-12-labs.js`) |
+| `/l/:slug` | a lab, by name — `/l/general`, `/l/visual`, `/l/music`, `/l/fashion`, `/l/anime`, `/l/news`, `/l/business` (`LAB_SLUG`; an old `/l/<id>` link forwards): its name, what to do there (`LAB_PITCH`), its #tags, recent work and "Join and step in" → `/?l=slug` (members land in the lab; everyone else joins first, then lands in it). What a lab's **Share** sends (`server/labs/pages.js`) |
 | `/e/:slug` · `/e/:slug/rules` | an event and its official rules (draft rules are generated until an admin writes their own) |
 | `/e/:slug/board` · `/e/:slug/:entry` | a poll's public scoreboard, and one entry's vote link (its preview is the piece; Vote opens `/?e=slug&v=entry` in the app) |
 | `/e/:slug/card.jpg` | the tournament's link preview (1080×1080, square for Instagram's previews): its name, prize and stage over the latest entry, redrawn as the stage changes. `/e/:slug` uses it unless an admin chose a **Cover picture** in Admin → Tournament |
 | `/e/:slug/board.jpg` · `/e/:slug/:entry/story.jpg` | Instagram pictures: the scoreboard (1080×1350, `?size=story` 1080×1920) and an entrant's "Vote for my piece" Story |
-| `/e/:slug/showcase.png` | The showcase: every piece in the event in one picture, entry order, no votes (1080×1350, `?size=story` 1080×1920) — `server-10-events-4b-showcase.js` |
+| `/e/:slug/showcase.png` | The showcase: every piece in the event in one picture, entry order, no votes (1080×1350, `?size=story` 1080×1920) — `server/events/showcase.js` |
 | `/` | the app; its link preview uses `og-cover-v3-2026-09-23.jpg` |
 
 ---
 
 ## Admin dashboard (`/admin`) — v4.0, 2026-10-20
 
-Admin-only; every route checks on the server. `public/admin.html` is the shell and base styles, `public/admin-app/ui.css` the shell, chart and card styles, and the app is `public/admin-app/1-core.js` … `9-studio.js` (Home `2-home.js`, Members `3-people.js` with one record in `3-person.js`, Content `4-content.js`, Orders/Listings/Sellers `5-*.js`, Settings `6-settings.js`, Systems `7-systems.js` + `7-systems2-google.js` + `7-systems3-meta.js` (the week's report with "Email me this now", Railway + GitHub, Google Search + Shopping, Instagram + Facebook; read-only; `src/server-10-admin-systems*.js`, 2026-10-26), Events `8-events.js`, Analytics `9-analytics.js`). The data comes from `src/server-10-admin.js`, `src/server-10-admin2-members.js`, `src/server-10-pulse-labs.js`, `src/server-10-admin-v4.js` plus the older admin routes. Each file stays under 24KB.
+Admin-only; every route checks on the server. `public/admin.html` is the shell and base styles, `public/admin-app/ui.css` the shell, chart and card styles, and the app is `public/admin-app/1-core.js` … `9-studio.js` (Home `2-home.js`, Members `3-people.js` with one record in `3-person.js`, Content `4-content.js`, Orders/Listings/Sellers `5-*.js`, Settings `6-settings.js`, Systems `7-systems.js` + `7-systems2-google.js` + `7-systems3-meta.js` (the week's report with "Email me this now", Railway + GitHub, Google Search + Shopping, Instagram + Facebook; read-only; `src/server/admin/systems*.js`, 2026-10-26), Events `8-events.js`, Analytics `9-analytics.js`). The data comes from `src/server/admin/admin.js`, `src/server/admin/members.js`, `src/server/admin/pulse-labs.js`, `src/server/admin/v4.js` plus the older admin routes. Each file stays under 24KB.
 
 Twelve sections in four groups, laid out like a shop's admin: **Run** (Home, Orders, Listings, Sellers), **People & content** (Members, Content, Events, Instagram), **Understand** (Analytics, Health, Systems), **Set up** (Settings). Old links keep working (`#today` → Home, `#market` → Orders, `#system` → Settings; typing a `#hash` opens that section).
 
@@ -260,9 +267,9 @@ Three layers: stop glitches before they ship, notice the ones that get through, 
 - **After every merge** (`.github/workflows/after-deploy.yml`): it waits until `/api/health` reports the new commit, then runs the scientist against the live site. A failure (or a deploy that never lands) turns the run red, and GitHub emails whoever merged.
 - **Daily at 18:45 UTC**, the same workflow runs the scientist again (GitHub emails a red run to whoever last edited its cron line). About 27 read-only checks: the shell loads and its scripts compile; `/api/health` reports the database answering, members present (not a fresh empty volume), `TNL_DATA` set, uploads there and a backup in the last 36 hours (yes/no only); `/api/me` and `/api/admin/*` refuse a stranger and `/api` is never cached; the Showroom has work in it; a real profile and post preview with their images, and the profile card renders; missing things 404; the service worker, manifest, palette, door script and icon; each answer under 8s; the certificate has 14+ days left. `test/scientist.test.mjs` runs it against a local copy, full (green) and empty (red).
 - **Sentry** receives server and browser errors. The alert *New or returning error in TNL LABS* emails on any first-seen, regressed or reappearing issue, at most every 30 minutes.
-- **Glitch signals** (`src/app-19-glitch.js` → `src/server-10-glitch.js`): members' own screens report rage taps, screen jumps, slow screens (over 3s) and failed saves. Admin → System shows the 24-hour count and the week's hotspots.
-- **Watch emails** (`src/server-10-watch.js`, to `ADMIN_EMAIL` via Resend): an email when something spikes within an hour (3 server errors, 10 app crashes, 3 failed saves, or 8 rage taps / screen jumps / slow screens), at most once per rule per 6 hours. There's also a morning digest at 13:00 UTC with yesterday's members, posts, errors, glitches and worst spots.
-- **The week** (`src/server-10-weekly.js`, 2026-10-26): every Monday at 13:00 UTC an email to `ADMIN_EMAIL` with last week against the week before — new members and where they stop, who came back, posts by lab, likes/comments/follows/collabs/plays/messages, pieces/views/offers/sales and the money, the tournament, Google Search + Shopping and Instagram/Facebook when connected, errors and glitches and the worst spot, and a short what-to-do list. Counts and patterns only, never a member's name. The first run goes out ~90s after the deploy that adds it. Admin → Systems shows the same report with an "Email me this now" button (`GET /api/admin/weekly`, `POST /api/admin/weekly/send`).
+- **Glitch signals** (`src/app/core/glitch.js` → `src/server/core/glitch.js`): members' own screens report rage taps, screen jumps, slow screens (over 3s) and failed saves. Admin → System shows the 24-hour count and the week's hotspots.
+- **Watch emails** (`src/server/admin/watch.js`, to `ADMIN_EMAIL` via Resend): an email when something spikes within an hour (3 server errors, 10 app crashes, 3 failed saves, or 8 rage taps / screen jumps / slow screens), at most once per rule per 6 hours. There's also a morning digest at 13:00 UTC with yesterday's members, posts, errors, glitches and worst spots.
+- **The week** (`src/server/admin/weekly.js`, 2026-10-26): every Monday at 13:00 UTC an email to `ADMIN_EMAIL` with last week against the week before — new members and where they stop, who came back, posts by lab, likes/comments/follows/collabs/plays/messages, pieces/views/offers/sales and the money, the tournament, Google Search + Shopping and Instagram/Facebook when connected, errors and glitches and the worst spot, and a short what-to-do list. Counts and patterns only, never a member's name. The first run goes out ~90s after the deploy that adds it. Admin → Systems shows the same report with an "Email me this now" button (`GET /api/admin/weekly`, `POST /api/admin/weekly/send`).
 - **Admin → System** shows errors and glitches side by side.
 
 ---
@@ -271,14 +278,14 @@ Three layers: stop glitches before they ship, notice the ones that get through, 
 
 Since 2026-10-08 a lab is a place, one per genre (General, Visual, Music, Fashion, Anime, News, Business), not a server of sub-channels. The labs list shows each genre once, explained by its #tags (`GENRE_TAGS` first, then the tags people use there — `/api/labs/tags`); tapping a tag opens that lab's work narrowed to it. Inside: **Work** (a grid of everything made there, narrowed by #tag) and **Talk** (one conversation). (Open and Pulse were cut on 2026-10-09 to keep it simple.) People #tag their own work in the caption; any #tag opens its page across every lab.
 
-- **No data moved.** Every channel id still holds its posts. Each lab has a home channel (`PLACES` in `server-10-places.js`, `LAB_HOME` in `app-11-places.js`) where new talk and lab posts go; Talk and Work read all of the lab's channels.
+- **No data moved.** Every channel id still holds its posts. Each lab has a home channel (`PLACES` in `server/labs/places.js`, `LAB_HOME` in `app/labs/places.js`) where new talk and lab posts go; Talk and Work read all of the lab's channels.
 - **Old channels became tags.** Posts from before the cutover (`place_meta.cutover`, set on first boot) carry their channel's tag (#photography, #feedback…), worked out when read. Captions are never rewritten.
 - **Tools stay:** Music's Work is the tracks library; Visual's archive and boards are one tap from Work; the Studio button is in Music's header.
 - `test/places.test.mjs` checks the app and server agree on the map, the tag rules and every route.
 
 ## Events
 
-The tournament runs on a general events system (`src/server-10-events-*.js`, screens in `src/app-17-event-*.js`, admin in `public/admin-app/8-events.js`). An admin creates an event in **Admin → Events**: title, brief, prize, which lab entries post into, the format, and the dates.
+The tournament runs on a general events system (`src/server/events/*.js`, screens in `src/app/events/*.js`, admin in `public/admin-app/8-events.js`). An admin creates an event in **Admin → Events**: title, brief, prize, which lab entries post into, the format, and the dates.
 
 - **Phases.** Entries (one per person, posted as a real work post) → a vote (members pick up to N favourites; counts hidden) → **bracket** format: head-to-head rounds, one pick per pair, decided when each round closes (a tie goes to the higher seed) → the **final**, decided by judges' 1–10 scores and member votes (`judge_weight`, 50/50 by default) → results. The **simple** format skips the bracket: the top N from the vote go to the final.
 - **The server decides everything.** `tickEvent()` closes phases on schedule, seeds the bracket (standard seeding; a bracket is the largest power of two that fits), and notifies entrants. "End this phase now" moves every later date earlier by the same amount.
@@ -414,7 +421,7 @@ GET    /api/tracks/videos   (auth)
 GET    /api/tracks   (auth)
 POST   /api/tracks   (auth)
 POST   /api/tracks/:id/play   (auth)
-GET    /api/playlists   (auth — yours only, server-12-playlists)
+GET    /api/playlists   (auth — yours only, server/music/playlists)
 POST   /api/playlists   (auth)
 GET    /api/playlists/:id   (auth)
 PATCH  /api/playlists/:id   (auth)
@@ -480,12 +487,12 @@ GET    /api/builders
 # health
 GET    /api/health
 GET    /api/me/start          (member) their pieces posted and people followed, for Get started
-GET    /api/report/daily      (Bearer TNL_REPORT_KEY; off without it — the morning check's summary, counts only: server-12-report.js)
+GET    /api/report/daily      (Bearer TNL_REPORT_KEY; off without it — the morning check's summary, counts only: server/admin/report.js)
 
 # admin
 GET    /api/admin/pulse?days=&tz=   (admin)  Home: numbers, series, needs-you
 GET    /api/admin/direction?days=&tz=   (admin)  Home: labs + #tags, the tournament, taking part, tournament needs
-GET    /api/admin/series?days=&tz=   (admin)  per-day series for the charts, the period before, fees (server-10-admin-v4.js)
+GET    /api/admin/series?days=&tz=   (admin)  per-day series for the charts, the period before, fees (server/admin/v4.js)
 GET    /api/admin/topwork?days=   (admin)  the work people reacted to most
 GET    /api/admin/audience?days=&tz=   (admin)  members by role and lab, hours people are on, verified, sellers
 GET    /api/admin/sellers   (admin)  every seller: Stripe kind, ready or stuck, listings, sales
@@ -528,7 +535,7 @@ GET    /api/admin/studio   (admin)
 GET    /api/admin/settings   (admin)
 PATCH  /api/admin/settings   (admin)
 
-# labs connector (server-12-mcp-1-oauth, server-12-mcp-2-tools)
+# labs connector (server/connector/oauth, server/connector/tools)
 GET    /.well-known/oauth-authorization-server   discovery (also …/mcp)
 GET    /.well-known/oauth-protected-resource   (also …/mcp)
 POST   /oauth/register   dynamic client registration — Claude's or Grok's callback only
@@ -545,7 +552,7 @@ GET    /api/admin/insights/collabs   (admin) invites sent/accepted/ignored, afte
 GET    /api/admin/insights/tournament?id=   (admin) voters vs entrants, rounds, reached out after
 GET    /api/admin/insights/tech   (admin) errors (ours or not), slow and failed requests
 
-# instagram inbox (admin; server-12-instagram-inbox)
+# instagram inbox (admin; server/instagram/inbox)
 GET    /api/admin/instagram   (admin) status, setup values, conversations
 GET    /api/admin/instagram/thread/:id   (admin) one conversation, marks it read
 GET    /api/admin/instagram/connect   (admin) → Instagram's sign-in URL

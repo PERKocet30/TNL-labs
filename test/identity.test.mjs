@@ -10,7 +10,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
-const head = readFileSync(join(ROOT, "src/app-01-head.html"), "utf8");
+const head = readFileSync(join(ROOT, "src/app/shell/head.html"), "utf8");
 const m = /<script type="application\/ld\+json">(.*?)<\/script>/s.exec(head);
 let g = null; try { g = JSON.parse(m[1]); } catch {}
 console.log("\nONE APP, CALLED LABS");

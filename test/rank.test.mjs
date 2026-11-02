@@ -1,5 +1,5 @@
 // Ranking v2.0 (2026-09-29): the Showroom and "Who's building". Runs the real
-// ranking code (lifted from src/server-10-rank.js) against a throwaway database.
+// ranking code (lifted from src/server/posts/rank.js) against a throwaway database.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { mkdirSync, rmSync, readFileSync } from "node:fs";
@@ -13,7 +13,7 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "âœ“" : "â
 const { db } = await import("../src/db.js");
 for (const c of ["post_id INTEGER", "deleted_at INTEGER"]) try { db.exec(`ALTER TABLE dm_messages ADD COLUMN ${c}`); } catch {}
 db.exec(`CREATE TABLE IF NOT EXISTS reactions (kind TEXT, target_id INTEGER, user_id INTEGER, emoji TEXT, created_at INTEGER, PRIMARY KEY (kind, target_id, user_id))`);
-const src = readFileSync(join(ROOT, "src/server-10-rank.js"), "utf8");
+const src = readFileSync(join(ROOT, "src/server/posts/rank.js"), "utf8");
 const R = new Function("db", src + "\nreturn { rankShowroom, rankBuilders, standingWeight, RANK, rankTagLift };")(db);
 const now = Date.now(), H = 3600000, D = 24 * H;
 const users = {};
@@ -128,10 +128,10 @@ t("recent work people respond to leads", bl[0] === "vet");
 t("quiet months still fill the row", R.rankBuilders(0).length >= 3);
 
 console.log("\nTHE SURFACE STAYS QUIET");
-const app = ["app-11-showroom.js", "app-14-detail-sell.js", "app-15-profile.js", "app-19-feed-boot.js"].map((f) => readFileSync(join(ROOT, "src", f), "utf8")).join("\n");
+const app = ["app/showroom/showroom.js", "app/market/detail-sell.js", "app/profile/profile.js", "app/feed/feed-boot.js"].map((f) => readFileSync(join(ROOT, "src", f), "utf8")).join("\n");
 t("no point values shown to members", !/LIKES \+6|you both earn\w* \+20|earns rep when|THE ONE RULE|someone's rep/.test(app));
-t("builders show faces, not scores", !/x\.validations|bstat/.test(readFileSync(join(ROOT, "src/app-11-showroom.js"), "utf8")));
-const api = readFileSync(join(ROOT, "src/server-10-collabs-beats-showroom.js"), "utf8");
+t("builders show faces, not scores", !/x\.validations|bstat/.test(readFileSync(join(ROOT, "src/app/showroom/showroom.js"), "utf8")));
+const api = readFileSync(join(ROOT, "src/server/posts/collabs-showroom.js"), "utf8");
 t("the builders API doesn't send rep, likes or collab counts", /display_name: u\.display_name, role: u\.role, avatar_url/.test(api) && !/validations/.test(api));
 
 console.log(`\n  ${pass} passed, ${fail} failed`);

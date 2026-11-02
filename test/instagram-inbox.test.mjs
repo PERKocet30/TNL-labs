@@ -49,7 +49,7 @@ globalThis.fetch = async (u, opts = {}) => {
 };
 
 /* ---- the part, with the server's helpers stubbed ---- */
-const src = readFileSync(join(ROOT, "src/server-12-instagram-inbox.js"), "utf8");
+const src = readFileSync(join(ROOT, "src/server/instagram/inbox.js"), "utf8");
 const routes = {};
 const app = { get: (p, ...h) => { routes["GET " + p] = h; }, post: (p, ...h) => { routes["POST " + p] = h; } };
 const audits = [];
@@ -187,7 +187,7 @@ t("Instagram is a section, under People & content, with its own icon", /\["insta
 t("the admin page loads it", /admin-app\/7-instagram\.js\?v=/.test(html));
 t("read only: it never posts a message, and sends you to Instagram to reply", !/\/messages["']/.test(src) && /ig\.me\/m\//.test(tab) && /Reply in Instagram/.test(tab));
 t("the Meta setup values are on the page with Copy", /data-igcopy/.test(tab) && /Verify token/.test(tab) && /Callback URL/.test(tab) && /Redirect URI/.test(tab));
-t("the JSON parser keeps the raw bytes for the webhook only", /req\.path === "\/api\/instagram\/webhook"\) req\.rawBody = buf/.test(readFileSync(join(ROOT, "src/server-01-json.js"), "utf8")));
+t("the JSON parser keeps the raw bytes for the webhook only", /req\.path === "\/api\/instagram\/webhook"\) req\.rawBody = buf/.test(readFileSync(join(ROOT, "src/server/core/json.js"), "utf8")));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

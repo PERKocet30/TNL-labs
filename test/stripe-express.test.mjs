@@ -90,7 +90,7 @@ const now = Date.now();
 const U = (n, acct = "", kind = "") => Number(db.prepare(`INSERT INTO users (username,display_name,email,role,password_hash,email_verified,stripe_account,stripe_kind,rep,created_at) VALUES (?,?,?,?,?,1,?,?,0,?)`)
   .run(n, n, n + "@x.com", "Model", "h", acct, kind, now).lastInsertRowid);
 const me = (id) => db.prepare(`SELECT * FROM users WHERE id=?`).get(id);
-const src = readFileSync(join(ROOT, "src/server-06-settings-payouts-market.js"), "utf8");
+const src = readFileSync(join(ROOT, "src/server/admin/settings-payouts-market.js"), "utf8");
 const part = src.slice(src.indexOf("/* ---- seller payouts"), src.indexOf('app.get("/api/market", maybeAuth'));
 const routes = {};
 new Function("app", "auth", "verified", "db", "PAYMENTS_ENABLED", "baseUrl", "createSellerAccount", "onboardingLink", "accountStatus", "loginLink", part)(
@@ -143,15 +143,15 @@ id = U("managed"); calls = []; r = await hit("POST /api/market/connect", id);
 t("the route stores which kind it got", me(id).stripe_kind === "express_stripe" && r.url);
 calls = []; await hit("POST /api/market/connect", id);
 t("…and doesn't treat it as a stuck long signup", calls.filter((c) => c.path === "accounts" || /^accounts\/[^/]+$/.test(c.path)).length === 0);
-const os = readFileSync(join(ROOT, "src/server-07-orders-sharing.js"), "utf8");
+const os = readFileSync(join(ROOT, "src/server/orders/orders-sharing.js"), "utf8");
 t("checkout: only plain 'express' adds the card fee (Stripe-risk sellers pay Stripe themselves, pay-later stays)", os.includes('platformPaysStripe: seller.stripe_kind === "express",'));
 refuseManaged = true;
 
 console.log("\nWIRED IN");
 const read = (f) => readFileSync(join(ROOT, "src", f), "utf8");
-t("both checkouts (one item, a bag) tell pay.js who pays Stripe", read("server-07-orders-sharing.js").includes('platformPaysStripe: seller.stripe_kind === "express"') && read("server-07-cart.js").includes('platformPaysStripe: seller.stripe_kind === "express"'));
-t("an Express seller who can't take cards yet is told to finish payouts, not to dig in Stripe settings", read("server-07-cart.js").includes("your payouts aren't finished yet"));
-const sell = read("app-14-detail-sell.js");
+t("both checkouts (one item, a bag) tell pay.js who pays Stripe", read("server/orders/orders-sharing.js").includes('platformPaysStripe: seller.stripe_kind === "express"') && read("server/orders/cart.js").includes('platformPaysStripe: seller.stripe_kind === "express"'));
+t("an Express seller who can't take cards yet is told to finish payouts, not to dig in Stripe settings", read("server/orders/cart.js").includes("your payouts aren't finished yet"));
+const sell = read("app/market/detail-sell.js");
 t("the app says 'Set up payouts', not 'Connect Stripe'", !sell.includes("Connect Stripe") && sell.includes("Set up payouts") && sell.includes("Your payouts"));
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

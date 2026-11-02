@@ -12,7 +12,7 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "âœ“" : "â
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/<!--[\s\S]*?-->/g, "").split("\n").map((l) => /^\s*\/\//.test(l) ? "" : l.replace(/(^|[^:"'`\\])\/\/[^"'`]*$/, "$1")).join("\n");
 const WORD = /(?<![\w.@/-])TNL(?![\w])/g;
 const files = [
-  ...readdirSync(join(ROOT, "src")).filter((f) => /^(app|server)-/.test(f) && !f.includes("runtime")).map((f) => "src/" + f),
+  ...(await import("../src/app/order.mjs")).APP.map((f) => "src/app/" + f), ...(await import("../src/server/order.mjs")).SERVER.map((f) => "src/server/" + f),
   "src/mail.js", ...readdirSync(join(ROOT, "public/admin-app")).map((f) => "public/admin-app/" + f),
   "public/admin.html", "public/studio.js", "public/door.js", "public/manifest.webmanifest",
 ];
@@ -25,7 +25,7 @@ console.log("\nTHE APP IS LABS");
 t("no \"TNL\" anywhere members, buyers, previews, emails or admin read", hits.length === 0);
 hits.slice(0, 10).forEach((h) => console.log("       " + h));
 t("not \"TNL LABS\" either", files.every((f) => !strip(readFileSync(join(ROOT, f), "utf8")).includes("TNL LABS")));
-const head = readFileSync(join(ROOT, "src/app-01-head.html"), "utf8");
+const head = readFileSync(join(ROOT, "src/app/shell/head.html"), "utf8");
 t("the page title and link previews say LABS", head.includes("<title>LABS") && head.includes('content="LABS'));
 t("installed on a phone it's called LABS", JSON.parse(readFileSync(join(ROOT, "public/manifest.webmanifest"), "utf8")).name === "LABS");
 t("emails come from LABS by default", readFileSync(join(ROOT, "src/mail.js"), "utf8").includes('process.env.MAIL_FROM || "LABS <'));

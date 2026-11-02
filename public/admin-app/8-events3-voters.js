@@ -1,6 +1,6 @@
 /* LABS admin · Events · Who voted v1.0 — 2026-10-30. "See who voted for you specifically, and who keeps voting."
    Each piece with its voters — tap a piece to open the list. A voter who has come back every day since their
-   first vote is a regular. Admins only: members never see who voted for them. server-11-signals-admin.js. */
+   first vote is a regular. Admins only: members never see who voted for them. server/trust/signals-admin.js. */
 LOADERS.voters = async () => { D.voters = EVID ? await req("/api/admin/events/" + EVID + "/voters").catch(() => null) : null; };
 function votersHTML() {
   const V = D.voters;

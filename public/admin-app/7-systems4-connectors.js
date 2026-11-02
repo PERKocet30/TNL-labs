@@ -1,4 +1,4 @@
-/* LABS admin · Systems · Connected apps v1.1 — 2026-10-28 (Create a key: for apps that take a pasted key — Manus. Shown once). v1.0 — 2026-10-27. Part 4: the LABS connector (server-12-mcp-*.js) — the
+/* LABS admin · Systems · Connected apps v1.1 — 2026-10-28 (Create a key: for apps that take a pasted key — Manus. Shown once). v1.0 — 2026-10-27. Part 4: the LABS connector (server/connector/*.js) — the
    address to add in Claude, which keys are connected, and the button that cuts one off. Rendered under
    Meta by 7-systems.js. Read only on Claude's side; this card is the only place a key is managed. */
 LOADERS.systemsConnectors = async () => { D.sysConn = await req("/api/admin/connectors"); };

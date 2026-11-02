@@ -73,6 +73,10 @@ function formEncode(obj, prefix = "", out = []) {
   return out.join("&");
 }
 
+/** One call to Stripe's HTTP API. → the JSON Stripe answered, or { error } when it refused.
+ *  @param {string} path
+ *  @param {{ method?: string, body?: any, account?: string, version?: string }} [o]
+ *  @returns {Promise<any>} */
 async function stripe(path, { method = "POST", body, account, version } = {}) {
   const headers = { Authorization: `Bearer ${KEY}` };
   if (account) headers["Stripe-Account"] = account;   // act as the connected account
@@ -81,6 +85,7 @@ async function stripe(path, { method = "POST", body, account, version } = {}) {
   const res = await fetch(`https://api.stripe.com/v1/${path}`, {
     method, headers, body: body ? formEncode(body) : undefined,
   });
+  /** @type {any} */
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = data?.error?.message || `stripe ${res.status}`;
@@ -118,6 +123,7 @@ export const isExpress = (kind) => String(kind || "").startsWith("express");
 
 /** Make a seller's Stripe account: Express if the platform has it switched on,
  *  else Standard (with their LABS page filled in as the website). → { id, kind } */
+/** @param {{ email?: string, username?: string, profileUrl?: string, expressOnly?: boolean }} [o] */
 export async function createSellerAccount({ email, username, profileUrl, expressOnly = false } = {}) {
   if (!KEY) return { error: "payments not configured" };
   const sm = await stripe("accounts", { body: expressBody({ email, username, profileUrl }, true) });
@@ -247,6 +253,7 @@ export async function verifySession(sessionId, sellerAccount) {
   // Pull the address the buyer entered on Stripe's checkout page, so the seller
   // knows where to ship without us ever prompting for it.
   const sd = out.shipping_details || out.collected_information?.shipping_details || null;
+  /** @type {null | { name: string, address: string }} */
   let ship = null;
   if (sd?.address) {
     const a = sd.address;

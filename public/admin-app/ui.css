@@ -115,7 +115,7 @@ h2.sec + .panel,h2.sec + .chart{border-top:1px solid var(--line)}
 .li .b span.tag{display:inline-block;width:auto;font-size:10.5px;color:var(--tx2);overflow:visible}
 .li .b span.tag.on{color:var(--on-fill)}.li .b span.tag.warn{color:var(--red)}
 
-/* Soft, not boxy (2026-10-18) — the same three radii as the app (app-05-styles-soft.css). */
+/* Soft, not boxy (2026-10-18) — the same three radii as the app (app/styles/soft.css). */
 :root{--rad:16px;--rad-m:12px;--rad-s:8px}
 .panel,.kpi,.chart,.card,.box,.list,.menu-b{border-radius:var(--rad)}
 .stats,.sum,.pdb-wrap,.pc{border-radius:var(--rad);overflow:hidden}

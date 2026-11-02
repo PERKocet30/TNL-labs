@@ -14,7 +14,9 @@ let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
 console.log("\nSLOW SCREENS ONLY COUNT WHILE SOMEONE IS LOOKING");
-const src = readFileSync(join(ROOT, "src/app-19-glitch.js"), "utf8");
+/* glitch.js's shared variables live in the register (app/state/state.js) since the flatten: bring its lines along */
+const state = readFileSync(join(ROOT, "src/app/state/state.js"), "utf8").split("\n").filter((l) => /^let (GLHID|GLRT)\b/.test(l)).join("\n");
+const src = state + "\n" + readFileSync(join(ROOT, "src/app/core/glitch.js"), "utf8");
 let clock = 1_000_000, reports = [];
 const listeners = {};
 const doc = { hidden: false, addEventListener: (k, f) => { (listeners[k] = listeners[k] || []).push(f); } };
@@ -53,7 +55,7 @@ await call("/api/feed");
 t("once awake, slow is slow again", reports.length === 1);
 
 console.log("\n\"SCRIPT ERROR.\" ISN'T OURS");
-const ui = readFileSync(join(ROOT, "src/app-08-state-ui.js"), "utf8");
+const ui = readFileSync(join(ROOT, "src/app/state/state-ui.js"), "utf8");
 t("the app doesn't report it (to Sentry or to us)", /Script error\\\.\?\$\/i\.test\(String\(e\.message\|\|""\)\)&&!e\.error\)return/.test(ui));
 
 const PORT = 8883, B = `http://localhost:${PORT}`;

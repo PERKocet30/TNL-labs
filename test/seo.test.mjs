@@ -60,7 +60,7 @@ try {
   const eh = await html("/e/art-cup"), e = lds(eh)[0];
   t("the tournament is an online Event with its dates, at its own address", e["@type"] === "Event" && e.startDate && e.endDate && /OnlineEventAttendanceMode$/.test(e.eventAttendanceMode)
     && eh.includes(`<link rel="canonical" href="${B}/e/art-cup">`));
-  t("the guest Showroom's tagline is the page's headline", readFileSync(join(ROOT, "src/app-11-showroom.js"), "utf8").includes('<h1 class="wi-tag">Social media by creatives, for creatives.</h1>'));
+  t("the guest Showroom's tagline is the page's headline", readFileSync(join(ROOT, "src/app/showroom/showroom.js"), "utf8").includes('<h1 class="wi-tag">Social media by creatives, for creatives.</h1>'));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

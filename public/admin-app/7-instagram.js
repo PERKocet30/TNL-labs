@@ -1,5 +1,5 @@
 /* LABS admin — Instagram v1.0, 2026-10-26. The messages people send
-   @tnl.labs on Instagram, read here (server-12-instagram-inbox): who
+   @tnl.labs on Instagram, read here (server/instagram/inbox): who
    wrote, what, when, and which are new. Read only — a reply opens the
    conversation in Instagram itself. Connect once (Instagram's own
    sign-in); LABS keeps the key on the server and checks for new messages

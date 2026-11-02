@@ -6,7 +6,7 @@ const t=(n,ok)=>{ok?pass++:fail++;console.log("  "+(ok?"✓":"✗")+"  "+n)};
    lookup, on every redirect hop. */
 import { readFileSync } from "node:fs";
 import { BlockList, isIP } from "node:net";
-const src=readFileSync(new URL("../src/server-10-links.js", import.meta.url),"utf8");
+const src=readFileSync(new URL("../src/server/posts/links.js", import.meta.url),"utf8");
 const guard=src.slice(src.indexOf("const NOT_PUBLIC"), src.indexOf("function publicLookup"));
 const isPublicIp=new Function("BlockList","isIP",guard+"; return isPublicIp;")(BlockList,isIP);
 

@@ -29,8 +29,8 @@ const loop = L(seller, "Loop", 1000, 0, [], 1, "loop");
 const q = { userById: db.prepare(`SELECT * FROM users WHERE id = ?`) };
 const told = [], routes = {};
 let PAYMENTS_ENABLED = false, lastCheckout = null;
-const stock = readFileSync(join(ROOT, "src/server-06-market-stock.js"), "utf8");
-const cart = readFileSync(join(ROOT, "src/server-07-cart.js"), "utf8");
+const stock = readFileSync(join(ROOT, "src/server/market/stock.js"), "utf8");
+const cart = readFileSync(join(ROOT, "src/server/orders/cart.js"), "utf8");
 const LISTING_SELECT = `SELECT l.*, u.username AS seller_username FROM listings l JOIN users u ON u.id = l.seller_id`;
 const X = new Function("db", "randomBytes", "q", "notify", "app", "auth", "verified", "maybeAuth", "rateLimit", "baseUrl", "feeFor", "createCheckout", "LISTING_SELECT", "shapeListings", "getPay",
   stock + "\n" + cart.replace(/PAYMENTS_ENABLED/g, "getPay()") + "\nreturn {orderGroup,sessionFits,groupTotal,priceChanged,priceDrop,takeStock};")(
@@ -115,7 +115,7 @@ const sold = (amt, ref) => db.prepare(`INSERT INTO orders (listing_id,buyer_id,s
 sold(10000, "cs_paid"); sold(5000, "");
 let stats; routes["GET /api/shop/stats"]({ user: q.userById.get(seller) }, { json: (o) => (stats = o) });
 t("TNL's cut comes off card sales only, not ones paid directly", stats.gross === 15000 && stats.net === 15000 - 1000);
-const meta = readFileSync(join(ROOT, "src/server-06-settings-payouts-market.js"), "utf8");
+const meta = readFileSync(join(ROOT, "src/server/admin/settings-payouts-market.js"), "utf8");
 const sizeOrder = new Function(meta.slice(meta.indexOf("const SIZE_RAIL"), meta.indexOf('app.get("/api/market/meta"')) + "return sizeOrder;")();
 t("sizes read S M L XL, then numbers, then the rest", ["XL", "M", "10", "S", "One size", "8.5", "L", "xs"].sort(sizeOrder).join() === "xs,S,M,L,XL,8.5,10,One size");
 console.log(`\n  ${pass} passed, ${fail} failed`);

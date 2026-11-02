@@ -1,5 +1,5 @@
 /* LABS admin · Systems · Google v1.1 — 2026-10-26 (v1.1: the one-time Link to Merchant Center). v1.0 — 2026-10-26. Part 2: how people find LABS on Google Search and how the
-   market's pieces do on Google Shopping, with the moves that get more of both (server-10-admin-systems2-google.js).
+   market's pieces do on Google Shopping, with the moves that get more of both (server/admin/systems-google.js).
    Rendered under the Railway/GitHub cards by 7-systems.js. */
 LOADERS.systemsGoogle = async () => { D.sysGoogle = await req("/api/admin/systems/google" + (D.systemsFresh ? "?fresh=1" : "")); };
 const ggNum = (n) => num(n), ggChg = (c) => c == null ? "" : `<i class="${c > 0 ? "up" : c < 0 ? "dn" : ""}">${c > 0 ? "+" : ""}${c}% vs the 28 days before</i>`;

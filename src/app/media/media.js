@@ -1,0 +1,419 @@
+/* MEDIA — photos, video, post sound. v1.2 2026-10-09 (v1.1 2026-09-29): post sound plays only while its post — or a profile's music tile — is on screen. */
+function wireInstall(){
+  const x=$("[data-installx]");if(x)x.onclick=dismissInstall;
+  const go=$("[data-installgo]");if(go)go.onclick=doInstall;
+}
+/* CAROUSELS v2.0 — 2026-09-30.
+   The counter and dots follow your finger: they update on every frame of
+   the swipe and switch at the halfway point (they used to wait until the
+   scroll had fully stopped, which on an iPhone's momentum scroll is long
+   after the next slide is already showing).
+   Where a carousel starts is ours, not the browser's: slide 1 when it first
+   appears (or you open a post), the slide you were on when a live refresh
+   rebuilds the screen. The position is put back as images load until you
+   touch it, so a re-layout can't leave it on a random slide. */
+const CAROIDX=new Map();   // key → slide, for the screen you're on
+function caroKey(c){return (c.closest("#poov")?"po:":"")+c.dataset.caro}
+function wireCaros(){
+  const view=MV.key+"|"+(PROFILE&&!MYPAGE()&&PROFILE.user?PROFILE.user.username:"")+"|"+(POSTOPEN?POSTOPEN.id:"");   // screen (app/nav/motion) + any profile/post on top
+  if(view!==CAROVIEW){CAROVIEW=view;CAROIDX.clear()}   // a new screen starts every carousel at 1
+  document.querySelectorAll("[data-caro]").forEach(c=>{
+    caroPrune(c);if(!c.isConnected)return;   // pictures known not to load leave first (app/media/img-fallback.js)
+    const track=c.querySelector(".caro-t");
+    const dots=[...c.querySelectorAll(".caro-d span")];
+    const num=c.querySelector(".caro-n");
+    if(!track||c.dataset.caroBound)return;
+    c.dataset.caroBound="1";
+    const key=caroKey(c), n=dots.length||track.children.length;
+    let idx=Math.min(CAROIDX.get(key)||0,Math.max(0,n-1)), touched=false, raf=0;
+    const show=i=>{
+      if(i===idx&&c.dataset.caroShown)return;
+      idx=i;c.dataset.caroShown="1";CAROIDX.set(key,i);
+      dots.forEach((d,j)=>d.classList.toggle("on",j===i));
+      if(num)num.textContent=(i+1)+"/"+n;
+    };
+    const place=()=>{const w=track.clientWidth;if(w&&Math.abs(track.scrollLeft-idx*w)>1)track.scrollLeft=idx*w};
+    c.dataset.caroShown="";show(idx);
+    requestAnimationFrame(place);
+    // images arriving can re-lay the track out; hold the slide until a finger moves it
+    track.querySelectorAll("img").forEach(im=>{if(!im.complete)im.addEventListener("load",()=>{if(!touched)place()},{once:true})});
+    const hands=()=>{touched=true};
+    track.addEventListener("pointerdown",hands,{passive:true});
+    track.addEventListener("touchstart",hands,{passive:true});
+    track.addEventListener("wheel",hands,{passive:true});
+    track.onscroll=()=>{
+      if(raf)return;
+      raf=requestAnimationFrame(()=>{raf=0;
+        const w=track.clientWidth;if(!w)return;
+        if(!touched){place();return}   // nobody's swiping: that was the layout moving, not you
+        show(Math.max(0,Math.min(n-1,Math.round(track.scrollLeft/w))));
+      });
+    };
+  });
+}
+
+/* A repaint used to throw every <video> away and build a new one, so a
+   feed video began loading from nothing each time anything changed — a
+   like, a notification, someone coming online. On a phone signal that
+   is every few seconds, and the video never played (2026-10-08). Now the
+   players on screen are set aside before the repaint and put back where
+   the same video is drawn again: same buffer, same place, same sound. */
+const vKey=v=>[v.getAttribute("src")||v.dataset.src,v.getAttribute("poster"),v.className,v.getAttribute("style"),v.dataset.vs,v.dataset.ve,"vsilent" in v.dataset].join("|");
+function vKeep(root){
+  const m=new Map();
+  for(const v of root.querySelectorAll("video[data-auto]")){const k=vKey(v);if(!m.has(k))m.set(k,[]);m.get(k).push(v)}
+  return m;
+}
+function vRestore(root,m){
+  if(!m.size)return;
+  for(const n of root.querySelectorAll("video[data-auto]")){
+    const old=(m.get(vKey(n))||[]).shift();if(!old)continue;
+    n.replaceWith(old);old._kept=true;
+    const b=old.parentElement&&old.parentElement.querySelector("[data-vmute]");if(b)b.innerHTML=old.muted?DI.soundOff:DI.soundOn;
+  }
+}
+/* Scrolling through a feed of videos on a phone (2026-10-08): every video
+   used to start the instant it was half on screen — a flick past ten
+   started ten downloads — and every player stayed loaded however far
+   behind you it was. Now a video starts once it has stayed in view for a
+   moment (VDWELL), and one more than two screens away lets go of its
+   decoder and buffer (it shows its cover, and loads again on the way
+   back) — the way Instagram keeps only the players near you alive. */
+const VDWELL=220;
+/* Sound stays on (2026-10-08). A phone's volume buttons never reach a web
+   page, so "raise the volume to unmute" can't be done here; instead,
+   unmute one video and every video after it
+   plays with sound as you scroll, until you mute one. A video and post
+   music never play over each other. Kept for this visit (sessionStorage). */
+/* Data saver (2026-10-08) — for a phone short on storage, battery or
+   signal: videos wait for a tap instead of playing themselves, and post
+   music waits for its chip. On by itself when the phone asks for less data
+   (Android's Data Saver); a switch in ≡ for everyone else. */
+const liteOn=()=>{try{const v=localStorage.getItem("tnl-lite");return v?v==="1":!!(navigator.connection&&navigator.connection.saveData)}catch(e){return false}};   // your switch wins over the phone's
+function setLite(on){try{localStorage.setItem("tnl-lite",on?"1":"0")}catch(e){}}
+/* A play button on a video that won't start itself (Data saver, or Low Power Mode). */
+function vPlayBtn(v){
+  const w=v.parentElement;if(!w||w.querySelector(".vplay"))return;
+  const b=document.createElement("button");
+  b.className="vplay"; b.innerHTML=DI.play.replace(/width="16" height="16"/,'width="22" height="22"'); b.setAttribute("aria-label","Play");
+  b.onclick=(ev)=>{ev.stopPropagation();vReload(v);v.play().then(()=>b.remove()).catch(()=>{})};
+  w.appendChild(b);
+}
+function setVSound(on){VSOUND=on;try{sessionStorage.setItem("tnl-vsound",on?"1":"0")}catch(e){}}
+const vIcon=v=>{const b=v.parentElement&&v.parentElement.querySelector("[data-vmute]");if(b)b.innerHTML=v.muted?DI.soundOff:DI.soundOn};
+/* This one has the sound: quiet every other video, and the post music. */
+function vTakeSound(v){
+  for(const o of document.querySelectorAll("video[data-auto]"))if(o!==v&&!o.muted){o.muted=true;vIcon(o)}
+  try{const a=audioEl();if(a&&!a.paused&&!(a.getAttribute("src")||"").startsWith("data:")){a.pause();paintPlayer()}}catch(e){}
+}
+/* A video asked to start WITH sound and no tap: iOS may neither play nor
+   refuse it — it just sits grey (Jorge's recording, 2026-10-08). If it hasn't
+   started in a moment, it starts muted; a tap brings the sound back. */
+function vLoud(v){
+  soundOn();let on=false;v.addEventListener("playing",()=>{on=true},{once:true});
+  setTimeout(()=>{if(on||v.muted||!v.isConnected)return;v.muted=true;vIcon(v);v.play().catch(()=>{})},1500);
+}
+function vUnload(v){const s=v.getAttribute("src");if(!s)return;v.dataset.src=s;try{v.pause()}catch(e){}v.removeAttribute("src");try{v.load()}catch(e){}}
+function vReload(v){if(v.getAttribute("src")||!v.dataset.src)return;v.setAttribute("src",v.dataset.src);delete v.dataset.src}
+function wireVideos(){
+  if(VOBS){VOBS.disconnect();VOBS=null}
+  if(VFAR){VFAR.disconnect();VFAR=null}
+  const vids=[...document.querySelectorAll("video[data-auto]")];
+  if(!vids.length)return;
+
+  VFAR=new IntersectionObserver((entries)=>{for(const e of entries){if(e.isIntersecting)vReload(e.target);else vUnload(e.target)}},{rootMargin:"200% 0px 200% 0px"});
+  VOBS=new IntersectionObserver((entries)=>{
+    for(const e of entries){
+      const v=e.target;
+      clearTimeout(v._dwell);
+      /* starts once on screen (2026-10-18 "audio started playing early"): nearly
+         all of it, or most of the screen for a tall one; on the gallery, the spotlit piece */
+      if(e.isIntersecting&&(e.intersectionRatio>=0.9||e.rootBounds&&e.intersectionRect.height>=e.rootBounds.height*0.8)&&galLets(v)){
+        v._dwell=setTimeout(()=>{
+        if(liteOn()&&v.paused)return vPlayBtn(v);   // Data saver: it waits for a tap
+        vReload(v);
+        if(VSOUND&&!("vsilent" in v.dataset)){v.muted=false;vIcon(v);vTakeSound(v)}
+        if(!v.muted)vLoud(v);
+        const p=v.play();
+        if(p&&p.catch)p.catch((err)=>{
+          /* refused WITH sound (no fresh tap): start muted, a tap brings the sound back.
+             Refused outright (iOS Low Power Mode): a play button, not a dead black box. */
+          if(err&&err.name==="NotAllowedError"&&!v.muted){v.muted=true;vIcon(v);v.play().catch(()=>{});return}
+          if(err&&err.name==="NotAllowedError")vPlayBtn(v);
+        });
+        },VDWELL);
+      }else{
+        try{v.pause()}catch(err){}
+      }
+    }
+  },{threshold:[0,0.25,0.5,0.75,0.9,1]});
+
+  for(const v of vids){
+    if(!v._kept)v.muted=true;     // required, or autoplay is refused outright (a kept one keeps the sound you chose)
+    /* Without this iOS shows a black rectangle until you press play —
+       #t=0.1 makes it decode one frame so there's something to look at. */
+    if(v.src&&!/#t=/.test(v.src))v.src=v.src+"#t=0.1";
+    VOBS.observe(v);VFAR.observe(v);
+    /* A trimmed video loops inside its trim: back to the start at the end,
+       and when the file's own loop comes round to 0. */
+    if(v.dataset.vs||v.dataset.ve){const s=(+v.dataset.vs||0)/1000,e=v.dataset.ve?+v.dataset.ve/1000:Infinity;
+      v.ontimeupdate=()=>{if(v.currentTime>=e-.05||v.currentTime<s-.3)v.currentTime=s}}
+    v.onclick=()=>{
+      if("vsilent" in v.dataset){if(v.paused)v.play().catch(()=>{});return}   // its author turned the sound off
+      v.muted=!v.muted;vIcon(v);if(!v.muted)soundOn();
+      setVSound(!v.muted);   // your choice carries on down the feed
+      if(v.paused)v.play().catch(()=>{});
+      if(!v.muted)vTakeSound(v);   // only one thing makes noise at a time
+    };
+  }
+  document.querySelectorAll("[data-vmute]").forEach(b=>b.onclick=(e)=>{
+    e.stopPropagation();
+    const v=b.parentElement.querySelector("video");
+    if(v)v.onclick();
+  });
+}
+
+/* The sound credit on a card — tap plays it through the global player and
+   counts a play for the track's owner, exactly like the library rows. */
+function musChipHTML(p){
+  if(!p.audioTrack)return "";
+  const on=NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id&&AUDIO&&!AUDIO.paused;
+  return `<button class="muschip" data-mustrack="${p.id}">${on?DI.pause:DI.music} <span class="muschip-t">${esc(p.audioTrack.title)}</span><span class="mono dim">· @${esc(p.audioTrack.by.username)}</span></button>`;
+}
+/* iOS will not start audio without a gesture, so autoplay stays off until the
+   first deliberate chip tap unlocks it for the session. MUSMUTE is set when
+   someone pauses on purpose — without it, the next scroll would restart the
+   track they just silenced. MUSAUTOID marks a track that autoplay started, so
+   scrolling away only stops music the reader didn't ask for. */
+/* Post ids whose card has actually ENTERED the centre band. "Stops the
+   instant it leaves" requires having been in — a Set, not element state,
+   because render() rebuilds the DOM and the observer with it. */
+/* A zero-length WAV. Playing it inside a real tap is what unlocks the audio
+   element on iOS; nothing is audible. */
+const SILENT="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+/* One audio unlock for the whole app. iOS will not let script start sound
+   until the element has played inside a real gesture; the first touch
+   anywhere plays a zero-length WAV, and that unlock holds for the session.
+
+   The old cleanup used setTimeout(...,0), which fired BEFORE the silent
+   play() resolved and aborted it — and an aborted play does not unlock the
+   element. MUSOK then reported "ready" while the element was still locked,
+   so the next programmatic play() was refused. Whether that race was won
+   depended on how fast the data URI decoded, which is exactly why it
+   behaved differently in Safari, in the home-screen app, and on different
+   days. Cleanup now waits on the promise, and the src is never removed:
+   dropping the source can reset activation on WebKit.
+
+   skipWire is for the intro door, which unlocks during its own tap but
+   must not attach the feed observer while the overlay is still up. */
+function primeAudio(skipWire){
+  if(MUSPRIMED)return;MUSPRIMED=true;
+  try{
+    const a=audioEl();
+    if(!a.getAttribute("src")){
+      a.src=SILENT;
+      const pr=a.play();
+      const tidy=()=>{try{if((a.getAttribute("src")||"").startsWith("data:"))a.pause()}catch(e){}};
+      if(pr&&pr.then)pr.then(tidy,()=>{}); else tidy();
+    }
+    MUSOK=true;
+  }catch(e){}
+  if(!skipWire)wireMusAuto();
+}
+(function wireMusChips(){
+  if(MUSDELEG)return;MUSDELEG=true;
+  /* One capture-phase delegate for every surface — stops the tap before a
+     work card's data-openpost swallows it. */
+  document.addEventListener("click",e=>{
+    const b=e.target.closest("[data-mustrack]");if(!b)return;
+    e.stopPropagation();e.preventDefault();
+    const id=b.dataset.mustrack;
+    const p=(POSTS||[]).find(x=>String(x.id)===id)
+      ||(SRPOSTS||[]).find(x=>String(x.id)===id)
+      ||(SEARCHRES&&SEARCHRES.posts||[]).find(x=>String(x.id)===id)
+      ||(PROFILE&&[...PROFILE.posts,...PROFILE.collabs]||[]).find(x=>String(x.id)===id);
+    if(p&&p.audioTrack){
+      const a=audioEl();
+      const stopping=NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id&&!a.paused;
+      MUSOK=true;                    // the gesture iOS was waiting for
+      MUSMUTE=stopping?p.id:null;    // that POST stays silent; others still autoplay
+      MUSAUTOID=p.id;                // this post owns the sound now — and it
+                                     // still stops the instant the post leaves
+      playTrack(p.audioTrack,false,p.audioStart);
+      /* Repaint so the glyph flips — a tap must always visibly do something,
+         otherwise working and broken look the same. render() rewires, which
+         covers wireMusAuto(). */
+      render();
+    }
+  },true);
+
+  /* iOS needs one gesture before it will let script start audio — but it does
+     not need that gesture to be on a chip. Prime on the first touch anywhere,
+     so scrolling into a post just works instead of depending on someone
+     discovering the chip first. pointerdown fires before click, so the unlock
+     is in place before any handler asks for sound; click stays as the
+     fallback where pointer events are absent. */
+  document.addEventListener("pointerdown",()=>primeAudio(),true);
+  document.addEventListener("click",()=>primeAudio(),true);
+})();
+
+/* Tile → full post. Reuses postHTML wholesale rather than a second renderer:
+   carousel, video, sound credit, actions and comments are all already built
+   there and already wired document-wide by wireFeed(), so this stays one
+   source of truth for what a post looks like. */
+function postOpenHTML(){
+  const p=(PROFILE&&[...PROFILE.posts,...PROFILE.collabs].find(x=>Number(x.id)===Number(POSTOPEN.id)))
+    ||(POSTS||[]).find(x=>Number(x.id)===Number(POSTOPEN.id))
+    ||POSTOPEN;
+  return `<div class="po-ov" id="poov">
+    <header class="po-top">
+      <button class="po-x" id="poclose" aria-label="Close"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="po-ttl">Post</div><span class="po-sp"></span>
+    </header>
+    <div class="po-body">${(CSLOTPO=true,postHTML(p))}${(CSLOTPO=false,"")}</div>
+  </div>`;
+}
+/* Any post currently in memory, wherever it came from. */
+function postById(id){
+  return (POSTS||[]).find(x=>String(x.id)===String(id))
+    ||(SRPOSTS||[]).find(x=>String(x.id)===String(id))
+    ||(SEARCHRES&&(SEARCHRES.posts||[]).find(x=>String(x.id)===String(id)))
+    ||(PROFILE&&[...PROFILE.posts,...PROFILE.collabs].find(x=>String(x.id)===String(id)))
+    ||null;
+}
+
+/* Music follows the post you're actually looking at. The rootMargin band means
+   a chip only counts as in view once it reaches the middle fifth of the screen,
+   so two half-visible posts can't fight over the speaker. Videos autoplay muted,
+   so nothing here competes with them. */
+function wireMusAuto(){
+  if(MOBS){MOBS.disconnect();MOBS=null}
+  if(!MUSOK)return;
+  const chips=[...document.querySelectorAll("[data-mustrack]")];
+  /* Nothing carries over: if the post that owns the sound is no longer on
+     screen the sound stops with it. Chats and drawers laid over the page are
+     handled by musicScope() (app/music/player.js). */
+  if(MUSAUTOID!=null&&NOWPLAYING){
+    const still=chips.some(c=>String(c.dataset.mustrack)===String(MUSAUTOID))||!!document.querySelector(`[data-trkown="${MUSAUTOID}"]`);   // a profile's music tile (2026-10-09)
+    if(!still){const a=audioEl();if(!a.paused)a.pause();MUSAUTOID=null;NOWPLAYING=null;paintPlayer();}   // and it doesn't resurface in the lab bar
+  }
+  if(!chips.length)return;
+  /* Watch the CARD, not the chip. The chip is one line of text and 025 moved it
+     into the header below the photo, so it crossed the centre band in a fraction
+     of the time a tall image takes — music fired and un-fired, or never fired at
+     all. The card overlapping the middle fifth is what "the post you are looking
+     at" actually means. */
+  const cards=[];
+  for(const c of chips){
+    const card=c.closest(".post,.sr-card")||c;
+    card.dataset.muspost=c.dataset.mustrack;
+    cards.push(card);
+  }
+  MOBS=new IntersectionObserver((entries)=>{
+    for(const e of entries){
+      const p=postById(e.target.dataset.muspost);
+      if(!p||!p.audioTrack)continue;
+      const a=audioEl();
+      /* The rule: music starts the moment a post is centred, stops the instant
+         it leaves, only one ever plays, and nothing carries over between posts.
+         MUSAUTOID is the POST that owns the sound — keyed on the track, two
+         posts sharing a song fought each other; keyed on the post, a repeat of
+         the same song restarts from the top like a fresh post should. */
+      if(e.isIntersecting){
+        MUSBAND.add(String(p.id));
+        /* You silenced THIS post — leave it silent, but any other post clears it. */
+        if(MUSMUTE!=null&&String(MUSMUTE)===String(p.id))continue;
+        MUSMUTE=null;
+        if(MUSAUTOID===p.id&&NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id&&!a.paused)continue;
+        /* Settle first (2026-10-08): a flick past five posts used to start and
+           abort five song downloads. The song starts once its post has stayed
+           centred for a moment; stopping on the way out is still instant. */
+        clearTimeout(MUSDWELL);
+        MUSDWELL=setTimeout(()=>{
+          if(!MUSBAND.has(String(p.id)))return;   // it left before it settled
+          if(liteOn())return;                       // Data saver: music waits for its chip
+          if([...document.querySelectorAll("video[data-auto]")].some(v=>!v.paused&&!v.muted))return;   // a video has the sound
+          MUSAUTOID=p.id;
+          if(NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id){
+            a.currentTime=(p.audioStart||0)/1000;
+            const pr=a.play();if(pr&&pr.catch)pr.catch(()=>{});
+            paintPlayer();
+          }else playTrack(p.audioTrack,true,p.audioStart);
+        },300);
+      }else if(!e.isIntersecting&&MUSBAND.has(String(p.id))&&MUSAUTOID!==p.id){
+        MUSBAND.delete(String(p.id));   // passed through without settling: nothing was playing for it
+      }else if(MUSAUTOID===p.id&&NOWPLAYING&&NOWPLAYING.id===p.audioTrack.id){
+        /* "Stops the instant it LEAVES" — leaving requires having been in.
+           Every render() rebuilds this observer, and its first pass reports
+           current state for every card. A post tapped while sitting OUTSIDE
+           the band (the guest landing pushes the first card below it) used
+           to be "not intersecting" on that first pass and got paused mid-
+           load — killing the tap's own play() with an AbortError. Now an
+           exit only counts if this post actually entered the band first. */
+        if(!MUSBAND.has(String(p.id)))continue;
+        MUSBAND.delete(String(p.id));
+        if(!a.paused)a.pause();
+        paintPlayer();
+      }
+    }
+  },{rootMargin:musBand(),threshold:0});   // the band: app/showroom/gallery.js
+  cards.forEach(c=>MOBS.observe(c));
+}
+
+function wirePostOpen(){
+  const ov=$("#poov");if(!ov)return;
+  const x=$("#poclose");if(x)x.onclick=()=>{POSTOPEN=null;OPENCOMMENTS=null;render()};
+}
+
+/* Name + cover, owner only. The server already scopes PATCH /api/tracks/:id to
+   the owner, so this adds presentation, not a new trust surface. */
+function trkEditHTML(){
+  const e=TRKEDIT;
+  return `<div class="pcmp-ov" id="trkeov"><div class="pcmp-sheet" role="dialog" aria-label="Edit track">
+    <header class="pcmp-top">
+      <button class="pcmp-x" id="trkecancel">${e.fresh?"Later":"Cancel"}</button>
+      <div class="pcmp-ttl">${e.fresh?"Name your track":"Edit track"}</div>
+      <button class="pcmp-share" id="trkesave" ${e.title.trim()&&!e.busy?"":"disabled"}>${e.busy?"Saving…":"Save"}</button>
+    </header>
+    <div class="pcmp-body">
+      <div class="trke-row">
+        <label class="trke-art">${e.artworkUrl?`<img src="${esc(e.artworkUrl)}" alt="">`:`<span>${DI.music}<br><small>Add cover</small></span>`}
+          <input type="file" id="trkeart" accept="image/*" hidden></label>
+        <div class="trke-fields">
+          <input class="ui-in" id="trketitle" placeholder="Track name" value="${esc(e.title)}" maxlength="120">
+          ${e.artworkUrl?`<button class="trke-rm" id="trkeartrm">Remove cover</button>`:""}
+        </div>
+      </div>
+      <div class="pcmp-note">The name and cover are yours to change any time — they travel with the track everywhere it gets used.${PCOMPOSE?" With no photos, the cover is your post's picture.":""}</div>
+    </div>
+  </div></div>`;
+}
+function wireTrkEdit(){
+  const ov=$("#trkeov");if(!ov)return;
+  const ti=$("#trketitle");if(ti)ti.oninput=()=>{
+    TRKEDIT.title=ti.value;
+    const s=$("#trkesave");if(s)s.disabled=!TRKEDIT.title.trim()||TRKEDIT.busy;
+  };
+  const af=$("#trkeart");if(af)af.onchange=async()=>{
+    const file=af.files&&af.files[0];af.value="";
+    if(!file)return;
+    if(!/^image\//.test(file.type))return toast("Images only");
+    try{const data=await compressImage(file,700,.85);const up=await api.upload(data);
+      TRKEDIT.artworkUrl=up.url||"";render();}
+    catch(err){toast(err.message||"Couldn't use that image")}
+  };
+  const rm=$("#trkeartrm");if(rm)rm.onclick=()=>{TRKEDIT.artworkUrl="";render()};
+  const cc=$("#trkecancel");if(cc)cc.onclick=()=>{TRKEDIT=null;render()};
+  ov.onclick=ev=>{if(ev.target===ov&&!TRKEDIT.busy){TRKEDIT=null;render()}};
+  const sv=$("#trkesave");if(sv)sv.onclick=async()=>{
+    if(TRKEDIT.busy||!TRKEDIT.title.trim())return;
+    TRKEDIT.busy=true;render();
+    try{
+      await api.updateTrack(TRKEDIT.id,{title:TRKEDIT.title.trim(),artworkUrl:TRKEDIT.artworkUrl});
+      const pc=PCOMPOSE;if(pc&&pc.track&&pc.track.id===TRKEDIT.id)pc.track={...pc.track,title:TRKEDIT.title.trim(),artworkUrl:TRKEDIT.artworkUrl};   // the post creator's song too
+      /* show it now; the library list catches up after (it used to wait for the
+         list first, so the creator sat without its new cover for a beat) */
+      TRKEDIT=null;toast("Saved.");render();await loadTracks();render();
+    }catch(err){TRKEDIT.busy=false;render();toast(err.message||"Save failed")}
+  };
+}

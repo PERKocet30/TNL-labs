@@ -11,7 +11,7 @@ const db = new DatabaseSync(":memory:");
 db.exec(`CREATE TABLE error_log (kind TEXT, message TEXT, detail TEXT, path TEXT, username TEXT, created_at INTEGER);
   CREATE TABLE glitch_events (kind TEXT, place TEXT, detail TEXT, device TEXT, username TEXT, created_at INTEGER);
   CREATE TABLE users (created_at INTEGER); CREATE TABLE posts (created_at INTEGER);`);
-const src = readFileSync(join(ROOT, "src/server-10-watch.js"), "utf8");
+const src = readFileSync(join(ROOT, "src/server/admin/watch.js"), "utf8");
 delete process.env.ADMIN_EMAIL;
 const watchTick = new Function("db", "sendAlertEmail", "logError", src + "\nreturn watchTick;")(db, null, () => {});
 const sent = [];

@@ -14,7 +14,7 @@ const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "âœ“" : "â
 const now = Date.now();
 const U = (n, ver, susp = 0, email = n + "@x.test") => Number(db.prepare(`INSERT INTO users (username,display_name,email,role,password_hash,email_verified,suspended,created_at) VALUES (?,?,?,?,?,?,?,?)`).run(n, n, email, "Model", "h", ver, susp, now).lastInsertRowid);
 U("done", 1); U("ana", 0); U("ben", 0); U("gone", 0, 1); U("noemail", 0, 0, "");
-const src = readFileSync(join(ROOT, "src/server-05-admin-verify-nudge.js"), "utf8").replace("const NUDGE_GAP_MS = 600;", "const NUDGE_GAP_MS = 1;");
+const src = readFileSync(join(ROOT, "src/server/admin/verify-nudge.js"), "utf8").replace("const NUDGE_GAP_MS = 600;", "const NUDGE_GAP_MS = 1;");
 const routes = {}, sentTo = [];
 let MAIL = true;
 const make = () => new Function("app", "auth", "admin", "db", "issueVerification", "getMail", src.replace(/MAIL_ENABLED/g, "getMail()"))(

@@ -25,7 +25,7 @@ function load(script) {
   };
   const quick = (f) => { Promise.resolve().then(f); return 1; };
   const R = new Function("fetch", "document", "setTimeout", "clearTimeout", "navigator", "AbortController",
-    read("src/app-07-updating.js") + "\nreturn { reqFetch };")(fakeFetch, doc, quick, () => {}, { onLine: true }, class { constructor() { this.signal = {}; } abort() {} });
+    read("src/app/core/updating.js") + "\nreturn { reqFetch };")(fakeFetch, doc, quick, () => {}, { onLine: true }, class { constructor() { this.signal = {}; } abort() {} });
   return { R, calls, body, seen };
 }
 
@@ -50,9 +50,9 @@ t("ordinary answers pass straight through (404)", r.status === 404 && x.calls.le
 x = load([500]);
 r = await x.R.reqFetch("/api/x", {});
 t("…a real server error isn't retried (500)", r.status === 500 && x.calls.length === 1);
-const api = read("src/app-07-theme-labs-api.js");
+const api = read("src/app/core/theme-labs-api.js");
 t("every app request goes through it", /const r=await reqFetch\(API\+path,/.test(api) && !/await fetch\(API\+path/.test(api));
-const css = read("src/app-05-styles-updating.css");
+const css = read("src/app/styles/updating.css");
 t("the pill uses the palette, no typed colours", /var\(--tx\)/.test(css) && !/#[0-9a-f]{3,8}\b/i.test(css));
 
 console.log("\nADMIN CHARTS READ LIKE A REAL DASHBOARD");

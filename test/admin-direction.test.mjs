@@ -17,9 +17,9 @@ let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
 // the lab names, as the app shows them, and as the admin server names them
-const app07 = readFileSync(join(ROOT, "src/app-07-theme-labs-api.js"), "utf8");
+const app07 = readFileSync(join(ROOT, "src/app/core/theme-labs-api.js"), "utf8");
 const LABS = new Function(app07.slice(app07.indexOf("const LABS = ["), app07.indexOf("];", app07.indexOf("const LABS = [")) + 2) + "\nreturn LABS;")();
-const part = readFileSync(join(ROOT, "src/server-10-pulse-labs.js"), "utf8");
+const part = readFileSync(join(ROOT, "src/server/admin/pulse-labs.js"), "utf8");
 const LAB_NAME = new Function(part.slice(part.indexOf("const LAB_NAME ="), part.indexOf(";", part.indexOf("const LAB_NAME =")) + 1) + "\nreturn LAB_NAME;")();
 
 const { db } = await import("../src/db.js");

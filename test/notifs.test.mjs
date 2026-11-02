@@ -48,10 +48,10 @@ try {
   t("unfollowing takes the follow notification back", await benN() === 0);
 
   console.log("\nHOW THE APP SHOWS THEM");
-  const src = readFileSync(join(ROOT, "src/app-17-notifs.js"), "utf8");
+  const src = readFileSync(join(ROOT, "src/app/notifications/notifs.js"), "utf8");
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
   const avHTML = (u) => `<i class="av">${u.displayName}</i>`;
-  const screenHead = (o) => `<div class="sh"><h2>${o.title}</h2></div>`;   // the kit's head (app-08-kit.js), 2026-10-20
+  const screenHead = (o) => `<div class="sh"><h2>${o.title}</h2></div>`;   // the kit's head (app/core/kit.js), 2026-10-20
   const K = new Function("esc", "avHTML", "DI", "skel", "NOTIFS", "screenHead", src + "\nreturn {nfRows, nfRowHTML, nfText, notifPanelHTML};")(esc, avHTML, { x: "x" }, () => "", N, screenHead);
   const rows = K.nfRows(N);
   const likes = rows.filter((r) => r.n.kind === "like");

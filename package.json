@@ -11,12 +11,17 @@
     "start": "node --experimental-sqlite --max-old-space-size=768 src/server.js",
     "dev": "node --watch --experimental-sqlite src/server.js",
     "test": "bash test/run.sh",
-    "e2e": "node test/e2e/run.mjs"
+    "e2e": "node test/e2e/run.mjs",
+    "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "ffmpeg-static": "^5.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "typescript": "^5.9.3"
   }
 }

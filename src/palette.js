@@ -3,17 +3,17 @@
 
    Change a colour here and it changes everywhere:
      • the app          — assemble.mjs writes paletteCss() into index.html
-                          at the @palette marker in app-02-styles-base.css
+                          at the @palette marker in app/styles/base.css
      • /admin           — admin.html links /palette.css (served from here)
-     • server pages     — lookPage() (server-01-look.js) inlines paletteCss()
+     • server pages     — lookPage() (server/core/look.js) inlines paletteCss()
      • emails           — mail.js reads PALETTE directly (email can't use CSS vars)
-     • the share card   — server-10-profile-card.js reads PALETTE directly
+     • the share card   — server/profile/card.js reads PALETTE directly
      • member accents   — ACCENTS lives here; db.js re-exports it
 
    The brand is white, black and green: true white and neutral greys by
    day, black by night, Reagent green as the app's accent. Each member can
    pick their own accent; accentSet() makes any accent readable the same
-   way the app does it (inkFor / onAccent in app-08-state-ui.js — a test
+   way the app does it (inkFor / onAccent in app/state/state-ui.js — a test
    keeps the two in step).
 
    CSS variable names are the app's. Pages that need a member's colour set
@@ -93,7 +93,7 @@ const isHex = (h) => /^#[0-9a-f]{6}$/i.test(h || "");
 /** An accent as text: the same colour, only darker (day) or lighter
     (night) until it reads at 4.5:1 — moved in OKLCH, so lime stays a green
     and gold stays gold, not olive and mud (v2, 2026-10-14). The app's copy
-    in app-08-state-ui.js is the same maths; test/palette.test.mjs checks. */
+    in app/state/state-ui.js is the same maths; test/palette.test.mjs checks. */
 export function inkFor(hex, theme) {
   if (!isHex(hex)) return hex;
   const lin = (x) => { x /= 255; return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };

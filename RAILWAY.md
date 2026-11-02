@@ -159,7 +159,7 @@ places if it ever leaks.
 
 ## Are you a person? — Cloudflare Turnstile at Join (optional, 2026-10-30)
 
-Off until both are set (`server-01-turnstile.js`). Then an email join carries
+Off until both are set (`server/trust/turnstile.js`). Then an email join carries
 a Turnstile token that LABS checks with Cloudflare before the account is made;
 Google / Apple / Facebook joins skip it. Most people never see a thing.
 
@@ -174,7 +174,7 @@ refusals log `[turnstile] refused a join`.
 
 ## Continue with Google / Apple / Facebook (optional, 2026-10-20; Facebook 2026-10-26)
 
-Each button stays hidden until its variables are set (`server-11-oauth.js`).
+Each button stays hidden until its variables are set (`server/auth/oauth.js`).
 
 | Variable | Value |
 | --- | --- |
@@ -207,7 +207,7 @@ at the top). Until then only the app's admins and testers can use the button.
 ## The Instagram inbox (optional, 2026-10-26)
 
 Admin → Instagram reads the messages people send the LABS Instagram
-account. Read only; replies happen in Instagram (`server-12-instagram-inbox.js`).
+account. Read only; replies happen in Instagram (`server/instagram/inbox.js`).
 
 | Variable | Value |
 | --- | --- |
@@ -228,7 +228,7 @@ Advanced Access; until then LABS checks every 3 minutes (`IG_POLL_MS`).
 ## Admin → Systems (optional, 2026-10-26)
 
 The Systems page in `/admin` reads Railway and GitHub so it can say what's
-live, what's building and what's waiting for a Push (`server-10-admin-systems.js`).
+live, what's building and what's waiting for a Push (`server/admin/systems.js`).
 Read-only; each card says "isn't connected yet" until its key is here.
 
 | Variable | Value |
@@ -242,7 +242,7 @@ Both tokens stay on the server. The page gets names and numbers, never a key.
 ### Google (Search Console + Merchant Center), 2026-10-26
 
 The Systems page also shows how people find LABS on Google Search and how the
-market's pieces do on Google Shopping (`server-10-admin-systems2-google.js`).
+market's pieces do on Google Shopping (`server/admin/systems-google.js`).
 One Google **service account** reads both, read-only. About 10 minutes:
 
 1. **Make the service account.** console.cloud.google.com → the LABS project →
@@ -277,7 +277,7 @@ The key signs a short-lived token on the server; neither reaches the page.
 
 ### Meta (Instagram + Facebook), 2026-10-26
 
-The Systems page also shows Instagram and Facebook (`server-10-admin-systems3-meta.js`):
+The Systems page also shows Instagram and Facebook (`server/admin/systems-meta.js`):
 followers, reach, link taps, the posts that reach most, when followers are
 online, where they are, and the shop catalog's rejections. One **system-user
 token** reads it all and doesn't expire. About 10 minutes, in Business

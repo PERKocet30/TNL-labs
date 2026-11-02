@@ -32,11 +32,11 @@ const verifySession = async (sid) => { asked.push(sid); return SESS[sid] || { pa
 const q = { userById: db.prepare(`SELECT * FROM users WHERE id = ?`) };
 const told = [], rep = [], routes = {}, timers = [];
 const read = (f) => readFileSync(join(ROOT, "src", f), "utf8");
-const os = read("server-07-orders-sharing.js");
+const os = read("server/orders/orders-sharing.js");
 const part = os.slice(os.indexOf('app.get("/api/market/checkout/done"'), os.indexOf("\n", os.indexOf("setInterval(() => { reconcileAll()")) + 1);
 const X = new Function("db", "randomBytes", "q", "notify", "app", "auth", "verified", "maybeAuth", "rateLimit", "baseUrl", "feeFor",
   "createCheckout", "verifySession", "awardRep", "LISTING_SELECT", "shapeListings", "PAYMENTS_ENABLED", "setInterval",
-  read("server-06-market-stock.js") + "\n" + read("server-07-cart.js") + "\n" + part + "\nreturn {reconcileAll, reconcileOrders, settlePaidOrder};")(
+  read("server/market/stock.js") + "\n" + read("server/orders/cart.js") + "\n" + part + "\nreturn {reconcileAll, reconcileOrders, settlePaidOrder};")(
   db, randomBytes, q, (...a) => told.push(a),
   { post: (p, ...h) => { routes["POST " + p] = h.at(-1); }, get: (p, ...h) => { routes["GET " + p] = h.at(-1); } },
   null, null, null, () => null, () => "https://x", () => 10, async () => ({}), verifySession,
@@ -83,7 +83,7 @@ await routes["GET /api/market/checkout/done"]({ query: { session_id: "cs_nope", 
 t("not paid: failed", to === "/?checkout=failed");
 
 console.log("\nIN THE APP");
-const app = read("app-17-order-done.js"), boot = read("app-19-feed-boot.js"), router = read("app-13-tracks-player.js");
+const app = read("app/market/order-done.js"), boot = read("app/feed/feed-boot.js"), router = read("app/music/tracks.js");
 t("the return opens Order confirmed for that order", boot.includes('if(p.get("o"))orderDoneOpen(p.get("o"),st)') && router.includes('if(MKTVIEW==="confirmed")return orderDoneHTML();'));
 t("it shows what was bought, the total, where it's going and what's next", ["Subtotal", "Shipping", "Total", "Shipping to", "What happens next", "View order", "Keep shopping"].every((w) => app.includes(w)));
 t("a bag shows every item (orders carry their bag id)", app.includes("o.cart===DONEID") && os.includes("cart: r.cart_id || r.id"));

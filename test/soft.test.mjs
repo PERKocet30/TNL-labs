@@ -11,7 +11,7 @@ const read = (p) => readFileSync(join(ROOT, p), "utf8");
 
 const html = read("public/index.html");
 const css = html.split("<style>")[1].split("</style>")[0];
-const soft = read("src/app-05-styles-soft.css");
+const soft = read("src/app/styles/soft.css");
 
 console.log("\nSOFT, NOT BOXY");
 t("three radii, defined once", /:root\{--rad:16px;--rad-m:12px;--rad-s:8px\}/.test(soft));
@@ -37,23 +37,23 @@ t("admin: a titled card rounds as one piece", ui.includes("h2.sec:has(+ :is(.pan
 t("admin loads the styles (?v=2.0 or later)", read("public/admin.html").match(/\/admin-app\/ui.css\?v=(1\.[2-9]|[2-9]\.\d)/));
 
 console.log("\nYOUR COLOUR AROUND YOUR PICTURE");
-const app07 = read("src/app-07-theme-labs-api.js");
+const app07 = read("src/app/core/theme-labs-api.js");
 const [avRing, avHTML] = new Function("esc", "accFill", app07.slice(app07.indexOf("const avRing="), app07.indexOf("\n", app07.indexOf("const avHTML=")) + 1) + "\nreturn [avRing, avHTML];")((s) => String(s), (h) => h);   // accFill: day (no night stand-in)
 t("a member with a colour gets the ring, in their colour", /class="av sm ring" style="--ring:#FF5A1F"/.test(avHTML({ avatarUrl: "/u.jpg", displayName: "ana", accentHex: "#FF5A1F" }, "sm")));
 t("no colour, no ring (and the letters still show)", avHTML({ displayName: "ben" }) === '<div class="av ">BE</div>');
 t("only a real #rrggbb goes into the style — nothing else can be injected", avRing({ accentHex: 'red;"><img src=x onerror=alert(1)>' })[0] === "" && avRing({ accentHex: "#12345" })[0] === "");
 t("the ring: a gap in the background colour, then theirs", /\.av\.ring\{border-color:transparent;box-shadow:0 0 0 2px var\(--bg\),0 0 0 4px var\(--ring\)\}/.test(soft));
-t("Who's building shows the person big, in their colour", /\.bcard \.av\{width:56px;height:56px/.test(soft) && read("src/app-11-showroom.js").includes("avHTML({avatarUrl:x.avatar_url,displayName:x.display_name,accentHex:x.accentHex})"));
-t("…and the server sends each builder's colour", read("src/server-10-collabs-beats-showroom.js").includes("accentHex: accentHex(u.accent) }))"));
-t("a profile picture wears the owner's colour, not the viewer's", read("src/app-15-profile.js").includes('class="pav pig-av"${avRing(u)[1]}') && /\.pav\{border:0;box-shadow:0 0 0 3px var\(--bg\),0 0 0 6px var\(--ring,var\(--accent-fill\)\)\}/.test(soft));
+t("Who's building shows the person big, in their colour", /\.bcard \.av\{width:56px;height:56px/.test(soft) && read("src/app/showroom/showroom.js").includes("avHTML({avatarUrl:x.avatar_url,displayName:x.display_name,accentHex:x.accentHex})"));
+t("…and the server sends each builder's colour", read("src/server/posts/collabs-showroom.js").includes("accentHex: accentHex(u.accent) }))"));
+t("a profile picture wears the owner's colour, not the viewer's", read("src/app/profile/profile.js").includes('class="pav pig-av"${avRing(u)[1]}') && /\.pav\{border:0;box-shadow:0 0 0 3px var\(--bg\),0 0 0 6px var\(--ring,var\(--accent-fill\)\)\}/.test(soft));
 
 // …everywhere a member's picture shows, the server sends their colour with it
 const srv = (f) => read("src/" + f);
-t("comments, notifications and search carry the colour", /level: levelFor\(r\.rep\)\.id, accentHex: accentHex\(r\.accent\)/.test(srv("server-03-upload-dm-notifications.js"))
-  && srv("server-03-upload-dm-notifications.js").includes("youFollow: !!r.you_follow, accentHex: accentHex(r.actor_accent)") && srv("server-03-upload-dm-notifications.js").includes('avatarUrl: p.avatar_url || "", accentHex: accentHex(p.accent)'));
-t("messages carry it (and only when the row has it)", srv("server-10-dm-core.js").includes("...(u.accent !== undefined ? { accentHex: accentHex(u.accent) } : {})") && srv("server-10-dm-core.js").includes("u.last_seen_at, u.show_active, u.accent"));
-t("sellers, @mentions, followers and tournament entrants carry it", srv("server-06-settings-payouts-market.js").includes("accentHex: accentHex(r.seller_accent)") && srv("server-07-orders-sharing.js").includes("role: r.role, accentHex: accentHex(r.accent)")
-  && srv("server-11-profile.js").includes("accentHex: accentHex(x.accent)") && srv("server-10-events-2-routes.js").includes("avatarUrl: u.avatar_url, accentHex: accentHex(u.accent)"));
+t("comments, notifications and search carry the colour", /level: levelFor\(r\.rep\)\.id, accentHex: accentHex\(r\.accent\)/.test(srv("server/uploads/upload-dm-notifications.js"))
+  && srv("server/uploads/upload-dm-notifications.js").includes("youFollow: !!r.you_follow, accentHex: accentHex(r.actor_accent)") && srv("server/uploads/upload-dm-notifications.js").includes('avatarUrl: p.avatar_url || "", accentHex: accentHex(p.accent)'));
+t("messages carry it (and only when the row has it)", srv("server/messages/core.js").includes("...(u.accent !== undefined ? { accentHex: accentHex(u.accent) } : {})") && srv("server/messages/core.js").includes("u.last_seen_at, u.show_active, u.accent"));
+t("sellers, @mentions, followers and tournament entrants carry it", srv("server/admin/settings-payouts-market.js").includes("accentHex: accentHex(r.seller_accent)") && srv("server/orders/orders-sharing.js").includes("role: r.role, accentHex: accentHex(r.accent)")
+  && srv("server/profile/profile.js").includes("accentHex: accentHex(x.accent)") && srv("server/events/routes.js").includes("avatarUrl: u.avatar_url, accentHex: accentHex(u.accent)"));
 
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

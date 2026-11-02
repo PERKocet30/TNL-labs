@@ -5,7 +5,7 @@
    they've signed in and voted from since, the accounts on the same
    network, and plain reasons to look twice. On a tournament: who's
    voting for each piece, and the networks with more than one voter.
-   Data starts 2026-10-26 (server-01-signals); older accounts show none. */
+   Data starts 2026-10-26 (server/trust/signals); older accounts show none. */
 const SIGKIND = { join: "Joined", login: "Signed in", vote: "Voted" };
 const SIGVIA = { email: "Email and password", google: "Continue with Google", apple: "Continue with Apple", facebook: "Continue with Facebook" };
 const flagOf = (c) => (/^[A-Z]{2}$/.test(c || "") ? String.fromCodePoint(...[...c].map((x) => 0x1f1a5 + x.charCodeAt(0))) + " " + c : "");

@@ -18,7 +18,7 @@ const me = U("me"), amy = U("amy"), bob = U("bob"), gone = U("gone", "s"), block
 const q = { userByName: db.prepare(`SELECT * FROM users WHERE username = ?`), postById: db.prepare(`SELECT * FROM posts WHERE id = ?`) };
 const blocks = new Set([blocker + ":" + me]);
 const told = [], routes = {};
-const part = readFileSync(join(ROOT, "src/server-02-post-extras.js"), "utf8");
+const part = readFileSync(join(ROOT, "src/server/posts/extras.js"), "utf8");
 const X = new Function("db", "q", "isBlocked", "notify", "app", "auth",
   part + "\nreturn {postExtras,cleanExtras,applyExtras,commentsOff,cleanVideoEdit,editPostFull};")(db, q,
   (a, b) => blocks.has(a + ":" + b) || blocks.has(b + ":" + a), (...a) => told.push(a),
@@ -109,7 +109,7 @@ console.log("\nEDIT INFO — the post maker on an existing post (2026-10-29)");
   t("a song that doesn't exist isn't attached", row().audio_track_id === null);
   X.editPostFull(row(), { channel: "visual" }, me);
   t("leaving the song out leaves it alone", row().audio_track_id === null);
-  const rt = readFileSync(join(ROOT, "src/server-03-upload-dm-notifications.js"), "utf8");
+  const rt = readFileSync(join(ROOT, "src/server/uploads/upload-dm-notifications.js"), "utf8");
   t("the full save only runs after the author check, and only when asked", /req\.body\?\.full === true\) editPostFull\(post, req\.body, req\.user\.id\)/.test(rt));
 }
 console.log(`\n  ${pass} passed, ${fail} failed`);

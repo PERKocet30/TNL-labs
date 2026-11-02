@@ -478,7 +478,7 @@ if (!cols.includes("email_verified")) {
   db.exec(`ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`);
   // Grandfather anyone who signed up before verification existed — locking
   // out current members to introduce a new rule would be hostile.
-  const n = db.prepare(`SELECT COUNT(*) n FROM users`).get().n;
+  const n = Number(/** @type {any} */ (db.prepare(`SELECT COUNT(*) n FROM users`).get()).n);
   if (n > 0) {
     db.exec(`UPDATE users SET email_verified = 1`);
     console.log(`[db] grandfathered ${n} existing account(s) as verified`);
@@ -538,12 +538,12 @@ if (!cols.includes("stripe_kind")) db.exec(`ALTER TABLE users ADD COLUMN stripe_
 if (!cols.includes("accent")) db.exec(`ALTER TABLE users ADD COLUMN accent TEXT NOT NULL DEFAULT 'lab'`);
 if (!cols.includes("stripe_ready")) db.exec(`ALTER TABLE users ADD COLUMN stripe_ready INTEGER NOT NULL DEFAULT 0`);
 if (!cols.includes("is_admin")) db.exec(`ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0`);
-/* 2026-10-28: Mods — a tier below the owner (server-04-admin-0-mods.js). Only the owner sets it. */
+/* 2026-10-28: Mods — a tier below the owner (server/admin/mods.js). Only the owner sets it. */
 if (!cols.includes("is_mod")) db.exec(`ALTER TABLE users ADD COLUMN is_mod INTEGER NOT NULL DEFAULT 0`);
 /* Suspension, not deletion. Deleting a member cascades their work out of
    everyone else's collabs and threads — that punishes the wrong people. */
 if (!cols.includes("suspended")) db.exec(`ALTER TABLE users ADD COLUMN suspended INTEGER NOT NULL DEFAULT 0`);
-// 2026-10-19: when an admin last emailed this member a fresh confirm link (server-05-admin-verify-nudge)
+// 2026-10-19: when an admin last emailed this member a fresh confirm link (server/admin/verify-nudge)
 if (!cols.includes("verify_nudged_at")) db.exec(`ALTER TABLE users ADD COLUMN verify_nudged_at INTEGER`);
 /* Profile v2 (2026-10-07): pronouns, up to five links [{title,url}], and up
    to three pinned posts (ids) at the top of the grid. */
@@ -596,7 +596,7 @@ if (!lcols.includes("price_dropped_at")) db.exec(`ALTER TABLE listings ADD COLUM
 // 2026-10-18: the seller's own "was" price (Shopify's compare-at). Shown only while it's above the price.
 if (!lcols.includes("compare_cents")) db.exec(`ALTER TABLE listings ADD COLUMN compare_cents INTEGER`);
 // 2026-10-18: who's selling — a brand (new, sizes and stock), vintage (pre-loved) or custom (one of one). '' = not said.
-if (!lcols.includes("specs")) db.exec(`ALTER TABLE listings ADD COLUMN specs TEXT NOT NULL DEFAULT '{}'`);   // category details (server-06-market-taxonomy)
+if (!lcols.includes("specs")) db.exec(`ALTER TABLE listings ADD COLUMN specs TEXT NOT NULL DEFAULT '{}'`);   // category details (server/market/taxonomy)
 if (!lcols.includes("sell_type")) db.exec(`ALTER TABLE listings ADD COLUMN sell_type TEXT NOT NULL DEFAULT ''`);
 
 /* Studio telemetry. Never throws — a metrics call must never be able to
@@ -659,7 +659,7 @@ export const SETTING_DEFAULTS = {
   minRepToSell:   "0",     // gate selling behind standing if it gets messy
   autoVerify:     "0",     // "1" skips email verification — use if mail breaks
   announcement:   "",      // a banner across the top of the app
-  nudgeMail:      "1",     // the weekly "finish your page" email (server-11-nudge); "0" stops it
+  nudgeMail:      "1",     // the weekly "finish your page" email (server/mail/nudge); "0" stops it
   signinGoogle:   "1",     // Continue with Google / Apple / Facebook: "0" hides that button even with its keys set (2026-10-26)
   signinApple:    "1",
   signinFacebook: "0",     // off until the Meta app is published (business verification, Oct 26)
@@ -692,7 +692,7 @@ export function setSetting(key, value, byUserId) {
 }
 export function allSettings() {
   const out = { ...SETTING_DEFAULTS };
-  for (const r of db.prepare(`SELECT key, value FROM settings`).all()) {
+  for (const r of /** @type {{ key: string, value: string }[]} */ (db.prepare(`SELECT key, value FROM settings`).all())) {
     if (r.key in out) out[r.key] = r.value;
   }
   return out;
@@ -717,7 +717,7 @@ export function ensureAdmin() {
     }
     if (owner) return; // the named owner is the admin; don't also promote user #1
   }
-  const has = db.prepare(`SELECT COUNT(*) n FROM users WHERE is_admin = 1`).get().n;
+  const has = /** @type {any} */ (db.prepare(`SELECT COUNT(*) n FROM users WHERE is_admin = 1`).get()).n;
   if (has) return;
   const first = db.prepare(`SELECT id, username FROM users ORDER BY id LIMIT 1`).get();
   if (!first) return; // no accounts yet — runs again after the first signup

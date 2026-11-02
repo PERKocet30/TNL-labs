@@ -128,7 +128,7 @@ try {
   raw.close();
 
   console.log("\nWHERE IT LIVES");
-  const src = readFileSync(join(ROOT, "src/server-10-events-6-mail.js"), "utf8");
+  const src = readFileSync(join(ROOT, "src/server/events/mail.js"), "utf8");
   t("at most 80 a day unless told otherwise (Resend's free plan stops at 100)", /EVENT_MAIL_PER_DAY\) \|\| 80/.test(src));
   t("never on Resend's test sender", /const evmReady = \(\) => MAIL_ENABLED && !MAIL_TEST_SENDER;/.test(src));
   const adm = readFileSync(join(ROOT, "public/admin-app/8-events.js"), "utf8");

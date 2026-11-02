@@ -21,20 +21,20 @@ t("day is the default; dark is picked by data-theme", /:root,\[data-theme="light
 t("a page can wear a member's accent (--acc…)", /--green:var\(--acc-l,/.test(css) && /--accent-fill:var\(--acc,/.test(css) && accentVars("#FF5A1F").startsWith("--acc:#FF5A1F;"));
 
 console.log("\nNOBODY KEEPS THEIR OWN COLOURS");
-const parts = readdirSync(join(ROOT, "src")).filter((f) => /^app-\d{2}-.*\.css$/.test(f));
+const parts = (await import("../src/app/order.mjs")).APP.filter((f) => f.endsWith(".css")).map((f) => "app/" + f);
 const defines = (s) => /(^|[;{\s])--(bg|tx|dim|el|card|green|accent-fill)\s*:\s*#/m.test(s);
 t("no app stylesheet defines theme colours" + parts.filter((f) => defines(read("src/" + f))).map((f) => " (" + f + ")").join(""), !parts.some((f) => defines(read("src/" + f))));
-t("the app's CSS keeps the /*@palette*/ marker", read("src/app-02-styles-base.css").includes("/*@palette*/"));
+t("the app's CSS keeps the /*@palette*/ marker", read("src/app/styles/base.css").includes("/*@palette*/"));
 t("the built app has the palette written in", read("public/index.html").includes(paletteCss()));
 t("/admin takes /palette.css and defines none of its own", read("public/admin.html").includes('href="/palette.css"') && !defines(read("public/admin.html")));
-t("server pages inline paletteCss() and define none of their own", /\$\{paletteCss\(\)\}/.test(read("src/server-01-look.js")) && !defines(read("src/server-01-look.js")) && /app\.get\("\/palette\.css"/.test(read("src/server-01-look.js")));
+t("server pages inline paletteCss() and define none of their own", /\$\{paletteCss\(\)\}/.test(read("src/server/core/look.js")) && !defines(read("src/server/core/look.js")) && /app\.get\("\/palette\.css"/.test(read("src/server/core/look.js")));
 const mail = read("src/mail.js");
 t("emails read PALETTE (no hand-typed theme hexes)", mail.includes('from "./palette.js"') && !/#(F7F1F1|FBF8F8|5C5C5C|E6E6E6|262626|9A9A9A|467430)/i.test(mail.replace(/\/\*[\s\S]*?\*\//g, "")));
-t("the share card reads PALETTE", /bg: ffc\(PALETTE\.light\.bg\)/.test(read("src/server-10-profile-card.js")));
-t("the app's browser bar colour follows --bg", /getPropertyValue\("--bg"\)/.test(read("src/app-07-theme-labs-api.js")));
+t("the share card reads PALETTE", /bg: ffc\(PALETTE\.light\.bg\)/.test(read("src/server/profile/card.js")));
+t("the app's browser bar colour follows --bg", /getPropertyValue\("--bg"\)/.test(read("src/app/core/theme-labs-api.js")));
 
 console.log("\nTHE ACCENT MATHS MATCH THE APP'S");
-const app = read("src/app-08-state-ui.js");
+const app = read("src/app/state/state-ui.js");
 const grab = (name) => { const i = app.indexOf("function " + name + "("); let d = 0; for (let k = app.indexOf("{", i); k < app.length; k++) { if (app[k] === "{") d++; else if (app[k] === "}" && --d === 0) return app.slice(i, k + 1); } };
 const clientInk = (theme) => new Function("THEME", grab("inkFor") + "\nreturn inkFor;")(theme);
 const clientOn = new Function(grab("onAccent") + "\nreturn onAccent;")();
@@ -58,5 +58,5 @@ const clientFill = (theme) => new Function("THEME", "ACCENTS", grab("accFill") +
 t("Black is offered, and wears white at night (app and server agree)", !!ACCENTS.black && !ACCENTS.black.legacy && accentFill("#000000", "dark") === "#FFFFFF" && accentFill("#000000", "light") === "#000000"
   && clientFill("dark")("#000000") === "#FFFFFF" && clientFill("light")("#000000") === "#000000" && clientFill("dark")("#98FC68") === "#98FC68");
 t("…its text at night is white too, never black on black", inkFor(accentFill("#000000", "dark"), "dark") === "#FFFFFF");
-t("the app, the avatar rings and the Story cards all go through it", app.includes("const f=accFill(ACCENTHEX)") && read("src/app-07-theme-labs-api.js").includes("--ring:${accFill(u.accentHex)}") && read("src/server-12-story.js").includes('accentFill(c.accent, "dark")'));
+t("the app, the avatar rings and the Story cards all go through it", app.includes("const f=accFill(ACCENTHEX)") && read("src/app/core/theme-labs-api.js").includes("--ring:${accFill(u.accentHex)}") && read("src/server/instagram/story.js").includes('accentFill(c.accent, "dark")'));
 console.log(`\n  ${pass} passed, ${fail} failed`);

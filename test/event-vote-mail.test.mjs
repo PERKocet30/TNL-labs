@@ -88,7 +88,7 @@ try {
   t("the admin's preview goes only to the admin", p.s === 200 && SENT.length === n + 1 && SENT[n].to[0] === "boss@x.test" && SENT[n].subject.startsWith("[Preview] LABS ART TOURNAMENT: voting opens today at"));
 
   console.log("\nSOURCE");
-  const src = readFileSync(join(ROOT, "src/server-10-events-7-votemail.js"), "utf8");
+  const src = readFileSync(join(ROOT, "src/server/events/votemail.js"), "utf8");
   t("never after voting has started", /if \(!start \|\| now >= start\) return false;/.test(src));
   t("9 AM Eastern unless told otherwise", /EVENT_VOTE_MAIL_HOUR \?\? 9/.test(src));
 } finally { srv.kill(); fake.close(); }

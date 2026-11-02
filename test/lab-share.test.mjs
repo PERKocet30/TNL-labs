@@ -31,17 +31,17 @@ try {
   for (let i = 0; i < 100; i++) { try { if ((await fetch(B + "/api/health")).ok) break; } catch {} await new Promise((r) => setTimeout(r, 100)); }
 
   console.log("\nTHE CAPTIONS");
-  const app = grab(part("app-11-places.js"), "const LAB_PITCH="), server = grab(part("server-12-labs.js"), "const LAB_PITCH = ");
-  const ids = [...part("app-07-theme-labs-api.js").matchAll(/^\s*\{id:"([a-z]+)",name:"/gm)].map((m) => m[1]);
+  const app = grab(part("app/labs/places.js"), "const LAB_PITCH="), server = grab(part("server/labs/pages.js"), "const LAB_PITCH = ");
+  const ids = [...part("app/core/theme-labs-api.js").matchAll(/^\s*\{id:"([a-z]+)",name:"/gm)].map((m) => m[1]);
   t("every lab has one", ids.length === 7 && ids.every((id) => app[id] && app[id].length > 30));
   t("…the same in the app and on the shared page", JSON.stringify(app) === JSON.stringify(server));
   t("Visual says upload your art, Music says upload your songs", /^Upload your art/.test(app.pharmacy) && /^Upload your songs/.test(app.culture));
   t("each is brief enough to send (one line, under 120 characters)", Object.values(app).every((c) => c.length < 120 && !c.includes("\n")));
 
   console.log("\nIN THE APP");
-  t("each lab's header has a Share button", /id="labshare"/.test(part("app-12-archive-posts.js")) && /\$\("#labshare"\).*shareLab\(LAB\)/.test(part("app-16-wire.js")));
-  t("a shared /l/ link opens the lab (?l=), or join first and then the lab", /qs\.get\("l"\)/.test(part("app-19-feed-boot.js")) && /LABNEXT=qlab\.id/.test(part("app-19-feed-boot.js"))
-    && (part("app-11-gate-logic.js").match(/labNext\(\)/g) || []).length === 2);
+  t("each lab's header has a Share button", /id="labshare"/.test(part("app/posts/archive-posts.js")) && /\$\("#labshare"\).*shareLab\(LAB\)/.test(part("app/core/wire.js")));
+  t("a shared /l/ link opens the lab (?l=), or join first and then the lab", /qs\.get\("l"\)/.test(part("app/feed/feed-boot.js")) && /LABNEXT=qlab\.id/.test(part("app/feed/feed-boot.js"))
+    && (part("app/gate/logic.js").match(/labNext\(\)/g) || []).length === 2);
 
   console.log("\nTHE PAGE A SHARED LINK OPENS");
   const r = await fetch(B + "/l/visual"), h = await r.text();
@@ -71,12 +71,12 @@ try {
   t("every lab's page is in the sitemap, by name", ["general", "visual", "music", "fashion", "anime", "news", "business"].every((n) => xml.includes(`<loc>${B}/l/${n}</loc>`)) && !xml.includes(`/l/pharmacy`));
 
   console.log("\nLINKS NAME THE LAB");
-  const slugApp = grab(part("app-11-places.js"), "const LAB_SLUG="), slugSrv = grab(part("server-12-labs.js"), "const LAB_SLUG = ");
+  const slugApp = grab(part("app/labs/places.js"), "const LAB_SLUG="), slugSrv = grab(part("server/labs/pages.js"), "const LAB_SLUG = ");
   t("every lab's link is its name (visual, music…), the same in the app and on the server", JSON.stringify(slugApp) === JSON.stringify(slugSrv)
     && ids.every((id) => slugApp[id]) && slugApp.pharmacy === "visual" && slugApp.culture === "music" && slugApp.akatsuki === "anime" && slugApp.casino === "news" && slugApp.tna === "business" && slugApp.hq === "general");
   const old = await fetch(B + "/l/pharmacy", { redirect: "manual" });
   t("a link sent before the rename still works: /l/pharmacy forwards to /l/visual", old.status === 301 && /\/l\/visual$/.test(old.headers.get("location")));
-  t("the app's Share sends the named link, and ?l= takes the name (or an old id)", /"\/l\/"\+\(LAB_SLUG\[l\.id\]/.test(part("app-11-places.js")) && /labBySlug\(ql\)/.test(part("app-19-feed-boot.js")));
+  t("the app's Share sends the named link, and ?l= takes the name (or an old id)", /"\/l\/"\+\(LAB_SLUG\[l\.id\]/.test(part("app/labs/places.js")) && /labBySlug\(ql\)/.test(part("app/feed/feed-boot.js")));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

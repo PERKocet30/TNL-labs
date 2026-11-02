@@ -1,7 +1,7 @@
 /* LABS admin · Events · Spam check v1.0 — 2026-10-27. "Any account with multiple linked accounts needs to be
    deleted and their vote disregarded… I'll manually do." Under an event's vote check: the tournament's voters in
    linked groups (same phone, same network) with plain reasons to look. Remove as spam → suspended and their
-   votes off the scoreboard; Undo brings both back. server-11-spam.js. */
+   votes off the scoreboard; Undo brings both back. server/trust/spam.js. */
 LOADERS.spam = async () => { D.spam = EVID ? await req("/api/admin/events/" + EVID + "/spam").catch(() => null) : null; };
 function spamHTML() {
   const S = D.spam;

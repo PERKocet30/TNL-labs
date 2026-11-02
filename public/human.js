@@ -1,7 +1,7 @@
 /* LABS · are you a person? v1.0 — 2026-10-30. Loaded only when someone taps Join with an email
-   (gxHuman, app-11-gate-logic). Cloudflare Turnstile, invisible unless Cloudflare isn't sure — then a
+   (gxHuman, app/gate/logic). Cloudflare Turnstile, invisible unless Cloudflare isn't sure — then a
    small check at the bottom of the screen. Resolves with the token, or "" if it can't run; the server
-   (server-01-turnstile) decides. Never holds Join for more than a minute. */
+   (server/trust/turnstile) decides. Never holds Join for more than a minute. */
 window.labsHuman = (sitekey) => new Promise((ok) => {
   let id = null, over = false;
   const box = document.createElement("div");
