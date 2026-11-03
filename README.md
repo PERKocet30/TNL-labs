@@ -21,7 +21,7 @@ One Node server, one SQLite database, no framework and no external services requ
 | **Showroom** | The front page: real work from every lab, ranked by what other people do with it — your own taps never count, and work made together gets a lift. Anyone can browse; posting needs an account. |
 | **Labs** | Places, one per genre: `// General`, `// Visual` (every visual art — painting, drawing, illustration, sculpture, design, photo, film), `// Music`, `// Fashion`, `// Anime`, `// News` and `// Business`. Each genre is explained by its #tags. Inside: **Work** (everything made there, narrowed by #tag) and **Talk** (one conversation). Members tag their own work; the labs that match what you make come first. Names are display-only — lab and channel IDs never change. |
 | **Posts** | A post is a piece of work: up to 10 images or a video, a song from the library, credits for collaborators (counted once they accept), feedback, shares and saves. The post creator puts the work first, then the caption with #tags and @mentions, then collaborators, music (pick a song or upload one), the lab, people and products. With no photos, a song's cover becomes the picture. |
-| **Profiles** | A member's body of work, worn in their own colour: level and what they make up top, then **Work**, **Music** (their songs, the pinned one first), **Shop**, **Collabs** and **Tagged**. Every profile, post and song has a public page. |
+| **Profiles** | A member's body of work, worn in their own colour: level and what they make up top, then **Work** (pinned pieces first), **Music** (their songs, the pinned one first; shown when there are any), **Shop** and **Collabs**. (Tagged came out 2026-10-18.) Every profile, post and song has a public page. |
 | **Collabs** | Two-sided: the author invites, the other person accepts, and only then does it count — for both of them. |
 | **Standing** | Rep comes only from what other people do with your work, and every point is logged. Levels (Entry → Leadership) lower your Market fees, and at Core TNL can cover your music's distribution (an admin setting). |
 | **Market** | One shared market for what members make: browse by category, list with photos, pricing (a live "you earn"), sizes and colours, inventory and shipping. Offers, saves, one checkout per seller through Stripe Connect, delivery confirmation and reviews. |
@@ -33,7 +33,7 @@ One Node server, one SQLite database, no framework and no external services requ
 | **Phone and computer** | Phones get the app as designed: top bar, bottom nav. From 1024px wide the top bar and nav become one left sidebar, pages sit at a reading width beside it, and a mouse gets hover states. Resizing a window switches layouts on the spot. |
 | **Admin** | `/admin` — the dashboard (see below). |
 
-Design language: Helvetica, `//` marks the labs, true white by day and black by night, Reagent green `#98FC68` as the one accent, each member in their own colour (nine to choose from in Edit profile; the ring and highlights are the colour itself, text a deeper shade of it that reads at 4.5:1), drawn 2px square-cap icons. Every screen and rule is in the LABS Blueprint (v1.2, 2026-10-11) in the project files.
+Design language: Helvetica, `//` marks the labs, true white by day and black by night, Reagent green `#98FC68` as the one accent, each member in their own colour (nine to choose from in Edit profile; the ring and highlights are the colour itself, text a deeper shade of it that reads at 4.5:1), drawn 2px square-cap icons. Every feature, its code and its tests are drawn on the LABS Blueprint sheets in the project files: A-0 every feature, A-1 the network, A-2 the ranking, A-3 the data map (internal).
 
 ---
 
@@ -89,7 +89,7 @@ Server features: `core` (boot, guards, headers, live stream) · `auth` · `trust
 | `app/showroom/showroom` · `app/posts/*` · `app/music/*` (`app/posts/extras`: tags, place, comments off and "Shop this post" on a card) | Showroom, lab index, archive/posts; the Music lab (`app/music/tracks`), its playlists (`app/music/playlists`: Songs · Playlists, ⊕ on every song and on the bar), the full-screen song (`app/music/nowplaying`: tap a song or the bar) and the player bar and queue (`app/music/player`) |
 | `app/market/detail-sell` · `app/market/listing` · `app/market/sell-variants` | orders and the listing editor (v3, Shopify-style: Photos · Pricing with a compare-at "was" price and what you keep after the TNL and card fees · Size & stock · Shipping · Details with category and condition pickers); the listing page (photos, size/colour picker, the pinned Buy bar, the pinch-zoom photo viewer); the editor's options — tap sizes, add colours, every combination gets its own stock |
 | `app/market/sell-specs` · `server/market/taxonomy` | who's selling (a brand, vintage, one of one — the form shapes itself; listings say "Vintage" / "1 of 1"; Market filter **Seller**) and the taxonomy (v1.1 2026-11-03: nine departments with hints; jewellery, paper & print, physical music and home goods have kinds of their own; each kind says what its options are called — colour, finish, design, format — and Other has no sizes): departments → categories, each with its own size buttons (shoe sizes, waists, print sizes, ring sizes) and details (fit and measurements, size system, metal, medium / edition / signed / framed…), saved as `specs` and shown on the listing as a list |
-| `app/profile/profile` · `app/profile/edit` · `app/core/wire` | profile v2 (≡ / ⋯ menus, followers/following, pinned, tagged), the edit page (one quiet row per field), wiring |
+| `app/profile/profile` · `app/profile/edit` · `app/core/wire` | profile v2 (≡ / ⋯ menus, followers/following, pinned; tabs Work · Music · Shop · Collabs), the edit page (one quiet row per field), wiring |
 | `app/market/bag` | the bag (one checkout per seller), recently viewed, price-drop tags, listing drafts, Duplicate, your shop's numbers |
 | `app/market/order-done` · `app/styles/shop` | "Order confirmed" — back from Stripe the buyer lands on that order (`?checkout=paid&o=`): items, total, where it's going, what happens next; a payment still clearing says "Payment processing" |
 | `app/events/screen` · `app/events/wire` · `app/events/poll` | Events (2026-10-06, poll 2026-10-07): the tournament screen — brief, enter sheet, gallery, picks, bracket, judges' scores, results — the Showroom banner, and the poll's scoreboard, Instagram vote-link landing (`EVFOCUS`) and Share to Instagram sheet; styles in `app/styles/event` |
@@ -101,7 +101,7 @@ Server features: `core` (boot, guards, headers, live stream) · `auth` · `trust
 | `server/trust/signals` · `server/trust/signals-admin` · `app/core/landed` · admin `3-person-signals` | Real people or bots (2026-10-26): joining, signing in and voting note the network (a salted hash of the IP), country (Cloudflare), device, how they joined, the first link and how long Join took. Admin-only: a member's record shows "How they joined" with accounts on the same network and reasons to look; a tournament shows a vote check per piece and the networks with more than one voter. Named in the privacy policy. |
 | `server/auth` · `server/uploads` · `server/admin` · `server/orders` · `server/trust` · `server/labs` · `server/posts` · `server/profile` | auth/feed, uploads/notifications, admin dashboard, admin controls/backups, settings/payouts/market, orders/sharing, trust/library, archive/boards, collabs/Showroom, social/meta |
 | `server/mail/nudge` | The weekly reminder (2026-10-23): a member whose page has gaps gets one tailored email a week — photo, music for a music role, first piece, bio, colour, 3 follows, a listing for a fashion role — until it's done or 4 have gone; 3 days after joining at the earliest; at most 40 a day. Admin → Settings → Email switches it and previews it; `?start=<gap>` opens that step in the app. Words in `mail.js` (`NUDGE_ITEMS`); unsubscribe shared with the tournament email |
-| `server/profile/profile` | profile v2: links, pronouns, pins (`/api/me/pins`), followers/following lists, the Tagged tab, "Followed by" |
+| `server/profile/profile` | profile v2: links, pronouns, pins (`/api/me/pins`), the pinned song, followers/following lists, "Followed by" |
 | `server/pages/policies` | the public policy pages Stripe reviews: `/terms`, `/privacy`, `/policies` (shipping, returns, disputes, prohibited items), `/contact`, `/shop`, and `lookFoot()` — the footer on every server-built page. `SUPPORT_EMAIL` sets the inbox |
 | `server/uploads/video` | old videos fixed on boot (index-first copy, a cover where none); and the light copies made in the background one at a time: for video, 720p/30fps/~1.3 Mbps (`video_feed` → `videoPlayUrl`; the original stays `videoUrl`); for music, 128 kbps AAC (`audio_play` → a track's `url`; the upload stays `fileUrl`) |
 | `server/instagram/story` · `app/instagram/story-share` | anything on LABS as an Instagram Story: 1080×1920 cards for a post (`/p/:id/story.jpg`, a text post as a quote), a profile (`/u/:name/story.jpg`), a listing (`/m/:id/story.jpg`) and a track (`/tr/:id/story.jpg`); `shareMenu()` — Instagram Story, Send off the app, Copy link — on profiles, listings and tracks, and the post menu's "Instagram Story" sheet: one tap shares the picture and copies the link for a Link sticker |
@@ -111,14 +111,14 @@ Server features: `core` (boot, guards, headers, live stream) · `auth` · `trust
 | `server/trust/turnstile` · `server/core/headers` · `public/human.js` | Cloudflare (2026-10-30): the Turnstile person check on email joins (off until `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET` are set; fails open if Cloudflare can't be reached; `human.js` loads only at Join), and HSTS / nosniff / Referrer-Policy on every answer (`browserHeaders`, first middleware in server/core/boot) (`test/turnstile.test.mjs`). |
 | `server/trust/visits` · `server/connector/insights-people` · `server/connector/insights-shop` | Connector insights (2026-10-29), asked for by Grok: `member_days` notes one row per member per day they use the app signed in (from `auth()`), `slow_requests` notes /api requests over 1.5s or 5xx (14 days). Six admin routes under `/api/admin/insights/` — conversion (drop-offs, time to first post/vote/collab, ways in), retention (back after 1/7/30 days, first-day habits, labs that keep people), market (looked/saved vs bought, Stripe vs listed), collabs (sent/accepted/ignored, after a collab), tournament (voters vs entrants, round-to-round, who reached out after votes), tech (errors marked ours or not, slow routes) — each a connector tool (`test/insights.test.mjs`). |
 | `server/posts/extras` | a post's people tagged, place, comments on/off and products from your own shop (`posts.extras`) |
-| `server/admin/verify-nudge` | Admin → System → Data → Email → **Email them a new confirm link**: everyone who hasn't confirmed (not suspended) gets the sign-up email again with a fresh 24-hour link; nobody twice in a day (`users.verify_nudged_at`) |
+| `server/admin/verify-nudge` | Admin → Settings → Backups & email → **Email them a new confirm link**: everyone who hasn't confirmed (not suspended) gets the sign-up email again with a fresh 24-hour link; nobody twice in a day (`users.verify_nudged_at`) |
 | `server/orders/cart` | the bag checkout (several items from one seller, one payment, shipping combined — `sessionFits()` binds a paid session to its whole group), `/api/shop/stats` |
 | `server/orders/orders-sharing` (orders) | buying one item, the checkout return, and settling: `settlePaidOrder()` is the one path; `reconcileAll()` re-checks pending checkouts every 5 minutes, so a buyer who pays and closes the tab still gets their order settled. Checkout (`pay.js` v2.0) offers the seller's own payment methods — Apple Pay, Google Pay, Cash App Pay, Klarna, Link — minus slow bank debits, with cards as the fallback |
 | `server/market/stock` | sizes and colours: every unit sold goes through `takeStock()` (the size picked, the listing closes at zero) |
 | `server/messages/core` · `groups` · `routes` | Messages v2: schema migration (groups; backup first), requests, replies, reactions, edit/unsend, forward, mute |
 | `server/posts/links` · `server/core/live` | link previews behind a DNS-level SSRF guard; the signed-in live stream, typing, presence, lab reactions and pins |
 | `server/labs/places` | Labs as places: `PLACES` (each lab's channels and home), #tags read from captions plus the old channel's tag for posts from before the cutover, and the lab feed / work / tags and #tag routes; pins from any of the lab's channels |
-| `server/admin/pulse-labs` | Admin · the direction: `/api/admin/direction` — each lab's work, talk and #tags, trending #tags, the tournament and what needs you about it, how people take part. `LAB_NAME` must match `LABS` |
+| `server/admin/pulse-labs` | Admin · the direction: `/api/admin/direction` — each lab's work, talk and #tags, trending #tags, the tournament and what needs you about it, how people take part, and group chats members started themselves (`groupChatStats()`, counts only — also on `/api/admin/overview`; 2026-11-03). `LAB_NAME` must match `LABS` |
 | `server/admin/weekly` | The week: `/api/admin/weekly` (+ `/send`) and the Monday 13:00 UTC email to `ADMIN_EMAIL` — last week against the week before, every table, counts only, never a name. Uses `labName` from pulse-labs and `worstSpots` from watch |
 | `server/admin/v4` | Admin v4 (2026-10-20): the per-day series behind the charts with the period before, top work, the audience breakdown, every seller and every listing |
 | `server/events/core` · `routes` · `admin` · `cards` · `pages` · `mail` | Events: the schema and state machine (`tickEvent()`: submit → vote → bracket rounds → judged final → results, idempotent, runs every minute), entering/voting/judging, the poll's scoreboard (`evBoard`), admin, the Instagram cards (entry Story, scoreboard post/Story) and the public `/e/:slug`, `/rules`, `/board` and `/e/:slug/:entry` pages; `-6-mail`: the "entries are open" email to every member, and `/mail/off` |
@@ -139,8 +139,8 @@ npm run typecheck   # just the types: src/pay.js, db.js, mail.js, palette.js (de
 **Deploying:** push to `main`. Railway rebuilds and restarts in about 80 seconds. The deploy log should show:
 
 ```
-[assemble] public/index.html: 96 parts, …
-[assemble] src/server.runtime.js: 79 parts, …
+[assemble] public/index.html: N parts, …   (the app's order file, src/app/order.mjs)
+[assemble] src/server.runtime.js: N parts, …   (src/server/order.mjs)
 [db] using /app/data/tnl.db
 │ in the lab  N members · N posts · N confirmed collabs
 ```
@@ -161,10 +161,20 @@ Set in Railway → Variables. Values are secret and never go in this repo.
 | `RESEND_API_KEY`, `MAIL_FROM` | real email (verification, password reset). Without them, links show on screen instead. |
 | `STRIPE_SECRET_KEY` | Market checkout and seller payouts |
 | `SENTRY_DSN` | optional; overrides the built-in error-reporting address |
+| `SUPPORT_EMAIL` | the contact address on the policy pages and emails |
+| `CANONICAL_HOST` | `tnllabs.com` — sends visits to an old address (labs.tnllabs.com) to the same path here (`server/core/move.js`) |
+| `TNL_REPORT_KEY` | the key for `/api/report/daily`, the morning check's summary |
+| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET` | optional; Cloudflare's person check on email joins (off until both are set) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | optional; Continue with Google |
+| `APPLE_SERVICES_ID` | optional; Continue with Apple (needs the Apple Developer account) |
+| `TNL_BLOCK_EMAIL_DOMAINS` | optional; extra throwaway-email domains to refuse at sign-up (comma-separated) |
+| `EVENT_MAIL_PER_DAY` | optional; tournament emails a day (default 80 — Resend's free plan stops at 100) |
 | `IG_APP_ID`, `IG_APP_SECRET` | optional; the Instagram inbox in Admin (a Meta app with Instagram API with Instagram Login). `IG_VERIFY_TOKEN` (any word) and `IG_POLL_MS` are optional too. |
 | `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET` | optional; Continue with Facebook (Meta's login for everyone, Instagram accounts included) — the Meta app's own id and secret, see RAILWAY.md |
 
-Things that change without a deploy live in **Admin → System → Settings**: signups open, auto-verify, guest access, market open, minimum rep to sell, loops/studio on or off, the distribution offer and the announcement banner.
+Tuning knobs with safe defaults (`NUDGE_*`, `IG_*`, `EVENT_MAIL_GAP_MS`, `EVENT_VOTE_MAIL_HOUR`, `EV_NEW_VOTE_WAIT_MS`) and test-only switches (`TNL_NO_WATCH`, `TNL_DB`, `TNL_NO_VIDEO_FIX`) are read in the code that uses them; Railway sets `PORT` and the `RAILWAY_*` values itself.
+
+Things that change without a deploy live in **Admin → Settings → Switches**: signups open, auto-verify, guest access, market open, minimum rep to sell, loops/studio on or off, the distribution offer and the announcement banner.
 
 ---
 
@@ -172,7 +182,7 @@ Things that change without a deploy live in **Admin → System → Settings**: s
 
 Members' accounts, posts, uploads and rep live on the Railway volume at `/app/data`, never in git.
 
-- The server writes a **daily backup** of the database to `/app/data/backups` and keeps the last 7. You can also make and download one from Admin → Backups.
+- The server writes a **daily backup** of the database to `/app/data/backups` and keeps the last 7. You can also make and download one from Admin → Settings → Backups & email.
 - Uploaded media is on the same volume and is **not** in those backups yet. An off-platform copy (object storage) is the top open item.
 - There is deliberately no seed or reset script. Nothing in the repo can wipe the lab.
 - **Members' work is not AI training data.** `public/robots.txt` turns AI training crawlers away (search engines and link previews still get in), and every response carries `X-Robots-Tag: noai, noimageai` and `tdm-reservation: 1`. `test/no-ai.test.mjs` checks both.
@@ -208,7 +218,7 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 
 ## Accounts
 
-- **Sign-up** is one question per screen: email → password → name → username (checked live, with suggestions when taken) → what you make. That creates the account; then profile photo → people to follow → welcome. The phone's back swipe steps back through it.
+- **Sign-up** is one question per screen: email → password → name → username (checked live, with suggestions when taken) → what you make. That creates the account; then photo → colour → bio → people to follow → **How LABS works** (one card per part of the app; ≡ on your profile reopens it), and the Showroom opens with a **Get started** list (seven things that make the app yours, ticked off as you do them, for the first 30 days). The phone's back swipe steps back through it.
 - Sign in with **username or email**. Both ignore capital letters, and a leading `@` on a username is fine.
 - A new account has full access straight away. The confirmation email still goes out, but it doesn't block anyone. Admin → Settings → auto-verify controls this.
 - Suspending a member from the dashboard ends their sessions on their next request.
@@ -227,7 +237,7 @@ Rep values live in `REP`, levels in `LEVELS`, and commission in `FEE_BY_LEVEL`, 
 | `/l/:slug` | a lab, by name — `/l/general`, `/l/visual`, `/l/music`, `/l/fashion`, `/l/anime`, `/l/news`, `/l/business` (`LAB_SLUG`; an old `/l/<id>` link forwards): its name, what to do there (`LAB_PITCH`), its #tags, recent work and "Join and step in" → `/?l=slug` (members land in the lab; everyone else joins first, then lands in it). What a lab's **Share** sends (`server/labs/pages.js`) |
 | `/e/:slug` · `/e/:slug/rules` | an event and its official rules (draft rules are generated until an admin writes their own) |
 | `/e/:slug/board` · `/e/:slug/:entry` | a poll's public scoreboard, and one entry's vote link (its preview is the piece; Vote opens `/?e=slug&v=entry` in the app) |
-| `/e/:slug/card.jpg` | the tournament's link preview (1080×1080, square for Instagram's previews): its name, prize and stage over the latest entry, redrawn as the stage changes. `/e/:slug` uses it unless an admin chose a **Cover picture** in Admin → Tournament |
+| `/e/:slug/card.jpg` | the tournament's link preview (1080×1080, square for Instagram's previews): its name, prize and stage over the latest entry, redrawn as the stage changes. `/e/:slug` uses it unless an admin chose a **Cover picture** in Admin → Events |
 | `/e/:slug/board.jpg` · `/e/:slug/:entry/story.jpg` | Instagram pictures: the scoreboard (1080×1350, `?size=story` 1080×1920) and an entrant's "Vote for my piece" Story |
 | `/e/:slug/showcase.png` | The showcase: every piece in the event in one picture, entry order, no votes (1080×1350, `?size=story` 1080×1920) — `server/events/showcase.js` |
 | `/` | the app; its link preview uses `og-cover-v3-2026-09-23.jpg` |
@@ -240,16 +250,16 @@ Admin-only; every route checks on the server. `public/admin.html` is the shell a
 
 Twelve sections in four groups, laid out like a shop's admin: **Run** (Home, Orders, Listings, Sellers), **People & content** (Members, Content, Events, Instagram), **Understand** (Analytics, Health, Systems), **Set up** (Settings). Old links keep working (`#today` → Home, `#market` → Orders, `#system` → Settings; typing a `#hash` opens that section).
 
-- **On a computer:** a grouped side menu with the ten sections, who's signed in, day/night and Open the app; tables where there are rows. **On a phone:** a bottom bar with Home, Orders, Members, Content and **More** (a sheet with every section); every table becomes cards. One date range — 7, 30 or 90 days — sits at the top of Home and Analytics and is remembered.
+- **On a computer:** a grouped side menu with the twelve sections, who's signed in, day/night and Open the app; tables where there are rows. **On a phone:** a bottom bar with Home, Orders, Members, Content and **More** (a sheet with every section); every table becomes cards. One date range — 7, 30 or 90 days — sits at the top of Home and Analytics and is remembered.
 - **Every page:** a search bar finds any member by name, @username or email and opens their record (Members has its own search instead). Each page starts with its title, one line on what it's for and its main buttons, then titled cards (`pageHead`, `card`, `subTabs`, `kpiHTML`, `lineHTML`, `breakHTML`, `funnelHTML` in `1-core.js`). Every number card says its share or its change against the period before, with a sparkline.
-- **Home:** what needs you first (reports, orders not shipped after 3 days, backups, errors, stale collab invites, new members, the tournament), four numbers, one line chart with a metric picker (active, work, votes, sign-ups, sales) and the period before behind it, Top work, the tournament, the labs and how people take part.
+- **Home:** what needs you first (reports, orders not shipped after 3 days, backups, errors, stale collab invites, new members, the tournament), four numbers, one line chart with a metric picker (active, work, votes, sign-ups, sales) and the period before behind it, Top work, the tournament, the labs, how people take part and group chats members started (counts only).
 - **Orders:** sales, fees and average order against the period before; orders by status with counts; a sales-per-day line; void from the row.
 - **Listings:** live, sold, "no one's looking" (live 2+ weeks, under 5 views) and saves; search; remove. **Sellers:** who's ready to be paid, who's stuck in Stripe's signup (nudge them from here), what kind of Stripe account each has.
 - **Members:** the directory — numbers for whatever is filtered, Table (18 columns, sort, sticky header) or Cards, pages of 25/50/100, filters, Export CSV (`/api/admin/members.csv` — never a password, session or Stripe id; logged). **A member's record:** Overview, Account, Activity, Notes; Message, Confirm email, Adjust rep (with a reason), Feature, Copy email; sign out everywhere and suspend kept apart at the bottom.
 - **Content:** open reports first, then every post, filterable by lab, #tag, work or talk, and text; pin, delete. Tap a lab on Home to land here filtered.
 - **Events:** set up and run events, with the Instagram kit.
 - **Analytics,** in tabs: **Members** (sign-ups, active, retention, by role and by lab, when people are on), **Reach** (work, votes, the funnel), **Commerce** (sales, orders, fees, top sellers), **Content** (posts, top work, #tags; the Studio's own stats behind a button).
-- **Health:** database, uploads, errors, glitches, server, unused files. **Settings,** in tabs: **Settings** (who can get in, what's open, what people see first), **Backups & email**, and the **Admin log** — every change made from the dashboard, with who and when (`admin_log`, written by a hook on `/api/admin` writes).
+- **Health:** database, uploads, errors, glitches, server, unused files. **Settings,** in tabs: **Switches** (who can get in, what's open, what people see first), **Backups & email**, and the **Admin log** — every change made from the dashboard, with who and when (`admin_log`, written by a hook on `/api/admin` writes).
 
 ---
 
@@ -272,10 +282,10 @@ Three layers: stop glitches before they ship, notice the ones that get through, 
 - **After every merge** (`.github/workflows/after-deploy.yml`): it waits until `/api/health` reports the new commit, then runs the scientist against the live site. A failure (or a deploy that never lands) turns the run red, and GitHub emails whoever merged.
 - **Daily at 18:45 UTC**, the same workflow runs the scientist again (GitHub emails a red run to whoever last edited its cron line). About 27 read-only checks: the shell loads and its scripts compile; `/api/health` reports the database answering, members present (not a fresh empty volume), `TNL_DATA` set, uploads there and a backup in the last 36 hours (yes/no only); `/api/me` and `/api/admin/*` refuse a stranger and `/api` is never cached; the Showroom has work in it; a real profile and post preview with their images, and the profile card renders; missing things 404; the service worker, manifest, palette, door script and icon; each answer under 8s; the certificate has 14+ days left. `test/scientist.test.mjs` runs it against a local copy, full (green) and empty (red).
 - **Sentry** receives server and browser errors. The alert *New or returning error in TNL LABS* emails on any first-seen, regressed or reappearing issue, at most every 30 minutes.
-- **Glitch signals** (`src/app/core/glitch.js` → `src/server/core/glitch.js`): members' own screens report rage taps, screen jumps, slow screens (over 3s) and failed saves. Admin → System shows the 24-hour count and the week's hotspots.
+- **Glitch signals** (`src/app/core/glitch.js` → `src/server/core/glitch.js`): members' own screens report rage taps, screen jumps, slow screens (over 3s) and failed saves. Admin → Health shows the 24-hour count and the week's hotspots.
 - **Watch emails** (`src/server/admin/watch.js`, to `ADMIN_EMAIL` via Resend): an email when something spikes within an hour (3 server errors, 10 app crashes, 3 failed saves, or 8 rage taps / screen jumps / slow screens), at most once per rule per 6 hours. There's also a morning digest at 13:00 UTC with yesterday's members, posts, errors, glitches and worst spots.
 - **The week** (`src/server/admin/weekly.js`, 2026-10-26): every Monday at 13:00 UTC an email to `ADMIN_EMAIL` with last week against the week before — new members and where they stop, who came back, posts by lab, likes/comments/follows/collabs/plays/messages, pieces/views/offers/sales and the money, the tournament, Google Search + Shopping and Instagram/Facebook when connected, errors and glitches and the worst spot, and a short what-to-do list. Counts and patterns only, never a member's name. The first run goes out ~90s after the deploy that adds it. Admin → Systems shows the same report with an "Email me this now" button (`GET /api/admin/weekly`, `POST /api/admin/weekly/send`).
-- **Admin → System** shows errors and glitches side by side.
+- **Admin → Health** shows errors and glitches side by side.
 
 ---
 
@@ -298,12 +308,12 @@ The tournament runs on a general events system (`src/server/events/*.js`, screen
 - **Fewer than two entries** when entries close calls the event off.
 - **Poll format** (2026-10-07, what the community asked for): `picks` votes a *day* that add up (stored with the day, yyyymmdd Eastern, in `event_votes.matchup`), a live public scoreboard with places moved in 24h, frozen for the last `freeze_hours` of each stage, then the top N go to a final (judges optional — `judge_weight` 0 means most votes wins). Voters need a confirmed email (`require_verified`).
 - **A face behind every vote** (2026-10-28): voters need a profile photo (`events.require_avatar`, on by default; Admin → Events → Edit switches it off per event). The app says so and offers "Add a photo". Confirmed email and the account-age wait still apply.
-- **Everyone hears when it opens.** When a published event's entries open, every member with a confirmed email (not suspended, not unsubscribed) gets one email, once. It sends at most `EVENT_MAIL_PER_DAY` (default 80) a UTC day, because Resend's free plan stops at 100 and account emails share that, and it picks up where it stopped after a restart. Admin → Tournament shows who it will reach and how far it has got, sends you a preview, and has a switch to turn it off per event. Each email has an unsubscribe link (`/mail/off`, with a button, so link checkers can't unsubscribe anyone) and one-click List-Unsubscribe headers. Nothing goes out on Resend's test sender.
+- **Everyone hears when it opens.** When a published event's entries open, every member with a confirmed email (not suspended, not unsubscribed) gets one email, once. It sends at most `EVENT_MAIL_PER_DAY` (default 80) a UTC day, because Resend's free plan stops at 100 and account emails share that, and it picks up where it stopped after a restart. Admin → Events shows who it will reach and how far it has got, sends you a preview, and has a switch to turn it off per event. Each email has an unsubscribe link (`/mail/off`, with a button, so link checkers can't unsubscribe anyone) and one-click List-Unsubscribe headers. Nothing goes out on Resend's test sender.
 - **Instagram leads back to the app.** Votes on Instagram never count. Each entry has a vote link (`/e/:slug/:entry`) and a Story card (`story.jpg`) the entrant shares from the app (Share to Instagram) with a link sticker; TNL posts the scoreboard pictures from Admin → Events → Instagram. Someone who signs up or confirms their email mid-vote is brought back to that piece (`tnl-evret`).
 
 ## API
 
-135 routes, grouped by area. `(auth)` means a login token is needed; `(admin)` means admin only. This list was generated from the code on 2026-09-28.
+Every `/api` route (264), grouped by area. `(auth)` means a login token is needed; `(admin)` means admin only. This list was checked against the code on 2026-11-03.
 
 ```
 # auth
@@ -316,11 +326,20 @@ POST   /api/auth/login
 POST   /api/auth/logout   (auth)
 POST   /api/auth/forgot
 POST   /api/auth/reset
+GET    /api/auth/oauth/:p/start
+GET    /api/auth/oauth/facebook/callback
+GET    /api/auth/oauth/google/callback
+POST   /api/auth/email   (auth)
+POST   /api/auth/handoff
+POST   /api/auth/handoff/claim
+POST   /api/auth/oauth/apple/callback
+POST   /api/auth/oauth/claim
 
 # me
 GET    /api/me   (auth)
 POST   /api/me/avatar   (auth)
 PATCH  /api/me   (auth)
+POST   /api/me/pinned-track   (auth)
 
 # feed
 GET    /api/feed   (auth)
@@ -342,6 +361,9 @@ POST   /api/posts/:id/send   (auth)
 GET    /api/posts/:id/saves   (auth)
 POST   /api/posts/:id/collab   (auth)
 POST   /api/posts/:id/collab/accept   (auth)
+GET    /api/posts/:id/likers   (auth)
+POST   /api/posts/:id/pin   (auth)
+POST   /api/posts/:id/react   (auth)
 
 # comments
 PATCH  /api/comments/:id   (auth)
@@ -365,6 +387,13 @@ POST   /api/chats/:id/members  ·  DELETE /api/chats/:id/members/:username   (au
 PATCH  /api/chats/m/:mid  (edit, 15 min)  ·  DELETE /api/chats/m/:mid  (unsend)  ·  POST /api/chats/m/:mid/react
 POST   /api/chats/forward  ·  /api/chats/mute  ·  /api/chats/activity   (auth)
 POST   /api/typing  ·  /api/posts/:id/react  (auth)  ·  POST /api/posts/:id/pin  (admin)
+DELETE /api/chats/:id/members/:username   (auth)
+DELETE /api/chats/m/:mid   (auth)
+POST   /api/chats/:id/accept   (auth)
+POST   /api/chats/:id/clear   (auth)
+POST   /api/chats/activity   (auth)
+POST   /api/chats/m/:mid/react   (auth)
+POST   /api/chats/mute   (auth)
 
 # notifications
 GET    /api/notifications   (auth)
@@ -400,11 +429,12 @@ GET    /api/market/checkout/done
 GET    /api/market/saved   (auth)
 GET    /api/users/:username/followers
 GET    /api/users/:username/following
-GET    /api/users/:username/tagged
 POST   /api/me/pins   (auth)
 GET    /api/market/recent   (auth)
 POST   /api/market/:id/download   (auth)
 GET    /api/market/:id/downloads   (auth)
+GET    /api/market/:id/ig-shop   (auth)
+POST   /api/market/:id/ig-shop   (auth)
 
 # offers
 POST   /api/offers/:id/:action   (auth)
@@ -437,6 +467,7 @@ POST   /api/playlists/:id/tracks   (auth)
 DELETE /api/playlists/:id/tracks/:tid   (auth)
 PATCH  /api/tracks/:id   (auth)
 DELETE /api/tracks/:id   (auth)
+GET    /api/tracks/trending   (auth)
 
 # samples
 GET    /api/samples   (auth)
@@ -487,6 +518,8 @@ GET    /api/labs/:lab/work   (auth)
 GET    /api/labs/tags   (auth)
 GET    /api/tags   (auth)
 GET    /api/tags/:tag   (auth)
+DELETE /api/labs/posts/:id   (auth)
+GET    /api/labs/:lab/leads   (auth)
 
 # builders
 GET    /api/builders
@@ -541,6 +574,41 @@ DELETE /api/admin/errors   (admin)
 GET    /api/admin/studio   (admin)
 GET    /api/admin/settings   (admin)
 PATCH  /api/admin/settings   (admin)
+DELETE /api/admin/events/:id   (admin)
+DELETE /api/admin/members/:username   (admin)
+GET    /api/admin/events   (admin)
+GET    /api/admin/events/:id   (admin)
+GET    /api/admin/events/:id/spam   (admin)
+GET    /api/admin/events/:id/vote-check   (admin)
+GET    /api/admin/events/:id/vote-mail   (admin)
+GET    /api/admin/events/:id/voters   (admin)
+GET    /api/admin/glitches   (admin)
+GET    /api/admin/log   (admin)
+GET    /api/admin/me   (admin)
+GET    /api/admin/people/:username   (admin)
+GET    /api/admin/people/:username/signals   (admin)
+GET    /api/admin/songs   (admin)
+GET    /api/admin/systems   (admin)
+GET    /api/admin/systems/google   (admin)
+GET    /api/admin/systems/meta   (admin)
+GET    /api/admin/weekly   (admin)
+PATCH  /api/admin/events/:id   (admin)
+POST   /api/admin/connectors/key   (admin)
+POST   /api/admin/events   (admin)
+POST   /api/admin/events/:id/advance   (admin)
+POST   /api/admin/events/:id/entries/:entryId/dq   (admin)
+POST   /api/admin/events/:id/judges   (admin)
+POST   /api/admin/events/:id/mail-preview   (admin)
+POST   /api/admin/events/:id/vote-mail-preview   (admin)
+POST   /api/admin/members/:username/lead   (admin)
+POST   /api/admin/members/:username/mod   (admin)
+POST   /api/admin/members/remind-unverified   (admin)
+POST   /api/admin/orders/:id/void   (admin)
+POST   /api/admin/people/:username/signout   (admin)
+POST   /api/admin/spam/remove   (admin)
+POST   /api/admin/spam/restore   (admin)
+POST   /api/admin/systems/google/register   (admin)
+POST   /api/admin/weekly/send   (admin)
 
 # labs connector (server/connector/oauth, server/connector/tools)
 GET    /.well-known/oauth-authorization-server   discovery (also …/mcp)
@@ -578,6 +646,7 @@ POST   /api/channels/:channel/read   (auth)
 
 # client-error
 POST   /api/client-error
+POST   /api/glitch
 
 # mentionable
 GET    /api/mentionable   (auth)
@@ -589,4 +658,19 @@ GET    /m/:id
 GET    /p/:id
 GET    /u/:username
 
+# events (the tournament) — server/events/routes.js
+DELETE /api/events/:slug/entry   (auth)
+GET    /api/events
+GET    /api/events/:slug
+GET    /api/events/:slug/rules
+POST   /api/events/:slug/enter   (auth)
+POST   /api/events/:slug/score   (auth)
+POST   /api/events/:slug/vote   (auth)
+
+# address — the site's one address (CANONICAL_HOST), so the app can move a session there (server/core/move.js)
+GET    /api/address
+
+# messages, old names (still answered: the same handlers as /api/chats and /api/chats/with/:username)
+GET    /api/dm   (auth)
+POST   /api/dm/:username   (auth)
 ```
