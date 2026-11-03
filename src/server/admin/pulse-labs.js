@@ -74,7 +74,25 @@ function takingPart() {
   return {
     members: live.size,
     ways: ways.map(([key, label, s]) => ({ key, label, n: [...s].filter((u) => live.has(u)).length })),
+    groups: groupChatStats(),
     notYet: { n: notYet.length, people: notYet.slice(0, 40).map((u) => ({ username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url || "" })) },
+  };
+}
+
+/* Group chats, counted (2026-11-03): "Has anyone besides me made group chats?" Whether members
+   organise on their own is the collaboration bet, so the number that matters is groups started by
+   someone who isn't an admin. Counts only — never a title, a name, a member list or a message.
+   Active = a real message (not a "made the group" line) in the last 7 days. */
+function groupChatStats(now = Date.now()) {
+  const one = (sql, ...p) => db.prepare(sql).get(...p)?.n ?? 0;
+  const byMembers = `FROM dm_threads t JOIN users u ON u.id = t.created_by WHERE t.is_group = 1 AND u.is_admin = 0`;
+  return {
+    all: one(`SELECT COUNT(*) n FROM dm_threads WHERE is_group = 1`),
+    byMembers: one(`SELECT COUNT(*) n ${byMembers}`),
+    startedBy: one(`SELECT COUNT(DISTINCT t.created_by) n ${byMembers}`),
+    people: one(`SELECT COUNT(DISTINCT m.user_id) n FROM dm_members m WHERE m.left_at IS NULL AND m.thread_id IN (SELECT t.id ${byMembers})`),
+    activeWeek: one(`SELECT COUNT(DISTINCT x.thread_id) n FROM dm_messages x WHERE x.kind = 'msg' AND x.deleted_at IS NULL AND x.created_at > ?
+      AND x.thread_id IN (SELECT t.id ${byMembers})`, now - 7 * 86400000),
   };
 }
 

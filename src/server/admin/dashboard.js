@@ -92,6 +92,7 @@ app.get("/api/admin/overview", auth, admin, (req, res) => {
     earned,
     openReports: one(`SELECT COUNT(*) n FROM reports WHERE handled_at IS NULL`),
     dms: one(`SELECT COUNT(*) n FROM dm_messages`),
+    groups: groupChatStats(now),   // counts only (server/admin/pulse-labs.js)
     beats: one(`SELECT COUNT(*) n FROM beat_projects`),
     levels, daily,
     paymentsOn: PAYMENTS_ENABLED,

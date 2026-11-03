@@ -1,4 +1,4 @@
-/* LABS admin v4.0 — 2026-10-20. Home: what needs you first (the work queue), then
+/* LABS admin v4.1 — 2026-11-03 (group chats members started, counts only, under "How people take part"). v4.0 — 2026-10-20. Home: what needs you first (the work queue), then
    this period's numbers with their share, the activity line with last period behind,
    the pieces that did best, the tournament, the labs. v3.1 — 2026-10-14 (page header; the chart's choices sit in its card). Today, for the app's direction: labs
    are places (genres explained by #tags), the tournament is the centre,
@@ -80,10 +80,18 @@ function partHTML(tp) {
   return `<div class="loop part">${tp.ways.map((w) => `
     <div class="step"><span>${esc(w.label)} <i class="mono">${WAYS[w.key] || ""}</i></span><span class="tr"><i style="width:${Math.round((w.n / top) * 100)}%"></i></span><span class="n">${w.n}</span></div>`).join("")}
     <p class="mono" style="margin:2px 0 0">${num(tp.members)} members · ${Math.round(((tp.members - tp.notYet.n) / top) * 100)}% have taken part</p>
+    ${groupsHTML(tp.groups)}
     ${tp.notYet.n ? `<div class="stuck">${tp.notYet.n} haven't taken part yet:
       ${tp.notYet.people.slice(0, 8).map((u) => `<button class="chip" data-person="${esc(u.username)}">${av(u)}@${esc(u.username)}</button>`).join("")}${tp.notYet.n > 8 ? ` +${tp.notYet.n - 8}` : ""}
       <div style="margin-top:8px"><button class="btn sm ghost" data-welcome="${esc(tp.notYet.people.slice(0, 12).map((u) => u.username).join(","))}">${I.msg} Say hi to ${Math.min(12, tp.notYet.n)}</button></div></div>` : ""}
   </div>`;
+}
+
+/* Group chats members started themselves — counts only (2026-11-03) */
+function groupsHTML(g) {
+  if (!g) return "";
+  const yours = g.all - g.byMembers;
+  return `<p class="mono" style="margin:8px 0 0"><b>Group chats:</b> ${g.byMembers ? `${num(g.byMembers)} started by ${num(g.startedBy)} member${g.startedBy === 1 ? "" : "s"} · ${num(g.people)} people in them · ${num(g.activeWeek)} active this week` : "none started by members yet"}${yours ? ` · ${num(yours)} by admins` : ""}</p>`;
 }
 
 function labsHTML(labs) {
