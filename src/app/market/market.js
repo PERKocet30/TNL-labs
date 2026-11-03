@@ -1,5 +1,5 @@
 function wireMarket(){
-  wireListing();wireSellVariants();wireBag();
+  wireListing();wireSellVariants();wireSellWalk();wireBag();   // the walk's handlers come after the form's: its own [data-stype] taps move a step on
   document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=async()=>{
     if(guest()&&(b.dataset.mv==="sell"||b.dataset.mv==="orders"))
       return needAccount(b.dataset.mv==="sell"?"Join to sell. Anyone can.":"Join to see your orders.");
@@ -8,7 +8,7 @@ function wireMarket(){
        seller posts a duplicate without noticing. */
     if(MKTEDIT){MKTEDIT=null;SELLFORM=null;SELLIMGS=[];SELLAUDIO=null;SELLAUDIONAME=""}
     MKTVIEW=b.dataset.mv;
-    if(MKTVIEW==="sell"&&!SELLFORM&&!sdRestore())SELLFORM={category:"Tops",condition:"Good",acceptsOffers:true};
+    if(MKTVIEW==="sell"&&!SELLFORM&&!sdRestore())SELLFORM={condition:"Good",acceptsOffers:true};   // the walkthrough asks the category first
     if(MKTVIEW==="bag")return bagLoad();
     if(MKTVIEW==="orders"){ORDERS=null;render();shopStatsLoad();try{ORDERS=await api.orders()}catch(e){toast(e.message)}}
     if(MKTVIEW==="saved"){

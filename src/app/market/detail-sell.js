@@ -40,7 +40,7 @@ function payoutBannerHTML(){
     <div class="dim">A couple of minutes, once.</div></div>
     <button class="btn sm green" id="payconnect">${ME.hasStripe?"Finish setup":"Set up"}</button></div>`}
 
-/* ── LISTING EDITOR · v3 · 2026-10-18 ──────────────────────────────
+/* ── LISTING EDITOR · v4 · 2026-11-03 — a new listing is a walkthrough (app/market/sell-walk.js); this form is for editing and sounds. v3 · 2026-10-18 ──
    v3 ("match Shopify standards, simplified and streamlined"): Photos,
    Title & description, Pricing (price, compare-at, what you keep after
    every fee), Size & stock (Shopify-style options — app/market/sell-variants),
@@ -74,8 +74,10 @@ function sellHTML(){const f=SELLFORM||{};const loop=SELLKIND==="loop";
       <h2 class="pf-h">Set up payouts to sell</h2>
       <p class="pf-p">A couple of minutes, once: who you are and where your money goes. Stripe checks it and pays you.</p>
       <button class="btn green" id="payconnect2">${ME.hasStripe?"Finish setup":"Set up payouts"}</button></div></div>`;
+  /* v4 (2026-11-03): a NEW listing is a walkthrough — one question a screen, shaped by the answers
+     (app/market/sell-walk.js). Editing keeps this form, every field at once; so do sounds. */
+  if(!loop&&!MKTEDIT)return sellWalkHTML(f);
   const noShip=!Number(f.shipping), st=loop?"":(f.sellType||"");
-  if(!loop&&!st&&!MKTEDIT)return `<div class="scroll pf">${head}<div class="pf-body">${sellTypeHTML(f)}</div></div>`;
   const descPh=loop?"Mood, gear, what it's for":st==="brand"?"Fit, fabric, care":st==="vintage"?"Measurements (pit to pit, length), era, any flaws":st==="custom"?"Materials, how you made it, how it fits":"Fit, measurements, any flaws";
   const conds=(MKTMETA.conditions||[]).filter(c=>st!=="vintage"||c!=="New");
   return `<div class="scroll pf">${head}${f._restored&&!MKTEDIT?`<div class="sdraft">Picked up where you left off<button type="button" id="sdraftx">Start over</button></div>`:""}
