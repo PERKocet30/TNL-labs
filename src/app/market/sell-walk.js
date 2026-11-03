@@ -27,6 +27,14 @@ function swSteps(f){
 }
 const swStep=f=>{const ks=swSteps(f).map(([k])=>k);return ks.includes(f._step)?f._step:ks[0]};
 function swGo(step){stashSell();SELLFORM._step=step;sdSave();render();const s=$(".pf");if(s)s.scrollTop=0}
+/* What we learn (server/market/sell-walk.js): each screen reached, once per walk — the step and the answers so far,
+   never the words, price or photos. A walk gets its id the first time it's seen. */
+function swTell(f,step){
+  if(!f||typeof ME==="undefined"||!ME)return;
+  if(!f._walk){try{f._walk=Array.from(crypto.getRandomValues(new Uint8Array(8)),b=>b.toString(16).padStart(2,"0")).join("")}catch(e){f._walk=String(Date.now())+Math.random().toString(16).slice(2,10)}}
+  f._told=f._told||[];if(f._told.includes(step))return;f._told.push(step);sdSave();
+  req("/api/market/walk",{method:"POST",body:{walk:f._walk,step,dept:f._dept||"",category:f.category||"",sellType:f.sellType||""}}).catch(()=>{});
+}
 function swNext(){
   const f=SELLFORM,ks=swSteps(f).map(([k])=>k),i=ks.indexOf(swStep(f));
   stashSell();
@@ -140,7 +148,8 @@ function wireSellWalk(){
   if(!$(".sw"))return;
   const b=$("#sw-back");if(b)b.onclick=swBack;
   const n=$("#sw-next");if(n)n.onclick=swNext;
-  const sk=$("#sw-skip");if(sk)sk.onclick=()=>{stashSell();SELLFORM.specs={};swNext()};
+  const sk=$("#sw-skip");if(sk)sk.onclick=()=>{stashSell();SELLFORM.specs={};swTell(SELLFORM,"details:skip");swNext()};
+  if(SELLFORM)swTell(SELLFORM,swStep(SELLFORM));
   document.querySelectorAll("[data-swdept]").forEach(x=>x.onclick=()=>{stashSell();const f=SELLFORM,t=TAX(),d=t.departments.find(y=>y.name===x.dataset.swdept);
     f._dept=x.dataset.swdept;f.category=d&&d.categories.length===1?d.categories[0]:(d&&d.categories.includes(f.category)?f.category:undefined);
     if(f.category){if(f.hasVariants)pvSync(f);f._step="who"}render()});

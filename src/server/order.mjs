@@ -44,6 +44,7 @@ export const SERVER = [
   // market
   "market/stock.js",
   "market/taxonomy.js",
+  "market/sell-walk.js",
 
   // admin
   "admin/settings-payouts-market.js",

@@ -2195,6 +2195,9 @@ console.log("\nMEMBER · COMPUTER");
       await settledGoto(p, B + "/admin#" + tab);
       await fast(p, 6000, () => p.locator(want).first().waitFor(), "admin → " + tab);
       ok(await p.locator(".pg-hd h1").count() === 1, tab + " has no page title");
+      /* 2026-11-03: Sellers shows what the walkthrough teaches — the listings made earlier are in it, as counts */
+      if (tab === "sellers") ok(await p.locator(".rc", { hasText: "Who's listing" }).count() === 1 && await p.locator(".rc", { hasText: "How far the walkthrough takes people" }).locator(".fun .fs").count() >= 8
+        && !(await p.locator(".rc", { hasText: "Who's listing" }).textContent()).includes("tester"), "Sellers doesn't show who lists and the walkthrough funnel (counts only)");
     }
     await settledGoto(p, B + "/admin#analytics"); await fast(p, 6000, () => p.locator("[data-atab=commerce]").waitFor(), "Analytics");
     await p.locator("[data-atab=commerce]").click();

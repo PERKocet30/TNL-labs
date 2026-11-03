@@ -299,6 +299,7 @@ app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, 
     isLoop ? 1 : vars.length ? stockOf(vars) : Math.min(500, Math.max(1, Math.round(Number(quantity)) || 1)),
     JSON.stringify(vars), now, now);
   if (!isLoop) { setCompare(Number(info.lastInsertRowid), body.compareAt, cents); setSellType(Number(info.lastInsertRowid), body.sellType); setSpecs(Number(info.lastInsertRowid), body.specs, cat); }
+  if (body._walk) try { sellWalkLog(req.user.id, { walk: body._walk, step: "listed", category: cat, sellType: body.sellType }, Number(info.lastInsertRowid)); } catch (e) {}   // the walkthrough's last step (server/market/sell-walk)
   res.json({ id: Number(info.lastInsertRowid) });
 });
 

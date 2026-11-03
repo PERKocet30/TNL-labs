@@ -82,7 +82,8 @@ app.get("/api/admin/sellers", auth, admin, (req, res) => {
     ORDER BY u.stripe_ready DESC, gross DESC, u.created_at DESC`).all();
   res.json({ sellers: rows.map((r) => ({ id: r.id, username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", isAdmin: !!r.is_admin, rep: r.rep,
     kind: r.stripe_account ? (r.stripe_kind || "standard") : "", ready: !!r.stripe_ready, started: !!r.stripe_account,
-    fee: feeForSeller(r.rep, r.is_admin), listings: r.listings, sales: r.sales, gross: r.gross, joined: r.created_at })) });
+    fee: feeForSeller(r.rep, r.is_admin), listings: r.listings, sales: r.sales, gross: r.gross, joined: r.created_at })),
+    learned: sellWalkStats(Math.max(7, Math.min(90, Number(req.query.days) || 30))) });   // who lists, and how far the walkthrough takes people (2026-11-03)
 });
 
 /* Every listing, for the Listings page: what's for sale, by whom, stock, views, sales. */
