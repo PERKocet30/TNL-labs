@@ -40,6 +40,21 @@ const CHANNEL_TAG = {
   "opportunities": "opportunities", "coding": "coding", "finance": "finance",
 };
 const LAB_OF = Object.fromEntries(Object.entries(PLACES).flatMap(([lab, p]) => p.channels.map((c) => [c, lab])));
+/* Each role's labs (2026-11-03, for the Showroom's "your labs" lean, server/posts/rank.js). Must match
+   ROLE_LABS in app/labs/places.js (test/places.test.mjs checks). */
+const ROLE_LABS = {
+  "Graphic Designer":["pharmacy"],"Illustrator":["pharmacy","akatsuki"],"3D Artist":["pharmacy"],"Motion Designer":["pharmacy"],
+  "Animator":["pharmacy","akatsuki"],"Art Director":["pharmacy","fashion"],"Painter":["pharmacy"],"Sculptor":["pharmacy"],
+  "Artist":["pharmacy"],"Muralist":["pharmacy"],"Printmaker":["pharmacy"],"Mixed Media Artist":["pharmacy"],
+  "Tattoo Artist":["pharmacy"],"Curator":["pharmacy","casino"],"Manga Artist":["akatsuki","pharmacy"],"Character Designer":["akatsuki","pharmacy"],
+  "Photographer":["pharmacy","fashion"],"Videographer":["pharmacy"],"Video Editor":["pharmacy"],"Cinematographer":["pharmacy"],"AMV Editor":["akatsuki","pharmacy"],
+  "Fashion Designer":["fashion"],"Stylist":["fashion"],"Model":["fashion"],"Tailor":["fashion"],"Sneaker Customizer":["fashion"],"Cosplayer":["akatsuki","fashion"],
+  "Producer":["culture"],"Beatmaker":["culture"],"Lyricist / Singer":["culture"],"Rapper":["culture"],"DJ":["culture"],"Audio Engineer":["culture"],"Musician":["culture"],
+  "Writer":["casino"],"Copywriter":["casino","tna"],"Journalist":["casino"],"Content Creator":["casino","pharmacy"],"Actor":["pharmacy"],
+  "Web Designer":["pharmacy","tna"],"Web Developer":["tna"],"App Developer":["tna"],"UI/UX Designer":["pharmacy","tna"],"Product Designer":["pharmacy","tna"],
+  "Entrepreneur":["tna"],"Founder":["tna"],"Brand Strategist":["tna","casino"],"Marketer":["tna","casino"],"Manager":["tna","culture"],"A&R":["culture","tna"],
+  "Photographer's Agent":["tna","pharmacy"],"Event Organizer":["tna","hq"],
+};
 
 /* When the old channels stopped being rooms. Set once, on the first boot
    of this version; posts from before it carry their channel's tag. */

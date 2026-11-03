@@ -94,6 +94,7 @@ export const APP = [
 
   // showroom
   "showroom/showroom.js",
+  "showroom/views.js",
 
   // posts
   "posts/archive-posts.js",

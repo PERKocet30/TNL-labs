@@ -65,6 +65,10 @@ try {
   const mineOf = (me) => forMe(LABS, me)[1]().mine.map((l) => l.id).join();
   t("every role someone can pick leads to a lab", ROLES.every((r) => (ROLE_LABS[r] || []).length > 0));
   t("…and only to real labs", Object.values(ROLE_LABS).flat().every((id) => LABS.some((l) => l.id === id)));
+  /* 2026-11-03: the server keeps a copy for the Showroom's "your labs" lean (server/posts/rank.js) */
+  const srvPlaces = readFileSync(join(ROOT, "src/server/labs/places.js"), "utf8");
+  const SRV_ROLE_LABS = new Function(srvPlaces.slice(srvPlaces.indexOf("const ROLE_LABS = {"), srvPlaces.indexOf("};", srvPlaces.indexOf("const ROLE_LABS = {")) + 2) + "\nreturn ROLE_LABS;")();
+  t("the server's ROLE_LABS is the same map as the app's, role for role", JSON.stringify(SRV_ROLE_LABS) === JSON.stringify(ROLE_LABS));
   t("signed out: the usual order", order(null) === LABS.map((l) => l.id).join() && mineOf(null) === "");
   t("a producer: Music first", mineOf({ roles: ["Producer"] }) === "culture" && order({ roles: ["Producer"] }).startsWith("culture,hq,pharmacy"));
   t("a stylist who shoots: Fashion, then Visual", mineOf({ roles: ["Stylist", "Photographer"] }) === "fashion,pharmacy");

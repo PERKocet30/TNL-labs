@@ -313,6 +313,18 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => !!document.querySelector('#sr-grid .sr-card[data-mark="e2e"]')), "the feed repainted after a like");
     ok(await p.evaluate(() => document.getElementById("showroom").scrollTop) === scroll0, "the feed scrolled by itself");
   });
+  await step(d, "a card on screen for a moment is a view, sent in a batch — nothing shown (2026-11-03)", async () => {
+    const sent = [];
+    await p.route("**/api/views", (r) => { sent.push(r.request().postDataJSON()); r.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"n":1}' }); });
+    await p.evaluate(() => { VSEEN.clear(); VQUEUE.length = 0; document.querySelectorAll(".sr-card[data-vw]").forEach((c) => delete c.dataset.vw); wireViews(); });
+    await p.locator("#sr-grid .sr-card").first().scrollIntoViewIfNeeded();
+    await p.waitForTimeout(6000);
+    const ids = sent.flatMap((b) => b.ids || []);
+    ok(ids.length > 0, "no view was sent after six seconds on the Showroom");
+    ok(ids.every((x) => Number.isInteger(x)), "a view id that isn't a number");
+    ok(await p.evaluate(() => !document.body.textContent.match(/\b\d+ views?\b/i)), "a view count is showing");
+    await p.unroute("**/api/views");
+  });
   await step(d, "five fast taps end where the server is", async () => {
     await p.evaluate(() => { const b = document.querySelector("#sr-grid [data-like]"); for (let i = 0; i < 5; i++) b.click(); });
     await p.waitForTimeout(1500);

@@ -38,6 +38,7 @@ function wireFeed(){
   wireMusAuto();
   wireCaros();
   wireInstall();
+  wireViews();   // a card on screen for a moment is a view (app/showroom/views.js)
   document.querySelectorAll("[data-like]").forEach(b=>b.onclick=()=>{
     if(guest())return needAccount("Join to like work.");
     const id=b.dataset.like, p=findAnyPost(id);

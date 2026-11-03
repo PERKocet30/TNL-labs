@@ -15,7 +15,7 @@ function showroomHTML(){return `<div class="scroll" id="showroom">
    (it's the first thing anyone sees); every other picture waits until it's near. */
 function srCardHTML(p,i){
   const ld=i===0?'loading="eager" fetchpriority="high"':'loading="lazy"';
-  return `<div class="sr-card">
+  return `<div class="sr-card" data-pid="${p.id}">
     <div class="sr-head">
       <div class="sr-who" data-u="${esc(p.author.username)}">
         ${avHTML(p.author,"sm")}

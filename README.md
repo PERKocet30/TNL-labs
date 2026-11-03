@@ -69,6 +69,7 @@ Server features: `core` (boot, guards, headers, live stream) · `auth` · `trust
 | `app/core/theme-labs-api` | theme, labs and channels, API client |
 | `app/media/images` | image quality (posts and tournament entries): the original kept up to 3000px (hidden data stripped), 1440px feed and 480px grid copies, `srcset` so screens get the sharp one |
 | `app/state/state-ui` · `app/nav/render-nav` | app state, toasts/modals, routing, top bar; `render()` picks the phone or computer frame and keeps your scroll place across repaints |
+| `server/posts/rank` · `server/posts/views` · `app/showroom/views` | the Showroom ranking (`RANK`, v3.0 2026-11-03: only other people count, standing weighs a little and fades gently, sends say the most, #tags lift, views are a signal, your labs lean, gravity by lab, a clique can't carry a piece) and the views that feed it — the app sends which cards were on screen (`POST /api/views`, one row per piece · viewer · day, never the author; `test/rank.test.mjs`, `test/views.test.mjs`) |
 | `server/admin/report` | `/api/report/daily` — the morning check's locked summary (key: `TNL_REPORT_KEY` in Railway; counts only, nothing personal; `test/report.test.mjs`) |
 | `server/labs/pages` | `/l/:slug`, a lab's shareable page (`LAB_SLUG`: links name the lab), and `LAB_PITCH` — the line on what to do in each lab (the same lines head each lab in the app, `app/labs/places.js`; `test/lab-share.test.mjs` checks) |
 | `server/pages/seo` | search: `/sitemap.xml` (every public page, nothing private) and `ldJson()` — schema.org structured data on the public pages (profile, post, song, listing, event) |
@@ -320,6 +321,7 @@ PATCH  /api/me   (auth)
 # feed
 GET    /api/feed   (auth)
 GET    /api/feed/showroom
+POST   /api/views          # the app says which pieces were on screen (batched; member or device mark)
 
 # posts
 POST   /api/posts   (auth)
