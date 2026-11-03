@@ -15,12 +15,12 @@ function evPollNote(){
   const me=EV.me, B=EV.board, n=EV.event.picks, left=Math.max(0,n-me.myVotes.length);
   if(me.voteBlock)return evBlockHTML(me.voteBlock);
   const day=left?(n===1?"You have <b>1 vote</b> today.":`<b>${left} of ${n}</b> votes left today.`):(n===1?"You've voted today.":"You've used today's votes.");
-  return `${day} Votes reset at midnight ET.${B&&B.frozen?` <b>The board froze for the last ${EV.event.freezeHours} hours</b> — votes still count, the rest is a surprise.`:""}`;
+  return `${day} Votes reset at midnight ET.${B&&B.blind?" <b>The final is blind</b> — the votes stay secret until the winner is announced.":""}${B&&B.frozen?` <b>The board froze for the last ${EV.event.freezeHours} hours</b> — votes still count, the rest is a surprise.`:""}`;
 }
 /* The piece someone came from Instagram to see. */
 function evFocusHTML(){
   const e=EVFOCUS&&evById(EVFOCUS);if(!e)return "";
-  const r=EV.board&&EV.board.rows.find(x=>x.entryId===e.id), voting=!!EV.board&&EV.inPlay.includes(e.id);
+  const r=EV.board&&!EV.board.blind&&EV.board.rows.find(x=>x.entryId===e.id), voting=!!EV.board&&EV.inPlay.includes(e.id);
   return `<div class="ev-focus">${evThumb(e,{big:true})}
     <div class="ev-fbar"><div><b data-u="${esc(e.author.username)}">@${esc(e.author.username)}</b>
       ${r?`<div class="dim ev-small">#${r.rank} · ${r.votes} ${r.votes===1?"vote":"votes"}</div>`:""}</div>
@@ -28,19 +28,19 @@ function evFocusHTML(){
 }
 function evPollHTML(){
   const B=EV.board, me=EV.me;if(!B)return evQualifyHTML();
-  const you=me.entry&&B.rows.find(x=>x.entryId===me.entry.id);
+  const you=!B.blind&&me.entry&&B.rows.find(x=>x.entryId===me.entry.id);
   return `<div class="ev-note">${evPollNote()}</div>
     ${you?`<div class="ev-you"><span>You're <b>#${you.rank}</b> with ${you.votes} ${you.votes===1?"vote":"votes"}</span>
       <button class="btn ghost" id="evshare">${DI.out} Share to Instagram</button></div>`:""}
-    <div class="ev-sec"><h3>${EV.event.stage==="final"?"The final":"Scoreboard"} · ${B.total} ${B.total===1?"vote":"votes"}${B.frozen?" · frozen":""}</h3>
+    <div class="ev-sec"><h3>${EV.event.stage==="final"?"The final":"Scoreboard"} · ${B.blind?"votes are secret":`${B.total} ${B.total===1?"vote":"votes"}`}${B.frozen?" · frozen":""}</h3>
     <div class="ev-board">${B.rows.map(r=>{const e=evById(r.entryId);if(!e)return "";
       return `<div class="ev-row ${me.myVotes.includes(e.id)?"on":""}">
-        <span class="ev-rk">${r.rank}</span>
+        <span class="ev-rk">${B.blind?"":r.rank}</span>
         <img ${imgAttrs({url:e.imageUrl,thumb:e.thumbUrl,w:e.w,h:e.h,tw:e.tw,sm:e.sm,sw:e.sw})} alt="" loading="lazy" data-evzoom="${esc(e.imageUrl)}">
         <div class="ev-rwho"><b data-u="${esc(e.author.username)}">@${esc(e.author.username)}</b>
-          <span class="dim">${r.votes} ${r.votes===1?"vote":"votes"} ${evMove(r.move)}</span></div>
+          ${B.blind?"":`<span class="dim">${r.votes} ${r.votes===1?"vote":"votes"} ${evMove(r.move)}</span>`}</div>
         <button class="ev-rshr" data-evshr="${e.id}" aria-label="Share @${esc(e.author.username)}'s piece">${DI.out}</button>${evVoteBtn(e)}</div>`}).join("")}</div></div>
-    <a class="ev-boardlink" href="/e/${esc(EV.event.slug)}/board" target="_blank" rel="noopener">Open the public scoreboard</a>`;
+    ${B.blind?"":`<a class="ev-boardlink" href="/e/${esc(EV.event.slug)}/board" target="_blank" rel="noopener">Open the public scoreboard</a>`}`;
 }
 
 /* ---- Share to Instagram ---- */

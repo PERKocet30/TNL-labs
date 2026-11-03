@@ -40,12 +40,15 @@ app.get("/e/:slug/board", (req, res) => {
     const p = e && q.postById.get(e.post_id), u = e && q.userById.get(e.user_id);
     if (!p || !u) return "";
     const mv = r.move > 0 ? `up ${r.move}` : r.move < 0 ? `down ${-r.move}` : "";
+    if (board.blind) return `<a class="row" href="/e/${esc(ev.slug)}/${r.entryId}"><span class="n">·</span>
+<img src="${esc(p.thumb_url || p.image_url)}" alt="" loading="lazy"><span><b>@${esc(u.username)}</b></span><span class="v">&nbsp;</span></a>`;
     return `<a class="row" href="/e/${esc(ev.slug)}/${r.entryId}"><span class="n">#${r.rank}</span>
 <img src="${esc(p.thumb_url || p.image_url)}" alt="" loading="lazy"><span><b>@${esc(u.username)}</b></span>
 <span class="v">${r.votes}<span class="mv">${mv || "&nbsp;"}</span></span></a>`;
   }).join("");
   const when = board ? new Date(board.asOf).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }) : "";
   const note = !board ? (ev.format === "poll" ? (cur.phase === "results" ? "Voting's closed — the results are in the app." : "The scoreboard goes live when voting opens.") : "This event keeps its counts secret until each stage ends.")
+    : board.blind ? "The final is blind: votes stay secret until the winner is announced. One vote a day, in the app."
     : board.frozen ? `Frozen at ${when} ET. Votes still count — the last ${ev.freeze_hours} hours stay secret until the results.` : `Live · ${when} ET · ${lookCount(board.total, "vote")}`;
   res.set("Cache-Control", "no-store");
   res.send(lookPage({

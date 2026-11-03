@@ -81,7 +81,11 @@ function evInPlay(ev, stage) {
 /* The poll's scoreboard for a stage: everyone in play, ranked by votes
    (ties share a place), and how far each moved in the last 24 hours.
    In the last `freeze_hours` it stops at the moment the freeze began. */
-function evBoard(ev, stage, cur, now = Date.now()) {
+/* THE BLIND FINAL (2026-11-02, "it's supposed to be hidden"): in a poll's final nobody outside the
+   admin sees counts, ranks or who's moving — the finalists come back in a fixed order (entry id)
+   with votes: null, and the winner is the reveal. The qualifying stage keeps its live board.
+   Everything public reads the board through here; only the admin passes { admin: true }. */
+function evBoard(ev, stage, cur, now = Date.now(), { admin = false } = {}) {
   if (ev.format !== "poll" || !["qualify", "final"].includes(stage)) return null;
   const freezeAt = cur.end - Math.max(0, ev.freeze_hours || 0) * 3600000;
   const frozen = ev.freeze_hours > 0 && now >= freezeAt;
@@ -98,6 +102,9 @@ function evBoard(ev, stage, cur, now = Date.now()) {
   const started = cut - EV_DAY >= cur.start;   // no "moved" on day one: everyone started at 0
   const rows = ids.map((id) => ({ entryId: id, votes: nowC.get(id), rank: rank.get(id), move: started ? prev.get(id) - rank.get(id) : 0 }))
     .sort((a, b) => a.rank - b.rank || a.entryId - b.entryId);
+  if (stage === "final" && !admin)
+    return { blind: true, frozen: false, freezeAt, asOf: cut, total: null,
+      rows: [...ids].sort((a, b) => a - b).map((id) => ({ entryId: id, votes: null, rank: null, move: 0 })) };
   return { frozen, freezeAt, asOf: cut, total: rows.reduce((s, r) => s + r.votes, 0), rows };
 }
 

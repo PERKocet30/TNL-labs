@@ -254,7 +254,18 @@ try {
   v = await view("c", "art");
   t("the top 3 by votes make the final, and its board shows just them", v.event.phase.phase === "final" && v.finalists.length === 3 && v.board.rows.length === 3 && v.finalists.includes(pu.h));
   for (const w of ["c", "d", "e"]) await vote(w, pu.l, true, "art");
-  await vote("f", pu.h, true, "art");
+  r = await vote("f", pu.h, true, "art");
+  /* 2026-11-02, "it's supposed to be hidden": the poll's final is blind */
+  v = await view("c", "art");
+  t("the final is blind: finalists, but no counts, ranks or total", v.board.blind === true && v.board.total === null && v.board.rows.length === 3
+    && v.board.rows.every((x) => x.votes === null && x.rank === null && x.move === 0) && r.j.board.blind === true && r.j.board.rows.every((x) => x.votes === null));
+  t("…in a fixed order, not by votes", v.board.rows.map((x) => x.entryId).join() === [...v.board.rows.map((x) => x.entryId)].sort((a, b) => a - b).join());
+  r = await call(null, "GET", "/e/art/board");
+  t("…the public board page says so and shows no numbers", r.s === 200 && r.text.includes("The final is blind") && !/class="v">\d/.test(r.text) && !/#1</.test(r.text));
+  if (FF) { const j = await jpeg("/e/art/board.jpg"); t("…and makes no scoreboard picture", j.s === 404); }
+  t("admins still see the final's tally", (await call("boss", "GET", `/api/admin/events/${pId}`)).j.board.total === 4);
+  r = await call(null, "GET", "/e/art/rules");
+  t("the rules say the final is blind", r.text.includes("which is blind: its votes stay secret until the winner is announced"));
   await call("boss", "POST", `/api/admin/events/${pId}/advance`);
   v = await view("c", "art");
   t("no judges: the final's votes decide", v.event.phase.phase === "results" && v.results.winner === pu.l && v.results.ranking[0].votePct === 75);

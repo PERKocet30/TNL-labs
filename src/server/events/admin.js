@@ -58,7 +58,7 @@ function evAdminView(ev) {
       scores: scores.filter((s) => s.entry_id === e.id).map((s) => ({ judge: s.username, score: s.score })) })),
     matchups: db.prepare(`SELECT round, slot, a_entry a, b_entry b, winner_entry winner FROM event_matchups WHERE event_id = ? ORDER BY round, slot`).all(ev.id),
     voters: db.prepare(`SELECT COUNT(DISTINCT voter_id) n FROM event_votes WHERE event_id = ?`).get(ev.id).n,
-    board: evBoard(ev, EV_STAGE(phaseAt(sched)), phaseAt(sched)),
+    board: evBoard(ev, EV_STAGE(phaseAt(sched)), phaseAt(sched), Date.now(), { admin: true }),   // the admin sees the blind final's counts
     mail: evmStatus(ev),
   };
 }
@@ -176,7 +176,7 @@ function evDefaultRules(ev) {
     `How the winner is picked. ${ev.format === "bracket"
       ? `Members vote for their favourites to set a bracket. Head-to-head rounds follow, decided by member votes (a tie goes to the higher seed). The last two meet in the final.`
       : ev.format === "poll"
-      ? `Members vote in the app: ${ev.picks === 1 ? "one vote" : ev.picks + " votes"} a day, resetting at midnight Eastern, on a public scoreboard${ev.freeze_hours ? ` that freezes for the last ${ev.freeze_hours} hours of each stage` : ""}. Votes on Instagram or anywhere else don't count. The top ${ev.finalists} go to the final.`
+      ? `Members vote in the app: ${ev.picks === 1 ? "one vote" : ev.picks + " votes"} a day, resetting at midnight Eastern, on a public scoreboard${ev.freeze_hours ? ` that freezes for the last ${ev.freeze_hours} hours` : ""}. Votes on Instagram or anywhere else don't count. The top ${ev.finalists} go to the final, which is blind: its votes stay secret until the winner is announced.`
       : `Members vote for their favourites; the top ${ev.finalists} go to the final.`} ${ev.judge_weight > 0
       ? `In the final, judges score each finalist from 1 to 10 for originality, craft and response to the brief. The winner is decided ${ev.judge_weight}% by the judges' scores and ${100 - ev.judge_weight}% by member votes.`
       : `In the final, members vote again and the most votes wins.`}`,

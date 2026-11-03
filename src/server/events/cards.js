@@ -96,7 +96,7 @@ function evStanding(ev, e) {
     const i = (st.results?.ranking || []).findIndex((r) => r.entryId === e.id);
     head = i === 0 ? "I won." : "The results are in"; tag = i === 0 ? "WINNER" : i > 0 ? `#${i + 1} IN THE FINAL` : "SEE THE WINNER"; voting = false;
   } else if (!inPlay) { head = "See who's leading"; tag = "VOTE NOW"; }
-  else if (row) tag = `#${row.rank} ${stage === "final" ? "IN THE FINAL" : "ON THE BOARD"}${board.frozen ? " · BOARD FROZEN" : ""}`;
+  else if (row && !board.blind) tag = `#${row.rank} ${stage === "final" ? "IN THE FINAL" : "ON THE BOARD"}${board.frozen ? " · BOARD FROZEN" : ""}`;
   else if (stage === "final") tag = "IN THE FINAL";
   return { head, tag, voting, row, board, cur, stage };
 }
@@ -117,7 +117,7 @@ function evEntryStory(ev, e, base, theirs = false) {
 function evBoardCard(ev, size, base) {
   tickEvent(ev);
   const cur = phaseAt(evJSON(ev.schedule, [])), stage = EV_STAGE(cur), board = stage ? evBoard(ev, stage, cur) : null;
-  if (!board || !board.rows.length) return null;
+  if (!board || !board.rows.length || board.blind) return null;   // the blind final has no scoreboard picture
   const story = size === "story";
   const rows = board.rows.slice(0, 5).map((r) => {
     const e = db.prepare(`SELECT * FROM event_entries WHERE id = ?`).get(r.entryId);
@@ -240,7 +240,8 @@ app.get("/e/:slug/board.jpg", rateLimit({ max: 60, windowMs: 60000 }), (req, res
   const ev = evPublished(req.params.slug); if (!ev) return res.status(404).end();
   const card = evBoardCard(ev, req.query.size === "story" ? "story" : "post", baseUrl(req));
   /* No votes yet (before voting opens): say so, not a blank page (2026-10-13, "make sure all links work"). */
-  if (!card) return res.status(404).send(lookNotFound("The scoreboard picture is made from votes — it's ready once voting opens."));
+  if (!card) return res.status(404).send(lookNotFound(ev.format === "poll" && EV_STAGE(phaseAt(evJSON(ev.schedule, []))) === "final"
+    ? "The final is blind — the votes stay secret until the winner is announced." : "The scoreboard picture is made from votes — it's ready once voting opens."));
   evSendCard(res, card, null);
 });
 app.get("/e/:slug/:entry/story.jpg", rateLimit({ max: 60, windowMs: 60000 }), (req, res) => {
