@@ -46,7 +46,7 @@ function sellWalkHTML(f){
     <div class="sw-prog" aria-hidden="true"><i style="width:${Math.round(((i+1)/ks.length)*100)}%"></i></div>`;
   const body={what:swWhatHTML,who:swWhoHTML,photos:swPhotosHTML,words:swWordsHTML,stock:swStockHTML,details:swDetailsHTML,price:swPriceHTML,review:swReviewHTML}[step](f);
   const auto=step==="what"||step==="who";   // a tap answers these
-  return `<div class="scroll pf sw">${head}${f._restored&&i===0?`<div class="sdraft">Picked up where you left off<button type="button" id="sdraftx">Start over</button></div>`:""}
+  return `<div class="scroll pf sw">${head}${f._restored?`<div class="sdraft">Picked up where you left off<button type="button" id="sdraftx">Start over</button></div>`:""}
     <div class="pf-body"><h1 class="sw-q">${esc(title)}</h1>${body}</div>
     ${auto?"":`<div class="pf-bar">${last?`<div class="pf-keep" id="s-earn">${sellEarnHTML()}</div><button class="gx-btn" id="s-post">Publish</button>`
       :`${step==="details"?`<button type="button" class="sw-skip" id="sw-skip">Skip for now</button>`:""}<button class="gx-btn" id="sw-next">Next</button>`}</div>`}

@@ -875,17 +875,19 @@ console.log("\nMEMBER · PHONE");
     const mine = (await api("/api/market?seller=tester", token)).listings.find((l) => l.title === "E2E Tee");   // (the one of one listed after it has no sizes)
     await p.evaluate(async (id) => { MKTVIEW = "detail"; const d = await api.mktOne(id); MKTONE = d.listing; MKTOFFERS = d.offers || []; MKTSELLER = d.seller; MKTSIMILAR = []; render(); }, mine.id);
     await p.locator("[data-mdup]").tap();
-    await p.waitForSelector("#s-title");
+    await p.waitForSelector("#s-post");                           // 2026-11-03: a copy lands on the walk's review — change what's different from there
     ok(await p.evaluate(() => MKTVIEW === "sell" && !MKTEDIT && SELLFORM.hasVariants && SELLFORM.variants.every((v) => !v.id)), "duplicate isn't a fresh listing");
-    ok((await p.locator("#s-title").inputValue()) === mine.title, "title not copied");
+    ok((await p.locator(".sw-title").textContent()) === mine.title, "title not copied");
+    await p.locator('[data-swgo="words"]').tap(); await p.waitForSelector("#s-title");
     await p.locator("#s-title").fill("Half-made listing"); await p.locator("#s-title").blur();
     await p.reload(); await throughDoor(p);                      // the app was closed and opened again
     await p.waitForFunction(() => typeof ME !== "undefined" && ME);
     await toMarket();
     await p.locator('[data-mv="sell"]').first().tap();
+    await p.waitForSelector("#s-title");                          // the draft resumes at the step it was on
     ok((await p.locator("#s-title").inputValue()) === "Half-made listing" && await p.locator(".sdraft").count() === 1, "draft not restored");
-    await p.locator("#sdraftx").tap();
-    ok((await p.locator("#s-title").inputValue()) === "", "Start over didn't clear it");
+    await p.locator("#sdraftx").tap(); await p.waitForSelector("[data-swdept]");
+    ok(await p.evaluate(() => !SELLFORM.title && !SELLFORM.category) && await p.locator("#s-title").count() === 0, "Start over didn't start the walk over");
     await p.evaluate(() => { MKTVIEW = "browse"; SELLFORM = null; TAB = "showroom"; render(); });
   });
   /* ---- the post creator v3 (2026-09-30) ---- */
