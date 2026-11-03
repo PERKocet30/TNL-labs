@@ -72,6 +72,10 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
 
 - Rep is only earned from what *other people* do with your work, and every
   point is written to the append-only `rep_events` log. Never self-awarded.
+- The Showroom ranking (`server/posts/rank.js`, `RANK`) is the one place feed
+  order is decided; nothing in the app explains it to members and nothing
+  needs to. Views (`post_views`) are a ranking signal only — never shown, never
+  a count on a post.
 - Collabs count only once the other person accepts.
 - Lab and channel IDs never change; names are display-only.
 - Admin checks are enforced on the server, not just hidden in the UI.

@@ -108,6 +108,7 @@ export const SERVER = [
 
   // posts
   "posts/rank.js",
+  "posts/views.js",
 
   // admin
   "admin/watch.js",

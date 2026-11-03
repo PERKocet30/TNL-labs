@@ -106,6 +106,8 @@ let PLDELEG=false;
 // showroom/showroom.js
 let SRB=[], SRBLOADED=false;
 let SRNEW=null, SRBNEXT=null;
+// showroom/views.js
+let VSEEN=new Set(), VQUEUE=[], VTIMER=null, VWOBS=null;   // pieces seen this session, waiting to be sent, the batch timer, the observer (null until asked, false if the browser can't)
 
 /* ── POSTS · comments in place ── */
 // posts/comments.js
