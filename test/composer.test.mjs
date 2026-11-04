@@ -37,7 +37,7 @@ t("posts to the profile unless a lab is picked", src.includes('channel:c.ch?c.ch
 t("collaborator invites go out after the post exists", /const pid=d&&d\.post&&d\.post\.id;\s*if\(pid\)for\(const u of c\.collabs\|\|\[\]\)\{try\{await api\.invite\(pid,u\.username\)/.test(src));
 t("at most 5 collaborators", wire.includes("c.collabs.length>=5"));
 // 2026-10-09: upload a song from here; with no photos its cover is the post's picture
-t("Add music offers Upload a song (audio files), through the library's own upload", html.includes('id="pcmusfile" accept="${TRACK_ACCEPT}"') && wire.includes("const t=await uploadTrackFile(file);") && src.includes("async function uploadTrackFile(file)"));
+t("Add music offers Upload a song (audio files), through the library's own upload", html.includes('id="pcmusup"') && wire.includes("pickFiles({accept:TRACK_ACCEPT") && wire.includes("const t=await uploadTrackFile(file);") && src.includes("async function uploadTrackFile(file)"));
 t("…then the name-and-cover sheet opens for it", wire.includes("TRKEDIT={id:t.id,title:t.title,artworkUrl:\"\",busy:false,fresh:true}"));
 t("no photos + a song with a cover → the cover is the picture, and it can be shared", src.includes("const pcCover=c=>!c.imgs.length&&!c.upN&&!c.vid&&!c.vidbusy&&c.track&&c.track.artworkUrl") && src.includes("cov?[{url:cov,thumb:cov,"));
 // 2026-10-08: labs are places — the picker lists the genres, each posting to its home channel
@@ -61,5 +61,14 @@ t("while sharing → disabled", !pcCan({ body: "hi", imgs: [], busy: true }));
 t("just a song with a cover → enabled (the cover is the picture)", pcCan({ body: "", imgs: [], track: { artworkUrl: "/uploads/c.jpg" } }));
 t("just a song without a cover → still needs a caption or photos", !pcCan({ body: "", imgs: [], track: { artworkUrl: "" } }));
 t("while the song uploads → disabled", !pcCan({ body: "hi", imgs: [], musup: true }));
+
+console.log("\nTHE PHOTO PICKER — OUTSIDE THE SCREEN (2026-11-04: an iPhone lost picked photos to a repaint)");
+const pick = fn("pickFiles");
+t("no file input is drawn inside the composer any more", !html.includes('type="file"') && !html.includes("pcfile"));
+t("every place you add photos opens the picker", (html.match(/data-pcpick/g) || []).length === 3 && wire.includes('querySelectorAll("[data-pcpick]")') && wire.includes('pickFiles({accept:"image/*,video/*",multiple:true'));
+t("the picker's input lives on <body>, made once, never in a render", pick.includes('document.getElementById("filepick")') && pick.includes("document.body.appendChild(fi)"));
+t("the files are copied before the input is cleared, and a cancel resolves empty", pick.includes("const files=[...(fi.files||[])];fi.value=\"\"") && pick.includes("fi.oncancel=()=>done([])"));
+t("the picked files go to the composer they were picked for, only if it's still open", wire.includes("if(files.length&&PCOMPOSE===c)pcPick(c,files)"));
+t("each pick is counted (start, then done or abandon) so a lost pick shows in Echo's flows", pick.includes('uiPush("flow",where,"start")') && pick.includes('uiPush("flow",where,files.length?"done":"abandon")'));
 
 console.log(`\n  ${pass} passed, ${fail} failed`);

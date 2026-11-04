@@ -92,6 +92,8 @@ for (let i = 0; ; i++) {
   if (i > 60) { console.log(serverLog); throw new Error("server didn't start"); }
   await new Promise((r) => setTimeout(r, 250));
 }
+/* The composer's picker opens from pickFiles (app/media/pick, 2026-11-04): tap where you add photos, then choose. */
+const pcFiles = async (p, files) => { const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcov [data-pcpick]").first().click()]); await fc.setFiles(files); };
 const api = async (path, token, body) => (await fetch(B + path, {
   method: body ? "POST" : "GET", headers: { "content-type": "application/json", ...(token ? { authorization: "Bearer " + token } : {}) },
   body: body ? JSON.stringify(body) : undefined })).json();
@@ -900,13 +902,23 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { MKTVIEW = "browse"; SELLFORM = null; TAB = "showroom"; render(); });
   });
   /* ---- the post creator v3 (2026-09-30) ---- */
-  const openCreator = async () => { await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcfile", { state: "attached" }); };
+  const openCreator = async () => { await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcov [data-pcpick]"); };
+  await step(d, "the photo picker survives a repaint: photos chosen while the screen repaints still land (an iPhone lost them, 2026-11-04)", async () => {
+    await openCreator();
+    const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcov [data-pcpick]").first().click()]);
+    await p.evaluate(() => { render(); render(); });   // the screen repaints while the picker is up
+    ok(await p.evaluate(() => { const f = document.getElementById("filepick"); return !!f && f.parentElement === document.body && !document.querySelector("#app input[type=file]#pcfile"); }), "the picker's input isn't outside the screen");
+    await fc.setFiles([UPLOAD_PNG, UPLOAD_PNG2]);
+    await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 2, null, { timeout: 8000 }).catch(() => {});
+    ok(await p.evaluate(() => PCOMPOSE && PCOMPOSE.imgs.length) === 2, "the photos chosen during a repaint were lost");
+    await p.evaluate(() => { const c = PCOMPOSE; c.dead = true; PCOMPOSE = null; render(); });
+  });
   const myPosts = async () => (await api("/api/users/tester", token)).posts || [];
   await step(d, "creator: never slides sideways; drag a thumbnail to reorder", async () => {
     await openCreator();
     const side = await p.evaluate(() => { const b = document.querySelector(".pc-body"); b.scrollLeft = 40; return { sl: b.scrollLeft, ox: getComputedStyle(b).overflowX }; });
     ok(side.sl === 0 && side.ox === "hidden", "the form can slide sideways: " + JSON.stringify(side));
-    await p.locator("#pcfile").setInputFiles([UPLOAD_PNG, UPLOAD_PNG2, UPLOAD_PNG3]);
+    await pcFiles(p, [UPLOAD_PNG, UPLOAD_PNG2, UPLOAD_PNG3]);
     /* 2026-10-25 "images aren't uploading": each photo takes its place at once, then its upload lands into that place */
     const at0 = await p.evaluate(() => { PCOMPOSE.imgs.forEach((im, k) => im._k = k); return { n: PCOMPOSE.imgs.length, busy: PCOMPOSE.imgs.filter((i) => i.busy).length, tiles: document.querySelectorAll(".pc-strip .pc-th[data-pci]").length }; });
     ok(at0.n === 3 && at0.tiles === 3, "three photos should have their places the moment they're picked: " + JSON.stringify(at0));
@@ -1062,7 +1074,7 @@ console.log("\nMEMBER · PHONE");
       return c.toDataURL(type, .98).split(",")[1]; }, [w, h, type]).then((b) => Buffer.from(b, "base64"));
     const big = await make(4000, 5000, "image/jpeg"), art = await make(2400, 3000);
     await openCreator();
-    await p.locator("#pcfile").setInputFiles([{ name: "print.jpg", mimeType: "image/jpeg", buffer: big }, { name: "poster.png", mimeType: "image/png", buffer: art }]);
+    await pcFiles(p, [{ name: "print.jpg", mimeType: "image/jpeg", buffer: big }, { name: "poster.png", mimeType: "image/png", buffer: art }]);
     await p.waitForFunction(() => PCOMPOSE.imgs.length === 2 && !PCOMPOSE.upN, null, { timeout: 45000 });
     const [capped, im] = await p.evaluate(() => PCOMPOSE.imgs);
     ok(capped.w === 2400 && capped.h === 3000, "a 4000×5000 upload wasn't capped at 3000: " + JSON.stringify(capped));
@@ -1096,7 +1108,7 @@ console.log("\nMEMBER · PHONE");
     const tee = (await api("/api/market?seller=tester", token)).listings.find((l) => l.title === "E2E Tee");
     ok(tee, "no E2E Tee to tag");
     await openCreator();
-    await p.locator("#pcfile").setInputFiles(UPLOAD_PNG);
+    await pcFiles(p, UPLOAD_PNG);
     await p.locator("#pcshop").tap();
     await p.locator(".pickrow", { hasText: "E2E Tee" }).first().tap();
     ok(await p.evaluate(() => PCOMPOSE.products.length === 1), "product not tagged");
@@ -1116,7 +1128,7 @@ console.log("\nMEMBER · PHONE");
   await step(d, "upload a song from the post creator: name it, add a cover — with no photos the cover is the post's picture; your songs come first, and the same file again is the song you have", async () => {
     await openCreator();
     await p.locator("[data-pcmusadd]").tap();
-    await p.locator("#pcmusfile").setInputFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) });
+    { const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcmusup").click()]); await fc.setFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) }); }
     await p.waitForSelector("#trkeov", { timeout: 10000 });
     ok(await p.evaluate(() => PCOMPOSE.track && PCOMPOSE.track.title === "my-song"), "the song isn't on the post");
     await p.locator("#trketitle").fill("Composer Song");
@@ -1135,7 +1147,7 @@ console.log("\nMEMBER · PHONE");
     await p.locator("[data-pcmusadd]").tap();
     await p.waitForSelector(".pcmus-row", { timeout: 8000 });
     ok(/Composer Song/.test(await p.locator(".pcmus-row").first().innerText()), "your own song isn't first in Add music: " + await p.locator(".pcmus-row").first().innerText());
-    await p.locator("#pcmusfile").setInputFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) });
+    { const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcmusup").click()]); await fc.setFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) }); }
     await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.track && !PCOMPOSE.musup, null, { timeout: 10000 });
     await p.waitForTimeout(300);
     ok(await p.evaluate((id) => PCOMPOSE.track.id === id && PCOMPOSE.track.title === "Composer Song", np.audioTrack.id), "the same file made a second song: " + JSON.stringify(await p.evaluate(() => PCOMPOSE.track)));
@@ -1152,7 +1164,7 @@ console.log("\nMEMBER · PHONE");
   await step(d, "which part of the song plays: drag the window under a long song, the times follow, and the post keeps that start", async () => {
     await openCreator();
     await p.locator("[data-pcmusadd]").tap();
-    await p.locator("#pcmusfile").setInputFiles({ name: "long-song.wav", mimeType: "audio/wav", buffer: wav(24, 330) });
+    { const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcmusup").click()]); await fc.setFiles({ name: "long-song.wav", mimeType: "audio/wav", buffer: wav(24, 330) }); }
     await p.waitForSelector("#trkeov", { timeout: 15000 });
     await p.locator("#trketitle").fill("Long Song");
     await p.locator("#trkesave").tap();
@@ -1237,7 +1249,7 @@ console.log("\nMEMBER · PHONE");
   /* 2026-10-30: "I tried uploading a carousel with a video in the middle of it and it didn't work" */
   await step(d, "a carousel with a video in the middle: photo, video, photo post together in that order, and the video plays in the carousel", async () => {
     await openCreator();
-    await p.locator("#pcfile").setInputFiles([UPLOAD_PNG, UPLOAD_WEBM, UPLOAD_PNG2]);
+    await pcFiles(p, [UPLOAD_PNG, UPLOAD_WEBM, UPLOAD_PNG2]);
     await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 3 && !PCOMPOSE.upN, null, { timeout: 30000 });
     const kinds = await p.evaluate(() => PCOMPOSE.imgs.map((im) => (im.video ? "video" : "photo")).join(","));
     ok(kinds === "photo,video,photo", "the picks didn't keep their order with the video in the middle: " + kinds);
@@ -1256,7 +1268,7 @@ console.log("\nMEMBER · PHONE");
   /* "Update the post maker to simple video editing, cover etc" (2026-10-08). */
   await step(d, "video editor: a cover arrives by itself; trim, sound off and 4:5 ride on the post and the feed honours them", async () => {
     await openCreator();
-    await p.locator("#pcfile").setInputFiles(UPLOAD_WEBM);
+    await pcFiles(p, UPLOAD_WEBM);
     await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.vid && !PCOMPOSE.vidbusy, null, { timeout: 15000 });
     ok(await p.evaluate(() => /^\/uploads\/.+-poster\.jpg$/.test(PCOMPOSE.cover || "")), "no automatic cover: " + await p.evaluate(() => PCOMPOSE.cover));
     await p.locator("[data-pcvedit]").tap();
@@ -1503,7 +1515,7 @@ console.log("\nMEMBER · PHONE");
   await step(d, "composer: Tag people puts a pin on the photo where you tap; Advanced hides the like count and takes alt text; Preview is the Showroom card; the post carries it all and the person icon shows the pin", async () => {
     await p.evaluate(() => { PCOMPOSE = null; PICKER = null; LAB = null; TAB = "showroom"; render(); });
     await openCreator();
-    await p.locator("#pcfile").setInputFiles([UPLOAD_PNG2]);
+    await pcFiles(p, [UPLOAD_PNG2]);
     await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 1 && !PCOMPOSE.upN, null, { timeout: 10000 });
     await p.waitForSelector("#pctrack .pc-slide img"); await p.waitForTimeout(400);
     await p.locator("#pctag").tap(); await p.waitForSelector(".pc-taghint");
