@@ -2235,7 +2235,8 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator(".rc h3", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
     // 2026-10-20: on a computer, a grouped side menu with every section and no bottom bar (twelve since Systems and Instagram, 2026-10-26)
     // 2026-11-04: nine sections in five groups — Orders · Listings · Sellers are Market's tabs, Systems is Health's
-    ok(await p.locator(".side .nv").count() === 11 && !(await p.locator(".bbar").isVisible()), "the side menu isn't the eleven grouped sections");
+    // 2026-11-04: twelve with the Network (Echo's group)
+    ok(await p.locator(".side .nv").count() === 12 && !(await p.locator(".bbar").isVisible()), "the side menu isn't the twelve grouped sections");
     // 2026-10-26: Systems — what's live, what's waiting for a Push; with no keys set, each card says so plainly (2026-11-04: a tab of Health; the old #systems link lands on it)
     await p.locator(".side .nv[data-tab=health]").click(); await fast(p, 6000, () => p.locator("[data-hs=systems]").waitFor(), "Health's tabs");
     await p.locator("[data-hs=systems]").click();
