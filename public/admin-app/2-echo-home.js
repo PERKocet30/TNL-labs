@@ -1,4 +1,4 @@
-/* LABS admin — Echo Home v1.2, 2026-11-04 ("my message keeps getting deleted": a send that fails no longer throws the question away — the page asks the server whether it arrived and shows the answer when it does, or says it didn't with the words back in the box; coming back to the page re-reads the conversation — 2-echo-home2.js). v1.1 — 2026-11-04 (everything Messages has: photos and PDFs, the mic, the speaker, the model picker, copy — 2-echo-home2.js). v1.0, 2026-11-04. "A simplified admin dashboard integrated
+/* LABS admin — Echo Home v1.3, 2026-11-04 ("I don't like having to scroll all the way down — it should be a module I can scroll in, with a button to the bottom, like Claude"): on a phone the conversation is its own scroll box sized to the screen, the composer pinned under it, a ↓ to the latest when you've scrolled up; Needs you sits right below. v1.2 — 2026-11-04 ("my message keeps getting deleted": a send that fails no longer throws the question away — the page asks the server whether it arrived and shows the answer when it does, or says it didn't with the words back in the box; coming back to the page re-reads the conversation — 2-echo-home2.js). v1.1 — 2026-11-04 (everything Messages has: photos and PDFs, the mic, the speaker, the model picker, copy — 2-echo-home2.js). v1.0, 2026-11-04. "A simplified admin dashboard integrated
    with Echo so it can help me manage everything." The admin opens here: Echo on the
    left — the same brain, memory and hands as Messages → Echo (server/echo), answers
    streamed over the app's live stream — and, on a computer, what needs you and
@@ -28,7 +28,7 @@ VIEWS.echohome = () => {
     </div>
     <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost sm" data-go="home">The full Home ${I.chev}</button></div>`;
   const head = pageHead("Echo", `${today} · LABS's own`, ehOn() ? `${"speechSynthesis" in window ? `<button class="btn ghost sm ${ehVoiceOn() ? "on" : ""}" id="ehvoice" aria-pressed="${ehVoiceOn()}">${ehVoiceOn() ? "Reading aloud" : "Read aloud"}</button>` : ""}<button class="btn ghost sm" id="ehbrief" ${EH.busy ? "disabled" : ""}>Brief me</button><button class="btn ghost sm" id="ehfresh" ${EH.busy ? "disabled" : ""}>New conversation</button>` : "");
-  return `${head}<div class="eh"><section class="rc eh-chat"><div class="eh-feed" id="ehfeed">${ehFeedHTML()}</div>${ehOn() ? `<div class="eh-foot" id="ehfoot">${ehComposerHTML()}</div>` : ""}</section><aside class="eh-side">${side}</aside></div>`;
+  return `${head}<div class="eh"><section class="rc eh-chat"><div class="eh-fw"><div class="eh-feed" id="ehfeed">${ehFeedHTML()}</div><button class="eh-down" id="ehdown" aria-label="To the latest">${di('<path d="M12 5v14M6 13l6 6 6-6"/>', 18)}</button></div>${ehOn() ? `<div class="eh-foot" id="ehfoot">${ehComposerHTML()}</div>` : ""}</section><aside class="eh-side">${side}</aside></div>`;
 };
 function ehFeedHTML() {
   const E = EH.data;
@@ -71,7 +71,10 @@ function ehComposerHTML() {
   return `<div class="eh-box ${EH.busy ? "busy" : ""}">${ehAttHTML()}<textarea id="ehdraft" rows="1" placeholder="${EH.listening ? "Listening…" : "Talk to Echo"}">${esc(EH.draft)}</textarea>
     <div class="eh-boxr"><span class="eh-tools"><input type="file" id="ehfile" accept="image/*,application/pdf" multiple hidden><button class="eh-ib" id="ehphoto" aria-label="Add a photo or PDF">${NAVI.listings}</button>${ehCanDictate() ? `<button class="eh-ib ${EH.listening ? "live" : ""}" id="ehmic" aria-label="${EH.listening ? "Stop listening" : "Speak"}">${di('<rect x="9" y="3" width="6" height="11"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', 18)}</button>` : ""}<select class="eh-model" id="ehmodel" aria-label="Which Claude answers">${models}</select></span><button class="eh-send" id="ehsend" aria-label="Send" ${ready ? "" : "disabled"}>${I.chev}</button></div></div>`;
 }
-function ehPaintFeed() { const f = $("#ehfeed"); if (!f) return; f.innerHTML = ehFeedHTML(); ehWireFeed(f); f.scrollTop = f.scrollHeight; }
+function ehPaintFeed() { const f = $("#ehfeed"); if (!f) return; f.innerHTML = ehFeedHTML(); ehWireFeed(f); f.scrollTop = f.scrollHeight; ehDownShow(); }
+/* the ↓ to the latest, as in Claude: shown once you've scrolled up past a screen's worth of the conversation */
+function ehDownShow() { const f = $("#ehfeed"), b = $("#ehdown"); if (!f || !b) return; b.classList.toggle("on", f.scrollHeight - f.scrollTop - f.clientHeight > 240); }
+function ehWireScroll() { const f = $("#ehfeed"), b = $("#ehdown"); if (!f || !b) return; f.onscroll = ehDownShow; b.onclick = () => f.scrollTo({ top: f.scrollHeight, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); ehDownShow(); }
 function ehPaintFoot() { const f = $("#ehfoot"); if (!f) return; const d = $("#ehdraft"), had = d && document.activeElement === d; f.innerHTML = ehComposerHTML(); ehWireFoot(f); if (had) { const d2 = $("#ehdraft"); if (d2) { d2.focus(); d2.setSelectionRange(d2.value.length, d2.value.length); } } }
 async function ehAsk(q, brief = false) {
   q = (q || "").trim(); const att = (EH.att || []).filter((a) => a.url);
@@ -117,7 +120,7 @@ function ehLive(d) {
   const w = $(`[data-ehturn="${t.id}"] .eh-work span`);
   if (d.kind === "text") { t.text = (t.text || "") + d.text; t.status = "Writing"; const n = $(`[data-ehturn="${t.id}"] .eh-text`); if (n) n.innerHTML = ehMd(t.text); if (w) w.textContent = "Writing"; }
   else if (d.kind === "status") { t.status = d.text; if (w) w.textContent = d.text; }
-  const f = $("#ehfeed"); if (f && f.scrollHeight - f.scrollTop - f.clientHeight < 200) f.scrollTop = f.scrollHeight;
+  const f = $("#ehfeed"); if (f && f.scrollHeight - f.scrollTop - f.clientHeight < 200) f.scrollTop = f.scrollHeight; ehDownShow();
 }
 function ehWireFeed(f) {
   $$("[data-ehask]", f).forEach((b) => b.onclick = () => ehAsk(b.dataset.ehask));
@@ -140,6 +143,7 @@ function ehWireFoot(F) {
 }
 WIRES.echohome = () => {
   const f = $("#ehfeed"); if (f) { ehWireFeed(f); if (EH.stick) { f.scrollTop = f.scrollHeight; EH.stick = false; } }
+  ehWireScroll();
   const F = $("#ehfoot"); if (F) ehWireFoot(F);
   const b = $("#ehbrief"); if (b) b.onclick = () => ehBrief();
   const v = $("#ehvoice"); if (v) v.onclick = () => ehVoiceToggle();

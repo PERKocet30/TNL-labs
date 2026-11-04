@@ -2358,6 +2358,29 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     ok(await p.locator(".eh-qb", { hasText: "second question" }).count() === 1, "the question vanished from the conversation");
     await p.unroute("**/api/echo"); await p.unroute("**/api/echo/ask");
   });
+  // 2026-11-04: "I don't like having to scroll all the way down — a module I can scroll in, with a button to the bottom, like Claude"
+  await step(d, "Echo Home on a phone: a long conversation scrolls in its own box, Needs you sits right under it, ↓ goes back to the latest", async () => {
+    const turns = Array.from({ length: 14 }, (_, i) => ({ id: 800 + i, asked: "Question " + (i + 1), label: "", files: [], proposals: [], kind: "brain",
+      text: Array.from({ length: 6 }, () => "A long answer line that takes up room on a phone screen.").join("\n\n") + " End " + (i + 1) + ".", tools: [], model: "Opus 5.5", createdAt: Date.now() }));
+    await p.route("**/api/echo", (r) => (r.request().method() === "GET" ? r.fulfill({ json: { name: "Echo", brain: true, model: "claude-opus-5-5", models: [{ id: "claude-opus-5-5", name: "Claude Opus 5.5", short: "Opus 5.5", line: "" }],
+      sub: "LABS's own", hello: "Hi — I'm Echo.", preview: false, topics: [], starters: [], briefToday: true, turns } }) : r.continue()));
+    await settledGoto(p, B + "/admin");
+    await fast(p, 8000, () => p.locator(".eh-a .eh-text", { hasText: "End 14." }).waitFor({ state: "attached" }), "the long conversation");
+    await p.waitForTimeout(300);
+    const m = await p.evaluate(() => { const c = document.querySelector(".eh-chat"), f = document.querySelector("#ehfeed"), n = document.querySelector(".eh-side .rc");
+      return { chatH: c.getBoundingClientRect().height, vh: innerHeight, scrolls: f.scrollHeight - f.clientHeight, atEnd: f.scrollHeight - f.scrollTop - f.clientHeight, needsTop: n.getBoundingClientRect().top + scrollY }; });
+    ok(m.scrolls > 400, "the conversation doesn't scroll in its own box (it grows the page instead)");
+    ok(m.chatH <= m.vh, "the conversation box is taller than the screen");
+    ok(m.needsTop < m.vh * 1.4, "Needs you is far below the conversation, not right under it");
+    ok(m.atEnd < 8 && !(await p.locator("#ehdown.on").count()), "it didn't open on the latest message, or ↓ shows at the bottom");
+    await p.evaluate(() => { const f = document.querySelector("#ehfeed"); f.scrollTop = 0; f.dispatchEvent(new Event("scroll")); });
+    await fast(p, 2000, () => p.locator("#ehdown.on").waitFor(), "the ↓ after scrolling up");
+    await p.locator("#ehdown").tap();
+    await p.waitForFunction(() => { const f = document.querySelector("#ehfeed"); return f.scrollHeight - f.scrollTop - f.clientHeight < 8; }, null, { timeout: 3000 });
+    await p.waitForTimeout(250);
+    ok(!(await p.locator("#ehdown.on").count()), "↓ didn't go away at the latest");
+    await p.unroute("**/api/echo");
+  });
   // 2026-10-14: on a phone, People starts in Cards (no sideways swiping) and has one search box, not two
   await step(d, "admin → People on a phone: cards, and one search box", async () => {
     await p.locator("[data-tab=people]:visible").tap();
