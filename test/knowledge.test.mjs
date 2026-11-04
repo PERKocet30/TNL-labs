@@ -99,11 +99,43 @@ try {
   const tools = (await rpc("tools/list", {})).result.tools;
   const kt = tools.find((x) => x.name === "knowledge");
   t("a `knowledge` tool, marked read-only", kt && kt.annotations.readOnlyHint === true && /creed/.test(kt.description));
-  t("no tool writes to it", !tools.some((x) => /knowledge/.test(x.name) && x.name !== "knowledge"));
+  const wt = tools.filter((x) => /^knowledge_/.test(x.name)).map((x) => x.name).sort();
+  t("two write tools and no other: knowledge_add and knowledge_edit, marked not read-only, never destructive", wt.join() === "knowledge_add,knowledge_edit" && tools.filter((x) => /^knowledge_/.test(x.name)).every((x) => x.annotations.readOnlyHint === false && x.annotations.destructiveHint === false));
+  t("the add tool names every kind and asks for plain words, never private things", /decision \(Decisions\)/.test(JSON.stringify(tools.find((x) => x.name === "knowledge_add").inputSchema)) && /never.*private/i.test(tools.find((x) => x.name === "knowledge_add").description));
   const kr = JSON.parse((await rpc("tools/call", { name: "knowledge", arguments: { kind: "creed" } })).result.content[0].text);
   t("Claude reads the creed through it", kr.entries.some((e) => e.title === "The creed" && /take over/.test(e.body)) && kr.entries.every((e) => e.kind === "creed"));
   t("…and can search", JSON.parse((await rpc("tools/call", { name: "knowledge", arguments: { q: "showroom" } })).result.content[0].text).entries.some((e) => e.title === "Showroom"));
-  t("a connector key can't add or edit (GET only)", (await call(tok, "POST", "/api/admin/knowledge", { kind: "note", title: "x", body: "y" })).s === 401 && (await call(tok, "PATCH", `/api/admin/knowledge/${id}`, { body: "z" })).s === 401);
+  t("a connector key can't call the admin routes itself (GET only, through /mcp)", (await call(tok, "POST", "/api/admin/knowledge", { kind: "note", title: "x", body: "y" })).s === 401 && (await call(tok, "PATCH", `/api/admin/knowledge/${id}`, { body: "z" })).s === 401);
+
+  console.log("\nCLAUDE AND GROK WRITE KNOWLEDGE — and only Knowledge");
+  const entry = async (id) => (await A("GET", "/api/admin/knowledge?archived=0")).j.entries.find((e) => e.id === id) || (await A("GET", "/api/admin/knowledge?archived=1")).j.entries.find((e) => e.id === id);
+  const logOf = async (id) => (await A("GET", "/api/admin/log")).j.log.find((l) => l.action === "connector knowledge_add" && l.target === String(id));
+  const wr = await rpc("tools/call", { name: "knowledge_add", arguments: { kind: "decision", title: "Echo is admin-only until it's perfected", body: "Decided 2026-11-04: Echo stays admins-only until Jorge flips the switch. Reason: members should meet it finished.", tags: "Echo, decision" } });
+  const wrj = JSON.parse(wr.result?.content?.[0]?.text || "{}");
+  const wrow = await entry(wrj.id || 0);
+  t("Claude adds a decision: live, marked as Claude's, under the admin whose key it is", !wr.result?.isError && wrj.ok === true && wrow && wrow.source === "claude" && wrow.createdBy === "boss" && wrow.tags === "echo decision" && wrow.kind === "decision");
+  t("…and Echo answers with it at once", (await call("tok-boss", "POST", "/api/echo/ask", { q: "why is echo admin-only until it is perfected" })).j.turn.knowId === wrj.id);
+  const wl = await logOf(wrj.id);
+  t("…and it's in the admin log, as a connector write by Claude under the admin", wl && wl.by === "boss" && /"by":"claude"/.test(wl.detail));
+  const we = await rpc("tools/call", { name: "knowledge_edit", arguments: { id: wrj.id, body: "Decided 2026-11-04: Echo stays admins-only until Jorge flips the switch in Admin → Echo." } });
+  const after2 = await entry(wrj.id);
+  t("Claude edits it: only the field given changes, the version before is kept", !we.result?.isError && after2.body.endsWith("Admin → Echo.") && after2.title === "Echo is admin-only until it's perfected" && (await A("GET", `/api/admin/knowledge/${wrj.id}/history`)).j.history.length === 1);
+  t("a kind that doesn't exist, or no words, is refused — including 'constructor' and '__proto__' (not kinds, whatever an object says)", (await rpc("tools/call", { name: "knowledge_add", arguments: { kind: "secrets", title: "x", body: "y" } })).result?.isError === true && (await rpc("tools/call", { name: "knowledge_add", arguments: { kind: "constructor", title: "x", body: "y" } })).result?.isError === true && (await rpc("tools/call", { name: "knowledge_edit", arguments: { id: wrj.id, kind: "__proto__" } })).result?.isError === true && (await A("POST", "/api/admin/knowledge", { kind: "constructor", title: "x", body: "y" })).s === 400 && (await rpc("tools/call", { name: "knowledge_add", arguments: { kind: "note", title: "x" } })).result?.isError === true);
+  t("editing an entry that isn't there is an error", (await rpc("tools/call", { name: "knowledge_edit", arguments: { id: 999999, body: "z" } })).result?.isError === true);
+  t("the connector can't put away or delete: archived is ignored, and there is no such tool", !(await rpc("tools/call", { name: "knowledge_edit", arguments: { id: wrj.id, archived: true } })).result?.isError && (await entry(wrj.id)).archived === false && (await rpc("tools/call", { name: "knowledge_delete", arguments: { id: wrj.id } })).result?.isError === true);
+  t("nothing else can be written through it (no tool that writes members, settings, orders or posts)", !tools.some((x) => x.annotations.readOnlyHint === false && !/^knowledge_/.test(x.name)));
+  /* Grok, from its own callback, writes as Grok */
+  const greg = (await call(null, "POST", "/oauth/register", { redirect_uris: ["https://grok.com/connectors/oauth/callback"] })).j;
+  const gv = "g".repeat(50), gch = createHash("sha256").update(gv).digest("base64url");
+  const gap = (await A("POST", "/oauth/approve", { client_id: greg.client_id, redirect_uri: "https://grok.com/connectors/oauth/callback", state: "s", code_challenge: gch })).j;
+  const gcode = new URL(gap.redirect || "https://x/").searchParams.get("code");
+  const gtok = (await call(null, "POST", "/oauth/token", { grant_type: "authorization_code", code: gcode || "", client_id: greg.client_id, redirect_uri: "https://grok.com/connectors/oauth/callback", code_verifier: gv }, true)).j.access_token;
+  const gw = JSON.parse((await call(gtok, "POST", "/mcp", { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "knowledge_add", arguments: { kind: "glossary", title: "Drop", body: "A release of new pieces at a set time, announced on Instagram, sold on LABS." } } })).j.result?.content?.[0]?.text || "{}");
+  t("Grok writes as Grok", gw.ok === true && (await entry(gw.id)).source === "grok" && /"by":"grok"/.test((await logOf(gw.id)).detail));
+  let capped = 0; for (let i = 0; i < 62; i++) { const r = await rpc("tools/call", { name: "knowledge_add", arguments: { kind: "note", title: "note " + i, body: "filler " + i } }); if (r.result?.isError) capped++; }
+  t("writes are capped at 60 an hour per admin", capped >= 2 && (await rpc("tools/call", { name: "knowledge_add", arguments: { kind: "note", title: "one more", body: "too many" } })).result?.isError === true);
+  const et2 = (await A("GET", "/api/admin/knowledge/export?format=text")).text;
+  t("the export carries what Claude and Grok wrote, like everything else", et2.includes("### Drop") && et2.includes("### Echo is admin-only"));
 
   console.log("\nNEVER MESSAGES");
   const src = readFileSync(join(ROOT, "src/server/knowledge/knowledge.js"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
