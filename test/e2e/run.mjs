@@ -2481,27 +2481,31 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.unroute("**/api/admin/systems/map");
   });
   /* 2026-11-04: "I don't see the interactive admin dashboard network. Make the whole admin dashboard interactive." — the Network, in the phone's bar */
-  await step(d, "admin → Network from the phone's bar: every section and service drawn, what needs you is picked first, a row opens its section", async () => {
-    const sec = (id, name, value, needs = []) => ({ id, name, does: name + " does things", value, label: "things", facts: [["Thing", 2]], needs: needs.map((text) => ({ text, level: "high" })) });
-    const svc = (id, name, state) => ({ id, name, does: name, state, line: name + " line", facts: [], go: "health" });
-    await p.route("**/api/admin/network", (r) => r.fulfill({ json: { at: Date.now(), sections: [sec("people", "Members", 40), sec("market", "Market", 3), sec("content", "Content", 9, ["2 open reports"]),
-      sec("events", "Events", 1), sec("instagram", "Instagram", 0), sec("knowledge", "Knowledge", 100), sec("echo", "Help desk", 0), sec("settings", "Settings", 4), sec("analytics", "Analytics", 12), sec("health", "Health", 0)],
-      services: [svc("labs", "LABS", "on"), svc("stripe", "Stripe", "warn"), svc("resend", "Resend", "on"), svc("google", "Google", "off")] } }));
+  await step(d, "admin → Network from the phone's bar: a member's path drawn as the Blueprint organises it, tap a stage for its numbers and needs, Open goes to its page", async () => {
+    const st = (id, name, value, needs = []) => ({ id, name, says: name + " says", value, before: Math.max(0, value - 1), label: "things", facts: [["Thing", 2]], go: "analytics", goName: "Analytics", needs: needs.map((text) => ({ text, level: "high" })) });
+    const sv = (id, name, state) => ({ id, name, does: name, state, line: name + " line", facts: [], go: "health" });
+    await p.route("**/api/admin/network**", (r) => r.fulfill({ json: { at: Date.now(), days: 30, stages: [st("arrive", "Arrive", 5), st("join", "Join", 3, ["2 new members haven't posted yet"]), st("see", "See", 9), st("make", "Make", 4),
+      st("respond", "Respond", 12), st("earn", "Earn", 40), { ...st("trade", "Trade", 2500), money: true }, st("talk", "Talk", 7)],
+      outside: [sv("meta", "Instagram", "off"), sv("stripe", "Stripe", "warn"), sv("resend", "Resend", "on")], base: [sv("labs", "Server", "on"), sv("trust", "Trust", "on")] } }));
     await settledGoto(p, B + "/admin");
     await p.locator(".bbar [data-tab=network]").tap();
-    await fast(p, 8000, () => p.locator("#nwcv").waitFor(), "the Network");
+    await fast(p, 8000, () => p.locator("#nwp .nwp-st").first().waitFor(), "the Network");
     await p.waitForTimeout(400);
-    ok(await p.evaluate(() => { const c = document.querySelector("#nwcv"), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 500; }), "the Network's canvas is blank");
-    ok(await p.locator(".nw [data-nwn]").count() === 14, "the Network's lists don't name all ten sections and four services");
-    ok(/Content/.test(await p.locator("#nwpick").innerText()) && /2 open reports/.test(await p.locator("#nwpick").innerText()), "what needs you wasn't picked first");
-    ok(await p.locator('.nw [data-nwn="s:labs"]').innerText().then((t) => /Server/.test(t)), "the server is called LABS, the same as the middle");
-    await p.locator('[data-nwn="analytics"]').tap(); await p.waitForTimeout(700);
-    ok(/Analytics/.test(await p.locator("#nwpick").innerText()), "tapping Analytics didn't show it");
-    await p.locator("[data-nwgo]").tap();
+    ok((await p.locator(".nwp-st .nwp-nm").allInnerTexts()).join(" ") === "Arrive Join See Make Respond Earn Trade Talk", "the path isn't the Blueprint's eight stages in order");
+    ok(await p.locator(".nwp-st.hot").count() === 1 && await p.locator('.nwp-st.hot[data-nwk="join"]').count() === 1, "the stage that needs you isn't marked");
+    ok(/\$25/.test(await p.locator('[data-nwk="trade"] .nwp-v').innerText()), "Trade isn't shown as money");
+    ok(await p.evaluate(() => { const c = document.querySelector("#nwcv"), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 200; }), "the path's lines aren't drawn");
+    await p.locator('.nwp-st[data-nwk="join"]').tap(); await p.waitForTimeout(300);
+    ok(/Join/.test(await p.locator("#nwdet").innerText()) && /haven't posted/.test(await p.locator("#nwdet").innerText()), "tapping Join didn't show its needs");
+    ok(/Resend/.test(await p.locator("#nwdet .nwp-links").innerText()), "Join doesn't say what it leans on (Resend)");
+    await p.locator('#nwdet [data-nwk="o:resend"]').tap(); await p.waitForTimeout(300);
+    ok(/Resend/.test(await p.locator("#nwdet h3").innerText()), "a linked service didn't open from the stage");
+    await p.locator('.nwp-st[data-nwk="see"]').tap(); await p.waitForTimeout(200);
+    await p.locator("#nwdet [data-nwgo]").tap();
     await fast(p, 6000, () => p.waitForFunction(() => TAB === "analytics"), "Open Analytics from the Network");
     await p.waitForTimeout(200);
     ok(await p.evaluate(() => NW.raf === 0), "the Network kept drawing after leaving it");
-    await p.unroute("**/api/admin/network");
+    await p.unroute("**/api/admin/network**");
   });
   await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {
     await p.evaluate(() => localStorage.removeItem("tnl-token"));   // signed out (the step before signed this phone in)

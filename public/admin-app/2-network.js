@@ -1,122 +1,119 @@
 /* LABS admin — the Network v1.0, 2026-11-04 ("I don't see the interactive admin dashboard network. Make the whole admin
-   dashboard interactive."). Its own section, in the phone's bar: the whole dashboard as one model you can spin. LABS in
-   the middle; round it every section with its live number — red when something in it needs you — and round those,
-   every service LABS runs on (green working, red needs a look, an outline in motion, grey not connected). Traffic moves
-   along the lines. Tap anything (or its row) for what it is, its numbers and what needs you, and Open goes there.
-   Data: GET /api/admin/network (server/admin/network). Drawn by hand on a canvas, palette colours only; spins on its
-   own unless reduced motion is on, and stops when the Network isn't on screen. */
-const NW = { yaw: 0.2, pitch: 0.82, vel: 0, drag: null, idle: 0, pick: "", raf: 0, hit: [], to: null, aimed: false };
-const NW_TAG = { on: "on", warn: "warn", wait: "wait", off: "" }, NW_WORD = { on: "working", warn: "needs a look", wait: "in motion", off: "not connected" };
-const NW_OPEN = { people: "Members", market: "Market", content: "Content", events: "Events", instagram: "Instagram", knowledge: "Knowledge", echo: "Help desk", settings: "Settings", analytics: "Analytics", health: "Health", echohome: "Echo", systems: "Systems" };
-LOADERS.network = async () => { D.network = await req("/api/admin/network"); };
-const nwSec = () => (D.network && D.network.sections) || [];
-/* the services; the server is "Server" here, so it isn't taken for LABS in the middle */
-const nwSvc = () => ((D.network && D.network.services) || []).map((x) => (x.id === "labs" ? { ...x, name: "Server" } : x));
-const nwFind = (id) => nwSec().find((x) => x.id === id) || nwSvc().find((x) => "s:" + x.id === id);
-function nwPickHTML() {
-  const x = nwFind(NW.pick);
-  if (!x) { const n = nwSec().reduce((a, s) => a + s.needs.length, 0); return `<b>${n ? `${n} thing${n === 1 ? "" : "s"} need${n === 1 ? "s" : ""} you` : "Nothing needs you"}</b><span class="dim">Drag to spin · tap a section or a service</span>`; }
-  if (NW.pick.startsWith("s:")) return `<div class="sm-ph"><b>${esc(x.name)}</b><span class="tag ${NW_TAG[x.state]}">${NW_WORD[x.state]}</span></div><span class="dim">${esc(x.does)}</span><span>${esc(x.line)}</span>
-    ${x.facts.length ? `<dl class="sm-facts">${x.facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(typeof v === "number" ? num(v) : v)}</dd></div>`).join("")}</dl>` : ""}
-    <button class="btn ghost sm" data-nwgo="${esc(x.go === "systems" ? "systems" : x.go)}">Open ${esc(NW_OPEN[x.go] || "it")} →</button>`;
-  return `<div class="sm-ph"><b>${esc(x.name)}</b>${x.needs.length ? `<span class="tag warn">needs you</span>` : ""}</div><span class="dim">${esc(x.does)}</span>
-    <div class="nw-big"><b>${esc(num(x.value))}</b><span>${esc(x.label)}</span></div>
-    ${x.needs.length ? `<ul class="nw-needs">${x.needs.map((n) => `<li>${esc(n.text)}</li>`).join("")}</ul>` : ""}
-    ${x.facts.length ? `<dl class="sm-facts">${x.facts.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(typeof v === "number" ? num(v) : v)}</dd></div>`).join("")}</dl>` : ""}
-    <button class="btn ghost sm" data-nwgo="${esc(x.id)}">Open ${esc(x.name)} →</button>`;
+   dashboard interactive" — "use the organization" of the LABS Blueprint, not its look). Its own section, in the phone's bar.
+   LABS the way the Blueprint (sheet A-0) reads it: a member's path, left to right — Arrive · Join · See · Make · Respond ·
+   Earn · Trade · Talk — each stage with its number for the date range, the change from the range before, and what needs
+   you there; across the top, the outside world each stage leans on; underneath, the foundations. Traffic moves along the
+   path; tap anything to light up what it connects to, read its numbers, and open the page that runs it.
+   Data: GET /api/admin/network (server/admin/network). LABS's own look — palette colours, cards, Helvetica. The lines are a
+   canvas laid over the cards; it moves unless reduced motion is on, and stops when the Network isn't on screen. */
+const NW = { pick: "", raf: 0 };
+/* what leans on what — the Blueprint's lines, between the cards on this page */
+const NW_LINKS = [["o:meta", "arrive"], ["o:cloudflare", "arrive"], ["o:google", "arrive"], ["o:resend", "join"], ["o:stripe", "trade"], ["o:resend", "talk"], ["o:claude", "talk"],
+  ["o:railway", "b:labs"], ["o:github", "b:labs"], ["o:connector", "b:labs"], ["b:trust", "join"], ["b:trust", "respond"], ["b:members", "see"], ["b:labs", "see"], ["b:data", "earn"]];
+const NW_RANGES = [7, 30, 90];
+LOADERS.network = async () => { D.network = await req(`/api/admin/network?days=${RANGE}`); };
+const nwStages = () => (D.network && D.network.stages) || [];
+const nwAll = () => { const N = D.network || {}; return [...(N.outside || []).map((x) => ({ ...x, key: "o:" + x.id })), ...(N.base || []).map((x) => ({ ...x, key: "b:" + x.id }))]; };
+const nwFind = (k) => nwStages().find((s) => s.id === k) || nwAll().find((s) => s.key === k);
+const nwFmt = (s, v) => (s.money ? money(v) : num(v));
+function nwDelta(s) {
+  if (!s.before && !s.value) return `<span class="nwp-d">—</span>`;
+  if (!s.before) return `<span class="nwp-d up">new</span>`;
+  const p = Math.round(((s.value - s.before) / s.before) * 100);
+  return `<span class="nwp-d ${p > 0 ? "up" : p < 0 ? "down" : ""}">${p > 0 ? "+" : ""}${p}%</span>`;
+}
+const nwLinked = (k) => NW_LINKS.filter(([a, b]) => a === k || b === k).map(([a, b]) => (a === k ? b : a));
+function nwChip(x) { return `<button class="nwp-chip ${x.key === NW.pick ? "on" : ""}" data-nwk="${esc(x.key)}"><i class="sm-dot ${x.state}"></i>${esc(x.name)}</button>`; }
+function nwDetailHTML() {
+  const k = NW.pick, x = nwFind(k);
+  if (!x) {
+    const n = nwStages().reduce((a, s) => a + s.needs.length, 0);
+    return `<h3>How to read it</h3><p class="dim">A member's path, left to right: they arrive (mostly from Instagram), join, see the Showroom and the labs, make work, other people respond, they earn standing, trade in the Market and talk. Across the top, what each stage leans on outside LABS; underneath, the foundations. ${n ? `<b>${n} thing${n === 1 ? "" : "s"} need${n === 1 ? "s" : ""} you</b> — the stages with a red dot.` : "Nothing needs you right now."} Tap any card.</p>`;
+  }
+  const links = nwLinked(k).map(nwFind).filter(Boolean).map((y) => `<button class="nwp-chip" data-nwk="${esc(y.id && !y.key ? y.id : y.key)}">${y.key ? `<i class="sm-dot ${y.state}"></i>` : ""}${esc(y.name)}</button>`).join("");
+  const facts = (x.facts || []).length ? `<dl class="sm-facts">${x.facts.map(([a, v]) => `<div><dt>${esc(a)}</dt><dd>${esc(typeof v === "number" ? num(v) : v)}</dd></div>`).join("")}</dl>` : "";
+  if (!x.key) {
+    const i = nwStages().indexOf(x);
+    return `<div class="sm-ph"><span class="nwp-no">${String(i + 1).padStart(2, "0")}</span><h3>${esc(x.name)}</h3>${x.needs.length ? `<span class="tag warn">needs you</span>` : ""}</div><p class="dim">${esc(x.says)}</p>
+      <div class="nw-big"><b>${esc(nwFmt(x, x.value))}</b><span>${esc(x.label)} · ${RANGE} days</span>${nwDelta(x)}</div><p class="dim nwp-was">${esc(nwFmt(x, x.before))} in the ${RANGE} days before</p>
+      ${x.needs.length ? `<ul class="nw-needs">${x.needs.map((n) => `<li>${esc(n.text)}</li>`).join("")}</ul>` : ""}${facts}
+      ${links ? `<div class="nwp-links"><span class="dim">Leans on</span>${links}</div>` : ""}
+      <button class="btn ghost sm" data-nwgo="${esc(x.go)}">Open ${esc(x.goName)} →</button>`;
+  }
+  return `<div class="sm-ph"><h3>${esc(x.name)}</h3><span class="tag ${{ on: "on", warn: "warn", wait: "wait" }[x.state] || ""}">${{ on: "working", warn: "needs a look", wait: "in motion", off: "not connected" }[x.state]}</span></div>
+    <p class="dim">${esc(x.does)}</p><p>${esc(x.line)}</p>${facts}${links ? `<div class="nwp-links"><span class="dim">Feeds</span>${links}</div>` : ""}
+    ${x.go ? `<button class="btn ghost sm" data-nwgo="${esc(x.go)}">Open ${esc({ health: "Health", settings: "Settings", market: "Market", echohome: "Echo", instagram: "Instagram", systems: "Systems", content: "Content" }[x.go] || "it")} →</button>` : ""}`;
 }
 VIEWS.network = () => {
-  const N = D.network, head = pageHead("Network", "The whole dashboard as one model: every section and every service LABS runs on. Tap one to open it.");
-  if (!N) return `${head}<section class="rc gl"><div class="gl-b"><div class="gl-ph"></div></div></section>`;
-  const sec = [...nwSec()].sort((a, b) => b.needs.length - a.needs.length), svc = [...nwSvc()].sort((a, b) => ["warn", "wait", "on", "off"].indexOf(a.state) - ["warn", "wait", "on", "off"].indexOf(b.state));
-  if (!NW.pick) { const s = sec.find((x) => x.needs.length); if (s) NW.pick = s.id; }
-  const row = (id, dot, name, line) => `<li><button data-nwn="${esc(id)}" class="${id === NW.pick ? "on" : ""}"><span class="sm-dot ${dot}"></span><span class="gl-n">${esc(name)}</span><span class="dim sm-l">${esc(line)}</span></button></li>`;
-  return `${head}<section class="rc gl sm nw" id="network"><div class="gl-b"><div class="gl-w nw-w"><canvas id="nwcv" role="img" aria-label="A model of the dashboard and the services LABS runs on"></canvas></div>
-    <div class="gl-side"><div class="gl-pick sm-pick" id="nwpick">${nwPickHTML()}</div>
-    <h4 class="nw-h">The dashboard</h4><ol class="gl-list sm-list">${sec.map((s) => row(s.id, s.needs.length ? "warn" : "on", s.name, s.needs.length ? s.needs[0].text : `${num(s.value)} ${s.label}`)).join("")}</ol>
-    <h4 class="nw-h">Runs on</h4><ol class="gl-list sm-list">${svc.map((s) => row("s:" + s.id, s.state, s.name, s.line)).join("")}</ol></div></div></section>`;
+  const N = D.network, seg = `<div class="seg" role="group" aria-label="Date range">${NW_RANGES.map((d) => `<button class="${RANGE === d ? "on" : ""}" data-nwr="${d}">${d} days</button>`).join("")}</div>`;
+  const head = pageHead("Network", "LABS as a member's path — arrive, join, see, make, respond, earn, trade, talk — with what it leans on. Tap any card.", seg);
+  if (!N) return `${head}<section class="rc nwp"><div class="nwp-ph"></div></section>`;
+  const tile = (s, i) => `<li><button class="nwp-st ${s.id === NW.pick ? "on" : ""} ${s.needs.length ? "hot" : ""}" data-nwk="${s.id}">
+    <span class="nwp-no">${String(i + 1).padStart(2, "0")}</span><b class="nwp-nm">${esc(s.name)}</b>
+    <span class="nwp-v">${esc(nwFmt(s, s.value))}</span><span class="nwp-l">${esc(s.label)}</span>${nwDelta(s)}</button></li>`;
+  return `${head}<section class="rc nwp" id="nwp"><canvas class="nwp-cv" id="nwcv" aria-hidden="true"></canvas>
+    <div class="nwp-band"><span class="nwp-bl">Outside the app</span><div class="nwp-row">${(N.outside || []).map((x) => nwChip({ ...x, key: "o:" + x.id })).join("")}</div></div>
+    <div class="nwp-band"><span class="nwp-bl">A member's path</span><ol class="nwp-path">${nwStages().map(tile).join("")}</ol></div>
+    <div class="nwp-band"><span class="nwp-bl">Foundations</span><div class="nwp-row">${(N.base || []).map((x) => nwChip({ ...x, key: "b:" + x.id })).join("")}</div></div></section>
+    <section class="rc nwp-det" id="nwdet">${nwDetailHTML()}</section>`;
 };
-function nwGo(id) {
-  NW.pick = NW.pick === id ? "" : id; NW.idle = performance.now();
-  const p = $("#nwpick"); if (p) { p.innerHTML = nwPickHTML(); nwWirePick(); }
-  $$("[data-nwn]").forEach((b) => b.classList.toggle("on", b.dataset.nwn === NW.pick));
-  const front = nwFront(NW.pick); if (front !== null) { if (matchMedia("(prefers-reduced-motion: reduce)").matches) NW.yaw = front; else NW.to = { yaw: front, from: NW.yaw, t0: performance.now() }; }
+function nwSelect(k) {
+  NW.pick = NW.pick === k ? "" : k;
+  $$("[data-nwk]").forEach((b) => b.classList.toggle("on", b.dataset.nwk === NW.pick && !b.closest("#nwdet")));
+  const d = $("#nwdet"); if (d) { d.innerHTML = nwDetailHTML(); nwWireDetail(); }
+  NW.dirty = true;
 }
-/* the yaw that brings a node round to the front, the short way */
-function nwFront(id) {
-  const sec = nwSec(), svc = nwSvc(); let a = null;
-  const i = sec.findIndex((x) => x.id === id), j = svc.findIndex((x) => "s:" + x.id === id);
-  if (i >= 0) a = (i / sec.length) * Math.PI * 2; else if (j >= 0) a = (j / svc.length) * Math.PI * 2 + Math.PI / svc.length; else return null;
-  let d = (Math.PI / 2 - a - NW.yaw) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return NW.yaw + d;
+function nwWireDetail() {
+  $$("#nwdet [data-nwk]").forEach((b) => b.onclick = () => { nwSelect(b.dataset.nwk); if (innerWidth < 1024) $("#nwp").scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); });
+  $$("[data-nwgo]").forEach((b) => b.onclick = () => go(b.dataset.nwgo));
 }
-function nwWirePick() { $$("[data-nwgo]").forEach((b) => b.onclick = () => go(b.dataset.nwgo)); }
 WIRES.network = () => {
-  const cv = $("#nwcv"); if (!cv) return;
-  $$("[data-nwn]").forEach((b) => b.onclick = () => nwGo(b.dataset.nwn)); nwWirePick();
-  if (!NW.aimed && NW.pick) { NW.aimed = true; const f = nwFront(NW.pick); if (f !== null) NW.yaw = f; }
-  cv.onpointerdown = (e) => { NW.drag = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: performance.now(), moved: false }; NW.to = null; NW.vel = 0; try { cv.setPointerCapture(e.pointerId); } catch (x) {} };
-  cv.onpointermove = (e) => {
-    const g = NW.drag; if (!g) return; const w = cv.clientWidth, dx = e.clientX - g.x, dy = e.clientY - g.y, dt = Math.max(1, performance.now() - g.t);
-    if (Math.abs(e.clientX - g.x0) + Math.abs(e.clientY - g.y0) > 5) g.moved = true;
-    NW.yaw += (dx / w) * 3; if (e.pointerType !== "touch") NW.pitch = Math.max(0.3, Math.min(1.1, NW.pitch + (dy / w) * 2));
-    NW.vel = ((dx / w) * 3) / dt; g.x = e.clientX; g.y = e.clientY; g.t = performance.now();
-  };
-  cv.onpointerup = (e) => { const g = NW.drag; NW.drag = null; NW.idle = performance.now(); if (g && !g.moved) { const b = cv.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
-    const hit = NW.hit.filter((h) => Math.hypot(h.x - x, h.y - y) < h.r + 12).sort((a, c) => c.z - a.z)[0]; if (hit) nwGo(hit.id); } };
-  cv.onpointercancel = () => { NW.drag = null; NW.idle = performance.now(); };
-  if (!NW.raf) NW.raf = requestAnimationFrame(nwFrame);
+  $$("#nwp [data-nwk]").forEach((b) => b.onclick = () => nwSelect(b.dataset.nwk));
+  $$("[data-nwr]").forEach((b) => b.onclick = () => { RANGE = +b.dataset.nwr; try { localStorage.setItem("tnl-admin-range", RANGE); } catch (e) {} D.network = null; paint(); load(); });
+  nwWireDetail(); NW.dirty = true;
+  if ($("#nwcv") && !NW.raf) NW.raf = requestAnimationFrame(nwFrame);
 };
+/* the lines between the cards: the path, heavy and moving; what leans on what, quiet — lit up when one end is picked */
 function nwFrame(now) {
-  const cv = $("#nwcv"); if (!cv || !cv.isConnected || TAB !== "network") { NW.raf = 0; return; }
+  const cv = $("#nwcv"), box = $("#nwp");
+  if (!cv || !box || !cv.isConnected || TAB !== "network") { NW.raf = 0; return; }
   NW.raf = requestAnimationFrame(nwFrame);
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
-  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
-  const dt = Math.min(64, now - (NW.last || now)); NW.last = now;
-  if (NW.to) { const k = Math.min(1, (now - NW.to.t0) / 650), e = 1 - Math.pow(1 - k, 3); NW.yaw = NW.to.from + (NW.to.yaw - NW.to.from) * e; if (k >= 1) NW.to = null; }
-  else if (!NW.drag && !reduce) { if (Math.abs(NW.vel) > 0.00002) { NW.yaw += NW.vel * dt; NW.vel *= Math.pow(0.93, dt / 16); } else if (!NW.pick && now - NW.idle > 2500) NW.yaw += dt * 0.0001; }
-  const sec = nwSec(), svc = nwSvc(); if (!sec.length) return;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const br = box.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (cv.width !== Math.round(br.width * dpr) || cv.height !== Math.round(br.height * dpr)) { cv.width = Math.round(br.width * dpr); cv.height = Math.round(br.height * dpr); NW.dirty = true; }
+  if (reduce && !NW.dirty) return; NW.dirty = false;
+  const at = (k) => { const el = box.querySelector(`[data-nwk="${CSS.escape(k)}"]`); if (!el) return null; const r = el.getBoundingClientRect(); return { x: (r.left - br.left) * dpr, y: (r.top - br.top) * dpr, w: r.width * dpr, h: r.height * dpr }; };
   const c = cv.getContext("2d"), cs = getComputedStyle(document.documentElement), col = (v) => cs.getPropertyValue(v).trim();
-  const C = { on: col("--accent-fill"), warn: col("--red"), wait: col("--tx"), off: col("--dim"), tx: col("--tx"), dim: col("--dim"), card: col("--card"), el: col("--el"), line: col("--line2"), onAcc: col("--on-accent") };
-  const W = cv.width, H = cv.height, cx = W / 2, cy = H * 0.5, Rr = Math.min(W * 0.37, H * 0.6), f = Rr * 4.2, u = Math.min(w, h * 1.3) / 400;
-  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, H);
-  const P = (x, y, z) => { const a = Math.cos(NW.yaw), b = Math.sin(NW.yaw), x1 = x * a - z * b, z1 = x * b + z * a, cp = Math.cos(NW.pitch), sp = Math.sin(NW.pitch);
-    const y2 = y * cp + z1 * sp, z2 = z1 * cp - y * sp, s = f / (f - z2); return { x: cx + x1 * s, y: cy + y2 * s, z: z2, s }; };
-  const pos = { labs: P(0, 0, 0) }, r1 = Rr * 0.58;
-  sec.forEach((s, i) => { const a = (i / sec.length) * Math.PI * 2; pos[s.id] = P(Math.cos(a) * r1, -Rr * 0.04, Math.sin(a) * r1); });
-  svc.forEach((s, i) => { const a = (i / svc.length) * Math.PI * 2 + Math.PI / svc.length; pos["s:" + s.id] = P(Math.cos(a) * Rr, Rr * 0.06, Math.sin(a) * Rr); });
-  const orbit = (r, y) => { c.globalAlpha = 0.45; c.strokeStyle = C.line; c.lineWidth = dpr; c.beginPath(); for (let k = 0; k <= 72; k++) { const a = (k / 72) * Math.PI * 2, p = P(Math.cos(a) * r, y, Math.sin(a) * r); k ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y); } c.stroke(); };
-  orbit(r1, -Rr * 0.04); orbit(Rr, Rr * 0.06);
-  /* lines: each section to LABS; each service to LABS, quieter */
-  const lines = [...sec.map((s) => ({ id: s.id, a: pos[s.id], st: s.needs.length ? "warn" : "on", main: true })), ...svc.map((s) => ({ id: "s:" + s.id, a: pos["s:" + s.id], st: s.state, main: false }))];
-  for (const L of lines) { c.globalAlpha = L.st === "off" ? 0.25 : L.main ? 0.5 : 0.28; c.strokeStyle = C[L.st]; c.lineWidth = (L.main ? 1.5 : 1) * dpr; c.setLineDash(L.st === "off" ? [3 * dpr, 5 * dpr] : []); c.beginPath(); c.moveTo(L.a.x, L.a.y); c.lineTo(pos.labs.x, pos.labs.y); c.stroke(); }
-  c.setLineDash([]);
-  if (!reduce) lines.forEach((L, i) => { if (L.st === "off") return; for (let j = 0; j < (L.main ? 2 : 1); j++) { const t = (now * (L.main ? 0.0003 : 0.0002) + j / 2 + i * 0.173) % 1, tt = i % 2 ? t : 1 - t;
-    c.globalAlpha = Math.sin(t * Math.PI) * (L.main ? 1 : 0.7); c.fillStyle = C[L.st]; c.beginPath(); c.arc(L.a.x + (pos.labs.x - L.a.x) * tt, L.a.y + (pos.labs.y - L.a.y) * tt, (L.main ? 2.4 : 1.8) * dpr, 0, 7); c.fill(); } });
-  /* nodes, back to front */
-  const draw = [{ id: "labs", kind: "core" }, ...sec.map((s) => ({ id: s.id, kind: "sec", n: s })), ...svc.map((s) => ({ id: "s:" + s.id, kind: "svc", n: s }))].map((d) => ({ ...d, p: pos[d.id] })).sort((a, b) => a.p.z - b.p.z);
-  NW.hit = []; c.textAlign = "center";
-  const font = (wgt, px) => `${wgt} ${Math.round(px)}px Helvetica, Arial, sans-serif`;
-  for (const { id, kind, n, p } of draw) {
-    const depth = Math.max(0.4, Math.min(1, 0.72 + p.z / (Rr * 2))), picked = NW.pick === id;
-    if (kind === "core") { const r = 26 * u * dpr * p.s, g = c.createRadialGradient(p.x, p.y, r * 0.5, p.x, p.y, r * 2.4); g.addColorStop(0, C.on); g.addColorStop(1, "transparent");
-      c.globalAlpha = 0.3; c.fillStyle = g; c.beginPath(); c.arc(p.x, p.y, r * 2.4, 0, 7); c.fill(); c.globalAlpha = 1; c.fillStyle = C.on; c.beginPath(); c.arc(p.x, p.y, r, 0, 7); c.fill();
-      c.fillStyle = C.onAcc; c.font = font(700, r * 0.5); c.textBaseline = "middle"; c.fillText("LABS", p.x, p.y); continue; }
-    if (kind === "sec") {
-      const r = 14 * u * dpr * p.s, hot = n.needs.length > 0;
-      if (hot) { c.globalAlpha = 0.2 * depth; c.fillStyle = C.warn; c.beginPath(); c.arc(p.x, p.y, r * 1.7, 0, 7); c.fill(); }
-      c.globalAlpha = depth; c.fillStyle = C.card; c.beginPath(); c.arc(p.x, p.y, r, 0, 7); c.fill();
-      c.lineWidth = (picked ? 3 : 2) * dpr; c.strokeStyle = picked ? C.tx : hot ? C.warn : C.on; c.stroke();
-      const v = n.value >= 10000 ? Math.round(n.value / 1000) + "k" : String(n.value);
-      c.fillStyle = C.tx; c.font = font(700, r * (v.length > 3 ? 0.62 : 0.78)); c.textBaseline = "middle"; c.fillText(v, p.x, p.y + r * 0.04);
-      if (hot) { c.fillStyle = C.warn; c.beginPath(); c.arc(p.x + r * 0.74, p.y - r * 0.74, r * 0.26, 0, 7); c.fill(); }
-      c.globalAlpha = Math.max(0.55, depth); c.fillStyle = C.tx; c.font = font(picked ? 700 : 600, 11 * u * dpr * Math.min(1.1, p.s)); c.textBaseline = "top"; c.fillText(n.name, p.x, p.y + r + 3 * dpr);
-      NW.hit.push({ id, x: p.x / dpr, y: p.y / dpr, r: r / dpr, z: p.z }); continue; }
-    const r = 8 * u * dpr * p.s, st = n.state;
-    c.globalAlpha = depth * (st === "off" ? 0.6 : 1); c.fillStyle = st === "off" ? C.el : st === "wait" ? C.card : C[st]; c.beginPath(); c.arc(p.x, p.y, r, 0, 7); c.fill();
-    c.lineWidth = (picked ? 2.5 : 1.5) * dpr; c.strokeStyle = picked ? C.tx : C[st]; c.stroke();
-    if (p.z > -Rr * 0.2 || picked) { c.globalAlpha = Math.max(0.45, depth) * (st === "off" ? 0.75 : 1); c.fillStyle = st === "off" ? C.dim : C.tx; c.font = font(picked ? 700 : 400, 10 * u * dpr * Math.min(1.1, p.s)); c.textBaseline = "top"; c.fillText(n.name, p.x, p.y + r + 3 * dpr); }
-    NW.hit.push({ id, x: p.x / dpr, y: p.y / dpr, r: r / dpr, z: p.z });
+  const acc = col("--accent-fill"), line = col("--line2"), red = col("--red"), tx = col("--tx");
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
+  const pick = NW.pick, lit = new Set(pick ? [pick, ...nwLinked(pick)] : []);
+  /* edge points: leave one card and enter the other on the facing sides */
+  const ends = (A, B) => {
+    const ac = { x: A.x + A.w / 2, y: A.y + A.h / 2 }, bc = { x: B.x + B.w / 2, y: B.y + B.h / 2 };
+    if (Math.abs(ac.y - bc.y) < Math.min(A.h, B.h) / 2) return ac.x < bc.x ? [{ x: A.x + A.w, y: ac.y }, { x: B.x, y: bc.y }] : [{ x: A.x, y: ac.y }, { x: B.x + B.w, y: bc.y }];
+    return ac.y < bc.y ? [{ x: ac.x, y: A.y + A.h }, { x: bc.x, y: B.y }] : [{ x: ac.x, y: A.y }, { x: bc.x, y: B.y + B.h }];
+  };
+  const curve = (p, q) => { const my = (p.y + q.y) / 2; c.beginPath(); c.moveTo(p.x, p.y); if (Math.abs(p.y - q.y) < 2) c.lineTo(q.x, q.y); else c.bezierCurveTo(p.x, my, q.x, my, q.x, q.y); };
+  const pt = (p, q, t) => { if (Math.abs(p.y - q.y) < 2) return { x: p.x + (q.x - p.x) * t, y: p.y };
+    const my = (p.y + q.y) / 2, u = 1 - t; return { x: u * u * u * p.x + 3 * u * u * t * p.x + 3 * u * t * t * q.x + t * t * t * q.x, y: u * u * u * p.y + 3 * u * u * t * my + 3 * u * t * t * my + t * t * t * q.y }; };
+  /* what leans on what */
+  for (const [a, b] of NW_LINKS) {
+    const A = at(a), B = at(b); if (!A || !B) continue;
+    const on = pick && (a === pick || b === pick), sv = nwFind(a), warn = sv && (sv.state === "warn"), off = sv && sv.state === "off";
+    c.globalAlpha = pick ? (on ? 0.9 : 0.08) : 0.35; c.strokeStyle = warn ? red : on ? tx : line; c.lineWidth = (on ? 1.6 : 1) * dpr; c.setLineDash(off ? [3 * dpr, 4 * dpr] : []);
+    const [p, q] = ends(A, B); curve(p, q); c.stroke();
+    if (on && !reduce && !off) { const t = ((now / 1400) % 1); const d = pt(p, q, t); c.globalAlpha = Math.sin(t * Math.PI); c.fillStyle = warn ? red : tx; c.beginPath(); c.arc(d.x, d.y, 2.2 * dpr, 0, 7); c.fill(); }
   }
-  c.globalAlpha = 1; c.textBaseline = "alphabetic";
+  c.setLineDash([]);
+  /* the path */
+  const st = nwStages();
+  for (let i = 0; i + 1 < st.length; i++) {
+    const A = at(st[i].id), B = at(st[i + 1].id); if (!A || !B) continue;
+    const [p, q] = ends(A, B), on = !pick || lit.has(st[i].id) || lit.has(st[i + 1].id) || pick === st[i].id;
+    c.globalAlpha = on ? 0.95 : 0.25; c.strokeStyle = acc; c.lineWidth = 3 * dpr; curve(p, q); c.stroke();
+    if (reduce) continue;
+    const busy = Math.min(3, 1 + Math.floor(Math.log10(1 + (st[i].value || 0))));   // more traffic, more dots
+    for (let j = 0; j < busy; j++) { const t = ((now / 1800) + j / busy + i * 0.13) % 1, d = pt(p, q, t); c.globalAlpha = (on ? 1 : 0.3) * Math.sin(t * Math.PI); c.fillStyle = acc; c.beginPath(); c.arc(d.x, d.y, 3 * dpr, 0, 7); c.fill(); }
+  }
+  c.globalAlpha = 1;
 }

@@ -1,6 +1,6 @@
-// THE NETWORK v1.0 — 2026-11-04: "I don't see the interactive admin dashboard network. Make the whole admin dashboard
-// interactive." GET /api/admin/network — every section of the admin with its live number and what needs you in it (the
-// same needs as Echo Home), and every service LABS runs on. Admins only; counts only; never a key or a name.
+// THE NETWORK v1.0 — 2026-11-04: "Make the whole admin dashboard interactive", organised like the LABS Blueprint.
+// GET /api/admin/network — a member's path (arrive → talk) with each stage's numbers and what needs you there, the outside
+// services and the foundations. Admins only; counts only; never a key or a name.
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -31,21 +31,24 @@ try {
   t("signed out: 401", (await get()).s === 401);
   t("a member: 403", (await get("tok-ana")).s === 403);
   const r = await get("tok-boss"); t("an admin: 200", r.s === 200);
-  const j = JSON.parse(r.text), S = Object.fromEntries(j.sections.map((s) => [s.id, s])), V = Object.fromEntries(j.services.map((s) => [s.id, s]));
+  const j = JSON.parse(r.text), S = Object.fromEntries(j.stages.map((s) => [s.id, s])), O = Object.fromEntries(j.outside.map((s) => [s.id, s])), F = Object.fromEntries(j.base.map((s) => [s.id, s]));
 
-  console.log("\nTHE DASHBOARD");
-  t("every section is there", ["people", "market", "content", "events", "instagram", "knowledge", "echo", "settings", "analytics", "health"].every((id) => S[id]));
-  t("each has a number, what it counts, what it does and its needs", j.sections.every((s) => typeof s.value === "number" && s.label && s.does && Array.isArray(s.needs) && Array.isArray(s.facts)));
-  t("members: 3, posts this week: 1", S.people.value === 3 && S.content.value === 1);
-  t("the open report needs you, in Content", S.content.needs.some((n) => /1 open report/.test(n.text)));
-  t("new members who haven't posted need you, in Members", S.people.needs.some((n) => /haven't posted/.test(n.text)));
-  t("no backups: Health needs you", S.health.needs.some((n) => /backup/i.test(n.text)));
-  t("nothing in Market needs you", S.market.needs.length === 0);
+  console.log("\nA MEMBER'S PATH (the Blueprint's order)");
+  t("eight stages, in order: arrive → join → see → make → respond → earn → trade → talk", j.stages.map((s) => s.id).join(" ") === "arrive join see make respond earn trade talk");
+  t("each has a number now, the one before, what it counts, its needs and the page that runs it", j.stages.every((s) => typeof s.value === "number" && typeof s.before === "number" && s.label && s.says && Array.isArray(s.needs) && Array.isArray(s.facts) && s.go && s.goName));
+  t("Join: 3 new members in the window", S.join.value === 3);
+  t("Make: 1 piece of work posted", S.make.value === 1);
+  t("the open report needs you on Respond", S.respond.needs.some((n) => /1 open report/.test(n.text)));
+  t("new members who haven't posted need you on Join", S.join.needs.some((n) => /haven't posted/.test(n.text)));
+  t("Trade is money, and nothing there needs you", S.trade.money === true && S.trade.needs.length === 0);
+  t("the date range moves the window", JSON.parse((await (await fetch(`http://localhost:${PORT}/api/admin/network?days=7`, { headers: { Authorization: "Bearer tok-boss" } })).text())).days === 7);
 
-  console.log("\nWHAT IT RUNS ON");
-  t("the services are there, with their states", ["stripe", "resend", "claude", "railway", "github", "cloudflare"].every((id) => V[id] && ["on", "warn", "wait", "off"].includes(V[id].state)));
-  t("Stripe and Claude keys set: on; Resend's not: off", V.stripe.state === "on" && V.claude.state === "on" && V.resend.state === "off");
-  t("never a key, an email or a report's words", !/SECRETSTRIPE|SECRETCLAUDE|x\.test|spam/.test(r.text));
+  console.log("\nOUTSIDE AND UNDERNEATH");
+  t("outside: the services, with their states", ["stripe", "resend", "claude", "railway", "github", "cloudflare", "meta"].every((id) => O[id] && ["on", "warn", "wait", "off"].includes(O[id].state)));
+  t("Stripe and Claude keys set: on; Resend's not: off", O.stripe.state === "on" && O.claude.state === "on" && O.resend.state === "off");
+  t("foundations: the server (named Server), the database, phones and trust", F.labs && F.labs.name === "Server" && F.data && F.members && F.trust);
+  t("no backups: the server needs a look", F.labs.state === "warn" && /backup/i.test(F.labs.line));
+  t("never a key, an email or a report's words", !/SECRETSTRIPE|SECRETCLAUDE|x\.test|"spam"/.test(r.text) && !/"reason"/.test(r.text));
 } finally { srv.kill(); }
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
