@@ -103,7 +103,7 @@ try {
   const tools = (await rpc("tools/list", {})).result?.tools || [];
   const names = tools.map((x) => x.name);
   t("tools cover the dashboard (overview, members, orders, reports, events, systems…)", ["overview", "members", "member", "orders", "reports", "events", "systems", "systems_meta", "health"].every((n) => names.includes(n)));
-  t("no tool reads messages, mail, backups, settings or the source", !names.some((n) => /message|(^|_)dms?(_|$)|inbox|thread|mail|backup|setting|source|csv|vote/i.test(n)));
+  t("no tool reads messages, mail, backups, keys or the source (settings — the switches, never a key — joined on 2026-11-04)", !names.some((n) => /message|(^|_)dms?(_|$)|inbox|thread|mail|backup|connector|source|csv|vote/i.test(n)) && names.includes("settings"));
   t("every tool says it is read only — except the two that write Knowledge (2026-11-04)", tools.every((x) => x.annotations?.readOnlyHint === !/^knowledge_(add|edit)$/.test(x.name)) && tools.filter((x) => x.annotations?.readOnlyHint === false).length === 2);
   const ov = await rpc("tools/call", { name: "overview", arguments: {} });
   const ovj = JSON.parse(ov.result?.content?.[0]?.text || "{}");
@@ -134,7 +134,7 @@ try {
   /* the key is not a session */
   t("a key can't read /api/me", (await call("/api/me", { token: KEY })).status === 401);
   t("a key can't open a member's messages", (await call("/api/admin/instagram", { token: KEY })).status === 401);
-  t("a key can't read the mail log, backups or settings", (await Promise.all(["/api/admin/mail-log", "/api/admin/backups", "/api/admin/settings", "/api/admin/members.csv"].map((p) => call(p, { token: KEY })))).every((r) => r.status === 401));
+  t("a key can't read the mail log, backups, the connector keys or the CSV", (await Promise.all(["/api/admin/mail-log", "/api/admin/backups", "/api/admin/connectors", "/api/admin/members.csv"].map((p) => call(p, { token: KEY })))).every((r) => r.status === 401));
   t("a key can't change anything", (await call("/api/admin/connectors/1", { method: "DELETE", token: KEY })).status === 401 && (await call("/api/admin/members/ana/suspend", { method: "POST", token: KEY })).status === 401);
   t("a key used straight from outside opens nothing, not even an allowed route", (await call("/api/admin/overview", { token: KEY })).status === 401 && (await call("/api/admin/people?q=ana", { token: KEY })).status === 401);
   const evil = await call(`/oauth/authorize?client_id=${reg.client_id}&redirect_uri=${encodeURIComponent(CB)}&state=${encodeURIComponent("</script><script>alert(1)</script>")}&code_challenge=${challenge}&code_challenge_method=S256&response_type=code`);

@@ -1,5 +1,5 @@
 /* ================================================================
-   MESSAGES v2.2 — 2026-10-14 (an unused day-divider helper out). v2.1 (Messages a screen of its own; repaints when the window changes shape).
+   MESSAGES v2.3 — 2026-11-04 (paintLayer ends with uiTick(): messages and chats are screens to the UI signals). v2.2 — 2026-10-14 (an unused day-divider helper out). v2.1 (Messages a screen of its own; repaints when the window changes shape).
    v2.0 — 2026-09-29. One chat kit for labs and DMs.
    Parts: 1-kit (this: state, API, shared pieces, the hold menu),
    2-dm (inbox + chat screens), 3-wire (DM behaviour, voice notes,
@@ -138,6 +138,7 @@ function paintLayer(){
   chatRestore(keep);
   mvLayer();
   syncChatHistory();
+  uiTick();   // app/ui-signals
 }
 /* Back / swipe-back. While anything chat is open we hold exactly one
    history entry: back closes the innermost thing (zoom, menu, sheet, chat,

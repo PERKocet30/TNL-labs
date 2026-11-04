@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · tools  v1.2 — 2026-11-04 (knowledge_add / knowledge_edit: Claude and Grok write to Knowledge, the one exception to read-only). v1.1 — 2026-11-04 (knowledge, read). v1.0 — 2026-10-27
+   LABS CONNECTOR · tools  v1.3 — 2026-11-04 (v1.3: echo_stats never carries a handoff's conversation; the UI-signals tools live in ui-signals/tools.js). v1.2 — 2026-11-04 (knowledge_add / knowledge_edit: Claude and Grok write to Knowledge, the one exception to read-only). v1.1 — 2026-11-04 (knowledge, read). v1.0 — 2026-10-27
    /mcp speaks MCP (JSON-RPC over HTTP, stateless) so Claude can read the
    admin dashboard like it reads GitHub or Railway. Each tool is one of
    the admin GET routes, fetched in-process with the connector key, then
@@ -108,6 +108,7 @@ async function mcpCall(key, name, args) {
   const body = await r.json().catch(() => ({ error: "not json" }));
   if (!r.ok) return { content: [{ type: "text", text: `LABS said ${r.status}: ${body.error || "no detail"}` }], isError: true };
   if (name === "admin_log" && Array.isArray(body.log)) body.log = body.log.map(({ detail, ...rest }) => rest);   // what was done, not what was typed
+  if (name === "echo_stats" && Array.isArray(body.handoffs)) body.handoffs = body.handoffs.map(({ transcript, ...rest }) => rest);   // who asked for a person and when, never the conversation
   return { content: [{ type: "text", text: JSON.stringify(mcpScrub(body)) }] };
 }
 
