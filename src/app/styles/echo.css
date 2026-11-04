@@ -1,0 +1,25 @@
+/* ECHO v1.0 — 2026-11-04. Echo, the help inside Messages (app/echo/echo.js):
+   the pinned row, the Echo mark, fact cards, suggestion chips, the thumbs. */
+.echo-av{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--accent-fill);color:var(--on-accent)}
+.echo-av.sm{width:34px;height:34px}.echo-av.sm svg{width:18px;height:18px}
+.echo-av.lg{width:72px;height:72px}.echo-av.lg svg{width:34px;height:34px}
+.echo-row{border-bottom:1px solid var(--line);margin-bottom:4px}
+.echo-row.sel{background:var(--el)}
+.echo-tag{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;background:var(--accent-fill);color:var(--on-accent);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
+.echo-th .cx-who{cursor:default}
+.echo-chips,.echo-sug{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;max-width:100%}
+.echo-sug .mono{width:100%;font-size:11px;color:var(--dim)}
+.echo-chips .chip,.echo-sug .chip{text-align:left;line-height:1.3}
+.echo-facts{margin-top:2px;padding:10px 13px;border-radius:var(--rad-m,12px);background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;gap:5px;font-size:13px;line-height:1.4;max-width:100%}
+.echo-facts b{font-size:12px;letter-spacing:.02em;text-transform:uppercase;color:var(--dim)}
+.echo-facts .btn{align-self:flex-start;margin-top:4px}
+.echo-rate{display:flex;align-items:center;gap:6px;margin-top:4px;min-height:28px}
+.echo-rate .mono{font-size:11px;color:var(--dim)}
+.echo-rb{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--dim);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.echo-rb:active{background:var(--el);color:var(--tx)}
+.echo-person{margin:0;font-size:12px;text-decoration:underline;color:var(--tx)}
+.echo-typing .c-b{display:flex;gap:4px;align-items:center;padding:12px 14px}
+.echo-typing i{width:6px;height:6px;border-radius:50%;background:var(--dim);opacity:.5;animation:echoDot 1s infinite}
+.echo-typing i:nth-child(2){animation-delay:.2s}.echo-typing i:nth-child(3){animation-delay:.4s}
+@keyframes echoDot{0%,100%{opacity:.3}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.echo-typing i{animation:none;opacity:.7}}

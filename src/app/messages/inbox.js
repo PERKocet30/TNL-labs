@@ -1,4 +1,5 @@
-/* v2026-10-20: the inbox head, search and tabs come from the screen kit (app/core/kit.js) */
+/* v2026-11-04: Echo (LABS help) is pinned at the top of Chats and takes the thread pane when open (app/echo/echo.js).
+   v2026-10-20: the inbox head, search and tabs come from the screen kit (app/core/kit.js) */
 /* MESSAGES v2.1 — 2026-10-14 (a screen of its own: two columns on a computer, full screen on a phone, search your chats).
    v2.0 — 2026-09-29. The inbox and the chat screen (markup). */
 const chatTitle=c=>c.isGroup?(c.title||c.people.filter(p=>p.username!==myName()).map(p=>(p.displayName||p.username).split(" ")[0]).join(", ")||"Group")
@@ -13,8 +14,8 @@ const chatOther=()=>CHAT&&CHAT.meta&&!CHAT.meta.isGroup?CHAT.meta.people.find(p=
 const dmTwo=()=>typeof isWide==="function"&&isWide();
 function dmScreenHTML(){
   if(dmTwo())return `<div class="cx cx-wide" id="cx"><div class="cx-in cx-2p"><section class="cx-col">${inboxHTML()}</section>
-    <section class="cx-pane">${CHAT?threadHTML():dmEmptyHTML()}</section></div></div>`;
-  return `<div class="cx" id="cx"><div class="cx-in">${CHAT?threadHTML():inboxHTML()}</div></div>`}
+    <section class="cx-pane">${CHAT?threadHTML():ECHOOPEN?echoThreadHTML():dmEmptyHTML()}</section></div></div>`;
+  return `<div class="cx" id="cx"><div class="cx-in">${CHAT?threadHTML():ECHOOPEN?echoThreadHTML():inboxHTML()}</div></div>`}
 function dmEmptyHTML(){return `<div class="cx-none"><span class="cx-none-ic">${UI_IC.dm}</span><b>Your messages</b>
   <span>Send a message to someone you want to make something with.</span><button class="btn" id="cxnew3">Send message</button></div>`}
 
@@ -23,7 +24,7 @@ function inboxHTML(){
   return `${screenHead({back:{id:"cxclose",label:"Back"},title:"Messages",actions:[`<button class="ib" id="cxnew" aria-label="New message">${CI.compose}</button>`]})}
     ${I&&(I.threads.length+I.requests.length)>3?searchHTML("cxq","Search your chats"):""}
     ${tabsHTML([["chats","Chats"],["requests","Requests",I&&I.requestCount?`<b>${I.requestCount}</b>`:""]],INBOXTAB,"data-itab")}
-    <div class="cx-list">${!I?`${skel()}`:!list.length
+    <div class="cx-list">${INBOXTAB==="chats"&&echoOn()?echoRowHTML():""}${!I?`${skel()}`:!list.length
       ?(INBOXTAB==="requests"?`<div class="cx-empty"><b>No requests</b><span>Messages from people you don't follow land here first.</span></div>`
         :`<div class="cx-empty"><b>No messages yet</b><span>Start a chat with someone you want to make something with.</span><button class="btn" id="cxnew2">New message</button></div>`)
       :list.map(inboxRowHTML).join("")}

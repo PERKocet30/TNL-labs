@@ -1479,6 +1479,26 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".sheetc > .sh .sh-back#sx").count() === 1 && await p.locator(".ksearch #sq").count() === 1, "Search doesn't wear the kit head and search field");
     await p.locator("#sx").tap(); await p.waitForTimeout(300);
   });
+  /* 2026-11-04 Echo: LABS help pinned at the top of Messages (admins only until the switch). The tester is the first member, so an admin. */
+  await step(d, "Echo: pinned at the top of Chats, answers a question with a fact card, takes a thumbs up, learns from 'I meant…', back lands on the inbox", async () => {
+    await p.locator("#dmBtn").tap(); await p.waitForSelector("#cxclose");
+    ok(await p.locator(".cx-list > :first-child").getAttribute("id") === "echorow", "Echo isn't the first row of Chats");
+    await p.locator("#echorow").tap(); await p.waitForSelector("#echodraft", { timeout: 4000 });
+    await p.waitForSelector(".echo-chips .chip", { timeout: 4000 });   // the hello and the starter questions
+    await p.locator("#echodraft").fill("where is my order"); await p.locator("#echosend").tap();
+    await p.waitForSelector("[data-echoturn] .echo-facts", { timeout: 5000 });
+    ok((await p.locator("[data-echoturn] .c-b").first().innerText()).includes("Orders") && await p.locator("[data-echoturn] .echo-rate [data-echoyes]").count() === 1, "no answer with a fact card and thumbs");
+    await p.locator("[data-echoyes]").first().tap(); await p.waitForTimeout(300);
+    ok((await p.locator("[data-echoturn] .echo-rate").first().innerText()).includes("Glad"), "the thumbs up didn't register");
+    await p.locator("#echodraft").fill("zorp"); await p.locator("#echosend").tap();
+    await p.waitForSelector("[data-echoperson]", { timeout: 5000 });   // a miss offers a person
+    ok(await p.locator("[data-echoturn]").count() === 2, "the miss didn't show as a turn");
+    ok(await p.evaluate(() => ECHOOPEN && DMOPENPANEL && !CHAT), "Echo isn't the open screen inside Messages");
+    await p.locator("#echoback").tap(); await p.waitForTimeout(400);
+    ok(await p.evaluate(() => !ECHOOPEN && DMOPENPANEL) && await p.locator("#echorow").count() === 1, "back didn't land on the inbox with Echo still pinned");
+    ok((await p.locator("#echorow .cx-rs").innerText()).includes("don't know"), "the row doesn't carry Echo's last line");
+    await p.locator("#cxclose").tap(); await p.waitForTimeout(300);
+  });
   /* 2026-10-21 "Instagram level": tag people on the picture, Advanced settings, Preview, hidden like count */
   await step(d, "composer: Tag people puts a pin on the photo where you tap; Advanced hides the like count and takes alt text; Preview is the Showroom card; the post carries it all and the person icon shows the pin", async () => {
     await p.evaluate(() => { PCOMPOSE = null; PICKER = null; LAB = null; TAB = "showroom"; render(); });
