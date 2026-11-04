@@ -144,7 +144,7 @@ app.get("/oauth/authorize", mcpLimit, (req, res) => {
   res.set("X-Frame-Options", "DENY"); res.set("Content-Security-Policy", "frame-ancestors 'none'");
   const params = { client_id: String(client_id), redirect_uri: String(redirect_uri), state: String(state).slice(0, 500), code_challenge: String(code_challenge) };
   res.send(lookPage({ title: "Connect — LABS", center: true, body: `${lookEyebrow("Connect")}
-<h1>Let ${lookEsc(client.name)} read the admin dashboard?</h1>
+<h1>Let ${lookEsc(client.name)} read the admin dashboard and write to Knowledge?</h1>
 <p class="p">Read only. Numbers, orders, reports, systems. Never messages, emails or anything that could expose a member. You can disconnect it any time in Admin → Systems.</p>
 <p class="p"><b>Only allow if you just pressed Connect in your own ${lookEsc(client.name)}.</b></p>
 <div id="who" class="p"></div>
