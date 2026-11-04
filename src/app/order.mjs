@@ -66,6 +66,7 @@ export const APP = [
 
   // media
   "media/upload.js",
+  "media/pick.js",        // the file picker, outside the screen (2026-11-04: an iPhone lost picked photos to a repaint)
 
   // nav
   "nav/motion.js",

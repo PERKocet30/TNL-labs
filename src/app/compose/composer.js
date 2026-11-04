@@ -1,3 +1,4 @@
+/* v2026-11-04: the photo picker opens from pickFiles (app/media/pick) — an input outside the screen, so a repaint while it's up can't lose what you chose (iPhone). */
 /* v2026-10-29: Edit opens this page on the post — "Edit info" · Done (app/compose/post-edit).
 /* v2026-10-25: pick which part of the song plays — the bar under the picked song (pcPartHTML/pcPartWire, app/compose/preview).
 /* v2026-10-25: a photo takes its place in the strip the moment it's picked and uploads land into it, two at a time (pcAddPhotos, app/compose/queue); a drag the phone turns into a scroll reorders nothing.
@@ -26,7 +27,7 @@ const PC_PIN=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke
 
 function pcomposeHTML(){
   const c=PCOMPOSE; c.collabs=c.collabs||[]; c.idx=Math.min(c.idx||0,Math.max(0,c.imgs.length-1));
-  const file=`<input id="pcfile" type="file" accept="image/*,video/*" multiple hidden>`;
+  const file="";   // the picker opens from pickFiles (app/media/pick): an input outside the screen, so a repaint can't lose what you chose
   let media;
   if(c.edit)media=pceMediaHTML(c);   // Edit info: the work as posted (app/compose/post-edit)
   else if(c.vidbusy)media=`<div class="pc-stage pc-busy"><span class="spin"></span>
@@ -47,11 +48,11 @@ function pcomposeHTML(){
     <div class="pc-strip">
       ${c.imgs.map((im,i)=>`<div class="pc-th ${i===c.idx?"on":""}${im.busy?" pc-busy":""}" data-pci="${i}"><button class="pc-thb" data-pcgo="${i}" aria-label="${im.video||im.isv?"Video":"Photo"} ${i+1}"><img src="${esc(im.thumb)}" alt="" draggable="false">${pcVidMark(im)}</button>
         ${im.busy?`<span class="spin"></span>`:`<button class="pc-rm sm" data-pcrm="${i}" aria-label="Remove photo">${PC_X}</button>`}</div>`).join("")}
-      ${c.imgs.length<10?`<label class="pc-th pc-add" aria-label="Add photos or videos">${UI_IC.plus}${file}</label>`:""}
+      ${c.imgs.length<10?`<label class="pc-th pc-add" data-pcpick role="button" tabindex="0" aria-label="Add photos or videos">${UI_IC.plus}${file}</label>`:""}
     </div>`;
   else if(pcCover(c))media=`<div class="pc-stage"><img class="pc-cov" src="${esc(pcCover(c))}" alt="${esc(c.track.title)} — cover"><span class="pc-covtag">${UI_IC.music} Song cover</span></div>
-    <label class="pc-pick pc-pick-sm">${file}<b>Add photos or video instead</b></label>`;
-  else media=`${pdRowHTML(c)}<label class="pc-pick">${file}${PC_PICK}<b>Add photos or video</b><span>Up to 10 photos and videos</span></label>`;
+    <label class="pc-pick pc-pick-sm" data-pcpick role="button" tabindex="0">${file}<b>Add photos or video instead</b></label>`;
+  else media=`${pdRowHTML(c)}<label class="pc-pick" data-pcpick role="button" tabindex="0">${file}${PC_PICK}<b>Add photos or video</b><span>Up to 10 photos and videos</span></label>`;
   const tags=c.tags||[];
 
   /* Where people see it (2026-10-21, "make sharing into labs and posting on profiles
@@ -80,7 +81,7 @@ function pcomposeHTML(){
             <button class="pc-x" data-pcmusrm aria-label="Remove music">${PC_X}</button></div>${pcPartHTML(c)}`
           :`<button class="pc-opt" data-pcmusadd><span class="pc-ic">${UI_IC.music}</span><span class="pc-l">Add music</span><span class="pc-v"></span>${PC_CHEV}</button>`}
         ${c.musup?`<div class="pc-mus"><div class="pcmus-up busy"><span class="spin"></span><b>Uploading your song…</b></div></div>`:""}
-        ${c.pick&&!c.musup?`<div class="pc-mus"><label class="pcmus-up"><span class="pc-ic">${UI_IC.plus}</span><span class="pc-l"><b>Upload a song</b><span class="dim">Then name it and add a cover</span></span><input type="file" id="pcmusfile" accept="${TRACK_ACCEPT}" hidden></label>
+        ${c.pick&&!c.musup?`<div class="pc-mus"><label class="pcmus-up" id="pcmusup" role="button" tabindex="0"><span class="pc-ic">${UI_IC.plus}</span><span class="pc-l"><b>Upload a song</b><span class="dim">Then name it and add a cover</span></span></label>
           <input class="pc-q" id="pcmusq" placeholder="Search tracks or artists" value="${esc(c.q||"")}">
           <div class="pcmus-list">${pcmusRowsHTML(c.list,!!(c.q&&c.q.trim()))}</div></div>`:""}
         <button class="pc-opt" id="pctag"><span class="pc-ic">${PC_TAG}</span><span class="pc-l">Tag people</span>
@@ -120,7 +121,9 @@ function wirePCompose(){
 
   /* ── media ── */
   /* photos, a video, or both in one carousel (app/compose/post-mixed) */
-  const fi=$("#pcfile");if(fi)fi.onchange=()=>{const files=[...fi.files];fi.value="";pcPick(c,files)};
+  ov.querySelectorAll("[data-pcpick]").forEach(b=>b.onclick=async e=>{e.preventDefault();
+    const files=await pickFiles({accept:"image/*,video/*",multiple:true,where:"pick:post"});
+    if(files.length&&PCOMPOSE===c)pcPick(c,files)});
   const tr=$("#pctrack");
   if(tr){
     pcRaf(()=>{tr.scrollLeft=(c.idx||0)*tr.clientWidth});
@@ -221,8 +224,9 @@ function wirePCompose(){
     dq=setTimeout(async()=>{try{c.list=(await api.tracks(c.q)).tracks}catch(e){c.list=[]}
       const box=document.querySelector(".pcmus-list");   // repaint rows only — keeps the keyboard up
       if(box){box.innerHTML=pcmusRowsHTML(c.list,!!c.q.trim());box.querySelectorAll("[data-pcmuspick]").forEach(pickTrack)}},300)}}
-  const mf=$("#pcmusfile");if(mf)mf.onchange=async()=>{
-    const file=mf.files&&mf.files[0];mf.value="";
+  const mf=$("#pcmusup");if(mf)mf.onclick=async e=>{e.preventDefault();
+    const file=(await pickFiles({accept:TRACK_ACCEPT,where:"pick:song"}))[0];   // app/media/pick: outside the screen
+    if(PCOMPOSE!==c)return;
     if(!file||!trackFileOk(file))return;
     c.musup=true;c.pick=false;render();
     try{
