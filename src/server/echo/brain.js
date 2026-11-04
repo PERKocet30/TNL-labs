@@ -147,7 +147,7 @@ function brainTurns(userId) {
   for (const r of brainRows(userId)) {
     const c = JSON.parse(r.content);
     if (r.kind === "ask") out.push({ id: r.id, asked: String((c[0] && c[0].text) || "").trim(), proposals: props.get(r.id) || [], files: c.filter((b) => b.type === "labs_file").map((b) => ({ url: b.url, kind: b.kind, name: b.name || "" })), kind: "brain", text: "", tools: [], createdAt: r.created_at });
-    else if (r.kind === "reply" && out.length) { const t = out[out.length - 1]; t.text = brainText(c) || t.text; if (r.model) t.model = brainShort(r.model); for (const b of c) if ((b.type === "tool_use" || b.type === "server_tool_use") && !t.tools.includes(b.name)) t.tools.push(b.name); }
+    else if (r.kind === "reply" && out.length) { const t = out[out.length - 1]; t.text = brainText(c) || t.text; if (r.model) t.model = brainShort(r.model); for (const b of c) if ((b.type === "tool_use" || b.type === "server_tool_use") && !echoIsHand(b.name) && !t.tools.includes(b.name)) t.tools.push(b.name); }   // a hand shows as its card, not as something looked at
     else if (r.kind === "error" && out.length) { const t = out[out.length - 1]; t.text = brainText(c); t.failed = true; }
   }
   return out;
