@@ -17,19 +17,46 @@ app.post("/api/users/:username/block", auth, (req, res) => {
   res.json({ blocked: true });
 });
 
-/* v1.1 — 2026-11-04: Report on every post (app/posts/report). The same person reporting the same
-   post again changes the reason on their open report — never a second row, so one upset member
-   can't stack the queue. A report on a post that doesn't exist is turned away. */
+/* v1.2 — 2026-11-04: "Make sure this feature is throughout the app anywhere problems might occur."
+   One route for every report: a post, a person, a comment, a listing, a song, or the app itself
+   ("Report a problem": the screen it happened on, never anything typed elsewhere).
+     { kind: "post"|"user"|"comment"|"listing"|"track"|"app", id?, postId?, username?, reason, detail? }
+   The person it's about is looked up here, never taken from the request. One open report per person
+   per thing — a second report changes the reason — so one upset member can't stack the queue. A
+   thing that's gone is turned away. A chat is reported as its person: the admin never sees messages. */
+for (const c of ["kind TEXT NOT NULL DEFAULT ''", "target_id INTEGER", "detail TEXT NOT NULL DEFAULT ''"]) { try { db.exec(`ALTER TABLE reports ADD COLUMN ${c}`); } catch (e) {} }
+const REPORT_KINDS = {
+  comment: (id) => db.prepare(`SELECT author_id uid, post_id FROM comments WHERE id = ?`).get(id),
+  listing: (id) => db.prepare(`SELECT seller_id uid FROM listings WHERE id = ?`).get(id),
+  track: (id) => db.prepare(`SELECT user_id uid FROM tracks WHERE id = ?`).get(id),
+};
 app.post("/api/report", auth, rateLimit({ max: 10, windowMs: 3600000, key: "user" }), (req, res) => {
-  const { postId, username, reason } = req.body || {};
-  const target = username ? q.userByName.get(username) : null;
-  const pid = Number(postId) || null, why = (reason || "").toString().trim().slice(0, 300);
-  if (pid && !db.prepare(`SELECT 1 FROM posts WHERE id = ?`).get(pid)) return res.status(404).json({ error: "That post is gone" });
-  if (!pid && !target) return res.status(400).json({ error: "Nothing to report" });
-  const open = pid ? db.prepare(`SELECT id FROM reports WHERE reporter_id = ? AND post_id = ? AND handled_at IS NULL`).get(req.user.id, pid) : null;
-  if (open) db.prepare(`UPDATE reports SET reason = ?, created_at = ? WHERE id = ?`).run(why, Date.now(), open.id);
-  else db.prepare(`INSERT INTO reports (reporter_id, post_id, user_id, reason, created_at) VALUES (?,?,?,?,?)`)
-    .run(req.user.id, pid, target?.id || null, why, Date.now());
+  const b = req.body || {};
+  const kind = ["post", "user", "comment", "listing", "track", "app"].includes(b.kind) ? b.kind : b.postId ? "post" : b.username ? "user" : "";
+  const why = (b.reason || "").toString().trim().slice(0, 300), detail = (b.detail || "").toString().replace(/[^\w :/#.-]/g, "").slice(0, 80);
+  let postId = null, userId = null, targetId = null;
+  if (kind === "post") {
+    postId = Number(b.postId || b.id) || null;
+    const p = postId && db.prepare(`SELECT author_id FROM posts WHERE id = ?`).get(postId);
+    if (!p) return res.status(404).json({ error: "That post is gone" });
+    userId = p.author_id;
+  } else if (kind === "user") {
+    const u = b.username ? q.userByName.get(String(b.username)) : null;
+    if (!u) return res.status(404).json({ error: "That account is gone" });
+    userId = u.id;
+  } else if (REPORT_KINDS[kind]) {
+    targetId = Number(b.id) || null;
+    const t = targetId && REPORT_KINDS[kind](targetId);
+    if (!t) return res.status(404).json({ error: "That's gone" });
+    userId = t.uid; postId = t.post_id || null;
+  } else if (kind !== "app") return res.status(400).json({ error: "Nothing to report" });
+  if (kind !== "app" && userId === req.user.id) return res.status(400).json({ error: "That's yours" });
+  if (kind === "app" && !why) return res.status(400).json({ error: "Say what went wrong" });
+  const open = kind === "app" ? null : db.prepare(`SELECT id FROM reports WHERE reporter_id = ? AND handled_at IS NULL AND (kind = ? OR (kind = '' AND ? IN ('post', 'user')))
+    AND COALESCE(post_id, 0) = ? AND COALESCE(user_id, 0) = ? AND COALESCE(target_id, 0) = ?`).get(req.user.id, kind, kind, kind === "user" ? 0 : postId || 0, userId || 0, targetId || 0);
+  if (open) db.prepare(`UPDATE reports SET reason = ?, detail = ?, created_at = ? WHERE id = ?`).run(why, detail, Date.now(), open.id);
+  else db.prepare(`INSERT INTO reports (reporter_id, post_id, user_id, reason, kind, target_id, detail, created_at) VALUES (?,?,?,?,?,?,?,?)`)
+    .run(req.user.id, kind === "user" ? null : postId, userId, why, kind, targetId, detail, Date.now());
   res.json({ ok: true });
 });
 
@@ -194,7 +221,10 @@ app.get("/api/admin/orders", auth, admin, (req, res) => {
 app.get("/api/admin/reports", auth, admin, (req, res) => {
   const rows = db.prepare(`
     SELECT r.*, ru.username AS reporter, tu.username AS reported,
-           p.body AS post_body, p.channel AS post_channel, p.image_url AS post_img
+           p.body AS post_body, p.channel AS post_channel, p.image_url AS post_img,
+           CASE r.kind WHEN 'comment' THEN (SELECT body FROM comments WHERE id = r.target_id)
+                       WHEN 'listing' THEN (SELECT title FROM listings WHERE id = r.target_id)
+                       WHEN 'track' THEN (SELECT title FROM tracks WHERE id = r.target_id) END AS target_text
     FROM reports r
     LEFT JOIN users ru ON ru.id = r.reporter_id
     LEFT JOIN users tu ON tu.id = r.user_id

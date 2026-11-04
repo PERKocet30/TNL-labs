@@ -197,6 +197,8 @@ function wireFeed(){
     if(!(await uiConfirm("Delete this comment?","",{okLabel:"Delete",danger:true})))return;
     try{await api.delComment(b.dataset.cdel);bumpComments(OPENCOMMENTS,-1);COMMENTS=(await api.comments(OPENCOMMENTS)).comments;paintComments()}catch(e){toast(e.message)}});
   document.querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>reportPost(findAnyPost(b.dataset.report)));   // app/posts/report
+  document.querySelectorAll("[data-crep]").forEach(b=>b.onclick=()=>reportThing({kind:"comment",id:+b.dataset.crep,username:b.dataset.crepu}));
+  document.querySelectorAll("[data-repfail]").forEach(b=>b.onclick=()=>reportProblem("A post didn't send"));
   wireProfileLinks();
 }
 function wireSheet(){

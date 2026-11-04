@@ -144,6 +144,7 @@
 .sdraft button{background:none;border:0;font:inherit;font-weight:700;text-decoration:underline;color:var(--tx);cursor:pointer}
 .lpol{margin-top:10px;font-size:11px;line-height:16px}
 .lpol a,.mktfoot a{color:inherit}
+.lrep{font:inherit;color:inherit;text-decoration:underline;padding:0;background:none;border:0}   /* Report listing (app/posts/report, 2026-11-04) */
 .mktfoot{display:flex;flex-wrap:wrap;gap:6px 16px;padding:28px 12px 8px;font-size:11px}
 .gx-legal{font-size:12px;line-height:16px;color:var(--dim);margin:0 0 10px;text-align:center}
 .gx-legal a{color:inherit}

@@ -1761,6 +1761,16 @@ console.log("\nMEMBER · PHONE");
     ok(after.length === 1 && after[0].reason === "Spam", "the report didn't reach the admin once: " + JSON.stringify(after.map((r) => r.reason)) + " (before: " + before + ")");   // run again (the computer frame) it's the same report, updated
     ok(await p.evaluate(() => !document.querySelector(".ui-ov") && !PICKER && !CMENU), "something was left open after the report");
   });
+  await step(d, "Report a problem (the app itself): a few words and the screen it happened on reach the admin", async () => {
+    await p.evaluate(() => { reportProblem(); });
+    await p.waitForSelector(".ui-ov .ui-in", { timeout: 5000 });
+    await p.locator(".ui-ov .ui-in").first().fill("the cart shows the wrong size " + d.name);
+    await p.locator(".ui-ov .ui-ok").tap();
+    await p.waitForTimeout(600);
+    const r = (await api("/api/admin/reports", token)).reports.find((x) => x.kind === "app" && x.reason.includes("wrong size " + d.name));
+    ok(!!r && r.detail === "showroom", "the problem didn't reach the admin with its screen: " + JSON.stringify(r));
+    ok(await p.evaluate(() => !document.querySelector(".ui-ov")), "the sheet was left open");
+  });
   await step(d, "UI signals: screens, the path between them and a back are counted; nothing typed leaves the phone", async () => {
     await p.evaluate(() => { TAB = "showroom"; render(); TAB = "labs"; render(); TAB = "market"; render(); });
     await p.waitForTimeout(100);

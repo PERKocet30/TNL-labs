@@ -130,7 +130,7 @@ function postHTML(p){const mine=p.author.username===myName();
   const cap=!p.body?"":media?`<div class="post-cap"><b class="post-capu" data-u="${esc(p.author.username)}">${esc(p.author.username)}</b> ${capHTML(p.body)}</div>`:`<div class="post-body">${rich(p.body)}</div>`;
   return `<div class="post ${p.pending?"pending":""} ${p.failed?"failed":""}">
   ${p.pending?`<div class="mono sending">${UPPROG!==null&&UPPROG<1?`UPLOADING ${Math.round(UPPROG*100)}%`:"SENDING…"}</div>${UPPROG!==null&&UPPROG<1?`<div class="uptrack"><div class="upbar" id="upbar" style="width:${Math.round(UPPROG*100)}%"></div></div>`:""}`:""}
-  ${p.failed?`<div class="failbar"><span>Didn't send.</span><button class="retryb" data-retry="${p.id}">Retry</button><button class="retryb ghost" data-discard="${p.id}">Discard</button></div>`:""}
+  ${p.failed?`<div class="failbar"><span>Didn't send.</span><button class="retryb" data-retry="${p.id}">Retry</button><button class="retryb ghost" data-discard="${p.id}">Discard</button><button class="retryb ghost" data-repfail="${p.id}">Report a problem</button></div>`:""}
   ${p.sharedFrom?`<div class="shared-tag">${IC_REMIX_SM} Shared</div>`:""}
   <div class="post-h">${avHTML(p.author)}
     <div class="post-hw"><div class="post-names">${pxNames(p)}</div>${pxSub(p)}</div>
@@ -182,9 +182,11 @@ function commentsHTML(p){return `<div class="cwrap">
       <span class="mono dim">${timeAgo(c.createdAt)}${c.editedAt?" · EDITED":""}</span>
       <div class="ctext">${rich(c.body)}</div>
     </div>
-    ${!guest()&&(c.author.username===myName()||p.author.username===myName()||curates(p))?`<div class="post-menu">
+    ${!guest()&&!c.pending&&(c.author.username===myName()||p.author.username===myName()||curates(p))?`<div class="post-menu">
       ${c.author.username===myName()?`<button class="pm" data-cedit="${c.id}" aria-label="Edit">${DI.edit}</button>`:""}
-      <button class="pm" data-cdel="${c.id}" aria-label="Delete">${DI.trash}</button></div>`:""}
+      ${c.author.username!==myName()?`<button class="pm" data-crep="${c.id}" data-crepu="${esc(c.author.username)}" aria-label="Report">${DI.flag}</button>`:""}
+      <button class="pm" data-cdel="${c.id}" aria-label="Delete">${DI.trash}</button></div>`
+    :ME&&!c.pending&&c.author.username!==myName()?`<div class="post-menu"><button class="pm" data-crep="${c.id}" data-crepu="${esc(c.author.username)}" aria-label="Report">${DI.flag}</button></div>`:""}
   </div>`).join("")}
   ${guest()
     ?`<button class="cjoin" id="cjoinb">Join to comment</button>`
