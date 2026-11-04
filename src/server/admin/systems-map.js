@@ -1,5 +1,5 @@
 /* ================================================================
-   ADMIN · THE SYSTEMS MAP v1.0 — 2026-11-04. "Can we do the same type of
+   ADMIN · THE SYSTEMS MAP v1.1 — 2026-11-04 (sysMapNodes, shared with the Network). v1.0 — 2026-11-04. "Can we do the same type of
    interactive model for the system networks… all the networks that run the
    app." The model on Health → Systems (admin-app/7-systems6-map.js) reads this:
      GET /api/admin/systems/map   (admins only)
@@ -11,7 +11,8 @@
    Railway and GitHub come from the Systems page's own read (/api/admin/systems,
    cached) — the page merges them. Never a key, a name or a message: counts.
 ================================================================ */
-app.get("/api/admin/systems/map", auth, admin, rateLimit({ max: 30, windowMs: 60000, key: "user" }), (req, res) => {
+/* every service with its state, from LABS's own keys and logs — the map here and the Network (server/admin/network.js) */
+function sysMapNodes(req) {
   const now = Date.now(), H = 3600000, DAYMS = 86400000;
   const n = (sql, ...p) => { try { return db.prepare(sql).get(...p)?.n ?? 0; } catch { return 0; } };
   const errs = (kind, since) => n(`SELECT COUNT(*) n FROM error_log WHERE kind = ? AND created_at >= ?`, kind, since);
@@ -80,5 +81,6 @@ app.get("/api/admin/systems/map", auth, admin, rateLimit({ max: 30, windowMs: 60
   const meta = { id: "meta", name: "Instagram", does: "@tnl.labs — reach, the inbox, the shop", state: mtOn || ig ? "on" : "off",
     line: mtOn || ig ? `${ig?.username ? "@" + ig.username : "Connected"}` : "Not connected", facts: [["Insights (Meta key)", mtOn ? "on" : "off"], ["Inbox", ig ? "connected" : "off"]], go: "instagram" };
 
-  res.json({ at: now, nodes: [server, phones, cloudflare, railway, volume, github, stripe, resend, claude, connector, google, meta] });
-});
+  return [server, phones, cloudflare, railway, volume, github, stripe, resend, claude, connector, google, meta];
+}
+app.get("/api/admin/systems/map", auth, admin, rateLimit({ max: 30, windowMs: 60000, key: "user" }), (req, res) => res.json({ at: Date.now(), nodes: sysMapNodes(req) }));

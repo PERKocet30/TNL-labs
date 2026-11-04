@@ -2324,10 +2324,10 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
   });
   // admin v4 (2026-10-20): on a phone, a bottom bar with four sections and More; tables are cards
   await step(d, "admin on a phone: a bottom bar, More opens the rest, Orders are cards", async () => {
-    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 4 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone (Echo · Market · Members · More)");
+    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 5 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone (Echo · Network · Market · Members · More)");
     await p.locator(".bbar [data-more]").tap();
     await fast(p, 3000, () => p.locator(".msheet .mi[data-tab=analytics]").waitFor(), "the More sheet");
-    ok(await p.locator(".msheet .grp").count() === 5 && await p.locator(".msheet .mi").count() === 12, "the phone's sheet isn't the five groups (eleven sections + Open the app)");
+    ok(await p.locator(".msheet .grp").count() === 5 && await p.locator(".msheet .mi").count() === 13, "the phone's sheet isn't the five groups (twelve sections + Open the app)");
     await p.locator(".msheet .mi[data-tab=market]").tap();
     await fast(p, 6000, () => p.locator("[data-os=paid]").waitFor(), "Orders from More");
     ok(await p.locator(".msheet").count() === 0, "More stayed open");
@@ -2479,6 +2479,29 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.waitForTimeout(200);
     ok(await p.evaluate(() => SM.raf === 0), "the map kept drawing after leaving Systems");
     await p.unroute("**/api/admin/systems/map");
+  });
+  /* 2026-11-04: "I don't see the interactive admin dashboard network. Make the whole admin dashboard interactive." — the Network, in the phone's bar */
+  await step(d, "admin → Network from the phone's bar: every section and service drawn, what needs you is picked first, a row opens its section", async () => {
+    const sec = (id, name, value, needs = []) => ({ id, name, does: name + " does things", value, label: "things", facts: [["Thing", 2]], needs: needs.map((text) => ({ text, level: "high" })) });
+    const svc = (id, name, state) => ({ id, name, does: name, state, line: name + " line", facts: [], go: "health" });
+    await p.route("**/api/admin/network", (r) => r.fulfill({ json: { at: Date.now(), sections: [sec("people", "Members", 40), sec("market", "Market", 3), sec("content", "Content", 9, ["2 open reports"]),
+      sec("events", "Events", 1), sec("instagram", "Instagram", 0), sec("knowledge", "Knowledge", 100), sec("echo", "Help desk", 0), sec("settings", "Settings", 4), sec("analytics", "Analytics", 12), sec("health", "Health", 0)],
+      services: [svc("labs", "LABS", "on"), svc("stripe", "Stripe", "warn"), svc("resend", "Resend", "on"), svc("google", "Google", "off")] } }));
+    await settledGoto(p, B + "/admin");
+    await p.locator(".bbar [data-tab=network]").tap();
+    await fast(p, 8000, () => p.locator("#nwcv").waitFor(), "the Network");
+    await p.waitForTimeout(400);
+    ok(await p.evaluate(() => { const c = document.querySelector("#nwcv"), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 500; }), "the Network's canvas is blank");
+    ok(await p.locator(".nw [data-nwn]").count() === 14, "the Network's lists don't name all ten sections and four services");
+    ok(/Content/.test(await p.locator("#nwpick").innerText()) && /2 open reports/.test(await p.locator("#nwpick").innerText()), "what needs you wasn't picked first");
+    ok(await p.locator('.nw [data-nwn="s:labs"]').innerText().then((t) => /Server/.test(t)), "the server is called LABS, the same as the middle");
+    await p.locator('[data-nwn="analytics"]').tap(); await p.waitForTimeout(700);
+    ok(/Analytics/.test(await p.locator("#nwpick").innerText()), "tapping Analytics didn't show it");
+    await p.locator("[data-nwgo]").tap();
+    await fast(p, 6000, () => p.waitForFunction(() => TAB === "analytics"), "Open Analytics from the Network");
+    await p.waitForTimeout(200);
+    ok(await p.evaluate(() => NW.raf === 0), "the Network kept drawing after leaving it");
+    await p.unroute("**/api/admin/network");
   });
   await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {
     await p.evaluate(() => localStorage.removeItem("tnl-token"));   // signed out (the step before signed this phone in)

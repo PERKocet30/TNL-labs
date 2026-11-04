@@ -1,5 +1,5 @@
-/* LABS admin — the models v1.0, 2026-11-04: the globe on People (3-globe.js) and the systems map on Health → Systems
-   (7-systems6-map.js). Every colour is a palette variable. */
+/* LABS admin — the models v1.1, 2026-11-04: the globe on People (3-globe.js), the systems map on Health → Systems
+   (7-systems6-map.js) and the Network (2-network.js, v1.1). Every colour is a palette variable. */
 /* the globe on People */
 .gl{margin:10px 0 14px}
 .gl-b{display:grid;grid-template-columns:1fr;gap:6px;padding:8px 14px 14px}
@@ -21,3 +21,9 @@
 .sm-pick .btn{align-self:flex-start;margin-top:4px}
 .sm-list button{grid-template-columns:auto minmax(0,9em) 1fr}.sm-l{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
 .sm-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--dim)}.sm-dot.on{background:var(--accent-fill);border-color:var(--accent-fill)}.sm-dot.warn{background:var(--red);border-color:var(--red)}.sm-dot.wait{border-color:var(--tx)}
+
+/* the Network (2-network.js, 2026-11-04): the whole dashboard as one model; shares the globe's frame and the map's rows */
+.nw-w{aspect-ratio:1/0.82;max-width:560px}@media(min-width:1024px){.nw-w{position:sticky;top:20px}}@media(min-width:720px){.nw .gl-b{grid-template-columns:minmax(0,560px) 1fr;align-items:start}}
+.nw-h{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:14px 8px 2px;font-weight:600}
+.nw-big{display:flex;align-items:baseline;gap:8px;margin:4px 0}.nw-big b{font-size:28px;letter-spacing:-.01em}.nw-big span{color:var(--dim);font-size:13px}
+.nw-needs{margin:2px 0 4px;padding-left:18px;color:var(--red);font-size:13.5px;line-height:1.45}
