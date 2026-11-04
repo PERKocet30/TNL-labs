@@ -111,6 +111,9 @@ export const SERVER = [
   "posts/rank.js",
   "posts/views.js",
 
+  // ui-signals — how people move through the app, as counts (after views: same viewer key)
+  "ui-signals/signals.js",
+
   // admin
   "admin/watch.js",
   "admin/weekly.js",
@@ -156,6 +159,9 @@ export const SERVER = [
   "connector/songs.js",
   "connector/insights-people.js",
   "connector/insights-shop.js",
+
+  // ui-signals — Echo's eyes for the signals above and the admin pages that had no tool
+  "ui-signals/tools.js",
 
   // shop-feeds
   "shop-feeds/google.js",

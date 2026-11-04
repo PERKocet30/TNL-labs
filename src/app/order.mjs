@@ -182,6 +182,9 @@ export const APP = [
   // core
   "core/glitch.js",
 
+  // ui-signals — how the app is used, as counts (after glitch: wraps fetch after it)
+  "ui-signals/signals.js",
+
   // shell
   "shell/tail.html",
 ];

@@ -1728,6 +1728,21 @@ console.log("\nMEMBER · PHONE");
   /* Glitch signals (app/core/glitch.js). Everything above is normal use, so it
      must have recorded nothing: no jumps, no slow screens, no failed saves. */
   const glitches = async () => { await p.evaluate(() => glFlush()); await p.waitForTimeout(600); return api("/api/admin/glitches", token); };
+  /* UI signals (app/ui-signals/signals.js, 2026-11-04): every screen change above was
+     counted; the admin read sees the screens, the paths and a back — and nothing a member typed. */
+  await step(d, "UI signals: screens, the path between them and a back are counted; nothing typed leaves the phone", async () => {
+    await p.evaluate(() => { TAB = "showroom"; render(); TAB = "labs"; render(); TAB = "market"; render(); });
+    await p.waitForTimeout(100);
+    await p.evaluate(() => { TAB = "labs"; render(); });
+    // (the queue flushes itself every 10s, so what's still in it isn't checked — the admin read is)
+    await p.evaluate(() => uiFlush());
+    await p.waitForTimeout(600);
+    const scr = await api("/api/admin/ui/screens?days=1", token), paths = await api("/api/admin/ui/paths?days=1", token);
+    ok(scr.screens.some((x) => /^labs?/.test(x.screen) && x.views >= 2) && scr.screens.some((x) => x.screen === "market"), "the admin read doesn't show the screens: " + JSON.stringify(scr.screens.slice(0, 5)));
+    ok(paths.next.some((x) => /^labs?/.test(x.from) && x.to === "market") || paths.next.length >= 30, "the move labs → market isn't counted: " + JSON.stringify(paths.next.slice(0, 5)));   // the walk above has made many moves; the list keeps the 30 most common
+    ok(!JSON.stringify(scr).includes("tester") && !JSON.stringify(paths).includes("tester"), "a username leaked into the UI signals");
+    ok(await p.evaluate(() => UI.q.every((e) => typeof e.kind === "string" && String(e.prev).length <= 60 && !/[A-Z]{3}/.test(e.screen))), "a signal carries more than a kind, two names and a number");
+  });
   await step(d, "event: the Showroom banner opens the tournament, its gallery and the enter sheet", async () => {
     const mk = await fetch(B + "/api/admin/events", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + token },
       body: JSON.stringify({ slug: "e2e-poster", title: "E2E Poster Tournament", brief: "A poster.", format: "bracket", published: true, opensAt: Date.now() - 1000, submitDays: 7 }) });
