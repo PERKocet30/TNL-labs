@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · tools  v1.0 — 2026-10-27
+   LABS CONNECTOR · tools  v1.1 — 2026-11-04 (knowledge: what LABS knows about itself, read-only). v1.0 — 2026-10-27
    /mcp speaks MCP (JSON-RPC over HTTP, stateless) so Claude can read the
    admin dashboard like it reads GitHub or Railway. Each tool is one of
    the admin GET routes, fetched in-process with the connector key, then
@@ -44,6 +44,9 @@ const MCP_TOOLS = [
   ["systems_google", "Google Search Console and Merchant Center: clicks, impressions, indexed pages, feed status.", { fresh: { type: "boolean" } }, (a) => `systems/google${a.fresh ? "?fresh=1" : ""}`],
   ["systems_meta", "Instagram and Facebook numbers: followers, reach, best posts, when followers are online, shop status. Never inbox messages.", { fresh: { type: "boolean" } }, (a) => `systems/meta${a.fresh ? "?fresh=1" : ""}`],
   ["studio", "Studio (beat maker) usage.", {}, "studio"],
+  ["knowledge", "What LABS knows about itself (server/knowledge, 2026-11-04): the creed, how LABS talks, settled decisions, the glossary, notes, sheets. Read this before writing anything in LABS's voice. Filter by kind (creed · voice · decision · glossary · note · sheet) or search.",
+    { kind: { type: "string", description: "creed · voice · decision · glossary · note · sheet" }, q: { type: "string", description: "Search text" } },
+    (a) => `knowledge?kind=${encodeURIComponent(a.kind || "")}&q=${encodeURIComponent(a.q || "")}`],
 ];
 const mcpName = (u) => { const s = String(u || "").trim().toLowerCase().replace(/^@/, ""); if (!/^[a-z0-9._]{2,20}$/.test(s)) throw new Error("That doesn't look like a username."); return s; };
 const mcpToolList = () => MCP_TOOLS.map(([name, description, props]) => ({ name, description, inputSchema: { type: "object", properties: props, additionalProperties: false },
