@@ -80,7 +80,29 @@ try {
   t("a fact card tells the app where to go", o.facts.go && o.facts.go.to === "orders" && pb.facts.go.to === "payouts");
   const back = (await call("tok-ana", "GET", "/api/echo")).j.turns;
   t("coming back, the conversation is there — with the facts refreshed, not stored", back.length >= 5 && back.find((x) => x.id === o.id).facts.lines.length === 2);
-  t("nothing personal is stored in a turn but the question itself", db.prepare("PRAGMA table_info(echo_turns)").all().map((c) => c.name).join() === "id,user_id,asked,faq_id,kind,score,helpful,picked,created_at");
+  t("nothing personal is stored in a turn but the question itself", db.prepare("PRAGMA table_info(echo_turns)").all().map((c) => c.name).join() === "id,user_id,asked,faq_id,kind,score,helpful,picked,created_at,know_id,picked_know");
+
+  console.log("\nFROM KNOWLEDGE — the creed, decisions, glossary and every feature (2026-11-04)");
+  const knowOf = (key) => db.prepare("SELECT id, title, body FROM knowledge WHERE key = ?").get(key);
+  const cult = await ask("tok-ana", "what is a cultivator?");
+  t("'what is a cultivator' → the glossary entry, as written, wearing its title", cult.kind === "answer" && cult.from === "know" && cult.knowId === knowOf("g-cultivators").id && cult.title === "Cultivators" && cult.text === knowOf("g-cultivators").body && !cult.faqId);
+  const look = await ask("tok-ana", "what does LABS look like");
+  t("'what does LABS look like' → the voice entry on how LABS looks", look.kind === "answer" && look.knowId === knowOf("voice-look").id);
+  const creedQ = await ask("tok-ana", "what's the creed");
+  t("'what's the creed' → the creed", creedQ.knowId === knowOf("creed").id && /take over/.test(creedQ.text));
+  const feat = await ask("tok-ana", "how does the poll scoreboard freeze");
+  t("a feature question → the feature entry (the poll)", feat.kind === "answer" && feat.knowId === knowOf("f-poll").id);
+  t("the purpose-written Q&A still wins its own questions (orders, fees, password)", await lands("where's my order", "orders") && await lands("how much do you take from a sale?", "fees") && await lands("I forgot my password", "password"));
+  t("a knowledge answer is stored by its own id, never as a Q&A id", db.prepare("SELECT faq_id, know_id FROM echo_turns WHERE id = ?").get(cult.id).faq_id === null && db.prepare("SELECT know_id FROM echo_turns WHERE id = ?").get(cult.id).know_id === knowOf("g-cultivators").id);
+  t("thumbs on a knowledge answer is noted and moves no Q&A weight", (await call("tok-ana", "POST", `/api/echo/turns/${cult.id}/helpful`, { helpful: true })).s === 200 && db.prepare("SELECT helpful FROM echo_turns WHERE id = ?").get(cult.id).helpful === 1);
+  const odd2 = await ask("tok-ana", "blorf the door");
+  const pk = await call("tok-ana", "POST", `/api/echo/turns/${odd2.id}/pick`, { knowId: knowOf("f-door").id });
+  t("'I meant this one' can pick a knowledge entry, and it learns the words", pk.s === 200 && pk.j.turn.knowId === knowOf("f-door").id && /blorf/.test(db.prepare("SELECT learned FROM knowledge WHERE key = 'f-door'").get().learned));
+  t("…so the odd words now land straight on it", (await ask("tok-ana", "blorf")).knowId === knowOf("f-door").id);
+  t("coming back, a knowledge answer is still there with its title", (await call("tok-ana", "GET", "/api/echo")).j.turns.find((x) => x.id === cult.id).title === "Cultivators");
+  t("an entry put away in Knowledge is out of Echo's reach", (await call("tok-admin", "PATCH", `/api/admin/knowledge/${knowOf("g-cultivators").id}`, { archived: true })).s === 200 && (await ask("tok-ana", "what is a cultivator?")).knowId !== knowOf("g-cultivators").id && (await call("tok-admin", "PATCH", `/api/admin/knowledge/${knowOf("g-cultivators").id}`, { archived: false })).s === 200);
+  const admK = (await call("tok-admin", "GET", "/api/admin/echo")).j;
+  t("Admin → Echo counts answers from Knowledge and names the entries", admK.numbers.fromKnowledge >= 4 && admK.know.some((k) => k.title === "Cultivators" && k.liked === 1) && admK.knowledgeTotal >= 90);
 
   console.log("\nLEARNING — from thumbs, from 'I meant this one', from teaching");
   const w0 = db.prepare("SELECT weight FROM echo_faq WHERE id = ?").get(o.faqId).weight;
@@ -88,7 +110,7 @@ try {
   t("…rating twice doesn't count twice", (await call("tok-ana", "POST", `/api/echo/turns/${o.id}/helpful`, { helpful: true })).s === 200 && db.prepare("SELECT weight FROM echo_faq WHERE id = ?").get(o.faqId).weight === w0 + 0.02);
   t("thumbs down moves it down", (await call("tok-ben", "POST", `/api/echo/turns/${ob.id}/helpful`, { helpful: false })).s === 200 && db.prepare("SELECT weight FROM echo_faq WHERE id = ?").get(o.faqId).weight < w0 + 0.02);
   t("you can't rate someone else's turn", (await call("tok-ben", "POST", `/api/echo/turns/${o.id}/helpful`, { helpful: false })).s === 404);
-  const odd = await ask("tok-ana", "zorp the delivery parcel thing");
+  const odd = await ask("tok-ana", "zorp the parcel thing");
   const picked = await call("tok-ana", "POST", `/api/echo/turns/${odd.id}/pick`, { faqId: faqOf("shipping") });
   t("'I meant this one' shows that answer", picked.s === 200 && picked.j.turn.faqId === faqOf("shipping") && picked.j.turn.kind === "answer");
   t("…and Echo learns the words: the same odd question now lands straight on it", (await lands("zorp the parcel", "shipping")));
@@ -108,7 +130,7 @@ try {
   const h = await call("tok-ana", "POST", "/api/echo/handoff", { note: "The hoodie never came" });
   t("the conversation goes to a person: a row for the admin, a reply to the member", h.s === 200 && /will reply to ana@x.test/.test(h.j.text) && db.prepare("SELECT COUNT(*) n FROM echo_handoffs WHERE user_id = ? AND status = 'open'").get(ana).n === 1);
   const row = db.prepare("SELECT * FROM echo_handoffs WHERE user_id = ?").get(ana);
-  t("…with the note and the conversation so far", row.note === "The hoodie never came" && /where is my order/.test(row.transcript) && /Echo: Where is my order\?/.test(row.transcript));
+  t("…with the note and the last twelve turns of the conversation (asked, and what Echo answered with)", row.note === "The hoodie never came" && /@ana: my cat is purple\nEcho: \((didn't know|wasn't sure)\)/.test(row.transcript) && /\nEcho: How does shipping work\?/.test(row.transcript) && row.transcript.split("\n").length === 24);
   t("…the email went to the support inbox (mail not configured here → logged)", /NOT CONFIGURED[\s\S]*Echo handoff from @ana/.test(log));
   const A2 = (await call("tok-admin", "GET", "/api/admin/echo")).j;
   t("Admin → Echo lists it open, with who", A2.handoffs.some((x) => x.id === row.id && x.status === "open" && x.username === "ana"));

@@ -48,7 +48,11 @@ try {
   t("the creed is there, word for word", creed && creed.kind === "creed" && creed.body === "We're not here to take part. We're here to take over.\nCultivators.");
   t("voice, decisions and a glossary too (lab, rep, Showroom, Cultivators…)", ["voice", "decision", "glossary"].every((k) => first.entries.some((e) => e.kind === k)) && ["Lab", "Rep", "Showroom", "Cultivators"].every((n) => first.entries.some((e) => e.kind === "glossary" && e.title === n)));
   t("it says LABS, never the other brand", first.entries.every((e) => !/\bTNL\b/.test(e.title + " " + e.body)));
-  t("the kinds are named for the page", first.kinds.creed === "Creed" && first.kinds.glossary === "Glossary");
+  t("the kinds are named for the page", first.kinds.creed === "Creed" && first.kinds.glossary === "Glossary" && first.kinds.feature === "Features");
+  const feats = first.entries.filter((e) => e.kind === "feature");
+  t("every feature of the app is written down (70+ entries), each with real words", feats.length >= 70 && feats.every((e) => e.title && e.body.length >= 80 && e.tags));
+  t("…the big ones are there: Showroom, Labs, Posts, Market, Selling, Payouts, Messages, the tournament, Echo, Knowledge, the admin", ["The Showroom", "Labs", "Posts", "The Market", "Selling (the sell walkthrough)", "Payouts (Stripe Connect)", "Messages", "The tournament (events)", "Echo (LABS help)", "Knowledge", "The admin dashboard"].every((n) => feats.some((e) => e.title === n)));
+  t("…and they say where things live in the code", feats.filter((e) => /Code: |src\/|server\/|app\//.test(e.body)).length >= 40);
   t("filter by kind and search", (await A("GET", "/api/admin/knowledge?kind=glossary")).j.entries.every((e) => e.kind === "glossary") && (await A("GET", "/api/admin/knowledge?q=cultivators")).j.entries.some((e) => e.key === "creed"));
 
   console.log("\nADD · EDIT · PUT AWAY — every version kept, with who and when");
@@ -76,9 +80,10 @@ try {
 
   console.log("\nONE EXPORT FOR ANY MODEL");
   const ej = await A("GET", "/api/admin/knowledge/export");
-  t("JSON: the entries with kind, title, body, tags — no ids of people, no keys", ej.s === 200 && ej.j.app === "LABS" && ej.j.entries.length >= 20 && ej.j.entries.every((e) => Object.keys(e).join() === "id,kind,title,body,tags,updatedAt"));
+  t("JSON: the entries with kind, title, body, tags — no ids of people, no keys", ej.s === 200 && ej.j.app === "LABS" && ej.j.entries.length >= 90 && ej.j.entries.every((e) => Object.keys(e).join() === "id,kind,title,body,tags,updatedAt"));
   const et = await A("GET", "/api/admin/knowledge/export?format=text");
   t("text: plain, headed by kind, the creed first", /text\/plain/.test(et.type) && /^# LABS — what it knows about itself/.test(et.text) && /## Creed[\s\S]*### The creed\nWe're not here to take part/.test(et.text) && et.text.indexOf("## Creed") < et.text.indexOf("## Glossary"));
+  t("text: the features have their own heading", /## Features\n/.test(et.text) && /### The Showroom\n/.test(et.text));
   t("the same text twice (so it can be diffed)", (await A("GET", "/api/admin/knowledge/export?format=text")).text === et.text);
   t("it's never cached", /no-store/.test((await fetch(B + "/api/admin/knowledge/export", { headers: { authorization: "Bearer tok-boss" } })).headers.get("cache-control") || ""));
   t("nothing from messages is in it", !/SECRET DM TEXT/.test(et.text) && !/SECRET DM TEXT/.test(JSON.stringify(ej.j)));

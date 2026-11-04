@@ -1,5 +1,5 @@
 /* ================================================================
-   ECHO v1.0 — 2026-11-04. "A chat bot for my app, for customer service and
+   ECHO v1.1 — 2026-11-04 (Echo answers from Knowledge too — the creed, voice, decisions, glossary, every feature — and learns which words mean which entry). v1.0 — 2026-11-04. "A chat bot for my app, for customer service and
    selling questions, trained on my app." Echo is LABS's help desk inside
    Messages: a member asks in their own words, Echo answers from what it
    knows about LABS, looks up the asking member's own account when the
@@ -109,7 +109,7 @@ const ECHO_SYN = { pay: "paid", payment: "paid", payout: "paid", payouts: "paid"
   tournament: "tournament", event: "tournament", vote: "tournament", votes: "tournament", voting: "tournament", contest: "tournament", competition: "tournament",
   collab: "collab", collabs: "collab", collaboration: "collab", collaborator: "collab", collaborators: "collab", collaborate: "collab",
   fee: "fee", fees: "fee", commission: "fee", cut: "fee", percent: "fee", percentage: "fee", stripe: "stripe", bank: "stripe",
-  account: "account", profile: "account", delete: "delete", remove: "delete", close: "delete", deactivate: "delete", human: "person", someone: "person", staff: "person", support: "person", help: "person" };
+  account: "account", profile: "account", backed: "backup", backups: "backup", delete: "delete", remove: "delete", close: "delete", deactivate: "delete", human: "person", someone: "person", staff: "person", support: "person", help: "person" };
 const echoStem = (w) => { if (ECHO_SYN[w]) return ECHO_SYN[w]; let s = w; for (const e of ["ing", "ers", "er", "ies", "es", "ed", "s"]) if (s.length > 4 && s.endsWith(e)) { s = s.slice(0, -e.length); break; } return ECHO_SYN[s] || s; };
 function echoWords(text) {
   const out = new Set();
@@ -118,24 +118,36 @@ function echoWords(text) {
   }
   return out;
 }
-const echoLive = () => db.prepare(`SELECT * FROM echo_faq WHERE enabled = 1 ORDER BY id`).all();
+/* Echo's candidates (v1.1, 2026-11-04): its own Q&A (echo_faq) and what LABS knows
+   about itself (knowledge — the creed, voice, decisions, glossary, features). One
+   shape: { src, id, question, answer, action, weight, text }. A knowledge entry is
+   answered with its words as written; a thumbs on it is noted but moves no weight,
+   and "I meant this one" teaches it the member's words (knowledge.learned). */
+for (const col of ["know_id", "picked_know"]) if (!db.prepare(`PRAGMA table_info(echo_turns)`).all().some((c) => c.name === col)) db.exec(`ALTER TABLE echo_turns ADD COLUMN ${col} INTEGER`);
+const echoLive = () => [
+  ...db.prepare(`SELECT * FROM echo_faq WHERE enabled = 1 ORDER BY id`).all().map((f) => ({ src: "faq", id: f.id, question: f.question, answer: f.answer, action: f.action, weight: f.weight, text: f.question + " " + f.keywords + " " + f.learned + " " + f.topic })),
+  ...db.prepare(`SELECT id, kind, title, body, tags, learned FROM knowledge WHERE archived = 0 ORDER BY id`).all().map((k) => ({ src: "know", id: k.id, question: k.title, answer: k.body, action: "", weight: -0.05, text: k.title + " " + k.tags + " " + k.learned + " " + k.body })),
+];
+const echoKey = (c) => c.src + ":" + c.id;
 /* One pass over the knowledge: each answer's words, and how rare each word is
    (a word in one answer out of twenty says a lot; "sell" in half of them says less). */
-function echoIndex(faqs) {
-  const docs = faqs.map((f) => ({ f, words: echoWords(f.question + " " + f.keywords + " " + f.learned + " " + f.topic) }));
+function echoIndex(cands) {
+  const docs = cands.map((f) => ({ f, words: echoWords(f.text), title: echoWords(f.question) }));
   const df = new Map(); for (const d of docs) for (const w of d.words) df.set(w, (df.get(w) || 0) + 1);
   const idf = (w) => (df.get(w) ? Math.log(1 + docs.length / df.get(w)) : 1);   // a word nothing knows is noise, not a heavy miss
   return { docs, idf };
 }
-function echoMatch(q, faqs = echoLive()) {
+function echoMatch(q, cands = echoLive()) {
   const words = echoWords(q); if (!words.size) return { best: null, score: 0, alts: [] };
-  const { docs, idf } = echoIndex(faqs);
+  const { docs, idf } = echoIndex(cands);
   const qTotal = [...words].reduce((s, w) => s + idf(w), 0) || 1;
   const scored = docs.map((d) => {
     let hit = 0, n = 0; for (const w of words) if (d.words.has(w)) { hit += idf(w); n++; }
     const cover = hit / qTotal;                                  // how much of the question the answer speaks to
     const focus = n / Math.max(3, d.words.size * 0.35);          // and how much of the answer's own words it hit (so a long entry can't win on bulk)
-    return { f: d.f, score: Math.min(1, cover * 0.75 + Math.min(1, focus) * 0.25 + (d.f.weight || 0)) };
+    let tn = 0; for (const w of words) if (d.title.has(w)) tn++;   // a word in the answer's own title says the most ("Cultivators" over an entry that mentions them)
+    const title = tn ? 0.1 + 0.05 * Math.min(2, tn) + (tn === d.title.size ? 0.05 : 0) : 0;   // the whole title: "Messages" over "Messages are private"
+    return { f: d.f, score: Math.min(1, cover * 0.75 + Math.min(1, focus) * 0.25 + title + (d.f.weight || 0)) };
   }).filter((x) => x.score > 0.08).sort((a, b) => b.score - a.score);
   const best = scored[0] || null;
   return { best: best && best.f, score: best ? best.score : 0, alts: scored.slice(best && best.score >= 0.45 ? 1 : 0, 4).map((x) => x.f) };
@@ -190,35 +202,42 @@ function echoFacts(action, user) {
 
 /* ---- one answer ---- */
 const echoAllowed = (u) => !!(u && (u.is_admin || settingBool("echoOpen")));
-function echoAnswer(faq, user) {
-  return { faqId: faq.id, text: faq.answer, facts: faq.action ? echoFacts(faq.action, user) : null };
+function echoAnswer(c, user) {
+  return { faqId: c.src === "faq" ? c.id : null, knowId: c.src === "know" ? c.id : null, from: c.src, title: c.src === "know" ? c.question : "", text: c.answer, facts: c.action ? echoFacts(c.action, user) : null };
 }
+const echoSug = (c) => ({ id: c.id, src: c.src, question: c.question });
 function echoAsk(user, q) {
   const asked = String(q || "").trim().slice(0, 500);
   if (!asked) return null;
   const m = echoMatch(asked);
   const kind = m.score >= ECHO_SURE ? "answer" : m.score >= ECHO_MAYBE ? "maybe" : "miss";
-  const id = Number(db.prepare(`INSERT INTO echo_turns (user_id, asked, faq_id, kind, score, created_at) VALUES (?,?,?,?,?,?)`).run(user.id, asked, kind === "answer" ? m.best.id : null, kind, m.score, Date.now()).lastInsertRowid);
+  const hit = kind === "answer" ? m.best : null;
+  const id = Number(db.prepare(`INSERT INTO echo_turns (user_id, asked, faq_id, know_id, kind, score, created_at) VALUES (?,?,?,?,?,?,?)`)
+    .run(user.id, asked, hit && hit.src === "faq" ? hit.id : null, hit && hit.src === "know" ? hit.id : null, kind, m.score, Date.now()).lastInsertRowid);
   const turn = { id, asked, kind, createdAt: Date.now() };
-  if (kind === "answer") Object.assign(turn, echoAnswer(m.best, user), { suggestions: m.alts.slice(0, 2).map((f) => ({ id: f.id, question: f.question })) });
-  else if (kind === "maybe") Object.assign(turn, { text: "I'm not sure I got that. Did you mean one of these?", suggestions: [m.best, ...m.alts].filter(Boolean).slice(0, 3).map((f) => ({ id: f.id, question: f.question })) });
+  if (kind === "answer") Object.assign(turn, echoAnswer(m.best, user), { suggestions: m.alts.slice(0, 2).map(echoSug) });
+  else if (kind === "maybe") Object.assign(turn, { text: "I'm not sure I got that. Did you mean one of these?", suggestions: [m.best, ...m.alts].filter(Boolean).slice(0, 3).map(echoSug) });
   else Object.assign(turn, { text: "I don't know that one yet — I'm still learning. Try asking another way, pick a topic, or hand this to a person and the LABS team will reply by email.", suggestions: [] });
   return turn;
 }
 const echoTurnOf = (id, userId) => db.prepare(`SELECT * FROM echo_turns WHERE id = ? AND user_id = ?`).get(id, userId);
 const echoTopics = () => db.prepare(`SELECT id, question, topic FROM echo_faq WHERE enabled = 1 ORDER BY weight DESC, id`).all();
+/* which candidate a stored turn shows: what the member picked, else what Echo answered with */
+function echoShown(t, byKey) {
+  return t.picked ? byKey.get("faq:" + t.picked) : t.picked_know ? byKey.get("know:" + t.picked_know) : t.faq_id ? byKey.get("faq:" + t.faq_id) : t.know_id ? byKey.get("know:" + t.know_id) : null;
+}
 
 app.get("/api/echo", auth, (req, res) => {
   if (!echoAllowed(req.user)) return res.status(403).json({ error: "Echo isn't open yet" });
-  const faqs = new Map(echoLive().map((f) => [f.id, f]));
+  const byKey = new Map(echoLive().map((c) => [echoKey(c), c]));
   const turns = db.prepare(`SELECT * FROM echo_turns WHERE user_id = ? ORDER BY id DESC LIMIT 40`).all(req.user.id).reverse().map((t) => {
-    const shown = t.picked ? faqs.get(t.picked) : t.faq_id ? faqs.get(t.faq_id) : null;
+    const shown = echoShown(t, byKey);
     const base = { id: t.id, asked: t.asked, kind: shown ? "answer" : t.kind, helpful: t.helpful, createdAt: t.created_at, suggestions: [] };
     return shown ? { ...base, ...echoAnswer(shown, req.user) } : { ...base, text: t.kind === "maybe" ? "I wasn't sure what you meant." : "I didn't know that one." };
   });
   const starters = echoTopics().filter((f) => ["post", "sell", "stripe", "orders", "standing", "returns"].some((k) => f.question.toLowerCase().includes(k === "stripe" ? "payout" : k === "standing" ? "rep" : k === "orders" ? "order" : k))).slice(0, 5);
-  res.json({ name: "Echo", hello: `Hi${req.user.display_name ? " " + req.user.display_name.split(" ")[0] : ""} — I'm Echo, LABS's help. Ask me anything about posting, selling, getting paid or your account. I can see your own orders and shop, nobody else's.`,
-    preview: !settingBool("echoOpen"), topics: ECHO_TOPICS, starters: starters.map((f) => ({ id: f.id, question: f.question })), turns });
+  res.json({ name: "Echo", hello: `Hi${req.user.display_name ? " " + req.user.display_name.split(" ")[0] : ""} — I'm Echo, LABS's help. Ask me anything about LABS, posting, selling, getting paid or your account. I can see your own orders and shop, nobody else's.`,
+    preview: !settingBool("echoOpen"), topics: ECHO_TOPICS, starters: starters.map((f) => ({ id: f.id, src: "faq", question: f.question })), turns });
 });
 app.post("/api/echo/ask", auth, rateLimit({ max: 30, windowMs: 60000, key: "user" }), (req, res) => {
   if (!echoAllowed(req.user)) return res.status(403).json({ error: "Echo isn't open yet" });
@@ -228,33 +247,36 @@ app.post("/api/echo/ask", auth, rateLimit({ max: 30, windowMs: 60000, key: "user
 });
 app.post("/api/echo/turns/:id/helpful", auth, (req, res) => {
   const t = echoTurnOf(+req.params.id, req.user.id); if (!t) return res.status(404).json({ error: "no such turn" });
-  const yes = !!(req.body || {}).helpful, faqId = t.picked || t.faq_id;
+  const yes = !!(req.body || {}).helpful, faqId = t.picked || (!t.picked_know && t.faq_id);
   db.prepare(`UPDATE echo_turns SET helpful = ? WHERE id = ?`).run(yes ? 1 : 0, t.id);
   if (faqId && t.helpful == null) db.prepare(`UPDATE echo_faq SET weight = MAX(-0.3, MIN(0.3, weight + ?)), updated_at = ? WHERE id = ?`).run(yes ? 0.02 : -0.03, Date.now(), faqId);
   res.json({ ok: true });
 });
 /* "I meant this one": the answer is shown, and the asked words join that
    answer's learned phrasings — next time the same words land straight on it. */
-function echoLearn(faqId, asked) {
-  const f = db.prepare(`SELECT learned FROM echo_faq WHERE id = ?`).get(faqId); if (!f) return;
+function echoLearn(src, id, asked) {
+  const table = src === "know" ? "knowledge" : "echo_faq";
+  const f = db.prepare(`SELECT learned FROM ${table} WHERE id = ?`).get(id); if (!f) return;
   const have = echoWords(f.learned), add = [...echoWords(asked)].filter((w) => !have.has(w));
   if (!add.length) return;
   const learned = (f.learned + " " + add.join(" ")).trim().slice(-600);
-  db.prepare(`UPDATE echo_faq SET learned = ?, updated_at = ? WHERE id = ?`).run(learned, Date.now(), faqId);
+  db.prepare(`UPDATE ${table} SET learned = ?, updated_at = ? WHERE id = ?`).run(learned, Date.now(), id);
 }
 app.post("/api/echo/turns/:id/pick", auth, (req, res) => {
   const t = echoTurnOf(+req.params.id, req.user.id); if (!t) return res.status(404).json({ error: "no such turn" });
-  const faq = db.prepare(`SELECT * FROM echo_faq WHERE id = ? AND enabled = 1`).get(+(req.body || {}).faqId); if (!faq) return res.status(404).json({ error: "no such answer" });
-  db.prepare(`UPDATE echo_turns SET picked = ? WHERE id = ?`).run(faq.id, t.id);
-  if (t.kind !== "answer" || t.faq_id !== faq.id) echoLearn(faq.id, t.asked);
-  res.json({ turn: { id: t.id, asked: t.asked, kind: "answer", createdAt: t.created_at, suggestions: [], ...echoAnswer(faq, req.user) } });
+  const b = req.body || {}, src = b.knowId ? "know" : "faq", id = +(b.knowId || b.faqId);
+  const c = echoLive().find((x) => x.src === src && x.id === id); if (!c) return res.status(404).json({ error: "no such answer" });
+  db.prepare(`UPDATE echo_turns SET picked = ?, picked_know = ? WHERE id = ?`).run(src === "faq" ? c.id : null, src === "know" ? c.id : null, t.id);
+  const was = t.faq_id ? "faq:" + t.faq_id : t.know_id ? "know:" + t.know_id : "";
+  if (t.kind !== "answer" || was !== echoKey(c)) echoLearn(src, c.id, t.asked);
+  res.json({ turn: { id: t.id, asked: t.asked, kind: "answer", createdAt: t.created_at, suggestions: [], ...echoAnswer(c, req.user) } });
 });
 app.post("/api/echo/handoff", auth, rateLimit({ max: 3, windowMs: 3600000, key: "user" }), async (req, res) => {
   if (!echoAllowed(req.user)) return res.status(403).json({ error: "Echo isn't open yet" });
   const note = String((req.body || {}).note || "").trim().slice(0, 1000);
-  const turns = db.prepare(`SELECT asked, kind, faq_id, picked FROM echo_turns WHERE user_id = ? ORDER BY id DESC LIMIT 12`).all(req.user.id).reverse();
-  const names = new Map(db.prepare(`SELECT id, question FROM echo_faq`).all().map((f) => [f.id, f.question]));
-  const transcript = turns.map((t) => `@${req.user.username}: ${t.asked}\nEcho: ${names.get(t.picked || t.faq_id) || (t.kind === "maybe" ? "(wasn't sure)" : "(didn't know)")}`).join("\n");
+  const turns = db.prepare(`SELECT * FROM echo_turns WHERE user_id = ? ORDER BY id DESC LIMIT 12`).all(req.user.id).reverse();
+  const byKey = new Map(echoLive().map((c) => [echoKey(c), c]));
+  const transcript = turns.map((t) => { const s = echoShown(t, byKey); return `@${req.user.username}: ${t.asked}\nEcho: ${s ? s.question : t.kind === "maybe" ? "(wasn't sure)" : "(didn't know)"}`; }).join("\n");
   const id = Number(db.prepare(`INSERT INTO echo_handoffs (user_id, note, transcript, created_at) VALUES (?,?,?,?)`).run(req.user.id, note, transcript, Date.now()).lastInsertRowid);
   const lines = [`From @${req.user.username} (${req.user.email})`, note ? `They say: ${note}` : "No note — see the conversation.", ...transcript.split("\n")];
   try { await sendAlertEmail(SUPPORT_EMAIL, `Echo handoff from @${req.user.username}`, "Someone needs a person", lines, (process.env.PUBLIC_URL || "https://tnllabs.com").trim().replace(/\/+$/, "") + "/admin#echo"); } catch (e) {}
@@ -277,7 +299,10 @@ app.get("/api/admin/echo", auth, admin, (req, res) => {
   const missed = [...groups.values()].sort((a, b) => b.n - a.n || b.last - a.last).slice(0, 60);
   const faq = db.prepare(`SELECT f.*, (SELECT COUNT(*) FROM echo_turns t WHERE (t.faq_id = f.id OR t.picked = f.id) AND t.created_at > ?) asked, (SELECT COUNT(*) FROM echo_turns t WHERE (t.faq_id = f.id OR t.picked = f.id) AND t.helpful = 1 AND t.created_at > ?) liked, (SELECT COUNT(*) FROM echo_turns t WHERE (t.faq_id = f.id OR t.picked = f.id) AND t.helpful = 0 AND t.created_at > ?) disliked FROM echo_faq f ORDER BY asked DESC, f.id`).all(since, since, since);
   const handoffs = db.prepare(`SELECT h.*, u.username, u.email FROM echo_handoffs h JOIN users u ON u.id = h.user_id ORDER BY (h.status = 'open') DESC, h.id DESC LIMIT 50`).all();
-  res.json({ days, open: settingBool("echoOpen"), topics: ECHO_TOPICS, actions: ECHO_ACTIONS, numbers: { asked, answered, rated, liked, people }, missed, faq, handoffs });
+  /* answered from Knowledge (Admin → Knowledge holds the words): which entries, how often, how rated */
+  const fromKnowledge = n(`SELECT COUNT(*) n FROM echo_turns WHERE created_at > ? AND ((kind = 'answer' AND know_id IS NOT NULL AND picked IS NULL) OR picked_know IS NOT NULL)`, since);
+  const know = db.prepare(`SELECT k.id, k.kind, k.title, k.learned, (SELECT COUNT(*) FROM echo_turns t WHERE (t.know_id = k.id OR t.picked_know = k.id) AND t.created_at > ?) asked, (SELECT COUNT(*) FROM echo_turns t WHERE (t.know_id = k.id OR t.picked_know = k.id) AND t.helpful = 1 AND t.created_at > ?) liked, (SELECT COUNT(*) FROM echo_turns t WHERE (t.know_id = k.id OR t.picked_know = k.id) AND t.helpful = 0 AND t.created_at > ?) disliked FROM knowledge k WHERE k.archived = 0 ORDER BY asked DESC, k.id LIMIT 30`).all(since, since, since).filter((k) => k.asked);
+  res.json({ days, open: settingBool("echoOpen"), topics: ECHO_TOPICS, actions: ECHO_ACTIONS, numbers: { asked, answered, rated, liked, people, fromKnowledge }, missed, faq, know, knowledgeTotal: n(`SELECT COUNT(*) n FROM knowledge WHERE archived = 0`), handoffs });
 });
 function echoFaqBody(b) {
   const question = String(b.question || "").trim().slice(0, 200), answer = String(b.answer || "").trim().slice(0, 2000);
