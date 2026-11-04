@@ -1,4 +1,4 @@
-/* LABS admin v3.2 — 2026-10-31. People: the member directory.
+/* LABS admin v3.3 — 2026-11-04 (the globe of where members are on top — 3-globe.js). v3.2 — 2026-10-31. People: the member directory.
    v3.2: "they should be most recent to old" — it always opens newest first; a heading you tap sorts
    until you leave, it isn't remembered (a tap on Member once kept the table A→Z for good).
    v3.1: a phone starts in Cards; the top bar's member search steps aside here (this page has its own).
@@ -22,7 +22,7 @@ const PFILTERS = [["all", "Everyone"], ["new", "New this week"], ["silent", "Nev
   ["tournament", "In the tournament"], ["sellers", "Sellers"], ["unverified", "Unverified"], ["suspended", "Suspended"], ["admins", "Admins"]];
 
 LOADERS.people = async () => {
-  const r = await req(`/api/admin/people?filter=${PFILTER}&all=1`);
+  const [r] = await Promise.all([req(`/api/admin/people?filter=${PFILTER}&all=1`), globeLoad()]);   // the globe on top (3-globe.js)
   D.people = r.people; D.peopleTotal = r.total;
 };
 
@@ -120,6 +120,7 @@ async function downloadMembers() {
 
 VIEWS.people = () => `
   ${pageHead("Members", "Every member's account, activity and standing. Tap a row to open their record.", `<button class="btn ghost sm" id="pcsv">${I.down} Export CSV</button>`)}
+  ${globeHTML()}
   <div class="tb">
     <div class="srch">${di('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>', 16)}<input id="pq" placeholder="Search name, username or email" value="${esc(PQ)}" autocomplete="off" aria-label="Search members"></div>
     <div class="seg" role="group" aria-label="View"><button class="${pview() === "table" ? "on" : ""}" data-pview="table">Table</button><button class="${pview() === "cards" ? "on" : ""}" data-pview="cards">Cards</button></div>
@@ -154,7 +155,7 @@ WIRES.people = () => {
   const cr = $("#pcolreset"); if (cr) cr.onclick = () => { PPREF.cols = null; psave(); paint(); };
   const dn = $("#pdense"); if (dn) dn.onclick = () => { PPREF.dense = !PPREF.dense; psave(); paint(); };
   const cv = $("#pcsv"); if (cv) cv.onclick = downloadMembers;
-  wirePeopleResults();
+  wirePeopleResults(); globeWire();
   const bc = $("#bcsend"); if (bc) bc.onclick = async () => {
     const body = $("#bcbody").value.trim(), target = $("#bcto").value;
     if (!body) return toast("Write something first");

@@ -132,6 +132,7 @@ export const SERVER = [
 
   // trust
   "trust/signals-admin.js",
+  "trust/globe.js",
 
   // profile
   "profile/social-meta.js",
