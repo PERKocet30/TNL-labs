@@ -1,4 +1,4 @@
-/* ECHO v1.5 — 2026-11-04 (photos on a question, the attach row, the mic, the speaker). v1.4 — 2026-11-04 (the model picker, who answered). v1.3 — 2026-11-04 (modelled on Claude: question card, answer as text, the working line, the composer box). v1.2 — 2026-11-04 (the brain: what it looked at under an answer). v1.1 — 2026-11-04 (a Knowledge answer's title). v1.0 — 2026-11-04. Echo, the help inside Messages (app/echo/echo.js):
+/* ECHO v1.6 — 2026-11-04 (the hands' cards). v1.5 — 2026-11-04 (photos on a question, the attach row, the mic, the speaker). v1.4 — 2026-11-04 (the model picker, who answered). v1.3 — 2026-11-04 (modelled on Claude: question card, answer as text, the working line, the composer box). v1.2 — 2026-11-04 (the brain: what it looked at under an answer). v1.1 — 2026-11-04 (a Knowledge answer's title). v1.0 — 2026-11-04. Echo, the help inside Messages (app/echo/echo.js):
    the pinned row, the Echo mark, fact cards, suggestion chips, the thumbs. */
 .echo-av{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--accent-fill);color:var(--on-accent)}
 .echo-av.sm{width:34px;height:34px}.echo-av.sm svg{width:18px;height:18px}
@@ -78,3 +78,10 @@
 .echo-ib svg{width:19px;height:19px}.echo-ib:active{background:var(--el);color:var(--tx)}
 .echo-ib.live{color:var(--on-accent);background:var(--accent-fill);animation:echoPulse 1.1s ease-in-out infinite}
 .echo-th .cx-ib.on{color:var(--on-accent);background:var(--accent-fill)}
+.echo-cards:empty{display:none}
+.echo-card{margin:10px 0 2px;padding:12px 14px;border-radius:var(--rad,16px);background:var(--card);border:1px solid var(--line2,var(--line));display:flex;flex-direction:column;gap:6px}
+.echo-card b{font-size:14.5px;line-height:1.3}.echo-card>span{font-size:13px;color:var(--dim);line-height:1.4}
+.echo-cb{display:flex;gap:8px;margin-top:4px}.echo-card.busy .echo-cb{opacity:.4;pointer-events:none}
+.echo-cs{font-size:12.5px;color:var(--dim);margin-top:2px}
+.echo-card.confirmed{border-color:var(--accent-fill)}.echo-card.confirmed .echo-cs{color:var(--tx)}
+.echo-card.declined{opacity:.6}.echo-card.failed .echo-cs{color:var(--tx)}
