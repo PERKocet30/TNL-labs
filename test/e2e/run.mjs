@@ -2402,6 +2402,24 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.locator("[data-tab=echohome]:visible").tap();
     await fast(p, 4000, () => p.locator("#gq").waitFor(), "the top-bar search on other pages");
   });
+  /* 2026-11-04: "a 3D graphic showing where everyone in the world is logging into LABS from" — the globe on People */
+  await step(d, "admin → People on a phone: the globe draws, a row flies to its country, the page still scrolls past it, and it stops when you leave", async () => {
+    await p.route("**/api/admin/globe**", (r) => r.fulfill({ json: { days: 30, total: 12, placed: 10, countries: [
+      { c: "US", members: 6, active: 4, today: 1, cities: [["Atlanta", 3]] }, { c: "NG", members: 3, active: 2, today: 0, cities: [["Lagos", 3]] }, { c: "GB", members: 1, active: 0, today: 0, cities: [] }] } }));
+    await p.evaluate(() => { D.globe = null; });
+    await p.locator("[data-tab=people]:visible").tap();
+    await fast(p, 6000, () => p.locator("#glcv").waitFor(), "the globe on People");
+    await p.waitForTimeout(400);
+    ok(await p.evaluate(() => { const c = document.querySelector("#glcv"), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 1000; }), "the globe's canvas is blank");
+    ok(await p.locator(".gl-list [data-glc]").count() === 3, "the globe's list doesn't show the three countries");
+    await p.locator('[data-glc="NG"]').tap(); await p.waitForTimeout(900);
+    ok(/Nigeria/.test(await p.locator("#glpick").innerText()) && /Lagos/.test(await p.locator("#glpick").innerText()), "tapping Nigeria didn't say what's there");
+    ok(await p.evaluate(() => Math.abs(GL.rot.lon - 8) < 3), "tapping Nigeria didn't turn the globe to it");
+    ok(await p.evaluate(() => getComputedStyle(document.querySelector("#glcv")).touchAction === "pan-y"), "a finger on the globe can't scroll the page past it");
+    await p.locator("[data-tab=echohome]:visible").tap(); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => GL.raf === 0), "the globe kept drawing after leaving People");
+    await p.unroute("**/api/admin/globe**");
+  });
   await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {
     await p.evaluate(() => localStorage.removeItem("tnl-token"));   // signed out (the step before signed this phone in)
     await settledGoto(p, B + "/?l=visual"); await throughDoor(p);

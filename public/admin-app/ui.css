@@ -215,3 +215,17 @@ a.li{color:inherit;text-decoration:none}a.li:hover{background:var(--el)}.li .b i
 .igm>.mono{margin-top:3px;font-size:11px;color:var(--dim)}
 /* the LABS logo in the admin header (2026-10-27) */
 .brand .bwm{height:15px;width:auto;vertical-align:-2px;margin-right:4px}[data-theme="dark"] .brand .bwm{filter:invert(1)}
+
+/* the globe on People (3-globe.js, 2026-11-04) */
+.gl{margin:10px 0 14px}
+.gl-b{display:grid;grid-template-columns:1fr;gap:6px;padding:8px 14px 14px}
+@media(min-width:720px){.gl-b{grid-template-columns:minmax(0,380px) 1fr;align-items:center;gap:22px}}
+.gl-w,.gl-ph{width:100%;max-width:380px;margin:0 auto;aspect-ratio:1}.gl-ph{border-radius:50%;background:var(--el)}
+.gl-w canvas{width:100%;height:100%;display:block;touch-action:pan-y;cursor:grab}.gl-w canvas:active{cursor:grabbing}
+.gl-pick{min-height:46px;display:flex;flex-direction:column;justify-content:center;gap:2px;font-size:13px}.gl-pick b{font-size:16px}.gl-pick em{font-style:normal;font-weight:600}
+.gl-list{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.gl-list button{width:100%;display:grid;grid-template-columns:minmax(0,9.5em) 1fr auto;gap:10px;align-items:center;padding:7px 8px;border-radius:var(--rad-s,8px);font-size:13.5px;text-align:left}
+.gl-list button:hover,.gl-list button.on{background:var(--el)}
+.gl-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gl-bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}.gl-bar i{display:block;height:100%;background:var(--accent-fill);border-radius:3px}
+.gl-note{font-size:12px;margin-top:10px;line-height:1.4}.gl-none{font-size:13px;margin-top:8px}
