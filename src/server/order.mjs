@@ -164,11 +164,12 @@ export const SERVER = [
   // pages
   "pages/policies.js",
 
+  // knowledge — before echo: Echo answers from it
+  "knowledge/knowledge.js",
+  "knowledge/features.js",
+
   // echo
   "echo/echo.js",
-
-  // knowledge
-  "knowledge/knowledge.js",
 
   // admin
   "admin/report.js",

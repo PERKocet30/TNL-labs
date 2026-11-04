@@ -1,4 +1,4 @@
-/* ECHO v1.0 — 2026-11-04. Echo is LABS's help, pinned at the top of Messages:
+/* ECHO v1.1 — 2026-11-04 (answers from Knowledge wear the entry's title; a pick names which kind it was). v1.0 — 2026-11-04. Echo is LABS's help, pinned at the top of Messages:
    ask in your own words, get an answer from what Echo knows about LABS
    (and about your own orders, shop and standing — nobody else's), thumbs it
    up or down, pick "I meant…" when it wasn't sure, or hand the conversation
@@ -9,7 +9,7 @@ const eapi={
   hello:()=>req("/api/echo"),
   ask:q=>req("/api/echo/ask",{method:"POST",body:{q}}),
   helpful:(id,helpful)=>req("/api/echo/turns/"+id+"/helpful",{method:"POST",body:{helpful}}),
-  pick:(id,faqId)=>req("/api/echo/turns/"+id+"/pick",{method:"POST",body:{faqId}}),
+  pick:(id,src,picked)=>req("/api/echo/turns/"+id+"/pick",{method:"POST",body:src==="know"?{knowId:picked}:{faqId:picked}}),
   handoff:note=>req("/api/echo/handoff",{method:"POST",body:{note}}),
 };
 const ECHO_IC={
@@ -70,14 +70,15 @@ function echoTurnHTML(t){
     facts=`<div class="echo-facts"><b>${esc(f.title)}</b>${(f.lines||[]).map(l=>`<span>${esc(l)}</span>`).join("")}${go}</div>`}
   let sug="";
   if(t.suggestions&&t.suggestions.length){const lbl=t.kind==="answer"?`<span class="mono">Related</span>`:"";
-    sug=`<div class="echo-sug">${lbl}${t.suggestions.map(s=>`<button class="chip" data-echopick="${s.id}" data-turn="${t.id}">${esc(s.question)}</button>`).join("")}</div>`}
+    sug=`<div class="echo-sug">${lbl}${t.suggestions.map(s=>`<button class="chip" data-echopick="${s.id}" data-echosrc="${esc(s.src||"faq")}" data-turn="${t.id}">${esc(s.question)}</button>`).join("")}</div>`}
   const person=`<button class="link echo-person" data-echoperson>Talk to a person</button>`;
   let rate="";
   if(t.kind==="answer"){
     if(t.helpful==null)rate=`<div class="echo-rate"><span class="mono">Did that help?</span><button class="echo-rb" data-echoyes="${t.id}" aria-label="Yes, that helped">${ECHO_IC.up}</button><button class="echo-rb" data-echono="${t.id}" aria-label="No">${ECHO_IC.down}</button></div>`;
     else rate=`<div class="echo-rate"><span class="mono">${t.helpful?"Glad it helped":"Noted — I\u2019ll learn from that"}</span>${t.helpful?"":person}</div>`;
   } else if(t.kind==="miss")rate=`<div class="echo-rate">${person}</div>`;
-  h+=`<div class="c-m them first last" data-echoturn="${t.id}"><div class="c-col"><div class="c-bw"><div class="c-b">${rich(t.text||"")}</div>${facts}</div>${sug}${rate}</div></div>`;
+  const title=t.from==="know"&&t.title?`<b class="echo-kt">${esc(t.title)}</b>`:"";
+  h+=`<div class="c-m them first last" data-echoturn="${t.id}"><div class="c-col"><div class="c-bw"><div class="c-b">${title}${rich(t.text||"")}</div>${facts}</div>${sug}${rate}</div></div>`;
   if(t.handoff)h+=`<div class="c-sys">${esc(t.handoff)}</div>`;
   return h;
 }
@@ -101,8 +102,8 @@ async function echoAsk(q){
   ECHOBUSY=false;const d2=$("#echodraft");if(d2){d2.disabled=false}
   echoPaintFeed();
 }
-async function echoPick(turnId,faqId){
-  try{const r=await eapi.pick(turnId,faqId);const i=ECHO.turns.findIndex(t=>String(t.id)===String(turnId));if(i>=0)ECHO.turns[i]=r.turn;echoPaintFeed()}
+async function echoPick(turnId,src,picked){
+  try{const r=await eapi.pick(turnId,src,picked);const i=ECHO.turns.findIndex(t=>String(t.id)===String(turnId));if(i>=0)ECHO.turns[i]=r.turn;echoPaintFeed()}
   catch(e){toast(e.message)}
 }
 async function echoRate(turnId,yes){
@@ -142,7 +143,7 @@ function wireEcho(L){
 }
 function wireEchoFeed(f){
   f.querySelectorAll("[data-echoask]").forEach(b=>b.onclick=()=>echoAsk(b.dataset.echoask));
-  f.querySelectorAll("[data-echopick]").forEach(b=>b.onclick=()=>echoPick(b.dataset.turn,+b.dataset.echopick));
+  f.querySelectorAll("[data-echopick]").forEach(b=>b.onclick=()=>echoPick(b.dataset.turn,b.dataset.echosrc,+b.dataset.echopick));
   f.querySelectorAll("[data-echoyes]").forEach(b=>b.onclick=()=>echoRate(b.dataset.echoyes,true));
   f.querySelectorAll("[data-echono]").forEach(b=>b.onclick=()=>echoRate(b.dataset.echono,false));
   f.querySelectorAll("[data-echoperson]").forEach(b=>b.onclick=()=>echoHandoff());

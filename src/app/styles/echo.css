@@ -1,4 +1,4 @@
-/* ECHO v1.0 — 2026-11-04. Echo, the help inside Messages (app/echo/echo.js):
+/* ECHO v1.1 — 2026-11-04 (a Knowledge answer's title). v1.0 — 2026-11-04. Echo, the help inside Messages (app/echo/echo.js):
    the pinned row, the Echo mark, fact cards, suggestion chips, the thumbs. */
 .echo-av{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--accent-fill);color:var(--on-accent)}
 .echo-av.sm{width:34px;height:34px}.echo-av.sm svg{width:18px;height:18px}
@@ -23,3 +23,4 @@
 .echo-typing i:nth-child(2){animation-delay:.2s}.echo-typing i:nth-child(3){animation-delay:.4s}
 @keyframes echoDot{0%,100%{opacity:.3}50%{opacity:1}}
 @media(prefers-reduced-motion:reduce){.echo-typing i{animation:none;opacity:.7}}
+.echo-kt{display:block;font-weight:700;margin-bottom:3px}

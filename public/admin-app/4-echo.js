@@ -1,4 +1,4 @@
-/* LABS admin — Echo v1.0, 2026-11-04. Echo is the help desk inside Messages
+/* LABS admin — Echo v1.1, 2026-11-04 (Answered from Knowledge). v1.0, 2026-11-04. Echo is the help desk inside Messages
    (server/echo). This page is where you teach it: what people asked that it
    couldn't answer (teach one in a tap), how its answers are rated, every
    answer it knows (edit, switch off, forget what it learned), the
@@ -36,6 +36,9 @@ VIEWS.echo = () => {
     <div class="panel" style="margin-bottom:14px">${sw}</div>
     <div class="stats">${[["Questions", num(n.asked)], ["People", num(n.people)], ["Answered", pc(n.answered, n.asked)], ["Rated helpful", pc(n.liked, n.rated)]].map(([l, v]) => `<div><b>${v}</b><span>${l}</span></div>`).join("")}</div>
     <h2 class="sec">What it missed <span class="mono">${d.missed.length ? d.missed.length + " to teach" : ""}</span></h2>${ECHOTEACH ? form(ECHOTEACH, "Teach Echo this one", "ef-go", "ef-x2") : ""}${missed}
+    <h2 class="sec" style="margin-top:18px">Answered from Knowledge <span class="mono">${n.fromKnowledge ? n.fromKnowledge + " in this period · " : ""}${d.knowledgeTotal} entries</span></h2>
+    ${d.know.length ? `<div class="list">${d.know.map((k) => `<div class="li"><div class="b"><b>${esc(k.title)}<span class="tag">${esc(k.kind)}</span></b>${k.learned ? `<span class="mono" style="font-size:11px">learned: ${esc(k.learned)}</span>` : ""}</div><div class="r"><span class="mono">${k.asked} asked · ${k.liked}👍 ${k.disliked}👎</span></div></div>`).join("")}</div>`
+      : `<div class="empty">Nothing from Knowledge was asked in this period. Echo answers from everything in <button class="link" data-go="knowledge" style="font-size:inherit">Admin → Knowledge</button> — the creed, decisions, glossary and every feature — as well as the answers below.</div>`}
     <h2 class="sec" style="margin-top:18px">Handed to a person <span class="mono">${open.length ? open.length + " open" : ""}</span></h2>${hand}
     <h2 class="sec" style="margin-top:18px">What Echo knows <span class="mono">${d.faq.length} answers</span></h2>${know}`;
 };
