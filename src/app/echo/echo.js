@@ -67,7 +67,8 @@ const echoBubble=(text,cls)=>`<div class="c-m them ${cls||""}"><div class="c-col
 function echoTurnHTML(t){
   let h=`<div class="c-m me first last"><div class="c-col"><div class="c-bw"><div class="c-b">${rich(t.asked)}</div></div></div></div>`;
   if(t.kind==="brain"){
-    const looked=t.tools&&t.tools.length?`<div class="echo-looked mono">Looked at: ${t.tools.map(x=>esc(x.replace(/_/g," "))).join(" · ")}</div>`:"";
+    const saw=(t.tools||[]).filter(x=>!/^knowledge_(add|edit)$/.test(x)),wrote=(t.tools||[]).some(x=>/^knowledge_(add|edit)$/.test(x));
+    const looked=saw.length||wrote?`<div class="echo-looked mono">${saw.length?"Looked at: "+saw.map(x=>esc(x.replace(/_/g," "))).join(" · "):""}${saw.length&&wrote?" · ":""}${wrote?"Wrote to Knowledge":""}</div>`:"";
     return h+`<div class="c-m them first last echo-brain ${t.failed?"echo-failed":""}" data-echoturn="${t.id}"><div class="c-col"><div class="c-bw"><div class="c-b">${rich(t.text||"…")}</div></div>${looked}</div></div>`}
   const f=t.facts;
   let facts="";
