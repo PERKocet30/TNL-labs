@@ -1,5 +1,5 @@
 /* ================================================================
-   ECHO · the hands v1.0 — 2026-11-04. "Build a simplified admin dashboard
+   ECHO · the hands v1.1 — 2026-11-04 (piece three: a setting from a short list, void a test order, send the weekly, a nudge preview — the same card). v1.0 — 2026-11-04. "Build a simplified admin dashboard
    integrated with Echo so it can help me manage everything." Jorge chose A:
    Echo gets hands, with his yes on each. Nothing here acts on its own —
    every hand is a PROPOSAL: Claude calls the tool, a row lands in
@@ -29,6 +29,9 @@ const handName = (u) => { const s = String(u || "").trim().toLowerCase().replace
 const handInt = (v, what) => { const n = Math.round(Number(v)); if (!Number.isFinite(n) || n <= 0) throw new Error(`Which ${what}? (its number)`); return n; };
 const handWhy = (a) => String((a && a.why) || (a && a.reason) || "").trim().slice(0, 300);
 const handNames = (a) => [...new Set((Array.isArray(a.usernames) ? a.usernames : []).map((u) => handName(u)))].slice(0, 50);
+/* Settings Echo may propose, with the words Jorge reads; nothing else in SETTING_DEFAULTS is reachable from here */
+const HAND_SETTINGS = { announcement: "the banner across the top of the app (empty takes it down)", signupsOpen: "whether new members can join (1 open · 0 invite-only)", guestAccess: "whether visitors can look around without an account (1 · 0)", marketOpen: "whether the Market shows (1 · 0)", echoOpen: "whether members see the help desk Echo (1 · 0)", echoModel: "which Claude answers Echo (claude-opus-5-5 · claude-sonnet-5-5 · claude-fable-5-1)", nudgeMail: "the weekly finish-your-page email (1 · 0)" };
+const handSetting = (a) => { const k = String(a.key || ""); if (!Object.hasOwn(HAND_SETTINGS, k)) throw new Error("Not a setting I can change. One of: " + Object.keys(HAND_SETTINGS).join(", ")); let v = String(a.value ?? "").trim(); if (k !== "announcement" && k !== "echoModel" && !/^[01]$/.test(v)) throw new Error(`${k} is 1 or 0.`); if (k === "echoModel" && !brainModelOf(v)) throw new Error("One of: " + BRAIN_MODELS.map((m) => m.id).join(", ")); return [k, v.slice(0, 300)]; };
 const handLab = (lab) => { const l = String(lab || "").trim().toLowerCase(); if (!PLACES[l]) throw new Error("Which lab? One of: " + Object.keys(PLACES).join(", ")); return l; };
 const whyProp = { why: { type: "string", description: "One line on why, in plain words — Jorge reads it on the card" } };
 const userProp = { username: { type: "string", description: "@handle" } };
@@ -62,6 +65,14 @@ const ECHO_HANDS = [
     title: (a) => { const n = handNames(a); return `Restore ${n.length} account${n.length === 1 ? "" : "s"}' votes`; }, route: (a) => { const n = handNames(a); if (!n.length) throw new Error("Which accounts?"); return ["POST", "/api/admin/spam/restore", { usernames: n }]; }, said: (r) => `${r.votes ?? 0} vote${r.votes === 1 ? "" : "s"} restored` },
   { name: "teach_echo", description: `Teach the members' Echo (the help) a question and its answer, in LABS's voice. ${DO.propose}`, props: { question: { type: "string", description: "As a member would ask it" }, answer: { type: "string", description: "Plain words: what to do and where to tap" }, keywords: { type: "string", description: "Other words people use for it" } }, required: ["question", "answer"],
     title: (a) => `Teach Echo: "${String(a.question || "").trim().slice(0, 80)}"`, route: (a) => ["POST", "/api/admin/echo/faq", { question: a.question, answer: a.answer, keywords: a.keywords || "" }], said: () => "taught" },
+  { name: "set_setting", description: `Change one of LABS's switches: ${Object.entries(HAND_SETTINGS).map(([k, v]) => k + " — " + v).join("; ")}. ${DO.propose}`, props: { key: { type: "string" }, value: { type: "string" }, ...whyProp }, required: ["key", "value"],
+    title: (a) => { const [k, v] = handSetting(a); return k === "announcement" ? (v ? `Put up the banner: "${v.slice(0, 60)}"` : "Take the banner down") : k === "echoModel" ? `Switch Echo to ${brainShort(v)}` : `${{ signupsOpen: "Signups", guestAccess: "Looking around without an account", marketOpen: "The Market", echoOpen: "The help desk Echo for members", nudgeMail: "The weekly nudge email" }[k]}: ${v === "1" ? "on" : "off"}`; }, route: (a) => { const [k, v] = handSetting(a); return ["PATCH", "/api/admin/settings", { [k]: v }]; }, said: (r) => (r.changed && r.changed.length ? "changed" : "no change") },
+  { name: "void_order", description: `Mark an order a test: it leaves everyone's lists and numbers and its rep is taken back through the log. For your own test buys, never a real sale. ${DO.propose}`, props: { orderId: { type: "integer" }, ...whyProp }, required: ["orderId"],
+    title: (a) => `Mark order #${handInt(a.orderId, "order")} a test (void it)`, route: (a) => ["POST", `/api/admin/orders/${handInt(a.orderId, "order")}/void`, {}], said: (r) => (r.repTaken ? `voided · ${r.repTaken} rep taken back` : "voided") },
+  { name: "send_weekly", description: `Email Jorge this week's report now (the one Systems shows). ${DO.propose}`, props: { ...whyProp }, required: [],
+    title: () => "Email me this week's report now", route: () => ["POST", "/api/admin/weekly/send", {}], said: (r) => (r.sent ? "sent" : "not sent — " + (r.reason || "mail isn't set up")) },
+  { name: "nudge_preview", description: `Send Jorge a preview of the finish-your-page nudge email, as a member would get it. ${DO.propose}`, props: { ...whyProp }, required: [],
+    title: () => "Send me a preview of the nudge email", route: () => ["POST", "/api/admin/nudge/preview", {}], said: () => "sent to your inbox" },
   { name: "mark_handoff_done", description: `Mark a member's handoff (a conversation sent to a person) as done. ${DO.propose}`, props: { handoffId: { type: "integer" }, ...whyProp }, required: ["handoffId"],
     title: (a) => `Mark handoff #${handInt(a.handoffId, "handoff")} done`, route: (a) => ["POST", `/api/admin/echo/handoffs/${handInt(a.handoffId, "handoff")}/done`, {}], said: () => "done" },
 ];
