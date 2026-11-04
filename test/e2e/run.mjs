@@ -2194,7 +2194,7 @@ console.log("\nMEMBER · COMPUTER");
   // 2026-11-04: the admin opens on Echo (Echo Home) — the chat beside what needs you; without a key it says so and still shows the queue
   await step(d, "admin → opens on Echo: the chat panel beside Needs you; no key, so it says how to wake it; Home is one tap away", async () => {
     await settledGoto(p, B + "/admin");
-    await fast(p, 8000, () => p.locator(".eh-chat").waitFor(), "Echo Home");
+    await fast(p, 10000, () => p.locator(".eh-off, .eh-hello").first().waitFor(), "Echo Home");   // the shell paints first, the data lands after
     ok((await p.locator(".pg-hd h1").first().textContent()) === "Echo", "the first page isn't Echo");
     ok(await p.locator(".eh-off code", { hasText: "ECHO_AI_KEY" }).count() === 1, "without a key, the page doesn't say how to wake Echo");
     ok(await p.locator(".eh-side .rc h3", { hasText: "Needs you" }).count() === 1 && await p.locator(".eh-side .kpi").count() === 4, "the queue and the four numbers aren't beside the chat");
