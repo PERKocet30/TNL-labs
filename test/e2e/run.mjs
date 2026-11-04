@@ -1734,8 +1734,7 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { TAB = "showroom"; render(); TAB = "labs"; render(); TAB = "market"; render(); });
     await p.waitForTimeout(100);
     await p.evaluate(() => { TAB = "labs"; render(); });
-    const before = await p.evaluate(() => UI.q.filter((e) => e.kind === "view").map((e) => e.screen + "<" + e.prev).join(" "));
-    ok(/(^| )labs?[^ ]*<showroom market<labs?[^ ]* labs?[^ ]*<market/.test(before), "the screen changes weren't queued in order: " + before);   // Labs keeps the lab you were in, so it may read lab:culture/work
+    // (the queue flushes itself every 10s, so what's still in it isn't checked — the admin read is)
     await p.evaluate(() => uiFlush());
     await p.waitForTimeout(600);
     const scr = await api("/api/admin/ui/screens?days=1", token), paths = await api("/api/admin/ui/paths?days=1", token);
