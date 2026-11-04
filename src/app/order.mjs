@@ -35,6 +35,7 @@ export const APP = [
   "styles/sizes.css",
   "styles/soft.css",
   "styles/updating.css",
+  "styles/echo.css",
   "styles/wide.css",
 
   // shell
@@ -48,6 +49,7 @@ export const APP = [
   "core/icons.js",
   "core/theme-labs-api.js",
   "core/updating.js",
+  "core/here.js",
 
   // media
   "media/images.js",
@@ -78,6 +80,9 @@ export const APP = [
   "messages/live.js",
   "messages/labs.js",
   "messages/search.js",
+
+  // echo
+  "echo/echo.js",
 
   // showroom
   "showroom/gallery.js",

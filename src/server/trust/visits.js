@@ -1,5 +1,5 @@
 /* ================================================================
-   VISITS & SLOW REQUESTS v1.0 — 2026-10-29. "Who comes back after day 1,
+   VISITS & SLOW REQUESTS v1.1 — 2026-11-04 (v1.0 — 2026-10-29). "Who comes back after day 1,
    day 7, day 30" and "any slow pages or failed requests" (Grok, reading
    the connector). LABS only knew what people *did* — a post, a like, a
    vote — not that they opened the app and looked around.
@@ -11,6 +11,13 @@
      on our side (5xx) — the route with numbers swapped for :id, how long,
      the status. Kept 14 days. No one is named.
    Read by the connector's insights (server/connector/insights-*.js).
+   v1.1 — 2026-11-04 · member_time: how long a member has had the app
+     open and in view, in seconds — one running total, nothing else (no
+     pages, no times of day). The app says "still here" every 30 seconds
+     while it's on screen (POST /api/here, app/core/here.js); a gap of
+     more than 75 seconds counts as the app having been closed, so only
+     time actually spent in it adds up. Read by the vote rule
+     (server/events/routes · evVoteBlock).
 ================================================================ */
 db.exec(`CREATE TABLE IF NOT EXISTS member_days (user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, day INTEGER NOT NULL, PRIMARY KEY (user_id, day));
 CREATE INDEX IF NOT EXISTS idx_member_days_day ON member_days(day);
@@ -45,4 +52,19 @@ app.use((req, res, next) => {
     } catch (e) {}
   });
   next();
+});
+
+/* ── TIME ON THE APP · v1.1 · 2026-11-04 ── */
+db.exec(`CREATE TABLE IF NOT EXISTS member_time (user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, secs INTEGER NOT NULL DEFAULT 0, last_at INTEGER NOT NULL DEFAULT 0);`);
+const HERE_GAP_MS = 75000;   // longer than this between pings = the app was closed or out of view
+function hereTick(userId, now = Date.now()) {
+  const r = db.prepare(`SELECT secs, last_at FROM member_time WHERE user_id = ?`).get(userId);
+  const add = r && now - r.last_at > 0 && now - r.last_at <= HERE_GAP_MS ? Math.round((now - r.last_at) / 1000) : 0;
+  db.prepare(`INSERT INTO member_time (user_id, secs, last_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET secs = secs + ?, last_at = ?`).run(userId, add, now, add, now);
+}
+/* seconds this member has spent with the app open */
+const activeSecs = (userId) => { try { return db.prepare(`SELECT secs FROM member_time WHERE user_id = ?`).get(userId)?.secs || 0; } catch (e) { return 0; } };
+app.post("/api/here", auth, rateLimit({ max: 10, windowMs: 60000, key: "user" }), (req, res) => {
+  try { hereTick(req.user.id); } catch (e) {}
+  res.json({ ok: true });
 });

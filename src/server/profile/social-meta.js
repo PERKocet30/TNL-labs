@@ -122,6 +122,7 @@ app.get("/api/levels", (_req, res) => res.json({
     marketOpen: settingBool("marketOpen"),
     studioOpen: settingBool("studioOpen"),
     loopsOpen: settingBool("loopsOpen"),
+    echoOpen: settingBool("echoOpen"),   // Echo for every member; admins always have it (server/echo)
   },
 }));
 /* commit: which version is live (Railway sets this for GitHub deploys), so the
