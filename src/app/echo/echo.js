@@ -1,4 +1,4 @@
-/* ECHO v1.3 — 2026-11-04 (modelled on Claude: your words in a quiet card, Echo's answer as plain text on the page, written in as it streams over the live stream, "Thinking" / "Looking at orders" while it works, light markdown, copy, a new conversation from the pen). v1.2 — 2026-11-04 (the brain: for an admin, when the server has a key, Echo is a model that reasons — the same screen, a turn of kind "brain" with what it looked at, Start fresh instead of Talk to a person). v1.1 — 2026-11-04 (answers from Knowledge wear the entry's title; a pick names which kind it was). v1.0 — 2026-11-04. Echo is LABS's help, pinned at the top of Messages:
+/* ECHO v1.4 — 2026-11-04 (pick the model: tap its name under the composer — a sheet of the three, a line on each; every answer says which one wrote it). v1.3 — 2026-11-04 (modelled on Claude: your words in a quiet card, Echo's answer as plain text on the page, written in as it streams over the live stream, "Thinking" / "Looking at orders" while it works, light markdown, copy, a new conversation from the pen). v1.2 — 2026-11-04 (the brain: for an admin, when the server has a key, Echo is a model that reasons — the same screen, a turn of kind "brain" with what it looked at, Start fresh instead of Talk to a person). v1.1 — 2026-11-04 (answers from Knowledge wear the entry's title; a pick names which kind it was). v1.0 — 2026-11-04. Echo is LABS's help, pinned at the top of Messages:
    ask in your own words, get an answer from what Echo knows about LABS
    (and about your own orders, shop and standing — nobody else's), thumbs it
    up or down, pick "I meant…" when it wasn't sure, or hand the conversation
@@ -12,6 +12,7 @@ const eapi={
   pick:(id,src,picked)=>req("/api/echo/turns/"+id+"/pick",{method:"POST",body:src==="know"?{knowId:picked}:{faqId:picked}}),
   handoff:note=>req("/api/echo/handoff",{method:"POST",body:{note}}),
   reset:()=>req("/api/echo/reset",{method:"POST",body:{}}),
+  model:model=>req("/api/echo/model",{method:"POST",body:{model}}),
 };
 const echoBrain=()=>!!(ECHO&&ECHO.brain);
 const ECHO_IC={
@@ -90,7 +91,7 @@ function echoBrainTurnHTML(t){
   const saw=(t.tools||[]).filter(x=>!/^knowledge_(add|edit)$/.test(x)),wrote=(t.tools||[]).some(x=>/^knowledge_(add|edit)$/.test(x));
   const looked=saw.length||wrote?`<span class="echo-looked">${saw.length?"Looked at "+saw.map(x=>esc(x.replace(/_/g," "))).join(", "):""}${saw.length&&wrote?" · ":""}${wrote?"Wrote to Knowledge":""}</span>`:"";
   const foot=t.pending?`<div class="echo-work" aria-live="polite"><i></i><span>${esc(t.status||"Thinking")}</span></div>`
-    :`<div class="echo-foot">${looked}${t.text&&!t.failed?`<button class="echo-copy" data-echocopy="${t.id}" aria-label="Copy">${DI.copy}</button>`:""}</div>`;
+    :`<div class="echo-foot">${looked}${t.model&&!t.failed?`<span class="echo-by">${looked?" · ":""}${esc(t.model)}</span>`:""}${t.text&&!t.failed?`<button class="echo-copy" data-echocopy="${t.id}" aria-label="Copy">${DI.copy}</button>`:""}</div>`;
   return `<div class="echo-q"><div class="echo-qb">${rich(t.asked)}</div></div>
     <div class="echo-a ${t.failed?"echo-failed":""} ${t.pending?"pending":""}" data-echoturn="${t.id}">${echoAvHTML("xs")}<div class="echo-ab"><div class="echo-text">${echoMd(t.text||"")}</div>${foot}</div></div>`;
 }
@@ -127,7 +128,7 @@ function echoComposerHTML(){
   const has=(ECHODRAFT||"").trim();
   if(echoBrain())return `<div class="echo-box ${ECHOBUSY?"busy":""}">
       <textarea class="echo-in" id="echodraft" rows="1" placeholder="Talk to Echo" enterkeyhint="send">${esc(ECHODRAFT||"")}</textarea>
-      <div class="echo-boxr"><span class="mono">${esc(echoModelName(ECHO&&ECHO.model))}</span><button class="echo-send" id="echosend" aria-label="Send" ${has&&!ECHOBUSY?"":"disabled"}>${DI.chev}</button></div>
+      <div class="echo-boxr"><button class="echo-pick mono" id="echomodel" aria-label="Pick the model">${esc(echoModelName(ECHO&&ECHO.model))}${DI.chev}</button><button class="echo-send" id="echosend" aria-label="Send" ${has&&!ECHOBUSY?"":"disabled"}>${DI.chev}</button></div>
     </div>`;
   return `<div class="composer c-comp">
       <textarea class="in c-in" id="echodraft" rows="1" placeholder="Ask Echo…" enterkeyhint="send" ${ECHOBUSY?"disabled":""}>${esc(ECHODRAFT||"")}</textarea>
@@ -166,6 +167,19 @@ async function echoHandoff(){
     echoPaintFeed();toast("Sent to the LABS team")}
   catch(e){toast(e.message)}
 }
+/* Pick which Claude answers: a sheet of the three, a line on each, the current one marked. The next message uses it. */
+function echoPickModel(){
+  if(!ECHO||!ECHO.models||ECHOBUSY)return;
+  const ov=document.createElement("div");ov.className="ui-ov ui-alertov";
+  ov.innerHTML=`<div class="ui-card ui-alert echo-models" role="dialog" aria-modal="true" aria-label="Pick the model">
+      <div class="ui-atext"><div class="ui-title">Which Claude answers</div><div class="ui-body">Takes effect on your next message.</div></div>
+      <div class="ui-btns">${ECHO.models.map(m=>`<button class="ui-btn echo-mrow ${m.id===ECHO.model?"on":""}" data-model="${esc(m.id)}"><b>${esc(m.name)}</b><span>${esc(m.line)}</span></button>`).join("")}<button class="ui-btn ui-cancel">Cancel</button></div></div>`;
+  document.body.appendChild(ov);
+  const done=()=>ov.remove();
+  ov.querySelector(".ui-cancel").onclick=done;ov.onclick=e=>{if(e.target===ov)done()};
+  ov.querySelectorAll("[data-model]").forEach(b=>b.onclick=async()=>{const id=b.dataset.model;done();if(id===ECHO.model)return;
+    try{const r=await eapi.model(id);ECHO.model=r.model;const l=$("#echomodel");if(l)l.innerHTML=esc(echoModelName(r.model))+DI.chev;toast(r.name+" from your next message")}catch(e){toast(e.message)}});
+}
 async function echoFresh(){
   if(!ECHO||!ECHO.turns||ECHOBUSY)return;
   const ok=await uiConfirm("New conversation?","This one is put away. Echo keeps everything it wrote in Knowledge.",{okLabel:"New conversation"});
@@ -187,6 +201,7 @@ function wireEcho(L){
   on("echoback",()=>closeEcho());
   on("echoperson",()=>echoHandoff());
   on("echofresh",()=>echoFresh());
+  on("echomodel",()=>echoPickModel());
   const f=L.querySelector("#echofeed");if(f){wireEchoFeed(f);if(ECHO&&ECHO.stick){f.scrollTop=f.scrollHeight;ECHO.stick=false}}
   const d=L.querySelector("#echodraft");
   if(d){fitDraft(d);

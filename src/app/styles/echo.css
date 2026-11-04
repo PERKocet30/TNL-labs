@@ -1,4 +1,4 @@
-/* ECHO v1.3 — 2026-11-04 (modelled on Claude: question card, answer as text, the working line, the composer box). v1.2 — 2026-11-04 (the brain: what it looked at under an answer). v1.1 — 2026-11-04 (a Knowledge answer's title). v1.0 — 2026-11-04. Echo, the help inside Messages (app/echo/echo.js):
+/* ECHO v1.4 — 2026-11-04 (the model picker, who answered). v1.3 — 2026-11-04 (modelled on Claude: question card, answer as text, the working line, the composer box). v1.2 — 2026-11-04 (the brain: what it looked at under an answer). v1.1 — 2026-11-04 (a Knowledge answer's title). v1.0 — 2026-11-04. Echo, the help inside Messages (app/echo/echo.js):
    the pinned row, the Echo mark, fact cards, suggestion chips, the thumbs. */
 .echo-av{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--accent-fill);color:var(--on-accent)}
 .echo-av.sm{width:34px;height:34px}.echo-av.sm svg{width:18px;height:18px}
@@ -53,3 +53,12 @@
 .echo-send svg{width:16px;height:16px;transform:rotate(-90deg)}
 .echo-send:disabled{opacity:.25}
 .echo-box.busy .echo-send{opacity:.25}
+.echo-pick{display:inline-flex;align-items:center;gap:2px;border:0;background:none;color:var(--dim);font-size:11px;padding:4px 6px 4px 0;cursor:pointer;border-radius:6px}
+.echo-pick svg{width:12px;height:12px;transform:rotate(90deg);opacity:.7}
+.echo-pick:active{color:var(--tx)}
+.echo-by{color:var(--dim)}
+.echo-models .ui-btns{display:flex;flex-direction:column}
+.echo-mrow{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:14px 20px;border-top:1px solid var(--line);color:var(--tx)}
+.echo-mrow b{font-size:15px}.echo-mrow span{font-size:12.5px;color:var(--dim);line-height:1.35}
+.echo-mrow.on b::after{content:" ·";color:var(--accent-fill)}
+.echo-mrow.on{background:var(--el)}

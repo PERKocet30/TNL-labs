@@ -1,5 +1,5 @@
 /* ================================================================
-   ECHO · the brain v1.2 — 2026-11-04 ("I like option 2" → "Invalid signature in thinking block": Echo's instructions carried Knowledge and the date, so a Knowledge write — or midnight — changed them mid-conversation, and Claude refuses reasoning sealed to other instructions. Now the instructions are frozen per conversation (a "system" row; the date rides on each question), the API is told to drop stale reasoning rather than refuse (thinking-binding-controls), and a refusal of that kind is retried once without the old reasoning). v1.1 — 2026-11-04 (modelled on Claude: the answer streams in word by word over the live stream, with "Thinking…" / "Looking at orders…" while it works; light markdown). v1.0 — 2026-11-04. "I want my own AI, like Jarvis."
+   ECHO · the brain v1.3 — 2026-11-04 (switch models in the app: tap the model's name under the composer — Opus 5.5 the default, Sonnet 5.5 for speed, Fable 5.1 for the hard ones; the echoModel setting; every answer says which one wrote it). v1.2 — 2026-11-04 ("I like option 2" → "Invalid signature in thinking block": Echo's instructions carried Knowledge and the date, so a Knowledge write — or midnight — changed them mid-conversation, and Claude refuses reasoning sealed to other instructions. Now the instructions are frozen per conversation (a "system" row; the date rides on each question), the API is told to drop stale reasoning rather than refuse (thinking-binding-controls), and a refusal of that kind is retried once without the old reasoning). v1.1 — 2026-11-04 (modelled on Claude: the answer streams in word by word over the live stream, with "Thinking…" / "Looking at orders…" while it works; light markdown). v1.0 — 2026-11-04. "I want my own AI, like Jarvis."
    Echo for the founder: a model that reasons (Claude, through a key kept in
    Railway — ECHO_AI_KEY), with the connector's tools as its eyes (live
    numbers, never saved copies) and Knowledge as its memory (the creed, the
@@ -21,7 +21,18 @@
 ================================================================ */
 const BRAIN_KEY = (process.env.ECHO_AI_KEY || process.env.ANTHROPIC_API_KEY || "").trim();   // ECHO_AI_KEY is the name in Railway (Jorge, 2026-11-04); the standard name works too
 const BRAIN_API = (process.env.ANTHROPIC_API_BASE || "https://api.anthropic.com").trim().replace(/\/+$/, "");
-const BRAIN_MODEL = (process.env.ECHO_MODEL || "claude-opus-5-5").trim();
+const BRAIN_MODEL = (process.env.ECHO_MODEL || "claude-opus-5-5").trim();   // the default when no model is picked in the app
+/* The models Jorge can pick from the composer (2026-11-04). Plain words about each; prices are
+   Anthropic's per million tokens, so a question is cents either way. A switch takes effect on
+   the next message: the API drops the old model's sealed reasoning rather than refusing it. */
+const BRAIN_MODELS = [
+  { id: "claude-opus-5-5", name: "Claude Opus 5.5", short: "Opus 5.5", line: "The default. Strong and steady — holds all of Knowledge and the numbers without losing the thread." },
+  { id: "claude-sonnet-5-5", name: "Claude Sonnet 5.5", short: "Sonnet 5.5", line: "Faster and half the price. Quick questions, captions, lookups." },
+  { id: "claude-fable-5-1", name: "Claude Fable 5.1", short: "Fable 5.1", line: "The most capable there is. Slower and about 2½× the price — for the hard questions, not the quick ones." },
+];
+const brainModelOf = (id) => BRAIN_MODELS.find((m) => m.id === id) || null;
+const brainModel = () => { const picked = setting("echoModel"); return brainModelOf(picked) ? picked : BRAIN_MODEL; };
+const brainShort = (id) => { const m = brainModelOf(id); return m ? m.short : String(id || "").replace(/^claude-/, "").replace(/-(\d)/g, " $1").replace(/(\d) (\d)/g, "$1.$2"); };
 const BRAIN_ROUNDS = 8;            // tool rounds per question
 const BRAIN_RESULT_MAX = 30000;    // characters of one tool result the model sees
 const BRAIN_ASKS = 40;             // how many of this admin's questions ride along as context (a New conversation starts over)
@@ -33,6 +44,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS echo_brain (
   id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role TEXT NOT NULL, kind TEXT NOT NULL, content TEXT NOT NULL, archived INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_echo_brain_user ON echo_brain(user_id, archived, id)`);
+if (!db.prepare(`PRAGMA table_info(echo_brain)`).all().some((c) => c.name === "model")) db.exec(`ALTER TABLE echo_brain ADD COLUMN model TEXT NOT NULL DEFAULT ''`);   // which Claude wrote a reply (2026-11-04)
 
 /* ---- what Echo is told, every time (stable first, so Claude caches it) ---- */
 const BRAIN_WHO = `You are Echo: LABS's own intelligence, built by Jorge, inside LABS, answering to Jorge. Not a help desk and not a chatbot — a cofounder that remembers, reads the live numbers, and thinks before it speaks.
@@ -90,8 +102,8 @@ async function brainRun(user, token, name, args) {
 
 /* ---- the conversation on disk: raw API messages, so a tool round replays whole ---- */
 const brainRows = (userId) => db.prepare(`SELECT * FROM echo_brain WHERE user_id = ? AND archived = 0 ORDER BY id`).all(userId);
-function brainKeep(userId, role, kind, content) {
-  return Number(db.prepare(`INSERT INTO echo_brain (user_id, role, kind, content, created_at) VALUES (?,?,?,?,?)`).run(userId, role, kind, JSON.stringify(content), Date.now()).lastInsertRowid);
+function brainKeep(userId, role, kind, content, model = "") {
+  return Number(db.prepare(`INSERT INTO echo_brain (user_id, role, kind, content, model, created_at) VALUES (?,?,?,?,?,?)`).run(userId, role, kind, JSON.stringify(content), model, Date.now()).lastInsertRowid);
 }
 /* The last BRAIN_ASKS questions and everything after each — always starting at a question, so
    every tool_use has its tool_result and the thinking that went with it. */
@@ -108,7 +120,7 @@ function brainTurns(userId) {
   for (const r of brainRows(userId)) {
     const c = JSON.parse(r.content);
     if (r.kind === "ask") out.push({ id: r.id, asked: String((c[0] && c[0].text) || "").trim(), kind: "brain", text: "", tools: [], createdAt: r.created_at });
-    else if (r.kind === "reply" && out.length) { const t = out[out.length - 1]; t.text = brainText(c) || t.text; for (const b of c) if (b.type === "tool_use" && !t.tools.includes(b.name)) t.tools.push(b.name); }
+    else if (r.kind === "reply" && out.length) { const t = out[out.length - 1]; t.text = brainText(c) || t.text; if (r.model) t.model = brainShort(r.model); for (const b of c) if (b.type === "tool_use" && !t.tools.includes(b.name)) t.tools.push(b.name); }
     else if (r.kind === "error" && out.length) { const t = out[out.length - 1]; t.text = brainText(c); t.failed = true; }
   }
   return out;
@@ -163,20 +175,20 @@ const BRAIN_SORRY = { 401: "The key in Railway isn't working — Claude turned i
 async function brainAsk(user, token, q) {
   const asked = String(q || "").trim().slice(0, 4000);
   if (!asked) return null;
-  const system = brainFrozenSystem(user), tools = brainTools();
+  const system = brainFrozenSystem(user), tools = brainTools(), model = brainModel();
   const askId = brainKeep(user.id, "user", "ask", [{ type: "text", text: asked }, { type: "text", text: brainToday() }]);
   let messages = brainHistory(user.id);
   let stripped = false;
   /* Last resort (once per question): if Claude still refuses old reasoning, send the history without
      it — every word and tool call stays, only the sealed reasoning goes. Stored rows are untouched. */
   const call = async () => {
-    try { return await brainCall({ model: BRAIN_MODEL, max_tokens: 8192, system, tools, messages }, onText); }
+    try { return await brainCall({ model, max_tokens: 8192, system, tools, messages }, onText); }
     catch (e) {
       if (stripped || e.status !== 400 || !/thinking|signature/i.test(e.message)) throw e;
       stripped = true;
       console.warn("[echo] brain: Claude refused old reasoning; retrying without it —", e.message.slice(0, 160));
       messages = messages.map((m) => (m.role === "assistant" && Array.isArray(m.content) ? { ...m, content: m.content.filter((b) => b.type !== "thinking" && b.type !== "redacted_thinking") } : m)).filter((m) => !Array.isArray(m.content) || m.content.length);
-      return brainCall({ model: BRAIN_MODEL, max_tokens: 8192, system, tools, messages }, onText);
+      return brainCall({ model, max_tokens: 8192, system, tools, messages }, onText);
     }
   };
   let used = 0;
@@ -188,7 +200,7 @@ async function brainAsk(user, token, q) {
       const res = await call();
       if (flush) { clearTimeout(flush); flush = null; } if (pending) { brainTell(user.id, { kind: "text", askId, text: pending }); pending = ""; }
       used += (res.usage && res.usage.output_tokens) || 0;
-      brainKeep(user.id, "assistant", "reply", res.content);
+      brainKeep(user.id, "assistant", "reply", res.content, model);
       messages.push({ role: "assistant", content: res.content });
       if (res.stop_reason !== "tool_use") {
         if (res.stop_reason === "refusal") brainKeep(user.id, "assistant", "error", [{ type: "text", text: "Claude wouldn't answer that one." }]);
@@ -224,7 +236,7 @@ async function brainAsk(user, token, q) {
 const brainHello = (user) => `${user.display_name ? user.display_name.split(" ")[0] : "Hey"} — I'm Echo. I know LABS, I can see the numbers as they are right now, and I remember what we've decided. What are we working on?`;
 app.get("/api/echo", auth, (req, res, next) => {
   if (!brainFor(req.user)) return next();
-  res.json({ name: "Echo", brain: true, model: BRAIN_MODEL, sub: "LABS's own", hello: brainHello(req.user), preview: false, topics: [], turns: brainTurns(req.user.id),
+  res.json({ name: "Echo", brain: true, model: brainModel(), models: BRAIN_MODELS, sub: "LABS's own", hello: brainHello(req.user), preview: false, topics: [], turns: brainTurns(req.user.id),
     starters: ["How are we doing this week?", "What should I build next, and why?", "Who's stuck setting up payouts?", "Write down what we decided today"].map((q, i) => ({ id: -1 - i, src: "brain", question: q })) });
 });
 const brainLimit = rateLimit({ max: 20, windowMs: 60000, key: "user" });   // counted only for the brain, so a member's questions to the matcher aren't
@@ -236,8 +248,16 @@ app.post("/api/echo/ask", auth, (req, res, next) => {
     res.json({ turn });
   });
 });
+/* Which Claude answers — picked from the composer; one setting for every admin; the next message uses it. */
+app.post("/api/echo/model", auth, admin, (req, res) => {
+  const id = String((req.body || {}).model || "").trim();
+  if (!brainModelOf(id)) return res.status(400).json({ error: "Not one of Echo's models" });
+  setSetting("echoModel", id, req.user.id);
+  console.log(`[echo] @${req.user.username} switched the brain to ${id}`);
+  res.json({ ok: true, model: id, name: brainModelOf(id).name });
+});
 app.post("/api/echo/reset", auth, admin, (req, res) => {
   const n = db.prepare(`UPDATE echo_brain SET archived = 1 WHERE user_id = ? AND archived = 0`).run(req.user.id).changes;
   res.json({ ok: true, putAway: n });
 });
-app.get("/api/echo/brain", auth, admin, (req, res) => res.json({ on: brainOn(), model: brainOn() ? BRAIN_MODEL : "", turns: brainOn() ? brainRows(req.user.id).filter((r) => r.kind === "ask").length : 0 }));
+app.get("/api/echo/brain", auth, admin, (req, res) => res.json({ on: brainOn(), model: brainOn() ? brainModel() : "", models: BRAIN_MODELS, turns: brainOn() ? brainRows(req.user.id).filter((r) => r.kind === "ask").length : 0 }));

@@ -10,6 +10,8 @@
 // v1.2 (2026-11-04, "I like option 2" → "Invalid signature in thinking block"): the stand-in
 // now seals its reasoning to the instructions it was written under and refuses a
 // mismatch the way the real API does, so a Knowledge write mid-conversation is checked.
+// v1.3 (2026-11-04): the model switch — three to pick from, admins only, the next
+// message uses it, every answer says which one wrote it.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { mkdirSync, rmSync } from "node:fs";
@@ -180,6 +182,23 @@ try {
   script = [{ stop_reason: "end_turn", content: [{ type: "text", text: "Fresh." }] }];
   await ask("tok-admin", "hi again");
   t("…the next question starts clean, with fresh instructions that now carry what was written", seen.at(-1).body.messages.length === 1 && /### Echo answers in plain text/.test(seen.at(-1).body.system[1].text) && db.prepare("SELECT 1 FROM knowledge WHERE id = ?").get(row.id));
+
+  console.log("\nWHICH CLAUDE — pick a model from the composer; the next message uses it");
+  const hm = (await call("tok-admin", "GET", "/api/echo")).j;
+  t("the hello carries the model and the three to pick from, each with a line", hm.model === "claude-opus-5-5" && hm.models.length === 3 && hm.models.map((m) => m.id).join() === "claude-opus-5-5,claude-sonnet-5-5,claude-fable-5-1" && hm.models.every((m) => m.name && m.short && m.line));
+  t("a member can't switch it; a made-up model is refused", (await call("tok-ana", "POST", "/api/echo/model", { model: "claude-sonnet-5-5" })).s === 403 && (await call("tok-admin", "POST", "/api/echo/model", { model: "gpt-9" })).s === 400 && (await call("tok-admin", "POST", "/api/echo/model", {})).s === 400);
+  const sw = await call("tok-admin", "POST", "/api/echo/model", { model: "claude-sonnet-5-5" });
+  t("the admin switches to Sonnet: saved as the echoModel setting", sw.s === 200 && sw.j.model === "claude-sonnet-5-5" && sw.j.name === "Claude Sonnet 5.5" && db.prepare("SELECT value FROM settings WHERE key = 'echoModel'").get().value === "claude-sonnet-5-5");
+  script = [{ stop_reason: "end_turn", content: [{ type: "text", text: "Quick one." }] }];
+  const a6 = await ask("tok-admin", "quick: how many members?");
+  t("the next message goes to Sonnet, with the same frozen instructions", seen.at(-1).body.model === "claude-sonnet-5-5" && JSON.stringify(seen.at(-1).body.system) === JSON.stringify(seen.at(-2).body.system));
+  t("…and the turn says who answered; the earlier ones still say Opus", a6.model === "Sonnet 5.5" && (await call("tok-admin", "GET", "/api/echo")).j.turns[0].model === "Opus 5.5");
+  t("/api/echo/brain reports the picked model", (await call("tok-admin", "GET", "/api/echo/brain")).j.model === "claude-sonnet-5-5");
+  await call("tok-admin", "POST", "/api/echo/model", { model: "claude-fable-5-1" });
+  script = [{ stop_reason: "end_turn", content: [{ type: "text", text: "Deep one." }] }];
+  const a7 = await ask("tok-admin", "what should I build this quarter?");
+  t("Fable too: same request shape (adaptive thinking, the binding safety net), the turn says Fable", seen.at(-1).body.model === "claude-fable-5-1" && seen.at(-1).body.thinking.type === "adaptive" && seen.at(-1).body.thinking.block_binding.prefix_mismatch_behavior === "drop_block" && a7.model === "Fable 5.1");
+  await call("tok-admin", "POST", "/api/echo/model", { model: "claude-opus-5-5" });
 
   console.log("\nWHEN CLAUDE FAILS — plain words, nothing dangling");
   script = [{ stop_reason: "tool_use", content: [{ type: "tool_use", id: "tu_9", name: "overview", input: {} }] }];

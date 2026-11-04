@@ -64,7 +64,7 @@ Sign up at **resend.com** (free, 3,000/month) → API Keys → create.
 | Variable | Value |
 | --- | --- |
 | `RESEND_API_KEY` | `re_xxxxxxxx` |
-| `ECHO_AI_KEY` | `sk-ant-…` — Echo's brain for admins (2026-11-04). A Claude API key from console.anthropic.com → API Keys. Without it Echo is the matcher for everyone (`ANTHROPIC_API_KEY` is read as a fallback). Optional beside it: `ECHO_MODEL` (default `claude-opus-5-5`). |
+| `ECHO_AI_KEY` | `sk-ant-…` — Echo's brain for admins (2026-11-04). A Claude API key from console.anthropic.com → API Keys. Without it Echo is the matcher for everyone (`ANTHROPIC_API_KEY` is read as a fallback). Optional beside it: `ECHO_MODEL`, the default model (`claude-opus-5-5`); Jorge switches between Opus 5.5, Sonnet 5.5 and Fable 5.1 from the composer in Messages → Echo (the `echoModel` setting). |
 | `MAIL_FROM` | `TNL LABS <onboarding@resend.dev>` |
 | `SUPPORT_EMAIL` | `support@tnllabs.com` — the inbox shown on /terms, /privacy, /policies, /contact and every public page footer. Must be one you read. |
 
