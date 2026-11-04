@@ -1,4 +1,4 @@
-/* MESSAGES v2.1 — 2026-10-14 (search your chats; keeps its place in the list).
+/* MESSAGES v2.2 — 2026-11-04 (Echo, LABS help, lives in this layer: app/echo/echo.js). v2.1 — 2026-10-14 (search your chats; keeps its place in the list).
    v2.0 — 2026-09-29. What the inbox and chat screen do. */
 const CHATDRAFTS={};
 const isMine=x=>!!(x&&x.from&&ME&&x.from.username===ME.username);
@@ -6,7 +6,7 @@ const isMine=x=>!!(x&&x.from&&ME&&x.from.username===ME.username);
 /* ---- opening and closing ---- */
 function openMessages(){
   if(guest())return needAccount("Join to message people.");
-  DMOPENPANEL=true;CHAT=null;CHATSHEET=null;CMENU=null;paintLayer();loadInbox();
+  DMOPENPANEL=true;CHAT=null;CHATSHEET=null;CMENU=null;ECHOOPEN=false;paintLayer();loadInbox();
 }
 async function loadInbox(){
   try{INBOX=await capi.inbox();DMUNREAD=INBOX.unreadTotal;paintBadges();
@@ -18,7 +18,7 @@ async function loadInbox(){
 async function openDM(username){
   if(guest())return needAccount("Join to message people.");
   const fromPanel=DMOPENPANEL;
-  DMOPENPANEL=true;PROFILE=null;CHATSHEET=null;CMENU=null;
+  DMOPENPANEL=true;PROFILE=null;CHATSHEET=null;CMENU=null;ECHOOPEN=false;
   CHAT={id:null,to:username,other:null,messages:null,direct:!fromPanel,draft:CHATDRAFTS["u:"+username]||""};
   render();paintLayer();
   try{const r=await capi.withUser(username);
@@ -55,7 +55,7 @@ function leaveChat(){
 }
 function closeMessages(){
   if(RECORD)stopRecord(false);
-  DMOPENPANEL=false;CHAT=null;CHATSHEET=null;CMENU=null;CXQ="";paintLayer();
+  DMOPENPANEL=false;CHAT=null;CHATSHEET=null;CMENU=null;ECHOOPEN=false;ECHOBUSY=false;CXQ="";paintLayer();
 }
 /* Back button / swipe-back: innermost first. Returns false when nothing of
    ours was open, so the app's own history handling carries on. */
@@ -64,6 +64,7 @@ function chatPop(){
   if(CMENU){closeMenu();return true}
   if(CHATSHEET){CHATSHEET=null;paintLayer();return true}
   if(CHAT){leaveChat();return true}
+  if(ECHOOPEN){closeEcho();return true}
   if(DMOPENPANEL){closeMessages();return true}
   return false;
 }
@@ -121,6 +122,7 @@ function wireLayer(){
       if(CHAT&&CHAT.unseen&&f.scrollHeight-f.scrollTop-f.clientHeight<80)CHAT.unseen=0;paintJump()}}
   on("cxjump",()=>{const f2=$("#cxfeed");if(f2)f2.scrollTo({top:f2.scrollHeight,behavior:"smooth"});CHAT.unseen=0;paintJump()});
   wireComposer();
+  if(typeof wireEcho==="function")wireEcho(L);   // Echo's row and screen (app/echo/echo.js)
   if(CHATSHEET)wireChatSheet();
   if(CMENU)wireMenu();
 }

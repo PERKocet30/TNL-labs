@@ -664,6 +664,7 @@ export const SETTING_DEFAULTS = {
   signinApple:    "1",
   signinFacebook: "0",     // off until the Meta app is published (business verification, Oct 26)
   voteWaitCountries: "IN:10",   // a longer wait before a new account can vote, by the country it joined from: "CC:minutes,…" (2026-10-29)
+  echoOpen:       "0",     // Echo, the help desk in Messages (server/echo): "0" = admins only while it's perfected, "1" = every member (2026-11-04)
 
 
   /* Distribution. A real promise with a real cost, so it's a setting: you

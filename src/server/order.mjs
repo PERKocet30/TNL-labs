@@ -164,6 +164,9 @@ export const SERVER = [
   // pages
   "pages/policies.js",
 
+  // echo
+  "echo/echo.js",
+
   // admin
   "admin/report.js",
 
