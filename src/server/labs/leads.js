@@ -1,5 +1,7 @@
 /* ================================================================
-   LAB LEADS v1.1 — 2026-10-28 (a new Lead is emailed). v1.0 — 2026-10-28. "A lab lead under mod. Leaders of a
+   LAB LEADS v1.2 — 2026-11-04 ("I want to make Alko lead of music lab" — a Mod: the owner can name a Mod
+   a Lead too; it adds the public "Lead · // Music" and their name on the lab, nothing they couldn't
+   already do). v1.1 — 2026-10-28 (a new Lead is emailed). v1.0 — 2026-10-28. "A lab lead under mod. Leaders of a
    specific scene … they're quality control."
    A Lead runs one or more labs (PLACES ids: hq, pharmacy, culture,
    fashion, akatsuki, casino, tna). Inside those labs only, and only in the
@@ -93,7 +95,8 @@ app.post("/api/admin/members/:username/lead", auth, admin, (req, res) => {
   if (!t) return res.status(404).json({ error: "no such user" });
   const lab = String(req.body?.lab || "");
   if (!PLACES[lab]) return res.status(400).json({ error: "Pick a lab." });
-  if (t.is_admin || t.is_mod) return res.status(400).json({ error: "The owner and Mods already curate every lab." });
+  if (t.is_admin) return res.status(400).json({ error: "The owner already curates every lab." });
+  if (t.is_mod && !req.user.is_admin) return res.status(403).json({ error: "Only the owner can name a Mod a Lead." });   // a Mod never acts on another Mod
   const on = !!req.body?.on;
   if (on && t.suspended) return res.status(400).json({ error: "Restore their account before making them a Lead." });
   if (on) { const added = db.prepare(`INSERT OR IGNORE INTO lab_leads (user_id, lab, appointed_by, created_at) VALUES (?,?,?,?)`).run(t.id, lab, req.user.id, Date.now()).changes;
