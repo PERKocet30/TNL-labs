@@ -10,9 +10,14 @@
 // v1.2 (2026-11-04, "I like option 2" → "Invalid signature in thinking block"): the stand-in
 // now seals its reasoning to the instructions it was written under and refuses a
 // mismatch the way the real API does, so a Knowledge write mid-conversation is checked.
+// v1.3 (2026-11-04): the model switch — three to pick from, admins only, the next
+// message uses it, every answer says which one wrote it.
+// v1.4 (2026-11-04): photos and PDFs on a message (kept on the volume, sent as the
+// bytes), web search as a server-side tool (its blocks stored and replayed, pause_turn
+// resumed, "Searched the web" on the turn).
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, rmSync, existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { createHash } from "node:crypto";
@@ -56,7 +61,8 @@ const claude = createServer((req, res) => {
     content.forEach((b, index) => {
       if (b.type === "thinking") { ev("content_block_start", { index, content_block: { type: "thinking", thinking: "", signature: "" } }); ev("content_block_delta", { index, delta: { type: "signature_delta", signature: seal(j) } }); ev("content_block_stop", { index }); return; }
       if (b.type === "text") { ev("content_block_start", { index, content_block: { type: "text", text: "" } }); const cut = Math.ceil(b.text.length / 2); ev("content_block_delta", { index, delta: { type: "text_delta", text: b.text.slice(0, cut) } }); ev("content_block_delta", { index, delta: { type: "text_delta", text: b.text.slice(cut) } }); }
-      else { ev("content_block_start", { index, content_block: { type: "tool_use", id: b.id, name: b.name, input: {} } }); const js = JSON.stringify(b.input || {}); ev("content_block_delta", { index, delta: { type: "input_json_delta", partial_json: js.slice(0, 5) } }); ev("content_block_delta", { index, delta: { type: "input_json_delta", partial_json: js.slice(5) } }); }
+      else if (b.type === "web_search_tool_result") { ev("content_block_start", { index, content_block: b }); }
+      else { ev("content_block_start", { index, content_block: { type: b.type, id: b.id, name: b.name, input: {} } }); const js = JSON.stringify(b.input || {}); ev("content_block_delta", { index, delta: { type: "input_json_delta", partial_json: js.slice(0, 5) } }); ev("content_block_delta", { index, delta: { type: "input_json_delta", partial_json: js.slice(5) } }); }
       ev("content_block_stop", { index });
     });
     ev("message_delta", { delta: { stop_reason: next.stop_reason }, usage: { output_tokens: 20 } });
@@ -121,7 +127,7 @@ try {
   t("Knowledge rides along as written: the creed and the features", /take over/.test(sys[1].text) && /### The Showroom/.test(sys[1].text) && /### Rep only comes from other people/.test(sys[1].text));
   const names = r1.body.tools.map((x) => x.name);
   t("the tools are the connector's: overview, members, orders, events, knowledge, knowledge_add — and nothing for messages", names.includes("overview") && names.includes("members") && names.includes("orders") && names.includes("events") && names.includes("knowledge") && names.includes("knowledge_add") && !names.some((n) => /^(messages?|dms?|inbox|groups?)$/.test(n)));
-  t("tools carry a JSON schema in Claude's shape", r1.body.tools.every((x) => x.input_schema && x.input_schema.type === "object" && x.description));
+  t("tools carry a JSON schema in Claude's shape; the web is a server-side tool beside them", r1.body.tools.filter((x) => !x.type).every((x) => x.input_schema && x.input_schema.type === "object" && x.description) && r1.body.tools.some((x) => x.type === "web_search_20260209" && x.name === "web_search" && x.max_uses === 5));
   t("the first request is just the question, with today's date riding on it", r1.body.messages.length === 1 && r1.body.messages[0].role === "user" && r1.body.messages[0].content[0].text === "how are we doing?" && /^\(Today is \w+day, /.test((r1.body.messages[0].content[1] || {}).text || ""));
   const back = r2.body.messages;
   t("the second request replays the tool call, its sealed reasoning, and brings its result", back.length === 3 && back[1].role === "assistant" && back[1].content[0].type === "thinking" && back[1].content[0].signature === seal(r1.body) && back[1].content.some((b) => b.type === "tool_use") && back[2].content[0].type === "tool_result" && back[2].content[0].tool_use_id === "tu_1");
@@ -180,6 +186,48 @@ try {
   script = [{ stop_reason: "end_turn", content: [{ type: "text", text: "Fresh." }] }];
   await ask("tok-admin", "hi again");
   t("…the next question starts clean, with fresh instructions that now carry what was written", seen.at(-1).body.messages.length === 1 && /### Echo answers in plain text/.test(seen.at(-1).body.system[1].text) && db.prepare("SELECT 1 FROM knowledge WHERE id = ?").get(row.id));
+
+  console.log("\nWHICH CLAUDE — pick a model from the composer; the next message uses it");
+  const hm = (await call("tok-admin", "GET", "/api/echo")).j;
+  t("the hello carries the model and the three to pick from, each with a line", hm.model === "claude-opus-5-5" && hm.models.length === 3 && hm.models.map((m) => m.id).join() === "claude-opus-5-5,claude-sonnet-5-5,claude-fable-5-1" && hm.models.every((m) => m.name && m.short && m.line));
+  t("a member can't switch it; a made-up model is refused", (await call("tok-ana", "POST", "/api/echo/model", { model: "claude-sonnet-5-5" })).s === 403 && (await call("tok-admin", "POST", "/api/echo/model", { model: "gpt-9" })).s === 400 && (await call("tok-admin", "POST", "/api/echo/model", {})).s === 400);
+  const sw = await call("tok-admin", "POST", "/api/echo/model", { model: "claude-sonnet-5-5" });
+  t("the admin switches to Sonnet: saved as the echoModel setting", sw.s === 200 && sw.j.model === "claude-sonnet-5-5" && sw.j.name === "Claude Sonnet 5.5" && db.prepare("SELECT value FROM settings WHERE key = 'echoModel'").get().value === "claude-sonnet-5-5");
+  script = [{ stop_reason: "end_turn", content: [{ type: "text", text: "Quick one." }] }];
+  const a6 = await ask("tok-admin", "quick: how many members?");
+  t("the next message goes to Sonnet, with the same frozen instructions", seen.at(-1).body.model === "claude-sonnet-5-5" && JSON.stringify(seen.at(-1).body.system) === JSON.stringify(seen.at(-2).body.system));
+  t("…and the turn says who answered; the earlier ones still say Opus", a6.model === "Sonnet 5.5" && (await call("tok-admin", "GET", "/api/echo")).j.turns[0].model === "Opus 5.5");
+  t("/api/echo/brain reports the picked model", (await call("tok-admin", "GET", "/api/echo/brain")).j.model === "claude-sonnet-5-5");
+  await call("tok-admin", "POST", "/api/echo/model", { model: "claude-fable-5-1" });
+  script = [{ stop_reason: "end_turn", content: [{ type: "text", text: "Deep one." }] }];
+  const a7 = await ask("tok-admin", "what should I build this quarter?");
+  t("Fable too: same request shape (adaptive thinking, the binding safety net), the turn says Fable", seen.at(-1).body.model === "claude-fable-5-1" && seen.at(-1).body.thinking.type === "adaptive" && seen.at(-1).body.thinking.block_binding.prefix_mismatch_behavior === "drop_block" && a7.model === "Fable 5.1");
+  await call("tok-admin", "POST", "/api/echo/model", { model: "claude-opus-5-5" });
+
+  console.log("\nPHOTOS AND PDFS — attached, kept on the volume, sent as the bytes");
+  const jpg = "data:image/jpeg;base64," + Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0xff, 0xd9]).toString("base64");
+  const pdf = "data:application/pdf;base64," + Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF").toString("base64");
+  t("a member can't attach; text isn't a photo; a PDF pretending to be a JPEG is read for what it is", (await call("tok-ana", "POST", "/api/echo/attach", { data: jpg })).s === 403 && (await call("tok-admin", "POST", "/api/echo/attach", { data: "data:text/plain;base64," + Buffer.from("hello").toString("base64") })).s === 400 && (await call("tok-admin", "POST", "/api/echo/attach", { data: "data:image/jpeg;base64," + pdf.split(",")[1] })).j.kind === "pdf");
+  const up1 = await call("tok-admin", "POST", "/api/echo/attach", { data: jpg, name: "poster.jpg" }), up2 = await call("tok-admin", "POST", "/api/echo/attach", { data: pdf, name: "lookbook.pdf" });
+  t("a photo and a PDF are kept as echo-<when>-<rand>.<ext> under uploads", up1.s === 200 && /^\/uploads\/echo-\d+-[0-9a-f]{16}\.jpg$/.test(up1.j.url) && up1.j.kind === "image" && /\.pdf$/.test(up2.j.url) && up2.j.kind === "pdf" && existsSync(join(DATA, "uploads", up1.j.url.replace("/uploads/", ""))));
+  script = [{ stop_reason: "end_turn", content: [{ type: "text", text: "A green poster and a lookbook." }] }];
+  const ap = (await call("tok-admin", "POST", "/api/echo/ask", { q: "what do you make of these?", files: [{ url: up1.j.url, name: "poster.jpg" }, { url: up2.j.url, name: "lookbook.pdf" }, { url: "/uploads/../../etc/passwd" }, { url: "/uploads/echo-1-0000000000000000.jpg" }] })).j.turn;
+  const sentQ = seen.at(-1).body.messages.at(-1).content;
+  t("Claude got the words, the photo as base64 image, the PDF as a document, the date — and nothing for the bad paths", sentQ[0].text === "what do you make of these?" && sentQ[1].type === "image" && sentQ[1].source.media_type === "image/jpeg" && sentQ[1].source.data === jpg.split(",")[1] && sentQ[2].type === "document" && sentQ[2].source.media_type === "application/pdf" && sentQ[2].title === "lookbook.pdf" && sentQ.length === 4 && /^\(Today/.test(sentQ[3].text));
+  t("the turn shows the files on the question; the row on disk is a small marker, not the bytes", ap.files.length === 2 && ap.files[0].url === up1.j.url && ap.files[1].kind === "pdf" && !db.prepare("SELECT content FROM echo_brain WHERE id = ?").get(ap.id).content.includes(jpg.split(",")[1]) && db.prepare("SELECT content FROM echo_brain WHERE id = ?").get(ap.id).content.includes("labs_file"));
+  script = [{ stop_reason: "end_turn", content: [{ type: "text", text: "Just the photo." }] }];
+  const ap2 = (await call("tok-admin", "POST", "/api/echo/ask", { q: "", files: [{ url: up1.j.url }] })).j.turn;
+  t("a photo with no words is a question in itself", ap2 && ap2.text === "Just the photo." && seen.at(-1).body.messages.at(-1).content[0].text === "Have a look at this photo." && seen.at(-1).body.messages.at(-2).content.some((b) => b.type === "thinking"));
+  t("…and the replay carries the same bytes again (Claude binds its reasoning to them)", seen.at(-1).body.messages.filter((m) => m.role === "user").some((m) => m.content.some((b) => b.type === "image" && b.source.data === jpg.split(",")[1])));
+
+  console.log("\nTHE WEB — a server-side search, resumed when Claude pauses, shown on the turn");
+  script = [
+    { stop_reason: "pause_turn", content: [{ type: "server_tool_use", id: "srvtoolu_1", name: "web_search", input: { query: "DMV streetwear pop-ups November 2026" } }, { type: "web_search_tool_result", tool_use_id: "srvtoolu_1", content: [{ type: "web_search_result", title: "Pop-up list", url: "https://example.com/popups", encrypted_content: "xx", page_age: "2 days" }] }] },
+    { stop_reason: "end_turn", content: [{ type: "text", text: "Two pop-ups this month worth a table." }] },
+  ];
+  const aw = await ask("tok-admin", "what's on in the scene this month?");
+  t("Claude searched, paused, was resumed without an extra message, and answered", aw.text === "Two pop-ups this month worth a table." && seen.at(-1).body.messages.at(-1).role === "assistant" && seen.at(-1).body.messages.at(-1).content.some((b) => b.type === "server_tool_use") && seen.at(-1).body.messages.at(-1).content.some((b) => b.type === "web_search_tool_result"));
+  t("the turn says it searched the web; the search is stored whole for the replay", aw.tools.includes("web_search") && db.prepare("SELECT content FROM echo_brain WHERE user_id = ? AND kind = 'reply' ORDER BY id DESC LIMIT 2").all(admin).some((r) => r.content.includes("srvtoolu_1") && r.content.includes("web_search_tool_result")));
 
   console.log("\nWHEN CLAUDE FAILS — plain words, nothing dangling");
   script = [{ stop_reason: "tool_use", content: [{ type: "tool_use", id: "tu_9", name: "overview", input: {} }] }];

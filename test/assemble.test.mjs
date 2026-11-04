@@ -31,7 +31,7 @@ const opener = (f) => { const m = /^\s*(\/\*[\s\S]*?\*\/)/.exec(readFileSync(joi
 const openers = APP.filter((f) => /\.(js|css)$/.test(f)).map(opener).filter((x) => x && x.length > 40 && !x.includes("@palette"));
 t("the parts' opening doc blocks are not in the page (" + openers.length + " of them)", openers.length > 50 && !openers.some((o) => html.includes(o)));
 t("…but the first line of code after them is", html.includes("function uiModal(") && html.includes(".ui-ov .ui-btn{"));
-/* 245KB at the flatten (2026-11-02); 265KB from 2026-11-04 — Echo, Knowledge and the UI signals brought it to ~246KB. A guard against bloat, not a target. */
+/* 245KB at the flatten (2026-11-02); 265KB from 2026-11-04 — Echo's brain screen (streamed answers, photos, the mic, the picker), Knowledge and the UI signals brought it to ~250KB. A guard against bloat, not a target. */
 t("the page is well under its gzipped budget", (await import("node:zlib")).gzipSync(html, { level: 9 }).length < 265 * 1024);
 
 console.log("\nTHE ORDER FILE AND THE DISK MUST AGREE");
