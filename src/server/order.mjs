@@ -176,6 +176,7 @@ export const SERVER = [
 
   // echo — the brain first (admins, when ECHO_AI_KEY is set), the matcher after it
   "echo/brain.js",
+  "echo/hands.js",
   "echo/echo.js",
 
   // admin

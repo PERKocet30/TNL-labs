@@ -1,4 +1,4 @@
-/* ECHO v1.5 — 2026-11-04 (what Claude's app has: photos and PDFs on a message (the photo button, thumbnails over the composer), dictation (the mic — the phone's own speech recognition, no outside service), answers read aloud (the speaker in the header, remembered on this phone), "Searched the web" under an answer). v1.4 — 2026-11-04 (pick the model: tap its name under the composer — a sheet of the three, a line on each; every answer says which one wrote it). v1.3 — 2026-11-04 (modelled on Claude: your words in a quiet card, Echo's answer as plain text on the page, written in as it streams over the live stream, "Thinking" / "Looking at orders" while it works, light markdown, copy, a new conversation from the pen). v1.2 — 2026-11-04 (the brain: for an admin, when the server has a key, Echo is a model that reasons — the same screen, a turn of kind "brain" with what it looked at, Start fresh instead of Talk to a person). v1.1 — 2026-11-04 (answers from Knowledge wear the entry's title; a pick names which kind it was). v1.0 — 2026-11-04. Echo is LABS's help, pinned at the top of Messages:
+/* ECHO v1.6 — 2026-11-04 (the hands: a card under an answer — what Echo set up and why, Confirm · Not now; done, declined or failed after; live when decided). v1.5 — 2026-11-04 (what Claude's app has: photos and PDFs on a message (the photo button, thumbnails over the composer), dictation (the mic — the phone's own speech recognition, no outside service), answers read aloud (the speaker in the header, remembered on this phone), "Searched the web" under an answer). v1.4 — 2026-11-04 (pick the model: tap its name under the composer — a sheet of the three, a line on each; every answer says which one wrote it). v1.3 — 2026-11-04 (modelled on Claude: your words in a quiet card, Echo's answer as plain text on the page, written in as it streams over the live stream, "Thinking" / "Looking at orders" while it works, light markdown, copy, a new conversation from the pen). v1.2 — 2026-11-04 (the brain: for an admin, when the server has a key, Echo is a model that reasons — the same screen, a turn of kind "brain" with what it looked at, Start fresh instead of Talk to a person). v1.1 — 2026-11-04 (answers from Knowledge wear the entry's title; a pick names which kind it was). v1.0 — 2026-11-04. Echo is LABS's help, pinned at the top of Messages:
    ask in your own words, get an answer from what Echo knows about LABS
    (and about your own orders, shop and standing — nobody else's), thumbs it
    up or down, pick "I meant…" when it wasn't sure, or hand the conversation
@@ -14,6 +14,8 @@ const eapi={
   reset:()=>req("/api/echo/reset",{method:"POST",body:{}}),
   model:model=>req("/api/echo/model",{method:"POST",body:{model}}),
   attach:(data,name)=>req("/api/echo/attach",{method:"POST",body:{data,name}}),
+  confirm:id=>req("/api/echo/proposals/"+id+"/confirm",{method:"POST",body:{}}),
+  decline:id=>req("/api/echo/proposals/"+id+"/decline",{method:"POST",body:{}}),
 };
 const echoCanDictate=()=>!!(window.SpeechRecognition||window.webkitSpeechRecognition);
 const echoVoiceOn=()=>{try{return localStorage.getItem("tnl-echo-voice")==="1"}catch(e){return false}};
@@ -97,8 +99,26 @@ function echoBrainTurnHTML(t){
   const files=(t.files||[]).length?`<div class="echo-qf">${t.files.map(f=>f.kind==="pdf"?`<a class="echo-pdf" href="${esc(f.url)}" target="_blank" rel="noreferrer">${DI.stack}<span>${esc(f.name||"PDF")}</span></a>`:`<img src="${esc(f.url)}" alt="" loading="lazy">`).join("")}</div>`:"";
   const foot=t.pending?`<div class="echo-work" aria-live="polite"><i></i><span>${esc(t.status||"Thinking")}</span></div>`
     :`<div class="echo-foot">${looked}${t.model&&!t.failed?`<span class="echo-by">${looked?" · ":""}${esc(t.model)}</span>`:""}${t.text&&!t.failed?`<button class="echo-copy" data-echocopy="${t.id}" aria-label="Copy">${DI.copy}</button>`:""}</div>`;
+  const cards=(t.proposals||[]).map(echoCardHTML).join("");
   return `<div class="echo-q"><div class="echo-qb">${files}${t.asked?rich(t.asked):""}</div></div>
-    <div class="echo-a ${t.failed?"echo-failed":""} ${t.pending?"pending":""}" data-echoturn="${t.id}">${echoAvHTML("xs")}<div class="echo-ab"><div class="echo-text">${echoMd(t.text||"")}</div>${foot}</div></div>`;
+    <div class="echo-a ${t.failed?"echo-failed":""} ${t.pending?"pending":""}" data-echoturn="${t.id}">${echoAvHTML("xs")}<div class="echo-ab"><div class="echo-text">${echoMd(t.text||"")}</div><div class="echo-cards">${cards}</div>${foot}</div></div>`;
+}
+/* a hand's card: what Echo set up, why, and the one button that runs it */
+function echoCardHTML(p){
+  const st=p.status;
+  const tail=st==="pending"?`<div class="echo-cb"><button class="btn sm" data-echook="${p.id}">Confirm</button><button class="btn ghost sm" data-echono-card="${p.id}">Not now</button></div>`
+    :`<div class="echo-cs ${st}">${st==="confirmed"?"Done":st==="declined"?"Not now":"Didn\u2019t work"}${p.result?` · ${esc(p.result)}`:""}</div>`;
+  return `<div class="echo-card ${st}" data-echocard="${p.id}"><b>${esc(p.title)}</b>${p.why?`<span>${esc(p.why)}</span>`:""}${tail}</div>`;
+}
+async function echoDecide(id,yes){
+  const card=$(`[data-echocard="${id}"]`);if(card)card.classList.add("busy");
+  try{const r=yes?await eapi.confirm(id):await eapi.decline(id);echoCardUpdate(r.proposal);if(yes)toast(r.ok?"Done":"Didn\u2019t work")}
+  catch(e){if(card)card.classList.remove("busy");toast(e.message)}
+}
+function echoCardUpdate(p){
+  if(!p||!ECHO||!ECHO.turns)return;
+  for(const t of ECHO.turns){const i=(t.proposals||[]).findIndex(x=>x.id===p.id);if(i>=0){t.proposals[i]=p;break}}
+  const card=$(`[data-echocard="${p.id}"]`);if(card){card.outerHTML=echoCardHTML(p);const f=$("#echofeed");if(f)wireEchoFeed(f)}
 }
 /* Light markdown, the way Claude writes for a screen: paragraphs, bullets, numbers, **bold**, `code`. Escaped first, always. */
 function echoMd(t){
@@ -122,10 +142,12 @@ function echoMd(t){
 /* Live from the server while Echo works (app/messages/live.js → "echo"): text as it's written, what it's looking at. */
 function onEchoLive(d){
   if(!echoBrain()||!ECHO.turns||!d)return;
+  if(d.kind==="proposal"){echoCardUpdate(d.proposal);return}
   const t=ECHO.turns.find(x=>x.pending&&x.kind==="brain");if(!t)return;
   const w=$(`[data-echoturn="${t.id}"] .echo-work span`);
   if(d.kind==="text"){t.text=(t.text||"")+d.text;t.status="Writing";const n=$(`[data-echoturn="${t.id}"] .echo-text`);if(n)n.innerHTML=echoMd(t.text);if(w)w.textContent="Writing"}
   else if(d.kind==="status"){t.status=d.text;if(w)w.textContent=d.text}
+  else if(d.kind==="proposal"){echoCardUpdate(d.proposal);return}
   const f=$("#echofeed");if(f&&f.scrollHeight-f.scrollTop-f.clientHeight<160)f.scrollTop=f.scrollHeight;
 }
 const echoModelName=m=>{const p=String(m||"").replace(/^claude-/,"").split("-");if(!p[0])return"";return"Claude "+p[0][0].toUpperCase()+p[0].slice(1)+(p.length>1?" "+p.slice(1).join("."):"")};
@@ -282,5 +304,7 @@ function wireEchoFeed(f){
   f.querySelectorAll("[data-echono]").forEach(b=>b.onclick=()=>echoRate(b.dataset.echono,false));
   f.querySelectorAll("[data-echoperson]").forEach(b=>b.onclick=()=>echoHandoff());
   f.querySelectorAll("[data-echogo]").forEach(b=>b.onclick=()=>echoGo(b.dataset.echogo));
+  f.querySelectorAll("[data-echook]").forEach(b=>b.onclick=()=>echoDecide(+b.dataset.echook,true));
+  f.querySelectorAll("[data-echono-card]").forEach(b=>b.onclick=()=>echoDecide(+b.dataset.echonoCard,false));
   f.querySelectorAll("[data-echocopy]").forEach(b=>b.onclick=()=>{const t=ECHO.turns.find(x=>String(x.id)===String(b.dataset.echocopy));if(!t)return;navigator.clipboard&&navigator.clipboard.writeText(t.text||"").then(()=>toast("Copied"),()=>toast("Couldn\u2019t copy"))});
 }
