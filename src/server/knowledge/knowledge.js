@@ -1,5 +1,5 @@
 /* ================================================================
-   KNOWLEDGE v1.1 — 2026-11-04 (the features, knowledge/features.js; Echo answers from here, and learns which words mean which entry). v1.0 — 2026-11-04. "LABS owns the memory, Claude only updates it."
+   KNOWLEDGE v1.2 — 2026-11-04 (more kinds — policies, questions, story, plan, scenes, playbooks; Claude and Grok write here through the connector, server/connector/tools.js). v1.1 — 2026-11-04 (the features, knowledge/features.js; Echo answers from here, and learns which words mean which entry). v1.0 — 2026-11-04. "LABS owns the memory, Claude only updates it."
    What LABS knows about itself, kept inside LABS (this database, on the
    Railway volume), not in anyone's chat: the creed, how LABS talks
    (voice), settled decisions, a glossary, notes, the blueprint sheets.
@@ -31,10 +31,14 @@ CREATE TABLE IF NOT EXISTS knowledge_history (
   source TEXT NOT NULL DEFAULT 'admin', by_user INTEGER, at INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_knowledge_history ON knowledge_history(entry_id, id)`);
 
-const KNOW_KINDS = { creed: "Creed", voice: "Voice", decision: "Decisions", glossary: "Glossary", feature: "Features", note: "Notes", sheet: "Sheets" };
+/* The kinds (2026-11-04, "what would be the most useful data to store"): the creed; voice (how LABS
+   speaks, words used and never used); decisions and their reasons; policies in human words; the
+   glossary; the features; real questions and the right answers (qa); the story and the people;
+   the plan; scenes and the market; playbooks; notes; sheets. */
+const KNOW_KINDS = { creed: "Creed", voice: "Voice", decision: "Decisions", policy: "Policies", glossary: "Glossary", feature: "Features", qa: "Questions & answers", story: "Story & people", plan: "The plan", scene: "Scenes & market", playbook: "Playbooks", note: "Notes", sheet: "Sheets" };
 /* learned (2026-11-04): the words members used when they picked this entry as the answer in Echo ("I meant this one") — Echo matches on them too. */
 if (!db.prepare(`PRAGMA table_info(knowledge)`).all().some((c) => c.name === "learned")) db.exec(`ALTER TABLE knowledge ADD COLUMN learned TEXT NOT NULL DEFAULT ''`);
-const KNOW_SOURCES = ["admin", "claude", "built-in"];
+const KNOW_SOURCES = ["admin", "claude", "grok", "connector", "built-in"];   // who wrote it: you in /admin, Claude or Grok through the connector, another app's pasted key, or the build
 /* The first entries: what's already settled in CLAUDE.md and the blueprint,
    keyed so an edit in /admin sticks (INSERT OR IGNORE) and a new build only
    adds what's missing. */

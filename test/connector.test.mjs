@@ -104,7 +104,7 @@ try {
   const names = tools.map((x) => x.name);
   t("tools cover the dashboard (overview, members, orders, reports, events, systems…)", ["overview", "members", "member", "orders", "reports", "events", "systems", "systems_meta", "health"].every((n) => names.includes(n)));
   t("no tool reads messages, mail, backups, settings or the source", !names.some((n) => /message|(^|_)dms?(_|$)|inbox|thread|mail|backup|setting|source|csv|vote/i.test(n)));
-  t("every tool says it is read only", tools.every((x) => x.annotations?.readOnlyHint === true));
+  t("every tool says it is read only — except the two that write Knowledge (2026-11-04)", tools.every((x) => x.annotations?.readOnlyHint === !/^knowledge_(add|edit)$/.test(x.name)) && tools.filter((x) => x.annotations?.readOnlyHint === false).length === 2);
   const ov = await rpc("tools/call", { name: "overview", arguments: {} });
   const ovj = JSON.parse(ov.result?.content?.[0]?.text || "{}");
   t("overview reads live numbers", !ov.result?.isError && Object.keys(ovj).length > 3);

@@ -146,6 +146,10 @@ export const SERVER = [
   // labs
   "labs/pages.js",
 
+  // knowledge — before the connector (Claude and Grok write to it) and before echo (Echo answers from it)
+  "knowledge/knowledge.js",
+  "knowledge/features.js",
+
   // connector
   "connector/oauth.js",
   "connector/tools.js",
@@ -163,10 +167,6 @@ export const SERVER = [
 
   // pages
   "pages/policies.js",
-
-  // knowledge — before echo: Echo answers from it
-  "knowledge/knowledge.js",
-  "knowledge/features.js",
 
   // echo
   "echo/echo.js",
