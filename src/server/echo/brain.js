@@ -1,5 +1,5 @@
 /* ================================================================
-   ECHO · the brain v1.1 — 2026-11-04 (modelled on Claude: the answer streams in word by word over the live stream, with "Thinking…" / "Looking at orders…" while it works; light markdown). v1.0 — 2026-11-04. "I want my own AI, like Jarvis."
+   ECHO · the brain v1.2 — 2026-11-04 ("I like option 2" → "Invalid signature in thinking block": Echo's instructions carried Knowledge and the date, so a Knowledge write — or midnight — changed them mid-conversation, and Claude refuses reasoning sealed to other instructions. Now the instructions are frozen per conversation (a "system" row; the date rides on each question), the API is told to drop stale reasoning rather than refuse (thinking-binding-controls), and a refusal of that kind is retried once without the old reasoning). v1.1 — 2026-11-04 (modelled on Claude: the answer streams in word by word over the live stream, with "Thinking…" / "Looking at orders…" while it works; light markdown). v1.0 — 2026-11-04. "I want my own AI, like Jarvis."
    Echo for the founder: a model that reasons (Claude, through a key kept in
    Railway — ECHO_AI_KEY), with the connector's tools as its eyes (live
    numbers, never saved copies) and Knowledge as its memory (the creed, the
@@ -24,7 +24,8 @@ const BRAIN_API = (process.env.ANTHROPIC_API_BASE || "https://api.anthropic.com"
 const BRAIN_MODEL = (process.env.ECHO_MODEL || "claude-opus-5-5").trim();
 const BRAIN_ROUNDS = 8;            // tool rounds per question
 const BRAIN_RESULT_MAX = 30000;    // characters of one tool result the model sees
-const BRAIN_ASKS = 14;             // how many of this admin's questions ride along as context
+const BRAIN_ASKS = 40;             // how many of this admin's questions ride along as context (a New conversation starts over)
+const BRAIN_BETA = "thinking-binding-controls-2026-08-01";   // lets Echo say "drop stale reasoning" instead of being refused
 const brainOn = () => !!BRAIN_KEY;
 const brainFor = (u) => brainOn() && !!(u && u.is_admin);
 
@@ -51,9 +52,20 @@ function brainSystem(user) {
   return [
     { type: "text", text: BRAIN_WHO },
     { type: "text", text: "KNOWLEDGE — what LABS knows about itself, as written in Admin → Knowledge:\n\n" + brainKnowledge(), cache_control: { type: "ephemeral", ttl: "1h" } },
-    { type: "text", text: `Today is ${new Date().toISOString().slice(0, 10)}. You're talking to ${name} (@${user.username}), an admin of LABS.` },
+    { type: "text", text: `You're talking to ${name} (@${user.username}), an admin of LABS. Each of his messages ends with today's date. Knowledge above is as it was when this conversation began: what you write during it, you already know; for anything else, read it fresh with the knowledge tool.` },
   ];
 }
+/* The instructions are frozen for the life of a conversation, byte for byte. Claude seals its
+   reasoning to the exact instructions it was written under, so changing them mid-conversation
+   (a Knowledge write, a new day) makes the API refuse the next message. New conversation = new snapshot. */
+function brainFrozenSystem(user) {
+  const row = db.prepare(`SELECT content FROM echo_brain WHERE user_id = ? AND archived = 0 AND kind = 'system' ORDER BY id DESC LIMIT 1`).get(user.id);
+  if (row) return JSON.parse(row.content);
+  const sys = brainSystem(user);
+  brainKeep(user.id, "system", "system", sys);
+  return sys;
+}
+const brainToday = () => { const d = new Date(); return `(Today is ${d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" })}, New York time.)`; };
 /* The connector's tools, in Claude's shape. Same list the connector offers, so what
    Claude can see from outside, Echo can see from inside — and nothing more. */
 const brainTools = () => mcpToolList().map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema }));
@@ -84,7 +96,7 @@ function brainKeep(userId, role, kind, content) {
 /* The last BRAIN_ASKS questions and everything after each — always starting at a question, so
    every tool_use has its tool_result and the thinking that went with it. */
 function brainHistory(userId) {
-  const rows = brainRows(userId);
+  const rows = brainRows(userId).filter((r) => r.kind !== "system");
   const asks = rows.filter((r) => r.kind === "ask");
   const from = asks.length > BRAIN_ASKS ? asks[asks.length - BRAIN_ASKS].id : 0;
   return rows.filter((r) => r.id >= from).map((r) => ({ role: r.role, content: JSON.parse(r.content) }));
@@ -95,7 +107,7 @@ function brainTurns(userId) {
   const out = [];
   for (const r of brainRows(userId)) {
     const c = JSON.parse(r.content);
-    if (r.kind === "ask") out.push({ id: r.id, asked: brainText(c), kind: "brain", text: "", tools: [], createdAt: r.created_at });
+    if (r.kind === "ask") out.push({ id: r.id, asked: String((c[0] && c[0].text) || "").trim(), kind: "brain", text: "", tools: [], createdAt: r.created_at });
     else if (r.kind === "reply" && out.length) { const t = out[out.length - 1]; t.text = brainText(c) || t.text; for (const b of c) if (b.type === "tool_use" && !t.tools.includes(b.name)) t.tools.push(b.name); }
     else if (r.kind === "error" && out.length) { const t = out[out.length - 1]; t.text = brainText(c); t.failed = true; }
   }
@@ -109,7 +121,8 @@ function brainTurns(userId) {
    being written the way Claude's own app shows it. */
 async function brainCall(body, onText) {
   const r = await fetch(`${BRAIN_API}/v1/messages`, { method: "POST", signal: AbortSignal.timeout(180000),
-    headers: { "content-type": "application/json", "x-api-key": BRAIN_KEY, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ ...body, stream: true }) });
+    headers: { "content-type": "application/json", "x-api-key": BRAIN_KEY, "anthropic-version": "2023-06-01", "anthropic-beta": BRAIN_BETA },
+    body: JSON.stringify({ ...body, thinking: { type: "adaptive", block_binding: { prefix_mismatch_behavior: "drop_block" } }, stream: true }) });
   if (!r.ok) { const j = await r.json().catch(() => ({})); const e = new Error((j.error && j.error.message) || `Claude said ${r.status}`); e.status = r.status; throw e; }
   const msg = { content: [], stop_reason: null, usage: {} };
   const blocks = [];   // index → the block being built (+ its partial JSON / text)
@@ -150,16 +163,29 @@ const BRAIN_SORRY = { 401: "The key in Railway isn't working — Claude turned i
 async function brainAsk(user, token, q) {
   const asked = String(q || "").trim().slice(0, 4000);
   if (!asked) return null;
-  const askId = brainKeep(user.id, "user", "ask", [{ type: "text", text: asked }]);
-  const system = brainSystem(user), tools = brainTools();
-  const messages = brainHistory(user.id);
+  const system = brainFrozenSystem(user), tools = brainTools();
+  const askId = brainKeep(user.id, "user", "ask", [{ type: "text", text: asked }, { type: "text", text: brainToday() }]);
+  let messages = brainHistory(user.id);
+  let stripped = false;
+  /* Last resort (once per question): if Claude still refuses old reasoning, send the history without
+     it — every word and tool call stays, only the sealed reasoning goes. Stored rows are untouched. */
+  const call = async () => {
+    try { return await brainCall({ model: BRAIN_MODEL, max_tokens: 8192, system, tools, messages }, onText); }
+    catch (e) {
+      if (stripped || e.status !== 400 || !/thinking|signature/i.test(e.message)) throw e;
+      stripped = true;
+      console.warn("[echo] brain: Claude refused old reasoning; retrying without it —", e.message.slice(0, 160));
+      messages = messages.map((m) => (m.role === "assistant" && Array.isArray(m.content) ? { ...m, content: m.content.filter((b) => b.type !== "thinking" && b.type !== "redacted_thinking") } : m)).filter((m) => !Array.isArray(m.content) || m.content.length);
+      return brainCall({ model: BRAIN_MODEL, max_tokens: 8192, system, tools, messages }, onText);
+    }
+  };
   let used = 0;
   let pending = "", flush = null;
   const onText = (t) => { pending += t; if (!flush) flush = setTimeout(() => { brainTell(user.id, { kind: "text", askId, text: pending }); pending = ""; flush = null; }, 90); };
   brainTell(user.id, { kind: "status", askId, text: "Thinking" });
   try {
     for (let round = 0; round <= BRAIN_ROUNDS; round++) {
-      const res = await brainCall({ model: BRAIN_MODEL, max_tokens: 4096, system, tools, messages }, onText);
+      const res = await call();
       if (flush) { clearTimeout(flush); flush = null; } if (pending) { brainTell(user.id, { kind: "text", askId, text: pending }); pending = ""; }
       used += (res.usage && res.usage.output_tokens) || 0;
       brainKeep(user.id, "assistant", "reply", res.content);
@@ -180,8 +206,9 @@ async function brainAsk(user, token, q) {
       if (round === BRAIN_ROUNDS) brainKeep(user.id, "assistant", "error", [{ type: "text", text: "I looked at a lot and lost the thread — ask me that in two parts." }]);
     }
   } catch (e) {
-    const text = BRAIN_SORRY[e.status] || (e.name === "TimeoutError" ? "Claude took too long. Ask again." : `Couldn't reach Claude: ${e.message}`);
+    const text = BRAIN_SORRY[e.status] || (e.name === "TimeoutError" ? "Claude took too long. Ask again." : e.status === 400 ? "Claude turned that message down. Ask again — if it keeps happening, tap the pen for a new conversation." : e.status ? "Claude had a problem on its side. Ask again in a moment." : "I couldn't reach Claude just now. Ask again in a moment.");
     console.error("[echo] brain:", e.status || "", e.message, e.cause ? "— " + e.cause.message : "");
+    try { logError("echo", `Echo: Claude ${e.status || "unreachable"}`, String(e.message || "").slice(0, 1500), "/api/echo/ask", user.username); } catch {}
     /* an unanswered question must not leave a dangling tool_use for the next replay */
     const rows = brainRows(user.id); const last = rows[rows.length - 1];
     if (last && last.kind === "reply" && JSON.parse(last.content).some((b) => b.type === "tool_use")) db.prepare(`UPDATE echo_brain SET archived = 1 WHERE id = ?`).run(last.id);
