@@ -6,6 +6,7 @@
 // can't be suspended) marks the card failed in plain words; a member can't touch a
 // card; Claude is told on its next message what was confirmed, declined or failed;
 // a bad argument is caught before a card exists; New conversation puts cards away.
+// v1.1: piece three — a setting from the short list, void a test order, the weekly, a nudge preview.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { mkdirSync, rmSync } from "node:fs";
@@ -145,6 +146,31 @@ try {
   const u = (id) => db.prepare("SELECT * FROM users WHERE id = ?").get(id);
   t("all five ran as the dashboard would: rep 50, ben confirmed and signed out (2 sessions), ana a Mod, Echo taught", rep(ana) === 50 && u(ben).email_verified === 1 && !db.prepare("SELECT 1 FROM sessions WHERE user_id = ?").get(ben) && u(ana).is_mod === 1 && !!db.prepare("SELECT 1 FROM echo_faq WHERE question = 'How do I pin a song?'").get());
   t("the rep change is in the rep log, by the admin, like any admin change", !!db.prepare("SELECT 1 FROM rep_events WHERE user_id = ? AND kind = 'admin_deduct' AND amount = -10").get(ana));
+
+  console.log("\nPIECE THREE — settings, a test order, mail");
+  const listing = Number(db.prepare("INSERT INTO listings (seller_id,title,price_cents,category,status,kind,images,created_at,updated_at) VALUES (?,?,?,?,'active','item','[]',?,?)").run(ana, "Lab tee", 3000, "Tops", now, now).lastInsertRowid);
+  const orderId = Number(db.prepare("INSERT INTO orders (listing_id,buyer_id,seller_id,amount_cents,shipping_cents,status,payment_ref,tracking,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)").run(listing, admin, ana, 3000, 500, "paid", "cs_test", "", now, now).lastInsertRowid);
+  script = [
+    { stop_reason: "tool_use", content: [
+      { type: "tool_use", id: "s1", name: "set_setting", input: { key: "announcement", value: "The tournament closes at 3pm." } },
+      { type: "tool_use", id: "s2", name: "set_setting", input: { key: "echoModel", value: "claude-sonnet-5-5" } },
+      { type: "tool_use", id: "s3", name: "set_setting", input: { key: "signupsOpen", value: "maybe" } },
+      { type: "tool_use", id: "s4", name: "set_setting", input: { key: "stripeKey", value: "x" } },
+      { type: "tool_use", id: "s5", name: "void_order", input: { orderId } },
+      { type: "tool_use", id: "s6", name: "send_weekly", input: {} },
+      { type: "tool_use", id: "s7", name: "nudge_preview", input: {} },
+    ] },
+    { stop_reason: "end_turn", content: [{ type: "text", text: "Cards." }] },
+  ];
+  const a6 = await ask("tidy up");
+  const res6 = seen.at(-1).body.messages.at(-1).content;
+  t("a setting outside the short list, or a value that isn't 1/0, never becomes a card", res6[2].is_error === true && /is 1 or 0/.test(res6[2].content) && res6[3].is_error === true && /Not a setting I can change/.test(res6[3].content));
+  t("five cards with readable titles", a6.proposals.map((p) => p.title).join(" | ") === `Put up the banner: "The tournament closes at 3pm." | Switch Echo to Sonnet 5.5 | Mark order #${orderId} a test (void it) | Email me this week's report now | Send me a preview of the nudge email`);
+  const out = {}; for (const p of a6.proposals) out[p.action] = (await call("tok-admin", "POST", `/api/echo/proposals/${p.id}/confirm`)).j;
+  t("the banner is up and Echo answers from Sonnet next — through the settings route, logged as any settings change", db.prepare("SELECT value FROM settings WHERE key = 'announcement'").get().value === "The tournament closes at 3pm." && db.prepare("SELECT value FROM settings WHERE key = 'echoModel'").get().value === "claude-sonnet-5-5" && out.set_setting.ok);
+  t("the order is void: gone from the numbers, the card says so", out.void_order.ok && db.prepare("SELECT status FROM orders WHERE id = ?").get(orderId).status !== "paid" && /voided/.test(out.void_order.proposal.result));
+  t("mail isn't set up here, so the weekly says not sent and the nudge preview fails in the route's own words — honestly, on the card", /not sent/.test(out.send_weekly.proposal.result) && out.nudge_preview.ok === false && /Email isn't set up/.test(out.nudge_preview.proposal.result));
+  await call("tok-admin", "POST", "/api/echo/model", { model: "claude-opus-5-5" });
 
   console.log("\nNEW CONVERSATION PUTS WAITING CARDS AWAY");
   script = [{ stop_reason: "tool_use", content: [{ type: "tool_use", id: "h9", name: "feature_member", input: { username: "ben" } }] }, { stop_reason: "end_turn", content: [{ type: "text", text: "Card." }] }];
