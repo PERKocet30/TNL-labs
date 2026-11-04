@@ -112,6 +112,7 @@ export const APP = [
   "market/listing.js",
   "market/sell-specs.js",
   "market/sell-variants.js",
+  "market/sell-walk.js",
 
   // profile
   "profile/edit.js",

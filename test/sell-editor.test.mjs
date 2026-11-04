@@ -13,7 +13,7 @@ const fn = (name) => { const i = src.indexOf("function " + name + "("); const j 
 console.log("\nLISTING EDITOR — SECTIONS");
 const sell = fn("sellHTML") + fn("pvHTML");   // Inventory (sizes & colours) is its own part since 2026-09-30
 for (const s of ["Photos", "Pricing", "Shipping", "Details", "Status"]) t("has a " + s + " card", sell.includes(`<div class="pf-sec">${s}</div>`));
-t("has a Size & stock card (just Size for a single piece)", sell.includes('<div class="pf-sec">${one?"Size":"Size &amp; stock"}</div>'));
+t("has a Size & stock card (just Size for a single piece; Format for a record, 2026-11-03)", sell.includes('<div class="pf-sec">${one?szOne:szOne+" &amp; stock"}</div>'));
 t("one Publish / Save button", sell.includes('id="s-post">${MKTEDIT?"Save":"Publish"}'));
 t("sound listings keep their own section", sell.includes('<div class="pf-sec">Sound</div>'));
 t("photos: up to 8, several at once", sell.includes("SELLIMGS.length<8") && sell.includes('accept="image/*" multiple'));

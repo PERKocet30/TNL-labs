@@ -1,6 +1,12 @@
-/* ── MARKET TAXONOMY v1.0 — 2026-10-18 ─────────────────────────────────
+/* ── MARKET TAXONOMY v1.1 — 2026-11-03 (v1.0 2026-10-18) ──────────────
    "Professional options to categorize what people are selling so you can
    give them better options to describe and list what they're selling."
+   v1.1 — "make the questions broad and narrower the more information you
+   collect": nine broad departments, then the kind, and each kind says what
+   to ask next — its size buttons (or none), what its second option is
+   called (colour, finish, design…), and its details. Jewellery, paper and
+   print, physical music and home goods have places of their own now; Other
+   no longer offers clothing sizes. Old values are kept (never change).
    One source for both sides: the categories (grouped into departments),
    the size buttons each category offers, and the details (specs) a seller
    can fill in — fit and measurements for clothes, shoe sizes, metal and
@@ -31,6 +37,11 @@ const SPECS = {
   signed: { label: "Signed", yes: 1 },
   framed: { label: "Framed", yes: 1 },
   year: { label: "Year made", ph: "2026" },
+  blen: { label: "Length", ph: "7 in" },
+  finish: { label: "Finish", choice: ["Matte", "Gloss", "Holographic", "Die-cut", "Enamel", "Other"] },
+  pages: { label: "Pages", ph: "32" },
+  tracks: { label: "Tracks", ph: "12" },
+  scent: { label: "Scent", ph: "Optional" },
 };
 const SIZE_SETS = {
   letters: ["XS", "S", "M", "L", "XL", "XXL"],
@@ -39,33 +50,49 @@ const SIZE_SETS = {
   hats: ["One size", "S/M", "L/XL", "7", "7 1/4", "7 1/2", "7 3/4"],
   rings: ["5", "6", "7", "8", "9", "10", "11"],
   prints: ["5×7", "8×10", "11×14", "12×16", "18×24", "24×36"],
+  formats: ['12" vinyl', '7" vinyl', "Cassette", "CD"],
   none: [],
 };
-// [department, [[value, size set, specs, label?], …]]
+/* what a kind's second option is called, and what its size buttons are called (default: colour · Sizes) */
+const OPT_WORD = { finish: ["finish", "Sizes"], design: ["design", "Sizes"], format: ["colour", "Formats"], none: ["colour", "Sizes"] };
+// [department, hint, [[value, size set, specs, label?, option word?], …]]
 const TAXONOMY = [
-  ["Clothing", [
+  ["Clothing", "Tops, bottoms, outerwear, sets", [
     ["Tops", "letters", ["fit", "material", "ptp", "length", "care"]],
     ["Bottoms", "waist", ["bfit", "material", "waist", "inseam", "care"]],
     ["Outerwear", "letters", ["fit", "material", "ptp", "length", "care"]],
     ["Dresses & skirts", "letters", ["fit", "material", "length", "care"]],
     ["Sets", "letters", ["fit", "material", "care"]]]],
-  ["Footwear", [["Footwear", "shoes", ["shoesys", "material", "box"]]]],
-  ["Accessories", [
+  ["Footwear", "Sneakers, boots, sandals", [["Footwear", "shoes", ["shoesys", "material", "box"]]]],
+  ["Accessories", "Hats, bags, belts, eyewear", [
     ["Headwear", "hats", ["hatfit", "material"]],
     ["Bags", "none", ["dims", "material"]],
-    ["Jewellery", "rings", ["metal", "stones", "chain"]],
-    ["Accessories", "none", ["material", "dims"]]]],
-  ["Art", [
-    ["Art / Prints", "prints", ["paper", "edition", "edsize", "signed", "framed"], "Prints"],
-    ["Original art", "none", ["medium", "dims", "year", "signed", "framed"]],
-    ["Photography", "prints", ["paper", "edition", "edsize", "signed", "framed"]],
-    ["Sculpture & objects", "none", ["material", "dims", "year"]]]],
-  ["Other", [["Other", "letters", ["material", "dims"]]]],
+    ["Accessories", "none", ["material", "dims"], "Other accessories"]]],
+  ["Jewellery", "Rings, chains, earrings, bracelets", [
+    ["Rings", "rings", ["metal", "stones"], null, "finish"],
+    ["Necklaces", "none", ["metal", "stones", "chain"], null, "finish"],
+    ["Earrings", "none", ["metal", "stones"], null, "finish"],
+    ["Bracelets", "none", ["metal", "stones", "blen"], null, "finish"],
+    ["Jewellery", "none", ["metal", "stones", "chain"], "Other jewellery", "finish"]]],
+  ["Art", "Originals, prints, photography, objects", [
+    ["Art / Prints", "prints", ["paper", "edition", "edsize", "signed", "framed"], "Prints", "finish"],
+    ["Original art", "none", ["medium", "dims", "year", "signed", "framed"], null, "finish"],
+    ["Photography", "prints", ["paper", "edition", "edsize", "signed", "framed"], null, "finish"],
+    ["Sculpture & objects", "none", ["material", "dims", "year"], null, "finish"]]],
+  ["Paper & print", "Stickers, pins, zines, posters", [
+    ["Stickers & pins", "none", ["finish", "dims"], null, "design"],
+    ["Zines & books", "none", ["pages", "dims", "edition", "edsize", "signed"], null, "finish"],
+    ["Posters", "prints", ["paper", "signed"], null, "finish"]]],
+  ["Music", "Vinyl, tapes, CDs", [["Physical music", "formats", ["tracks", "year", "signed"], "Vinyl, tape & CD", "format"]]],
+  ["Home & objects", "Candles, ceramics, things for a room", [
+    ["Home goods", "none", ["material", "dims", "scent"]],
+    ["Collectibles & toys", "none", ["material", "dims", "year"]]]],
+  ["Other", "Something that isn't on this list", [["Other", "none", ["material", "dims"]]]],
 ];
-const TAX_CATS = new Map(TAXONOMY.flatMap(([dept, cats]) => cats.map(([v, set, specs, label]) => [v, { dept, set, specs, label: label || v }])));
+const TAX_CATS = new Map(TAXONOMY.flatMap(([dept, , cats]) => cats.map(([v, set, specs, label, opt]) => [v, { dept, set, specs, label: label || v, opt: OPT_WORD[opt || "none"] }])));
 const TAXONOMY_META = {
-  departments: TAXONOMY.map(([dept, cats]) => ({ name: dept, categories: cats.map(([v]) => v) })),
-  categories: Object.fromEntries([...TAX_CATS].map(([v, c]) => [v, { label: c.label, sizes: SIZE_SETS[c.set], specs: c.specs }])),
+  departments: TAXONOMY.map(([dept, hint, cats]) => ({ name: dept, hint, categories: cats.map(([v]) => v) })),
+  categories: Object.fromEntries([...TAX_CATS].map(([v, c]) => [v, { label: c.label, sizes: SIZE_SETS[c.set], specs: c.specs, opt: c.opt[0], sizeWord: c.opt[1] }])),
   specs: SPECS,
 };
 

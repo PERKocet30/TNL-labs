@@ -70,10 +70,16 @@ const X = new Function("db", tax + "\nreturn {TAX_CATS, TAXONOMY_META, cleanSpec
 const old = ["Tops", "Bottoms", "Outerwear", "Footwear", "Accessories", "Headwear", "Bags", "Jewellery", "Art / Prints", "Other"];
 t("every category listings already use is still there (values never change)", old.every((c) => X.TAX_CATS.has(c)));
 t("new ones: Dresses & skirts, Sets, Original art, Photography, Sculpture & objects", ["Dresses & skirts", "Sets", "Original art", "Photography", "Sculpture & objects"].every((c) => X.TAX_CATS.has(c)));
-t("grouped into Clothing, Footwear, Accessories, Art, Other", X.TAXONOMY_META.departments.map((d) => d.name).join() === "Clothing,Footwear,Accessories,Art,Other");
+/* v1.1 (2026-11-03): broad first — nine departments, each with a hint; then the kind */
+t("grouped into nine broad departments: Clothing, Footwear, Accessories, Jewellery, Art, Paper & print, Music, Home & objects, Other", X.TAXONOMY_META.departments.map((d) => d.name).join() === "Clothing,Footwear,Accessories,Jewellery,Art,Paper & print,Music,Home & objects,Other");
+t("every department carries a hint for the picker", X.TAXONOMY_META.departments.every((d) => d.hint && d.hint.length > 8));
+t("jewellery has its own kinds: rings get ring sizes, a necklace asks chain length, a bracelet its length — and the old Jewellery value still works", X.TAXONOMY_META.categories.Rings.sizes.includes("7") && !X.TAXONOMY_META.categories.Necklaces.sizes.length && X.TAXONOMY_META.categories.Necklaces.specs.includes("chain") && X.TAXONOMY_META.categories.Bracelets.specs.includes("blen") && X.TAXONOMY_META.categories.Jewellery.label === "Other jewellery");
+t("stickers ask for designs, not colours; a release asks for formats, not sizes; prints for finishes", X.TAXONOMY_META.categories["Stickers & pins"].opt === "design" && X.TAXONOMY_META.categories["Physical music"].sizeWord === "Formats" && X.TAXONOMY_META.categories["Physical music"].sizes.includes("Cassette") && X.TAXONOMY_META.categories["Art / Prints"].opt === "finish" && X.TAXONOMY_META.categories.Tops.opt === "colour");
+t("Other no longer offers clothing sizes", !X.TAXONOMY_META.categories.Other.sizes.length);
+t("a zine asks pages and edition; a record asks tracks and year; home goods ask material, size and scent", X.TAXONOMY_META.categories["Zines & books"].specs.includes("pages") && X.TAXONOMY_META.categories["Physical music"].specs.includes("tracks") && X.TAXONOMY_META.categories["Home goods"].specs.includes("scent"));
 t("\"Art / Prints\" reads as Prints", X.TAXONOMY_META.categories["Art / Prints"].label === "Prints");
 t("size buttons follow the category: shoes, waists, print sizes, rings", X.TAXONOMY_META.categories.Footwear.sizes.includes("10.5") && X.TAXONOMY_META.categories.Bottoms.sizes.includes("32")
-  && X.TAXONOMY_META.categories["Art / Prints"].sizes.includes("18×24") && X.TAXONOMY_META.categories.Jewellery.sizes.includes("7") && !X.TAXONOMY_META.categories["Original art"].sizes.length);
+  && X.TAXONOMY_META.categories["Art / Prints"].sizes.includes("18×24") && X.TAXONOMY_META.categories.Rings.sizes.includes("7") && !X.TAXONOMY_META.categories["Original art"].sizes.length);
 t("every detail a category asks for is defined", [...X.TAX_CATS.values()].every((c) => c.specs.every((k) => X.TAXONOMY_META.specs[k])));
 const sp = X.cleanSpecs({ fit: "Oversized", material: " 100% cotton ", ptp: "22 in", medium: "Oil", signed: true, junk: "x" }, "Tops");
 t("only the category's own details are kept, trimmed", JSON.stringify(sp) === JSON.stringify({ fit: "Oversized", material: "100% cotton", ptp: "22 in" }));

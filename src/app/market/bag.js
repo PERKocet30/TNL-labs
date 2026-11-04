@@ -117,6 +117,7 @@ function wireBag(){
       quantity:1,category:l.category,condition:l.condition,brand:l.brand||"",size:l.size||"",colour:l.colour||"",shipsFrom:l.shipsFrom||"",
       acceptsOffers:l.acceptsOffers!==false,bpm:l.bpm||"",musicalKey:l.musicalKey||"",stems:!!l.stems,compareAt:l.compareAt?(l.compareAt/100).toFixed(2):"",sellType:l.sellType||((l.variants||[]).length?"brand":""),specs:{...(l.specs||{})},
       hasVariants:!!(l.variants||[]).length,variants:(l.variants||[]).map(v=>({size:v.size,colour:v.colour,qty:v.qty}))};
+    SELLFORM._step="review";   // a copy has everything: land on the review, change what's different from there (2026-11-03)
     MKTVIEW="sell";render();toast("Copied — change what's different")});
-  const sx=$("#sdraftx");if(sx)sx.onclick=()=>{sdClear();SELLFORM={category:"Tops",condition:"Good",acceptsOffers:true,sellType:SELLFORM&&SELLFORM.sellType};SELLIMGS=[];render()};   // starting over keeps who's selling
+  const sx=$("#sdraftx");if(sx)sx.onclick=()=>{sdClear();SELLFORM={condition:"Good",acceptsOffers:true};SELLIMGS=[];render()};   // starting over starts the walkthrough over
 }

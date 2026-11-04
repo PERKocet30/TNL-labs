@@ -1,8 +1,23 @@
-/* LABS admin v4.0 — 2026-10-20. Sellers: who can take money, which kind of
+/* v1.1 2026-11-03: what the walkthrough teaches. LABS admin v4.0 — 2026-10-20. Sellers: who can take money, which kind of
    Stripe account they got (the short signup with Stripe carrying the risk ·
    the short signup with LABS carrying it · the old full signup), who started
    and never finished, and a nudge for them. Reads /api/admin/sellers. */
-LOADERS.sellers = async () => { D.sellers = (await req("/api/admin/sellers")).sellers; };
+LOADERS.sellers = async () => { const r = await req("/api/admin/sellers"); D.sellers = r.sellers; D.learned = r.learned; };
+/* What the sell walkthrough teaches (2026-11-03): who lists, by type and department, and how far people get. Counts only. */
+const WTYPE = { brand: "Brands", vintage: "Vintage", custom: "One of one", unsaid: "Not said" };
+const WSTEP = { what: "What are you selling?", who: "Who's selling it?", photos: "Photos", words: "Title & description", stock: "Size & stock", details: "Details", price: "Price & shipping", review: "Review", listed: "Listed" };
+function learnedHTML(L) {
+  if (!L) return "";
+  const w = L.walk, who = L.whoLists;
+  const types = who.byType.map((r) => ({ label: `${WTYPE[r.k] || r.k} · ${num(r.sellers)} seller${r.sellers === 1 ? "" : "s"}`, n: r.listings }));
+  const depts = who.byDept.map((r) => ({ label: `${r.k} · ${num(r.sellers)} seller${r.sellers === 1 ? "" : "s"}`, n: r.listings }));
+  const steps = w.steps.map((s) => ({ label: WSTEP[s.step] || s.step, n: s.n }));
+  const byType = w.byType.filter((t) => t.walks).map((t) => `${WTYPE[t.k]}: ${num(t.listed)} of ${num(t.walks)} listed`).join(" · ");
+  return `<div class="two" style="margin-top:12px">
+    ${card("Who's listing", `<div class="body">${who.byType.length ? breakHTML(types) + `<p class="mono" style="margin:10px 0 6px">BY DEPARTMENT · live listings</p>` + breakHTML(depts) : `<div class="empty">No listings yet.</div>`}</div>`, "live listings, by who's selling")}
+    ${card("How far the walkthrough takes people", `<div class="body">${w.walks ? funnelHTML(steps) + `<p class="mono" style="margin-top:10px">${num(w.walks)} started · ${num(w.listed)} listed · ${num(w.skippedDetails)} skipped Details${byType ? "<br>" + esc(byType) : ""}</p>` : `<div class="empty">Nobody has started a listing in the last ${L.days} days.</div>`}</div>`, `last ${L.days} days`)}
+  </div>`;
+}
 const KIND = { express_stripe: ["Short signup", "Stripe carries the risk"], express: ["Short signup", "LABS carries the risk"], standard: ["Full signup", "their own Stripe"], "": ["—", "no payouts yet"] };
 VIEWS.sellers = () => {
   const S = D.sellers; if (!S) return `<div class="empty">Loading…</div>`;
@@ -22,6 +37,7 @@ VIEWS.sellers = () => {
     ${kpiHTML("Listing without payouts", num(none.length), { share: "buyers can't pay them yet" })}
     ${kpiHTML("Short signup", num(ready.filter((s) => /^express/.test(s.kind)).length), { share: `${ready.filter((s) => s.kind === "standard").length} on the full signup` })}
   </div>
+  ${learnedHTML(D.learned)}
   ${card("Which kind of Stripe account", `<div class="body">${breakHTML(byKind)}<p class="mono" style="margin-top:10px">Stripe is asked to carry the risk first; if it won't, LABS does and pays the card fee; the full signup is what sellers had before Oct 19.</p></div>`)}
   ${stuck.length ? card("Stuck in setup", `<div class="body toc">${table(stuck)}</div>`, "a nudge opens a chat with them in the app") : ""}
   ${card("Can sell", `<div class="body toc">${table(ready)}</div>`)}

@@ -11,6 +11,11 @@ const TAX=()=>MKTMETA.taxonomy||{departments:[],categories:{},specs:{}};
 const catLabel=c=>(TAX().categories[c]||{}).label||c;
 const sellSizes=f=>{const c=TAX().categories[f.category];return c?c.sizes:PV_SIZES};
 const sellDept=f=>((TAX().departments||[]).find(d=>d.categories.includes(f.category))||{}).name||"";
+/* v1.1 (2026-11-03): what a kind's second option is called (colour · finish · design) and its size buttons (Sizes · Formats) */
+const sellOpt=f=>(TAX().categories[f.category]||{}).opt||"colour";
+const sellSizeWord=f=>(TAX().categories[f.category]||{}).sizeWord||"Sizes";
+/* a kind with no sizes whose dimensions are a detail: one of one has no size or stock to ask about */
+const sellNoStock=f=>sellOne(f)&&!sellSizes(f).length&&["Art","Paper & print"].includes(sellDept(f));
 
 /* The category picker: one select, grouped by department (a phone shows its own wheel). */
 function catPickHTML(f){

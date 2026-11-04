@@ -606,25 +606,43 @@ console.log("\nMEMBER · PHONE");
   });
   /* ---- the shop: sizes and colours, the listing page (2026-09-30) ---- */
   const toMarket = () => p.evaluate(async () => { PROFILE = null; TAB = "market"; MKTVIEW = "browse"; render(); await loadMarket(); render(); });
-  await step(d, "sell form: pick sizes, set stock per size, a compare-at price and a category, publish", async () => {
+  /* 2026-11-03: a new listing is a walkthrough — one question a screen (app/market/sell-walk.js) */
+  const walkTo = async (dept, cat, who) => {
     await toMarket();
     await p.locator('[data-mv="sell"]').first().tap();
-    /* 2026-10-18: a new listing first asks who's selling; a brand starts with sizes on */
-    await p.waitForSelector(".st-pick", { timeout: 5000 });
-    ok(await p.locator("#s-title").count() === 0 && await p.locator(".st-opt").count() === 3, "the form shows before choosing who's selling");
-    await p.locator('[data-stype="brand"]').tap();
+    await p.waitForSelector(".sw", { timeout: 5000 });
+    ok(await p.locator("#s-title").count() === 0 && await p.locator("[data-swdept]").count() === 9, "the walk doesn't start by asking what you're selling (nine broad departments)");
+    await p.locator(`[data-swdept="${dept}"]`).tap();
+    if (cat) { await p.waitForSelector(`[data-swcat="${cat}"]`); ok(await p.locator("[data-swdept]").count() === 0, "which kind should be a screen of its own"); await p.locator(`[data-swcat="${cat}"]`).tap(); }
+    await p.waitForSelector(".sw [data-stype]", { timeout: 5000 });
+    await p.locator(`.sw [data-stype="${who}"]`).tap();
     await p.waitForSelector("#sfile", { state: "attached" });
-    ok(await p.locator("#s-hasvar").isChecked() && await p.locator("#s-cond").count() === 0, "a brand doesn't start with sizes on (or still asks condition)");
+  };
+  await step(d, "sell walkthrough: what → who → photos → words → sizes & stock → details → price → review → publish", async () => {
+    await walkTo("Clothing", "Outerwear", "brand");
+    ok(await p.evaluate(() => SELLFORM.category === "Outerwear" && SELLFORM.sellType === "brand" && SELLFORM.hasVariants === true), "the first two answers didn't land");
+    await p.locator("#sw-next").tap(); await p.waitForTimeout(300);
+    ok(await p.locator("#sfile").count() === 1, "Next let you past Photos with no photo");
     await p.locator("#sfile").setInputFiles(UPLOAD_PNG);
     await p.waitForSelector(".pf-img", { timeout: 8000 });
-    await p.locator("#s-title").fill("E2E Tee"); await p.locator("#s-price").fill("40");
+    await p.locator("#sw-next").tap(); await p.waitForSelector("#s-title");
+    await p.locator("#s-title").fill("E2E Tee");
+    await p.locator("#sw-next").tap(); await p.waitForSelector("[data-pvsize]");
+    ok(await p.locator("#s-hasvar").isChecked() && await p.locator("#s-cond").count() === 0, "a brand doesn't start with sizes on");
     for (const s of ["S", "M", "L"]) await p.locator(`[data-pvsize="${s}"]`).tap();   // v2 (2026-10-18): Shopify-style options
     await p.locator("#pvrows .pv-row").nth(1).locator('[data-pvqty="1"]').tap();
     ok((await p.locator("#pvtot").textContent()).startsWith("4 in stock"), "running total: " + (await p.locator("#pvtot").textContent()));
     ok(await p.locator("#pvrows .pv-name").allTextContents().then((x) => x.join()) === "S,M,L", "rows aren't S, M, L");
-    await p.locator("#s-compare").fill("55");
+    await p.locator("#sw-next").tap(); await p.waitForSelector("#sw-skip");
+    ok(await p.locator("#s-cond").count() === 0 && await p.locator('[data-spec="fit"]').count() === 1, "Details for a brand's outerwear should ask fit, not condition");
+    await p.locator("#sw-skip").tap(); await p.waitForSelector("#s-price");
+    await p.locator("#s-price").fill("40"); await p.locator("#s-compare").fill("55");
     ok(/27% off/.test(await p.locator("#s-cmphint").textContent()), "no sale preview: " + (await p.locator("#s-cmphint").textContent()));
-    await p.locator("#s-cat").selectOption("Outerwear");
+    await p.locator("#sw-next").tap(); await p.waitForSelector("#s-post");
+    ok((await p.locator(".sw-row").allTextContents()).join(" ").includes("4 in stock across 3 options") && (await p.locator(".sw-title").textContent()) === "E2E Tee", "the review doesn't show the listing as it will be");
+    await p.locator('[data-swgo="words"]').tap(); await p.waitForSelector("#s-title");
+    ok(await p.locator("#s-title").inputValue() === "E2E Tee", "a review row doesn't go back to its step with what was typed");
+    await p.evaluate(() => swGo("review")); await p.waitForSelector("#s-post");
     await p.locator("#s-post").tap();
     await p.waitForFunction(() => MKTVIEW === "detail" && MKTONE && MKTONE.title === "E2E Tee", null, { timeout: 8000 });
     const v = await p.evaluate(() => MKTONE.variants.map((x) => x.size + ":" + x.qty).join());
@@ -633,20 +651,27 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => MKTONE.compareAt === 5500 && MKTONE.wasPrice === 5500 && MKTONE.sale && MKTONE.category === "Outerwear"), "compare-at or category didn't save: " + JSON.stringify(await p.evaluate(() => [MKTONE.compareAt, MKTONE.wasPrice, MKTONE.category])));
     ok(/\$55\.00/.test(await p.locator(".dprice .mwas").textContent()), "the listing doesn't show $55 crossed out");
     ok(await p.evaluate(() => MKTONE.sellType === "brand" && MKTONE.condition === "New"), "not saved as a brand's new stock");
+    ok(await p.evaluate(() => !localStorage.getItem(sdKey()) && !SELLFORM), "the draft wasn't cleared after publishing");
   });
-  await step(d, "sell form: one of one — a single piece, no stock to count, tagged 1 of 1; Vintage asks condition and maker", async () => {
-    await toMarket();
-    await p.locator('[data-mv="sell"]').first().tap();
-    await p.waitForSelector(".st-pick", { timeout: 5000 });
-    await p.locator('[data-stype="vintage"]').tap();
-    ok(await p.locator("#s-hasvar").count() === 0 && await p.locator("#s-qty").count() === 0, "vintage shows stock controls");
+  await step(d, "sell walkthrough: vintage asks condition and maker; one of one asks neither and has no stock to count; tagged 1 of 1", async () => {
+    await walkTo("Clothing", "Tops", "vintage");
+    await p.evaluate(() => swGo("details")); await p.waitForSelector("#s-cond");
     ok(await p.locator("#s-cond option").allTextContents().then((o) => !o.includes("New") && o.includes("Good")), "vintage condition list is wrong");
     ok((await p.locator('label[for="s-brand"]').textContent()) === "Brand / maker", "vintage brand label");
-    await p.locator('.st-seg [data-stype="custom"]').tap();
-    ok(await p.locator("#s-cond").count() === 0 && await p.locator("#s-brand").count() === 0 && await p.locator("#s-qty").count() === 0, "one of one still asks condition, brand or quantity");
+    await p.evaluate(() => swGo("who")); await p.waitForSelector('.sw [data-stype="custom"]');
+    await p.locator('.sw [data-stype="custom"]').tap(); await p.waitForSelector("#sfile", { state: "attached" });
     await p.locator("#sfile").setInputFiles(UPLOAD_PNG);
     await p.waitForSelector(".pf-img", { timeout: 8000 });
-    await p.locator("#s-title").fill("E2E Custom Jacket"); await p.locator("#s-price").fill("220"); await p.locator("#s-size").fill("One size");
+    await p.locator("#sw-next").tap(); await p.waitForSelector("#s-title");
+    await p.locator("#s-title").fill("E2E Custom Jacket");
+    await p.locator("#sw-next").tap(); await p.waitForSelector("#s-size");
+    ok(await p.locator("#s-hasvar").count() === 0 && await p.locator("#s-qty").count() === 0, "one of one shows stock controls");
+    await p.locator("#s-size").fill("One size");
+    await p.locator("#sw-next").tap(); await p.waitForSelector("#sw-skip");
+    ok(await p.locator("#s-cond").count() === 0 && await p.locator("#s-brand").count() === 0, "one of one still asks condition or brand");
+    await p.locator("#sw-next").tap(); await p.waitForSelector("#s-price");
+    await p.locator("#s-price").fill("220");
+    await p.locator("#sw-next").tap(); await p.waitForSelector("#s-post");
     /* 2026-10-20: a member can put their piece in the LABS Instagram shop (an admin's are always in, so no switch) */
     const admin = await p.evaluate(() => !!ME.isAdmin);
     ok(await p.locator("#s-ig").count() === (admin ? 0 : 1), "the Instagram shop switch shows for the wrong person");
@@ -661,6 +686,28 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { MKTFILT.type = "custom"; }); await p.evaluate(async () => { await loadMarket(); render(); });
     ok(await p.evaluate(() => MKT.length > 0 && MKT.every((l) => l.sellType === "custom")), "the One of one filter lets other listings through");
     await p.evaluate(async () => { MKTFILT = {}; await loadMarket(); TAB = "showroom"; MKTVIEW = "browse"; render(); });
+  });
+  await step(d, "sell walkthrough: a jeweller never sees clothing words; a record asks formats; an original painting skips sizes; the edit form still shows everything at once", async () => {
+    await walkTo("Jewellery", "Rings", "brand");
+    ok(!(await p.evaluate(() => document.querySelector(".sw").textContent)).match(/sizes and colours/i), "a jeweller was told about sizes and colours");
+    await p.evaluate(() => swGo("stock")); await p.waitForSelector("[data-pvsize]");
+    ok((await p.locator(".sw-stock").textContent()).includes("Finishes") && await p.locator('[data-pvsize="7"]').count() === 1, "rings should offer ring sizes and finishes");
+    await p.evaluate(() => { sdClear(); SELLFORM = null; SELLIMGS = []; MKTVIEW = "browse"; render(); });
+    await walkTo("Music", null, "brand");
+    await p.evaluate(() => swGo("stock")); await p.waitForSelector("[data-pvsize]");
+    ok((await p.locator(".sw-stock").textContent()).includes("Formats") && await p.locator('[data-pvsize="Cassette"]').count() === 1, "a release should offer formats");
+    await p.evaluate(() => { sdClear(); SELLFORM = null; SELLIMGS = []; MKTVIEW = "browse"; render(); });
+    await walkTo("Art", "Original art", "custom");
+    ok(await p.evaluate(() => swSteps(SELLFORM).map(([k]) => k).join()) === "what,kind,who,photos,words,details,price,review", "an original painting is asked for a size");
+    ok(await p.evaluate(() => swSteps({ sellType: "brand", category: "Art / Prints", hasVariants: true }).some(([k]) => k === "stock")), "prints aren't asked for sizes and stock");
+    await p.evaluate(() => { sdClear(); SELLFORM = null; SELLIMGS = []; MKTVIEW = "browse"; render(); });
+    const mine = (await api("/api/market?seller=" + encodeURIComponent(await p.evaluate(() => ME.username)), token)).listings || [];
+    ok(mine.length > 0, "the two listings just published aren't on the Market");
+    await p.evaluate(async (id) => { const d = await api.mktOne(id); MKTONE = d.listing; MKTOFFERS = d.offers || []; MKTSELLER = d.seller || null; MKTSIMILAR = []; TAB = "market"; MKTVIEW = "detail"; render(); }, mine[0].id);
+    await p.waitForSelector("[data-medit]"); await p.locator("[data-medit]").first().tap();
+    await p.waitForSelector("#s-title");
+    ok(await p.locator(".sw").count() === 0 && await p.locator("#s-price").count() === 1 && await p.locator("#sfile").count() === 1, "editing a listing opened the walkthrough instead of the full form");
+    await p.evaluate(() => { MKTEDIT = null; SELLFORM = null; SELLIMGS = []; MKTVIEW = "browse"; TAB = "showroom"; render(); });
   });
   let dropId;
   await step(d, "listing page: swipe photos, readable heart saves in place, Buy bar stays pinned", async () => {
@@ -837,17 +884,19 @@ console.log("\nMEMBER · PHONE");
     const mine = (await api("/api/market?seller=tester", token)).listings.find((l) => l.title === "E2E Tee");   // (the one of one listed after it has no sizes)
     await p.evaluate(async (id) => { MKTVIEW = "detail"; const d = await api.mktOne(id); MKTONE = d.listing; MKTOFFERS = d.offers || []; MKTSELLER = d.seller; MKTSIMILAR = []; render(); }, mine.id);
     await p.locator("[data-mdup]").tap();
-    await p.waitForSelector("#s-title");
+    await p.waitForSelector("#s-post");                           // 2026-11-03: a copy lands on the walk's review — change what's different from there
     ok(await p.evaluate(() => MKTVIEW === "sell" && !MKTEDIT && SELLFORM.hasVariants && SELLFORM.variants.every((v) => !v.id)), "duplicate isn't a fresh listing");
-    ok((await p.locator("#s-title").inputValue()) === mine.title, "title not copied");
+    ok((await p.locator(".sw-title").textContent()) === mine.title, "title not copied");
+    await p.locator('[data-swgo="words"]').tap(); await p.waitForSelector("#s-title");
     await p.locator("#s-title").fill("Half-made listing"); await p.locator("#s-title").blur();
     await p.reload(); await throughDoor(p);                      // the app was closed and opened again
     await p.waitForFunction(() => typeof ME !== "undefined" && ME);
     await toMarket();
     await p.locator('[data-mv="sell"]').first().tap();
+    await p.waitForSelector("#s-title");                          // the draft resumes at the step it was on
     ok((await p.locator("#s-title").inputValue()) === "Half-made listing" && await p.locator(".sdraft").count() === 1, "draft not restored");
-    await p.locator("#sdraftx").tap();
-    ok((await p.locator("#s-title").inputValue()) === "", "Start over didn't clear it");
+    await p.locator("#sdraftx").tap(); await p.waitForSelector("[data-swdept]");
+    ok(await p.evaluate(() => !SELLFORM.title && !SELLFORM.category) && await p.locator("#s-title").count() === 0, "Start over didn't start the walk over");
     await p.evaluate(() => { MKTVIEW = "browse"; SELLFORM = null; TAB = "showroom"; render(); });
   });
   /* ---- the post creator v3 (2026-09-30) ---- */
@@ -2155,6 +2204,9 @@ console.log("\nMEMBER · COMPUTER");
       await settledGoto(p, B + "/admin#" + tab);
       await fast(p, 6000, () => p.locator(want).first().waitFor(), "admin → " + tab);
       ok(await p.locator(".pg-hd h1").count() === 1, tab + " has no page title");
+      /* 2026-11-03: Sellers shows what the walkthrough teaches — the listings made earlier are in it, as counts */
+      if (tab === "sellers") ok(await p.locator(".rc", { hasText: "Who's listing" }).count() === 1 && await p.locator(".rc", { hasText: "How far the walkthrough takes people" }).locator(".fun .fs").count() >= 8
+        && !(await p.locator(".rc", { hasText: "Who's listing" }).textContent()).includes("tester"), "Sellers doesn't show who lists and the walkthrough funnel (counts only)");
     }
     await settledGoto(p, B + "/admin#analytics"); await fast(p, 6000, () => p.locator("[data-atab=commerce]").waitFor(), "Analytics");
     await p.locator("[data-atab=commerce]").click();
