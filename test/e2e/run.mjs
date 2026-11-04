@@ -2254,6 +2254,7 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator("#person [data-ptab]").count() === 4, "the record has no tabs");
     await p.keyboard.press("Escape");
     await p.screenshot({ path: join(SHOTS, "admin-home.png"), fullPage: false });
+    await settledGoto(p, B + "/admin#home"); await fast(p, 6000, () => p.locator("[data-labf=pharmacy]").first().waitFor(), "Home again (the labs panel)");   // 2026-11-04: Home isn't in the menu; the lab link lives on it
     await p.locator("[data-labf=pharmacy]").first().click();
     // the lab list arrives with the posts — wait for it, not just the empty select
     await fast(p, 5000, () => p.locator("#clab option[value=pharmacy]").waitFor({ state: "attached" }), "the Labs tab");
