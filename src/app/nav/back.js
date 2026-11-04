@@ -1,5 +1,5 @@
 /* ================================================================
-   BACK · v2.1 — 2026-10-12 (v2.1: a playlist and the full-screen player are screens too) ("make sure the app is easily navigable —
+   BACK · v2.2 — 2026-11-04 (every back tells the UI signals, uiBack()). v2.1 — 2026-10-12 (v2.1: a playlist and the full-screen player are screens too) ("make sure the app is easily navigable —
    back buttons and everything need to move through all sections")
    One trail of screens, the way Instagram keeps it. Every screen you open
    — a post, a profile, a lab, a #tag, a listing, your orders, an event,
@@ -54,8 +54,8 @@ function navTrack(){
   if(navSame(k,navKey(left)))return;   // same screen: data arrived, an in-screen tab
   /* Closed with the app's own ‹ / ✕ — back to the screen one step up. */
   const w=NAVWAIT[NAVWAIT.length-1];
-  if(w){if(navSame(k,navKey(w))){NAVWAIT.pop();return}}
-  else if(NAVD>0&&navSame(k,navKey(NAVS[NAVD-1]))){NAVD--;NAVGO++;if(NAVGO===1&&!NAVBUSY)setTimeout(navFlush,0);return}
+  if(w){if(navSame(k,navKey(w))){NAVWAIT.pop();uiBack();return}}
+  else if(NAVD>0&&navSame(k,navKey(NAVS[NAVD-1]))){NAVD--;NAVGO++;if(NAVGO===1&&!NAVBUSY)setTimeout(navFlush,0);uiBack();return}
   if(NAVGO||NAVBUSY)NAVWAIT.push(left);else navEntry(left);
 }
 function navFlush(){if(!NAVGO)return;const n=NAVGO;NAVGO=0;NAVBUSY=true;NAVSWALLOW++;try{history.go(-n)}catch(e){NAVBUSY=false;NAVSWALLOW--}}
@@ -94,7 +94,7 @@ function initHistory(){
     if(chatPopstate())return;   // messages, menus and chat sheets hold their own one entry
     if(NAVSWALLOW){NAVSWALLOW--;navLanded();return}   // the app's ‹ / ✕ already went back
     const d=e.state&&typeof e.state.nav==="number"?e.state.nav:0;
-    POPPING=true;let acted=false;
+    POPPING=true;let acted=false;uiBack();
     try{
       if(GATE){if(gateBack()){render();return}gateClose();acted=true}
       else if(EDITING&&EDITPF&&EDITPF.sub){EDITPF.sub=null;navRearm(d);render();return}
