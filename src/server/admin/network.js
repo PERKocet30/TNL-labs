@@ -79,5 +79,24 @@ app.get("/api/admin/network", auth, admin, rateLimit({ max: 30, windowMs: 60000,
     line: `${n(`SELECT COUNT(*) n FROM users WHERE spam_at IS NOT NULL AND spam_at >= ?`, a)} flagged as spam · ${n(`SELECT COUNT(*) n FROM reports WHERE handled_at IS NULL`)} open reports`,
     facts: [["Flagged as spam", n(`SELECT COUNT(*) n FROM users WHERE spam_at IS NOT NULL AND spam_at >= ?`, a)], ["Suspended", n(`SELECT COUNT(*) n FROM users WHERE suspended = 1`)]], go: "content" });
   if ((needs.base || []).length) { const h = base.find((s) => s.id === "labs"); if (h) { h.state = h.state === "on" ? "warn" : h.state; h.line = needs.base[0].text; h.facts = [...h.facts, ...needs.base.slice(0, 2).map((x) => ["Needs you", x.text])]; } }
-  res.json({ at: now, days, stages, outside, base });
+  /* the dashboard's sections, each with its live count and what needs you in it (by the page each need opens) — Echo
+     Home's model, the to-do: "front of the admin dashboard like Echo's to-do" (2026-11-04) */
+  const toPage = (it) => it.kind === "unverified" ? "people" : it.kind === "backup" || it.kind === "errors" ? "health" : ({ system: "health", orders: "market", listings: "market", sellers: "market", systems: "health" }[it.go] || it.go);
+  const todo = {}; for (const it of [...inbox, ...tour]) (todo[toPage(it)] ||= []).push({ text: it.text, level: it.level });
+  let live = 0; try { for (const e of db.prepare(`SELECT schedule FROM events WHERE published = 1`).all()) { if (JSON.parse(e.schedule || "[]").some((x) => x.end > now)) live++; } } catch {}
+  const wk = now - 7 * DAYMS;
+  const SEC = (id, name, does, value, label) => ({ id, name, does, value, label, needs: todo[id] || [] });
+  const sections = [
+    SEC("people", "Members", "Everyone on LABS — accounts, standing, the globe", n(`SELECT COUNT(*) n FROM users`), "members"),
+    SEC("market", "Market", "Orders, listings and sellers", n(`SELECT COUNT(*) n FROM listings WHERE status = 'active'`), "listings live"),
+    SEC("content", "Content", "Posts, comments and reports", n(`SELECT COUNT(*) n FROM posts WHERE created_at > ?`, wk), "posts this week"),
+    SEC("events", "Events", "The tournament", live, "live now"),
+    SEC("instagram", "Instagram", "@tnl.labs — reach and the inbox", n(`SELECT COUNT(*) n FROM ig_conversations WHERE updated_at > ?`, wk), "chats this week"),
+    SEC("knowledge", "Knowledge", "What LABS knows about itself", n(`SELECT COUNT(*) n FROM knowledge WHERE archived = 0`), "entries"),
+    SEC("echo", "Help desk", "Members' questions to Echo, and the ones it hands you", n(`SELECT COUNT(*) n FROM echo_handoffs WHERE status = 'open'`), "handed to you"),
+    SEC("analytics", "Analytics", "How people use LABS", n(`SELECT COUNT(DISTINCT user_id) n FROM member_days WHERE day >= ?`, Math.floor(wk / DAYMS)), "active this week"),
+    SEC("health", "Health", "Errors, backups, the systems", n(`SELECT COUNT(*) n FROM error_log WHERE created_at > ?`, now - DAYMS), "errors today"),
+    SEC("settings", "Settings", "The switches", n(`SELECT COUNT(*) n FROM settings`), "switches set"),
+  ];
+  res.json({ at: now, days, stages, outside, base, sections });
 });

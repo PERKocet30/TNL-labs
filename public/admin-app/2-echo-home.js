@@ -1,4 +1,4 @@
-/* LABS admin — Echo Home v1.5, 2026-11-04 ("prefer the current admin dashboard, just the interactive models front and forward": Echo first, then Needs you, then LABS today — the member's path model, 2-network.js — in place of the four numbers). v1.4, 2026-11-04 ("make Echo interactive, like speaking with a virtual AI": the Talk button opens 2-echo-voice.js; the live stream feeds it so Echo speaks while it writes). v1.3, 2026-11-04 ("I don't like having to scroll all the way down — it should be a module I can scroll in, with a button to the bottom, like Claude"): on a phone the conversation is its own scroll box sized to the screen, the composer pinned under it, a ↓ to the latest when you've scrolled up; Needs you sits right below. v1.2 — 2026-11-04 ("my message keeps getting deleted": a send that fails no longer throws the question away — the page asks the server whether it arrived and shows the answer when it does, or says it didn't with the words back in the box; coming back to the page re-reads the conversation — 2-echo-home2.js). v1.1 — 2026-11-04 (everything Messages has: photos and PDFs, the mic, the speaker, the model picker, copy — 2-echo-home2.js). v1.0, 2026-11-04. "A simplified admin dashboard integrated
+/* LABS admin — Echo Home v1.6, 2026-11-04 ("this interactive dashboard is way better and should be front… like Echo's to-do": Needs you opens on a spinning model of the whole dashboard — every section round LABS, red where something's waiting, the services round those — with the queue under it; 2-network.js todoCardHTML, the 3D ring 2-ring.js). v1.5, 2026-11-04 (Echo first, then Needs you, then a flat model). v1.4, 2026-11-04 ("make Echo interactive, like speaking with a virtual AI": the Talk button opens 2-echo-voice.js; the live stream feeds it so Echo speaks while it writes). v1.3, 2026-11-04 ("I don't like having to scroll all the way down — it should be a module I can scroll in, with a button to the bottom, like Claude"): on a phone the conversation is its own scroll box sized to the screen, the composer pinned under it, a ↓ to the latest when you've scrolled up; Needs you sits right below. v1.2 — 2026-11-04 ("my message keeps getting deleted": a send that fails no longer throws the question away — the page asks the server whether it arrived and shows the answer when it does, or says it didn't with the words back in the box; coming back to the page re-reads the conversation — 2-echo-home2.js). v1.1 — 2026-11-04 (everything Messages has: photos and PDFs, the mic, the speaker, the model picker, copy — 2-echo-home2.js). v1.0, 2026-11-04. "A simplified admin dashboard integrated
    with Echo so it can help me manage everything." The admin opens here: Echo on the
    left — the same brain, memory and hands as Messages → Echo (server/echo), answers
    streamed over the app's live stream — and, on a computer, what needs you and
@@ -19,8 +19,7 @@ VIEWS.echohome = () => {
   const today = new Date().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
   const needs = p && d ? [...p.inbox, ...d.needs] : [];
   const side = !p || !S ? `<div class="empty">Loading…</div>` : `
-    ${card("Needs you", `<div class="body"><div class="q">${needs.length ? needs.map(queueHTML).join("") : `<div class="clear">${I.check} Nothing waiting.</div>`}</div></div>`, needs.length ? String(needs.length) : "")}
-    ${nwModelHTML()}
+    ${todoCardHTML(needs)}
     <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost sm" data-go="home">The full Home ${I.chev}</button></div>`;
   const head = pageHead("Echo", `${today} · LABS's own`, ehOn() ? `${"speechSynthesis" in window ? `<button class="btn ghost sm ${ehVoiceOn() ? "on" : ""}" id="ehvoice" aria-pressed="${ehVoiceOn()}">${ehVoiceOn() ? "Reading aloud" : "Read aloud"}</button>` : ""}<button class="btn ghost sm" id="ehbrief" ${EH.busy ? "disabled" : ""}>Brief me</button><button class="btn ghost sm" id="ehfresh" ${EH.busy ? "disabled" : ""}>New conversation</button>` : "");
   return `${head}<div class="eh"><section class="rc eh-chat"><div class="eh-fw"><div class="eh-feed" id="ehfeed">${ehFeedHTML()}</div><button class="eh-down" id="ehdown" aria-label="To the latest">${di('<path d="M12 5v14M6 13l6 6 6-6"/>', 18)}</button></div>${ehOn() ? `<div class="eh-foot" id="ehfoot">${ehComposerHTML()}</div>` : ""}</section><aside class="eh-side">${side}</aside></div>`;
@@ -139,7 +138,7 @@ function ehWireFoot(F) {
 }
 WIRES.echohome = () => {
   const f = $("#ehfeed"); if (f) { ehWireFeed(f); if (EH.stick) { f.scrollTop = f.scrollHeight; EH.stick = false; } }
-  ehWireScroll(); nwWire();
+  ehWireScroll(); todoWire();
   const F = $("#ehfoot"); if (F) ehWireFoot(F);
   const b = $("#ehbrief"); if (b) b.onclick = () => ehBrief();
   const v = $("#ehvoice"); if (v) v.onclick = () => ehVoiceToggle();

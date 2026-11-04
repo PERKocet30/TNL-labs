@@ -22,41 +22,17 @@
 .sm-list button{grid-template-columns:auto minmax(0,9em) 1fr}.sm-l{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
 .sm-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--dim)}.sm-dot.on{background:var(--accent-fill);border-color:var(--accent-fill)}.sm-dot.warn{background:var(--red);border-color:var(--red)}.sm-dot.wait{border-color:var(--tx)}
 
-/* the Network (2-network.js, 2026-11-04): LABS as the Blueprint organises it — outside the app, a member's path, the foundations —
-   in LABS's own look; the lines are a canvas over the cards (pointer-events off) */
-.nwp{position:relative;padding:14px 14px 16px;display:flex;flex-direction:column;gap:22px;margin-top:10px}
-.nwp-ph{height:420px}
-.nwp-cv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
-.nwp-band{position:relative;z-index:1;display:flex;flex-direction:column;gap:8px}
-.nwp-bl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-weight:600}
-.nwp-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.nwp-chip{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 13px 0 11px;border-radius:17px;border:1px solid var(--line2,var(--line));background:var(--card);font-size:13px;font-weight:500}
-.nwp-chip:hover{border-color:var(--tx)}.nwp-chip.on{border-color:var(--tx);box-shadow:0 0 0 1px var(--tx)}
-.nwp-chip .sm-dot{width:9px;height:9px}
-.nwp-path{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 22px}
-@media(min-width:1024px){.nwp-path{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(min-width:1400px){.nwp-path{grid-template-columns:repeat(8,minmax(0,1fr));gap:14px}}
-.nwp-st{width:100%;text-align:left;display:flex;flex-direction:column;gap:2px;padding:12px 13px 11px;border-radius:var(--rad,16px);border:1px solid var(--line2,var(--line));background:var(--card);position:relative;min-height:118px}
-.nwp-st:hover{border-color:var(--tx)}.nwp-st.on{border-color:var(--tx);box-shadow:0 0 0 1px var(--tx)}
-.nwp-st.hot::after{content:"";position:absolute;top:11px;right:11px;width:9px;height:9px;border-radius:50%;background:var(--red)}
+/* the spinning models at the front (2-ring.js + 2-network.js, 2026-11-04): Analytics' member's path, Echo Home's to-do */
+.rg-w{aspect-ratio:1/0.82;max-width:520px}
+.rg .gl-b{align-items:start}@media(min-width:720px){.rg.gl .gl-b{grid-template-columns:minmax(0,520px) 1fr}}
+.td .rg-w{max-width:none;padding:6px 10px 0}.td-pick{padding:4px 14px 10px;border-bottom:1px solid var(--line)}
+.td-pick .btn,.rg .gl-pick .btn{align-self:flex-start;margin-top:4px}
 .nwp-no{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--dim);letter-spacing:.06em}
-.nwp-nm{font-size:15px}
-.nwp-v{font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.1;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nwp-l{font-size:12px;color:var(--dim);line-height:1.3}
-.nwp-d{font-size:12px;font-weight:600;color:var(--dim);margin-top:2px}.nwp-d.up{color:var(--green)}.nwp-d.down{color:var(--red)}
-.nwp-det{padding:16px 18px;margin-top:12px;display:flex;flex-direction:column;gap:6px}
-.nwp-det h3{font-size:19px}.nwp-det .sm-ph{gap:10px}
-.nwp-det .btn{align-self:flex-start;margin-top:6px}
-.nwp-was{font-size:12.5px;margin-top:-4px}
+.nwp-d{font-size:12px;font-weight:600;color:var(--dim)}.nwp-d.up{color:var(--green)}.nwp-d.down{color:var(--red)}
+.nwp-was{font-size:12.5px}
+.nwp-chip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 11px 0 9px;border-radius:15px;border:1px solid var(--line2,var(--line));background:var(--card);font-size:12.5px;font-weight:500}
+.nwp-chip:hover{border-color:var(--tx)}.nwp-chip .sm-dot{width:9px;height:9px}
 .nwp-links{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}.nwp-links .dim{font-size:12px;margin-right:4px}
-.nw-big{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin:4px 0}.nw-big b{font-size:32px;letter-spacing:-.01em}.nw-big span{color:var(--dim);font-size:13px}
+.nw-big{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin:4px 0}.nw-big b{font-size:30px;letter-spacing:-.01em}.nw-big span{color:var(--dim);font-size:13px}
 .nw-needs{margin:2px 0 4px;padding-left:18px;color:var(--red);font-size:13.5px;line-height:1.45}
-.nwp-det p,.nwp-det ul,.nwp-det dl{margin-left:0;padding-left:0}.nwp-det .nw-needs{padding-left:18px}.nwp-det h3{margin:0}
-/* LABS today on Echo Home (v1.1): the model as a card under Needs you, two stages a row beside the chat */
-.nwc{margin-top:12px;overflow:hidden}.nwc>header{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.nwc .nwp{margin:0;padding:12px 12px 14px;gap:18px}
-.nwc .nwp-path{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:20px 16px}
-.nwc .nwp-st{min-height:100px;padding:10px 11px 9px}.nwc .nwp-v{font-size:22px}.nwc .nwp-nm{font-size:14px}
-.nwc .nwp-chip{height:30px;font-size:12.5px;padding:0 11px 0 9px}
-.nwc .nwp-det{margin:0;padding:12px 14px 14px;border-top:1px solid var(--line)}
-.nwc .seg.sm button{padding:3px 9px;font-size:12px}
+.rg .sm-list button{grid-template-columns:auto minmax(0,7.5em) 1fr}

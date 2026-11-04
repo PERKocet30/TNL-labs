@@ -2209,7 +2209,7 @@ console.log("\nMEMBER · COMPUTER");
     await fast(p, 10000, () => p.locator(".eh-off, .eh-hello").first().waitFor(), "Echo Home");   // the shell paints first, the data lands after
     ok((await p.locator(".pg-hd h1").first().textContent()) === "Echo", "the first page isn't Echo");
     ok(await p.locator(".eh-off code", { hasText: "ECHO_AI_KEY" }).count() === 1, "without a key, the page doesn't say how to wake Echo");
-    ok(await p.locator(".eh-side .rc h3", { hasText: "Needs you" }).count() === 1 && await p.locator(".eh-side .nwp-st").count() === 8, "the queue and the member's path aren't beside the chat");
+    ok(await p.locator(".eh-side .rc h3", { hasText: "Needs you" }).count() === 1 && await p.locator(".eh-side #todocv").count() === 1, "Needs you beside the chat doesn't open on its model");
     ok((await p.locator(".side .nv").first().getAttribute("data-tab")) === "echohome" && await p.locator(".side .nv[data-tab=echo] span", { hasText: "Help desk" }).count() === 1, "Echo isn't first in the side menu, or the help desk isn't named");
     await p.locator(".eh-side [data-go=home]").click();
     await fast(p, 6000, () => p.locator(".tour [data-ev-open]").waitFor(), "Home from Echo Home");
@@ -2481,33 +2481,45 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.unroute("**/api/admin/systems/map");
   });
   /* 2026-11-04: "I don't see the interactive admin dashboard network. Make the whole admin dashboard interactive." — the Network, in the phone's bar */
-  /* …then "prefer the current admin dashboard, just the interactive models front and forward" — "Echo first, then everything else around her": the model is LABS today on Echo Home, under Needs you */
-  await step(d, "Echo Home → LABS today: a member's path organised like the Blueprint under Needs you, tap a stage for its numbers and needs, Open goes to its page", async () => {
-    const st = (id, name, value, needs = []) => ({ id, name, says: name + " says", value, before: Math.max(0, value - 1), label: "things", facts: [["Thing", 2]], go: "analytics", goName: "Analytics", needs: needs.map((text) => ({ text, level: "high" })) });
+  /* 2026-11-04: "this interactive dashboard is way better and should be front of the admin dashboard, like Echo's to-do and
+     Members and Analytics" — the spinning models at the front: Echo Home's Needs you, and Analytics' member's path */
+  await step(d, "the models at the front: Needs you spins the whole dashboard (a section with something waiting opens it), Analytics opens on a member's path", async () => {
+    const st = (id, name, value, needs = []) => ({ id, name, says: name + " says", value, before: Math.max(0, value - 1), label: "things", facts: [["Thing", 2]], go: "people", goName: "Members", needs: needs.map((text) => ({ text, level: "high" })) });
+    const sec = (id, name, value, needs = []) => ({ id, name, does: name + " does things", value, label: "things", needs: needs.map((text) => ({ text, level: "high" })) });
     const sv = (id, name, state) => ({ id, name, does: name, state, line: name + " line", facts: [], go: "health" });
-    await p.route("**/api/admin/network**", (r) => r.fulfill({ json: { at: Date.now(), days: 30, stages: [st("arrive", "Arrive", 5), st("join", "Join", 3, ["2 new members haven't posted yet"]), st("see", "See", 9), st("make", "Make", 4),
-      st("respond", "Respond", 12), st("earn", "Earn", 40), { ...st("trade", "Trade", 2500), money: true }, st("talk", "Talk", 7)],
-      outside: [sv("meta", "Instagram", "off"), sv("stripe", "Stripe", "warn"), sv("resend", "Resend", "on")], base: [sv("labs", "Server", "on"), sv("trust", "Trust", "on")] } }));
+    await p.route("**/api/admin/network**", (r) => r.fulfill({ json: { at: Date.now(), days: 30,
+      stages: [st("arrive", "Arrive", 5), st("join", "Join", 3, ["2 new members haven't posted yet"]), st("see", "See", 9), st("make", "Make", 4), st("respond", "Respond", 12), st("earn", "Earn", 40), { ...st("trade", "Trade", 2500), money: true }, st("talk", "Talk", 7)],
+      sections: [sec("people", "Members", 40), sec("market", "Market", 3), sec("content", "Content", 9, ["2 open reports"]), sec("events", "Events", 1), sec("health", "Health", 0)],
+      outside: [sv("meta", "Instagram", "off"), sv("stripe", "Stripe", "warn"), sv("resend", "Resend", "on")], base: [sv("labs", "LABS", "on"), sv("trust", "Trust", "on")] } }));
     await settledGoto(p, B + "/admin");
-    await fast(p, 8000, () => p.locator("#nwp .nwp-st").first().waitFor({ state: "attached" }), "LABS today on Echo Home");
-    ok(await p.evaluate(() => { const c = document.querySelector(".eh-chat").getBoundingClientRect().top, n = document.querySelector(".eh-side .rc").getBoundingClientRect().top, m = document.querySelector(".nwc").getBoundingClientRect().top;
-      return c < n && n < m; }), "Echo Home isn't Echo, then Needs you, then LABS today");
-    await p.locator('.nwp-st[data-nwk="join"]').scrollIntoViewIfNeeded();
-    await p.waitForTimeout(400);
-    ok((await p.locator(".nwp-st .nwp-nm").allInnerTexts()).join(" ") === "Arrive Join See Make Respond Earn Trade Talk", "the path isn't the Blueprint's eight stages in order");
-    ok(await p.locator(".nwp-st.hot").count() === 1 && await p.locator('.nwp-st.hot[data-nwk="join"]').count() === 1, "the stage that needs you isn't marked");
-    ok(/\$25/.test(await p.locator('[data-nwk="trade"] .nwp-v').innerText()), "Trade isn't shown as money");
-    ok(await p.evaluate(() => { const c = document.querySelector("#nwcv"), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 200; }), "the path's lines aren't drawn");
-    await p.locator('.nwp-st[data-nwk="join"]').tap(); await p.waitForTimeout(300);
-    ok(/Join/.test(await p.locator("#nwdet").innerText()) && /haven't posted/.test(await p.locator("#nwdet").innerText()), "tapping Join didn't show its needs");
-    ok(/Resend/.test(await p.locator("#nwdet .nwp-links").innerText()), "Join doesn't say what it leans on (Resend)");
-    await p.locator('#nwdet [data-nwk="o:resend"]').tap(); await p.waitForTimeout(300);
-    ok(/Resend/.test(await p.locator("#nwdet h3").innerText()), "a linked service didn't open from the stage");
-    await p.locator('.nwp-st[data-nwk="see"]').tap(); await p.waitForTimeout(200);
-    await p.locator("#nwdet [data-nwgo]").tap();
-    await fast(p, 6000, () => p.waitForFunction(() => TAB === "analytics"), "Open Analytics from the Network");
+    await fast(p, 8000, () => p.locator("#todocv").waitFor({ state: "attached" }), "Needs you's model on Echo Home");
+    await p.locator("#todocv").scrollIntoViewIfNeeded(); await p.waitForTimeout(500);
+    const drawn = (sel) => p.evaluate((s) => { const c = document.querySelector(s), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 500; }, sel);
+    ok(await drawn("#todocv"), "Needs you's model is blank");
+    ok(await p.evaluate(() => { const c = document.querySelector(".eh-chat").getBoundingClientRect().top, n = document.querySelector("#todocard").getBoundingClientRect().top; return c < n; }), "Echo isn't first, with Needs you after her");
+    ok(/2 things need you/.test(await p.locator("#todopick").innerText()), "the model doesn't say how many things need you");
+    ok(await p.locator("#todocard .q").count() === 1, "the full queue isn't under the model");
+    /* a tap on a node: find Content on the canvas and tap it */
+    await p.evaluate(() => ringAim("todocv", "s:content")); await p.waitForTimeout(800);
+    const at = await p.evaluate(() => { const h = RINGS.todocv.hit.find((x) => x.key === "s:content"), b = document.querySelector("#todocv").getBoundingClientRect(); return h && { x: b.left + h.x, y: b.top + h.y }; });
+    ok(!!at, "Content isn't on the model");
+    await p.mouse.click(at.x, at.y); await p.waitForTimeout(400);
+    ok(/Content/.test(await p.locator("#todopick").innerText()) && /2 open reports/.test(await p.locator("#todopick").innerText()), "tapping Content on the model didn't show what's waiting there");
+    await p.locator("#todopick [data-nwgo]").tap();
+    await fast(p, 6000, () => p.waitForFunction(() => TAB === "content"), "Open Content from the model");
     await p.waitForTimeout(200);
-    ok(await p.evaluate(() => NW.raf === 0), "LABS today kept drawing after leaving Echo Home");
+    ok(await p.evaluate(() => !RINGS.todocv.raf), "Needs you's model kept drawing after leaving Echo Home");
+    /* Analytics: the member's path at the front */
+    await p.evaluate(() => go("analytics"));
+    await fast(p, 8000, () => p.locator("#pathcv").waitFor(), "Analytics' member's path");
+    await p.waitForTimeout(400);
+    ok(await drawn("#pathcv"), "the member's path model is blank");
+    ok((await p.locator("#pathcard .sm-list .gl-n").allInnerTexts()).map((t) => t.replace(/^\d+ /, "")).join(" ") === "Arrive Join See Make Respond Earn Trade Talk", "the path isn't the Blueprint's eight stages in order");
+    ok(await p.evaluate(() => { const a = document.querySelector("#pathcard").getBoundingClientRect().top, t = document.querySelector("[data-atab]").getBoundingClientRect().top; return a < t; }), "the member's path isn't at the front of Analytics");
+    await p.locator('#pathcard .sm-list [data-nwk="join"]').tap(); await p.waitForTimeout(300);
+    ok(/Join/.test(await p.locator("#pathpick").innerText()) && /haven't posted/.test(await p.locator("#pathpick").innerText()) && /Resend/.test(await p.locator("#pathpick").innerText()), "tapping Join didn't show its needs and what it leans on");
+    await p.locator("#pathpick [data-nwgo]").tap();
+    await fast(p, 6000, () => p.waitForFunction(() => TAB === "people"), "Open Members from the path");
     await p.unroute("**/api/admin/network**");
   });
   await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {

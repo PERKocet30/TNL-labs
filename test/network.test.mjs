@@ -41,6 +41,10 @@ try {
   t("the open report needs you on Respond", S.respond.needs.some((n) => /1 open report/.test(n.text)));
   t("new members who haven't posted need you on Join", S.join.needs.some((n) => /haven't posted/.test(n.text)));
   t("Trade is money, and nothing there needs you", S.trade.money === true && S.trade.needs.length === 0);
+  console.log("\nTHE TO-DO (Echo Home's model)");
+  const SC = Object.fromEntries((j.sections || []).map((s) => [s.id, s]));
+  t("every section of the dashboard, each with a number and its needs", ["people", "market", "content", "events", "instagram", "knowledge", "echo", "analytics", "health", "settings"].every((id) => SC[id] && typeof SC[id].value === "number" && Array.isArray(SC[id].needs)));
+  t("the open report sits on Content, the new members on Members, the backups on Health; Market is clear", SC.content.needs.some((n) => /open report/.test(n.text)) && SC.people.needs.some((n) => /haven't posted/.test(n.text)) && SC.health.needs.some((n) => /backup/i.test(n.text)) && SC.market.needs.length === 0);
   t("the date range moves the window", JSON.parse((await (await fetch(`http://localhost:${PORT}/api/admin/network?days=7`, { headers: { Authorization: "Bearer tok-boss" } })).text())).days === 7);
 
   console.log("\nOUTSIDE AND UNDERNEATH");
