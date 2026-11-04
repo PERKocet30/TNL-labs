@@ -52,3 +52,11 @@
 .nw-big{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin:4px 0}.nw-big b{font-size:32px;letter-spacing:-.01em}.nw-big span{color:var(--dim);font-size:13px}
 .nw-needs{margin:2px 0 4px;padding-left:18px;color:var(--red);font-size:13.5px;line-height:1.45}
 .nwp-det p,.nwp-det ul,.nwp-det dl{margin-left:0;padding-left:0}.nwp-det .nw-needs{padding-left:18px}.nwp-det h3{margin:0}
+/* LABS today on Echo Home (v1.1): the model as a card under Needs you, two stages a row beside the chat */
+.nwc{margin-top:12px;overflow:hidden}.nwc>header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.nwc .nwp{margin:0;padding:12px 12px 14px;gap:18px}
+.nwc .nwp-path{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:20px 16px}
+.nwc .nwp-st{min-height:100px;padding:10px 11px 9px}.nwc .nwp-v{font-size:22px}.nwc .nwp-nm{font-size:14px}
+.nwc .nwp-chip{height:30px;font-size:12.5px;padding:0 11px 0 9px}
+.nwc .nwp-det{margin:0;padding:12px 14px 14px;border-top:1px solid var(--line)}
+.nwc .seg.sm button{padding:3px 9px;font-size:12px}

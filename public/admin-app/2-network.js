@@ -1,17 +1,18 @@
-/* LABS admin — the Network v1.0, 2026-11-04 ("I don't see the interactive admin dashboard network. Make the whole admin
-   dashboard interactive" — "use the organization" of the LABS Blueprint, not its look). Its own section, in the phone's bar.
-   LABS the way the Blueprint (sheet A-0) reads it: a member's path, left to right — Arrive · Join · See · Make · Respond ·
-   Earn · Trade · Talk — each stage with its number for the date range, the change from the range before, and what needs
-   you there; across the top, the outside world each stage leans on; underneath, the foundations. Traffic moves along the
-   path; tap anything to light up what it connects to, read its numbers, and open the page that runs it.
-   Data: GET /api/admin/network (server/admin/network). LABS's own look — palette colours, cards, Helvetica. The lines are a
-   canvas laid over the cards; it moves unless reduced motion is on, and stops when the Network isn't on screen. */
+/* LABS admin — Echo Home · LABS today v1.1, 2026-11-04 ("prefer the current admin dashboard, just the interactive models front
+   and forward; organise what's most important first" — "Echo first, then everything else around her"). v1.0 was its own
+   section (the Network); now it sits on Echo Home, under Needs you, in place of the four number cards.
+   LABS the way the LABS Blueprint (sheet A-0) organises it, in LABS's own look: a member's path — Arrive · Join · See · Make ·
+   Respond · Earn · Trade · Talk — each stage with its number for the date range, the change from the range before, and what
+   needs you there; across the top, the outside world each stage leans on; underneath, the foundations. Traffic moves along
+   the path; tap anything to light up what it connects to, read its numbers, and open the page that runs it.
+   Data: GET /api/admin/network (server/admin/network), loaded with Echo Home. The lines are a canvas laid over the cards; it
+   moves unless reduced motion is on, and stops when Echo Home isn't on screen. */
 const NW = { pick: "", raf: 0 };
 /* what leans on what — the Blueprint's lines, between the cards on this page */
 const NW_LINKS = [["o:meta", "arrive"], ["o:cloudflare", "arrive"], ["o:google", "arrive"], ["o:resend", "join"], ["o:stripe", "trade"], ["o:resend", "talk"], ["o:claude", "talk"],
   ["o:railway", "b:labs"], ["o:github", "b:labs"], ["o:connector", "b:labs"], ["b:trust", "join"], ["b:trust", "respond"], ["b:members", "see"], ["b:labs", "see"], ["b:data", "earn"]];
 const NW_RANGES = [7, 30, 90];
-LOADERS.network = async () => { D.network = await req(`/api/admin/network?days=${RANGE}`); };
+async function nwLoad() { try { D.network = await req(`/api/admin/network?days=${RANGE}`); } catch (e) { D.network = null; } }   // with Echo Home's loader
 const nwStages = () => (D.network && D.network.stages) || [];
 const nwAll = () => { const N = D.network || {}; return [...(N.outside || []).map((x) => ({ ...x, key: "o:" + x.id })), ...(N.base || []).map((x) => ({ ...x, key: "b:" + x.id }))]; };
 const nwFind = (k) => nwStages().find((s) => s.id === k) || nwAll().find((s) => s.key === k);
@@ -44,19 +45,19 @@ function nwDetailHTML() {
     <p class="dim">${esc(x.does)}</p><p>${esc(x.line)}</p>${facts}${links ? `<div class="nwp-links"><span class="dim">Feeds</span>${links}</div>` : ""}
     ${x.go ? `<button class="btn ghost sm" data-nwgo="${esc(x.go)}">Open ${esc({ health: "Health", settings: "Settings", market: "Market", echohome: "Echo", instagram: "Instagram", systems: "Systems", content: "Content" }[x.go] || "it")} →</button>` : ""}`;
 }
-VIEWS.network = () => {
-  const N = D.network, seg = `<div class="seg" role="group" aria-label="Date range">${NW_RANGES.map((d) => `<button class="${RANGE === d ? "on" : ""}" data-nwr="${d}">${d} days</button>`).join("")}</div>`;
-  const head = pageHead("Network", "LABS as a member's path — arrive, join, see, make, respond, earn, trade, talk — with what it leans on. Tap any card.", seg);
-  if (!N) return `${head}<section class="rc nwp"><div class="nwp-ph"></div></section>`;
+/* the model, as a card: Echo Home puts it under Needs you */
+function nwModelHTML() {
+  const N = D.network, seg = `<div class="seg sm" role="group" aria-label="Date range">${NW_RANGES.map((d) => `<button class="${RANGE === d ? "on" : ""}" data-nwr="${d}">${d}d</button>`).join("")}</div>`;
+  if (!N) return "";
   const tile = (s, i) => `<li><button class="nwp-st ${s.id === NW.pick ? "on" : ""} ${s.needs.length ? "hot" : ""}" data-nwk="${s.id}">
     <span class="nwp-no">${String(i + 1).padStart(2, "0")}</span><b class="nwp-nm">${esc(s.name)}</b>
     <span class="nwp-v">${esc(nwFmt(s, s.value))}</span><span class="nwp-l">${esc(s.label)}</span>${nwDelta(s)}</button></li>`;
-  return `${head}<section class="rc nwp" id="nwp"><canvas class="nwp-cv" id="nwcv" aria-hidden="true"></canvas>
+  return `<section class="rc nwc"><header><h3>LABS today</h3>${seg}</header><div class="nwp" id="nwp"><canvas class="nwp-cv" id="nwcv" aria-hidden="true"></canvas>
     <div class="nwp-band"><span class="nwp-bl">Outside the app</span><div class="nwp-row">${(N.outside || []).map((x) => nwChip({ ...x, key: "o:" + x.id })).join("")}</div></div>
     <div class="nwp-band"><span class="nwp-bl">A member's path</span><ol class="nwp-path">${nwStages().map(tile).join("")}</ol></div>
-    <div class="nwp-band"><span class="nwp-bl">Foundations</span><div class="nwp-row">${(N.base || []).map((x) => nwChip({ ...x, key: "b:" + x.id })).join("")}</div></div></section>
-    <section class="rc nwp-det" id="nwdet">${nwDetailHTML()}</section>`;
-};
+    <div class="nwp-band"><span class="nwp-bl">Foundations</span><div class="nwp-row">${(N.base || []).map((x) => nwChip({ ...x, key: "b:" + x.id })).join("")}</div></div></div>
+    <div class="nwp-det" id="nwdet">${nwDetailHTML()}</div></section>`;
+}
 function nwSelect(k) {
   NW.pick = NW.pick === k ? "" : k;
   $$("[data-nwk]").forEach((b) => b.classList.toggle("on", b.dataset.nwk === NW.pick && !b.closest("#nwdet")));
@@ -67,16 +68,16 @@ function nwWireDetail() {
   $$("#nwdet [data-nwk]").forEach((b) => b.onclick = () => { nwSelect(b.dataset.nwk); if (innerWidth < 1024) $("#nwp").scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); });
   $$("[data-nwgo]").forEach((b) => b.onclick = () => go(b.dataset.nwgo));
 }
-WIRES.network = () => {
+function nwWire() {   // from WIRES.echohome
   $$("#nwp [data-nwk]").forEach((b) => b.onclick = () => nwSelect(b.dataset.nwk));
-  $$("[data-nwr]").forEach((b) => b.onclick = () => { RANGE = +b.dataset.nwr; try { localStorage.setItem("tnl-admin-range", RANGE); } catch (e) {} D.network = null; paint(); load(); });
+  $$("[data-nwr]").forEach((b) => b.onclick = async () => { RANGE = +b.dataset.nwr; try { localStorage.setItem("tnl-admin-range", RANGE); } catch (e) {} await Promise.all([nwLoad(), LOADERS.home()]); paint(); });
   nwWireDetail(); NW.dirty = true;
   if ($("#nwcv") && !NW.raf) NW.raf = requestAnimationFrame(nwFrame);
-};
+}
 /* the lines between the cards: the path, heavy and moving; what leans on what, quiet — lit up when one end is picked */
 function nwFrame(now) {
   const cv = $("#nwcv"), box = $("#nwp");
-  if (!cv || !box || !cv.isConnected || TAB !== "network") { NW.raf = 0; return; }
+  if (!cv || !box || !cv.isConnected || TAB !== "echohome") { NW.raf = 0; return; }
   NW.raf = requestAnimationFrame(nwFrame);
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const br = box.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);

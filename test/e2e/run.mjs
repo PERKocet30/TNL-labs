@@ -2209,7 +2209,7 @@ console.log("\nMEMBER · COMPUTER");
     await fast(p, 10000, () => p.locator(".eh-off, .eh-hello").first().waitFor(), "Echo Home");   // the shell paints first, the data lands after
     ok((await p.locator(".pg-hd h1").first().textContent()) === "Echo", "the first page isn't Echo");
     ok(await p.locator(".eh-off code", { hasText: "ECHO_AI_KEY" }).count() === 1, "without a key, the page doesn't say how to wake Echo");
-    ok(await p.locator(".eh-side .rc h3", { hasText: "Needs you" }).count() === 1 && await p.locator(".eh-side .kpi").count() === 4, "the queue and the four numbers aren't beside the chat");
+    ok(await p.locator(".eh-side .rc h3", { hasText: "Needs you" }).count() === 1 && await p.locator(".eh-side .nwp-st").count() === 8, "the queue and the member's path aren't beside the chat");
     ok((await p.locator(".side .nv").first().getAttribute("data-tab")) === "echohome" && await p.locator(".side .nv[data-tab=echo] span", { hasText: "Help desk" }).count() === 1, "Echo isn't first in the side menu, or the help desk isn't named");
     await p.locator(".eh-side [data-go=home]").click();
     await fast(p, 6000, () => p.locator(".tour [data-ev-open]").waitFor(), "Home from Echo Home");
@@ -2235,8 +2235,7 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator(".rc h3", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
     // 2026-10-20: on a computer, a grouped side menu with every section and no bottom bar (twelve since Systems and Instagram, 2026-10-26)
     // 2026-11-04: nine sections in five groups — Orders · Listings · Sellers are Market's tabs, Systems is Health's
-    // 2026-11-04: twelve with the Network (Echo's group)
-    ok(await p.locator(".side .nv").count() === 12 && !(await p.locator(".bbar").isVisible()), "the side menu isn't the twelve grouped sections");
+    ok(await p.locator(".side .nv").count() === 11 && !(await p.locator(".bbar").isVisible()), "the side menu isn't the eleven grouped sections");
     // 2026-10-26: Systems — what's live, what's waiting for a Push; with no keys set, each card says so plainly (2026-11-04: a tab of Health; the old #systems link lands on it)
     await p.locator(".side .nv[data-tab=health]").click(); await fast(p, 6000, () => p.locator("[data-hs=systems]").waitFor(), "Health's tabs");
     await p.locator("[data-hs=systems]").click();
@@ -2325,10 +2324,10 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
   });
   // admin v4 (2026-10-20): on a phone, a bottom bar with four sections and More; tables are cards
   await step(d, "admin on a phone: a bottom bar, More opens the rest, Orders are cards", async () => {
-    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 5 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone (Echo · Network · Market · Members · More)");
+    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 4 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone (Echo · Market · Members · More)");
     await p.locator(".bbar [data-more]").tap();
     await fast(p, 3000, () => p.locator(".msheet .mi[data-tab=analytics]").waitFor(), "the More sheet");
-    ok(await p.locator(".msheet .grp").count() === 5 && await p.locator(".msheet .mi").count() === 13, "the phone's sheet isn't the five groups (twelve sections + Open the app)");
+    ok(await p.locator(".msheet .grp").count() === 5 && await p.locator(".msheet .mi").count() === 12, "the phone's sheet isn't the five groups (eleven sections + Open the app)");
     await p.locator(".msheet .mi[data-tab=market]").tap();
     await fast(p, 6000, () => p.locator("[data-os=paid]").waitFor(), "Orders from More");
     ok(await p.locator(".msheet").count() === 0, "More stayed open");
@@ -2482,15 +2481,18 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.unroute("**/api/admin/systems/map");
   });
   /* 2026-11-04: "I don't see the interactive admin dashboard network. Make the whole admin dashboard interactive." — the Network, in the phone's bar */
-  await step(d, "admin → Network from the phone's bar: a member's path drawn as the Blueprint organises it, tap a stage for its numbers and needs, Open goes to its page", async () => {
+  /* …then "prefer the current admin dashboard, just the interactive models front and forward" — "Echo first, then everything else around her": the model is LABS today on Echo Home, under Needs you */
+  await step(d, "Echo Home → LABS today: a member's path organised like the Blueprint under Needs you, tap a stage for its numbers and needs, Open goes to its page", async () => {
     const st = (id, name, value, needs = []) => ({ id, name, says: name + " says", value, before: Math.max(0, value - 1), label: "things", facts: [["Thing", 2]], go: "analytics", goName: "Analytics", needs: needs.map((text) => ({ text, level: "high" })) });
     const sv = (id, name, state) => ({ id, name, does: name, state, line: name + " line", facts: [], go: "health" });
     await p.route("**/api/admin/network**", (r) => r.fulfill({ json: { at: Date.now(), days: 30, stages: [st("arrive", "Arrive", 5), st("join", "Join", 3, ["2 new members haven't posted yet"]), st("see", "See", 9), st("make", "Make", 4),
       st("respond", "Respond", 12), st("earn", "Earn", 40), { ...st("trade", "Trade", 2500), money: true }, st("talk", "Talk", 7)],
       outside: [sv("meta", "Instagram", "off"), sv("stripe", "Stripe", "warn"), sv("resend", "Resend", "on")], base: [sv("labs", "Server", "on"), sv("trust", "Trust", "on")] } }));
     await settledGoto(p, B + "/admin");
-    await p.locator(".bbar [data-tab=network]").tap();
-    await fast(p, 8000, () => p.locator("#nwp .nwp-st").first().waitFor(), "the Network");
+    await fast(p, 8000, () => p.locator("#nwp .nwp-st").first().waitFor({ state: "attached" }), "LABS today on Echo Home");
+    ok(await p.evaluate(() => { const c = document.querySelector(".eh-chat").getBoundingClientRect().top, n = document.querySelector(".eh-side .rc").getBoundingClientRect().top, m = document.querySelector(".nwc").getBoundingClientRect().top;
+      return c < n && n < m; }), "Echo Home isn't Echo, then Needs you, then LABS today");
+    await p.locator('.nwp-st[data-nwk="join"]').scrollIntoViewIfNeeded();
     await p.waitForTimeout(400);
     ok((await p.locator(".nwp-st .nwp-nm").allInnerTexts()).join(" ") === "Arrive Join See Make Respond Earn Trade Talk", "the path isn't the Blueprint's eight stages in order");
     ok(await p.locator(".nwp-st.hot").count() === 1 && await p.locator('.nwp-st.hot[data-nwk="join"]').count() === 1, "the stage that needs you isn't marked");
@@ -2505,7 +2507,7 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.locator("#nwdet [data-nwgo]").tap();
     await fast(p, 6000, () => p.waitForFunction(() => TAB === "analytics"), "Open Analytics from the Network");
     await p.waitForTimeout(200);
-    ok(await p.evaluate(() => NW.raf === 0), "the Network kept drawing after leaving it");
+    ok(await p.evaluate(() => NW.raf === 0), "LABS today kept drawing after leaving Echo Home");
     await p.unroute("**/api/admin/network**");
   });
   await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {
