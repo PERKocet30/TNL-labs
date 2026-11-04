@@ -2420,6 +2420,28 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     ok(await p.evaluate(() => GL.raf === 0), "the globe kept drawing after leaving People");
     await p.unroute("**/api/admin/globe**");
   });
+  /* 2026-11-04: "the same type of interactive model for the system networks" — the map on Health → Systems */
+  await step(d, "admin → Health → Systems on a phone: the map draws every service, the one that needs a look is picked, a row opens its page, and it stops when you leave", async () => {
+    const node = (id, name, state, go) => ({ id, name, does: name + " does things", state, line: name + " line", facts: [["Thing", 1]], go });
+    await p.route("**/api/admin/systems/map", (r) => r.fulfill({ json: { at: Date.now(), nodes: [node("labs", "LABS", "on", "health"), node("members", "Members' phones", "on", "health"),
+      node("cloudflare", "Cloudflare", "on", "settings"), node("railway", "Railway", "on", "systems"), node("data", "Database", "on", "health"), node("github", "GitHub", "on", "systems"),
+      node("stripe", "Stripe", "warn", "market"), node("resend", "Resend", "on", "health"), node("claude", "Claude", "on", "echohome"), node("connector", "Connected apps", "off", "systems"),
+      node("google", "Google", "off", "systems"), node("meta", "Instagram", "off", "instagram")] } }));
+    await settledGoto(p, B + "/admin#systems");
+    await fast(p, 8000, () => p.locator("#smcv").waitFor(), "the systems map");
+    await p.waitForTimeout(400);
+    ok(await p.evaluate(() => { const c = document.querySelector("#smcv"), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 500; }), "the systems map's canvas is blank");
+    ok(await p.locator(".sm-list [data-smn]").count() === 12, "the map's list doesn't name all twelve");
+    ok(/Stripe/.test(await p.locator("#smpick").innerText()) && /needs a look/.test(await p.locator("#smpick").innerText()), "the service that needs a look wasn't picked first");
+    ok(await p.locator(".sm-list [data-smn]").first().getAttribute("data-smn") === "stripe", "what needs a look isn't at the top of the list");
+    await p.locator('[data-smn="claude"]').tap(); await p.waitForTimeout(800);
+    ok(/Claude/.test(await p.locator("#smpick").innerText()), "tapping Claude didn't show Claude");
+    await p.locator("[data-smgo]").tap();
+    await fast(p, 6000, () => p.waitForFunction(() => TAB === "echohome"), "Open Echo from the map");
+    await p.waitForTimeout(200);
+    ok(await p.evaluate(() => SM.raf === 0), "the map kept drawing after leaving Systems");
+    await p.unroute("**/api/admin/systems/map");
+  });
   await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {
     await p.evaluate(() => localStorage.removeItem("tnl-token"));   // signed out (the step before signed this phone in)
     await settledGoto(p, B + "/?l=visual"); await throughDoor(p);
