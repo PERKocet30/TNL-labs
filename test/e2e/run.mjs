@@ -1735,12 +1735,12 @@ console.log("\nMEMBER · PHONE");
     await p.waitForTimeout(100);
     await p.evaluate(() => { TAB = "labs"; render(); });
     const before = await p.evaluate(() => UI.q.filter((e) => e.kind === "view").map((e) => e.screen + "<" + e.prev).join(" "));
-    ok(/labs<showroom market<labs labs<market/.test(before), "the screen changes weren't queued in order: " + before);
+    ok(/(^| )labs?[^ ]*<showroom market<labs?[^ ]* labs?[^ ]*<market/.test(before), "the screen changes weren't queued in order: " + before);   // Labs keeps the lab you were in, so it may read lab:culture/work
     await p.evaluate(() => uiFlush());
     await p.waitForTimeout(600);
     const scr = await api("/api/admin/ui/screens?days=1", token), paths = await api("/api/admin/ui/paths?days=1", token);
-    ok(scr.screens.some((x) => x.screen === "labs" && x.views >= 2) && scr.screens.some((x) => x.screen === "market"), "the admin read doesn't show the screens: " + JSON.stringify(scr.screens.slice(0, 5)));
-    ok(paths.next.some((x) => x.from === "labs" && x.to === "market"), "the move labs → market isn't counted: " + JSON.stringify(paths.next.slice(0, 5)));
+    ok(scr.screens.some((x) => /^labs?/.test(x.screen) && x.views >= 2) && scr.screens.some((x) => x.screen === "market"), "the admin read doesn't show the screens: " + JSON.stringify(scr.screens.slice(0, 5)));
+    ok(paths.next.some((x) => /^labs?/.test(x.from) && x.to === "market"), "the move labs → market isn't counted: " + JSON.stringify(paths.next.slice(0, 5)));
     ok(!JSON.stringify(scr).includes("tester") && !JSON.stringify(paths).includes("tester"), "a username leaked into the UI signals");
     ok(await p.evaluate(() => UI.q.every((e) => typeof e.kind === "string" && String(e.prev).length <= 60 && !/[A-Z]{3}/.test(e.screen))), "a signal carries more than a kind, two names and a number");
   });
