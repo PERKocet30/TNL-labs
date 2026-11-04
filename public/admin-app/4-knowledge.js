@@ -1,4 +1,4 @@
-/* LABS admin — Knowledge v1.1, 2026-11-04 (more kinds; who wrote it: Claude, Grok, an app). v1.0, 2026-11-04. What LABS knows about itself
+/* LABS admin — Knowledge v1.2, 2026-11-04 (Echo wrote this). v1.1, 2026-11-04 (more kinds; who wrote it: Claude, Grok, an app). v1.0, 2026-11-04. What LABS knows about itself
    (server/knowledge): the creed, how LABS talks, settled decisions, the
    glossary, notes, the blueprint sheets. LABS owns the memory; Claude
    only updates it. Everything here can be read, edited and put back the
@@ -31,7 +31,7 @@ VIEWS.knowledge = () => {
       : `<div class="empty">This is the only version so far.</div>`}</div>`; };
   const groups = Object.entries(K).map(([k, n]) => [k, n, d.entries.filter((e) => e.kind === k)]).filter(([, , es]) => es.length);
   const list = groups.length ? groups.map(([k, n, es]) => `<h2 class="sec">${n} <span class="mono">${es.length}</span></h2><div class="list">${es.map((e) => KNOWEDIT && KNOWEDIT.id === e.id ? form(KNOWEDIT) + (KNOWHIST === e.id ? hist(e) : "")
-    : `<div class="li" style="align-items:flex-start"><div class="b"><b>${esc(e.title)}${e.source === "claude" ? `<span class="tag on">Claude wrote this</span>` : e.source === "grok" ? `<span class="tag on">Grok wrote this</span>` : e.source === "connector" ? `<span class="tag on">an app wrote this</span>` : ""}${e.archived ? `<span class="tag warn">put away</span>` : ""}</b>
+    : `<div class="li" style="align-items:flex-start"><div class="b"><b>${esc(e.title)}${e.source === "claude" ? `<span class="tag on">Claude wrote this</span>` : e.source === "grok" ? `<span class="tag on">Grok wrote this</span>` : e.source === "connector" ? `<span class="tag on">an app wrote this</span>` : e.source === "echo" ? `<span class="tag on">Echo wrote this</span>` : ""}${e.archived ? `<span class="tag warn">put away</span>` : ""}</b>
       <span style="white-space:pre-wrap;color:var(--tx)">${esc(e.body)}</span>
       <span class="mono">${e.tags ? esc(e.tags) + " · " : ""}${e.updatedBy ? "by @" + esc(e.updatedBy).replace("@LABS", "LABS") + " · " : ""}${knowWhen(e.updatedAt)}</span></div>
       <button class="btn ghost sm" data-knowedit="${e.id}">Edit</button></div>`).join("")}</div>`).join("")

@@ -1,4 +1,4 @@
-/* ECHO v1.1 — 2026-11-04 (a Knowledge answer's title). v1.0 — 2026-11-04. Echo, the help inside Messages (app/echo/echo.js):
+/* ECHO v1.2 — 2026-11-04 (the brain: what it looked at under an answer). v1.1 — 2026-11-04 (a Knowledge answer's title). v1.0 — 2026-11-04. Echo, the help inside Messages (app/echo/echo.js):
    the pinned row, the Echo mark, fact cards, suggestion chips, the thumbs. */
 .echo-av{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--accent-fill);color:var(--on-accent)}
 .echo-av.sm{width:34px;height:34px}.echo-av.sm svg{width:18px;height:18px}
@@ -24,3 +24,5 @@
 @keyframes echoDot{0%,100%{opacity:.3}50%{opacity:1}}
 @media(prefers-reduced-motion:reduce){.echo-typing i{animation:none;opacity:.7}}
 .echo-kt{display:block;font-weight:700;margin-bottom:3px}
+.echo-looked{font-size:11px;color:var(--dim);margin:3px 0 0 4px}
+.echo-brain.echo-failed .c-b{color:var(--dim)}

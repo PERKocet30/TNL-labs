@@ -38,7 +38,7 @@ CREATE INDEX IF NOT EXISTS idx_knowledge_history ON knowledge_history(entry_id, 
 const KNOW_KINDS = { creed: "Creed", voice: "Voice", decision: "Decisions", policy: "Policies", glossary: "Glossary", feature: "Features", qa: "Questions & answers", story: "Story & people", plan: "The plan", scene: "Scenes & market", playbook: "Playbooks", note: "Notes", sheet: "Sheets" };
 /* learned (2026-11-04): the words members used when they picked this entry as the answer in Echo ("I meant this one") — Echo matches on them too. */
 if (!db.prepare(`PRAGMA table_info(knowledge)`).all().some((c) => c.name === "learned")) db.exec(`ALTER TABLE knowledge ADD COLUMN learned TEXT NOT NULL DEFAULT ''`);
-const KNOW_SOURCES = ["admin", "claude", "grok", "connector", "built-in"];   // who wrote it: you in /admin, Claude or Grok through the connector, another app's pasted key, or the build
+const KNOW_SOURCES = ["admin", "claude", "grok", "connector", "echo", "built-in"];   // who wrote it: you in /admin, Claude or Grok through the connector, another app's pasted key, Echo itself (2026-11-04), or the build
 /* The first entries: what's already settled in CLAUDE.md and the blueprint,
    keyed so an edit in /admin sticks (INSERT OR IGNORE) and a new build only
    adds what's missing. */

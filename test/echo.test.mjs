@@ -29,7 +29,7 @@ order(l2, ana, ben, "paid");                 // ana bought from ben; ben hasn't 
 order(l1, ben, admin, "complete");           // ben bought from jorge
 
 const PORT = 18800 + (process.pid % 200);
-const srv = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), TNL_DATA: DATA, TNL_NO_WATCH: "1" }, stdio: ["ignore", "pipe", "pipe"] });
+const srv = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), TNL_DATA: DATA, TNL_NO_WATCH: "1", ECHO_AI_KEY: "", ANTHROPIC_API_KEY: "" }, stdio: ["ignore", "pipe", "pipe"] });
 let log = ""; srv.stdout.on("data", (d) => log += d); srv.stderr.on("data", (d) => log += d);
 for (let i = 0; i < 150 && !/listening/.test(log); i++) await new Promise((r) => setTimeout(r, 100));
 const call = async (tok, method, path, body) => {

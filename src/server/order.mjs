@@ -168,7 +168,8 @@ export const SERVER = [
   // pages
   "pages/policies.js",
 
-  // echo
+  // echo — the brain first (admins, when ECHO_AI_KEY is set), the matcher after it
+  "echo/brain.js",
   "echo/echo.js",
 
   // admin
