@@ -1,4 +1,4 @@
-/* LABS admin — Echo Home, the composer's tools v1.0, 2026-11-04 ("Echo is more limited in the admin
+/* LABS admin — Echo Home, the composer's tools v1.1, 2026-11-04 (a send that fails is recovered from the server, or said plainly with the words back — ehRecover; the page re-reads the conversation when it comes back into view — ehRefresh; failures land in the errors log — ehReport). v1.0, 2026-11-04 ("Echo is more limited in the admin
    dashboard than in my messages"). What Messages → Echo has, here too: photos and PDFs on a message
    (shrunk in the browser, POST /api/echo/attach, thumbnails over the box), dictation with the mic (the
    browser's own speech recognition), answers read aloud (the speaker, remembered on this device), the
@@ -61,3 +61,43 @@ async function ehPickModel(id) {
   try { const r = await req("/api/echo/model", { method: "POST", body: { model: id } }); EH.data.model = r.model; toast(r.name + " from your next message"); } catch (e) { toast(e.message); ehPaintFoot(); }
 }
 function ehCopy(id) { const t = EH.data.turns.find((x) => String(x.id) === String(id)); if (!t) return; navigator.clipboard && navigator.clipboard.writeText(t.text || "").then(() => toast("Copied"), () => toast("Couldn’t copy")); }
+
+/* A send that failed (the phone dropped the line, a network blip): before calling it lost, ask the server.
+   The question may have arrived and Echo may still be answering — then wait for it; if it never arrived,
+   say so in the conversation and put the words back in the box. Never just make them disappear. */
+async function ehRecover({ q, brief, att, known, seq, err }) {
+  const findNew = (turns) => [...turns].reverse().find((t) => !known.has(String(t.id)) && (brief ? t.label === "brief" : t.asked === q));
+  const pending = () => EH.data.turns.find((x) => x.pending);
+  const stale = () => seq !== EH.seq;
+  for (let i = 0; i < 45; i++) {   // ~3 minutes, the longest Echo takes
+    await new Promise((r) => setTimeout(r, i ? 4000 : 1200));
+    if (stale()) return;
+    let d; try { d = await req("/api/echo"); } catch (e) { continue; }
+    const t = findNew(d.turns || []);
+    if (!t) { if (i >= 3) break; continue; }   // not on the server after ~13s: it never arrived
+    if (t.text || t.failed) { EH.data.turns = d.turns; if (brief) EH.data.briefToday = true; if (t.text && !t.failed) ehSay(t.text); return; }
+    const p = pending(); if (p) { p.status = "Still working on it"; const w = $(`[data-ehturn="${p.id}"] .eh-work span`); if (w) w.textContent = p.status; }
+  }
+  if (stale()) return;
+  const i = EH.data.turns.findIndex((x) => x.pending); if (i >= 0) EH.data.turns.splice(i, 1);
+  const why = /load failed|failed to fetch|network/i.test(String(err && err.message)) ? "the connection dropped" : String((err && err.message) || "something went wrong").replace(/\.$/, "");
+  EH.data.turns.push({ id: "f" + Date.now(), asked: q, label: brief ? "brief" : "", files: att.filter((a) => a.url).map((a) => ({ url: a.url, kind: a.kind, name: a.name })), kind: "brain", text: brief ? `The brief didn’t come through (${why}). Tap Brief me to try again.` : `That didn’t reach Echo (${why}). Your words are back in the box — send them again.`, failed: true, tools: [], proposals: [] });
+  if (!brief && !EH.draft.trim()) { EH.draft = q; EH.att = att; }
+}
+/* Back on the page (the phone was locked, or Echo answered in Messages): read the conversation again. */
+async function ehRefresh() {
+  if (!ehOn() || EH.busy || TAB !== "echohome") return;
+  try { const d = await req("/api/echo"); if (EH.busy || !d.brain) return;
+    const before = JSON.stringify(EH.data.turns.map((t) => [t.id, t.text, (t.proposals || []).map((p) => p.status)]));
+    const keepLocal = EH.data.turns.filter((t) => String(t.id).startsWith("f"));   // a failed send stays on screen until the next one
+    EH.data.turns = [...d.turns, ...keepLocal]; EH.data.model = d.model;
+    if (JSON.stringify(EH.data.turns.map((t) => [t.id, t.text, (t.proposals || []).map((p) => p.status)])) !== before) ehPaintFeed();
+    const sel = $("#ehmodel"); if (sel && sel.value !== d.model) sel.value = d.model;
+  } catch (e) {}
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") ehRefresh(); });
+/* What went wrong goes to Health → errors, so the next "it didn't respond" has a reason on record. */
+function ehReport(e, brief) {
+  try { fetch(API + "/api/client-error", { method: "POST", headers: { "Content-Type": "application/json", ...(TOKEN ? { Authorization: "Bearer " + TOKEN } : {}) },
+    body: JSON.stringify({ message: `Echo Home: ${brief ? "the brief" : "a question"} didn't come back — ${String((e && e.message) || e).slice(0, 200)}`, detail: `online=${navigator.onLine} visible=${document.visibilityState}`, path: "/admin" }), keepalive: true }).catch(() => {}); } catch (x) {}
+}

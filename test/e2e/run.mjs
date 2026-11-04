@@ -2334,6 +2334,30 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     ok(!(await p.locator(".toc table").first().isVisible()), "Orders on a phone is a sideways table");
     await p.screenshot({ path: join(SHOTS, "admin-phone-orders.png"), fullPage: false });
   });
+  // 2026-11-04: "my message keeps getting deleted" — a send whose connection dropped used to empty the box and drop the
+  // question. Now the page asks the server: an answer that was written appears; a question that never arrived says so, words back in the box.
+  await step(d, "Echo Home on a phone: a dropped send isn't lost — the saved answer is fetched; one that never arrived comes back to the box", async () => {
+    const hello = (turns) => ({ name: "Echo", brain: true, model: "claude-opus-5-5", models: [{ id: "claude-opus-5-5", name: "Claude Opus 5.5", short: "Opus 5.5", line: "" }], sub: "LABS's own",
+      hello: "Hi — I'm Echo.", preview: false, topics: [], starters: [], briefToday: true, turns });
+    let serverTurns = [], phase = "saved";
+    await p.route("**/api/echo", (r) => (r.request().method() === "GET" ? r.fulfill({ json: hello(serverTurns) }) : r.continue()));
+    await p.route("**/api/echo/ask", (r) => {
+      const q = r.request().postDataJSON().q;
+      if (phase === "saved") serverTurns = [{ id: 901, asked: q, label: "", files: [], proposals: [], kind: "brain", text: "Here is the answer you nearly lost.", tools: ["overview"], model: "Opus 5.5", createdAt: Date.now() }];
+      return r.abort("failed");   // the phone dropped the line
+    });
+    await settledGoto(p, B + "/admin");
+    await fast(p, 8000, () => p.locator("#ehdraft").waitFor(), "Echo Home with the brain on");
+    await p.locator("#ehdraft").fill("how are we doing?"); await p.locator("#ehsend").tap();
+    await fast(p, 12000, () => p.locator(".eh-a .eh-text", { hasText: "nearly lost" }).waitFor(), "the answer, fetched after the dropped send");
+    ok(await p.locator(".eh-qb", { hasText: "how are we doing?" }).count() === 1, "the question vanished from the conversation");
+    phase = "lost";
+    await p.locator("#ehdraft").fill("second question"); await p.locator("#ehsend").tap();
+    await fast(p, 25000, () => p.locator(".eh-a.failed .eh-text", { hasText: /reach Echo/ }).waitFor(), "a plain 'didn't reach Echo' in the conversation");
+    ok(await p.locator("#ehdraft").inputValue() === "second question", "the words weren't put back in the box");
+    ok(await p.locator(".eh-qb", { hasText: "second question" }).count() === 1, "the question vanished from the conversation");
+    await p.unroute("**/api/echo"); await p.unroute("**/api/echo/ask");
+  });
   // 2026-10-14: on a phone, People starts in Cards (no sideways swiping) and has one search box, not two
   await step(d, "admin → People on a phone: cards, and one search box", async () => {
     await p.locator("[data-tab=people]:visible").tap();

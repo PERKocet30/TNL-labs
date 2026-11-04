@@ -1,4 +1,4 @@
-/* LABS admin — Echo Home v1.1, 2026-11-04 (everything Messages has: photos and PDFs, the mic, the speaker, the model picker, copy — 2-echo-home2.js). v1.0, 2026-11-04. "A simplified admin dashboard integrated
+/* LABS admin — Echo Home v1.2, 2026-11-04 ("my message keeps getting deleted": a send that fails no longer throws the question away — the page asks the server whether it arrived and shows the answer when it does, or says it didn't with the words back in the box; coming back to the page re-reads the conversation — 2-echo-home2.js). v1.1 — 2026-11-04 (everything Messages has: photos and PDFs, the mic, the speaker, the model picker, copy — 2-echo-home2.js). v1.0, 2026-11-04. "A simplified admin dashboard integrated
    with Echo so it can help me manage everything." The admin opens here: Echo on the
    left — the same brain, memory and hands as Messages → Echo (server/echo), answers
    streamed over the app's live stream — and, on a computer, what needs you and
@@ -78,12 +78,17 @@ async function ehAsk(q, brief = false) {
   if (EH.busy || !ehOn() || (!q && !brief && !att.length)) return;
   if ((EH.att || []).some((a) => !a.url)) return toast("Still uploading…");
   if (EH.rec) { try { EH.rec.stop(); } catch (e) {} }
+  const known = new Set(EH.data.turns.map((t) => String(t.id))), keepAtt = (EH.att || []).slice(), seq = (EH.seq = (EH.seq || 0) + 1);
   EH.draft = ""; EH.att = []; EH.busy = true;
   EH.data.turns.push({ id: "p" + Date.now(), asked: q, files: att.map((a) => ({ url: a.url, kind: a.kind, name: a.name })), label: brief ? "brief" : "", kind: "brain", pending: true, status: "Thinking", text: "", tools: [], proposals: [] });
   ehPaintFeed(); ehPaintFoot(); $$("#ehbrief,#ehfresh").forEach((b) => b.disabled = true);
   const drop = () => { const i = EH.data.turns.findIndex((x) => x.pending); if (i >= 0) EH.data.turns.splice(i, 1); };
-  try { const r = brief ? await req("/api/echo/brief", { method: "POST", body: {} }) : await req("/api/echo/ask", { method: "POST", body: { q, files: att.map((a) => ({ url: a.url, name: a.name })) } }); drop(); EH.data.turns.push(r.turn); if (brief) EH.data.briefToday = true; if (r.turn && r.turn.text && !r.turn.failed) ehSay(r.turn.text); }
-  catch (e) { drop(); toast(e.message); }
+  try { const r = brief ? await req("/api/echo/brief", { method: "POST", body: {} }) : await req("/api/echo/ask", { method: "POST", body: { q, files: att.map((a) => ({ url: a.url, name: a.name })) } });
+    if (!r || !r.turn) throw new Error((r && r.error) || "No answer came back");
+    if (seq !== EH.seq) return;   // a recovery already showed this one
+    drop(); EH.data.turns.push(r.turn); if (brief) EH.data.briefToday = true; if (r.turn.text && !r.turn.failed) ehSay(r.turn.text); }
+  catch (e) { if (seq !== EH.seq) return; ehReport(e, brief); await ehRecover({ q, brief, att: keepAtt, known, seq, err: e }); }
+  if (seq !== EH.seq) return;
   EH.busy = false; ehPaintFeed(); ehPaintFoot(); $$("#ehbrief,#ehfresh").forEach((b) => b.disabled = false);
 }
 const ehBrief = () => ehAsk("", true);
