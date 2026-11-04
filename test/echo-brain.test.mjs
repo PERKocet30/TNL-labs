@@ -229,6 +229,17 @@ try {
   t("Claude searched, paused, was resumed without an extra message, and answered", aw.text === "Two pop-ups this month worth a table." && seen.at(-1).body.messages.at(-1).role === "assistant" && seen.at(-1).body.messages.at(-1).content.some((b) => b.type === "server_tool_use") && seen.at(-1).body.messages.at(-1).content.some((b) => b.type === "web_search_tool_result"));
   t("the turn says it searched the web; the search is stored whole for the replay", aw.tools.includes("web_search") && db.prepare("SELECT content FROM echo_brain WHERE user_id = ? AND kind = 'reply' ORDER BY id DESC LIMIT 2").all(admin).some((r) => r.content.includes("srvtoolu_1") && r.content.includes("web_search_tool_result")));
 
+  console.log("\nTHE BRIEF — Echo Home's once-a-day question, shown as Brief");
+  t("the hello says no brief yet today", (await call("tok-admin", "GET", "/api/echo")).j.briefToday === false);
+  t("a member can't ask for one", (await call("tok-ana", "POST", "/api/echo/brief")).s === 403);
+  script = [{ stop_reason: "end_turn", content: [{ type: "text", text: "Quiet. Two things need you." }] }];
+  const br = (await call("tok-admin", "POST", "/api/echo/brief", {})).j.turn;
+  const brAsk = seen.at(-1).body.messages.at(-1).content;
+  t("Claude was asked for the day in five lines — what moved, what needs me, what to do first — with today's date", /five short lines/.test(brAsk[0].text) && /what needs me/.test(brAsk[0].text) && /^\(Today is/.test(brAsk.at(-1).text));
+  t("the turn is labelled brief, so the page shows 'Brief' instead of the prompt", br.label === "brief" && br.text === "Quiet. Two things need you." && (await call("tok-admin", "GET", "/api/echo")).j.turns.at(-1).label === "brief");
+  t("…and the hello now says there was one today", (await call("tok-admin", "GET", "/api/echo")).j.briefToday === true);
+  t("an ordinary question has no label", (await call("tok-admin", "GET", "/api/echo")).j.turns[0].label === "");
+
   console.log("\nWHEN CLAUDE FAILS — plain words, nothing dangling");
   script = [{ stop_reason: "tool_use", content: [{ type: "tool_use", id: "tu_9", name: "overview", input: {} }] }];
   const seenBefore = seen.length;

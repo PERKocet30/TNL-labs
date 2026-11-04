@@ -62,7 +62,7 @@ New behaviour gets a test in `test/` — suites are plain Node scripts that set
   pays Stripe — asked for first), `express` (LABS carries the risk and pays the card fee,
   so it's added into the application fee; pay-later is off) or Standard (''/`standard`). `src/mail.js` — email via Resend.
 - `public/studio.js` — the Studio (beat maker), hidden unless Admin → Settings
-  → Studio is on (`studioOn()`). `public/admin.html` + `public/admin-app/*.js` — `/admin` (keep each ≤ 24KB too).
+  → Studio is on (`studioOn()`). `public/admin.html` + `public/admin-app/*.js` — `/admin` (keep each ≤ 24KB too). It opens on Echo Home (`2-echo-home.js`, 2026-11-04): the same `/api/echo` as Messages, streamed over the live stream, cards and all; `POST /api/echo/brief` is the once-a-day brief (an ask labelled `brief`). The help desk section is "Help desk".
 - The README has the feature folders, a table of what each part holds, and the API route list.
 - Labs are places (2026-10-08): `server/labs/places.js` + `app/labs/places.js`. A lab = Work · Talk and #tags (kept simple on purpose), no sub-channels on screen; the labs list explains each genre by its #tags. Channel ids still hold every post; `PLACES` / `LAB_HOME` map each lab to its channels and home channel and must match `LABS` (`test/places.test.mjs` checks).
 - Events (the tournament): `server/events/*.js` + `app/events/*.js` + admin `8-events.js`. `tickEvent()` is the only thing that moves an event forward; vote counts never leave the server while a stage is open — the one exception is the poll format's scoreboard, which is public by design and freezes for the last `freeze_hours` (`test/events.test.mjs` checks both). Instagram is for reach; votes only count in the app.

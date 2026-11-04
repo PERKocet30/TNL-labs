@@ -1,5 +1,5 @@
 /* ================================================================
-   ECHO · the brain v1.5 — 2026-11-04 (hands: the tools in echo/hands.js propose, a card with Confirm runs — see that file; what was confirmed rides on the next question). v1.4 — 2026-11-04 (what Claude's own app has: photos and PDFs in a message — POST /api/echo/attach, kept on the volume, sent to Claude as the bytes; the web — web_search, a server-side tool, so Echo can see outside LABS and says when it did; pause_turn resumed). v1.3 — 2026-11-04 (switch models in the app: tap the model's name under the composer — Opus 5.5 the default, Sonnet 5.5 for speed, Fable 5.1 for the hard ones; the echoModel setting; every answer says which one wrote it). v1.2 — 2026-11-04 ("I like option 2" → "Invalid signature in thinking block": Echo's instructions carried Knowledge and the date, so a Knowledge write — or midnight — changed them mid-conversation, and Claude refuses reasoning sealed to other instructions. Now the instructions are frozen per conversation (a "system" row; the date rides on each question), the API is told to drop stale reasoning rather than refuse (thinking-binding-controls), and a refusal of that kind is retried once without the old reasoning). v1.1 — 2026-11-04 (modelled on Claude: the answer streams in word by word over the live stream, with "Thinking…" / "Looking at orders…" while it works; light markdown). v1.0 — 2026-11-04. "I want my own AI, like Jarvis."
+   ECHO · the brain v1.6 — 2026-11-04 (the brief: POST /api/echo/brief asks Echo for the day in five lines — what moved, what needs Jorge, what it would do first; a labelled question, shown as "Brief" not as the prompt; briefToday on the hello so Echo Home asks once a day). v1.5 — 2026-11-04 (hands: the tools in echo/hands.js propose, a card with Confirm runs — see that file; what was confirmed rides on the next question). v1.4 — 2026-11-04 (what Claude's own app has: photos and PDFs in a message — POST /api/echo/attach, kept on the volume, sent to Claude as the bytes; the web — web_search, a server-side tool, so Echo can see outside LABS and says when it did; pause_turn resumed). v1.3 — 2026-11-04 (switch models in the app: tap the model's name under the composer — Opus 5.5 the default, Sonnet 5.5 for speed, Fable 5.1 for the hard ones; the echoModel setting; every answer says which one wrote it). v1.2 — 2026-11-04 ("I like option 2" → "Invalid signature in thinking block": Echo's instructions carried Knowledge and the date, so a Knowledge write — or midnight — changed them mid-conversation, and Claude refuses reasoning sealed to other instructions. Now the instructions are frozen per conversation (a "system" row; the date rides on each question), the API is told to drop stale reasoning rather than refuse (thinking-binding-controls), and a refusal of that kind is retried once without the old reasoning). v1.1 — 2026-11-04 (modelled on Claude: the answer streams in word by word over the live stream, with "Thinking…" / "Looking at orders…" while it works; light markdown). v1.0 — 2026-11-04. "I want my own AI, like Jarvis."
    Echo for the founder: a model that reasons (Claude, through a key kept in
    Railway — ECHO_AI_KEY), with the connector's tools as its eyes (live
    numbers, never saved copies) and Knowledge as its memory (the creed, the
@@ -45,6 +45,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS echo_brain (
   role TEXT NOT NULL, kind TEXT NOT NULL, content TEXT NOT NULL, archived INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_echo_brain_user ON echo_brain(user_id, archived, id)`);
 if (!db.prepare(`PRAGMA table_info(echo_brain)`).all().some((c) => c.name === "model")) db.exec(`ALTER TABLE echo_brain ADD COLUMN model TEXT NOT NULL DEFAULT ''`);   // which Claude wrote a reply (2026-11-04)
+if (!db.prepare(`PRAGMA table_info(echo_brain)`).all().some((c) => c.name === "label")) db.exec(`ALTER TABLE echo_brain ADD COLUMN label TEXT NOT NULL DEFAULT ''`);   // "brief": a question Echo Home asked for Jorge (2026-11-04)
 
 /* ---- what Echo is told, every time (stable first, so Claude caches it) ---- */
 const BRAIN_WHO = `You are Echo: LABS's own intelligence, built by Jorge, inside LABS, answering to Jorge. Not a help desk and not a chatbot — a cofounder that remembers, reads the live numbers, and thinks before it speaks.
@@ -129,8 +130,8 @@ async function brainRun(user, token, name, args, askId = 0) {
 
 /* ---- the conversation on disk: raw API messages, so a tool round replays whole ---- */
 const brainRows = (userId) => db.prepare(`SELECT * FROM echo_brain WHERE user_id = ? AND archived = 0 ORDER BY id`).all(userId);
-function brainKeep(userId, role, kind, content, model = "") {
-  return Number(db.prepare(`INSERT INTO echo_brain (user_id, role, kind, content, model, created_at) VALUES (?,?,?,?,?,?)`).run(userId, role, kind, JSON.stringify(content), model, Date.now()).lastInsertRowid);
+function brainKeep(userId, role, kind, content, model = "", label = "") {
+  return Number(db.prepare(`INSERT INTO echo_brain (user_id, role, kind, content, model, label, created_at) VALUES (?,?,?,?,?,?,?)`).run(userId, role, kind, JSON.stringify(content), model, label, Date.now()).lastInsertRowid);
 }
 /* The last BRAIN_ASKS questions and everything after each — always starting at a question, so
    every tool_use has its tool_result and the thinking that went with it. */
@@ -146,7 +147,7 @@ function brainTurns(userId) {
   const out = [], props = echoProposalsFor(userId);
   for (const r of brainRows(userId)) {
     const c = JSON.parse(r.content);
-    if (r.kind === "ask") out.push({ id: r.id, asked: String((c[0] && c[0].text) || "").trim(), proposals: props.get(r.id) || [], files: c.filter((b) => b.type === "labs_file").map((b) => ({ url: b.url, kind: b.kind, name: b.name || "" })), kind: "brain", text: "", tools: [], createdAt: r.created_at });
+    if (r.kind === "ask") out.push({ id: r.id, asked: String((c[0] && c[0].text) || "").trim(), label: r.label || "", proposals: props.get(r.id) || [], files: c.filter((b) => b.type === "labs_file").map((b) => ({ url: b.url, kind: b.kind, name: b.name || "" })), kind: "brain", text: "", tools: [], createdAt: r.created_at });
     else if (r.kind === "reply" && out.length) { const t = out[out.length - 1]; t.text = brainText(c) || t.text; if (r.model) t.model = brainShort(r.model); for (const b of c) if ((b.type === "tool_use" || b.type === "server_tool_use") && !echoIsHand(b.name) && !t.tools.includes(b.name)) t.tools.push(b.name); }   // a hand shows as its card, not as something looked at
     else if (r.kind === "error" && out.length) { const t = out[out.length - 1]; t.text = brainText(c); t.failed = true; }
   }
@@ -199,7 +200,7 @@ async function brainCall(body, onText, onBlock) {
 const BRAIN_SAYS = { web_search: "Searching the web", knowledge_add: "Writing to Knowledge", knowledge_edit: "Editing Knowledge", knowledge: "Reading Knowledge", overview: "Looking at the big picture", members: "Looking at members", member: "Looking at a member", orders: "Looking at orders", sellers: "Looking at sellers", listings: "Looking at listings", market: "Looking at the Market", events: "Looking at the tournament", event: "Looking at the tournament", posts: "Looking at posts", errors: "Looking at errors", health: "Checking the server", systems: "Checking Railway and GitHub" };
 const brainTell = (userId, data) => { try { sendTo([userId], "echo", data); } catch {} };
 const BRAIN_SORRY = { 401: "The key in Railway isn't working — Claude turned it away. Check ECHO_AI_KEY in Railway → Variables.", 402: "Claude's account is out of credit. Top it up at console.anthropic.com → Billing.", 429: "Claude is busy right now. Give it a minute and ask again.", 529: "Claude is overloaded right now. Give it a minute and ask again." };
-async function brainAsk(user, token, q, files = []) {
+async function brainAsk(user, token, q, files = [], label = "") {
   const asked = String(q || "").trim().slice(0, 4000);
   const attach = (Array.isArray(files) ? files : []).slice(0, BRAIN_FILES_PER_ASK).map((f) => {
     const m = BRAIN_FILE_RE.exec(String((f && f.url) || "")); if (!m || !existsSync(join(UPLOAD_DIR, m[1]))) return null;
@@ -209,7 +210,7 @@ async function brainAsk(user, token, q, files = []) {
   if (!asked && !attach.length) return null;
   const system = brainFrozenSystem(user), tools = brainTools(), model = brainModel();
   const news = echoHandNews(user.id);
-  const askId = brainKeep(user.id, "user", "ask", [{ type: "text", text: asked || (attach.some((a) => a.kind === "pdf") ? "Have a look at this." : "Have a look at this photo.") }, ...attach, ...(news ? [{ type: "text", text: news }] : []), { type: "text", text: brainToday() }]);
+  const askId = brainKeep(user.id, "user", "ask", [{ type: "text", text: asked || (attach.some((a) => a.kind === "pdf") ? "Have a look at this." : "Have a look at this photo.") }, ...attach, ...(news ? [{ type: "text", text: news }] : []), { type: "text", text: brainToday() }], "", label);
   let messages = brainHistory(user.id);
   let stripped = false;
   /* Last resort (once per question): if Claude still refuses old reasoning, send the history without
@@ -271,7 +272,7 @@ async function brainAsk(user, token, q, files = []) {
 const brainHello = (user) => `${user.display_name ? user.display_name.split(" ")[0] : "Hey"} — I'm Echo. I know LABS, I can see the numbers as they are right now, and I remember what we've decided. What are we working on?`;
 app.get("/api/echo", auth, (req, res, next) => {
   if (!brainFor(req.user)) return next();
-  res.json({ name: "Echo", brain: true, model: brainModel(), models: BRAIN_MODELS, sub: "LABS's own", hello: brainHello(req.user), preview: false, topics: [], turns: brainTurns(req.user.id),
+  res.json({ name: "Echo", brain: true, model: brainModel(), models: BRAIN_MODELS, sub: "LABS's own", hello: brainHello(req.user), preview: false, topics: [], turns: brainTurns(req.user.id), briefToday: brainBriefToday(req.user.id),
     starters: ["How are we doing this week?", "What should I build next, and why?", "Who's stuck setting up payouts?", "Write down what we decided today"].map((q, i) => ({ id: -1 - i, src: "brain", question: q })) });
 });
 const brainLimit = rateLimit({ max: 20, windowMs: 60000, key: "user" });   // counted only for the brain, so a member's questions to the matcher aren't
@@ -280,6 +281,18 @@ app.post("/api/echo/ask", auth, (req, res, next) => {
   brainLimit(req, res, async () => {
     const turn = await brainAsk(req.user, req.token, (req.body || {}).q, (req.body || {}).files).catch((e) => { console.error("[echo] brain:", e); return { id: 0, asked: "", kind: "brain", text: "Something broke on my side. Ask again.", tools: [], failed: true, createdAt: Date.now() }; });
     if (!turn) return res.status(400).json({ error: "Ask something" });
+    res.json({ turn });
+  });
+});
+/* The brief (Echo Home, 2026-11-04): the day in five lines, asked once a day by the page and any time by the button. */
+const BRAIN_BRIEF = "Give me the brief for today, in five short lines at most: what moved since yesterday (look at overview and pulse for 7 days), what needs me right now (open reports, handoffs, sellers stuck at Stripe, the tournament's next deadline — look), and the one thing you'd do first and why. If one action is plainly right, set up its card. No preamble, no headings.";
+const brainDayNY = (t = Date.now()) => new Date(t).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+const brainBriefToday = (userId) => { const r = db.prepare(`SELECT created_at FROM echo_brain WHERE user_id = ? AND kind = 'ask' AND label = 'brief' ORDER BY id DESC LIMIT 1`).get(userId); return !!(r && brainDayNY(r.created_at) === brainDayNY()); };
+app.post("/api/echo/brief", auth, admin, (req, res) => {
+  if (!brainOn()) return res.status(400).json({ error: "Echo isn't awake here yet — ECHO_AI_KEY in Railway → Variables." });
+  brainLimit(req, res, async () => {
+    const turn = await brainAsk(req.user, req.token, BRAIN_BRIEF, [], "brief").catch((e) => { console.error("[echo] brief:", e); return null; });
+    if (!turn) return res.status(500).json({ error: "Couldn't ask for the brief" });
     res.json({ turn });
   });
 });
