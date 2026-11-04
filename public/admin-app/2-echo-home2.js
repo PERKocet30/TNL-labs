@@ -1,4 +1,4 @@
-/* LABS admin — Echo Home, the composer's tools v1.1, 2026-11-04 (a send that fails is recovered from the server, or said plainly with the words back — ehRecover; the page re-reads the conversation when it comes back into view — ehRefresh; failures land in the errors log — ehReport). v1.0, 2026-11-04 ("Echo is more limited in the admin
+/* LABS admin — Echo Home, the composer's tools v1.2, 2026-11-04 (ehPlain, shared with Talk — 2-echo-voice.js). v1.1, 2026-11-04 (a send that fails is recovered from the server, or said plainly with the words back — ehRecover; the page re-reads the conversation when it comes back into view — ehRefresh; failures land in the errors log — ehReport). v1.0, 2026-11-04 ("Echo is more limited in the admin
    dashboard than in my messages"). What Messages → Echo has, here too: photos and PDFs on a message
    (shrunk in the browser, POST /api/echo/attach, thumbnails over the box), dictation with the mic (the
    browser's own speech recognition), answers read aloud (the speaker, remembered on this device), the
@@ -44,10 +44,12 @@ function ehDictate() {
   rec.onend = () => { EH.rec = null; EH.listening = false; ehPaintFoot(); };
   try { rec.start(); EH.rec = rec; EH.listening = true; ehPaintFoot(); } catch (e) { toast("Can’t listen right now"); }
 }
-/* read aloud, when the speaker is on */
+/* an answer as words to say: no markdown, a link is "a link" (2-echo-voice.js uses it too) */
+const ehPlain = (text) => String(text || "").replace(/\*\*|`|^#+\s*/gm, "").replace(/^\s*[-*•]\s+/gm, "").replace(/https?:\/\/\S+/g, "a link").trim();
+/* read aloud, when the speaker is on — and not while Talk is open: Talk speaks for itself */
 function ehSay(text) {
-  if (!ehVoiceOn() || !("speechSynthesis" in window)) return;
-  const plain = String(text || "").replace(/\*\*|`|^#+\s*/gm, "").replace(/^\s*[-*•]\s+/gm, "").replace(/https?:\/\/\S+/g, "a link").trim(); if (!plain) return;
+  if (!ehVoiceOn() || !("speechSynthesis" in window) || (typeof EV !== "undefined" && EV.open)) return;
+  const plain = ehPlain(text); if (!plain) return;
   try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(plain.slice(0, 3000)); u.lang = navigator.language || "en-US"; u.rate = 1.02; speechSynthesis.speak(u); } catch (e) {}
 }
 function ehVoiceToggle() {
