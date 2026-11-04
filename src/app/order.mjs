@@ -104,6 +104,7 @@ export const APP = [
 
   // posts
   "posts/archive-posts.js",
+  "posts/report.js",       // Report on any post that isn't yours (2026-11-04)
   "posts/comments.js",
   "posts/extras.js",
 

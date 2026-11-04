@@ -11,7 +11,7 @@ function showroomHTML(){return `<div class="scroll" id="showroom">
   <div class="sr-gridwrap">${galNavHTML()}<div class="sr-grid${galOn()?" sr-wall":""}" id="sr-grid">${SRPOSTS.length?SRPOSTS.map(srCardHTML).join(""):skel("cards")}</div></div>
 </div>`}
 
-/* SHOWROOM CARD v1.2 — 2026-10-28: no loops — a card with no picture or video shows its words (the server keeps those off the wall anyway); v1.1 — 2026-10-14: the first card's picture loads right away
+/* SHOWROOM CARD v1.3 — 2026-11-04: a ··· on every card (Report, Send to…, and your own post's Edit / Delete), like Instagram. v1.2 — 2026-10-28: no loops — a card with no picture or video shows its words (the server keeps those off the wall anyway); v1.1 — 2026-10-14: the first card's picture loads right away
    (it's the first thing anyone sees); every other picture waits until it's near. */
 function srCardHTML(p,i){
   const ld=i===0?'loading="eager" fetchpriority="high"':'loading="lazy"';
@@ -21,6 +21,7 @@ function srCardHTML(p,i){
         ${avHTML(p.author,"sm")}
         <div class="post-hw"><div class="post-names sr-name">${pxNames(p)}</div>${pxSub(p)}</div>
       </div>
+      ${ME?`<button class="pm pmore sr-more" data-pmore="${p.id}" aria-label="More">${DI.more}</button>`:""}
     </div>
     <div class="post-media">${pxTagBtn(p)}
     ${(p.images&&p.images.length>1)?`<div class="caro" data-caro="s${p.id}">

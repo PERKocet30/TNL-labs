@@ -196,12 +196,7 @@ function wireFeed(){
   document.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=async()=>{
     if(!(await uiConfirm("Delete this comment?","",{okLabel:"Delete",danger:true})))return;
     try{await api.delComment(b.dataset.cdel);bumpComments(OPENCOMMENTS,-1);COMMENTS=(await api.comments(OPENCOMMENTS)).comments;paintComments()}catch(e){toast(e.message)}});
-  document.querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>{
-    const id=+b.dataset.report;
-    openPicker({eyebrow:"REPORT",title:"What's wrong?",
-      items:["Spam","Harassment","Stolen work","Nudity or gore","Something else"].map(r=>({label:r,icon:DI.flag,reason:r})),
-      onPick:async(it)=>{try{await api.report({postId:id,reason:it.reason});toast("Reported — thank you")}catch(e){toast(e.message)}}});
-  });
+  document.querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>reportPost(findAnyPost(b.dataset.report)));   // app/posts/report
   wireProfileLinks();
 }
 function wireSheet(){

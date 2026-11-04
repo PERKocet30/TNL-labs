@@ -17,11 +17,19 @@ app.post("/api/users/:username/block", auth, (req, res) => {
   res.json({ blocked: true });
 });
 
+/* v1.1 — 2026-11-04: Report on every post (app/posts/report). The same person reporting the same
+   post again changes the reason on their open report — never a second row, so one upset member
+   can't stack the queue. A report on a post that doesn't exist is turned away. */
 app.post("/api/report", auth, rateLimit({ max: 10, windowMs: 3600000, key: "user" }), (req, res) => {
   const { postId, username, reason } = req.body || {};
   const target = username ? q.userByName.get(username) : null;
-  db.prepare(`INSERT INTO reports (reporter_id, post_id, user_id, reason, created_at) VALUES (?,?,?,?,?)`)
-    .run(req.user.id, postId || null, target?.id || null, (reason || "").toString().slice(0, 300), Date.now());
+  const pid = Number(postId) || null, why = (reason || "").toString().trim().slice(0, 300);
+  if (pid && !db.prepare(`SELECT 1 FROM posts WHERE id = ?`).get(pid)) return res.status(404).json({ error: "That post is gone" });
+  if (!pid && !target) return res.status(400).json({ error: "Nothing to report" });
+  const open = pid ? db.prepare(`SELECT id FROM reports WHERE reporter_id = ? AND post_id = ? AND handled_at IS NULL`).get(req.user.id, pid) : null;
+  if (open) db.prepare(`UPDATE reports SET reason = ?, created_at = ? WHERE id = ?`).run(why, Date.now(), open.id);
+  else db.prepare(`INSERT INTO reports (reporter_id, post_id, user_id, reason, created_at) VALUES (?,?,?,?,?)`)
+    .run(req.user.id, pid, target?.id || null, why, Date.now());
   res.json({ ok: true });
 });
 
