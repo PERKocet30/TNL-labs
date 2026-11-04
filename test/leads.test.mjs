@@ -22,7 +22,7 @@ const mk = (u, { admin = 0, mod = 0 } = {}) => {
   db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?,?,?)`).run("tok-" + u, id, now);
   return id;
 };
-const U = { boss: mk("boss", { admin: 1 }), embers: mk("embers", { mod: 1 }), lea: mk("lea"), fay: mk("fay"), ana: mk("ana"), ben: mk("ben") };
+const U = { boss: mk("boss", { admin: 1 }), embers: mk("embers", { mod: 1 }), cole: mk("cole", { mod: 1 }), lea: mk("lea"), fay: mk("fay"), ana: mk("ana"), ben: mk("ben") };
 let n = 0;
 const post = (who, ch) => Number(db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, created_at) VALUES (?,?,?,1,?)`).run(U[who], ch, "by " + who, now - (++n) * 1000).lastInsertRowid);
 const P = { anaMusic: post("ana", "music-chat"), anaMusic2: post("ana", "tracks"), benMusic: post("ben", "music-chat"), anaFashion: post("ana", "clothing-design"),
@@ -47,7 +47,8 @@ try {
   t("a Mod makes lea Lead of // Music", (await lead("embers", "lea", "culture")).j.leads?.join() === "culture");
   t("the owner makes fay Lead of // Music too", (await lead("boss", "fay", "culture")).j.leads?.join() === "culture");
   t("a Lead can't appoint a Lead", (await lead("lea", "ben", "culture")).s === 403);
-  t("the owner and Mods can't be made Leads (they curate every lab)", (await lead("boss", "embers", "culture")).s !== 200);
+  t("the owner can't be made a Lead (they curate every lab)", (await lead("embers", "boss", "culture")).s !== 200 && (await lead("boss", "boss", "culture")).s !== 200);
+  t("a Mod can't name another Mod a Lead", (await lead("cole", "embers", "culture")).s === 403);
   t("a made-up lab is refused", (await lead("boss", "ben", "nowhere")).s === 400);
   t("a Lead has no /admin", (await call("lea", "GET", "/api/admin/pulse?days=7")).s === 403 && (await call("lea", "GET", "/api/admin/people")).s === 403);
 
@@ -89,6 +90,14 @@ try {
   t("the Mod removes lea as Lead", (await lead("embers", "lea", "culture", false)).j.leads?.length === 0);
   t("…and she can't take things down any more", (await call("lea", "DELETE", `/api/labs/posts/${P.anaMusic}`)).s === 403);
   t("…or pin", (await call("lea", "POST", `/api/posts/${P.benMusic}/pin`, { pinned: true })).s === 403);
+
+  console.log("\nA MOD AS A LAB'S LEAD (2026-11-04: \"make Alko lead of music lab\" — Alko is a Mod)");
+  t("the owner names a Mod Lead of // Music", (await lead("boss", "embers", "culture")).j.leads?.join() === "culture");
+  t("…their profile says they lead // Music, and Mod stays private", (await call("ben", "GET", "/api/users/embers")).j.user.leads?.join() === "culture" && (await call("ben", "GET", "/api/users/embers")).j.user.isMod === undefined);
+  t("…// Music names them as its lead", (await call("ben", "GET", "/api/labs/culture/leads")).j.leads?.some((u) => u.username === "embers"));
+  t("…and they're still a Mod everywhere (any lab, a Lead's post)", (await call("embers", "POST", `/api/posts/${P.anaFashion}/pin`, { pinned: false })).s === 200);
+  t("a Lead still can't take down that Mod's post", (await lead("boss", "lea", "culture")).j.leads?.join() === "culture" && (await call("lea", "DELETE", `/api/labs/posts/${P.modMusic}`)).s === 403);
+  t("the owner can take the Lead off again", (await lead("boss", "embers", "culture", false)).j.leads?.length === 0);
 } catch (e) {
   fail++; console.log("  ✗  threw: " + e.message); console.log(log.slice(-1500));
 } finally { srv.kill(); }
