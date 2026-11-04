@@ -54,6 +54,6 @@ t("both people's order lists leave it out", (os.match(/AND o\.status != 'void'/g
 t("it can't be marked shipped or received", (os.match(/if \(o\.status === "void"\) return res\.status\(400\)/g) || []).length === 2);
 t("sales numbers only ever count paid / shipped / delivered", read("server/orders/cart.js").includes("const paid = `status IN ('paid','shipped','complete')`"));
 const adm = readFileSync(join(ROOT, "public/admin-app/5-orders.js"), "utf8");
-t("admin: Test order… on each order, with a filter for voided ones", adm.includes("data-voidorder") && adm.includes('void: "Test (voided)"') && readFileSync(join(ROOT, "public/admin.html"), "utf8").includes("5-orders.js?v=4.0"));
+t("admin: Test order… on each order, with a filter for voided ones", adm.includes("data-voidorder") && adm.includes('void: "Test (voided)"') && readFileSync(join(ROOT, "public/admin.html"), "utf8").includes("5-orders.js?v=4.1"));
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
