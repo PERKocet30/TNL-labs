@@ -35,8 +35,17 @@ const claude = createServer((req, res) => {
     const j = JSON.parse(body || "{}"); seen.push({ headers: req.headers, body: j });
     if (mode === "401" || (mode === "401-after-tool" && j.messages.at(-1).content[0] && j.messages.at(-1).content[0].type === "tool_result")) { res.writeHead(401, { "content-type": "application/json" }); return res.end(JSON.stringify({ error: { type: "authentication_error", message: "invalid x-api-key" } })); }
     const next = script.shift() || { stop_reason: "end_turn", content: [{ type: "text", text: "(script ran out)" }] };
-    res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ id: "msg_" + seen.length, type: "message", role: "assistant", model: j.model, usage: { input_tokens: 10, output_tokens: 20 }, ...next }));
+    /* streamed, the way Claude answers: text in two pieces, tool input as partial JSON */
+    res.writeHead(200, { "content-type": "text/event-stream" });
+    const ev = (type, d) => res.write(`event: ${type}\ndata: ${JSON.stringify({ type, ...d })}\n\n`);
+    ev("message_start", { message: { id: "msg_" + seen.length, role: "assistant", model: j.model, usage: { input_tokens: 10 } } });
+    next.content.forEach((b, index) => {
+      if (b.type === "text") { ev("content_block_start", { index, content_block: { type: "text", text: "" } }); const cut = Math.ceil(b.text.length / 2); ev("content_block_delta", { index, delta: { type: "text_delta", text: b.text.slice(0, cut) } }); ev("content_block_delta", { index, delta: { type: "text_delta", text: b.text.slice(cut) } }); }
+      else { ev("content_block_start", { index, content_block: { type: "tool_use", id: b.id, name: b.name, input: {} } }); const js = JSON.stringify(b.input || {}); ev("content_block_delta", { index, delta: { type: "input_json_delta", partial_json: js.slice(0, 5) } }); ev("content_block_delta", { index, delta: { type: "input_json_delta", partial_json: js.slice(5) } }); }
+      ev("content_block_stop", { index });
+    });
+    ev("message_delta", { delta: { stop_reason: next.stop_reason }, usage: { output_tokens: 20 } });
+    ev("message_stop", {}); res.end();
   });
 });
 await new Promise((r) => claude.listen(0, "127.0.0.1", r));
@@ -90,7 +99,7 @@ try {
   const a1 = await ask("tok-admin", "how are we doing?");
   t("the turn: kind brain, the final words, what it looked at", a1 && a1.kind === "brain" && /Two members/.test(a1.text) && a1.tools.join() === "overview" && !a1.failed);
   const r1 = seen[0], r2 = seen[1];
-  t("Claude got the key, the model, and no beta surprises", r1.headers["x-api-key"] === "sk-ant-test" && r1.headers["anthropic-version"] === "2023-06-01" && r1.body.model === "claude-opus-5-5" && r1.body.max_tokens === 4096);
+  t("Claude got the key, the model, streaming on, and no beta surprises", r1.headers["x-api-key"] === "sk-ant-test" && r1.headers["anthropic-version"] === "2023-06-01" && r1.body.model === "claude-opus-5-5" && r1.body.max_tokens === 4096 && r1.body.stream === true);
   const sys = r1.body.system;
   t("the system prompt: who Echo is, then Knowledge (cached), then today and who's asking", Array.isArray(sys) && sys.length === 3 && /You are Echo/.test(sys[0].text) && /KNOWLEDGE/.test(sys[1].text) && sys[1].cache_control && sys[1].cache_control.ttl === "1h" && /@jorge/.test(sys[2].text));
   t("Knowledge rides along as written: the creed and the features", /take over/.test(sys[1].text) && /### The Showroom/.test(sys[1].text) && /### Rep only comes from other people/.test(sys[1].text));
@@ -111,7 +120,7 @@ try {
   ];
   const a2 = await ask("tok-admin", "remember: plain text only");
   const row = db.prepare("SELECT * FROM knowledge WHERE title = 'Echo answers in plain text'").get();
-  t("the entry exists, source echo, written by the admin who asked", row && row.source === "echo" && row.kind === "decision" && row.created_by === admin && /Reason:/.test(row.body));
+  t("the entry exists (its input arrived as partial JSON and was put back together), source echo, written by the admin who asked", row && row.source === "echo" && row.kind === "decision" && row.created_by === admin && /Reason:/.test(row.body));
   t("the tool result told Claude the id and title", /\"ok\":true/.test(seen[3].body.messages.at(-1).content[0].content) && new RegExp(`"id":${row.id}`).test(seen[3].body.messages.at(-1).content[0].content));
   t("the admin log has it", !!db.prepare("SELECT 1 FROM admin_log WHERE action = 'echo knowledge_add' AND target = ? AND admin_id = ?").get(String(row.id), admin));
   t("the turn says what it did", a2.tools.join() === "knowledge_add" && /Written down/.test(a2.text));

@@ -1,5 +1,5 @@
 /* ================================================================
-   ECHO · the brain v1.0 — 2026-11-04. "I want my own AI, like Jarvis."
+   ECHO · the brain v1.1 — 2026-11-04 (modelled on Claude: the answer streams in word by word over the live stream, with "Thinking…" / "Looking at orders…" while it works; light markdown). v1.0 — 2026-11-04. "I want my own AI, like Jarvis."
    Echo for the founder: a model that reasons (Claude, through a key kept in
    Railway — ECHO_AI_KEY), with the connector's tools as its eyes (live
    numbers, never saved copies) and Knowledge as its memory (the creed, the
@@ -43,7 +43,7 @@ What you have:
 
 What you never do: read messages (there is no tool, by design); act on members, orders, settings or the live app; ship anything. If Jorge wants the app changed, write the brief for Claude Code in plain words — what members will notice, where it lives — and remind him nothing ships without his Push.
 
-How to answer: short. Bottom line first, the reason second, detail only if asked. Plain words, never file names or jargon unless he asks. A recommendation, not a menu. If something is wrong or you don't know, say so straight. Write in plain text for a chat bubble: no markdown headings, no bold, no tables; a short line per point when a list helps. It's LABS, never the three-letter parent brand.`;
+How to answer: short. Bottom line first, the reason second, detail only if asked. Plain words, never file names or jargon unless he asks. A recommendation, not a menu. If something is wrong or you don't know, say so straight. Format for a phone screen: short paragraphs; a bulleted or numbered list when it helps; **bold** for the one thing that matters; no headings, no tables, no code blocks unless he asks for code. It's LABS, never the three-letter parent brand.`;
 
 const brainKnowledge = () => knowText(knowList());
 function brainSystem(user) {
@@ -103,13 +103,49 @@ function brainTurns(userId) {
 }
 
 /* ---- one question: think, look, answer ---- */
-async function brainCall(body) {
-  const r = await fetch(`${BRAIN_API}/v1/messages`, { method: "POST", signal: AbortSignal.timeout(120000),
-    headers: { "content-type": "application/json", "x-api-key": BRAIN_KEY, "anthropic-version": "2023-06-01" }, body: JSON.stringify(body) });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) { const e = new Error((j.error && j.error.message) || `Claude said ${r.status}`); e.status = r.status; throw e; }
-  return j;
+/* One call, streamed: Claude's server-sent events are folded back into the same
+   message shape a plain call returns ({ content, stop_reason, usage }), and every
+   piece of text is handed to onText as it arrives, so the admin watches the answer
+   being written the way Claude's own app shows it. */
+async function brainCall(body, onText) {
+  const r = await fetch(`${BRAIN_API}/v1/messages`, { method: "POST", signal: AbortSignal.timeout(180000),
+    headers: { "content-type": "application/json", "x-api-key": BRAIN_KEY, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ ...body, stream: true }) });
+  if (!r.ok) { const j = await r.json().catch(() => ({})); const e = new Error((j.error && j.error.message) || `Claude said ${r.status}`); e.status = r.status; throw e; }
+  const msg = { content: [], stop_reason: null, usage: {} };
+  const blocks = [];   // index → the block being built (+ its partial JSON / text)
+  let buf = "", event = "";
+  const take = (data) => {
+    let d; try { d = JSON.parse(data); } catch { return; }
+    if (d.type === "error") { const e = new Error((d.error && d.error.message) || "Claude's stream failed"); e.status = 529; throw e; }
+    if (d.type === "message_start" && d.message) msg.usage = d.message.usage || {};
+    else if (d.type === "content_block_start") { const b = { ...d.content_block }; if (b.type === "tool_use") b._json = ""; blocks[d.index] = b; }
+    else if (d.type === "content_block_delta") {
+      const b = blocks[d.index]; if (!b) return; const x = d.delta || {};
+      if (x.type === "text_delta") { b.text = (b.text || "") + x.text; if (onText) onText(x.text); }
+      else if (x.type === "input_json_delta") b._json += x.partial_json;
+      else if (x.type === "thinking_delta") b.thinking = (b.thinking || "") + x.thinking;
+      else if (x.type === "signature_delta") b.signature = (b.signature || "") + x.signature;
+    }
+    else if (d.type === "content_block_stop") { const b = blocks[d.index]; if (b && b.type === "tool_use") { try { b.input = b._json ? JSON.parse(b._json) : (b.input || {}); } catch { b.input = {}; } delete b._json; } }
+    else if (d.type === "message_delta") { if (d.delta && d.delta.stop_reason) msg.stop_reason = d.delta.stop_reason; if (d.usage) msg.usage = { ...msg.usage, ...d.usage }; }
+  };
+  const reader = r.body.getReader(), dec = new TextDecoder();
+  for (;;) {
+    const { value, done } = await reader.read(); if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let i; while ((i = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, i).replace(/\r$/, ""); buf = buf.slice(i + 1);
+      if (line.startsWith("event:")) event = line.slice(6).trim();
+      else if (line.startsWith("data:")) take(line.slice(5).trim());
+    }
+  }
+  msg.content = blocks.filter(Boolean);
+  if (!msg.stop_reason) msg.stop_reason = msg.content.some((b) => b.type === "tool_use") ? "tool_use" : "end_turn";
+  return msg;
 }
+/* What the admin's screen is told while Echo works (the app's live stream, server/core/live.js). */
+const BRAIN_SAYS = { knowledge_add: "Writing to Knowledge", knowledge_edit: "Editing Knowledge", knowledge: "Reading Knowledge", overview: "Looking at the big picture", members: "Looking at members", member: "Looking at a member", orders: "Looking at orders", sellers: "Looking at sellers", listings: "Looking at listings", market: "Looking at the Market", events: "Looking at the tournament", event: "Looking at the tournament", posts: "Looking at posts", errors: "Looking at errors", health: "Checking the server", systems: "Checking Railway and GitHub" };
+const brainTell = (userId, data) => { try { sendTo([userId], "echo", data); } catch {} };
 const BRAIN_SORRY = { 401: "The key in Railway isn't working — Claude turned it away. Check ECHO_AI_KEY in Railway → Variables.", 402: "Claude's account is out of credit. Top it up at console.anthropic.com → Billing.", 429: "Claude is busy right now. Give it a minute and ask again.", 529: "Claude is overloaded right now. Give it a minute and ask again." };
 async function brainAsk(user, token, q) {
   const asked = String(q || "").trim().slice(0, 4000);
@@ -118,9 +154,13 @@ async function brainAsk(user, token, q) {
   const system = brainSystem(user), tools = brainTools();
   const messages = brainHistory(user.id);
   let used = 0;
+  let pending = "", flush = null;
+  const onText = (t) => { pending += t; if (!flush) flush = setTimeout(() => { brainTell(user.id, { kind: "text", askId, text: pending }); pending = ""; flush = null; }, 90); };
+  brainTell(user.id, { kind: "status", askId, text: "Thinking" });
   try {
     for (let round = 0; round <= BRAIN_ROUNDS; round++) {
-      const res = await brainCall({ model: BRAIN_MODEL, max_tokens: 4096, system, tools, messages });
+      const res = await brainCall({ model: BRAIN_MODEL, max_tokens: 4096, system, tools, messages }, onText);
+      if (flush) { clearTimeout(flush); flush = null; } if (pending) { brainTell(user.id, { kind: "text", askId, text: pending }); pending = ""; }
       used += (res.usage && res.usage.output_tokens) || 0;
       brainKeep(user.id, "assistant", "reply", res.content);
       messages.push({ role: "assistant", content: res.content });
@@ -130,6 +170,7 @@ async function brainAsk(user, token, q) {
         break;
       }
       const calls = res.content.filter((b) => b.type === "tool_use");
+      brainTell(user.id, { kind: "status", askId, text: calls.map((b) => BRAIN_SAYS[b.name] || "Looking at " + b.name.replace(/_/g, " ")).filter((v, i, a) => a.indexOf(v) === i).join(" · ") });
       const results = await Promise.all(calls.map(async (b) => {
         const r = await brainRun(user, token, b.name, b.input).catch((e) => ({ text: e.message, isError: true }));
         return { type: "tool_result", tool_use_id: b.id, content: r.text, ...(r.isError ? { is_error: true } : {}) };
@@ -146,7 +187,9 @@ async function brainAsk(user, token, q) {
     if (last && last.kind === "reply" && JSON.parse(last.content).some((b) => b.type === "tool_use")) db.prepare(`UPDATE echo_brain SET archived = 1 WHERE id = ?`).run(last.id);
     brainKeep(user.id, "assistant", "error", [{ type: "text", text }]);
   }
+  if (flush) { clearTimeout(flush); flush = null; }
   const turn = brainTurns(user.id).find((t) => t.id === askId);
+  brainTell(user.id, { kind: "done", askId });
   return { ...turn, outputTokens: used };
 }
 
