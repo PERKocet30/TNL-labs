@@ -1,4 +1,4 @@
-/* LABS admin — Echo Home v1.0, 2026-11-04. "A simplified admin dashboard integrated
+/* LABS admin — Echo Home v1.1, 2026-11-04 (everything Messages has: photos and PDFs, the mic, the speaker, the model picker, copy — 2-echo-home2.js). v1.0, 2026-11-04. "A simplified admin dashboard integrated
    with Echo so it can help me manage everything." The admin opens here: Echo on the
    left — the same brain, memory and hands as Messages → Echo (server/echo), answers
    streamed over the app's live stream — and, on a computer, what needs you and
@@ -27,7 +27,7 @@ VIEWS.echohome = () => {
       ${kpiHTML("Sales", money(p.now.gmv), { now: p.now.gmv, before: p.before.gmv, fmt: money, series: S.series.gmv })}
     </div>
     <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost sm" data-go="home">The full Home ${I.chev}</button></div>`;
-  const head = pageHead("Echo", `${today} · LABS's own`, ehOn() ? `<button class="btn ghost sm" id="ehbrief" ${EH.busy ? "disabled" : ""}>Brief me</button><button class="btn ghost sm" id="ehfresh" ${EH.busy ? "disabled" : ""}>New conversation</button>` : "");
+  const head = pageHead("Echo", `${today} · LABS's own`, ehOn() ? `${"speechSynthesis" in window ? `<button class="btn ghost sm ${ehVoiceOn() ? "on" : ""}" id="ehvoice" aria-pressed="${ehVoiceOn()}">${ehVoiceOn() ? "Reading aloud" : "Read aloud"}</button>` : ""}<button class="btn ghost sm" id="ehbrief" ${EH.busy ? "disabled" : ""}>Brief me</button><button class="btn ghost sm" id="ehfresh" ${EH.busy ? "disabled" : ""}>New conversation</button>` : "");
   return `${head}<div class="eh"><section class="rc eh-chat"><div class="eh-feed" id="ehfeed">${ehFeedHTML()}</div>${ehOn() ? `<div class="eh-foot" id="ehfoot">${ehComposerHTML()}</div>` : ""}</section><aside class="eh-side">${side}</aside></div>`;
 };
 function ehFeedHTML() {
@@ -41,10 +41,10 @@ function ehFeedHTML() {
   return h;
 }
 function ehTurnHTML(t) {
-  const q = t.label === "brief" ? `<div class="eh-q brief"><span class="mono">Brief</span></div>` : `<div class="eh-q"><div class="eh-qb">${esc(t.asked)}</div></div>`;
+  const q = t.label === "brief" ? `<div class="eh-q brief"><span class="mono">Brief</span></div>` : `<div class="eh-q"><div class="eh-qb">${ehFilesHTML(t.files)}${esc(t.asked)}</div></div>`;
   const saw = (t.tools || []).filter((x) => !/^knowledge_(add|edit)$|^web_search$/.test(x)), wrote = (t.tools || []).some((x) => /^knowledge_(add|edit)$/.test(x)), web = (t.tools || []).includes("web_search");
   const bits = [saw.length ? "Looked at " + saw.map((x) => esc(x.replace(/_/g, " "))).join(", ") : "", web ? "Searched the web" : "", wrote ? "Wrote to Knowledge" : "", t.model ? esc(t.model) : ""].filter(Boolean);
-  const foot = t.pending ? `<div class="eh-work"><i></i><span>${esc(t.status || "Thinking")}</span></div>` : `<div class="eh-ft">${bits.join(" · ")}</div>`;
+  const foot = t.pending ? `<div class="eh-work"><i></i><span>${esc(t.status || "Thinking")}</span></div>` : `<div class="eh-ft"><span>${bits.join(" · ")}</span>${t.text && !t.failed ? `<button class="eh-copy" data-ehcopy="${t.id}" aria-label="Copy">${di('<rect x="8" y="8" width="12" height="12"/><path d="M16 8V4H4v12h4"/>', 15)}</button>` : ""}</div>`;
   const cards = (t.proposals || []).map(ehCardHTML).join("");
   return `${q}<div class="eh-a ${t.failed ? "failed" : ""} ${t.pending ? "pending" : ""}" data-ehturn="${t.id}"><div class="eh-mark sm">${NAVI.echo}</div><div class="eh-ab"><div class="eh-text">${ehMd(t.text || "")}</div><div class="eh-cards">${cards}</div>${foot}</div></div>`;
 }
@@ -65,19 +65,24 @@ function ehMd(t) {
   flushP(); flushL(); return h;
 }
 function ehComposerHTML() {
-  const E = EH.data, name = (E && E.models && E.models.find((m) => m.id === E.model) || {}).name || "";
-  return `<div class="eh-box ${EH.busy ? "busy" : ""}"><textarea id="ehdraft" rows="1" placeholder="Talk to Echo">${esc(EH.draft)}</textarea>
-    <div class="eh-boxr"><span class="mono">${esc(name)}</span><button class="eh-send" id="ehsend" aria-label="Send" ${EH.draft.trim() && !EH.busy ? "" : "disabled"}>${I.chev}</button></div></div>`;
+  const E = EH.data, att = EH.att || [];
+  const ready = (EH.draft.trim() || att.some((a) => a.url)) && !att.some((a) => !a.url) && !EH.busy;
+  const models = (E && E.models || []).map((m) => `<option value="${esc(m.id)}" ${m.id === E.model ? "selected" : ""}>${esc(m.name)}</option>`).join("");
+  return `<div class="eh-box ${EH.busy ? "busy" : ""}">${ehAttHTML()}<textarea id="ehdraft" rows="1" placeholder="${EH.listening ? "Listening…" : "Talk to Echo"}">${esc(EH.draft)}</textarea>
+    <div class="eh-boxr"><span class="eh-tools"><input type="file" id="ehfile" accept="image/*,application/pdf" multiple hidden><button class="eh-ib" id="ehphoto" aria-label="Add a photo or PDF">${NAVI.listings}</button>${ehCanDictate() ? `<button class="eh-ib ${EH.listening ? "live" : ""}" id="ehmic" aria-label="${EH.listening ? "Stop listening" : "Speak"}">${di('<rect x="9" y="3" width="6" height="11"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', 18)}</button>` : ""}<select class="eh-model" id="ehmodel" aria-label="Which Claude answers">${models}</select></span><button class="eh-send" id="ehsend" aria-label="Send" ${ready ? "" : "disabled"}>${I.chev}</button></div></div>`;
 }
 function ehPaintFeed() { const f = $("#ehfeed"); if (!f) return; f.innerHTML = ehFeedHTML(); ehWireFeed(f); f.scrollTop = f.scrollHeight; }
 function ehPaintFoot() { const f = $("#ehfoot"); if (!f) return; const d = $("#ehdraft"), had = d && document.activeElement === d; f.innerHTML = ehComposerHTML(); ehWireFoot(f); if (had) { const d2 = $("#ehdraft"); if (d2) { d2.focus(); d2.setSelectionRange(d2.value.length, d2.value.length); } } }
 async function ehAsk(q, brief = false) {
-  q = (q || "").trim(); if (EH.busy || !ehOn() || (!q && !brief)) return;
-  EH.draft = ""; EH.busy = true;
-  EH.data.turns.push({ id: "p" + Date.now(), asked: q, label: brief ? "brief" : "", kind: "brain", pending: true, status: "Thinking", text: "", tools: [], proposals: [] });
+  q = (q || "").trim(); const att = (EH.att || []).filter((a) => a.url);
+  if (EH.busy || !ehOn() || (!q && !brief && !att.length)) return;
+  if ((EH.att || []).some((a) => !a.url)) return toast("Still uploading…");
+  if (EH.rec) { try { EH.rec.stop(); } catch (e) {} }
+  EH.draft = ""; EH.att = []; EH.busy = true;
+  EH.data.turns.push({ id: "p" + Date.now(), asked: q, files: att.map((a) => ({ url: a.url, kind: a.kind, name: a.name })), label: brief ? "brief" : "", kind: "brain", pending: true, status: "Thinking", text: "", tools: [], proposals: [] });
   ehPaintFeed(); ehPaintFoot(); $$("#ehbrief,#ehfresh").forEach((b) => b.disabled = true);
   const drop = () => { const i = EH.data.turns.findIndex((x) => x.pending); if (i >= 0) EH.data.turns.splice(i, 1); };
-  try { const r = brief ? await req("/api/echo/brief", { method: "POST", body: {} }) : await req("/api/echo/ask", { method: "POST", body: { q } }); drop(); EH.data.turns.push(r.turn); if (brief) EH.data.briefToday = true; }
+  try { const r = brief ? await req("/api/echo/brief", { method: "POST", body: {} }) : await req("/api/echo/ask", { method: "POST", body: { q, files: att.map((a) => ({ url: a.url, name: a.name })) } }); drop(); EH.data.turns.push(r.turn); if (brief) EH.data.briefToday = true; if (r.turn && r.turn.text && !r.turn.failed) ehSay(r.turn.text); }
   catch (e) { drop(); toast(e.message); }
   EH.busy = false; ehPaintFeed(); ehPaintFoot(); $$("#ehbrief,#ehfresh").forEach((b) => b.disabled = false);
 }
@@ -115,18 +120,25 @@ function ehWireFeed(f) {
   $$("[data-ehno]", f).forEach((b) => b.onclick = () => ehDecide(+b.dataset.ehno, false));
   $$("[data-person]", f).forEach((el) => el.onclick = () => openPerson(el.dataset.person));
   $$("[data-go]", f).forEach((el) => el.onclick = () => go(el.dataset.go));
+  $$("[data-ehcopy]", f).forEach((b) => b.onclick = () => ehCopy(b.dataset.ehcopy));
 }
 function ehWireFoot(F) {
   const d = $("#ehdraft", F);
   if (d) { const fit = () => { d.style.height = "auto"; d.style.height = Math.min(160, d.scrollHeight) + "px"; }; fit();
-    d.oninput = () => { EH.draft = d.value; fit(); const s = $("#ehsend"); if (s) s.disabled = !d.value.trim() || EH.busy; };
+    d.oninput = () => { EH.draft = d.value; fit(); const s = $("#ehsend"); if (s) s.disabled = (!d.value.trim() && !(EH.att || []).some((a) => a.url)) || EH.busy; };
     d.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ehAsk(d.value); } }; }
   const s = $("#ehsend", F); if (s) s.onclick = () => ehAsk(EH.draft);
+  const fi = $("#ehfile", F), ph = $("#ehphoto", F); if (ph && fi) { ph.onclick = () => fi.click(); fi.onchange = () => { const files = [...(fi.files || [])]; fi.value = ""; if (files.length) ehAttach(files); }; }   // copy the list first: clearing the input empties it
+  const mic = $("#ehmic", F); if (mic) mic.onclick = () => ehDictate();
+  const sel = $("#ehmodel", F); if (sel) sel.onchange = () => ehPickModel(sel.value);
+  $$("[data-ehattx]", F).forEach((b) => b.onclick = () => { EH.att.splice(+b.dataset.ehattx, 1); ehPaintFoot(); });
 }
 WIRES.echohome = () => {
   const f = $("#ehfeed"); if (f) { ehWireFeed(f); if (EH.stick) { f.scrollTop = f.scrollHeight; EH.stick = false; } }
   const F = $("#ehfoot"); if (F) ehWireFoot(F);
   const b = $("#ehbrief"); if (b) b.onclick = () => ehBrief();
+  const v = $("#ehvoice"); if (v) v.onclick = () => ehVoiceToggle();
   const n = $("#ehfresh"); if (n) n.onclick = async () => { if (!(await modal({ title: "New conversation?", body: "This one is put away, with any cards still waiting. Echo keeps everything it wrote in Knowledge.", ok: "New conversation" }))) return;
-    try { await req("/api/echo/reset", { method: "POST", body: {} }); EH.data.turns = []; ehPaintFeed(); } catch (e) { toast(e.message); } };
+    try { speechSynthesis.cancel(); } catch (e) {} EH.att = [];
+    try { await req("/api/echo/reset", { method: "POST", body: {} }); EH.data.turns = []; ehPaintFeed(); ehPaintFoot(); } catch (e) { toast(e.message); } };
 };

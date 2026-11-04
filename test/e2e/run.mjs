@@ -2234,16 +2234,19 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator(".line svg polyline.nw").count() === 1 && await p.locator(".line svg polyline.pv").count() === 1, "no line chart with last period behind");
     ok(await p.locator(".rc h3", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
     // 2026-10-20: on a computer, a grouped side menu with every section and no bottom bar (twelve since Systems and Instagram, 2026-10-26)
-    ok(await p.locator(".side .nv").count() >= 12 && !(await p.locator(".bbar").isVisible()), "no full side menu (twelve sections or more) on a computer");
-    // 2026-10-26: Systems — what's live, what's waiting for a Push; with no keys set, each card says so plainly
-    await p.locator(".side .nv[data-tab=systems]").click();
+    // 2026-11-04: nine sections in five groups — Orders · Listings · Sellers are Market's tabs, Systems is Health's
+    ok(await p.locator(".side .nv").count() === 11 && !(await p.locator(".bbar").isVisible()), "the side menu isn't the eleven grouped sections");
+    // 2026-10-26: Systems — what's live, what's waiting for a Push; with no keys set, each card says so plainly (2026-11-04: a tab of Health; the old #systems link lands on it)
+    await p.locator(".side .nv[data-tab=health]").click(); await fast(p, 6000, () => p.locator("[data-hs=systems]").waitFor(), "Health's tabs");
+    await p.locator("[data-hs=systems]").click();
     await fast(p, 6000, () => p.locator(".pg-hd h1", { hasText: "Systems" }).waitFor(), "the Systems page");
+    ok(await p.evaluate(() => location.hash === "#systems"), "the Systems tab didn't set #systems");
     ok((await p.locator(".empty", { hasText: "isn't connected yet" }).count()) === 4, "Systems doesn't say its keys aren't set yet (Railway, GitHub, Google, Meta)");
     ok(await p.locator("#sysfresh").count() === 1, "no Look again on Systems");
     // 2026-10-26: the week's report sits at the top of Systems with a button that emails it now
     ok(await p.locator(".sec", { hasText: "This week" }).count() === 1 && await p.locator("#wkmail").count() === 1, "Systems doesn't show the week with an Email-me-now button");
-    await p.locator(".side .nv[data-tab=home]").click(); await p.waitForTimeout(400);
-    ok(await p.locator(".side .grp").count() === 4, "the side menu isn't grouped");
+    await p.locator(".side .nv[data-tab=echohome]").click(); await p.waitForTimeout(400);
+    ok(await p.locator(".side .grp").count() === 5, "the side menu isn't in five groups");
     await p.locator("#gq").fill("tester");
     await fast(p, 4000, () => p.locator("#gres [data-gp]").first().waitFor(), "member search results");
     await p.locator("#gres [data-gp]").first().dispatchEvent("mousedown");
@@ -2251,6 +2254,7 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator("#person [data-ptab]").count() === 4, "the record has no tabs");
     await p.keyboard.press("Escape");
     await p.screenshot({ path: join(SHOTS, "admin-home.png"), fullPage: false });
+    await settledGoto(p, B + "/admin#home"); await fast(p, 6000, () => p.locator("[data-labf=pharmacy]").first().waitFor(), "Home again (the labs panel)");   // 2026-11-04: Home isn't in the menu; the lab link lives on it
     await p.locator("[data-labf=pharmacy]").first().click();
     // the lab list arrives with the posts — wait for it, not just the empty select
     await fast(p, 5000, () => p.locator("#clab option[value=pharmacy]").waitFor({ state: "attached" }), "the Labs tab");
@@ -2263,6 +2267,7 @@ console.log("\nMEMBER · COMPUTER");
       await settledGoto(p, B + "/admin#" + tab);
       await fast(p, 6000, () => p.locator(want).first().waitFor(), "admin → " + tab);
       ok(await p.locator(".pg-hd h1").count() === 1, tab + " has no page title");
+      if (["orders", "listings", "sellers"].includes(tab)) ok(await p.locator(`[data-mkt=${tab}][aria-selected=true]`).count() === 1 && await p.evaluate(() => TAB === "market"), "an old #" + tab + " link didn't land on Market's " + tab + " tab");
       /* 2026-11-03: Sellers shows what the walkthrough teaches — the listings made earlier are in it, as counts */
       if (tab === "sellers") ok(await p.locator(".rc", { hasText: "Who's listing" }).count() === 1 && await p.locator(".rc", { hasText: "How far the walkthrough takes people" }).locator(".fun .fs").count() >= 8
         && !(await p.locator(".rc", { hasText: "Who's listing" }).textContent()).includes("tester"), "Sellers doesn't show who lists and the walkthrough funnel (counts only)");
@@ -2319,10 +2324,11 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
   });
   // admin v4 (2026-10-20): on a phone, a bottom bar with four sections and More; tables are cards
   await step(d, "admin on a phone: a bottom bar, More opens the rest, Orders are cards", async () => {
-    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 5 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone");
+    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 4 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone (Echo · Market · Members · More)");
     await p.locator(".bbar [data-more]").tap();
     await fast(p, 3000, () => p.locator(".msheet .mi[data-tab=analytics]").waitFor(), "the More sheet");
-    await p.locator(".msheet .mi[data-tab=orders]").tap();
+    ok(await p.locator(".msheet .grp").count() === 5 && await p.locator(".msheet .mi").count() === 12, "the phone's sheet isn't the five groups (eleven sections + Open the app)");
+    await p.locator(".msheet .mi[data-tab=market]").tap();
     await fast(p, 6000, () => p.locator("[data-os=paid]").waitFor(), "Orders from More");
     ok(await p.locator(".msheet").count() === 0, "More stayed open");
     ok(!(await p.locator(".toc table").first().isVisible()), "Orders on a phone is a sideways table");
@@ -2346,7 +2352,7 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     ok(await p.evaluate(() => { const th = document.querySelector('#pres th [data-pdbk="joined"]').closest("th");
       return th.getAttribute("aria-sort") === "descending" && PPREF.k === "joined" && !PPREF.up; }), "opening Admin again kept the old A→Z sort instead of newest first");
     await p.locator("[data-pview=cards]").tap();
-    await p.locator("[data-tab=home]:visible").tap();
+    await p.locator("[data-tab=echohome]:visible").tap();
     await fast(p, 4000, () => p.locator("#gq").waitFor(), "the top-bar search on other pages");
   });
   await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {

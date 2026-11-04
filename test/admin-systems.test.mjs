@@ -118,7 +118,8 @@ try {
 
   console.log("\nTHE PAGE");
   const core = readFileSync(join(ROOT, "public/admin-app/1-core.js"), "utf8"), page = readFileSync(join(ROOT, "public/admin-app/7-systems.js"), "utf8"), html = readFileSync(join(ROOT, "public/admin.html"), "utf8");
-  t("Systems is a section under Understand, with its own script", /\["systems", "Systems"\]/.test(core) && /"health", "systems"\]/.test(core) && /7-systems\.js/.test(html));
+  /* 2026-11-04: Systems is a tab of Health (Under the hood); an old #systems link still lands on it */
+  t("Systems is a tab of Health under the hood, with its own script, and #systems still lands on it", /\["systems", "Systems"\]/.test(core) && /"Under the hood", \["analytics", "health"\]/.test(core) && /systems: "health"/.test(core) && /7-systems\.js/.test(html) && /7-systems5-health\.js/.test(html));
   t("the page says plainly when a key isn't set", /RAILWAY_PROJECT_TOKEN/.test(page) && /GITHUB_TOKEN/.test(page) && /RAILWAY\.md/.test(page));
   t("it never takes a token from the page or stores one", !/localStorage\.(set|get)Item\(["'](railway|github)/i.test(page));
 } finally { srv.kill(); fake.close(); }
