@@ -1,4 +1,4 @@
-/* LABS admin — Echo Home v1.3, 2026-11-04 ("I don't like having to scroll all the way down — it should be a module I can scroll in, with a button to the bottom, like Claude"): on a phone the conversation is its own scroll box sized to the screen, the composer pinned under it, a ↓ to the latest when you've scrolled up; Needs you sits right below. v1.2 — 2026-11-04 ("my message keeps getting deleted": a send that fails no longer throws the question away — the page asks the server whether it arrived and shows the answer when it does, or says it didn't with the words back in the box; coming back to the page re-reads the conversation — 2-echo-home2.js). v1.1 — 2026-11-04 (everything Messages has: photos and PDFs, the mic, the speaker, the model picker, copy — 2-echo-home2.js). v1.0, 2026-11-04. "A simplified admin dashboard integrated
+/* LABS admin — Echo Home v1.4, 2026-11-04 ("make Echo interactive, like speaking with a virtual AI": the Talk button opens 2-echo-voice.js; the live stream feeds it so Echo speaks while it writes). v1.3, 2026-11-04 ("I don't like having to scroll all the way down — it should be a module I can scroll in, with a button to the bottom, like Claude"): on a phone the conversation is its own scroll box sized to the screen, the composer pinned under it, a ↓ to the latest when you've scrolled up; Needs you sits right below. v1.2 — 2026-11-04 ("my message keeps getting deleted": a send that fails no longer throws the question away — the page asks the server whether it arrived and shows the answer when it does, or says it didn't with the words back in the box; coming back to the page re-reads the conversation — 2-echo-home2.js). v1.1 — 2026-11-04 (everything Messages has: photos and PDFs, the mic, the speaker, the model picker, copy — 2-echo-home2.js). v1.0, 2026-11-04. "A simplified admin dashboard integrated
    with Echo so it can help me manage everything." The admin opens here: Echo on the
    left — the same brain, memory and hands as Messages → Echo (server/echo), answers
    streamed over the app's live stream — and, on a computer, what needs you and
@@ -69,7 +69,7 @@ function ehComposerHTML() {
   const ready = (EH.draft.trim() || att.some((a) => a.url)) && !att.some((a) => !a.url) && !EH.busy;
   const models = (E && E.models || []).map((m) => `<option value="${esc(m.id)}" ${m.id === E.model ? "selected" : ""}>${esc(m.name)}</option>`).join("");
   return `<div class="eh-box ${EH.busy ? "busy" : ""}">${ehAttHTML()}<textarea id="ehdraft" rows="1" placeholder="${EH.listening ? "Listening…" : "Talk to Echo"}">${esc(EH.draft)}</textarea>
-    <div class="eh-boxr"><span class="eh-tools"><input type="file" id="ehfile" accept="image/*,application/pdf" multiple hidden><button class="eh-ib" id="ehphoto" aria-label="Add a photo or PDF">${NAVI.listings}</button>${ehCanDictate() ? `<button class="eh-ib ${EH.listening ? "live" : ""}" id="ehmic" aria-label="${EH.listening ? "Stop listening" : "Speak"}">${di('<rect x="9" y="3" width="6" height="11"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', 18)}</button>` : ""}<select class="eh-model" id="ehmodel" aria-label="Which Claude answers">${models}</select></span><button class="eh-send" id="ehsend" aria-label="Send" ${ready ? "" : "disabled"}>${I.chev}</button></div></div>`;
+    <div class="eh-boxr"><span class="eh-tools"><input type="file" id="ehfile" accept="image/*,application/pdf" multiple hidden><button class="eh-ib" id="ehphoto" aria-label="Add a photo or PDF">${NAVI.listings}</button>${ehCanDictate() ? `<button class="eh-ib ${EH.listening ? "live" : ""}" id="ehmic" aria-label="${EH.listening ? "Stop listening" : "Speak"}">${di('<rect x="9" y="3" width="6" height="11"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', 18)}</button>` : ""}<select class="eh-model" id="ehmodel" aria-label="Which Claude answers">${models}</select></span>${typeof evCan === "function" && evCan() ? `<button class="eh-talk" id="ehtalk" aria-label="Talk with Echo">${di('<path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/>', 16)}Talk</button>` : ""}<button class="eh-send" id="ehsend" aria-label="Send" ${ready ? "" : "disabled"}>${I.chev}</button></div></div>`;
 }
 function ehPaintFeed() { const f = $("#ehfeed"); if (!f) return; f.innerHTML = ehFeedHTML(); ehWireFeed(f); f.scrollTop = f.scrollHeight; ehDownShow(); }
 /* the ↓ to the latest, as in Claude: shown once you've scrolled up past a screen's worth of the conversation */
@@ -118,7 +118,7 @@ function ehLive(d) {
   if (d.kind === "proposal") return ehCardUpdate(d.proposal);
   const t = EH.data.turns.find((x) => x.pending); if (!t) return;
   const w = $(`[data-ehturn="${t.id}"] .eh-work span`);
-  if (d.kind === "text") { t.text = (t.text || "") + d.text; t.status = "Writing"; const n = $(`[data-ehturn="${t.id}"] .eh-text`); if (n) n.innerHTML = ehMd(t.text); if (w) w.textContent = "Writing"; }
+  if (d.kind === "text") { t.text = (t.text || "") + d.text; t.status = "Writing"; const n = $(`[data-ehturn="${t.id}"] .eh-text`); if (n) n.innerHTML = ehMd(t.text); if (w) w.textContent = "Writing"; if (typeof evText === "function") evText(t.text, false); }
   else if (d.kind === "status") { t.status = d.text; if (w) w.textContent = d.text; }
   const f = $("#ehfeed"); if (f && f.scrollHeight - f.scrollTop - f.clientHeight < 200) f.scrollTop = f.scrollHeight; ehDownShow();
 }
@@ -138,6 +138,7 @@ function ehWireFoot(F) {
   const s = $("#ehsend", F); if (s) s.onclick = () => ehAsk(EH.draft);
   const fi = $("#ehfile", F), ph = $("#ehphoto", F); if (ph && fi) { ph.onclick = () => fi.click(); fi.onchange = () => { const files = [...(fi.files || [])]; fi.value = ""; if (files.length) ehAttach(files); }; }   // copy the list first: clearing the input empties it
   const mic = $("#ehmic", F); if (mic) mic.onclick = () => ehDictate();
+  const talk = $("#ehtalk", F); if (talk) talk.onclick = () => evOpen();
   const sel = $("#ehmodel", F); if (sel) sel.onchange = () => ehPickModel(sel.value);
   $$("[data-ehattx]", F).forEach((b) => b.onclick = () => { EH.att.splice(+b.dataset.ehattx, 1); ehPaintFoot(); });
 }

@@ -2381,6 +2381,44 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     ok(!(await p.locator("#ehdown.on").count()), "↓ didn't go away at the latest");
     await p.unroute("**/api/echo");
   });
+  /* 2026-11-04: "make Echo interactive too, like speaking with a virtual AI" — Talk. A pretend microphone and voice stand in
+     for the phone's own (a test browser can't hear or speak): you say something, a pause sends it, Echo says it back
+     sentence by sentence, then listens again; End closes it and the conversation is there in writing. */
+  await step(d, "Echo Home → Talk: speak, a pause sends it, Echo answers out loud and listens again; End leaves it all in writing", async () => {
+    const turns = [{ id: 880, asked: "Hi", label: "", files: [], proposals: [], kind: "brain", text: "Hello.", tools: [], model: "Opus 5.5", createdAt: Date.now() }];
+    let asked = null;
+    await p.route("**/api/echo", (r) => (r.request().method() === "GET" ? r.fulfill({ json: { name: "Echo", brain: true, model: "claude-opus-5-5", models: [{ id: "claude-opus-5-5", name: "Claude Opus 5.5", short: "Opus 5.5", line: "" }],
+      sub: "LABS's own", hello: "Hi — I'm Echo.", preview: false, topics: [], starters: [], briefToday: true, turns } }) : r.continue()));
+    await p.route("**/api/echo/ask", async (r) => { asked = JSON.parse(r.request().postData() || "{}").q; await new Promise((x) => setTimeout(x, 300));
+      r.fulfill({ json: { turn: { id: 881, asked, label: "", files: [], proposals: [], kind: "brain", text: "**All good.** Ten members joined this week.\n\n- The tournament is busy.", tools: ["pulse"], model: "Opus 5.5", createdAt: Date.now() } } }); });
+    await settledGoto(p, B + "/admin");
+    await fast(p, 8000, () => p.locator(".eh-a .eh-text", { hasText: "Hello." }).waitFor({ state: "attached" }), "Echo Home");
+    await p.evaluate(() => {
+      window.__spoken = [];
+      window.webkitSpeechRecognition = window.SpeechRecognition = class { start() { window.__rec = this; } stop() { setTimeout(() => this.onend && this.onend(), 0); } };
+      window.__say = (words) => window.__rec.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: words }], { isFinal: true })] });
+      speechSynthesis.speak = (u) => { window.__spoken.push(u.text); setTimeout(() => { u.onstart && u.onstart(); setTimeout(() => u.onend && u.onend(), 40); }, 10); };
+      speechSynthesis.cancel = () => {};
+      ehPaintFoot();
+    });
+    await p.locator("#ehtalk").tap();
+    await fast(p, 3000, () => p.locator("#ev.ev-in").waitFor(), "the Talk screen");
+    await p.waitForFunction(() => EV.state === "listening" && window.__rec, null, { timeout: 4000 });
+    ok(await p.evaluate(() => /listening/i.test(window.__spoken[0] || "")), "Echo didn't say it's listening when Talk opened");
+    await p.evaluate(() => window.__say("How are we doing"));
+    ok(/How are we doing/.test(await p.locator("#evsub").innerText()), "your words don't show as you say them");
+    await p.waitForFunction(() => EV.state === "thinking", null, { timeout: 4000 });
+    await p.waitForFunction(() => window.__spoken.some((s) => /Ten members/.test(s)), null, { timeout: 6000 });
+    ok(asked === "How are we doing", "the pause didn't send what you said");
+    ok(await p.evaluate(() => window.__spoken.some((s) => s === "All good.") && !window.__spoken.some((s) => /\*\*|^- /.test(s))), "Echo didn't speak sentence by sentence, or read out the markdown");
+    await p.waitForFunction(() => EV.state === "listening", null, { timeout: 4000 });
+    ok(true, "Echo listens again after answering");
+    await p.locator("#evend").tap();
+    await p.waitForTimeout(200);
+    ok(!(await p.locator("#ev").count()) && await p.evaluate(() => !EV.open && !EV.raf), "End didn't close Talk, or the orb kept drawing");
+    ok(await p.locator(".eh-a .eh-text", { hasText: "Ten members joined" }).count() === 1, "the spoken conversation isn't in writing behind Talk");
+    await p.unroute("**/api/echo"); await p.unroute("**/api/echo/ask");
+  });
   // 2026-10-14: on a phone, People starts in Cards (no sideways swiping) and has one search box, not two
   await step(d, "admin → People on a phone: cards, and one search box", async () => {
     await p.locator("[data-tab=people]:visible").tap();
