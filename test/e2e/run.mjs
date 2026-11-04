@@ -2440,6 +2440,46 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.locator("[data-tab=echohome]:visible").tap();
     await fast(p, 4000, () => p.locator("#gq").waitFor(), "the top-bar search on other pages");
   });
+  /* 2026-11-04: "a 3D graphic showing where everyone in the world is logging into LABS from" — the globe on People */
+  await step(d, "admin → People on a phone: the globe draws, a row flies to its country, the page still scrolls past it, and it stops when you leave", async () => {
+    await p.route("**/api/admin/globe**", (r) => r.fulfill({ json: { days: 30, total: 12, placed: 10, countries: [
+      { c: "US", members: 6, active: 4, today: 1, cities: [["Atlanta", 3]] }, { c: "NG", members: 3, active: 2, today: 0, cities: [["Lagos", 3]] }, { c: "GB", members: 1, active: 0, today: 0, cities: [] }] } }));
+    await p.evaluate(() => { D.globe = null; });
+    await p.locator("[data-tab=people]:visible").tap();
+    await fast(p, 6000, () => p.locator("#glcv").waitFor(), "the globe on People");
+    await p.waitForTimeout(400);
+    ok(await p.evaluate(() => { const c = document.querySelector("#glcv"), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 1000; }), "the globe's canvas is blank");
+    ok(await p.locator(".gl-list [data-glc]").count() === 3, "the globe's list doesn't show the three countries");
+    await p.locator('[data-glc="NG"]').tap(); await p.waitForTimeout(900);
+    ok(/Nigeria/.test(await p.locator("#glpick").innerText()) && /Lagos/.test(await p.locator("#glpick").innerText()), "tapping Nigeria didn't say what's there");
+    ok(await p.evaluate(() => Math.abs(GL.rot.lon - 8) < 3), "tapping Nigeria didn't turn the globe to it");
+    ok(await p.evaluate(() => getComputedStyle(document.querySelector("#glcv")).touchAction === "pan-y"), "a finger on the globe can't scroll the page past it");
+    await p.locator("[data-tab=echohome]:visible").tap(); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => GL.raf === 0), "the globe kept drawing after leaving People");
+    await p.unroute("**/api/admin/globe**");
+  });
+  /* 2026-11-04: "the same type of interactive model for the system networks" — the map on Health → Systems */
+  await step(d, "admin → Health → Systems on a phone: the map draws every service, the one that needs a look is picked, a row opens its page, and it stops when you leave", async () => {
+    const node = (id, name, state, go) => ({ id, name, does: name + " does things", state, line: name + " line", facts: [["Thing", 1]], go });
+    await p.route("**/api/admin/systems/map", (r) => r.fulfill({ json: { at: Date.now(), nodes: [node("labs", "LABS", "on", "health"), node("members", "Members' phones", "on", "health"),
+      node("cloudflare", "Cloudflare", "on", "settings"), node("railway", "Railway", "on", "systems"), node("data", "Database", "on", "health"), node("github", "GitHub", "on", "systems"),
+      node("stripe", "Stripe", "warn", "market"), node("resend", "Resend", "on", "health"), node("claude", "Claude", "on", "echohome"), node("connector", "Connected apps", "off", "systems"),
+      node("google", "Google", "off", "systems"), node("meta", "Instagram", "off", "instagram")] } }));
+    await settledGoto(p, B + "/admin#systems");
+    await fast(p, 8000, () => p.locator("#smcv").waitFor(), "the systems map");
+    await p.waitForTimeout(400);
+    ok(await p.evaluate(() => { const c = document.querySelector("#smcv"), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 500; }), "the systems map's canvas is blank");
+    ok(await p.locator(".sm-list [data-smn]").count() === 12, "the map's list doesn't name all twelve");
+    ok(/Stripe/.test(await p.locator("#smpick").innerText()) && /needs a look/.test(await p.locator("#smpick").innerText()), "the service that needs a look wasn't picked first");
+    ok(await p.locator(".sm-list [data-smn]").first().getAttribute("data-smn") === "stripe", "what needs a look isn't at the top of the list");
+    await p.locator('[data-smn="claude"]').tap(); await p.waitForTimeout(800);
+    ok(/Claude/.test(await p.locator("#smpick").innerText()), "tapping Claude didn't show Claude");
+    await p.locator("[data-smgo]").tap();
+    await fast(p, 6000, () => p.waitForFunction(() => TAB === "echohome"), "Open Echo from the map");
+    await p.waitForTimeout(200);
+    ok(await p.evaluate(() => SM.raf === 0), "the map kept drawing after leaving Systems");
+    await p.unroute("**/api/admin/systems/map");
+  });
   await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {
     await p.evaluate(() => localStorage.removeItem("tnl-token"));   // signed out (the step before signed this phone in)
     await settledGoto(p, B + "/?l=visual"); await throughDoor(p);
