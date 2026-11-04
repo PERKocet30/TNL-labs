@@ -43,13 +43,14 @@ let drops = 0;   // how many times the stand-in dropped stale reasoning because 
 const seal = (j) => "sig:" + createHash("sha256").update(JSON.stringify(j.system) + JSON.stringify(j.tools)).digest("hex").slice(0, 16);
 const BINDING = "messages.1.content.0: Invalid `signature` in `thinking` block. The block is bound to a different conversation. Remove the block, or set `thinking.block_binding.prefix_mismatch_behavior` to \"drop_block\".";
 const claude = createServer((req, res) => {
-  let body = ""; req.on("data", (d) => body += d); req.on("end", () => {
+  let body = ""; req.on("data", (d) => body += d); req.on("end", async () => {
     const j = JSON.parse(body || "{}"); seen.push({ headers: req.headers, body: j });
     /* the binding check, as the real API runs it: reasoning sealed to other instructions is refused, unless the request asks to drop it */
     const stale = (j.messages || []).some((m) => Array.isArray(m.content) && m.content.some((b) => b.type === "thinking" && b.signature !== seal(j)));
     const dropOk = j.thinking && j.thinking.block_binding && j.thinking.block_binding.prefix_mismatch_behavior === "drop_block" && req.headers["anthropic-beta"] === "thinking-binding-controls-2026-08-01";
     if (stale && (!dropOk || mode === "refuse-binding")) { res.writeHead(400, { "content-type": "application/json" }); return res.end(JSON.stringify({ type: "error", error: { type: "invalid_request_error", message: BINDING } })); }
     if (stale) drops++;
+    if (mode === "slow") await new Promise((r) => setTimeout(r, 900));   // Claude taking its time
     if (mode === "500") { res.writeHead(500, { "content-type": "application/json" }); return res.end(JSON.stringify({ type: "error", error: { type: "api_error", message: "Internal server error" } })); }
     if (mode === "401" || (mode === "401-after-tool" && j.messages.at(-1).content[0] && j.messages.at(-1).content[0].type === "tool_result")) { res.writeHead(401, { "content-type": "application/json" }); return res.end(JSON.stringify({ error: { type: "authentication_error", message: "invalid x-api-key" } })); }
     const next = script.shift() || { stop_reason: "end_turn", content: [{ type: "text", text: "(script ran out)" }] };
@@ -96,7 +97,7 @@ try {
   t("…and the stand-in was never called", seen.length === 0);
 } finally { await stop(srv); }
 
-srv = boot({ ECHO_AI_KEY: "sk-ant-test", ANTHROPIC_API_KEY: "", ANTHROPIC_API_BASE: CLAUDE, ECHO_MODEL: "claude-opus-5-5" });
+srv = boot({ ECHO_AI_KEY: "sk-ant-test", ANTHROPIC_API_KEY: "", ANTHROPIC_API_BASE: CLAUDE, ECHO_MODEL: "claude-opus-5-5", ECHO_HOLD_MS: "150" });
 await ready(srv);
 try {
   console.log("\nWHO GETS THE BRAIN — admins; a member still gets the matcher");
@@ -239,6 +240,19 @@ try {
   t("the turn is labelled brief, so the page shows 'Brief' instead of the prompt", br.label === "brief" && br.text === "Quiet. Two things need you." && (await call("tok-admin", "GET", "/api/echo")).j.turns.at(-1).label === "brief");
   t("…and the hello now says there was one today", (await call("tok-admin", "GET", "/api/echo")).j.briefToday === true);
   t("an ordinary question has no label", (await call("tok-admin", "GET", "/api/echo")).j.turns[0].label === "");
+
+  console.log("\nTHE LINE STAYS OPEN — a slow answer keeps the phone's connection alive (2026-11-04, \"my message keeps getting deleted\")");
+  mode = "slow"; script = [{ stop_reason: "end_turn", content: [{ type: "text", text: "Took a while." }] }];
+  const t0 = Date.now(); let firstByte = 0, raw = "";
+  const sr = await fetch(`http://127.0.0.1:${PORT}/api/echo/ask`, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer tok-admin" }, body: JSON.stringify({ q: "take your time" }) });
+  const headersAt = Date.now() - t0;
+  const rd = sr.body.getReader(), dec = new TextDecoder(); let chunks = 0;
+  for (;;) { const { value, done } = await rd.read(); if (done) break; if (!firstByte) firstByte = Date.now() - t0; chunks++; raw += dec.decode(value, { stream: true }); }
+  mode = "ok";
+  t("the answer's headers come back at once, not after Claude finishes", sr.status === 200 && headersAt < 400 && /application\/json/.test(sr.headers.get("content-type")));
+  t("…bytes arrive while Claude works (a space now and every few beats), then the answer", firstByte < 400 && chunks >= 2 && /^\s+\{/.test(raw) && Date.now() - t0 >= 850);
+  t("…and the page reads it as ordinary JSON", JSON.parse(raw).turn.text === "Took a while.");
+  t("an empty question is still refused straight away, with a 400", (await call("tok-admin", "POST", "/api/echo/ask", { q: "", files: [] })).s === 400);
 
   console.log("\nWHEN CLAUDE FAILS — plain words, nothing dangling");
   script = [{ stop_reason: "tool_use", content: [{ type: "tool_use", id: "tu_9", name: "overview", input: {} }] }];

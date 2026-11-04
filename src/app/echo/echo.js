@@ -1,4 +1,4 @@
-/* ECHO v1.6 — 2026-11-04 (the hands: a card under an answer — what Echo set up and why, Confirm · Not now; done, declined or failed after; live when decided). v1.5 — 2026-11-04 (what Claude's app has: photos and PDFs on a message (the photo button, thumbnails over the composer), dictation (the mic — the phone's own speech recognition, no outside service), answers read aloud (the speaker in the header, remembered on this phone), "Searched the web" under an answer). v1.4 — 2026-11-04 (pick the model: tap its name under the composer — a sheet of the three, a line on each; every answer says which one wrote it). v1.3 — 2026-11-04 (modelled on Claude: your words in a quiet card, Echo's answer as plain text on the page, written in as it streams over the live stream, "Thinking" / "Looking at orders" while it works, light markdown, copy, a new conversation from the pen). v1.2 — 2026-11-04 (the brain: for an admin, when the server has a key, Echo is a model that reasons — the same screen, a turn of kind "brain" with what it looked at, Start fresh instead of Talk to a person). v1.1 — 2026-11-04 (answers from Knowledge wear the entry's title; a pick names which kind it was). v1.0 — 2026-11-04. Echo is LABS's help, pinned at the top of Messages:
+/* ECHO v1.7 — 2026-11-04 ("my message keeps getting deleted": a failed send asks the server whether it arrived, waits for the answer if Echo is still at it, or says it didn't with the words back in the box; coming back to the app re-reads the conversation). v1.6 — 2026-11-04 (the hands: a card under an answer — what Echo set up and why, Confirm · Not now; done, declined or failed after; live when decided). v1.5 — 2026-11-04 (what Claude's app has: photos and PDFs on a message (the photo button, thumbnails over the composer), dictation (the mic — the phone's own speech recognition, no outside service), answers read aloud (the speaker in the header, remembered on this phone), "Searched the web" under an answer). v1.4 — 2026-11-04 (pick the model: tap its name under the composer — a sheet of the three, a line on each; every answer says which one wrote it). v1.3 — 2026-11-04 (modelled on Claude: your words in a quiet card, Echo's answer as plain text on the page, written in as it streams over the live stream, "Thinking" / "Looking at orders" while it works, light markdown, copy, a new conversation from the pen). v1.2 — 2026-11-04 (the brain: for an admin, when the server has a key, Echo is a model that reasons — the same screen, a turn of kind "brain" with what it looked at, Start fresh instead of Talk to a person). v1.1 — 2026-11-04 (answers from Knowledge wear the entry's title; a pick names which kind it was). v1.0 — 2026-11-04. Echo is LABS's help, pinned at the top of Messages:
    ask in your own words, get an answer from what Echo knows about LABS
    (and about your own orders, shop and standing — nobody else's), thumbs it
    up or down, pick "I meant…" when it wasn't sure, or hand the conversation
@@ -172,16 +172,47 @@ async function echoAsk(q){
   const att=(ECHO.att||[]).filter(a=>a.url);if(!q&&!att.length)return;
   if((ECHO.att||[]).some(a=>!a.url&&!a.failed))return toast("Still uploading…");
   if(ECHO.rec){try{ECHO.rec.stop()}catch(e){}}
+  const known=new Set(ECHO.turns.map(t=>String(t.id))),keepAtt=(ECHO.att||[]).slice(),seq=(ECHO.seq=(ECHO.seq||0)+1);
   ECHO.att=[];ECHODRAFT="";ECHOBUSY=true;echoPaintFoot();
   const d=$("#echodraft");if(d){d.value="";fitDraft(d)}
   ECHO.turns.push(echoBrain()?{id:"p"+Date.now(),asked:q,files:att.map(a=>({url:a.url,kind:a.kind,name:a.name})),kind:"brain",pending:true,status:"Thinking",text:"",tools:[]}:{id:"p"+Date.now(),asked:q,kind:"pending",text:"",suggestions:[]});
   echoPaintFeed();const s=$("#echosend");if(s){if(echoBrain())s.disabled=true;else s.hidden=true}
   const drop=()=>{const i=ECHO.turns.findIndex(x=>x.pending||x.kind==="pending");if(i>=0)ECHO.turns.splice(i,1)};
-  try{const r=echoBrain()?await req("/api/echo/ask",{method:"POST",body:{q,files:att.map(a=>({url:a.url,name:a.name}))}}):await eapi.ask(q);drop();ECHO.turns.push(r.turn);if(echoBrain()&&r.turn&&r.turn.text&&!r.turn.failed)echoSay(r.turn.text)}
-  catch(e){drop();toast(e.message)}
+  try{const r=echoBrain()?await req("/api/echo/ask",{method:"POST",body:{q,files:att.map(a=>({url:a.url,name:a.name}))}}):await eapi.ask(q);
+    if(!r||!r.turn)throw new Error((r&&r.error)||"No answer came back");
+    if(!ECHO||seq!==ECHO.seq)return;
+    drop();ECHO.turns.push(r.turn);if(echoBrain()&&r.turn.text&&!r.turn.failed)echoSay(r.turn.text)}
+  catch(e){if(!ECHO||seq!==ECHO.seq)return;if(echoBrain())await echoRecover({q,att:keepAtt,known,seq,err:e});else{drop();toast(e.message)}}
+  if(!ECHO||seq!==ECHO.seq)return;
   ECHOBUSY=false;const d2=$("#echodraft");if(d2){d2.disabled=false}
   echoPaintFeed();if(echoBrain())echoPaintFoot();
 }
+/* A send that failed: ask the server before calling it lost — it may have arrived and Echo may still be answering.
+   If it never arrived, say so in the conversation with the words back in the box. Never just make them disappear. */
+async function echoRecover({q,att,known,seq,err}){
+  const stale=()=>!ECHO||seq!==ECHO.seq;
+  for(let i=0;i<45;i++){
+    await new Promise(r=>setTimeout(r,i?4000:1200));if(stale())return;
+    let d;try{d=await eapi.hello()}catch(e){continue}
+    const t=[...(d.turns||[])].reverse().find(x=>!known.has(String(x.id))&&x.asked===q);
+    if(!t){if(i>=3)break;continue}
+    if(t.text||t.failed){ECHO.turns=d.turns;if(t.text&&!t.failed)echoSay(t.text);return}
+    const p=ECHO.turns.find(x=>x.pending);if(p){p.status="Still working on it";const w=$(`[data-echoturn="${p.id}"] .echo-work span`);if(w)w.textContent=p.status}
+  }
+  if(stale())return;
+  const i=ECHO.turns.findIndex(x=>x.pending);if(i>=0)ECHO.turns.splice(i,1);
+  const why=/load failed|failed to fetch|network/i.test(String(err&&err.message))?"the connection dropped":String((err&&err.message)||"something went wrong").replace(/\.$/,"");
+  ECHO.turns.push({id:"f"+Date.now(),asked:q,files:att.filter(a=>a.url).map(a=>({url:a.url,kind:a.kind,name:a.name})),kind:"brain",text:`That didn\u2019t reach Echo (${why}). Your words are back in the box \u2014 send them again.`,failed:true,tools:[],proposals:[]});
+  if(!(ECHODRAFT||"").trim()){ECHODRAFT=q;ECHO.att=att}
+  try{fetch(API+"/api/client-error",{method:"POST",headers:{"Content-Type":"application/json",...(TOKEN?{Authorization:"Bearer "+TOKEN}:{})},body:JSON.stringify({message:"Echo (Messages): a question didn't come back \u2014 "+String((err&&err.message)||err).slice(0,200),detail:"online="+navigator.onLine,path:"/echo"}),keepalive:true}).catch(()=>{})}catch(x){}
+}
+/* Back in the app with Echo open (the phone was locked, or Echo answered on the computer): read the conversation again. */
+document.addEventListener("visibilitychange",async()=>{
+  if(document.visibilityState!=="visible"||!ECHOOPEN||ECHOBUSY||!echoBrain())return;
+  try{const d=await eapi.hello();if(!ECHOOPEN||ECHOBUSY||!d.brain)return;const keep=ECHO.turns.filter(t=>String(t.id).startsWith("f"));
+    const was=JSON.stringify(ECHO.turns.map(t=>[t.id,t.text]));ECHO.turns=[...d.turns,...keep];ECHO.model=d.model;
+    if(JSON.stringify(ECHO.turns.map(t=>[t.id,t.text]))!==was)echoPaintFeed()}catch(e){}
+});
 async function echoPick(turnId,src,picked){
   try{const r=await eapi.pick(turnId,src,picked);const i=ECHO.turns.findIndex(t=>String(t.id)===String(turnId));if(i>=0)ECHO.turns[i]=r.turn;echoPaintFeed()}
   catch(e){toast(e.message)}

@@ -1,5 +1,5 @@
 /* ================================================================
-   ECHO · the brain v1.6 — 2026-11-04 (the brief: POST /api/echo/brief asks Echo for the day in five lines — what moved, what needs Jorge, what it would do first; a labelled question, shown as "Brief" not as the prompt; briefToday on the hello so Echo Home asks once a day). v1.5 — 2026-11-04 (hands: the tools in echo/hands.js propose, a card with Confirm runs — see that file; what was confirmed rides on the next question). v1.4 — 2026-11-04 (what Claude's own app has: photos and PDFs in a message — POST /api/echo/attach, kept on the volume, sent to Claude as the bytes; the web — web_search, a server-side tool, so Echo can see outside LABS and says when it did; pause_turn resumed). v1.3 — 2026-11-04 (switch models in the app: tap the model's name under the composer — Opus 5.5 the default, Sonnet 5.5 for speed, Fable 5.1 for the hard ones; the echoModel setting; every answer says which one wrote it). v1.2 — 2026-11-04 ("I like option 2" → "Invalid signature in thinking block": Echo's instructions carried Knowledge and the date, so a Knowledge write — or midnight — changed them mid-conversation, and Claude refuses reasoning sealed to other instructions. Now the instructions are frozen per conversation (a "system" row; the date rides on each question), the API is told to drop stale reasoning rather than refuse (thinking-binding-controls), and a refusal of that kind is retried once without the old reasoning). v1.1 — 2026-11-04 (modelled on Claude: the answer streams in word by word over the live stream, with "Thinking…" / "Looking at orders…" while it works; light markdown). v1.0 — 2026-11-04. "I want my own AI, like Jarvis."
+   ECHO · the brain v1.7 — 2026-11-04 ("my message keeps getting deleted": a phone drops a request that sits silent for the 10–60s Claude takes; the answer's headers now go out at once and a space every 10s until the JSON — brainHold; JSON allows leading whitespace, so the page reads it as before). v1.6 — 2026-11-04 (the brief: POST /api/echo/brief asks Echo for the day in five lines — what moved, what needs Jorge, what it would do first; a labelled question, shown as "Brief" not as the prompt; briefToday on the hello so Echo Home asks once a day). v1.5 — 2026-11-04 (hands: the tools in echo/hands.js propose, a card with Confirm runs — see that file; what was confirmed rides on the next question). v1.4 — 2026-11-04 (what Claude's own app has: photos and PDFs in a message — POST /api/echo/attach, kept on the volume, sent to Claude as the bytes; the web — web_search, a server-side tool, so Echo can see outside LABS and says when it did; pause_turn resumed). v1.3 — 2026-11-04 (switch models in the app: tap the model's name under the composer — Opus 5.5 the default, Sonnet 5.5 for speed, Fable 5.1 for the hard ones; the echoModel setting; every answer says which one wrote it). v1.2 — 2026-11-04 ("I like option 2" → "Invalid signature in thinking block": Echo's instructions carried Knowledge and the date, so a Knowledge write — or midnight — changed them mid-conversation, and Claude refuses reasoning sealed to other instructions. Now the instructions are frozen per conversation (a "system" row; the date rides on each question), the API is told to drop stale reasoning rather than refuse (thinking-binding-controls), and a refusal of that kind is retried once without the old reasoning). v1.1 — 2026-11-04 (modelled on Claude: the answer streams in word by word over the live stream, with "Thinking…" / "Looking at orders…" while it works; light markdown). v1.0 — 2026-11-04. "I want my own AI, like Jarvis."
    Echo for the founder: a model that reasons (Claude, through a key kept in
    Railway — ECHO_AI_KEY), with the connector's tools as its eyes (live
    numbers, never saved copies) and Knowledge as its memory (the creed, the
@@ -276,12 +276,25 @@ app.get("/api/echo", auth, (req, res, next) => {
     starters: ["How are we doing this week?", "What should I build next, and why?", "Who's stuck setting up payouts?", "Write down what we decided today"].map((q, i) => ({ id: -1 - i, src: "brain", question: q })) });
 });
 const brainLimit = rateLimit({ max: 20, windowMs: 60000, key: "user" });   // counted only for the brain, so a member's questions to the matcher aren't
+/* Keep the line open while Claude works: the headers go out at once and a space every 10s, then the JSON.
+   A silent request of 10–60s is what a phone drops (screen lock, Low Power Mode, a network switch); bytes
+   keep it alive. Leading whitespace is valid JSON, so the page's r.json() reads it unchanged. */
+const BRAIN_HOLD_MS = Math.max(50, +process.env.ECHO_HOLD_MS || 10000);   // the test shortens it
+function brainHold(res) {
+  res.status(200); res.setHeader("Content-Type", "application/json; charset=utf-8"); res.setHeader("Cache-Control", "no-store"); res.setHeader("X-Accel-Buffering", "no");
+  try { res.flushHeaders(); res.write(" "); } catch {}
+  const tick = setInterval(() => { try { res.write(" "); } catch {} }, BRAIN_HOLD_MS);
+  res.on("close", () => clearInterval(tick));
+  return (obj) => { clearInterval(tick); try { res.end(JSON.stringify(obj)); } catch {} };
+}
 app.post("/api/echo/ask", auth, (req, res, next) => {
   if (!brainFor(req.user)) return next();
+  const b = req.body || {};
+  if (!String(b.q || "").trim() && !(Array.isArray(b.files) && b.files.length)) return res.status(400).json({ error: "Ask something" });
   brainLimit(req, res, async () => {
-    const turn = await brainAsk(req.user, req.token, (req.body || {}).q, (req.body || {}).files).catch((e) => { console.error("[echo] brain:", e); return { id: 0, asked: "", kind: "brain", text: "Something broke on my side. Ask again.", tools: [], failed: true, createdAt: Date.now() }; });
-    if (!turn) return res.status(400).json({ error: "Ask something" });
-    res.json({ turn });
+    const done = brainHold(res);
+    const turn = await brainAsk(req.user, req.token, b.q, b.files).catch((e) => { console.error("[echo] brain:", e); return { id: 0, asked: "", kind: "brain", text: "Something broke on my side. Ask again.", tools: [], failed: true, createdAt: Date.now() }; });
+    done(turn ? { turn } : { error: "Ask something" });
   });
 });
 /* The brief (Echo Home, 2026-11-04): the day in five lines, asked once a day by the page and any time by the button. */
@@ -291,9 +304,9 @@ const brainBriefToday = (userId) => { const r = db.prepare(`SELECT created_at FR
 app.post("/api/echo/brief", auth, admin, (req, res) => {
   if (!brainOn()) return res.status(400).json({ error: "Echo isn't awake here yet — ECHO_AI_KEY in Railway → Variables." });
   brainLimit(req, res, async () => {
+    const done = brainHold(res);
     const turn = await brainAsk(req.user, req.token, BRAIN_BRIEF, [], "brief").catch((e) => { console.error("[echo] brief:", e); return null; });
-    if (!turn) return res.status(500).json({ error: "Couldn't ask for the brief" });
-    res.json({ turn });
+    done(turn ? { turn } : { error: "Couldn't ask for the brief" });
   });
 });
 /* A photo or PDF for a message: base64 in, sniffed, kept on the volume as echo-<when>-<rand>.<ext>, its /uploads URL back. */
