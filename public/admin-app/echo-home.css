@@ -1,9 +1,15 @@
-/* LABS admin — Echo Home v1.1, 2026-11-04 (the composer's tools; the Market and Health tab strips). v1.0, 2026-11-04 (admin-app/2-echo-home.js). The chat on the left, what needs you on the right;
+/* LABS admin — Echo Home v1.2, 2026-11-04 (on a phone the conversation is a scroll box sized to the screen, with a ↓ to the latest). v1.1, 2026-11-04 (the composer's tools; the Market and Health tab strips). v1.0, 2026-11-04 (admin-app/2-echo-home.js). The chat on the left, what needs you on the right;
    modelled on Claude: your words in a quiet card, Echo's answer as text, a working line, cards with Confirm.
    Every colour is a palette variable (/palette.css). */
 .eh{display:grid;grid-template-columns:1fr;gap:14px;margin-top:10px}
 @media(min-width:1024px){.eh{grid-template-columns:minmax(0,1fr) 360px;align-items:start}.eh-chat{position:sticky;top:20px;height:calc(100vh - 150px)}}
-.eh-chat{display:flex;flex-direction:column;min-height:60vh;overflow:hidden}
+.eh-chat{position:relative;display:flex;flex-direction:column;overflow:hidden}
+/* a phone: the conversation is a box you scroll in — the screen minus the top bar, the page title and the bottom bar — so Needs you is right below it, not past the whole thread */
+@media(max-width:1023px){.eh-chat{height:calc(100dvh - 300px - env(safe-area-inset-bottom));min-height:380px}.eh-feed{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}}
+.eh-fw{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
+.eh-down{position:absolute;left:50%;bottom:12px;width:38px;height:38px;margin-left:-19px;border-radius:50%;background:var(--bg);color:var(--tx);border:1px solid var(--line2,var(--line));box-shadow:0 4px 14px color-mix(in srgb,var(--tx) 14%,transparent);display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .16s,transform .16s;z-index:2}
+.eh-down.on{opacity:1;transform:none;pointer-events:auto}
+@media(prefers-reduced-motion:reduce){.eh-down{transition:none}}
 .eh-feed{flex:1;overflow-y:auto;padding:18px 18px 8px;display:flex;flex-direction:column}
 .eh-feed>:first-child{margin-top:auto}
 .eh-hello{display:flex;gap:12px;align-items:flex-start;font-size:15px;line-height:1.5;padding-bottom:6px}
