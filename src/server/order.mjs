@@ -167,6 +167,9 @@ export const SERVER = [
   // echo
   "echo/echo.js",
 
+  // knowledge
+  "knowledge/knowledge.js",
+
   // admin
   "admin/report.js",
 

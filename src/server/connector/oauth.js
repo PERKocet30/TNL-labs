@@ -72,7 +72,7 @@ const mcpLimit = rateLimit({ max: 30, windowMs: 600000 });
    person — messages, emails, mail log, backups, source, settings, CSV export, the
    vote-check with voter identities — is simply not on the list. */
 const MCP_PATHS = new Set(["overview", "pulse", "series", "funnel", "retention", "audience", "direction", "topwork", "people", "content", "posts",
-  "reports", "orders", "market", "sellers", "listings", "events", "health", "errors", "glitches", "log", "nudge", "systems", "systems/google", "systems/meta", "studio"]);
+  "reports", "orders", "market", "sellers", "listings", "events", "health", "errors", "glitches", "log", "nudge", "systems", "systems/google", "systems/meta", "studio", "knowledge"]);
 function mcpPathAllowed(path) {
   const p = String(path || "").split("?")[0].replace(/^\/api\/admin\//, "");
   if (MCP_PATHS.has(p)) return true;
