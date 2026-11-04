@@ -2191,6 +2191,18 @@ console.log("\nMEMBER · COMPUTER");
     await fast(p, 3000, () => p.waitForSelector(".lx-list"), "Labs from the side menu");
     ok(await p.evaluate(() => !DMOPENPANEL && !document.querySelector("#chatlayer .cx")), "Messages stayed open over Labs");
   });
+  // 2026-11-04: the admin opens on Echo (Echo Home) — the chat beside what needs you; without a key it says so and still shows the queue
+  await step(d, "admin → opens on Echo: the chat panel beside Needs you; no key, so it says how to wake it; Home is one tap away", async () => {
+    await settledGoto(p, B + "/admin");
+    await fast(p, 8000, () => p.locator(".eh-chat").waitFor(), "Echo Home");
+    ok((await p.locator(".pg-hd h1").first().textContent()) === "Echo", "the first page isn't Echo");
+    ok(await p.locator(".eh-off code", { hasText: "ECHO_AI_KEY" }).count() === 1, "without a key, the page doesn't say how to wake Echo");
+    ok(await p.locator(".eh-side .rc h3", { hasText: "Needs you" }).count() === 1 && await p.locator(".eh-side .kpi").count() === 4, "the queue and the four numbers aren't beside the chat");
+    ok((await p.locator(".side .nv").first().getAttribute("data-tab")) === "echohome" && await p.locator(".side .nv[data-tab=echo] span", { hasText: "Help desk" }).count() === 1, "Echo isn't first in the side menu, or the help desk isn't named");
+    await p.locator(".eh-side [data-go=home]").click();
+    await fast(p, 6000, () => p.locator(".tour [data-ev-open]").waitFor(), "Home from Echo Home");
+    ok(await p.evaluate(() => TAB === "home"), "The full Home didn't open Home");
+  });
   await step(d, "admin → Health shows the Glitches panel with the phone's rage tap", async () => {
     // 2026-10-20 (admin v4): Health is its own section; an old #system link lands on Settings
     await settledGoto(p, B + "/admin#health");
