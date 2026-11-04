@@ -1,5 +1,7 @@
 
 /* ================================================================
+   EVENTS v1.3 — 2026-11-04 (v1.3: the country vote wait counts time
+   spent in the app, not time since joining).
    EVENTS v1.2 — 2026-10-12 (v1.2: says which event is the current one,
    the one tnllabs.com/tournament opens).
    EVENTS v1.1 — 2026-10-07. What members see and do: the event page,
@@ -29,20 +31,31 @@ const evShuffle = (list, salt) => list.slice().sort((a, b) => ((Math.imul(a.id ^
 const EV_NEW_VOTE_WAIT_MS = Math.max(0, Number(process.env.EV_NEW_VOTE_WAIT_MS ?? 5 * 60000));
 /* 2026-10-29: "Accounts from India have to be on the app for 10 minutes before voting." A longer wait by the
    country an account joined from (join_signals.country, server/trust/signals), set in Admin → System → Switches
-   as voteWaitCountries: "IN:10" — country code:minutes, comma-separated, blank for none. Never longer than
-   the rule says, never shorter than everyone's wait, and the member sees the same words as everyone. */
-function evVoteWaitMs(user) {
-  let ms = EV_NEW_VOTE_WAIT_MS;
+   as voteWaitCountries: "IN:10" — country code:minutes, comma-separated, blank for none. The member sees the same
+   words as everyone, and the rule is never written anywhere members read.
+   2026-11-04: the minutes are now minutes actually spent with the app open (member_time, server/trust/visits) —
+   not minutes since joining, which an account could sit out with the app closed. Accounts made before the
+   counter existed (EV_HERE_FROM) keep the old clock rule: they've already sat it, and have no time on record. */
+const EV_HERE_FROM = Number(process.env.EV_HERE_FROM_MS || Date.UTC(2026, 10, 4, 6, 0));   // 2026-11-04 06:00 UTC, when the app started counting (tests move it)
+function evVoteCountryMins(user) {
   const rule = String(setting("voteWaitCountries") || "").toUpperCase();
-  if (!rule.trim() || !user?.id) return ms;
+  if (!rule.trim() || !user?.id) return 0;
   let c = "";
   try { c = db.prepare(`SELECT country FROM join_signals WHERE user_id = ?`).get(user.id)?.country || ""; } catch {}
-  if (!c) return ms;
+  if (!c) return 0;
+  let mins = 0;
   for (const part of rule.split(",")) {
     const m = /^\s*([A-Z]{2})\s*:\s*(\d{1,4})\s*$/.exec(part);
-    if (m && m[1] === c) ms = Math.max(ms, Number(m[2]) * 60000);
+    if (m && m[1] === c) mins = Math.max(mins, Number(m[2]));
   }
-  return ms;
+  return mins;
+}
+/* true while the country rule still holds this account back */
+function evVoteCountryWaiting(user) {
+  const mins = evVoteCountryMins(user);
+  if (!mins) return false;
+  if (user.created_at < EV_HERE_FROM) return Date.now() - user.created_at < mins * 60000;
+  return activeSecs(user.id) < mins * 60;
 }
 /* Who may vote on what, right now. null = yes; otherwise the reason. */
 function evVoteBlock(ev, user, stage, entryId) {
@@ -51,8 +64,8 @@ function evVoteBlock(ev, user, stage, entryId) {
   if (ev.require_avatar && !user.avatar_url) return "Add a profile photo to vote.";   // 2026-10-28: a face (or a mark) behind every vote
   /* 2026-10-27: "New accounts can't instantly vote — 5 minute wait… while they set up account." A real person spends it on
      the joining steps (photo, colour, bio, people) and barely notices; a burst of accounts made to vote has to sit. */
-  const waitLeft = evVoteWaitMs(user) - (Date.now() - user.created_at);
-  if (waitLeft > 0) { return "Finish setting up your account to vote."; }   // no timer shown (2026-10-27)
+  const waitLeft = EV_NEW_VOTE_WAIT_MS - (Date.now() - user.created_at);
+  if (waitLeft > 0 || evVoteCountryWaiting(user)) { return "Finish setting up your account to vote."; }   // no timer shown (2026-10-27)
   const days = Math.max(0, ev.min_account_days || 0);
   if (Date.now() - user.created_at < days * EV_DAY) return `Accounts need to be ${days} day${days === 1 ? "" : "s"} old to vote.`;
   if (stage === "final" && evJudges(ev.id).some((j) => j.id === user.id)) return "Judges score the final instead of voting.";

@@ -48,6 +48,7 @@ export const APP = [
   "core/icons.js",
   "core/theme-labs-api.js",
   "core/updating.js",
+  "core/here.js",
 
   // media
   "media/images.js",

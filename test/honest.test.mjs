@@ -27,7 +27,7 @@ writeFileSync(join(DATA, "uploads", "e0.jpg"), "x");
 db.close();
 const PORT = 18880 + (process.pid % 40);
 const srv = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"],
-  env: { ...process.env, PORT: String(PORT), TNL_DATA: DATA, TNL_NO_WATCH: "1", RESEND_API_KEY: "", STRIPE_SECRET_KEY: "", TNL_BLOCK_EMAIL_DOMAINS: "junk.example" } });
+  env: { ...process.env, PORT: String(PORT), TNL_DATA: DATA, TNL_NO_WATCH: "1", RESEND_API_KEY: "", STRIPE_SECRET_KEY: "", TNL_BLOCK_EMAIL_DOMAINS: "junk.example", EV_HERE_FROM_MS: String(now - 2 * 3600000) } });
 let log = ""; srv.stdout.on("data", (d) => log += d); srv.stderr.on("data", (d) => log += d);
 for (let i = 0; i < 100 && !/listening/.test(log); i++) await wait(100);
 const B = `http://127.0.0.1:${PORT}`;
@@ -93,19 +93,40 @@ try {
   const r6 = await fetch(B + "/api/events/art/vote", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + fresh.j.token, "X-Device": "abcdefabcdefabcdefab" }, body: JSON.stringify({ entryId, on: true }) });
   t("five minutes on, the vote goes through", r6.status === 200);
 
-  console.log("\nA LONGER WAIT BY THE COUNTRY AN ACCOUNT JOINED FROM (2026-10-29)");
-  const newcomer = async (u, country, minsAgo) => { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db"));
-    const id = Number(w.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, avatar_url) VALUES (?,?,?,?,?,1,'/uploads/av.jpg')`).run(u, u, u + ".person@gmail.com", "x", Date.now() - minsAgo * 60000).lastInsertRowid);
+  console.log("\nA LONGER WAIT BY THE COUNTRY AN ACCOUNT JOINED FROM — TIME IN THE APP (2026-10-29, 2026-11-04)");
+  const sql = async (fn) => { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db")); try { return fn(w); } finally { w.close(); } };
+  const newcomer = (u, country, minsAgo, at = Date.now() - minsAgo * 60000) => sql((w) => {
+    const id = Number(w.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, avatar_url) VALUES (?,?,?,?,?,1,'/uploads/av.jpg')`).run(u, u, u + ".person@gmail.com", "x", at).lastInsertRowid);
     w.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)`).run("tok-" + u, id, Date.now());
-    w.prepare(`INSERT INTO join_signals (user_id, country, created_at) VALUES (?,?,?)`).run(id, country, Date.now()); w.close(); };
+    w.prepare(`INSERT INTO join_signals (user_id, country, created_at) VALUES (?,?,?)`).run(id, country, Date.now()); return id; });
   const voteAs = async (u, dev) => { const r = await fetch(B + "/api/events/art/vote", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer tok-" + u, "X-Device": dev }, body: JSON.stringify({ entryId, on: true }) }); return { s: r.status, j: await r.json() }; };
-  await newcomer("india6", "IN", 6); await newcomer("us6", "US", 6); await newcomer("india11", "IN", 11); await newcomer("india7", "IN", 7);
+  const here = (u) => fetch(B + "/api/here", { method: "POST", headers: { Authorization: "Bearer tok-" + u } });
+  const secsOf = (id) => sql((w) => w.prepare(`SELECT secs FROM member_time WHERE user_id = ?`).get(id)?.secs ?? 0);
+  const setSecs = (id, secs) => sql((w) => w.prepare(`INSERT INTO member_time (user_id, secs, last_at) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET secs = excluded.secs`).run(id, secs, Date.now()));
+  const back = (id, ms) => sql((w) => w.prepare(`UPDATE member_time SET last_at = last_at - ? WHERE user_id = ?`).run(ms, id));
+  const in6 = await newcomer("india6", "IN", 6); await newcomer("us6", "US", 6); const in30 = await newcomer("india30", "IN", 30); await newcomer("india7", "IN", 7);
   const i6 = await voteAs("india6", "1111111111111111aaaa");
-  t("joined from India 6 minutes ago: still waiting, with the same words as everyone", i6.s === 403 && i6.j.error === "Finish setting up your account to vote.");
+  t("joined from India 6 minutes ago, no time in the app: waits, with the same words as everyone", i6.s === 403 && i6.j.error === "Finish setting up your account to vote.");
   t("joined from the US 6 minutes ago: votes", (await voteAs("us6", "2222222222222222bbbb")).s === 200);
-  t("joined from India 11 minutes ago: votes", (await voteAs("india11", "3333333333333333cccc")).s === 200);
-  { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db"));
-    w.prepare(`INSERT INTO settings (key, value, updated_at) VALUES ('voteWaitCountries', '', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(Date.now()); w.close(); }
+  const i30 = await voteAs("india30", "3333333333333333cccc");
+  t("joined from India 30 minutes ago but never had the app open: still waits", i30.s === 403 && i30.j.error === "Finish setting up your account to vote.");
+  t("the app's 'still here' counts time only while it's open", (await here("india30")).status === 200 && (await secsOf(in30)) === 0
+    && await (async () => { await back(in30, 30000); await here("india30"); return (await secsOf(in30)) === 30; })());
+  t("a long gap (app closed) adds nothing", await (async () => { await back(in30, 10 * 60000); await here("india30"); return (await secsOf(in30)) === 30; })());
+  await setSecs(in30, 9 * 60);
+  t("9 minutes in the app: still waits", (await voteAs("india30", "3333333333333333cccc")).s === 403);
+  await setSecs(in30, 10 * 60);
+  t("10 minutes in the app: votes", (await voteAs("india30", "3333333333333333cccc")).s === 200);
+  await setSecs(in6, 10 * 60);
+  t("…but never before everyone's 5 minutes since joining", (await newcomer("india0", "IN", 0), await sql((w) => w.prepare(`INSERT INTO member_time (user_id, secs, last_at) SELECT id, 900, ? FROM users WHERE username = 'india0'`).run(Date.now())), (await voteAs("india0", "5555555555555555eeee")).s === 403)
+    && (await voteAs("india6", "1111111111111111aaaa")).s === 200);
+  await newcomer("indiaold", "IN", 0, now - 3 * 3600000);
+  t("an account made before the app started counting keeps the old clock rule", (await voteAs("indiaold", "6666666666666666ffff")).s === 200);
+  t("the app says 'still here' every 30s, only while it's on screen and signed in", (() => { const h = readFileSync(join(ROOT, "src/app/core/here.js"), "utf8");
+    return /\/api\/here/.test(h) && /30000/.test(h) && /visibilityState==="visible"/.test(h) && /TOKEN&&/.test(h); })());
+  t("the rule is nowhere a member reads (event page, policies)", await (async () => { const pg = await (await fetch(B + "/api/events/art")).text() + await (await fetch(B + "/policies")).text().catch(() => "");
+    return !/india|\bIN:10\b|10 minutes/i.test(pg); })());
+  await sql((w) => w.prepare(`INSERT INTO settings (key, value, updated_at) VALUES ('voteWaitCountries', '', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(Date.now()));
   t("Admin clears the list: back to everyone's 5 minutes", (await voteAs("india7", "4444444444444444dddd")).s === 200);
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
