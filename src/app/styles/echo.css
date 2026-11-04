@@ -1,4 +1,4 @@
-/* ECHO v1.4 — 2026-11-04 (the model picker, who answered). v1.3 — 2026-11-04 (modelled on Claude: question card, answer as text, the working line, the composer box). v1.2 — 2026-11-04 (the brain: what it looked at under an answer). v1.1 — 2026-11-04 (a Knowledge answer's title). v1.0 — 2026-11-04. Echo, the help inside Messages (app/echo/echo.js):
+/* ECHO v1.5 — 2026-11-04 (photos on a question, the attach row, the mic, the speaker). v1.4 — 2026-11-04 (the model picker, who answered). v1.3 — 2026-11-04 (modelled on Claude: question card, answer as text, the working line, the composer box). v1.2 — 2026-11-04 (the brain: what it looked at under an answer). v1.1 — 2026-11-04 (a Knowledge answer's title). v1.0 — 2026-11-04. Echo, the help inside Messages (app/echo/echo.js):
    the pinned row, the Echo mark, fact cards, suggestion chips, the thumbs. */
 .echo-av{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--accent-fill);color:var(--on-accent)}
 .echo-av.sm{width:34px;height:34px}.echo-av.sm svg{width:18px;height:18px}
@@ -62,3 +62,19 @@
 .echo-mrow b{font-size:15px}.echo-mrow span{font-size:12.5px;color:var(--dim);line-height:1.35}
 .echo-mrow.on b::after{content:" ·";color:var(--accent-fill)}
 .echo-mrow.on{background:var(--el)}
+.echo-qf{display:flex;flex-wrap:wrap;gap:6px;margin:-2px -4px 8px}
+.echo-qf img{width:120px;height:120px;object-fit:cover;border-radius:var(--rad-m,12px);display:block}
+.echo-pdf{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:var(--rad-m,12px);background:var(--card);border:1px solid var(--line);color:var(--tx);font-size:12.5px;text-decoration:none;max-width:200px}
+.echo-pdf span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.echo-pdf svg{width:16px;height:16px;flex-shrink:0}
+.echo-att{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+.echo-atti{position:relative;width:64px;height:64px;border-radius:var(--rad-s,8px);overflow:hidden;background:var(--el);display:flex;align-items:center;justify-content:center}
+.echo-atti img{width:100%;height:100%;object-fit:cover;display:block}
+.echo-atti.up img,.echo-atti.up i{opacity:.4}
+.echo-atti i{display:flex;color:var(--dim)}.echo-atti i svg{width:22px;height:22px}
+.echo-attx{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;border:0;background:var(--tx);color:var(--bg);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.echo-attx svg{width:11px;height:11px}
+.echo-boxl{display:flex;align-items:center;gap:2px;min-width:0}
+.echo-ib{width:32px;height:32px;border:0;background:none;color:var(--dim);display:inline-flex;align-items:center;justify-content:center;border-radius:50%;padding:0;cursor:pointer;flex-shrink:0}
+.echo-ib svg{width:19px;height:19px}.echo-ib:active{background:var(--el);color:var(--tx)}
+.echo-ib.live{color:var(--on-accent);background:var(--accent-fill);animation:echoPulse 1.1s ease-in-out infinite}
+.echo-th .cx-ib.on{color:var(--on-accent);background:var(--accent-fill)}

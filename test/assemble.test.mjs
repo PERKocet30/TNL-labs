@@ -31,7 +31,7 @@ const opener = (f) => { const m = /^\s*(\/\*[\s\S]*?\*\/)/.exec(readFileSync(joi
 const openers = APP.filter((f) => /\.(js|css)$/.test(f)).map(opener).filter((x) => x && x.length > 40 && !x.includes("@palette"));
 t("the parts' opening doc blocks are not in the page (" + openers.length + " of them)", openers.length > 50 && !openers.some((o) => html.includes(o)));
 t("…but the first line of code after them is", html.includes("function uiModal(") && html.includes(".ui-ov .ui-btn{"));
-t("the page is well under its gzipped budget", (await import("node:zlib")).gzipSync(html, { level: 9 }).length < 245 * 1024);
+t("the page is well under its gzipped budget", (await import("node:zlib")).gzipSync(html, { level: 9 }).length < 260 * 1024);   // 245 at the flatten (2026-11-02); 260 with Echo's brain screen (2026-11-04: streamed answers, photos, the mic, the picker)
 
 console.log("\nTHE ORDER FILE AND THE DISK MUST AGREE");
 writeFileSync(join(TMP, "a", "one.js"), "const ONE=1;\n"); writeFileSync(join(TMP, "b", "two.js"), "const TWO=2;\n");
