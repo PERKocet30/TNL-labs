@@ -64,6 +64,7 @@ Sign up at **resend.com** (free, 3,000/month) → API Keys → create.
 | Variable | Value |
 | --- | --- |
 | `RESEND_API_KEY` | `re_xxxxxxxx` |
+| `ECHO_AI_KEY` | `sk-ant-…` — Echo's brain for admins (2026-11-04). A Claude API key from console.anthropic.com → API Keys. Without it Echo is the matcher for everyone (`ANTHROPIC_API_KEY` is read as a fallback). Optional beside it: `ECHO_MODEL` (default `claude-opus-5-5`). |
 | `MAIL_FROM` | `TNL LABS <onboarding@resend.dev>` |
 | `SUPPORT_EMAIL` | `support@tnllabs.com` — the inbox shown on /terms, /privacy, /policies, /contact and every public page footer. Must be one you read. |
 
@@ -310,6 +311,7 @@ TNL_DATA=/app/data
 ADMIN_EMAIL=Jorgemfuentes001@gmail.com
 PUBLIC_URL=https://tnllabs.com
 RESEND_API_KEY=re_xxxxxxxx
+ECHO_AI_KEY=sk-ant-xxxxxxxx
 MAIL_FROM=TNL LABS <onboarding@resend.dev>
 STRIPE_SECRET_KEY=sk_test_xxxxx
 ```

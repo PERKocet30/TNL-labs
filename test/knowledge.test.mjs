@@ -51,7 +51,7 @@ try {
   t("the kinds are named for the page", first.kinds.creed === "Creed" && first.kinds.glossary === "Glossary" && first.kinds.feature === "Features");
   const feats = first.entries.filter((e) => e.kind === "feature");
   t("every feature of the app is written down (70+ entries), each with real words", feats.length >= 70 && feats.every((e) => e.title && e.body.length >= 80 && e.tags));
-  t("…the big ones are there: Showroom, Labs, Posts, Market, Selling, Payouts, Messages, the tournament, Echo, Knowledge, the admin", ["The Showroom", "Labs", "Posts", "The Market", "Selling (the sell walkthrough)", "Payouts (Stripe Connect)", "Messages", "The tournament (events)", "Echo (LABS help)", "Knowledge", "The admin dashboard"].every((n) => feats.some((e) => e.title === n)));
+  t("…the big ones are there: Showroom, Labs, Posts, Market, Selling, Payouts, Messages, the tournament, Echo, Knowledge, the admin", ["The Showroom", "Labs", "Posts", "The Market", "Selling (the sell walkthrough)", "Payouts (Stripe Connect)", "Messages", "The tournament (events)", "Echo (LABS's own)", "Knowledge", "The admin dashboard"].every((n) => feats.some((e) => e.title === n)));
   t("…and they say where things live in the code", feats.filter((e) => /Code: |src\/|server\/|app\//.test(e.body)).length >= 40);
   t("filter by kind and search", (await A("GET", "/api/admin/knowledge?kind=glossary")).j.entries.every((e) => e.kind === "glossary") && (await A("GET", "/api/admin/knowledge?q=cultivators")).j.entries.some((e) => e.key === "creed"));
 
