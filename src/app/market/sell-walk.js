@@ -1,4 +1,10 @@
-/* ── SELL WALKTHROUGH · v1.0 — 2026-11-03 ─────────────────────────────
+/* ── SELL WALKTHROUGH · v1.1 — 2026-11-03 (v1.0 same day) ─────────────
+   v1.1 — "make the questions broad and narrower the more information you
+   collect": what (nine broad departments) → which kind (a step of its own
+   when the department has more than one) → who's selling it, worded for
+   the department → and every later screen takes its words from the kind
+   (server/market/taxonomy.js v1.1: sizes or formats, colour or finish or
+   design, the details). Nothing about clothes reaches a jeweller.
    "Instead of one selling format for everyone, walk them through with
    questions tailored to what they're trying to sell, until they list."
    A new listing is a run of short screens, one question each, and the
@@ -12,18 +18,25 @@
    their own form too. The steps reuse the form's own field ids, so the
    form's wiring, stashSell() and the draft work unchanged; the step is
    kept on the form (_step) so a draft picks up where it left off. */
-const SW_STEPS=[["what","What are you selling?"],["who","Who's selling it?"],["photos","Photos"],["words","Tell people about it"],
+const SW_STEPS=[["what","What are you selling?"],["kind","Which kind?"],["who","Who's selling it?"],["photos","Photos"],["words","Tell people about it"],
   ["stock","Size & stock"],["details","Details"],["price","Price & shipping"],["review","Ready to list"]];
-/* who's selling, worded for the department (same three answers underneath: brand · vintage · custom) */
+/* who's selling, worded for the department (the same three answers underneath: brand · vintage · custom) */
 const SW_WHO={
+  Clothing:[["brand","My brand","New pieces in sizes and colours, with stock"],["vintage","Vintage / pre-loved","One second-hand piece — its size, maker and condition"],["custom","One of one","A custom piece you made. There's only one"]],
+  Jewellery:[["brand","My line","Pieces you make more of — sizes, finishes, stock"],["custom","One of one","A single piece you made"],["vintage","Pre-owned","Vintage, or a piece you're passing on — its condition matters"]],
   Art:[["custom","An original","One piece, made by you. There's only one"],["brand","Prints or an edition","Copies you can make more of — sizes and stock"],["vintage","Pre-owned art","A piece by someone else that you're passing on"]],
-  Other:[["custom","Made by me, one of one","There's only one"],["brand","Made by me, I have several","Options and stock"],["vintage","Pre-owned","Something you're passing on — its condition matters"]],
+  "Paper & print":[["brand","My designs","Printed in quantity — designs and stock"],["custom","One of one","A single hand-made piece"],["vintage","Pre-owned","Something you're passing on"]],
+  Music:[["brand","My release","Copies to sell — formats and stock"],["vintage","A record I'm passing on","One pre-owned copy — its condition matters"],["custom","A one-off","A test pressing, a hand-made copy. There's only one"]],
+  "Home & objects":[["brand","Made by me, I have several","Options and stock"],["custom","Made by me, one of one","There's only one"],["vintage","Pre-owned","Something you're passing on — its condition matters"]],
+  Other:[["brand","Made by me, I have several","Options and stock"],["custom","Made by me, one of one","There's only one"],["vintage","Pre-owned","Something you're passing on — its condition matters"]],
 };
+const swWho=f=>SW_WHO[swDept(f)]||SW_WHO.Clothing;   // Footwear and Accessories read as clothing does
 const swDept=f=>f._dept||sellDept(f);
-/* the steps this listing needs — an original painting has no size or stock to ask about */
+const swDeptOf=f=>(TAX().departments||[]).find(d=>d.name===swDept(f));
+/* the steps this listing needs: no "which kind" when the department has one, no size or stock for an original */
 function swSteps(f){
-  const skipStock=sellOne(f)&&sellDept(f)==="Art"&&!sellSizes(f).length;
-  return SW_STEPS.filter(([k])=>!(k==="stock"&&skipStock));
+  const d=swDeptOf(f), oneKind=!!d&&d.categories.length<2;   // before a department is picked, count the kind step in
+  return SW_STEPS.filter(([k])=>!(k==="kind"&&oneKind)&&!(k==="stock"&&sellNoStock(f)));
 }
 const swStep=f=>{const ks=swSteps(f).map(([k])=>k);return ks.includes(f._step)?f._step:ks[0]};
 function swGo(step){stashSell();SELLFORM._step=step;sdSave();render();const s=$(".pf");if(s)s.scrollTop=0}
@@ -52,26 +65,28 @@ function sellWalkHTML(f){
   const title=ks[i][1];
   const head=`<header class="kform sw-head">${i?`<button class="kf-b" id="sw-back">${DI.back}<span>Back</span></button>`:`<button class="kf-b" data-mv="browse">Cancel</button>`}<b>New listing</b><span class="sw-n mono">${i+1} / ${ks.length}</span></header>
     <div class="sw-prog" aria-hidden="true"><i style="width:${Math.round(((i+1)/ks.length)*100)}%"></i></div>`;
-  const body={what:swWhatHTML,who:swWhoHTML,photos:swPhotosHTML,words:swWordsHTML,stock:swStockHTML,details:swDetailsHTML,price:swPriceHTML,review:swReviewHTML}[step](f);
-  const auto=step==="what"||step==="who";   // a tap answers these
+  const body={what:swWhatHTML,kind:swKindHTML,who:swWhoHTML,photos:swPhotosHTML,words:swWordsHTML,stock:swStockHTML,details:swDetailsHTML,price:swPriceHTML,review:swReviewHTML}[step](f);
+  const auto=step==="what"||step==="kind"||step==="who";   // a tap answers these
   return `<div class="scroll pf sw">${head}${f._restored?`<div class="sdraft">Picked up where you left off<button type="button" id="sdraftx">Start over</button></div>`:""}
     <div class="pf-body"><h1 class="sw-q">${esc(title)}</h1>${body}</div>
     ${auto?"":`<div class="pf-bar">${last?`<div class="pf-keep" id="s-earn">${sellEarnHTML()}</div><button class="gx-btn" id="s-post">Publish</button>`
       :`${step==="details"?`<button type="button" class="sw-skip" id="sw-skip">Skip for now</button>`:""}<button class="gx-btn" id="sw-next">Next</button>`}</div>`}
   </div>`;
 }
-/* 1 · what: the department, then its categories (one category → picked for you) */
+/* 1 · what: the broad department (its hint comes with the taxonomy) */
 function swWhatHTML(f){
-  const t=TAX(),dept=swDept(f);
-  const hint={Clothing:"Tops, bottoms, outerwear, sets",Footwear:"Sneakers, boots, anything you wear on your feet",Accessories:"Hats, bags, jewellery",Art:"Prints, originals, photography, objects",Other:"Something that isn't on this list"};
-  const d=t.departments.find(x=>x.name===dept);
-  return `<div class="sw-opts">${t.departments.map(x=>`<button type="button" class="st-opt sw-opt${dept===x.name?" on":""}" data-swdept="${esc(x.name)}"><b>${esc(x.name)}</b><span>${esc(hint[x.name]||"")}</span></button>`).join("")}</div>
-    ${d&&d.categories.length>1?`<div class="pf-lb">Which kind?</div><div class="pf-chips sw-cats">${d.categories.map(c=>`<button type="button" class="chip${f.category===c?" on":""}" data-swcat="${esc(c)}">${esc(catLabel(c))}</button>`).join("")}</div>`:""}`;
+  const dept=swDept(f);
+  return `<div class="sw-opts sw-grid">${(TAX().departments||[]).map(x=>`<button type="button" class="st-opt sw-opt${dept===x.name?" on":""}" data-swdept="${esc(x.name)}"><b>${esc(x.name)}</b><span>${esc(x.hint||"")}</span></button>`).join("")}</div>`;
+}
+/* 1b · kind: the department's kinds (skipped when it has one) */
+function swKindHTML(f){
+  const d=swDeptOf(f);if(!d)return "";
+  return `<p class="sw-p">${esc(d.name)}</p><div class="sw-opts">${d.categories.map(c=>{const k=TAX().categories[c]||{};const what=[k.sizes&&k.sizes.length?(k.sizeWord||"Sizes").toLowerCase():"",(k.specs||[]).slice(0,3).map(x=>((TAX().specs[x]||{}).label||x).toLowerCase()).join(", ")].filter(Boolean).join(" · ");
+    return `<button type="button" class="st-opt sw-opt${f.category===c?" on":""}" data-swcat="${esc(c)}"><b>${esc(catLabel(c))}</b><span>${esc(what?"Asks for "+what:"")}</span></button>`}).join("")}</div>`;
 }
 /* 2 · who: brand · vintage · one of one, in the department's words */
 function swWhoHTML(f){
-  const list=SW_WHO[sellDept(f)]||SELLTYPES.map(([k,t,,d])=>[k,t,d]);
-  return `<div class="sw-opts">${list.map(([k,t,d])=>`<button type="button" class="st-opt sw-opt${f.sellType===k?" on":""}" data-stype="${k}"><b>${esc(t)}</b><span>${esc(d)}</span></button>`).join("")}</div>`;
+  return `<div class="sw-opts">${swWho(f).map(([k,t,d])=>`<button type="button" class="st-opt sw-opt${f.sellType===k?" on":""}" data-stype="${k}"><b>${esc(t)}</b><span>${esc(d)}</span></button>`).join("")}</div>`;
 }
 /* 3 · photos: the form's own picker, so its wiring (upload, cover, remove) is the same */
 function swPhotosHTML(f){
@@ -87,8 +102,13 @@ function swPhotosHTML(f){
 /* 4 · words: title and description, with a prompt for this kind of thing */
 function swWordsHTML(f){
   const st=f.sellType||"",dept=sellDept(f);
-  const ph=dept==="Art"?(st==="custom"?"What it is, how you made it, what it means":"Paper, size, how it's printed and signed")
-    :st==="brand"?"Fit, fabric, care":st==="vintage"?"Measurements (pit to pit, length), era, any flaws":st==="custom"?"Materials, how you made it, how it fits":"Fit, measurements, any flaws";
+  const PH={Art:[ "Paper, size, how it's printed and signed","The piece's story, its condition","What it is, how you made it, what it means"],
+    Jewellery:["Metal, stones, how it's made and sized","Metal, age, any wear","Metal, stones, how you made it"],
+    "Paper & print":["What's printed, paper, size","What it is, condition","How you made it, what's inside"],
+    Music:["The release — tracks, pressing, what's in the sleeve","Pressing, condition of the vinyl and the sleeve","What it is and why there's one"],
+    "Home & objects":["What it's for, materials, size","What it is, age, any wear","Materials, how you made it"],
+    Other:["What it is, materials, size","What it is, condition","What it is, how you made it"]};
+  const ph=(PH[dept]||["Fit, fabric, care","Measurements (pit to pit, length), era, any flaws","Materials, how you made it, how it fits"])[st==="brand"?0:st==="vintage"?1:2];
   return `<section class="pf-card">
     <label class="pf-lb" for="s-title">Title</label><input class="pf-in" id="s-title" value="${esc(f.title||"")}" maxlength="120" placeholder="Short, clear title" autofocus>
     <label class="pf-lb" for="s-desc">Description</label><textarea class="pf-in pf-ta" id="s-desc" rows="5" maxlength="2000" placeholder="${esc(ph)}">${esc(f.description||"")}</textarea>
@@ -97,7 +117,8 @@ function swWordsHTML(f){
 /* 5 · stock: the form's Size & stock card (sizes × colours for a brand; one size for one piece) */
 function swStockHTML(f){
   if(f.sellType==="brand"&&!f.hasVariants){f.hasVariants=true;f.optSizes=f.optSizes||[];f.optColours=f.optColours||[]}
-  return `<p class="sw-p">${f.sellType==="brand"?"Tap every size you have, add colours if there are any, then set how many of each.":"Its size, so the right person finds it."}</p><div class="sw-stock">${pvHTML(f)}</div>`;
+  const sz=sellSizes(f).length, w=sellOpt(f), ws=w+(/sh$/.test(w)?"es":"s"), one=sellSizeWord(f).toLowerCase().replace(/s$/,"");
+  return `<p class="sw-p">${f.sellType==="brand"?(sz?`Tap every ${one} you have, add ${ws} if there are any, then set how many of each.`:`Add your ${ws} if there are any, then set how many of each.`):sz?`Its ${one}, so the right person finds it.`:`What it is, so the right person finds it.`}</p><div class="sw-stock">${pvHTML(f)}</div>`;
 }
 /* 6 · details: condition and maker where they mean something, then what this category asks for — all optional */
 function swDetailsHTML(f){
@@ -106,7 +127,7 @@ function swDetailsHTML(f){
   return `<p class="sw-p">Buyers ask these anyway. Answer what you can.</p><section class="pf-card">
     <div class="pf-2">
       ${st==="brand"||st==="custom"?"":`<div><label class="pf-lb" for="s-cond">Condition</label>${pick("s-cond",conds,f.condition)}</div>`}
-      ${st==="custom"?"":`<div><label class="pf-lb" for="s-brand">${st==="vintage"?"Brand / maker":"Brand"}</label><input class="pf-in" id="s-brand" value="${esc(f.brand||"")}" maxlength="60" placeholder="${st==="vintage"?"Levi's, unbranded…":st==="brand"?"Your label":"Optional"}"></div>`}
+      ${st==="custom"?"":`<div><label class="pf-lb" for="s-brand">${st==="vintage"?"Brand / maker":"Brand"}</label><input class="pf-in" id="s-brand" value="${esc(f.brand||"")}" maxlength="60" placeholder="${st==="vintage"?(sellDept(f)==="Clothing"?"Levi's, unbranded…":"The maker, or unbranded"):st==="brand"?"Your label":"Optional"}"></div>`}
     </div>${specFieldsHTML(f)}</section>`;
 }
 /* 7 · price: the price, a "was" price, offers, shipping — and what you'll get, above Next */
@@ -137,7 +158,7 @@ function swReviewHTML(f){
     <div class="sw-rows">
       ${row("photos","Photos",`${SELLIMGS.length} photo${SELLIMGS.length===1?"":"s"}`)}
       ${row("words","Description",(f.description||"").trim()?f.description.trim().slice(0,60)+(f.description.trim().length>60?"…":""):"None yet")}
-      ${swSteps(f).some(([k])=>k==="stock")?row("stock",one?"Size":"Stock",stock):""}
+      ${swSteps(f).some(([k])=>k==="stock")?row("stock",one?(sellSizeWord(f)==="Formats"?"Format":"Size"):"Stock",stock):""}
       ${row("details","Details",[st==="vintage"&&f.condition?f.condition:"",st!=="custom"&&f.brand?f.brand:"",...specs].filter(Boolean).join(" · ")||"Nothing added")}
       ${row("price","Price",Number(f.price)>=1?money(Math.round(Number(f.price)*100))+(f.acceptsOffers!==false?" · offers on":""):"")}
     </div>
@@ -150,9 +171,10 @@ function wireSellWalk(){
   const n=$("#sw-next");if(n)n.onclick=swNext;
   const sk=$("#sw-skip");if(sk)sk.onclick=()=>{stashSell();SELLFORM.specs={};swTell(SELLFORM,"details:skip");swNext()};
   if(SELLFORM)swTell(SELLFORM,swStep(SELLFORM));
-  document.querySelectorAll("[data-swdept]").forEach(x=>x.onclick=()=>{stashSell();const f=SELLFORM,t=TAX(),d=t.departments.find(y=>y.name===x.dataset.swdept);
+  document.querySelectorAll("[data-swdept]").forEach(x=>x.onclick=()=>{stashSell();const f=SELLFORM,d=(TAX().departments||[]).find(y=>y.name===x.dataset.swdept);
     f._dept=x.dataset.swdept;f.category=d&&d.categories.length===1?d.categories[0]:(d&&d.categories.includes(f.category)?f.category:undefined);
-    if(f.category){if(f.hasVariants)pvSync(f);f._step="who"}render()});
+    if(f.category&&f.hasVariants)pvSync(f);
+    swGo(f.category?"who":"kind")});
   document.querySelectorAll("[data-swcat]").forEach(x=>x.onclick=()=>{stashSell();SELLFORM.category=x.dataset.swcat;if(SELLFORM.hasVariants)pvSync(SELLFORM);swGo("who")});
   document.querySelectorAll(".sw [data-stype]").forEach(x=>x.onclick=()=>{SELLFORM._step="photos";sellTypeSet(x.dataset.stype)});   // sellTypeSet stashes and renders
   document.querySelectorAll("[data-swgo]").forEach(x=>x.onclick=()=>swGo(x.dataset.swgo));

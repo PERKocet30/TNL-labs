@@ -37,22 +37,22 @@ function pvHTML(f){
   const step=(attr,val,lbl)=>`<div class="pf-step"><button type="button" ${attr}="-1" aria-label="Fewer">−</button>
     <input type="number" inputmode="numeric" min="0" max="500" step="1" ${lbl} value="${val}">
     <button type="button" ${attr}="1" aria-label="More">+</button></div>`;
-  const one=sellOne(f), SZ=sellSizes(f), art=sellDept(f)==="Art", noSz=!SZ.length;
-  const colW=art?"finish":"colour", colL=art?"Finish":"Colour";
-  const head=`<section class="pf-card"><div class="pf-sec">${one?"Size":"Size &amp; stock"}</div>
-    ${one?"":`<label class="pf-row"><span>More than one ${noSz?"option":"size"} or ${colW}</span><input type="checkbox" class="pf-sw" id="s-hasvar" ${on?"checked":""}></label>`}`;
-  if(one&&noSz&&art)return "";   // an original painting: its dimensions are in Details
+  const one=sellOne(f), SZ=sellSizes(f), art=sellNoStock(f)||sellOpt(f)==="finish", noSz=!SZ.length;
+  const colW=sellOpt(f), colL=colW.charAt(0).toUpperCase()+colW.slice(1), colP=colL+(/sh$/.test(colL)?"es":"s"), szW=sellSizeWord(f), szOne=szW==="Formats"?"Format":"Size";
+  const head=`<section class="pf-card"><div class="pf-sec">${one?szOne:szOne+" &amp; stock"}</div>
+    ${one?"":`<label class="pf-row"><span>More than one ${noSz?"option":szOne.toLowerCase()} or ${colW}</span><input type="checkbox" class="pf-sw" id="s-hasvar" ${on?"checked":""}></label>`}`;
+  if(sellNoStock(f))return "";   // an original painting, a one-off zine: its dimensions are in Details
   if(one)return `${head}
     <div class="${noSz||art?"":"pf-2"}">
-      ${noSz?"":`<div><label class="pf-lb" for="s-size">Size</label><input class="pf-in" id="s-size" value="${esc(f.size||"")}" maxlength="20" placeholder="${esc(SZ.slice(1,4).join(", ")||"One size")}"></div>`}
-      ${art?"":`<div><label class="pf-lb" for="s-colour">${colL}</label><input class="pf-in" id="s-colour" value="${esc(f.colour||"")}" maxlength="30" placeholder="Black"></div>`}
+      ${noSz?"":`<div><label class="pf-lb" for="s-size">${szOne}</label><input class="pf-in" id="s-size" value="${esc(f.size||"")}" maxlength="20" placeholder="${esc(SZ.slice(1,4).join(", ")||"One size")}"></div>`}
+      ${art&&noSz?"":`<div><label class="pf-lb" for="s-colour">${colL}</label><input class="pf-in" id="s-colour" value="${esc(f.colour||"")}" maxlength="30" placeholder="Black"></div>`}
     </div>
     <div class="pf-hint">${f.sellType==="custom"?"One of one — it comes off the Market once it sells.":"One piece — it comes off the Market once it sells."}</div>
   </section>`;
   if(!on)return `${head}
     <div class="pf-2">
-      <div><label class="pf-lb" for="s-size">Size</label><input class="pf-in" id="s-size" value="${esc(f.size||"")}" maxlength="20" placeholder="M, 32, 10"></div>
-      <div><label class="pf-lb" for="s-colour">Colour</label><input class="pf-in" id="s-colour" value="${esc(f.colour||"")}" maxlength="30" placeholder="Black"></div>
+      <div><label class="pf-lb" for="s-size">${szOne}</label><input class="pf-in" id="s-size" value="${esc(f.size||"")}" maxlength="20" placeholder="${esc(SZ.slice(1,4).join(", ")||"One size")}"></div>
+      <div><label class="pf-lb" for="s-colour">${colL}</label><input class="pf-in" id="s-colour" value="${esc(f.colour||"")}" maxlength="30" placeholder="${colW==="colour"?"Black":"Optional"}"></div>
     </div>
     <div class="pf-row pv-qrow"><span>Quantity</span>${step("data-qty",f.quantity||1,'id="s-qty" aria-label="Quantity"').replace('min="0"','min="1"')}</div>
   </section>`;
@@ -61,12 +61,12 @@ function pvHTML(f){
   const have=new Set(f.optSizes.map(s=>s.toUpperCase()));
   const add=(id,ph,max)=>`<div class="pv-add"><input class="pf-in" id="${id}" maxlength="${max}" placeholder="${ph}" enterkeyhint="done"><button type="button" class="pv-addb" data-pvadd="${id}">Add</button></div>`;
   return `${head}
-    <div class="pf-lb">Sizes${noSz?" (optional)":""}</div>
+    <div class="pf-lb">${szW}${noSz?" (optional)":""}</div>
     <div class="pv-chips">${sizes.map(s=>`<button type="button" class="chip${have.has(s.toUpperCase())?" on":""}" data-pvsize="${esc(s)}">${esc(s)}</button>`).join("")}</div>
-    ${add("pv-newsize",noSz?"Small, Large, 14 in…":"Add a size of your own",20)}
-    <div class="pf-lb">${art?"Finishes":"Colours"}</div>
+    ${add("pv-newsize",noSz?"Small, Large, 14 in…":`Add a ${szOne.toLowerCase()} of your own`,20)}
+    <div class="pf-lb">${colP}</div>
     ${f.optColours.length?`<div class="pv-chips">${f.optColours.map((c,i)=>`<span class="chip on pv-col">${esc(c)}<button type="button" data-pvcx="${i}" aria-label="Remove ${esc(c)}">${pvX}</button></span>`).join("")}</div>`:""}
-    ${add("pv-newcol",f.optColours.length?`Add another ${colW}`:art?"Optional — Unframed, Black frame":"Optional — Black, Washed blue",30)}
+    ${add("pv-newcol",f.optColours.length?`Add another ${colW}`:colW==="finish"?"Optional — Unframed, Black frame":colW==="design"?"Optional — each design":"Optional — Black, Washed blue",30)}
     ${f.variants.length?`<div class="pf-lb">Stock</div><div class="pv-rows" id="pvrows">${f.variants.map((v,i)=>`<div class="pv-row" data-pvi="${i}">
       <span class="pv-name">${esc([v.size,v.colour].filter(Boolean).join(" · "))}</span>
       ${step("data-pvqty",Number(v.qty)||0,`data-pvf="qty" aria-label="In stock: ${esc([v.size,v.colour].filter(Boolean).join(" "))}"`)}</div>`).join("")}</div>`:""}

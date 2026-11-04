@@ -611,9 +611,9 @@ console.log("\nMEMBER · PHONE");
     await toMarket();
     await p.locator('[data-mv="sell"]').first().tap();
     await p.waitForSelector(".sw", { timeout: 5000 });
-    ok(await p.locator("#s-title").count() === 0 && await p.locator("[data-swdept]").count() === 5, "the walk doesn't start by asking what you're selling");
+    ok(await p.locator("#s-title").count() === 0 && await p.locator("[data-swdept]").count() === 9, "the walk doesn't start by asking what you're selling (nine broad departments)");
     await p.locator(`[data-swdept="${dept}"]`).tap();
-    if (cat) { await p.waitForSelector(`[data-swcat="${cat}"]`); await p.locator(`[data-swcat="${cat}"]`).tap(); }
+    if (cat) { await p.waitForSelector(`[data-swcat="${cat}"]`); ok(await p.locator("[data-swdept]").count() === 0, "which kind should be a screen of its own"); await p.locator(`[data-swcat="${cat}"]`).tap(); }
     await p.waitForSelector(".sw [data-stype]", { timeout: 5000 });
     await p.locator(`.sw [data-stype="${who}"]`).tap();
     await p.waitForSelector("#sfile", { state: "attached" });
@@ -687,9 +687,18 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => MKT.length > 0 && MKT.every((l) => l.sellType === "custom")), "the One of one filter lets other listings through");
     await p.evaluate(async () => { MKTFILT = {}; await loadMarket(); TAB = "showroom"; MKTVIEW = "browse"; render(); });
   });
-  await step(d, "sell walkthrough: an original painting skips sizes; the edit form still shows everything at once", async () => {
+  await step(d, "sell walkthrough: a jeweller never sees clothing words; a record asks formats; an original painting skips sizes; the edit form still shows everything at once", async () => {
+    await walkTo("Jewellery", "Rings", "brand");
+    ok(!(await p.evaluate(() => document.querySelector(".sw").textContent)).match(/sizes and colours/i), "a jeweller was told about sizes and colours");
+    await p.evaluate(() => swGo("stock")); await p.waitForSelector("[data-pvsize]");
+    ok((await p.locator(".sw-stock").textContent()).includes("Finishes") && await p.locator('[data-pvsize="7"]').count() === 1, "rings should offer ring sizes and finishes");
+    await p.evaluate(() => { sdClear(); SELLFORM = null; SELLIMGS = []; MKTVIEW = "browse"; render(); });
+    await walkTo("Music", null, "brand");
+    await p.evaluate(() => swGo("stock")); await p.waitForSelector("[data-pvsize]");
+    ok((await p.locator(".sw-stock").textContent()).includes("Formats") && await p.locator('[data-pvsize="Cassette"]').count() === 1, "a release should offer formats");
+    await p.evaluate(() => { sdClear(); SELLFORM = null; SELLIMGS = []; MKTVIEW = "browse"; render(); });
     await walkTo("Art", "Original art", "custom");
-    ok(await p.evaluate(() => swSteps(SELLFORM).map(([k]) => k).join()) === "what,who,photos,words,details,price,review", "an original painting is asked for a size");
+    ok(await p.evaluate(() => swSteps(SELLFORM).map(([k]) => k).join()) === "what,kind,who,photos,words,details,price,review", "an original painting is asked for a size");
     ok(await p.evaluate(() => swSteps({ sellType: "brand", category: "Art / Prints", hasVariants: true }).some(([k]) => k === "stock")), "prints aren't asked for sizes and stock");
     await p.evaluate(() => { sdClear(); SELLFORM = null; SELLIMGS = []; MKTVIEW = "browse"; render(); });
     const mine = (await api("/api/market?seller=" + encodeURIComponent(await p.evaluate(() => ME.username)), token)).listings || [];
