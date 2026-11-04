@@ -182,6 +182,7 @@ export const SERVER = [
 
   // admin
   "admin/report.js",
+  "admin/systems-map.js",
 
   // pages
   "pages/seo.js",
