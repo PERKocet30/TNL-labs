@@ -121,3 +121,38 @@
 .pc-vmark{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .pc-th .pc-vmark{width:22px;height:22px}
 .pc-th .pc-vmark svg{width:11px;height:11px}
+
+/* ── POST WALKTHROUGH · v1.0 · 2026-11-05 (app/compose/composer-walk.js) ─
+   Your work → where it belongs → caption & details. The listing walkthrough's
+   kit (sw-q, sw-p, sw-opt, sw-prog, gx-btn, sw-skip), inside the composer. */
+.pcw .pc-body{flex:1;min-height:0}
+.pcw-prog{position:relative;top:auto;flex-shrink:0}
+.pcw .kform .sw-n{font-size:13px;color:var(--tx2);font-variant-numeric:tabular-nums;justify-self:end}
+.pcw-step{display:flex;flex-direction:column;min-height:100%}
+.pcw-in{padding:18px 16px 6px;display:flex;flex-direction:column;gap:12px}
+.pcw-media .pc-media{display:flex;flex-direction:column}
+.pcw-h{font-size:13px;font-weight:700;color:var(--tx2);margin:12px 0 -2px;letter-spacing:.02em}
+.pcw-labs .st-opt b .lg{font-style:normal;color:var(--tx2);font-weight:700}
+.pcw-labs .st-opt.on{border-color:var(--tx);box-shadow:inset 0 0 0 1px var(--tx)}
+.pcw-tags{display:flex;flex-wrap:wrap;gap:8px}
+.pcw-tags .chip{font-size:14px;padding:8px 14px}
+.pcw-sk{display:inline-block;width:76px;height:36px;border-radius:999px;background:var(--el)}
+.pcw-add{display:flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:999px;padding:4px 4px 4px 14px;margin-bottom:8px}
+.pcw-add .pc-hash{color:var(--tx2);font-weight:700}
+.pcw-add input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:16px;color:var(--tx);outline:none;padding:8px 0}
+.pcw-bar{position:relative;flex-shrink:0;max-width:none;background:var(--bg);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+/* step 3 on a phone: the work is a thumbnail beside the caption, like Instagram (tagging people still shows it) */
+@media(max-width:1023px){.pc-det .pc-media{display:none}}
+@media(min-width:1024px){
+  .pc-det .pc-cap .pce-th{display:none}
+  .pcw:not(.pcw-details) .pc-body{display:block;overflow-y:auto}
+  .pcw-step{max-width:720px;margin:0 auto;width:100%}
+  .pcw.pcw-media .pc-body{display:flex;flex-direction:column;overflow:hidden}
+  .pcw.pcw-media .pcw-step{max-width:none;flex:1;min-height:0}
+  .pcw.pcw-media .pc-media{flex:1;min-height:0;border-right:0}
+  .pcw-in{padding:24px 28px 8px}
+  .pcw-bar{flex-direction:row;justify-content:flex-end;align-items:center;gap:12px;padding:12px 20px}
+  .pcw-bar .gx-btn{width:auto;min-width:180px}
+  .pcw-bar .sw-skip{width:auto}
+  .pcw-place .sw-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}

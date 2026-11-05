@@ -153,6 +153,7 @@ export const APP = [
   // compose
   "compose/composer-ig.js",
   "compose/composer.js",
+  "compose/composer-walk.js",
 
   // media
   "media/img-fallback.js",

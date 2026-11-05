@@ -94,6 +94,9 @@ for (let i = 0; ; i++) {
 }
 /* The composer's picker opens from pickFiles (app/media/pick, 2026-11-04): tap where you add photos, then choose. */
 const pcFiles = async (p, files) => { const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcov [data-pcpick]").first().click()]); await fc.setFiles(files); };
+/* 2026-11-05: a new post walks through steps (app/compose/composer-walk): straight to its last, caption & details */
+const toDetails = async (p) => { await p.evaluate(() => { if (PCOMPOSE && !PCOMPOSE.edit) { PCOMPOSE.step = "details"; render(); } }); await p.waitForSelector("#pcbody"); };
+const toFirst = async (p) => { await p.evaluate(() => { if (PCOMPOSE && !PCOMPOSE.edit) { PCOMPOSE.step = "media"; render(); } }); await p.waitForSelector("#pccancel"); };
 const api = async (path, token, body) => (await fetch(B + path, {
   method: body ? "POST" : "GET", headers: { "content-type": "application/json", ...(token ? { authorization: "Bearer " + token } : {}) },
   body: body ? JSON.stringify(body) : undefined })).json();
@@ -979,7 +982,9 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => !document.querySelector(".ped")), "Cancel didn't close the editor");
   });
   await step(d, "drafts: Cancel → Save draft, then Drafts brings it back", async () => {
+    await toDetails(p);
     await p.locator("#pcbody").fill("draft from e2e");
+    await toFirst(p);
     await p.locator("#pccancel").tap();
     await p.locator(".ui-choose [data-uic='0']").tap();
     await p.waitForFunction(() => !PCOMPOSE);
@@ -1028,6 +1033,30 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => { const po = document.querySelector("#poov .post"), m = po.querySelector(".post-img, .post-vid");
       return getComputedStyle(po).borderTopLeftRadius === "0px" && (!m || getComputedStyle(m).borderTopLeftRadius === "0px"); }), "the opened post got a rounded frame or picture");
     await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; PROFILE = null; TAB = "showroom"; render(); });
+  });
+  /* 2026-11-05 "make the post composer walk you through the posting process like Instagram and the onboarding or the listing" */
+  await step(d, "New post walks you through it: your work → where it belongs (a lab, #tags) → caption & details; the phone's back goes a step back; the post lands in the lab with its #tag", async () => {
+    await p.evaluate(() => { PCOMPOSE = null; PICKER = null; LAB = null; TAB = "showroom"; render(); });
+    await openCreator();
+    ok(await p.locator("#pcwnext[disabled]").count() === 1 && /1 \/ 3/.test(await p.locator(".pc .kform").innerText()), "step 1 isn't 1 / 3 with Next off until there's work");
+    await pcFiles(p, [UPLOAD_PNG2]);
+    await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 1 && !PCOMPOSE.upN, null, { timeout: 10000 });
+    await p.locator("#pcwnext").tap(); await p.waitForSelector("[data-pcwlab]");
+    ok(await p.locator("#pcwskip").count() === 1, "step 2 with nothing picked has no Skip");
+    await p.locator('[data-pcwlab="pharmacy"]').tap();
+    ok(await p.locator('[data-pcwlab="pharmacy"].on').count() === 1 && await p.locator("#pcwskip").count() === 0, "picking // Visual didn't take");
+    await p.locator("#pcwtagq").fill("e2ewalk"); await p.locator("#pcwtagf button").tap();
+    ok(await p.locator('[data-pcwtag="e2ewalk"].on').count() === 1, "my own #tag didn't land");
+    await p.locator("#pcwnext").tap(); await p.waitForSelector("#pcbody");
+    ok(/#e2ewalk/.test(await p.locator("#pcbody").inputValue()) && /Visual/.test(await p.locator("#pcto .pc-labchip").innerText()), "the caption or Posting to doesn't carry the lab and the #tag");
+    await p.goBack(); await p.waitForSelector("[data-pcwlab]", { timeout: 4000 });
+    ok(await p.evaluate(() => PCOMPOSE && PCOMPOSE.step === "place"), "the phone's back didn't go back a step");
+    await p.locator("#pcwnext").tap(); await p.waitForSelector("#pcbody");
+    await p.locator("#pcbody").fill("walked through #e2ewalk");
+    await p.locator("#pcgo").tap();
+    await p.waitForFunction(() => !PCOMPOSE && PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 10000 });
+    const np = (await myPosts())[0];
+    ok(np && /#e2ewalk/.test(np.body) && np.channel !== "profile", "the post didn't land in the lab with its #tag: " + JSON.stringify(np && { b: np.body, c: np.channel }));
   });
   /* "When someone likes your work it doesn't take you directly to the post" (2026-10-12) */
   await step(d, "notifications: Friend liked your post — its picture on the row, a tap opens that post", async () => {
@@ -1104,6 +1133,7 @@ console.log("\nMEMBER · PHONE");
     const th = Buffer.from(await (await fetch(B + im.thumb)).arrayBuffer());
     ok(th[0] === 0x89 && th[1] === 0x50, "the feed copy of a transparent design isn't a PNG (it would go black)");
     await p.evaluate(() => { PCOMPOSE.imgs.shift(); PCOMPOSE.idx = 0; render(); });
+    await toDetails(p);
     await p.locator("#pcbody").fill("Tournament entry");
     await p.locator("#pcgo").tap();
     await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 15000 });
@@ -1126,6 +1156,7 @@ console.log("\nMEMBER · PHONE");
     ok(tee, "no E2E Tee to tag");
     await openCreator();
     await pcFiles(p, UPLOAD_PNG);
+    await toDetails(p);
     await p.locator("#pcshop").tap();
     await p.locator(".pickrow", { hasText: "E2E Tee" }).first().tap();
     ok(await p.evaluate(() => PCOMPOSE.products.length === 1), "product not tagged");
@@ -1144,6 +1175,7 @@ console.log("\nMEMBER · PHONE");
   /* "You should be able to upload music with the post composer too" (2026-10-09). */
   await step(d, "upload a song from the post creator: name it, add a cover — with no photos the cover is the post's picture; your songs come first, and the same file again is the song you have", async () => {
     await openCreator();
+    await toDetails(p);
     await p.locator("[data-pcmusadd]").tap();
     { const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcmusup").click()]); await fc.setFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) }); }
     await p.waitForSelector("#trkeov", { timeout: 10000 });
@@ -1161,6 +1193,7 @@ console.log("\nMEMBER · PHONE");
       "post: " + JSON.stringify({ t: np.audioTrack, img: np.imageUrl, w: np.mediaW }));
     /* The same song twice (2026-10-11): your songs come first in Add music, and the same file again is the song you have. */
     await openCreator();
+    await toDetails(p);
     await p.locator("[data-pcmusadd]").tap();
     await p.waitForSelector(".pcmus-row", { timeout: 8000 });
     ok(/Composer Song/.test(await p.locator(".pcmus-row").first().innerText()), "your own song isn't first in Add music: " + await p.locator(".pcmus-row").first().innerText());
@@ -1180,6 +1213,7 @@ console.log("\nMEMBER · PHONE");
   /* "You should be able to select what part the song plays" (2026-10-25): a bar under the picked song, a 15-second window to drag */
   await step(d, "which part of the song plays: drag the window under a long song, the times follow, and the post keeps that start", async () => {
     await openCreator();
+    await toDetails(p);
     await p.locator("[data-pcmusadd]").tap();
     { const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcmusup").click()]); await fc.setFiles({ name: "long-song.wav", mimeType: "audio/wav", buffer: wav(24, 330) }); }
     await p.waitForSelector("#trkeov", { timeout: 15000 });
@@ -1245,6 +1279,7 @@ console.log("\nMEMBER · PHONE");
   });
   await step(d, "Add music: ▶ plays a song without picking it, tap again stops it; the row picks it and it keeps playing; closing the post maker stops it", async () => {
     await openCreator();
+    await toDetails(p);
     await p.locator("[data-pcmusadd]").tap();
     await p.waitForSelector(".pcmus-row [data-pcprev]", { timeout: 8000 });
     const row = p.locator(".pcmus-row").first(), id = Number(await row.getAttribute("data-pcmuspick"));
@@ -1271,6 +1306,7 @@ console.log("\nMEMBER · PHONE");
     const kinds = await p.evaluate(() => PCOMPOSE.imgs.map((im) => (im.video ? "video" : "photo")).join(","));
     ok(kinds === "photo,video,photo", "the picks didn't keep their order with the video in the middle: " + kinds);
     ok(await p.locator(".pc-strip .pc-th").nth(1).locator(".pc-vmark").count() === 1, "the video's thumbnail has no play mark");
+    await toDetails(p);
     await p.locator("#pcbody").fill("mixed carousel");
     await p.locator("#pcgo").tap();
     await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 15000 });
@@ -1301,6 +1337,7 @@ console.log("\nMEMBER · PHONE");
     await p.locator('[data-vedt="frame"]').tap(); await p.locator('[data-vedr="4:5"]').tap();
     ok(await p.evaluate(() => getComputedStyle(document.querySelector(".ved-frame")).aspectRatio.replace(/\s/g, "") === "4/5"), "the preview isn't 4:5");
     await p.locator("#vedok").tap();
+    await toDetails(p);
     ok((await p.locator("#pcved .pc-v").textContent()) === "Trimmed · Sound off · 4:5", "summary: " + await p.locator("#pcved .pc-v").textContent());
     await p.locator("#pcgo").tap();
     await p.waitForFunction(() => PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 10000 });
@@ -1534,7 +1571,7 @@ console.log("\nMEMBER · PHONE");
     await openCreator();
     await pcFiles(p, [UPLOAD_PNG2]);
     await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 1 && !PCOMPOSE.upN, null, { timeout: 10000 });
-    await p.waitForSelector("#pctrack .pc-slide img"); await p.waitForTimeout(400);
+    await p.waitForSelector("#pctrack .pc-slide img"); await toDetails(p); await p.waitForTimeout(400);
     await p.locator("#pctag").tap(); await p.waitForSelector(".pc-taghint");
     const img = p.locator("#pctrack .pc-slide img").first();
     const at = await p.evaluate(() => { const im = document.querySelector("#pctrack .pc-slide img"), r = im.getBoundingClientRect(), nw = im.naturalWidth, nh = im.naturalHeight, s = Math.min(r.width / nw, r.height / nh), w = nw * s, h = nh * s;
@@ -1589,7 +1626,7 @@ console.log("\nMEMBER · PHONE");
   await step(d, "labs: + inside // Visual opens New post already posting to Your profile · // Visual (take it out → Add a lab); the lab's head says Invite; the archive has no search box", async () => {
     await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#labshare");
     ok((await p.locator("#labshare").innerText()).trim() === "Invite", "the lab's head doesn't say Invite");
-    await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcto");
+    await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcov"); await toDetails(p);
     ok(await p.locator("#pcto .pc-me").count() === 1 && /Visual/.test(await p.locator("#pcto .pc-labchip").innerText()), "New post from inside the lab isn't posting to Your profile · // Visual");
     ok((await p.locator("#pcgo").innerText()).trim() === "Post" && await p.locator("#pclab").count() === 1 && await p.locator(".pc-opt", { hasText: "Share to a lab" }).count() === 0, "the composer still says Share for posting");
     await p.locator("#pcto [data-pclabrm]").tap(); await p.waitForTimeout(200);
@@ -1606,8 +1643,11 @@ console.log("\nMEMBER · PHONE");
   });
   /* 2026-10-20 one kit, part 3: New post and New listing share the form bar (Cancel · title · the one action) */
   await step(d, "one kit: New post's bar is Cancel · New post · Share (black pill, off until there's something to share); New listing's is Cancel · New listing", async () => {
-    await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcgo");
-    ok(await p.locator(".pc > .kform #pcgo.btn[disabled]").count() === 1 && await p.locator(".pc > .kform #pccancel.kf-b").count() === 1 && await p.locator(".pc-top").count() === 0, "New post's bar isn't the kit's form bar");
+    await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pccancel");
+    ok(await p.locator(".pc > .kform #pccancel.kf-b").count() === 1 && await p.locator(".pcw-bar #pcwnext[disabled]").count() === 1 && await p.locator(".pc-top").count() === 0, "New post's bar isn't the kit's form bar (Cancel · New post, Next off until there's work)");
+    await toDetails(p);
+    ok(await p.locator(".pc > .kform #pcgo.btn[disabled]").count() === 1 && await p.locator(".pc > .kform #pcwback.kf-b").count() === 1, "the last step's bar isn't Back · New post · Post");
+    await toFirst(p);
     await p.locator("#pccancel").tap(); await p.waitForTimeout(300);
     await p.evaluate(() => { PCOMPOSE = false; TAB = "market"; MKTVIEW = "sell"; render(); }); await p.waitForSelector(".kform");
     ok((await p.locator(".kform b").first().innerText()) === "New listing" && await p.locator(".pf-top, .pf-x").count() === 0, "New listing's bar isn't the kit's form bar");
@@ -2263,13 +2303,13 @@ console.log("\nMEMBER · COMPUTER");
   // 2026-10-18: "build a full post composer only for computers — reorganize everything to fit the page"
   await step(d, "a laptop: the post maker is two panes on one screen — the picture left, caption and options right", async () => {
     await p.setViewportSize({ width: 1366, height: 768 });
-    await p.locator('.side [data-tab="post"]').click(); await p.waitForSelector("#pcov .pc-side");
+    await p.locator('.side [data-tab="post"]').click(); await p.waitForSelector("#pcov"); await toDetails(p); await p.waitForSelector("#pcov .pc-side");
     const g = await p.evaluate(() => { const m = document.querySelector(".pc-media").getBoundingClientRect(), sd = document.querySelector(".pc-side").getBoundingClientRect(), pc = document.querySelector(".pc").getBoundingClientRect();
       return { side: sd.left - m.right, top: Math.abs(sd.top - m.top), bottom: pc.bottom, h: innerHeight, mw: m.width, scroll: document.scrollingElement.scrollHeight - innerHeight }; });
     ok(g.side >= -1 && g.side < 4 && g.top < 2 && g.mw > 500, "the picture and the options aren't side by side: " + JSON.stringify(g));
     ok(g.bottom <= g.h && g.scroll <= 1, "the post maker doesn't fit the screen: " + JSON.stringify(g));
     ok(await p.locator(".pc-side #pcbody").count() === 1 && await p.locator(".pc-side #pclab").count() === 1, "the caption and options aren't in the right-hand column");
-    await p.locator("#pccancel").click(); await p.waitForFunction(() => !PCOMPOSE, null, { timeout: 3000 });
+    await toFirst(p); await p.locator("#pccancel").click(); await p.waitForFunction(() => !PCOMPOSE, null, { timeout: 3000 });
     await p.setViewportSize({ width: 1440, height: 900 });
   });
   await step(d, "an opened post sits beside the sidebar", async () => {

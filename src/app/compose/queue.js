@@ -44,7 +44,7 @@ function pdOpen(c){
   openPicker({title:"Drafts",items:ds.map(d=>({label:(d.body||"").trim().slice(0,60)||"Untitled",
       sub:timeAgo(d.at)+(d.imgs&&d.imgs.length?` · ${d.imgs.length} photo${d.imgs.length>1?"s":""}`:d.vid?" · video":""),
       avatar:d.imgs&&d.imgs[0]?d.imgs[0].thumb:(d.cover||""),d})),
-    onPick:it=>{if(PCOMPOSE!==c)return;Object.assign(c,JSON.parse(JSON.stringify(it.d)),{draftId:it.d.id,idx:0});render()}});
+    onPick:it=>{if(PCOMPOSE!==c)return;Object.assign(c,JSON.parse(JSON.stringify(it.d)),{draftId:it.d.id,idx:0,step:"details"});render()}});   // a draft opens on its details (2026-11-05)
 }
 
 /* Cancel / back: save, discard, or keep going. */

@@ -99,6 +99,7 @@ function initHistory(){
       if(GATE){if(gateBack()){render();return}gateClose();acted=true}
       else if(EDITING&&EDITPF&&EDITPF.sub){EDITPF.sub=null;navRearm(d);render();return}
       else if(EDITING){EDITING=false;EDITPF=null;if(ME)applyAccent(ME.accentHex);acted=true}
+      else if(PCOMPOSE&&pcwBack()){navRearm(d);return}   // a step back in a new post (app/compose/composer-walk)
       else if(PCOMPOSE){
         /* Back can't be cancelled once it has fired, so a dirty draft puts its
            history entry back and then asks. "Keep writing" leaves you exactly

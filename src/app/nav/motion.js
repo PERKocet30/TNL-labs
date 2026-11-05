@@ -24,12 +24,12 @@ const mvReduced=()=>{try{return matchMedia("(prefers-reduced-motion: reduce)").m
 /* What the main area shows. An overlay (another person's profile, a post, a
    sheet) is not a new screen: the feed under it keeps its place. */
 function mvKey(){
-  if(PCOMPOSE)return "compose";
+  if(PCOMPOSE)return "compose:"+pcwStep(PCOMPOSE);   // each step of a new post is a screen (2026-11-05)
   if(MYPAGE())return "me";
   return [TAB,TAB==="labs"?[ROOMOPEN,LAB&&LAB.id,LAB?LABVIEW:"",TAGVIEW?TAGVIEW.tag:""].join("/"):"",TAB==="market"?MKTVIEW:""].join("|");
 }
 function mvDepth(){
-  if(PCOMPOSE)return 2;
+  if(PCOMPOSE)return 2+Math.max(0,PCW_STEPS.indexOf(pcwStep(PCOMPOSE)));   // Next moves forward, Back back
   if(TAB==="labs"&&(ROOMOPEN||TAGVIEW)&&!MYPAGE())return 1;
   if(TAB==="market"&&MKTVIEW&&MKTVIEW!=="browse"&&!MYPAGE())return 1;
   return 0;

@@ -1,3 +1,4 @@
+/* v2026-11-05 (later): a new post walks you through it — your work → where it belongs → caption & details (app/compose/composer-walk); this page is the last step.
 /* v2026-11-05: tapping Post counts the post flow as done — it posts after the screen closes, so Echo's flows showed every post as abandoned. */
 /* v2026-11-04: the photo picker opens from pickFiles (app/media/pick) — an input outside the screen, so a repaint while it's up can't lose what you chose (iPhone). */
 /* v2026-10-29: Edit opens this page on the post — "Edit info" · Done (app/compose/post-edit).
@@ -54,6 +55,7 @@ function pcomposeHTML(){
   else if(pcCover(c))media=`<div class="pc-stage"><img class="pc-cov" src="${esc(pcCover(c))}" alt="${esc(c.track.title)} — cover"><span class="pc-covtag">${UI_IC.music} Song cover</span></div>
     <label class="pc-pick pc-pick-sm" data-pcpick role="button" tabindex="0">${file}<b>Add photos or video instead</b></label>`;
   else media=`${pdRowHTML(c)}<label class="pc-pick" data-pcpick role="button" tabindex="0">${file}${PC_PICK}<b>Add photos or video</b><span>Up to 10 photos and videos</span></label>`;
+  if(!c.edit&&pcwStep(c)!=="details")return pcwHTML(c,media);   // steps 1–2 of a new post (app/compose/composer-walk)
   const tags=c.tags||[];
 
   /* Where people see it (2026-10-21, "make sharing into labs and posting on profiles
@@ -65,11 +67,11 @@ function pcomposeHTML(){
       ${c.ch?`<span class="pc-chip pc-labchip"><i class="lg">//</i>${esc(c.ch.lab)}<button data-pclabrm aria-label="Take it out of ${esc(c.ch.lab)}">${PC_X}</button></span><button class="pc-chip pc-add2" id="pclab" aria-label="Change lab">${DI.edit}</button>`
         :`<button class="pc-chip pc-add2" id="pclab">${DI.plus}<span>Add a lab</span></button>`}
     </div>`;
-  return `<div class="pcmp-ov" id="pcov"><div class="pc${c.edit?" pce"+(c.tagMode?" pce-tag":""):""}" role="dialog" aria-label="${c.edit?"Edit info":"New post"}">
-    ${c.edit?pceHead(c):formHead({id:"pccancel",label:"Cancel"},"New post",{id:"pcgo",label:c.busy?"Posting…":"Post",disabled:!pcCan(c)})}
+  return `<div class="pcmp-ov" id="pcov"><div class="pc${c.edit?" pce"+(c.tagMode?" pce-tag":""):" pcw-details"+(c.tagMode?"":" pc-det")}" role="dialog" aria-label="${c.edit?"Edit info":"New post"}">
+    ${c.edit?pceHead(c):pcwHead(c)/* Back · New post · Post (label:c.busy?"Posting…":"Post") */}
     <div class="pc-body"><div class="pc-media">${media}</div><div class="pc-side">
       ${to}
-      <div class="pc-cap">${c.edit?pceThumb(c):avHTML(ME,"")}
+      <div class="pc-cap">${pceThumb(c)}
         <textarea class="pc-ta" id="pcbody" rows="3" maxlength="${PC_CAP_MAX}" placeholder="Write a caption… #tag it so people find it">${esc(c.body||"")}</textarea></div>${pcCapCountHTML(c)}
       <div class="pc-ment" id="pcment" hidden></div>
       <div class="pc-opts">
@@ -119,6 +121,7 @@ function pcmusRowsHTML(list,searching){
 function wirePCompose(){
   const ov=$("#pcov");if(!ov){if(PED&&!PCOMPOSE)pedClose();pcPrevStop();return}const c=PCOMPOSE;
   const syncGo=()=>{const g=$("#pcgo");if(g)g.disabled=!pcCan(c)};
+  pcwWire(c);   // Next, Back, the lab and #tags (app/compose/composer-walk)
 
   /* ── media ── */
   /* photos, a video, or both in one carousel (app/compose/post-mixed) */
