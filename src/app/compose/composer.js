@@ -1,3 +1,4 @@
+/* v2026-11-05: tapping Post counts the post flow as done — it posts after the screen closes, so Echo's flows showed every post as abandoned. */
 /* v2026-11-04: the photo picker opens from pickFiles (app/media/pick) — an input outside the screen, so a repaint while it's up can't lose what you chose (iPhone). */
 /* v2026-10-29: Edit opens this page on the post — "Edit info" · Done (app/compose/post-edit).
 /* v2026-10-25: pick which part of the song plays — the bar under the picked song (pcPartHTML/pcPartWire, app/compose/preview).
@@ -247,6 +248,7 @@ function wirePCompose(){
   const go=$("#pcgo");if(go)go.onclick=async()=>{
     if(c.edit)return pceSave(c);   // saves in place (app/compose/post-edit)
     if(!pcCan(c)){if(!c.busy)toast("Add a photo, a video, or write something");return}
+    try{if(UI.flow==="post")UI.flowDone=true}catch(e){}   // tapping Post finishes the flow: the post lands after the screen has closed (2026-11-05)
     pqSubmit(c);   // closes now; posts in the background (app/compose/queue.js)
   };
 }

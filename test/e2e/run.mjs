@@ -920,6 +920,16 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => PCOMPOSE && PCOMPOSE.imgs.length) === 2, "the photos chosen during a repaint were lost");
     await p.evaluate(() => { const c = PCOMPOSE; c.dead = true; PCOMPOSE = null; render(); });
   });
+  await step(d, "a video chosen after iOS says cancel still lands (an iPhone lost a 1:59 video, 2026-11-05)", async () => {
+    await openCreator();
+    const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcov [data-pcpick]").first().click()]);
+    await p.evaluate(() => document.getElementById("filepick").dispatchEvent(new Event("cancel")));   // iOS: the picker closes while it gets the video ready
+    await p.waitForTimeout(300);
+    await fc.setFiles([UPLOAD_PNG]);                                                                   // …then the file arrives
+    await p.waitForFunction(() => PCOMPOSE && (PCOMPOSE.imgs.length || PCOMPOSE.upN || PCOMPOSE.vid || PCOMPOSE.vidbusy), null, { timeout: 8000 }).catch(() => {});
+    ok(await p.evaluate(() => !!(PCOMPOSE && (PCOMPOSE.imgs.length || PCOMPOSE.upN))), "the file chosen after a cancel was lost");
+    await p.evaluate(() => { const c = PCOMPOSE; c.dead = true; PCOMPOSE = null; render(); });
+  });
   const myPosts = async () => (await api("/api/users/tester", token)).posts || [];
   await step(d, "creator: never slides sideways; drag a thumbnail to reorder", async () => {
     await openCreator();
