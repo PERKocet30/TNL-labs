@@ -70,6 +70,7 @@ export const APP = [
 
   // nav
   "nav/motion.js",
+  "nav/motion-live.js",    // ARRIVE · ANSWER · LAND — the app's motion rules, applied everywhere (2026-11-05)
   "nav/back.js",
   "nav/render-nav.js",
 

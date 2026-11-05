@@ -53,13 +53,19 @@ function wireGate(){
     if(f.username&&!G.un.state)gxCheck()}
   document.querySelectorAll("[data-sugg]").forEach(b=>b.onclick=()=>{f.username=b.dataset.sugg;if(un)un.value=f.username;gxCheck()});
 
+  /* ── roles: the search hides what doesn't match (chosen ones always show), never repaints ── */
+  const rq=$("#gxrq");if(rq)rq.oninput=()=>{const q=rq.value.trim().toLowerCase();let any=false;
+    document.querySelectorAll("#gxroles [data-rgrp]").forEach(g=>{let n=0;
+      g.querySelectorAll("[data-r]").forEach(b=>{const show=!q||b.classList.contains("on")||b.dataset.r.toLowerCase().split(/[\s/&'-]+/).some(w=>w.startsWith(q))||b.dataset.r.toLowerCase().startsWith(q);b.hidden=!show;if(show)n++});
+      g.hidden=!n;if(n)any=true});
+    const no=$("#gxrnone");if(no)no.hidden=any};
   /* ── roles: toggled in place so the long list keeps its scroll ── */
   document.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{const r=b.dataset.r;
     if(f.roles.includes(r))f.roles=f.roles.filter(x=>x!==r);
     else if(f.roles.length<5)f.roles=[...f.roles,r];
     else{toast("Up to 5");return}
     b.classList.toggle("on",f.roles.includes(r));
-    const c=$("#rcount");if(c)c.textContent=f.roles.length+" of 5 selected";
+    const c=$("#rcount");if(c){c.textContent=f.roles.length+" of 5 selected";gxBump(c)}
     const n=nx();if(n)n.disabled=!f.roles.length});
 
   /* ── Next, per screen ── */
@@ -87,7 +93,7 @@ function wireGate(){
   document.querySelectorAll("[data-gxacc]").forEach(b=>b.onclick=()=>{const k=b.dataset.gxacc,a=ACCENTS[k];if(!a||!ME)return;
     ME.accent=k;ME.accentHex=a.hex;try{applyAccent(a.hex);localStorage.setItem("tnl-gs-colour","1")}catch(e){}
     document.querySelectorAll("[data-gxacc]").forEach(x=>x.classList.toggle("on",x===b));
-    const t=$(".gx-tint");if(t)t.style.setProperty("--ring",accFill(a.hex));
+    const t=$(".gx-tint");if(t){t.style.setProperty("--ring",accFill(a.hex));gxBump(t)}
     api.updateMe({accent:k}).then(d=>{if(d&&d.user)ME=d.user}).catch(e=>toast(e.message))});
   on("#gxchange",()=>{const fi=$("#gxfile");if(fi)fi.click()});
   const fi=$("#gxfile");
@@ -114,6 +120,8 @@ function wireGate(){
 }
 
 /* Debounced availability check; paints only the username bits so the field keeps focus. */
+/* a little "that worked" bump on an element changed in place (the count, the colour ring) — the app's mvBump */
+function gxBump(el){if(el)mvBump(el)}
 function gxCheck(){
   const G=GFLOW;if(!G)return;const u=G.f.username;
   const paint=()=>{if(GFLOW!==G)return;

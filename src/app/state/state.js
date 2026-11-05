@@ -39,6 +39,7 @@ let ARCHIVE=null, ARCHFILT={}, ARCHT=null;
 let GATE=null;                       // null = browsing, "join"/"login" = the door
 let ENTER = false;
 let GATEWHY="";
+let GXPAINTED="";   // the sign-up step last painted — a new one moves in (app/gate/screens, 2026-11-05 "more interactive… motion")
 let MKT=null, MKTMETA={categories:[],conditions:[],paymentsEnabled:false}, MKTFILT={}, MKTVIEW="browse";
 let MKTONE=null, MKTOFFERS=[], SELLFORM=null, SELLIMGS=[], ORDERS=null, ORDTAB="buying", SELLUP=false, MKTFILTOPEN=false;
 let MKTEDIT=null;

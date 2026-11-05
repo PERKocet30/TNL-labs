@@ -47,6 +47,21 @@ const ROLES = [
   "Web Designer","Web Developer","App Developer","UI/UX Designer","Product Designer",
   // business
   "Entrepreneur","Founder","Brand Strategist","Marketer","Manager","A&R","Photographer's Agent","Event Organizer",
+  /* more titles, lab by lab — every one has its home lab in ROLE_LABS (app/labs/places) */
+  // fine art · Visual (2026-11-05: "titles that include all the fine arts", "that correspond to the current labs")
+  "Fine Artist","Digital Artist","Concept Artist","Sketch Artist","Portrait Artist","Watercolorist","Calligrapher","Collage Artist","Installation Artist","Performance Artist","Street Artist","Graffiti Artist","Ceramicist","Glass Artist","Woodworker","Architect","Art Teacher","Filmmaker","Director","Photojournalist",
+  // Music
+  "Composer","Songwriter","Vocalist","Guitarist","Drummer","Pianist","Mixing Engineer","Dancer","Choreographer","Music Video Director",
+  // Fashion
+  "Jewelry Designer","Textile Artist","Metalsmith","Makeup Artist","Hairstylist","Pattern Maker","Embroiderer","Shoe Designer","Creative Director","Vintage Reseller",
+  // Anime
+  "Comic Artist","Webtoon Artist","Fan Artist","Figure Sculptor","Voice Actor","VTuber",
+  // News · the words lab
+  "Editor","Reporter","Critic","Columnist","Blogger","Podcaster","Poet","Author","Screenwriter","Playwright","Spoken Word Artist",
+  // Business
+  "Investor","Publicist","Talent Manager","Art Dealer","Gallerist","Promoter","Merch Maker","Consultant",
+  // General
+  "Collector","Community Builder","Art Lover",
 ];
 
 /* Every profile shouldn't look the same. A producer's page and a fashion

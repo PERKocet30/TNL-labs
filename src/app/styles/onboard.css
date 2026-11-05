@@ -14,7 +14,15 @@
 .gx-h{font-size:24px;margin:4px 0 8px}
 .gx-p{max-width:330px;margin-left:auto;margin-right:auto}
 .gxf-in,.gx-out,.gx-people,.gxf-ta{text-align:left}
-.gx-sugg,.gx-roles{justify-content:center}
+.gx-sugg{justify-content:center}
+/* What do you make? grouped by lab, with a search (2026-11-05) */
+.gx-roles{display:block}
+.gx-rq{width:100%;box-sizing:border-box;margin:4px 0 14px;padding:12px 14px;border-radius:var(--rad-s);border:1px solid var(--line);background:var(--el);color:var(--tx);font:inherit;font-size:16px}
+.gx-rgrp{margin:0 0 14px}
+.gx-rlab{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--tx2);margin:0 0 8px;text-align:left}
+.gx-rchips{display:flex;flex-wrap:wrap;gap:8px}
+.gx-rgrp[hidden],.gx-rchips [hidden]{display:none}
+.gx-rnone{font-size:14px;color:var(--tx2);text-align:center;padding:10px 0}
 .gx-pwr{align-self:center;align-items:flex-start}
 .gx-body.center .gx-stick{position:static;background:none;padding:4px 0 0;margin-top:0}
 .gxf-ta{border-radius:var(--rad);background:var(--el);padding:14px 18px}

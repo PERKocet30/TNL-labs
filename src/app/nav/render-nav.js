@@ -44,7 +44,7 @@ function render(){
     ${installCardHTML()}
     ${ENTER?enterHTML():""}`;
   vRestore(app,vk);
-  mvAfter(mvb);
+  mvAfter(mvb);mvLanded();   // app/nav/motion-live: loading gave way to the real thing → its parts arrive
   wire();
   wireEnter();
   if(TAB==="labs")loadFeed();

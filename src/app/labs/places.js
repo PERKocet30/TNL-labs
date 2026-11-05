@@ -32,6 +32,14 @@ const ROLE_LABS={
   "Web Designer":["pharmacy","tna"],"Web Developer":["tna"],"App Developer":["tna"],"UI/UX Designer":["pharmacy","tna"],"Product Designer":["pharmacy","tna"],
   "Entrepreneur":["tna"],"Founder":["tna"],"Brand Strategist":["tna","casino"],"Marketer":["tna","casino"],"Manager":["tna","culture"],"A&R":["culture","tna"],
   "Photographer's Agent":["tna","pharmacy"],"Event Organizer":["tna","hq"],
+  /* more titles, lab by lab (2026-11-05) */
+  "Fine Artist":["pharmacy"],"Digital Artist":["pharmacy"],"Concept Artist":["pharmacy","akatsuki"],"Sketch Artist":["pharmacy"],"Portrait Artist":["pharmacy"],"Watercolorist":["pharmacy"],"Calligrapher":["pharmacy"],"Collage Artist":["pharmacy"],"Installation Artist":["pharmacy"],"Performance Artist":["pharmacy","culture"],"Street Artist":["pharmacy"],"Graffiti Artist":["pharmacy"],"Ceramicist":["pharmacy"],"Glass Artist":["pharmacy"],"Woodworker":["pharmacy"],"Architect":["pharmacy","tna"],"Art Teacher":["pharmacy"],"Filmmaker":["pharmacy"],"Director":["pharmacy"],"Photojournalist":["pharmacy","casino"],
+  "Composer":["culture"],"Songwriter":["culture"],"Vocalist":["culture"],"Guitarist":["culture"],"Drummer":["culture"],"Pianist":["culture"],"Mixing Engineer":["culture"],"Dancer":["culture","pharmacy"],"Choreographer":["culture","pharmacy"],"Music Video Director":["culture","pharmacy"],
+  "Jewelry Designer":["fashion","pharmacy"],"Textile Artist":["fashion","pharmacy"],"Metalsmith":["fashion","pharmacy"],"Makeup Artist":["fashion"],"Hairstylist":["fashion"],"Pattern Maker":["fashion"],"Embroiderer":["fashion"],"Shoe Designer":["fashion"],"Creative Director":["fashion","tna"],"Vintage Reseller":["fashion","tna"],
+  "Comic Artist":["akatsuki","pharmacy"],"Webtoon Artist":["akatsuki","pharmacy"],"Fan Artist":["akatsuki","pharmacy"],"Figure Sculptor":["akatsuki","pharmacy"],"Voice Actor":["akatsuki","culture"],"VTuber":["akatsuki"],
+  "Editor":["casino"],"Reporter":["casino"],"Critic":["casino"],"Columnist":["casino"],"Blogger":["casino"],"Podcaster":["casino","culture"],"Poet":["casino"],"Author":["casino"],"Screenwriter":["casino","pharmacy"],"Playwright":["casino","pharmacy"],"Spoken Word Artist":["casino","culture"],
+  "Investor":["tna"],"Publicist":["tna","casino"],"Talent Manager":["tna","culture"],"Art Dealer":["tna","pharmacy"],"Gallerist":["tna","pharmacy"],"Promoter":["tna","culture"],"Merch Maker":["tna","fashion"],"Consultant":["tna"],
+  "Collector":["hq","pharmacy"],"Community Builder":["hq","tna"],"Art Lover":["hq"],
 };
 /* Your labs first: each role you picked counts for its labs — the first
    role you picked most, a role's second lab half. Then everything else,
