@@ -85,6 +85,8 @@ export const SERVER = [
   "events/pages.js",
   "events/mail.js",
   "events/votemail.js",
+  "events/resultmail.js",
+  "events/winnercard.js",
 
   // core
   "core/glitch.js",

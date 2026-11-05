@@ -1,5 +1,5 @@
 /* ================================================================
-   MAIL v2.3 — 2026-10-28 (roleEmail: "anytime someone is made a Mod or a Lab Lead they're emailed"). v2.2 — 2026-10-23. Verification and password-reset emails,
+   MAIL v2.4 — 2026-11-05 (resultsEmail: the tournament's over, the winner, what's next — to everyone who voted). v2.3 — 2026-10-28 (roleEmail: "anytime someone is made a Mod or a Lab Lead they're emailed"). v2.2 — 2026-10-23. Verification and password-reset emails,
    in the app's design language (see THE LOOK below).
    v2.2: the weekly "finish your page" reminder (nudgeEmail): one email
    a week to a member whose page has gaps, saying exactly which — a
@@ -168,6 +168,25 @@ export function voteOpenEmail({ name, title, at, entries, picks, rules, url, uns
   });
 }
 export const voteOpenSubject = (title, at) => `${title}: voting opens today at ${at}`;
+
+/** The tournament is over (2026-11-05): to everyone who voted. `winner`,
+    `second`, `third` are { name, username }; `next` is the next
+    tournament's genre ("music"), or "" to say nothing about it. */
+export function resultsEmail({ name, title, winner, second, third, prize, next, url, unsub }) {
+  const who = (p) => `${p.name} (@${p.username})`;
+  return renderEmail({
+    eyebrow: "Tournament", title: `The winner is ${winner.name}`,
+    lines: [`${name ? name + ", the" : "The"} ${title} is over. Thank you for voting.`,
+      `${who(winner)} won${prize ? ` the ${prize} prize` : ""}.`,
+      second ? `${third ? `Second, ${who(second)}. Third, ${who(third)}.` : `Second, ${who(second)}.`}` : "",
+      "Thank you to everyone who entered, voted and shared.",
+      next ? `The next tournament is for ${next}. Get your work ready — we'll email you when entries open.` : ""].filter(Boolean),
+    cta: "See the results", url, unsub,
+    note: "You're getting this because you voted in the tournament.",
+    preheader: `${winner.name} won. Thank you for voting.`,
+  });
+}
+export const resultsSubject = (title, winner) => `${title}: the winner is ${winner}`;
 
 /** The weekly reminder. `items` are the gaps, first the one the button
     goes to; `done`/`total` are the Get started numbers. The words for
