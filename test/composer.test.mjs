@@ -67,7 +67,12 @@ const pick = fn("pickFiles");
 t("no file input is drawn inside the composer any more", !html.includes('type="file"') && !html.includes("pcfile"));
 t("every place you add photos opens the picker", (html.match(/data-pcpick/g) || []).length === 3 && wire.includes('querySelectorAll("[data-pcpick]")') && wire.includes('pickFiles({accept:"image/*,video/*",multiple:true'));
 t("the picker's input lives on <body>, made once, never in a render", pick.includes('document.getElementById("filepick")') && pick.includes("document.body.appendChild(fi)"));
-t("the files are copied before the input is cleared, and a cancel resolves empty", pick.includes("const files=[...(fi.files||[])];fi.value=\"\"") && pick.includes("fi.oncancel=()=>done([])"));
+t("the files are copied before the input is cleared", pick.includes("const files=[...(fi.files||[])];if(!files.length)return false;fi.value=\"\""));
+console.log("\nA CANCEL IS ONLY A MAYBE (2026-11-05: an iPhone video came back empty — iOS said cancel, then the video arrived)");
+t("a cancel doesn't end the pick: it keeps listening and looks for files the phone fills in", /fi\.oncancel=\(\)=>\{if\(settled\|\|take\(\)\)return;/.test(pick) && pick.includes("poll=setInterval(take,500)") && !pick.includes("fi.oncancel=()=>done([])"));
+t("…a late change or input still lands", pick.includes("fi.onchange=fi.oninput=()=>{take()}"));
+t("…and the pick ends after a long wait, or when the next pick starts", pick.includes("wait=setTimeout(()=>done([]),PICK_WAIT_MS)") && pick.includes("if(pickOpen)pickOpen([])"));
+t("tapping Post counts the post flow as done (it posts after the screen closes)", wire.includes('if(UI.flow==="post")UI.flowDone=true') && wire.indexOf("UI.flowDone=true") < wire.indexOf("pqSubmit(c)"));
 t("the picked files go to the composer they were picked for, only if it's still open", wire.includes("if(files.length&&PCOMPOSE===c)pcPick(c,files)"));
 t("each pick is counted (start, then done or abandon) so a lost pick shows in Echo's flows", pick.includes('uiPush("flow",where,"start")') && pick.includes('uiPush("flow",where,files.length?"done":"abandon")'));
 

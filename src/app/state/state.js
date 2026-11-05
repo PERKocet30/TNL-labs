@@ -1,4 +1,4 @@
-/* THE APP'S SHARED STATE — v1.0 · 2026-10-31. Every top-level `let` the app has, in one place,
+/* THE APP'S SHARED STATE — v1.1 · 2026-11-05 (pickOpen) · v1.0 · 2026-10-31. Every top-level `let` the app has, in one place,
    under the feature that owns it (sets and clears it; others only read). The first script: nothing
    here runs at load but reading storage. New shared state goes HERE (test/state.test.mjs). A screen
    over another puts it aside and brings it back (pceOpen / pceLeave, app/compose/post-edit.js). */
@@ -17,6 +17,7 @@ let SRPOSTS=[];
 let PTAB="work", EDITING=false, LIGHTBOX=null, VERIFYURL=null;
 let PROFLISTINGS=null;
 let PCOMPOSE=null;
+let pickOpen=null;   // media/pick.js: the file pick still waiting, so the next one can end it
 let FEEDAT={}, SRAT=0;  // freshness stamps — render() must not hammer the network on every tap
 let CLIMB=false, CLIMBOPENRUNG=0; // THE CLIMB — the one screen where the whole progression system is legible
 /* Several files at once. Each posts separately. */
