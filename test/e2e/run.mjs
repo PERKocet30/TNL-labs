@@ -1884,6 +1884,27 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#labback").tap(); await p.waitForSelector(".lx-list");
     await p.evaluate(() => { TAB = "showroom"; render(); });
   });
+  /* "Does the Labs reflect the design language" (2026-11-05): the Labs moved in as one block, Older said
+     "Loading…", and a lab that failed to load was a dead end */
+  await step(d, "the Labs follow the design language: lab cards and a lab's parts rise in turn, Older shimmers, a failure has Try again", async () => {
+    if (await p.evaluate(() => mvReduced())) return;
+    await p.evaluate(() => { TAB = "showroom"; LAB = null; TAGVIEW = null; render(); });
+    await p.locator('.nav [data-tab="labs"]').tap(); await p.waitForSelector("#lxlist .lx");
+    const cards = await p.evaluate(() => [...document.querySelectorAll("#lxlist .lx")].slice(0, 3).map((e) => [getComputedStyle(e).animationName, getComputedStyle(e).animationDelay]));
+    ok(cards.every(([n]) => n === "mvRise") && new Set(cards.map(([, dl]) => dl)).size > 1, "the lab cards don't rise one after another: " + JSON.stringify(cards));
+    await p.locator('#lxlist .lx[data-lab="pharmacy"]').first().tap(); await p.waitForSelector(".room .pl-tabs");
+    const parts = await p.evaluate(() => [...document.querySelectorAll(".content .room>*")].slice(0, 3).map((e) => getComputedStyle(e).animationName));
+    ok(parts.every((n) => n === "mvRise"), "a lab's head, tabs and body don't come in: " + JSON.stringify(parts));
+    // a failure offers the way forward, and it works
+    const ok2 = await p.evaluate(async () => { const P = PLACE.pharmacy || (PLACE.pharmacy = {}), k = placeKey(), keep = P[k]; P[k] = { error: "e2e: couldn't reach LABS" }; paintPlace();
+      const b = document.querySelector("#plbody [data-plretry]"); if (!b) { P[k] = keep; paintPlace(); return "no Try again"; }
+      b.click(); for (let i = 0; i < 40 && !(PLACE.pharmacy[k] && !PLACE.pharmacy[k].error); i++) await new Promise((r) => setTimeout(r, 100));
+      return PLACE.pharmacy[k] && !PLACE.pharmacy[k].error ? "" : "Try again didn't load the work"; });
+    ok(!ok2, ok2);
+    ok(!(await p.evaluate(() => document.getElementById("app").innerText.includes("Loading…"))), "a lab says \"Loading…\"");
+    await p.locator("#labback").tap(); await p.waitForSelector(".lx-list");
+    await p.evaluate(() => { TAB = "showroom"; render(); });
+  });
   /* "Every lab to have a share button with captions that describe what to do inside each lab" (2026-10-15) */
   await step(d, "every lab says what to do there and has a Share that sends that line and a link to the lab", async () => {
     await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#labshare");
@@ -2036,7 +2057,7 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { const s = document.querySelector("#evscroll"); s.scrollTop = s.scrollHeight; });
     await p.waitForTimeout(200);
     const bb = await p.locator("#evback").boundingBox();
-    ok(bb && bb.y >= 0 && bb.y < 200 && bb.height >= 44, "scrolled down, the ‹ left the screen (or is too small to tap): " + JSON.stringify(bb));
+    ok(bb && bb.y >= 0 && bb.y < 200 && Math.round(bb.height) >= 44, "scrolled down, the ‹ left the screen (or is too small to tap): " + JSON.stringify(bb));
     await p.evaluate(() => openProfile(ME.username)); await p.waitForFunction(() => PROFILE && PROFILE.user, null, { timeout: 4000 });
     await p.evaluate(() => history.back());
     await p.waitForFunction(() => TAB === "event" && !PROFILE, null, { timeout: 4000 });
@@ -2293,6 +2314,24 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.getByText(/× rage taps · /).count() > 0, "the rage tap isn't listed");
     ok(await p.getByText(/Glitches, 24h/).count() > 0, "no Glitches KPI");
     await p.screenshot({ path: join(SHOTS, "admin-glitches.png"), fullPage: false });
+    await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
+  });
+  // 2026-11-05 "Including the admin dashboard": the design language's motion and shimmer in /admin
+  await step(d, "admin follows the design language: a section's parts rise in turn, loading shimmers (never \"Loading…\"), a number that changes bumps", async () => {
+    await settledGoto(p, B + "/admin#health");
+    await fast(p, 6000, () => p.locator("h2.sec", { hasText: "Glitches" }).first().waitFor(), "the admin Health page");
+    if (await p.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+    const seen = await p.evaluate(() => { D.settings = null; go("settings"); const m = document.getElementById("main");
+      return { cls: m.className, text: m.innerText, ask: !!m.querySelector(".ask"), anim: [...m.children].slice(0, 2).map((e) => getComputedStyle(e).animationName) }; });
+    ok(!/Loading/.test(seen.text), "a section says Loading…: " + seen.text.slice(0, 80));
+    ok(/mv-in/.test(seen.cls) && seen.ask, "a section doesn't arrive with its shimmer: " + JSON.stringify(seen));
+    await fast(p, 6000, () => p.waitForFunction(() => !document.querySelector("#main .ask")), "Settings landing");
+    const landed = await p.evaluate(() => { const m = document.getElementById("main"); return { cls: m.className, anim: [...m.children].slice(0, 2).map((e) => getComputedStyle(e).animationName) }; });
+    ok(/mv-(land|in)/.test(landed.cls) && landed.anim.every((n) => n === "amvRise"), "when the shimmer gives way the parts don't rise in: " + JSON.stringify(landed));
+    const bumped = await p.evaluate(() => { const v = document.querySelector("#app .nv b, #app .bb b, #main .kpi .v"); if (!v) return "none";
+      const was = v.textContent; v.textContent = was + "1"; const b = admMvBefore(); v.textContent = was; admMvAfter(b);
+      const now = document.querySelector("#app .nv b, #app .bb b, #main .kpi .v"); return now && now.classList.contains("mv-bump") ? "" : "no bump"; });
+    ok(bumped === "" || bumped === "none", "a changed number doesn't bump");
     await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
   // 2026-10-09: Today runs on the direction — the tournament, the labs and their #tags

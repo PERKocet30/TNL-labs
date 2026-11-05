@@ -14,7 +14,7 @@ const igDay = (t) => (t ? new Date(t).toLocaleDateString([], { month: "long", da
 
 VIEWS.instagram = () => {
   const d = D.instagram;
-  if (!d) return `${pageHead("Instagram", "Messages sent to the LABS account on Instagram.")}<div class="empty">Loading…</div>`;
+  if (!d) return `${pageHead("Instagram", "Messages sent to the LABS account on Instagram.")}${askel()}`;
   if (IGCONV) return igThreadHTML(d);
   const who = d.username ? "@" + esc(d.username) : "the LABS account";
   const actions = d.connected
@@ -44,7 +44,7 @@ function igSetupHTML(d) {
 function igThreadHTML(d) {
   const t = D.igthread;
   const back = `<button class="btn ghost sm" id="igback">${I.chev} All conversations</button>`;
-  if (!t) return `${pageHead("Instagram", "", back)}<div class="empty">Loading…</div>`;
+  if (!t) return `${pageHead("Instagram", "", back)}${askel()}`;
   const open = t.username ? `<a class="btn sm" href="https://ig.me/m/${encodeURIComponent(t.username)}" target="_blank" rel="noopener">Reply in Instagram ${I.out}</a>` : "";
   let day = "";
   const rows = t.messages.map((m) => {

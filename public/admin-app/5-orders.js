@@ -12,7 +12,7 @@ const STATUS = { pending: "Awaiting payment", paid: "Paid — ship it", shipped:
 const stDot = (o) => o.status === "paid" ? (Date.now() - o.createdAt > 3 * 86400000 ? "bad" : "warn") : ["shipped", "complete"].includes(o.status) ? "ok" : "off";
 VIEWS.orders = () => {
   const m = D.market, O = D.orders, S = D.series;
-  if (!m || !O || !S) return `<div class="empty">Loading…</div>`;
+  if (!m || !O || !S) return askel();
   const labels = dayLabels(S.start, S.days), now = sum(S.series.orders), before = sum(S.prev.orders), gmv = sum(S.series.gmv), gmvB = sum(S.prev.gmv);
   const rows = O.filter((o) => OSTAT === "all" ? o.status !== "void" : o.status === OSTAT);
   const count = (s) => O.filter((o) => s === "all" ? o.status !== "void" : o.status === s).length;

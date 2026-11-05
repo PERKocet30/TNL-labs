@@ -8,7 +8,7 @@ const MT_TODO = { instagram: "Instagram", shop: "Instagram shop" };
 
 function sysMetaHTML() {
   const M = D.sysMeta;
-  if (!M) return `<h2 class="sec">Meta</h2><div class="panel"><div class="empty">Loading…</div></div>`;
+  if (!M) return `<h2 class="sec">Meta</h2><div class="panel">${askel("rows")}</div>`;
   if (!M.on) return `<h2 class="sec">Meta <span class="mono">Instagram · Facebook</span></h2><div class="panel">${sysOff("Meta", "META_ACCESS_TOKEN")}</div>`;
   if (M.error) return `<h2 class="sec">Meta <span class="mono">Instagram · Facebook</span></h2><div class="panel">${sysErr(M.error)}</div>`;
   const I = M.instagram, F = M.facebook, S = M.shop;

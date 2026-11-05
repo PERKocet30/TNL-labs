@@ -21,7 +21,7 @@ const actionName = (a) => (ACTIONS.find(([re]) => re.test(a)) || [0, a])[1];
 VIEWS.system = () => VIEWS.settings();
 VIEWS.settings = (only) => {
   const h = D.health, g = D.settings && D.settings.settings;
-  if (!h || !g) return `<div class="empty">Loading…</div>`;
+  if (!h || !g) return askel();
   const tog = (k, label, desc) => `<div class="set"><div class="t"><b>${esc(label)}</b><span>${desc}</span></div>
     <button class="sw ${g[k] === "1" ? "on" : ""}" data-tog="${k}" role="switch" aria-checked="${g[k] === "1"}" aria-label="${esc(label)}"></button></div>`;
   const ok = (on, yes, no) => `<span class="tag ${on ? "on" : "warn"}">${on ? yes : no}</span>`;

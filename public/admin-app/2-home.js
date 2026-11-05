@@ -17,7 +17,7 @@ LOADERS.home = async () => {
 VIEWS.today = () => VIEWS.home();
 VIEWS.home = () => {
   const p = D.pulse, d = D.dir, S = D.series;
-  if (!p || !d || !S) return `<div class="empty">Loading…</div>`;
+  if (!p || !d || !S) return askel();
   const n = p.now, b = p.before, labels = dayLabels(p.start, p.days), M = p.totals.members;
   const needs = [...p.inbox, ...d.needs];
   const today = new Date().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });

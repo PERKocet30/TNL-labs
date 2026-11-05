@@ -20,7 +20,7 @@ function learnedHTML(L) {
 }
 const KIND = { express_stripe: ["Short signup", "Stripe carries the risk"], express: ["Short signup", "LABS carries the risk"], standard: ["Full signup", "their own Stripe"], "": ["—", "no payouts yet"] };
 VIEWS.sellers = () => {
-  const S = D.sellers; if (!S) return `<div class="empty">Loading…</div>`;
+  const S = D.sellers; if (!S) return askel();
   const ready = S.filter((s) => s.ready), stuck = S.filter((s) => s.started && !s.ready), none = S.filter((s) => !s.started);
   const byKind = ["express_stripe", "express", "standard"].map((k) => ({ label: KIND[k][0] + " · " + KIND[k][1], n: ready.filter((s) => s.kind === k).length }));
   const stateOf = (s) => s.ready ? `<span class="st ok"><i></i>Can sell</span>` : s.started ? `<span class="st warn"><i></i>Started, not finished</span>` : `<span class="st off"><i></i>No payouts yet</span>`;

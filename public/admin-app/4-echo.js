@@ -9,7 +9,7 @@ LOADERS.echo = async () => { D.echo = await req("/api/admin/echo?days=" + RANGE)
 const echoWhen = (t) => (t ? new Date(t).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "");
 VIEWS.echo = () => {
   const d = D.echo;
-  if (!d) return `${pageHead("Echo", "The help desk inside Messages. Teach it here.")}<div class="empty">Loading…</div>`;
+  if (!d) return `${pageHead("Echo", "The help desk inside Messages. Teach it here.")}${askel()}`;
   const n = d.numbers, pc = (a, b) => (b ? Math.round((a / b) * 100) + "%" : "—");
   const open = d.handoffs.filter((h) => h.status === "open");
   const sw = `<div class="set" style="border:0;padding:0"><div class="t"><b>Open to everyone</b><span>${d.open ? "Every member sees Echo at the top of Messages." : "Admins only, while you perfect it. Members don't see it."}</span></div>

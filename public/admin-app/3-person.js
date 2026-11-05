@@ -42,7 +42,7 @@ function personHTML() {
   const bar = `<div class="rec-bar"><span class="mono">People / ${esc(PERSON.username)}</span>
     ${d ? `<a class="btn ghost sm" href="/u/${encodeURIComponent(d.person.username)}" target="_blank" rel="noopener">View profile ${I.out}</a>` : ""}
     <button class="ib" data-close aria-label="Close">${I.x}</button></div>`;
-  if (!d) return bar + `<div class="empty">Loading record…</div>`;
+  if (!d) return bar + `${askel()}`;
   const p = d.person, s = d.stats;
   const owner = ACCESS === "owner", staff = p.isAdmin || p.isMod, tools = owner || !staff;   // a Mod can't act on the owner or another Mod
   const ptabs = owner ? PTABS : PTABS.filter(([k]) => k !== "notes");

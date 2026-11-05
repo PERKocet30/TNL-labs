@@ -5,7 +5,7 @@ LOADERS.systemsConnectors = async () => { D.sysConn = await req("/api/admin/conn
 function sysConnectorsHTML() {
   const C = D.sysConn;
   const head = `<h2 class="sec">Connected apps <span class="mono">reads the dashboard · writes Knowledge only · never messages</span></h2>`;
-  if (!C) return `${head}<div class="panel"><div class="empty">Loading…</div></div>`;
+  if (!C) return `${head}<div class="panel">${askel("rows")}</div>`;
   if (C.error) return `${head}<div class="panel">${sysErr(C.error)}</div>`;
   const keys = C.keys || [];
   return `${head}<div class="panel">

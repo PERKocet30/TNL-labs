@@ -1,0 +1,49 @@
+/* ADMIN · MOTION v1.0 — 2026-11-05. The design language's motion in /admin (ARRIVE · ANSWER · LAND,
+   the app's src/app/styles/motion.css; logic admin-app/1-motion.js). Same tokens, same curve:
+   --mv-fast .14s a press · --mv-base .28s a move · --mv-slow .42s an arrival · --mv-step .05s one part
+   after another. Transform and opacity only; with reduced motion, none of it (the shimmer stands still). */
+:root{--mv-fast:.14s;--mv-base:.28s;--mv-slow:.42s;--mv-step:.05s;--mv-ease:cubic-bezier(.2,.8,.2,1)}
+@keyframes amvRise{from{opacity:0;transform:translate3d(0,14px,0)}to{opacity:1;transform:none}}
+@keyframes amvUp{from{transform:translate3d(0,100%,0)}to{transform:none}}
+@keyframes amvFade{from{opacity:0}to{opacity:1}}
+@keyframes amvToast{from{opacity:0;transform:translate3d(-50%,12px,0)}to{opacity:1;transform:translate3d(-50%,0,0)}}
+@keyframes amvPop{0%{transform:scale(1)}40%{transform:scale(1.1)}70%{transform:scale(.97)}100%{transform:scale(1)}}
+@keyframes amvBump{0%{transform:scale(1)}35%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes amvShim{from{background-position:100% 0}to{background-position:-100% 0}}
+
+/* loading: a shimmer in the page's own shape, never "Loading…" */
+.ask{display:flex;flex-direction:column;gap:12px;padding:4px 0}
+.ask-k{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ask-k i{display:block;height:74px;border-radius:var(--rad)}
+.ask-p{display:flex;flex-direction:column;gap:16px;padding:16px;border:1px solid var(--line);border-radius:var(--rad)}
+.rc .ask-p,.panel .ask-p{border:0;padding:6px 0}
+.ask-r{display:flex;align-items:center;gap:11px}.ask-r span{flex:1;display:flex;flex-direction:column;gap:7px}
+.ask-av{width:30px;height:30px;border-radius:50%;flex:none}
+.ask-b{display:block;height:10px;border-radius:999px}
+.ask-k i,.ask-av,.ask-b{background:linear-gradient(90deg,var(--el) 25%,var(--line) 50%,var(--el) 75%);background-size:200% 100%}
+
+@media (prefers-reduced-motion:no-preference){
+  .ask-k i,.ask-av,.ask-b{animation:amvShim 1.3s linear infinite}
+  /* ARRIVE: a section's parts, one after another; inside them, the first cards and numbers */
+  #main.mv-in>*,#main.mv-land>*,#main.mv-in :is(.kpi,.rc,.card),#main.mv-land :is(.kpi,.rc,.card){animation:amvRise var(--mv-slow) var(--mv-ease) both;animation-delay:var(--mvd,0s)}
+  #main>*:nth-child(2),#main :is(.kpi,.rc,.card):nth-child(2){animation-delay:calc(var(--mvd,0s) + var(--mv-step))}
+  #main>*:nth-child(3),#main :is(.kpi,.rc,.card):nth-child(3){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 2)}
+  #main>*:nth-child(4),#main :is(.kpi,.rc,.card):nth-child(4){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 3)}
+  #main>*:nth-child(5),#main :is(.kpi,.rc,.card):nth-child(5){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 4)}
+  #main>*:nth-child(n+6),#main :is(.kpi,.rc,.card):nth-child(n+6){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 5)}
+  /* past the first screenful nothing waits */
+  #main :is(.kpi,.rc,.card):nth-child(n+9){animation:none}
+  #main .ask{animation:none}
+  /* overlays come in: the More sheet from below, a confirm over a scrim, a toast */
+  .msheet.mv-in{animation:amvUp var(--mv-base) var(--mv-ease)}
+  .msheet.mv-in .mi{animation:amvRise var(--mv-slow) var(--mv-ease) both}
+  .modal{animation:amvFade var(--mv-base) var(--mv-ease)}
+  .modal .box{animation:amvRise var(--mv-base) var(--mv-ease) both}
+  .toast{animation:amvToast var(--mv-base) var(--mv-ease) both}
+  /* ANSWER: every tap presses; what turned on pops */
+  :is(.btn,.nv,.bb,.mi,button.li,.chip,.ib):active{transform:scale(.97)}
+  :is(.btn,.nv,.bb,.mi,button.li,.chip,.ib){transition:transform var(--mv-fast) var(--mv-ease)}
+  .mv-pop{animation:amvPop .34s var(--mv-ease)}
+  /* LAND: a number that changed bumps */
+  .mv-bump{animation:amvBump .42s var(--mv-ease)}
+}

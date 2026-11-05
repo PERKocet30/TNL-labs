@@ -11,7 +11,7 @@ const SIGVIA = { email: "Email and password", google: "Continue with Google", ap
 const flagOf = (c) => (/^[A-Z]{2}$/.test(c || "") ? String.fromCodePoint(...[...c].map((x) => 0x1f1a5 + x.charCodeAt(0))) + " " + c : "");
 function sigCard() {
   const s = PERSON && PERSON.sig;
-  if (s === undefined) return card("How they joined", `<div class="empty">Loading…</div>`);
+  if (s === undefined) return card("How they joined", askel("rows"));
   if (!s) return "";
   const j = s.joined;
   const flags = s.flags.length ? `<ul class="flags">${s.flags.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : "";

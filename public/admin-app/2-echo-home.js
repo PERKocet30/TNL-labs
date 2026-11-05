@@ -18,7 +18,7 @@ VIEWS.echohome = () => {
   const p = D.pulse, d = D.dir, S = D.series, E = EH.data;
   const today = new Date().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
   const needs = p && d ? [...p.inbox, ...d.needs] : [];
-  const side = !p || !S ? `<div class="empty">Loading…</div>` : `
+  const side = !p || !S ? askel() : `
     ${todoCardHTML(needs)}
     <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost sm" data-go="home">The full Home ${I.chev}</button></div>`;
   const head = pageHead("Echo", `${today} · LABS's own`, ehOn() ? `${"speechSynthesis" in window ? `<button class="btn ghost sm ${ehVoiceOn() ? "on" : ""}" id="ehvoice" aria-pressed="${ehVoiceOn()}">${ehVoiceOn() ? "Reading aloud" : "Read aloud"}</button>` : ""}<button class="btn ghost sm" id="ehbrief" ${EH.busy ? "disabled" : ""}>Brief me</button><button class="btn ghost sm" id="ehfresh" ${EH.busy ? "disabled" : ""}>New conversation</button>` : "");
@@ -26,7 +26,7 @@ VIEWS.echohome = () => {
 };
 function ehFeedHTML() {
   const E = EH.data;
-  if (!E) return `<div class="empty">Loading…</div>`;
+  if (!E) return askel();
   if (E.error) return `<div class="empty">${esc(E.error)}</div>`;
   if (!E.brain) return `<div class="eh-off"><b>Echo isn't awake here yet.</b><p>Add <code>ECHO_AI_KEY</code> in Railway → Variables (a Claude API key from console.anthropic.com) and Echo becomes LABS's own intelligence: it reads the numbers, remembers every decision, and sets up actions for you to confirm. Members' Echo (the help desk) is under <a data-go="echo">Help desk</a>.</p></div>`;
   let h = `<div class="eh-hello"><div class="eh-mark">${NAVI.echo}</div><div>${esc(E.hello)}</div></div>`;

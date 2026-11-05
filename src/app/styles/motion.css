@@ -1,4 +1,4 @@
-/* ── MOTION v1.3 · 2026-11-05 (ARRIVE · ANSWER · LAND: the sign-up's motion, made the app's; sign-up block at the end); v1.1 · 2026-10-14 (unused selectors out); v1.0 · 2026-09-30 (app/nav/motion.js) ────────────────────────
+/* ── MOTION v1.4 · 2026-11-05 (the Labs: lab cards, a lab's head · tabs · body and its work rise in turn); v1.3 · 2026-11-05 (ARRIVE · ANSWER · LAND: the sign-up's motion, made the app's; sign-up block at the end); v1.1 · 2026-10-14 (unused selectors out); v1.0 · 2026-09-30 (app/nav/motion.js) ────────────────────────
    Transform and opacity only — nothing here moves the layout. One curve
    for everything that arrives (fast out, soft landing), short durations,
    and none of it when the phone asks for reduced motion. */
@@ -110,6 +110,17 @@ button,a,[role=button],.lx,.trk,.sr-card,.chip{-webkit-tap-highlight-color:trans
   .sheet.mv-in .sheetc>*:nth-child(5),.pick.mv-in .pickrow:nth-child(5),.pick.mv-in .c-ma:nth-child(5),.content .sr-card:nth-child(5),.content .post:nth-child(5),.content .lcard:nth-child(5),.content .pf-sec:nth-child(5),.content .nrow:nth-child(5),#npbg.mv-in .nrow:nth-child(5),#sbg.mv-in .srow:nth-child(5){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 4)}
   .content.mv-fwd>.scroll>*:nth-child(n+6),.content.mv-back>.scroll>*:nth-child(n+6),.content.mv-fade>.scroll>*:nth-child(n+6),.content.mv-land>.scroll>*:nth-child(n+6),
   .sheet.mv-in .sheetc>*:nth-child(n+6),.pick.mv-in .pickrow:nth-child(n+6),.pick.mv-in .c-ma:nth-child(n+6),.content .sr-card:nth-child(n+6),.content .post:nth-child(n+6),.content .lcard:nth-child(n+6),.content .pf-sec:nth-child(n+6),.content .nrow:nth-child(n+6),#npbg.mv-in .nrow:nth-child(n+6),#sbg.mv-in .srow:nth-child(n+6){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 5)}
+  /* the Labs (2026-11-05, "does the Labs reflect the design language"): each lab card rises in turn;
+     inside a lab the head, the tabs and the body come in one after another; the work's first tiles
+     rise in turn when you arrive or when the shimmer gives way to them (#plbody.mv-land, places.js) */
+  .content.mv-fwd .lx,.content.mv-back .lx,.content.mv-fade .lx,.content.mv-land .lx,
+  .content.mv-fwd .room>*,.content.mv-back .room>*,.content.mv-fade .room>*,
+  .content.mv-fwd .pl-tile:not(.sk-img),.content.mv-back .pl-tile:not(.sk-img),.content.mv-fade .pl-tile:not(.sk-img),.pl-body.mv-land .pl-tile{animation:mvRise var(--mv-slow) var(--mv-ease) both;animation-delay:var(--mvd,0s)}
+  .content .lx:nth-child(2),.content .room>*:nth-child(2),.content .pl-tile:nth-child(2),.content .pl-tile:nth-child(3){animation-delay:calc(var(--mvd,0s) + var(--mv-step))}
+  .content .lx:nth-child(3),.content .room>*:nth-child(3),.content .pl-tile:nth-child(4),.content .pl-tile:nth-child(5),.content .pl-tile:nth-child(6){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 2)}
+  .content .lx:nth-child(4),.content .room>*:nth-child(n+4),.content .pl-tile:nth-child(n+7){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 3)}
+  .content .lx:nth-child(n+5){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 4)}
+  .content .lx:nth-child(n+10),.content .pl-tile:nth-child(n+13){animation:none}
   /* past the first screenful nothing waits: what's below the fold shouldn't be blank when you get there */
   .content .sr-card:nth-child(n+9),.content .post:nth-child(n+9),.content .lcard:nth-child(n+9),.content .nrow:nth-child(n+9),.pick.mv-in .pickrow:nth-child(n+12){animation:none}
   /* the shimmer keeps shimmering while it's there */

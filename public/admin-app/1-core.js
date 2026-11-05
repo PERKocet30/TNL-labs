@@ -180,6 +180,7 @@ function paint() {
     app.innerHTML = `<div class="gate"><div><div class="brand"><img class="bwm" src="/labs-wordmark-ink.png" alt="LABS"> Admin</div>
     <h1>Admins only</h1><p>${TOKEN ? "This account isn't an admin. Log in with one and you'll come straight back here."
       : "This browser isn't signed in — LABS on your home screen keeps its own sign-in, so email links open here signed out. Log in once and it'll remember you."}</p><a class="btn" id="adminlogin" href="${esc(back)}">Log in</a></div></div>`; return; }
+  const mvb = admMvBefore();   // the design language's motion (1-motion.js)
   const n = (k) => (D.pulse && (k === "home" || k === "echohome") && D.pulse.inbox.length) || (D.pulse && k === "content" && (D.pulse.inbox.find((i) => i.kind === "reports") || {}).n) || (k === "instagram" && D.instagram?.unread) || 0;
   const badge = (k) => n(k) ? `<b>${n(k)}</b>` : "";
   /* keep the field you're typing in (and where the cursor is) through a repaint */
@@ -208,6 +209,7 @@ function paint() {
     document.documentElement.dataset.theme = th; try { localStorage.setItem("tnl-theme", th); } catch (e) {} paint(); });
   WIRES[TAB]?.(); wireTips(); wireCommon(); wireSearch();
   if (foId) { const f = document.getElementById(foId); if (f) { f.focus(); if (foSel) try { f.setSelectionRange(...foSel); } catch (e) {} } }
+  admMvAfter(mvb);
 }
 
 /* ---- search any member from any page (the bar at the top) ---- */

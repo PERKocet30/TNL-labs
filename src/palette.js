@@ -1,5 +1,5 @@
 /* ================================================================
-   PALETTE v1.0 — 2026-09-29. Every colour LABS uses, in one place.
+   PALETTE v1.1 — 2026-11-05 (warn: the admin's amber status dot moved in here). v1.0 — 2026-09-29. Every colour LABS uses, in one place.
 
    Change a colour here and it changes everywhere:
      • the app          — assemble.mjs writes paletteCss() into index.html
@@ -32,6 +32,7 @@ export const PALETTE = {
     fgRgb: "0,0,0",     // ink as r,g,b — the app draws lines as rgba(ink, .12)
     scrim: "rgba(0,0,0,.45)",
     red: "#C9302C",
+    warn: "#E0A23A",   // needs a look (the admin's amber status dot, 2026-11-05)
     err: "#B42318",
   },
   dark: {
@@ -45,6 +46,7 @@ export const PALETTE = {
     fgRgb: "255,255,255",
     scrim: "rgba(0,0,0,.72)",
     red: "#FF6B66",
+    warn: "#E0A23A",
     err: "#F87171",
   },
   accent: "#98FC68",    // Reagent — the flask. The app's one accent.
@@ -132,7 +134,7 @@ export function paletteCss() {
     `--green:var(--acc-${mode === "light" ? "l" : "d"},${inkFor(PALETTE.accent, mode)})`,
     `--accent-fill:var(--acc,${PALETTE.accent})`, `--on-accent:var(--on-acc,${PALETTE.onAccent})`,
     `--fill:var(--accent-fill)`, `--on-fill:var(--on-accent)`,
-    `--scrim:${t.scrim}`, `--red:${t.red}`, `--err:${t.err}`,
+    `--scrim:${t.scrim}`, `--red:${t.red}`, `--warn:${t.warn}`, `--err:${t.err}`,
   ].join(";");
   return `/* palette.js v1.0 — generated; edit src/palette.js, not this */
 :root,[data-theme="light"]{${block(PALETTE.light, "light")}}
