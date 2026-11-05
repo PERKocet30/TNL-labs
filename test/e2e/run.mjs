@@ -1786,6 +1786,16 @@ console.log("\nMEMBER · PHONE");
     ok(!!r && r.detail === "showroom", "the problem didn't reach the admin with its screen: " + JSON.stringify(r));
     ok(await p.evaluate(() => !document.querySelector(".ui-ov")), "the sheet was left open");
   });
+  /* "Sometimes I hit screens without a back button where the only way back is click Labs" (2026-11-04) */
+  await step(d, "a listing that won't load still has Back (and Try again) — never bare placeholders with no way out", async () => {
+    await p.evaluate(() => { closeMenu(); PICKER = null; POSTOPEN = null; PROFILE = null; pxOpenListing(987654321); });
+    await p.waitForSelector("[data-mretry]", { timeout: 8000 });
+    ok(await p.locator(".content .sh-back").count() === 1, "no Back on the listing that didn't load");
+    await p.locator(".content .sh-back").tap();
+    await p.waitForFunction(() => MKTVIEW === "browse", null, { timeout: 5000 }).catch(() => {});
+    ok(await p.evaluate(() => TAB === "market" && MKTVIEW === "browse"), "Back didn't leave the broken listing");
+    await p.evaluate(() => { TAB = "showroom"; render(); });
+  });
   await step(d, "UI signals: screens, the path between them and a back are counted; nothing typed leaves the phone", async () => {
     await p.evaluate(() => { TAB = "showroom"; render(); TAB = "labs"; render(); TAB = "market"; render(); });
     await p.waitForTimeout(100);

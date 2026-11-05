@@ -232,10 +232,10 @@ function studioHTML(){
     </div>`;
   };
   return `<div class="scroll">
-  <div class="page-head"><h2>Studio</h2>
-  <p class="page-sub">${guest()
+  ${screenHead({back:{id:"studioback",label:"Back"},title:"Studio",rawSub:true,sub:guest()
     ?"A full beat maker in the app — drums, a tuned 808, synths with a scale-locked piano roll. Have a play. Joining lets you save it, export a WAV, or publish it to #beats for someone to write to."
-    :"Make it here — publish straight to #beats."}</p>
+    :"Make it here — publish straight to #beats."})}
+  <div class="page-head">
   ${guest()?`<div class="tryline mono">TRY IT — NOTHING SAVES UNTIL YOU JOIN</div>`:""}
   ${distro()}</div>
   <div id="studiomount"></div>

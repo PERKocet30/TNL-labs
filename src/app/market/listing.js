@@ -52,8 +52,16 @@ function lbarHTML(l,mine){
     <button class="btn ghost lbar-bag" data-bagadd="${l.id}" aria-label="Add to bag"${out?" disabled":""}>${UI_IC.navMarket}</button>
     <button class="btn green lbar-buy" data-buy="${l.id}"${out?" disabled":""}>${out?"Sold out":st.need?"Pick "+st.need:"Buy now"}</button></div>`}
 
+/* A listing that's loading, or didn't load, still has its Back (2026-11-04: "sometimes I hit screens without
+   a back button where the only way back is click Labs"). It used to be bare placeholders — forever, if the
+   listing was gone (an old /m/ link from Instagram) or the network dropped. Now: Back, the reason, Try again. */
+function mktFail(id,x){MKTONE={error:(x&&x.message)||"Couldn't load this listing.",id:Number(id)||0};render()}
 function detailHTML(){
-  if(!MKTONE)return `<div class="scroll">${skel()}</div>`;
+  if(!MKTONE||MKTONE.error){
+    const head=screenHead({back:{attrs:'data-mv="browse"',label:"Market"},title:"Market"});
+    if(!MKTONE)return `<div class="scroll">${head}${skel()}</div>`;
+    return `<div class="scroll">${head}<div class="empty">${esc(MKTONE.error)}${MKTONE.id?`<br><br><button class="btn ghost sm" data-mretry="${MKTONE.id}">Try again</button>`:""}</div></div>`;
+  }
   if(MKTONE.kind==="loop")return loopDetailHTML(MKTONE);   // a loop isn't a jacket
   const l=MKTONE, mine=l.seller.username===myName(), hasV=(l.variants||[]).length;
   const acc=MKTOFFERS.find(o=>o.status==="accepted"), pend=MKTOFFERS.find(o=>o.status==="pending");
@@ -121,6 +129,7 @@ function paintListingPick(){
 
 function wireListing(){
   document.querySelectorAll("[data-mrep]").forEach(b=>b.onclick=()=>reportThing({kind:"listing",id:+b.dataset.mrep,username:MKTONE&&MKTONE.seller.username}));   // app/posts/report
+  document.querySelectorAll("[data-mretry]").forEach(b=>b.onclick=()=>pxOpenListing(+b.dataset.mretry));
   document.querySelectorAll("[data-lvs],[data-lvc]").forEach(b=>b.onclick=()=>{
     if(b.getAttribute("aria-disabled")&&!b.classList.contains("on"))return toast("Sold out");
     if(b.dataset.lvs!==undefined)LPICK.size=LPICK.size===b.dataset.lvs&&lvState(MKTONE).sizes.length>1?"":b.dataset.lvs;
