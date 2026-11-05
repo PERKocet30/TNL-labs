@@ -76,4 +76,11 @@ t("tapping Post counts the post flow as done (it posts after the screen closes)"
 t("the picked files go to the composer they were picked for, only if it's still open", wire.includes("if(files.length&&PCOMPOSE===c)pcPick(c,files)"));
 t("each pick is counted (start, then done or abandon) so a lost pick shows in Echo's flows", pick.includes('uiPush("flow",where,"start")') && pick.includes('uiPush("flow",where,files.length?"done":"abandon")'));
 
+console.log("\nLET IT LOAD, LIKE INSTAGRAM (2026-11-05: \"if it needs time to load the video from my camera roll let it load up\")");
+t("on an iPhone the screen waits from the moment the picker opens, and looks for the files until they come", /if\(ios\)\{[\s\S]{0,200}onWait\(\)[\s\S]{0,120}poll=setInterval\(take,500\);wait=setTimeout\(\(\)=>done\(\[\]\),PICK_WAIT_MS\)/.test(pick));
+t("…an iPhone's cancel with nothing still waits a while, then lets go", pick.includes("ios?PICK_CANCEL_MS:PICK_WAIT_MS") && /const PICK_CANCEL_MS=\d+/.test(src));
+t("the composer says it's getting it (with a Stop), instead of sitting empty", wire.includes("onWait:()=>{if(PCOMPOSE===c&&!c.dead){c.picking=true;render()}}") && html.includes("Getting it from your phone…") && html.includes('id="pcpickstop"'));
+t("Stop ends the wait", wire.includes('$("#pcpickstop");if(ps)ps.onclick=()=>{c.pickStopped=true;pickStop()}') && /function pickStop\(\)\{if\(pickOpen\)pickOpen\(\[\]\)\}/.test(src));
+t("the wait ends with the files (they land) or with nothing (back to the empty box)", wire.includes("const was=c.picking;c.picking=false;"));
+
 console.log(`\n  ${pass} passed, ${fail} failed`);
