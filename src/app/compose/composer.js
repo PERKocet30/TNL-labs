@@ -1,3 +1,4 @@
+/* v2026-11-05 (latest): while iOS gets a picked video ready, the work area says "Getting it from your phone…" (c.picking, app/media/pick onWait) instead of sitting empty.
 /* v2026-11-05 (later): a new post walks you through it — your work → where it belongs → caption & details (app/compose/composer-walk); this page is the last step.
 /* v2026-11-05: tapping Post counts the post flow as done — it posts after the screen closes, so Echo's flows showed every post as abandoned. */
 /* v2026-11-04: the photo picker opens from pickFiles (app/media/pick) — an input outside the screen, so a repaint while it's up can't lose what you chose (iPhone). */
@@ -32,6 +33,10 @@ function pcomposeHTML(){
   const file="";   // the picker opens from pickFiles (app/media/pick): an input outside the screen, so a repaint can't lose what you chose
   let media;
   if(c.edit)media=pceMediaHTML(c);   // Edit info: the work as posted (app/compose/post-edit)
+  else if(c.picking)media=`<div class="pc-stage pc-busy pc-getting" role="status" aria-live="polite"><span class="spin"></span>
+      <span class="pc-gt">Getting it from your phone…</span>
+      <span class="dim pc-keep">A video can take a moment</span>
+      <button type="button" class="btn sm ghost" id="pcpickstop">Stop</button></div>`;
   else if(c.vidbusy)media=`<div class="pc-stage pc-busy"><span class="spin"></span>
       <div class="pc-prog"><i id="pcvidbar" style="width:${Math.round((c.vidprog||0)*100)}%"></i></div>
       <span class="dim" id="pcvidprog">Uploading video · ${Math.round((c.vidprog||0)*100)}%</span>
@@ -126,8 +131,12 @@ function wirePCompose(){
   /* ── media ── */
   /* photos, a video, or both in one carousel (app/compose/post-mixed) */
   ov.querySelectorAll("[data-pcpick]").forEach(b=>b.onclick=async e=>{e.preventDefault();
-    const files=await pickFiles({accept:"image/*,video/*",multiple:true,where:"pick:post"});
-    if(files.length&&PCOMPOSE===c)pcPick(c,files)});
+    const files=await pickFiles({accept:"image/*,video/*",multiple:true,where:"pick:post",
+      onWait:()=>{if(PCOMPOSE===c&&!c.dead){c.picking=true;render()}}});   // iOS getting a video ready: say so, like Instagram
+    const was=c.picking;c.picking=false;
+    if(files.length&&PCOMPOSE===c)pcPick(c,files);
+    else if(PCOMPOSE===c){c.pickStopped=false;if(was)render()}});
+  const ps=$("#pcpickstop");if(ps)ps.onclick=()=>{c.pickStopped=true;pickStop()};
   const tr=$("#pctrack");
   if(tr){
     pcRaf(()=>{tr.scrollLeft=(c.idx||0)*tr.clientWidth});

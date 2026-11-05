@@ -156,3 +156,8 @@
   .pcw-bar .sw-skip{width:auto}
   .pcw-place .sw-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+
+/* 2026-11-05: an iPhone getting a picked video ready — the work area waits, like Instagram (c.picking) */
+.pc-getting{padding:0 24px;text-align:center}
+.pc-getting .pc-gt{color:var(--tx);font-size:15px;font-weight:600}
+.pc-getting .btn{margin-top:4px}

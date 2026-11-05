@@ -933,6 +933,29 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => !!(PCOMPOSE && (PCOMPOSE.imgs.length || PCOMPOSE.upN))), "the file chosen after a cancel was lost");
     await p.evaluate(() => { const c = PCOMPOSE; c.dead = true; PCOMPOSE = null; render(); });
   });
+  /* 2026-11-05 "if it needs time to load the video from my camera roll let it load up like Instagram" */
+  await step(d, "on an iPhone, picking waits like Instagram: Getting it from your phone… until the files arrive, then they land; Stop goes back", async () => {
+    const real = await p.evaluate(() => navigator.userAgent);
+    await p.evaluate(() => Object.defineProperty(navigator, "userAgent", { configurable: true, get: () => "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.7 Mobile/15E148 Safari/604.1" }));
+    try {
+      await openCreator();
+      let [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcov [data-pcpick]").first().click()]);
+      await p.waitForSelector("#pcov .pc-getting", { timeout: 3000 }).catch(() => {});
+      ok(/Getting it from your phone/.test(await p.locator("#pcov").innerText()), "the screen sat empty while the phone got it ready");
+      await p.waitForTimeout(700);
+      await fc.setFiles([UPLOAD_PNG]);   // …iOS hands it over
+      await p.waitForFunction(() => PCOMPOSE && (PCOMPOSE.imgs.length || PCOMPOSE.upN) && !document.querySelector("#pcov .pc-getting"), null, { timeout: 8000 }).catch(() => {});
+      ok(await p.evaluate(() => !!(PCOMPOSE && (PCOMPOSE.imgs.length || PCOMPOSE.upN)) && !document.querySelector("#pcov .pc-getting")), "the file didn't land after the wait");
+      await p.evaluate(() => { const c = PCOMPOSE; c.dead = true; PCOMPOSE = null; render(); });
+      await openCreator();
+      [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcov [data-pcpick]").first().click()]);
+      await p.waitForSelector("#pcpickstop", { timeout: 3000 });
+      await p.locator("#pcpickstop").click();
+      await p.waitForSelector("#pcov .pc-pick", { timeout: 3000 }).catch(() => {});
+      ok(await p.locator("#pcov .pc-getting").count() === 0 && await p.locator("#pcov .pc-pick").count() === 1, "Stop didn't go back to Add photos or video");
+      await p.evaluate(() => { const c = PCOMPOSE; c.dead = true; PCOMPOSE = null; render(); });
+    } finally { await p.evaluate((ua) => Object.defineProperty(navigator, "userAgent", { configurable: true, get: () => ua }), real); }
+  });
   const myPosts = async () => (await api("/api/users/tester", token)).posts || [];
   await step(d, "creator: never slides sideways; drag a thumbnail to reorder", async () => {
     await openCreator();
