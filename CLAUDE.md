@@ -110,11 +110,26 @@ card read `PALETTE`. `test/palette.test.mjs` fails if anything drifts. Icons are
 2px stroke, square caps. Mobile-first — check it at phone width, and at
 1440px: from 1024px the app switches to the computer frame (left sidebar,
 `src/app/styles/wide.css`, `isWide()` in `app/nav/render-nav.js`).
-Motion lives in `app/nav/motion.js` + `app/styles/motion.css`: screens keep
-their scroll place, move in (forward from the right, back from the left, tabs
-fade), overlays arrive, taps press. Animate transform/opacity only (anything
-else can shift the layout and trips the glitch watcher), honour reduced
-motion, and show loading with `skel()` rather than "Loading…".
+**Motion is part of the design language** (2026-11-05, "make everything more
+dynamic and interactive"): `app/nav/motion.js` + `app/nav/motion-live.js` +
+`app/styles/motion.css`. Three rules, and every screen gets them without
+knowing — don't write per-screen animations, use these:
+- **ARRIVE** — a screen moves in (forward from the right, back from the left,
+  tab to tab fades) and its parts rise one after another (the scroller's first
+  blocks, cards, rows, sections — `--mv-step` apart); overlays come in (drawers
+  from the side, sheets from the bottom) with their rows the same; when a
+  shimmer (`skel()`) gives way to the real thing, that arrives too (`mv-land`).
+- **ANSWER** — every tap presses; a tap that turns something on pops it
+  (`mv-pop`: a title, a like, a follow, a tab, a colour) — `motion-live.js`
+  looks under the finger after the repaint, so it works through a re-render.
+- **LAND** — a number that changed from what you did bumps (`mv-bump`:
+  likes, comments, followers, a badge, "N of 5").
+Tokens: `--mv-fast` .14s (a press) · `--mv-base` .28s (a move) · `--mv-slow`
+.42s (an arrival) · `--mv-step` .05s; one curve, `--mv-ease`. Screens keep
+their scroll place. Animate transform/opacity only (anything else shifts the
+layout and trips the glitch watcher), honour reduced motion (all of it off),
+and show loading with `skel()` rather than "Loading…". `test/motion.test.mjs`
+holds the rules.
 
 ## Careful areas
 

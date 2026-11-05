@@ -1,4 +1,4 @@
-/* ── MOTION v1.2 · 2026-11-05 (sign-up in motion, at the end); v1.1 · 2026-10-14 (unused selectors out); v1.0 · 2026-09-30 (app/nav/motion.js) ────────────────────────
+/* ── MOTION v1.3 · 2026-11-05 (ARRIVE · ANSWER · LAND: the sign-up's motion, made the app's; sign-up block at the end); v1.1 · 2026-10-14 (unused selectors out); v1.0 · 2026-09-30 (app/nav/motion.js) ────────────────────────
    Transform and opacity only — nothing here moves the layout. One curve
    for everything that arrives (fast out, soft landing), short durations,
    and none of it when the phone asks for reduced motion. */
@@ -74,17 +74,57 @@ button,a,[role=button],.lx,.trk,.sr-card,.chip{-webkit-tap-highlight-color:trans
 .sk-tile .sk-img{aspect-ratio:1;margin:0 0 3px}
 @media (prefers-reduced-motion:no-preference){.sk-shim,.sk-av,.sk-bar,.sk-img{animation:mvShim 1.3s linear infinite}}
 
+/* ── ARRIVE · ANSWER · LAND · 2026-11-05 — the app's motion rules (design language; app/nav/motion-live.js)
+   "Include this in the design language for the whole app, then standardize everything to be more
+   dynamic and interactive." The sign-up's motion, made the app's. Every screen gets it without knowing:
+     ARRIVE  a screen that moves in brings its parts in one after another — the first eight blocks of
+             its scroller rise, 50ms apart; cards, rows, sections and groups the same. The same when
+             loading gives way to the real thing (.mv-land).
+     ANSWER  a tap that turns something on pops it (.mv-pop): a title, a like, a follow, a tab, a colour.
+     LAND    a number that changed from what you did bumps (.mv-bump).
+   Tokens: --mv-fast .14s (a press) · --mv-base .28s (a move) · --mv-slow .42s (an arrival) ·
+   --mv-step .05s (one part after another). One curve (--mv-ease). Transform and opacity only.
+   Reduced motion: none of it. */
+:root{--mv-fast:.14s;--mv-base:.28s;--mv-slow:.42s;--mv-step:.05s}
+@keyframes mvRise{from{opacity:0;transform:translate3d(0,14px,0)}to{opacity:1;transform:none}}
+@keyframes mvPopIn{0%{transform:scale(1)}40%{transform:scale(1.1)}70%{transform:scale(.97)}100%{transform:scale(1)}}
+@keyframes mvBump{0%{transform:scale(1)}35%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes mvFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:no-preference){
+  /* ARRIVE: the first blocks of a screen that moved in, or just landed */
+  .content.mv-fwd>.scroll>*,.content.mv-back>.scroll>*,.content.mv-fade>.scroll>*,.content.mv-land>.scroll>*,
+  .content.mv-fwd .sr-card,.content.mv-back .sr-card,.content.mv-fade .sr-card,.content.mv-land .sr-card,
+  .content.mv-fwd .post,.content.mv-back .post,.content.mv-fade .post,.content.mv-land .post,
+  .content.mv-fwd .lcard,.content.mv-back .lcard,.content.mv-fade .lcard,.content.mv-land .lcard,
+  .content.mv-fwd .pf-sec,.content.mv-back .pf-sec,.content.mv-fade .pf-sec,.content.mv-land .pf-sec,
+  .content.mv-fwd .nrow,.content.mv-back .nrow,.content.mv-fade .nrow,.content.mv-land .nrow,
+  .sheet.mv-in .sheetc>*,.pick.mv-in .pickrow,.pick.mv-in .c-ma,#npbg.mv-in .nrow,#sbg.mv-in .srow,
+  .po-ov.mv-in .po-body>*,.cx-in.mv-tf>*>*,.cx-in.mv-tb>*>*{animation:mvRise var(--mv-slow) var(--mv-ease) both;animation-delay:var(--mvd,0s)}
+  .content.mv-fwd>.scroll>*:nth-child(2),.content.mv-back>.scroll>*:nth-child(2),.content.mv-fade>.scroll>*:nth-child(2),.content.mv-land>.scroll>*:nth-child(2),
+  .sheet.mv-in .sheetc>*:nth-child(2),.pick.mv-in .pickrow:nth-child(2),.pick.mv-in .c-ma:nth-child(2),.content .sr-card:nth-child(2),.content .post:nth-child(2),.content .lcard:nth-child(2),.content .pf-sec:nth-child(2),.content .nrow:nth-child(2),#npbg.mv-in .nrow:nth-child(2),#sbg.mv-in .srow:nth-child(2){animation-delay:calc(var(--mvd,0s) + var(--mv-step))}
+  .content.mv-fwd>.scroll>*:nth-child(3),.content.mv-back>.scroll>*:nth-child(3),.content.mv-fade>.scroll>*:nth-child(3),.content.mv-land>.scroll>*:nth-child(3),
+  .sheet.mv-in .sheetc>*:nth-child(3),.pick.mv-in .pickrow:nth-child(3),.pick.mv-in .c-ma:nth-child(3),.content .sr-card:nth-child(3),.content .post:nth-child(3),.content .lcard:nth-child(3),.content .pf-sec:nth-child(3),.content .nrow:nth-child(3),#npbg.mv-in .nrow:nth-child(3),#sbg.mv-in .srow:nth-child(3){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 2)}
+  .content.mv-fwd>.scroll>*:nth-child(4),.content.mv-back>.scroll>*:nth-child(4),.content.mv-fade>.scroll>*:nth-child(4),.content.mv-land>.scroll>*:nth-child(4),
+  .sheet.mv-in .sheetc>*:nth-child(4),.pick.mv-in .pickrow:nth-child(4),.pick.mv-in .c-ma:nth-child(4),.content .sr-card:nth-child(4),.content .post:nth-child(4),.content .lcard:nth-child(4),.content .pf-sec:nth-child(4),.content .nrow:nth-child(4),#npbg.mv-in .nrow:nth-child(4),#sbg.mv-in .srow:nth-child(4){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 3)}
+  .content.mv-fwd>.scroll>*:nth-child(5),.content.mv-back>.scroll>*:nth-child(5),.content.mv-fade>.scroll>*:nth-child(5),.content.mv-land>.scroll>*:nth-child(5),
+  .sheet.mv-in .sheetc>*:nth-child(5),.pick.mv-in .pickrow:nth-child(5),.pick.mv-in .c-ma:nth-child(5),.content .sr-card:nth-child(5),.content .post:nth-child(5),.content .lcard:nth-child(5),.content .pf-sec:nth-child(5),.content .nrow:nth-child(5),#npbg.mv-in .nrow:nth-child(5),#sbg.mv-in .srow:nth-child(5){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 4)}
+  .content.mv-fwd>.scroll>*:nth-child(n+6),.content.mv-back>.scroll>*:nth-child(n+6),.content.mv-fade>.scroll>*:nth-child(n+6),.content.mv-land>.scroll>*:nth-child(n+6),
+  .sheet.mv-in .sheetc>*:nth-child(n+6),.pick.mv-in .pickrow:nth-child(n+6),.pick.mv-in .c-ma:nth-child(n+6),.content .sr-card:nth-child(n+6),.content .post:nth-child(n+6),.content .lcard:nth-child(n+6),.content .pf-sec:nth-child(n+6),.content .nrow:nth-child(n+6),#npbg.mv-in .nrow:nth-child(n+6),#sbg.mv-in .srow:nth-child(n+6){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 5)}
+  /* past the first screenful nothing waits: what's below the fold shouldn't be blank when you get there */
+  .content .sr-card:nth-child(n+9),.content .post:nth-child(n+9),.content .lcard:nth-child(n+9),.content .nrow:nth-child(n+9),.pick.mv-in .pickrow:nth-child(n+12){animation:none}
+  /* the shimmer keeps shimmering while it's there */
+  .content.mv-fwd .sk-list,.content.mv-back .sk-list,.content.mv-fade .sk-list{animation:none}
+  /* ANSWER and LAND */
+  .mv-pop{animation:mvPopIn .34s var(--mv-ease)}
+  .mv-bump{animation:mvBump .3s var(--mv-ease)}
+}
 /* ── SIGN-UP IN MOTION · 2026-11-05 ("make the onboarding more interactive so it's not so static. Motion.")
    Each step arrives: the content slides in (forward from the right, back from the left) and its parts
    rise one after another; the newest progress bar fills; titles cascade in by lab; what you pick pops;
    the count bumps; your photo lands; your colour ring pops; people slide in; the welcome bursts.
    Transform and opacity only, once per step (app/gate/screens GXPAINTED), none with reduced motion. */
-@keyframes gxRise{from{opacity:0;transform:translate3d(0,14px,0)}to{opacity:1;transform:none}}
 @keyframes gxInF{from{opacity:0;transform:translate3d(36px,0,0)}to{opacity:1;transform:none}}
 @keyframes gxInB{from{opacity:0;transform:translate3d(-36px,0,0)}to{opacity:1;transform:none}}
-@keyframes gxFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@keyframes gxPick{0%{transform:scale(1)}40%{transform:scale(1.1)}70%{transform:scale(.97)}100%{transform:scale(1)}}
-@keyframes gxBump{0%{transform:scale(1)}35%{transform:scale(1.12)}100%{transform:scale(1)}}
 @keyframes gxLand{0%{opacity:0;transform:scale(.6) translate3d(0,10px,0)}60%{opacity:1;transform:scale(1.05)}100%{transform:none}}
 @keyframes gxFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-5px,0)}}
 @keyframes gxBurst{0%{opacity:0;transform:rotate(var(--a)) translate3d(0,0,0) scale(.4)}20%{opacity:1}100%{opacity:0;transform:rotate(var(--a)) translate3d(0,-96px,0) scale(1)}}
@@ -95,23 +135,22 @@ button,a,[role=button],.lx,.trk,.sr-card,.chip{-webkit-tap-highlight-color:trans
 @media (prefers-reduced-motion:no-preference){
   .gx-body.gx-in{animation:gxInF .34s var(--mv-ease) both}
   .gx-body.gx-in.gx-back{animation-name:gxInB}
-  .gx-body.gx-in>*,.gx-body.gx-in .gx-mid>*{animation:gxRise .42s var(--mv-ease) both}
+  .gx-body.gx-in>*,.gx-body.gx-in .gx-mid>*{animation:mvRise .42s var(--mv-ease) both}
   .gx-body.gx-in>*:nth-child(2),.gx-body.gx-in .gx-mid>*:nth-child(2){animation-delay:.05s}
   .gx-body.gx-in>*:nth-child(3),.gx-body.gx-in .gx-mid>*:nth-child(3){animation-delay:.1s}
   .gx-body.gx-in>*:nth-child(4),.gx-body.gx-in .gx-mid>*:nth-child(4){animation-delay:.15s}
   .gx-body.gx-in>*:nth-child(5){animation-delay:.2s}
   .gx-body.gx-in>*:nth-child(n+6){animation-delay:.25s}
-  .gx-top.gx-in .gx-prog i.now{transform-origin:left center;animation:gxFill .5s var(--mv-ease) .08s both}
+  .gx-top.gx-in .gx-prog i.now{transform-origin:left center;animation:mvFill .5s var(--mv-ease) .08s both}
   .gx-body.gx-in .gx-roles{animation:none}
-  .gx-body.gx-in .gx-rgrp{animation:gxRise .45s var(--mv-ease) both;animation-delay:calc(.12s + var(--g,0) * .07s)}
-  .gx-roles .chip.on,.gx-fbtn.on,.gx-sw .pe-dot.on{animation:gxPick .34s var(--mv-ease)}
-  .gx-bump{animation:gxBump .3s var(--mv-ease)}
-  .gx-tint.gx-bump .gx-av{animation:gxBump .36s var(--mv-ease)}
+  .gx-body.gx-in .gx-rgrp{animation:mvRise .45s var(--mv-ease) both;animation-delay:calc(.12s + var(--g,0) * .07s)}
+  .gx-roles .chip.on,.gx-fbtn.on,.gx-sw .pe-dot.on{animation:mvPopIn .34s var(--mv-ease)}
+  .gx-tint.mv-bump .gx-av{animation:mvBump .36s var(--mv-ease)}
   .gx-body.gx-in .gx-av{animation:gxLand .6s var(--mv-ease) .05s both}
   .gx-av.sm,.gx-body.gx-in .gx-av.sm{animation:gxLand .6s var(--mv-ease) .05s both,gxFloat 3.2s ease-in-out 1.2s infinite}   /* the welcome: lands, then floats */
-  .gx-body.gx-in .gx-sw .pe-dot{animation:gxRise .36s var(--mv-ease) both;animation-delay:calc(.18s + var(--i,0) * .03s)}
-  .gx-body.gx-in .gx-person{animation:gxRise .4s var(--mv-ease) both;animation-delay:calc(.12s + var(--i,0) * .06s)}
+  .gx-body.gx-in .gx-sw .pe-dot{animation:mvRise .36s var(--mv-ease) both;animation-delay:calc(.18s + var(--i,0) * .03s)}
+  .gx-body.gx-in .gx-person{animation:mvRise .4s var(--mv-ease) both;animation-delay:calc(.12s + var(--i,0) * .06s)}
   .gx-body.gx-in .gx-burst i{animation:gxBurst .9s var(--mv-ease) both;animation-delay:calc(.35s + var(--d,0) * .06s)}
-  .gxf-st.ok svg{animation:gxPick .34s var(--mv-ease)}
+  .gxf-st.ok svg{animation:mvPopIn .34s var(--mv-ease)}
   .gx-btn{transition:opacity .22s ease,transform .14s var(--mv-ease)}
 }

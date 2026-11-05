@@ -120,8 +120,8 @@ function wireGate(){
 }
 
 /* Debounced availability check; paints only the username bits so the field keeps focus. */
-/* restart a little "that worked" bump on an element changed in place (the count, the colour ring) */
-function gxBump(el){if(!el)return;el.classList.remove("gx-bump");void el.offsetWidth;el.classList.add("gx-bump")}
+/* a little "that worked" bump on an element changed in place (the count, the colour ring) — the app's mvBump */
+function gxBump(el){if(el)mvBump(el)}
 function gxCheck(){
   const G=GFLOW;if(!G)return;const u=G.f.username;
   const paint=()=>{if(GFLOW!==G)return;
