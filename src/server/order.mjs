@@ -78,6 +78,7 @@ export const SERVER = [
 
   // events
   "events/core.js",
+  "events/badges.js",
   "events/routes.js",
   "events/admin.js",
   "events/cards.js",

@@ -1,4 +1,4 @@
-/* PROFILE v2026-10-28: a Lab Lead's profile says which labs they lead (tap → the lab). v2026-10-20: the head comes from the screen kit (app/core/kit.js); Follow is the black main action */
+/* PROFILE v2026-11-05: tournament badges under the name (Champion · Finalist · Entrant), tap → the event. v2026-10-28: a Lab Lead's profile says which labs they lead (tap → the lab). v2026-10-20: the head comes from the screen kit (app/core/kit.js); Follow is the black main action */
 function workCardHTML(p, collab, K, pinned) {
   K = K || KIND;
   const accepted = p.collaborators.filter(c => c.status === "accepted");
@@ -128,6 +128,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
   <div class="pig-name"><span class="pname">${esc(u.displayName)}</span>${u.pronouns?`<span class="pig-pro">${esc(u.pronouns)}</span>`:""}<button class="pig-lvl" id="lvlpill" title="${esc(l.name)}">L${l.id}</button></div>
   <div class="pig-cat">${(u.roles&&u.roles.length?u.roles:[u.role]).filter(Boolean).map(r=>esc(r)).join(" · ")}</div>
   ${(u.leads||[]).length?`<div class="pig-lead">Lead · ${u.leads.map(id=>{const lb=LABS.find(x=>x.id===id);return lb?`<button data-pflab="${esc(id)}">${esc(labMark(lb.name))}</button>`:""}).join(" ")}</div>`:""}
+  ${pfBadgesHTML(PROFILE.badges)}
   ${u.bio?`<div class="pbio">${rich(u.bio)}</div>`:""}
   ${links.length?`<div class="plinks"><a class="plink" href="${esc(links[0].url)}" target="_blank" rel="noreferrer nofollow">${UI_IC.link}${esc(linkTxt(links[0]))}</a>${links.length>1?`<button class="plink-more" id="pflinks">and ${links.length-1} more</button>`:""}</div>`:""}
   ${fb?`<div class="pfb">Followed by ${fb.names.map(n=>`<b data-u="${esc(n)}">${esc(n)}</b>`).join(", ")}${fb.count>fb.names.length?` and ${fb.count-fb.names.length} other${fb.count-fb.names.length>1?"s":""}`:""}</div>`:""}
@@ -152,5 +153,15 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
   :list.length?`<div class="worklist ${K.grid?"asgrid":""}">${list.map(p=>workCardHTML(p,PTAB==="collabs",K,PTAB==="work"&&pins.includes(Number(p.id)))).join("")}</div>`
   :`<div class="empty">${PTAB==="collabs"?"No collabs yet.":mine?K.empty+" Hit + Post and it lands here.":esc(K.empty)}</div>`}
 </div></div>`}
+
+/* Tournament badges (2026-11-05). One per event, newest first; the server
+   only sends them once an event's results are locked. Tapping opens the
+   event through the app-wide data-evopen handler (app/events/wire.js). */
+const PF_BADGE_ICON=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"/></svg>`;
+const PF_BADGE_NAME={champion:"Champion",finalist:"Finalist",entrant:"Entrant"};
+function pfBadgesHTML(list){
+  if(!list||!list.length)return"";
+  return `<div class="pig-badges">${list.map(b=>`<button class="pbadge t-${esc(b.tier)}" data-evopen="${esc(b.slug)}" aria-label="${esc(PF_BADGE_NAME[b.tier]||"")} · ${esc(b.title)}">${PF_BADGE_ICON}<b>${esc(PF_BADGE_NAME[b.tier]||"")}</b><span>${esc(b.title)}</span></button>`).join("")}</div>`;
+}
 
 /* ---- wiring ---- */

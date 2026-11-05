@@ -1,4 +1,4 @@
-/* ── PROFILE v2.1 · 2026-10-20 (the edit bar is the kit's formHead) · v2 · 2026-10-07 (app/profile/profile.js, app/profile/edit.js) ── */
+/* ── PROFILE v2.2 · 2026-11-05 (tournament badges) · v2.1 · 2026-10-20 (the edit bar is the kit's formHead) · v2 · 2026-10-07 (app/profile/profile.js, app/profile/edit.js) ── */
 .pig-stats button.pstat{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
 .pig-stats .pstat span{font-size:13px;color:var(--tx2)}
 .pig-name{align-items:center}
@@ -59,3 +59,17 @@
 .lv2-r.on b{color:var(--green)}
 .lv2-r>span:last-child{color:var(--tx2)}
 @media(min-width:1024px){.sheetc.pe{max-width:600px;margin:0 auto;width:100%}}
+
+/* Tournament badges (v2.2 · 2026-11-05): Champion is the black/white main look with a green star,
+   Finalist an outline, Entrant quiet. Long titles cut with an ellipsis; the row wraps. */
+.pig-badges{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
+.pbadge{display:inline-flex;align-items:center;gap:6px;max-width:100%;min-height:30px;padding:5px 12px 5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--el);color:var(--tx);font:inherit;font-size:13px;cursor:pointer}
+.pbadge b{font-weight:700;white-space:nowrap}
+.pbadge span{color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.pbadge svg{flex:none}
+.pbadge.t-champion{background:var(--tx);border-color:var(--tx);color:var(--bg)}
+.pbadge.t-champion span{color:var(--bg);opacity:.75}
+.pbadge.t-champion svg{color:var(--accent-fill);fill:var(--accent-fill)}
+.pbadge.t-finalist{background:none}
+.pbadge.t-entrant{background:none;border-color:var(--line);color:var(--dim)}
+.pbadge.t-entrant b{font-weight:600}

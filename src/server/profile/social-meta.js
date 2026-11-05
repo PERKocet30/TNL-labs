@@ -1,5 +1,6 @@
 /* ================================================================
    SOCIAL GRAPH — follow / unfollow / profile
+   v1.6 — 2026-11-05: a profile carries its tournament badges (server/events/badges).
    v1.5 — 2026-10-30: /api/levels says the Turnstile site key, when it's on.
    v1.4 — 2026-10-30: anyone signed in sees who liked a post, unless its maker hid the likes.
    v1.3 — 2026-10-30: who liked a post — its maker sees the list (below).
@@ -99,6 +100,7 @@ app.get("/api/users/:username", maybeAuth, (req, res) => {
     tracks: db.prepare(`SELECT t.*, u.username, u.display_name, u.avatar_url, u.rep FROM tracks t JOIN users u ON u.id = t.user_id
       WHERE t.user_id = ? ORDER BY t.created_at DESC LIMIT 40`).all(u.id).map(shapeTrack),
     pinnedTrack: u.pinned_track || null,
+    badges: eventBadges(u.id),   // tournament badges (server/events/badges)
   });
 });
 
