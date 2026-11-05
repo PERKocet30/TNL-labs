@@ -1874,6 +1874,27 @@ console.log("\nMEMBER · PHONE");
     await p.locator("#labback").tap(); await p.waitForSelector(".lx-list");
     await p.evaluate(() => { TAB = "showroom"; render(); });
   });
+  /* "Does the Labs reflect the design language" (2026-11-05): the Labs moved in as one block, Older said
+     "Loading…", and a lab that failed to load was a dead end */
+  await step(d, "the Labs follow the design language: lab cards and a lab's parts rise in turn, Older shimmers, a failure has Try again", async () => {
+    if (await p.evaluate(() => mvReduced())) return;
+    await p.evaluate(() => { TAB = "showroom"; LAB = null; TAGVIEW = null; render(); });
+    await p.locator('.nav [data-tab="labs"]').tap(); await p.waitForSelector("#lxlist .lx");
+    const cards = await p.evaluate(() => [...document.querySelectorAll("#lxlist .lx")].slice(0, 3).map((e) => [getComputedStyle(e).animationName, getComputedStyle(e).animationDelay]));
+    ok(cards.every(([n]) => n === "mvRise") && new Set(cards.map(([, dl]) => dl)).size > 1, "the lab cards don't rise one after another: " + JSON.stringify(cards));
+    await p.locator('#lxlist .lx[data-lab="pharmacy"]').first().tap(); await p.waitForSelector(".room .pl-tabs");
+    const parts = await p.evaluate(() => [...document.querySelectorAll(".content .room>*")].slice(0, 3).map((e) => getComputedStyle(e).animationName));
+    ok(parts.every((n) => n === "mvRise"), "a lab's head, tabs and body don't come in: " + JSON.stringify(parts));
+    // a failure offers the way forward, and it works
+    const ok2 = await p.evaluate(async () => { const P = PLACE.pharmacy || (PLACE.pharmacy = {}), k = placeKey(), keep = P[k]; P[k] = { error: "e2e: couldn't reach LABS" }; paintPlace();
+      const b = document.querySelector("#plbody [data-plretry]"); if (!b) { P[k] = keep; paintPlace(); return "no Try again"; }
+      b.click(); for (let i = 0; i < 40 && !(PLACE.pharmacy[k] && !PLACE.pharmacy[k].error); i++) await new Promise((r) => setTimeout(r, 100));
+      return PLACE.pharmacy[k] && !PLACE.pharmacy[k].error ? "" : "Try again didn't load the work"; });
+    ok(!ok2, ok2);
+    ok(!(await p.evaluate(() => document.getElementById("app").innerText.includes("Loading…"))), "a lab says \"Loading…\"");
+    await p.locator("#labback").tap(); await p.waitForSelector(".lx-list");
+    await p.evaluate(() => { TAB = "showroom"; render(); });
+  });
   /* "Every lab to have a share button with captions that describe what to do inside each lab" (2026-10-15) */
   await step(d, "every lab says what to do there and has a Share that sends that line and a link to the lab", async () => {
     await p.evaluate(() => openLab("pharmacy")); await p.waitForSelector("#labshare");
