@@ -10,6 +10,18 @@ const GX_OK=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke=
 const GX_NO=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>`;
 const GX_PERSON=`<svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>`;
 
+/* What do you make? — 120 titles since 2026-11-05 ("add more titles that include all the fine arts…
+   that correspond to the current labs"), so they're grouped under the lab each one leads to
+   (ROLE_LABS, app/labs/places), with a search on top that hides, never repaints. */
+function gxRolesHTML(f){
+  const chip=r=>`<button class="chip ${f.roles.includes(r)?"on":""}" data-r="${esc(r)}">${esc(r)}</button>`;
+  const groups=[...LABS.filter(l=>l.id!=="hq"),...LABS.filter(l=>l.id==="hq")]   // General, the catch-all, last
+    .map(l=>[l,ROLES.filter(r=>(ROLE_LABS[r]||[])[0]===l.id)]).filter(([,rs])=>rs.length);
+  const other=ROLES.filter(r=>!(ROLE_LABS[r]||[]).length);
+  return `<input class="gx-rq" id="gxrq" type="search" placeholder="Search — painter, poet, DJ…" autocapitalize="none" autocomplete="off" aria-label="Search what you make">
+    <div class="gx-roles" id="gxroles">${groups.map(([l,rs])=>`<div class="gx-rgrp" data-rgrp><div class="gx-rlab">// ${esc(l.name)}</div><div class="gx-rchips">${rs.map(chip).join("")}</div></div>`).join("")}${other.length?`<div class="gx-rgrp" data-rgrp><div class="gx-rchips">${other.map(chip).join("")}</div></div>`:""}
+    <div class="gx-rnone" id="gxrnone" hidden>Nothing by that name — pick the closest, or "Artist".</div></div>`;
+}
 function gxNew(){const tour=GATE==="tour";   // ≡ → How LABS works: the walkthrough on its own (app/gate/tour)
   return {src:GATE,t0:Date.now(),mode:tour?"tour":GATE==="login"?"login":"register",step:tour?"tour":"email",ti:0,
   f:{displayName:"",username:"",email:"",password:"",roles:[],bio:"",ig:""},
@@ -102,7 +114,7 @@ function gateHTML(){
         ${err}${next("Next",G.un.state==="ok")}`;
     }else{
       body=`<h1 class="gx-h">What do you make?</h1><p class="gx-p">Pick up to 5. It's how people find you.</p>
-        <div class="gx-roles">${ROLES.map(r=>`<button class="chip ${f.roles.includes(r)?"on":""}" data-r="${esc(r)}">${esc(r)}</button>`).join("")}</div>
+        ${gxRolesHTML(f)}
         <div class="gx-count" id="rcount">${f.roles.length} of 5 selected</div>
         ${err}<div class="gx-stick"><p class="gx-legal">By creating an account you agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy policy</a>.</p>${next("Create account",f.roles.length>0)}</div>`;
     }

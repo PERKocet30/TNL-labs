@@ -76,6 +76,8 @@ try {
   t("…but two visual roles outweigh one music role", mineOf({ roles: ["Rapper", "Graphic Designer", "Illustrator"] }) === "pharmacy,culture,akatsuki");
   t("an old account with just one role still works", mineOf({ roles: [], role: "Manga Artist" }) === "akatsuki,pharmacy");
   t("painters and every other visual artist land in Visual first (2026-10-12)", ["Painter", "Artist", "Muralist", "Printmaker", "Mixed Media Artist", "Sculptor"].every((r) => mineOf({ roles: [r] }) === "pharmacy"));
+  t("more titles, lab by lab — the fine arts in Visual, performers in Music, writers in News… each with its home lab (2026-11-05)", [["Ceramicist", "pharmacy"], ["Watercolorist", "pharmacy"], ["Installation Artist", "pharmacy"], ["Composer", "culture"], ["Dancer", "culture"], ["Makeup Artist", "fashion"], ["Jewelry Designer", "fashion"], ["Webtoon Artist", "akatsuki"], ["Poet", "casino"], ["Editor", "casino"], ["Investor", "tna"], ["Collector", "hq"]].every(([r, lab]) => ROLES.includes(r) && mineOf({ roles: [r] }).split(",")[0] === lab) && new Set(ROLES).size === ROLES.length);
+  t("every lab has titles that lead to it first", LABS.every((l) => ROLES.some((r) => (ROLE_LABS[r] || [])[0] === l.id)));
   t("a role we don't know changes nothing", mineOf({ roles: ["Astronaut"] }) === "");
 
   console.log("\nNEW POSTS GO HOME, AND #TAG THEMSELVES");

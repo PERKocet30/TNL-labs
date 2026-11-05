@@ -56,6 +56,14 @@ const ROLE_KIND = {
   "Web Designer": "build", "Web Developer": "build", "App Developer": "build", "UI/UX Designer": "build", "Product Designer": "build",
   "Entrepreneur": "business", "Founder": "business", "Brand Strategist": "business", "Marketer": "business",
   "Manager": "business", "A&R": "business", "Photographer's Agent": "business", "Event Organizer": "business",
+  // more titles, lab by lab (2026-11-05)
+  "Fine Artist": "visual", "Digital Artist": "visual", "Concept Artist": "visual", "Sketch Artist": "visual", "Portrait Artist": "visual", "Watercolorist": "visual", "Calligrapher": "visual", "Collage Artist": "visual", "Installation Artist": "visual", "Performance Artist": "visual", "Street Artist": "visual", "Graffiti Artist": "visual", "Ceramicist": "visual", "Glass Artist": "visual", "Woodworker": "visual", "Architect": "visual", "Art Teacher": "visual", "Filmmaker": "lens", "Director": "lens", "Photojournalist": "lens",
+  "Composer": "music", "Songwriter": "music", "Vocalist": "music", "Guitarist": "music", "Drummer": "music", "Pianist": "music", "Mixing Engineer": "music", "Dancer": "music", "Choreographer": "music", "Music Video Director": "music",
+  "Jewelry Designer": "fashion", "Textile Artist": "fashion", "Metalsmith": "fashion", "Makeup Artist": "fashion", "Hairstylist": "fashion", "Pattern Maker": "fashion", "Embroiderer": "fashion", "Shoe Designer": "fashion", "Creative Director": "fashion", "Vintage Reseller": "fashion",
+  "Comic Artist": "anime", "Webtoon Artist": "anime", "Fan Artist": "anime", "Figure Sculptor": "anime", "Voice Actor": "anime", "VTuber": "anime",
+  "Editor": "word", "Reporter": "word", "Critic": "word", "Columnist": "word", "Blogger": "word", "Podcaster": "word", "Poet": "word", "Author": "word", "Screenwriter": "word", "Playwright": "word", "Spoken Word Artist": "word",
+  "Investor": "business", "Publicist": "business", "Talent Manager": "business", "Art Dealer": "business", "Gallerist": "business", "Promoter": "business", "Merch Maker": "business", "Consultant": "business",
+  "Collector": "business", "Community Builder": "business", "Art Lover": "visual",
 };
 function kindFor(rolesJson, role) {
   let rs = [];

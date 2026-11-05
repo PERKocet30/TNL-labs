@@ -53,6 +53,12 @@ function wireGate(){
     if(f.username&&!G.un.state)gxCheck()}
   document.querySelectorAll("[data-sugg]").forEach(b=>b.onclick=()=>{f.username=b.dataset.sugg;if(un)un.value=f.username;gxCheck()});
 
+  /* ── roles: the search hides what doesn't match (chosen ones always show), never repaints ── */
+  const rq=$("#gxrq");if(rq)rq.oninput=()=>{const q=rq.value.trim().toLowerCase();let any=false;
+    document.querySelectorAll("#gxroles [data-rgrp]").forEach(g=>{let n=0;
+      g.querySelectorAll("[data-r]").forEach(b=>{const show=!q||b.classList.contains("on")||b.dataset.r.toLowerCase().split(/[\s/&'-]+/).some(w=>w.startsWith(q))||b.dataset.r.toLowerCase().startsWith(q);b.hidden=!show;if(show)n++});
+      g.hidden=!n;if(n)any=true});
+    const no=$("#gxrnone");if(no)no.hidden=any};
   /* ── roles: toggled in place so the long list keeps its scroll ── */
   document.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{const r=b.dataset.r;
     if(f.roles.includes(r))f.roles=f.roles.filter(x=>x!==r);
