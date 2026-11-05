@@ -165,3 +165,12 @@ button,a,[role=button],.lx,.trk,.sr-card,.chip{-webkit-tap-highlight-color:trans
   .gxf-st.ok svg{animation:mvPopIn .34s var(--mv-ease)}
   .gx-btn{transition:opacity .22s ease,transform .14s var(--mv-ease)}
 }
+/* 2026-11-05: the post walkthrough — each step's parts rise in turn as it arrives (Next forward, Back back) */
+@media (prefers-reduced-motion:no-preference){
+  .content.mv-fwd .pcw-in>*,.content.mv-back .pcw-in>*,.content.mv-fwd .pcw-labs .st-opt,.content.mv-back .pcw-labs .st-opt{animation:mvRise var(--mv-slow) var(--mv-ease) both;animation-delay:var(--mvd,0s)}
+  .content .pcw-in>*:nth-child(2),.content .pcw-labs .st-opt:nth-child(2){animation-delay:calc(var(--mvd,0s) + var(--mv-step))}
+  .content .pcw-in>*:nth-child(3),.content .pcw-labs .st-opt:nth-child(3){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 2)}
+  .content .pcw-in>*:nth-child(n+4),.content .pcw-labs .st-opt:nth-child(n+4){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 3)}
+  .content .pcw-labs .st-opt:nth-child(n+7){animation-delay:calc(var(--mvd,0s) + var(--mv-step) * 4)}
+  .pcw-tag.on{animation:mvPopIn .34s var(--mv-ease)}
+}

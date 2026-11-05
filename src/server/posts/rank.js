@@ -1,5 +1,7 @@
 /* ================================================================
-   RANKING v3.0 — 2026-11-03. v2.1 — 2026-10-29 (#hashtags lift a piece —
+   RANKING v3.1 — 2026-11-05 (placed work rises: "if people don't send their work
+   inside labs and use hashtags their work doesn't get featured in the showroom" —
+   a strong lift, not a wall: placedHalf / unplaced below). v3.0 — 2026-11-03. v2.1 — 2026-10-29 (#hashtags lift a piece —
    "people who use hashtags get better exposure in our showroom because it
    helps define the uploads"). v2.0 — 2026-09-29. The Showroom and "Who's building".
 
@@ -55,6 +57,11 @@
      little for each tag, up to three. Stuffing a caption with tags earns
      nothing (more than ten and the lift is gone), and it's never worth
      more than a few people responding — the work still has to land.
+   - Placed work rises (v3.1). A piece posted in a lab AND given a #hashtag has
+     told everyone what it is and where it belongs, so it keeps its whole
+     score; one that did only one of the two keeps placedHalf of it; one that
+     did neither (profile only, no #tag) keeps unplaced of it. Still a lift,
+     never a wall: strong work that skipped both can still reach the page.
    Tune the numbers here; nothing else depends on them.
 ================================================================ */
 const RANK = {
@@ -74,6 +81,9 @@ const RANK = {
   tagLift: 0.4,           // per #hashtag on the piece…
   tagMax: 3,              // …counting up to three
   tagSpam: 10,            // more than this many tags: no lift at all
+  /* v3.1 — placed work rises */
+  placedHalf: 0.7,        // in a lab OR #tagged (not both): × this
+  unplaced: 0.45,         // neither in a lab nor #tagged: × this (in a lab AND #tagged: × 1)
   /* v3.0 */
   viewLift: 1,            // a piece everyone who saw it responded to: × (1 + viewLift)
   rateFull: 0.25,         // a response rate this high (1 in 4) earns the whole lift
@@ -91,10 +101,16 @@ const RANK = {
 /* #tags in a caption, the way the labs read them (bodyTags in server/labs/places.js): 2–30 letters, numbers
    or _, not inside a link or an HTML entity, each counted once. Kept here so the ranking stands alone. */
 const RANK_TAG_RE = /(^|[^\w&#/])#([a-z0-9_]{2,30})(?![\w])/gi;
-function rankTagLift(body) {
+function rankTagCount(body) {
   const tags = new Set();
   for (const m of String(body || "").replace(/https?:\/\/\S+/g, " ").matchAll(RANK_TAG_RE)) tags.add(m[2].toLowerCase());
-  return tags.size > RANK.tagSpam ? 0 : RANK.tagLift * Math.min(RANK.tagMax, tags.size);
+  return tags.size > RANK.tagSpam ? 0 : tags.size;   // stuffing doesn't count as tagged
+}
+function rankTagLift(body) { return RANK.tagLift * Math.min(RANK.tagMax, rankTagCount(body)); }
+/* v3.1: posted in a lab, #tagged, both or neither → × 1, placedHalf or unplaced */
+function rankPlaced(channel, body) {
+  const n = (rankLabOf(channel) ? 1 : 0) + (rankTagCount(body) ? 1 : 0);
+  return n === 2 ? 1 : n === 1 ? RANK.placedHalf : RANK.unplaced;
 }
 
 /* How much one person's response counts, from their standing. */
@@ -213,6 +229,7 @@ function rankShowroom(viewerId = 0, limit = 60) {
       * (1 + RANK.viewLift * Math.min(1, rate / RANK.rateFull))
       / Math.pow((Math.max(0, now - c.created_at) / 3600000 + RANK.ageOffsetH) / RANK.ageOffsetH, rankGravity(rankLabOf(c.channel)));
     s *= affinity[rankLabOf(c.channel)] || 1;
+    s *= rankPlaced(c.channel, c.body);
     if (follows.has(c.author_id)) s *= RANK.followBoost;
     if (seen.has(c.id)) s *= RANK.seenDamp;
     else if (viewed.has(c.id)) s *= RANK.viewedDamp;

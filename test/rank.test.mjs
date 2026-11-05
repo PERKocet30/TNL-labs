@@ -199,6 +199,24 @@ t("you're never in your own row", !bl.includes("newbie"));
 t("recent work people respond to leads", bl[0] === "vet");
 t("quiet months still fill the row", R.rankBuilders(0).length >= 3);
 
+console.log("\nPLACED WORK RISES (v3.1, 2026-11-05)");
+{
+  clear();
+  const both = Number(db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, created_at) VALUES (?,?,?,?,?)`).run(users.vet, "creators", "train #collage", 1, now - 2 * H).lastInsertRowid);
+  const lab = Number(db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, created_at) VALUES (?,?,?,?,?)`).run(users.vet2, "creators", "train", 1, now - 2 * H).lastInsertRowid);
+  const tag = Number(db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, created_at) VALUES (?,?,?,?,?)`).run(users.big, "profile", "train #collage", 1, now - 2 * H).lastInsertRowid);
+  const none = Number(db.prepare(`INSERT INTO posts (author_id, channel, body, is_work, created_at) VALUES (?,?,?,?,?)`).run(users.fan3, "profile", "train", 1, now - 2 * H).lastInsertRowid);
+  const o = order();
+  t("in a lab AND #tagged comes first", o[0] === both);
+  t("a lab alone or a #tag alone sits above neither", o.indexOf(lab) < o.indexOf(none) && o.indexOf(tag) < o.indexOf(none));
+  t("profile only, no #tag, comes last — but it's still there (a lift, not a wall)", o.indexOf(none) === o.length - 1 && o.includes(none));
+  t("tag stuffing doesn't count as tagged", R.rankTagLift("#a1 #b2 #c3 #d4 #e5 #f6 #g7 #h8 #i9 #j10 #k11") === 0);
+  for (const f of ["fan1", "fan2", "vet", "big", "newbie"]) like(none, f);
+  comment(none, "fan1"); comment(none, "fan2");
+  t("strong work that skipped both can still reach the top", order()[0] === none);
+  t("the numbers live in RANK", R.RANK.placedHalf > R.RANK.unplaced && R.RANK.placedHalf < 1 && R.RANK.unplaced > 0);
+}
+
 console.log("\nTHE SURFACE STAYS QUIET");
 const app = ["app/showroom/showroom.js", "app/market/detail-sell.js", "app/profile/profile.js", "app/feed/feed-boot.js"].map((f) => readFileSync(join(ROOT, "src", f), "utf8")).join("\n");
 t("no point values shown to members", !/LIKES \+6|you both earn\w* \+20|earns rep when|THE ONE RULE|someone's rep/.test(app));
