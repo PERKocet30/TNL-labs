@@ -95,7 +95,7 @@ app.get("/api/admin/network", auth, admin, rateLimit({ max: 30, windowMs: 60000,
     SEC("knowledge", "Knowledge", "What LABS knows about itself", n(`SELECT COUNT(*) n FROM knowledge WHERE archived = 0`), "entries"),
     SEC("echo", "Help desk", "Members' questions to Echo, and the ones it hands you", n(`SELECT COUNT(*) n FROM echo_handoffs WHERE status = 'open'`), "handed to you"),
     SEC("analytics", "Analytics", "How people use LABS", n(`SELECT COUNT(DISTINCT user_id) n FROM member_days WHERE day >= ?`, Math.floor(wk / DAYMS)), "active this week"),
-    SEC("health", "Health", "Errors, backups, the systems", n(`SELECT COUNT(*) n FROM error_log WHERE created_at > ?`, now - DAYMS), "errors today"),
+    SEC("health", "Health", "Errors, backups, the systems", n(`SELECT COUNT(*) n FROM error_log WHERE created_at > ? AND kind != 'foreign'`, now - DAYMS), "errors today"),
     SEC("settings", "Settings", "The switches", n(`SELECT COUNT(*) n FROM settings`), "switches set"),
   ];
   res.json({ at: now, days, stages, outside, base, sections });

@@ -69,11 +69,11 @@ async function watchTick(now, send) {
   const dig = lastSent.get("digest");
   if (d.getUTCHours() >= 13 && (!dig || new Date(dig.last_at).toISOString().slice(0, 10) !== today)) {
     const day = now - 86400000;
-    const errs = db.prepare(`SELECT kind, COUNT(*) n FROM error_log WHERE created_at >= ? GROUP BY kind ORDER BY n DESC`).all(day);
+    const errs = db.prepare(`SELECT kind, COUNT(*) n FROM error_log WHERE created_at >= ? AND kind != 'foreign' GROUP BY kind ORDER BY n DESC`).all(day);
     const gl = db.prepare(`SELECT kind, COUNT(*) n FROM glitch_events WHERE created_at >= ? GROUP BY kind ORDER BY n DESC`).all(day);
     const hot = worstSpots(day, null, 3);
     /* which errors, not just how many — so a day of noise reads as noise */
-    const topErr = db.prepare(`SELECT message, COUNT(*) n FROM error_log WHERE created_at >= ? GROUP BY message ORDER BY n DESC LIMIT 2`).all(day);
+    const topErr = db.prepare(`SELECT message, COUNT(*) n FROM error_log WHERE created_at >= ? AND kind != 'foreign' GROUP BY message ORDER BY n DESC LIMIT 2`).all(day);
     const joined = db.prepare(`SELECT COUNT(*) n FROM users WHERE created_at >= ?`).get(day).n;
     const posted = db.prepare(`SELECT COUNT(*) n FROM posts WHERE created_at >= ?`).get(day).n;
     const NAME = { rage_tap: "rage taps", layout_jump: "screen jumps", slow_screen: "slow screens", action_failed: "failed saves" };

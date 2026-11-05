@@ -91,10 +91,10 @@ function weeklyApp(now) {
   /* slow or failed requests (server/trust/visits keeps 14 days) */
   const slow = wkHas("slow_requests") ? { n: wkN(`SELECT COUNT(*) n FROM slow_requests WHERE at >= ?`, a),
     top: db.prepare(`SELECT method, route, COUNT(*) n, MAX(ms) ms FROM slow_requests WHERE at >= ? GROUP BY method, route ORDER BY n DESC LIMIT 1`).get(a) || null } : null;
-  const errors = both(`SELECT COUNT(*) n FROM error_log WHERE created_at >= ? AND created_at < ?`);
+  const errors = both(`SELECT COUNT(*) n FROM error_log WHERE created_at >= ? AND created_at < ? AND kind != 'foreign'`);
   const glitches = both(`SELECT COUNT(*) n FROM glitch_events WHERE created_at >= ? AND created_at < ?`);
   const worst = typeof worstSpots === "function" ? worstSpots(a, null, 2) : [];
-  const topErr = db.prepare(`SELECT message, COUNT(*) n FROM error_log WHERE created_at >= ? GROUP BY message ORDER BY n DESC LIMIT 1`).get(a);
+  const topErr = db.prepare(`SELECT message, COUNT(*) n FROM error_log WHERE created_at >= ? AND kind != 'foreign' GROUP BY message ORDER BY n DESC LIMIT 1`).get(a);
   return { joined, confirmed, finished, firstPost, posted, opened, visits, cohort, back, posts, byLab, tagged, topTags, song: song ? { title: String(song.title).slice(0, 60), n: song.n } : null, leads, ig, slow, likes, comments, follows, collabs, plays, dms,
     listings, views, offers, sales, gross, lookedNotBought: lookedNotBought.map((l) => ({ id: l.id, title: String(l.title).slice(0, 60), n: l.n })),
     event, errors, glitches, worst, topErr: topErr ? { message: String(topErr.message || "").slice(0, 100), n: topErr.n } : null };

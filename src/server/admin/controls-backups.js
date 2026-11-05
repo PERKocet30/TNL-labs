@@ -317,7 +317,7 @@ app.get("/api/admin/errors", auth, admin, (req, res) => {
   const since = Date.now() - 86400000;
   res.json({
     errors: rows,
-    last24h: db.prepare(`SELECT COUNT(*) n FROM error_log WHERE created_at > ?`).get(since).n,
+    last24h: db.prepare(`SELECT COUNT(*) n FROM error_log WHERE created_at > ? AND kind != 'foreign'`).get(since).n,
     byKind: db.prepare(`SELECT kind, COUNT(*) n FROM error_log WHERE created_at > ? GROUP BY kind`).all(since),
   });
 });
@@ -330,11 +330,23 @@ app.delete("/api/admin/errors", auth, admin, (req, res) => {
 /* The app reports its own breakage. Without this you only hear about bugs
    loud enough that someone bothers to message you — which is a small and
    badly-biased sample. */
+/* v2026-11-05: an error thrown by someone else's code on our page — a browser extension, Instagram's or
+   Facebook's in-app scripts, a crypto wallet — is kept as "foreign", not "client", so it never sets off
+   the "app crashes on members' screens" email (40 of them in one night came from one visitor's extension,
+   chrome-extension://…/executors/200.js). Its bare "unhandled promise rejection" twins (same message, no
+   stack) follow it for a day. Admin → Health still lists them, marked. */
+const FOREIGN_ERR = /(chrome|moz|safari(-web)?|edge)-extension:\/\/|webkit-masked-url:|iabjs:\/\/|window\._META|webkit\.messageHandlers|Java object is gone|ethereum|evmAsk|__gCrWeb|instantSearchSDK/i;
+const foreignTwin = db.prepare(`SELECT 1 FROM error_log WHERE kind = 'foreign' AND message = ? AND created_at >= ? LIMIT 1`);
+function clientErrKind(message, detail) {
+  if (FOREIGN_ERR.test(String(message)) || FOREIGN_ERR.test(String(detail))) return "foreign";
+  if (/^unhandled promise rejection$/i.test(String(detail).trim()) && foreignTwin.get(String(message).slice(0, 2000), Date.now() - 86400000)) return "foreign";
+  return "client";
+}
 app.post("/api/client-error", maybeAuth, rateLimit({ max: 20, windowMs: 60000 }), (req, res) => {
   const { message, detail, path } = req.body || {};
   /* "Script error." is a browser hiding someone else's crash (Instagram's
      in-app browser, an extension) — never ours, nothing to act on (2026-10-19). */
-  if (message && !/^Script error\.?$/i.test(String(message).trim())) logError("client", message, detail || "", path || "", req.user?.username || "");
+  if (message && !/^Script error\.?$/i.test(String(message).trim())) logError(clientErrKind(message, detail || ""), message, detail || "", path || "", req.user?.username || "");
   res.json({ ok: true });
 });
 

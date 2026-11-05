@@ -83,7 +83,7 @@ function wireEvPoll(){
   const close=()=>{EVSHARE=null;render()};
   on("#evshx",close);
   const bg=$("#evshsheet");if(bg)bg.onclick=e=>{if(e.target===bg)close()};
-  const pic=$("#evshpic");if(pic)pic.onerror=()=>{EVSHARE.failed=true;render()};
+  const pic=$("#evshpic");if(pic)pic.onerror=()=>{if(!EVSHARE)return;EVSHARE.failed=true;render()};   // closed before the picture failed (2026-11-05: "Cannot set properties of null (setting 'failed')")
   on("#evshgo",evSharePic);
   on("#evshsend",()=>{const e=evById(EVSHARE.id),t=EV.event.title;shareOut({title:t,text:(EV.me.entry&&EV.me.entry.id===EVSHARE.id?"Vote for my piece":"Vote for @"+(e?e.author.username:"this")+"'s piece")+" in "+t+" on LABS",url:evVoteUrl(EVSHARE.id)})});
   on("#evshcopy",async()=>{try{await navigator.clipboard.writeText(evVoteUrl(EVSHARE.id));toast("Link copied")}catch(e){toast("Couldn't copy")}});
