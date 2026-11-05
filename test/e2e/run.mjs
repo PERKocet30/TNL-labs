@@ -2209,7 +2209,7 @@ console.log("\nMEMBER · COMPUTER");
     await fast(p, 10000, () => p.locator(".eh-off, .eh-hello").first().waitFor(), "Echo Home");   // the shell paints first, the data lands after
     ok((await p.locator(".pg-hd h1").first().textContent()) === "Echo", "the first page isn't Echo");
     ok(await p.locator(".eh-off code", { hasText: "ECHO_AI_KEY" }).count() === 1, "without a key, the page doesn't say how to wake Echo");
-    ok(await p.locator(".eh-side .rc h3", { hasText: "Needs you" }).count() === 1 && await p.locator(".eh-side .kpi").count() === 4, "the queue and the four numbers aren't beside the chat");
+    ok(await p.locator(".eh-side .rc h3", { hasText: "Needs you" }).count() === 1 && await p.locator(".eh-side #todocv").count() === 1, "Needs you beside the chat doesn't open on its model");
     ok((await p.locator(".side .nv").first().getAttribute("data-tab")) === "echohome" && await p.locator(".side .nv[data-tab=echo] span", { hasText: "Help desk" }).count() === 1, "Echo isn't first in the side menu, or the help desk isn't named");
     await p.locator(".eh-side [data-go=home]").click();
     await fast(p, 6000, () => p.locator(".tour [data-ev-open]").waitFor(), "Home from Echo Home");
@@ -2235,12 +2235,13 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator(".rc h3", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
     // 2026-10-20: on a computer, a grouped side menu with every section and no bottom bar (twelve since Systems and Instagram, 2026-10-26)
     // 2026-11-04: nine sections in five groups — Orders · Listings · Sellers are Market's tabs, Systems is Health's
-    ok(await p.locator(".side .nv").count() === 11 && !(await p.locator(".bbar").isVisible()), "the side menu isn't the eleven grouped sections");
+    ok(await p.locator(".side .nv").count() === 12 && !(await p.locator(".bbar").isVisible()), "the side menu isn't the twelve grouped sections (Systems up front)");
     // 2026-10-26: Systems — what's live, what's waiting for a Push; with no keys set, each card says so plainly (2026-11-04: a tab of Health; the old #systems link lands on it)
-    await p.locator(".side .nv[data-tab=health]").click(); await fast(p, 6000, () => p.locator("[data-hs=systems]").waitFor(), "Health's tabs");
-    await p.locator("[data-hs=systems]").click();
+    /* 2026-11-04: "I said I wanted this at the front of the admin dashboard" — Systems is its own section again, second in the side menu */
+    ok((await p.locator(".side .nv").nth(1).getAttribute("data-tab")) === "systems", "Systems isn't up front, right after Echo");
+    await p.locator(".side .nv[data-tab=systems]").click();
     await fast(p, 6000, () => p.locator(".pg-hd h1", { hasText: "Systems" }).waitFor(), "the Systems page");
-    ok(await p.evaluate(() => location.hash === "#systems"), "the Systems tab didn't set #systems");
+    ok(await p.evaluate(() => location.hash === "#systems" && TAB === "systems"), "Systems didn't open as its own section (#systems)");
     ok((await p.locator(".empty", { hasText: "isn't connected yet" }).count()) === 4, "Systems doesn't say its keys aren't set yet (Railway, GitHub, Google, Meta)");
     ok(await p.locator("#sysfresh").count() === 1, "no Look again on Systems");
     // 2026-10-26: the week's report sits at the top of Systems with a button that emails it now
@@ -2324,10 +2325,10 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
   });
   // admin v4 (2026-10-20): on a phone, a bottom bar with four sections and More; tables are cards
   await step(d, "admin on a phone: a bottom bar, More opens the rest, Orders are cards", async () => {
-    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 4 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone (Echo · Market · Members · More)");
+    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 5 && await p.locator(".bbar [data-tab=systems]").count() === 1 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone (Echo · Systems · Market · Members · More)");
     await p.locator(".bbar [data-more]").tap();
     await fast(p, 3000, () => p.locator(".msheet .mi[data-tab=analytics]").waitFor(), "the More sheet");
-    ok(await p.locator(".msheet .grp").count() === 5 && await p.locator(".msheet .mi").count() === 12, "the phone's sheet isn't the five groups (eleven sections + Open the app)");
+    ok(await p.locator(".msheet .grp").count() === 5 && await p.locator(".msheet .mi").count() === 13, "the phone's sheet isn't the five groups (twelve sections + Open the app)");
     await p.locator(".msheet .mi[data-tab=market]").tap();
     await fast(p, 6000, () => p.locator("[data-os=paid]").waitFor(), "Orders from More");
     ok(await p.locator(".msheet").count() === 0, "More stayed open");
@@ -2459,7 +2460,7 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.unroute("**/api/admin/globe**");
   });
   /* 2026-11-04: "the same type of interactive model for the system networks" — the map on Health → Systems */
-  await step(d, "admin → Health → Systems on a phone: the map draws every service, the one that needs a look is picked, a row opens its page, and it stops when you leave", async () => {
+  await step(d, "admin → Systems on a phone: the map draws every service, the one that needs a look is picked, a row opens its page, and it stops when you leave", async () => {
     const node = (id, name, state, go) => ({ id, name, does: name + " does things", state, line: name + " line", facts: [["Thing", 1]], go });
     await p.route("**/api/admin/systems/map", (r) => r.fulfill({ json: { at: Date.now(), nodes: [node("labs", "LABS", "on", "health"), node("members", "Members' phones", "on", "health"),
       node("cloudflare", "Cloudflare", "on", "settings"), node("railway", "Railway", "on", "systems"), node("data", "Database", "on", "health"), node("github", "GitHub", "on", "systems"),
@@ -2479,6 +2480,48 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.waitForTimeout(200);
     ok(await p.evaluate(() => SM.raf === 0), "the map kept drawing after leaving Systems");
     await p.unroute("**/api/admin/systems/map");
+  });
+  /* 2026-11-04: "I don't see the interactive admin dashboard network. Make the whole admin dashboard interactive." — the Network, in the phone's bar */
+  /* 2026-11-04: "this interactive dashboard is way better and should be front of the admin dashboard, like Echo's to-do and
+     Members and Analytics" — the spinning models at the front: Echo Home's Needs you, and Analytics' member's path */
+  await step(d, "the models at the front: Needs you spins the whole dashboard (a section with something waiting opens it), Analytics opens on a member's path", async () => {
+    const st = (id, name, value, needs = []) => ({ id, name, says: name + " says", value, before: Math.max(0, value - 1), label: "things", facts: [["Thing", 2]], go: "people", goName: "Members", needs: needs.map((text) => ({ text, level: "high" })) });
+    const sec = (id, name, value, needs = []) => ({ id, name, does: name + " does things", value, label: "things", needs: needs.map((text) => ({ text, level: "high" })) });
+    const sv = (id, name, state) => ({ id, name, does: name, state, line: name + " line", facts: [], go: "health" });
+    await p.route("**/api/admin/network**", (r) => r.fulfill({ json: { at: Date.now(), days: 30,
+      stages: [st("arrive", "Arrive", 5), st("join", "Join", 3, ["2 new members haven't posted yet"]), st("see", "See", 9), st("make", "Make", 4), st("respond", "Respond", 12), st("earn", "Earn", 40), { ...st("trade", "Trade", 2500), money: true }, st("talk", "Talk", 7)],
+      sections: [sec("people", "Members", 40), sec("market", "Market", 3), sec("content", "Content", 9, ["2 open reports"]), sec("events", "Events", 1), sec("health", "Health", 0)],
+      outside: [sv("meta", "Instagram", "off"), sv("stripe", "Stripe", "warn"), sv("resend", "Resend", "on")], base: [sv("labs", "LABS", "on"), sv("trust", "Trust", "on")] } }));
+    await settledGoto(p, B + "/admin");
+    await fast(p, 8000, () => p.locator("#todocv").waitFor({ state: "attached" }), "Needs you's model on Echo Home");
+    await p.locator("#todocv").scrollIntoViewIfNeeded(); await p.waitForTimeout(500);
+    const drawn = (sel) => p.evaluate((s) => { const c = document.querySelector(s), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 500; }, sel);
+    ok(await drawn("#todocv"), "Needs you's model is blank");
+    ok(await p.evaluate(() => { const c = document.querySelector(".eh-chat").getBoundingClientRect().top, n = document.querySelector("#todocard").getBoundingClientRect().top; return c < n; }), "Echo isn't first, with Needs you after her");
+    ok(/1 thing needs you/.test(await p.locator("#todopick").innerText()), "the model doesn't say how many things need you");
+    ok(await p.locator("#todocard .q").count() === 1, "the full queue isn't under the model");
+    /* a tap on a node: find Content on the canvas and tap it */
+    await p.evaluate(() => ringAim("todocv", "s:content")); await p.waitForTimeout(800);
+    const at = await p.evaluate(() => { const h = RINGS.todocv.hit.find((x) => x.key === "s:content"), b = document.querySelector("#todocv").getBoundingClientRect(); return h && { x: b.left + h.x, y: b.top + h.y }; });
+    ok(!!at, "Content isn't on the model");
+    await p.mouse.click(at.x, at.y); await p.waitForTimeout(400);
+    ok(/Content/.test(await p.locator("#todopick").innerText()) && /2 open reports/.test(await p.locator("#todopick").innerText()), "tapping Content on the model didn't show what's waiting there");
+    await p.locator("#todopick [data-nwgo]").tap();
+    await fast(p, 6000, () => p.waitForFunction(() => TAB === "content"), "Open Content from the model");
+    await p.waitForTimeout(200);
+    ok(await p.evaluate(() => !RINGS.todocv.raf), "Needs you's model kept drawing after leaving Echo Home");
+    /* Analytics: the member's path at the front */
+    await p.evaluate(() => go("analytics"));
+    await fast(p, 8000, () => p.locator("#pathcv").waitFor(), "Analytics' member's path");
+    await p.waitForTimeout(400);
+    ok(await drawn("#pathcv"), "the member's path model is blank");
+    ok((await p.locator("#pathcard .sm-list .gl-n").allInnerTexts()).map((t) => t.replace(/^\d+ /, "")).join(" ") === "Arrive Join See Make Respond Earn Trade Talk", "the path isn't the Blueprint's eight stages in order");
+    ok(await p.evaluate(() => { const a = document.querySelector("#pathcard").getBoundingClientRect().top, t = document.querySelector("[data-atab]").getBoundingClientRect().top; return a < t; }), "the member's path isn't at the front of Analytics");
+    await p.locator('#pathcard .sm-list [data-nwk="join"]').tap(); await p.waitForTimeout(300);
+    ok(/Join/.test(await p.locator("#pathpick").innerText()) && /haven't posted/.test(await p.locator("#pathpick").innerText()) && /Resend/.test(await p.locator("#pathpick").innerText()), "tapping Join didn't show its needs and what it leans on");
+    await p.locator("#pathpick [data-nwgo]").tap();
+    await fast(p, 6000, () => p.waitForFunction(() => TAB === "people"), "Open Members from the path");
+    await p.unroute("**/api/admin/network**");
   });
   await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {
     await p.evaluate(() => localStorage.removeItem("tnl-token"));   // signed out (the step before signed this phone in)

@@ -1,4 +1,4 @@
-/* LABS admin v4.5 — 2026-11-04 (five groups, eleven sections: Market = Orders · Listings · Sellers, Health = Health · Systems; the phone's sheet grouped; old links land on the tab — SUBTAB). v4.4 — 2026-11-04 (Echo Home: the admin opens on Echo — admin-app/2-echo-home.js; the help desk section is "Help desk"). v4.3 — 2026-11-04 (Knowledge: what LABS knows about itself, admin-app/4-knowledge.js). v4.2 — 2026-11-04 (Echo, the help desk, is a section: admin-app/4-echo.js). v4.1 — 2026-10-28 (charts: readable dates and numbers, round scale); v4.0 — 2026-10-20. "Make it more like Shopify's admin, with
+/* LABS admin v4.6 — 2026-11-04 (Systems up front: its own section, second in the sidebar and in the phone's bar, opening on the spinning map; Health is Health again). v4.5 — 2026-11-04 (five groups, eleven sections: Market = Orders · Listings · Sellers, Health = Health · Systems; the phone's sheet grouped; old links land on the tab — SUBTAB). v4.4 — 2026-11-04 (Echo Home: the admin opens on Echo — admin-app/2-echo-home.js; the help desk section is "Help desk"). v4.3 — 2026-11-04 (Knowledge: what LABS knows about itself, admin-app/4-knowledge.js). v4.2 — 2026-11-04 (Echo, the help desk, is a section: admin-app/4-echo.js). v4.1 — 2026-10-28 (charts: readable dates and numbers, round scale); v4.0 — 2026-10-20. "Make it more like Shopify's admin, with
    graphs; one tailored for mobile and one for computer; compare against
    Instagram analytics." Ten sections named by what you manage — Home ·
    Orders · Listings · Sellers · Members · Content · Events · Analytics ·
@@ -20,11 +20,11 @@ let ME = null, TAB = "echohome", RANGE = 30, D = {}, TOASTT = null;
 /* the sections, in groups (the sidebar shows the groups; the phone's bar shows the first four and More) */
 const TABS = [["echohome", "Echo"], ["home", "Home"], ["market", "Market"], ["orders", "Orders"], ["listings", "Listings"], ["sellers", "Sellers"],
   ["people", "Members"], ["content", "Content"], ["events", "Events"], ["instagram", "Instagram"], ["echo", "Help desk"], ["analytics", "Analytics"], ["health", "Health"], ["systems", "Systems"], ["knowledge", "Knowledge"], ["settings", "Settings"]];
-const GROUPS = [["Echo", ["echohome"]], ["The shop", ["market"]], ["People", ["people", "content", "events", "instagram"]], ["LABS itself", ["knowledge", "echo", "settings"]], ["Under the hood", ["analytics", "health"]]];
-const PHONE_BAR = ["echohome", "market", "people"];
+const GROUPS = [["Echo", ["echohome", "systems"]], ["The shop", ["market"]], ["People", ["people", "content", "events", "instagram"]], ["LABS itself", ["knowledge", "echo", "settings"]], ["Under the hood", ["analytics", "health"]]];
+const PHONE_BAR = ["echohome", "systems", "market", "people"];   // Systems up front (2026-11-04: "I said I wanted this at the front of the admin dashboard" — the spinning map)
 /* old links and old data-go targets still land somewhere sensible */
 /* old links and old data-go targets still land somewhere sensible; a folded section opens on its tab (SUBTAB is read by 5-market and 7-systems5-health) */
-const OLD_TABS = { today: "home", system: "settings", orders: "market", listings: "market", sellers: "market", systems: "health" };
+const OLD_TABS = { today: "home", system: "settings", orders: "market", listings: "market", sellers: "market" };
 let SUBTAB = "";
 try { const raw = location.hash.slice(1), h = OLD_TABS[raw] || raw; if (TABS.some(([k]) => k === h)) { TAB = h; SUBTAB = raw; } RANGE = +localStorage.getItem("tnl-admin-range") || 30; } catch (e) {}
 let MORE = false;   // the phone's More sheet
