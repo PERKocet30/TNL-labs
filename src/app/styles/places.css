@@ -1,4 +1,4 @@
-/* PLACES v1.5 — 2026-10-28 ("Led by" under the pitch) · v1.4 — 2026-10-21 (month markers, Older) · v1.3 — 2026-10-12 (v1.3: the Tournament chip and Entry marks, at the end). v1.2 — 2026-10-09 ("For you" / "More labs" on the index). Labs as places: the index (one list, each
+/* PLACES v1.6 — 2026-11-05 (the design language: shimmer tiles sit flush, Try again) · v1.5 — 2026-10-28 ("Led by" under the pitch) · v1.4 — 2026-10-21 (month markers, Older) · v1.3 — 2026-10-12 (v1.3: the Tournament chip and Entry marks, at the end). v1.2 — 2026-10-09 ("For you" / "More labs" on the index). Labs as places: the index (one list, each
    genre with its #tags), a lab's Work · Talk tabs, the #tag page, and #tags
    in text. Square grid, underline tabs, pills — in TNL's white, black
    and green. Logic: app/labs/places.js. */
@@ -69,3 +69,7 @@
 /* a Lead's profile line (app/profile/profile) */
 .pig-lead{color:var(--dim);font-size:13px;margin:0 0 4px}
 .pig-lead button{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--tx);cursor:pointer}
+
+/* 2026-11-05: the design language — the shimmering tiles sit flush in the grid; a failure's Try again */
+.pl-tile.sk-img{margin:0}
+.pl-retry{margin-top:12px}

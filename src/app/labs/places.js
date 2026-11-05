@@ -1,5 +1,5 @@
 /* ================================================================
-   PLACES v1.11 — 2026-10-28 (Work says who leads the lab — "Led by"); v1.10 — 2026-10-27 (Fashion covers modeling and styling too); v1.9 — 2026-10-21 (the Work grid is the archive: month markers, Older; the archive is a chip, no search); v1.8 — 2026-10-20 (the #tag page's head from the screen kit); v1.7 — 2026-10-15 (v1.7: links name the lab — /l/visual, LAB_SLUG). v1.6: each lab says what to do there, and has
+   PLACES v1.12 — 2026-11-05 (the design language: Older shimmers instead of "Loading…", a failure has Try again, the work lands); v1.11 — 2026-10-28 (Work says who leads the lab — "Led by"); v1.10 — 2026-10-27 (Fashion covers modeling and styling too); v1.9 — 2026-10-21 (the Work grid is the archive: month markers, Older; the archive is a chip, no search); v1.8 — 2026-10-20 (the #tag page's head from the screen kit); v1.7 — 2026-10-15 (v1.7: links name the lab — /l/visual, LAB_SLUG). v1.6: each lab says what to do there, and has
    a Share — LAB_PITCH, shareLab; a shared /l/ link lands in the lab).
    v1.5 — 2026-10-12 (v1.5: the tournament running in a lab is a
    chip in its Work — every entry, no #tag needed — and entries are marked).
@@ -130,7 +130,10 @@ async function loadPlace(){
   if(LAB&&LAB.id===lab&&placeKey()===key)paintPlace();
 }
 /* Repaint just the tab's body: the header and your place stay put. */
-function paintPlace(){const b=$("#plbody");if(b){b.innerHTML=placeBodyHTML();wirePlace()}else render()}
+function paintPlace(){const b=$("#plbody");if(!b)return render();
+  /* LAND (design language, 2026-11-05): the shimmer gave way to the work, so the tiles rise in */
+  const had=!!b.querySelector(".sk-img:not(.pl-more)");b.innerHTML=placeBodyHTML();wirePlace();
+  if(had&&!b.querySelector(".sk-img")&&!mvReduced()){b.classList.add("mv-land");setTimeout(()=>b.classList.remove("mv-land"),900)}}
 
 function placeTabsHTML(){
   return `<div class="pl-tabs" role="tablist">${PLV.map(([k,n])=>{const on=LABVIEW===k||(k==="work"&&LABVIEW==="archive");
@@ -156,7 +159,8 @@ function plGridHTML(list,more){
 const plEvChip=(ev,on)=>`<button class="pl-chip ev ${on?"on":""}" data-pltag="event:${esc(ev.slug)}" aria-label="${esc(ev.title)}">Tournament<span>${ev.n}</span></button>`;
 const plChip=(t,on,n)=>`<button class="pl-chip ${on?"on":""}" data-pltag="${esc(t)}">${t?"#"+esc(t):"All"}${n?`<span>${n}</span>`:""}</button>`;
 const plEmpty=(h,p)=>`<div class="empty estate"><div class="eh">${esc(h)}</div><div class="ep">${esc(p)}</div></div>`;
-const plErr=d=>d&&d.error?plEmpty("Couldn't load this.",d.error):"";
+/* a failure says what happened and offers the way forward (design language: no dead ends) */
+const plErr=d=>d&&d.error?`<div class="empty estate"><div class="eh">Couldn't load this.</div><div class="ep">${esc(d.error)}</div><button class="btn ghost sm pl-retry" data-plretry>Try again</button></div>`:"";
 /* A genre's tags: its own (the ones that explain it) first, then
    whatever else people tag their work with here. */
 async function loadLabTags(){if(LABTAGSBUSY)return;LABTAGSBUSY=true;
@@ -207,6 +211,9 @@ function wirePlace(){
   on("#plarchive",()=>setLabView("archive"));
   on("#plolder",()=>plOlder());
   on("#plwork",()=>setLabView("work"));
+  document.querySelectorAll("[data-plretry]").forEach(b=>b.onclick=()=>{
+    if(TAGVIEW){TAGVIEW.d=null;render();loadTag(TAGVIEW.tag);return}
+    if(LAB){const P=PLACE[LAB.id];if(P)delete P[placeKey()];paintPlace();loadPlace()}});
   if(TAGVIEW){on("#tagback",()=>navBack(closeTag));
     document.querySelectorAll("[data-taglab]").forEach(b=>b.onclick=()=>openLab(b.dataset.taglab,"work",TAGVIEW.tag))}
 }
@@ -214,7 +221,9 @@ function wirePlace(){
 async function plOlder(){
   if(PLOLDERBUSY||!LAB||LABVIEW!=="work")return;const lab=LAB.id,key=placeKey(),P=PLACE[lab]||{},d=P[key];
   if(!d||!d.more||!d.posts.length)return;
-  const b=$("#plolder");if(b){b.disabled=true;b.textContent="Loading…"}
+  /* the next tiles shimmer where they'll land — never "Loading…" (design language) */
+  const b=$("#plolder");if(b){const g=b.previousElementSibling;
+    if(g&&g.classList.contains("pl-grid"))g.insertAdjacentHTML("beforeend",Array.from({length:3},()=>`<i class="pl-tile sk-img pl-more"></i>`).join(""));b.remove()}
   PLOLDERBUSY=true;
   try{const last=d.posts[d.posts.length-1],n=await papi.work(lab,LABTAG,last.createdAt);
     const seen=new Set(d.posts.map(p=>p.id));d.posts.push(...n.posts.filter(p=>!seen.has(p.id)));d.more=n.more}
@@ -232,8 +241,9 @@ function openTag(t){
   pushView("tag",t);
   const from={tab:TAB,lab:TAB==="labs"&&LAB?LAB.id:null,view:LABVIEW,tag:LABTAG};
   TAB="labs";LAB=null;ROOMOPEN=false;TAGVIEW={tag:t,d:null,from};PROFILE=null;POSTOPEN=null;OPENCOMMENTS=null;render();
-  papi.tag(t).then(d=>{if(TAGVIEW&&TAGVIEW.tag===t){TAGVIEW.d=d;render()}}).catch(e=>{if(TAGVIEW&&TAGVIEW.tag===t){TAGVIEW.d={error:e.message};render()}});
+  loadTag(t);
 }
+function loadTag(t){papi.tag(t).then(d=>{if(TAGVIEW&&TAGVIEW.tag===t){TAGVIEW.d=d;render()}}).catch(e=>{if(TAGVIEW&&TAGVIEW.tag===t){TAGVIEW.d={error:e.message};render()}})}
 /* Back from a tag page lands where you came from — the lab and tab, or
    the Showroom. */
 function closeTag(){const f=TAGVIEW&&TAGVIEW.from;TAGVIEW=null;if(!f)return;TAB=f.tab;
