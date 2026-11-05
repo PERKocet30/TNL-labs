@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 const R = (f) => readFileSync(new URL("../" + f, import.meta.url), "utf8");
-const w = R("src/app/compose/composer-walk.js"), comp = R("src/app/compose/composer.js"), back = R("src/app/nav/back.js"),
+const w = R("src/app/compose/composer-walk.js"), src = w, comp = R("src/app/compose/composer.js"), back = R("src/app/nav/back.js"),
   mo = R("src/app/nav/motion.js"), q = R("src/app/compose/queue.js"), order = R("src/app/order.mjs"), css = R("src/app/styles/compose.css");
 
 console.log("\nTHE STEPS");
@@ -25,7 +25,7 @@ t("…except while tagging people on it", comp.includes('" pcw-details"+(c.tagMo
 console.log("\nWHERE IT BELONGS");
 t("one tap picks its lab — your labs first, each with what it's for; tap again takes it out", /labsOrdered\(\)\.map/.test(w) && /LAB_ID\[l\.id\]\|\|\{\}\)\.for/.test(w) && /if\(pcwLabId\(c\)===l\.id\)c\.ch=null/.test(w) && /const h=labHome\(l\);c\.ch=\{id:h\.id,label:l\.name,lab:l\.name\}/.test(w));
 t("#tags people use in that lab, one tap each (a shimmer while they load)", /papi\.tags\(lab,""\)/.test(w) && /pcw-sk/.test(w));
-t("…or your own", w.includes('id="pcwtagq" placeholder="Add your own"'));
+t("…or your own", /id="pcwtagq"[^>]*placeholder="Add your own"/.test(w));
 t("skippable — it stays on your profile", w.includes('id="pcwskip">Skip — just my profile'));
 t("never explains the ranking", !/showroom|rank|feature|boost/i.test(w.slice(w.indexOf("function pcwHTML"))));
 
@@ -44,5 +44,6 @@ T.pcwToggleTag(c, "a"); t("too short says so", /2–30/.test(toasted));
 c.body = Array.from({ length: 10 }, (_, i) => "#tag" + i).join(" "); toasted = ""; T.pcwToggleTag(c, "more"); t("ten is the most", /Up to 10/.test(toasted) && !c.body.includes("#more"));
 t("read the way the labs read them (not inside a link)", T.pcwTags("see https://x.com/#frag and #real").join() === "real");
 
+t("your own #tag survives a repaint while you type", /value="\$\{esc\(c\.pcwQ\|\|""\)\}"/.test(src) && /oninput=\(\)=>\{c\.pcwQ=tq\.value\}/.test(src));
 console.log(`\n  ${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

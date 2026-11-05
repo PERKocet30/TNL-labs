@@ -1,4 +1,4 @@
-/* ── POST WALKTHROUGH · v1.0 — 2026-11-05 ─────────────────────────────
+/* ── POST WALKTHROUGH · v1.1 — 2026-11-05 (your own #tag survives the suggestions landing while you type) · v1.0 ─────────────────────────────
    "Make the post composer walk you through the posting process like
    Instagram and the onboarding process or the product listing." And,
    minutes before: "if people don't send their work inside labs and use
@@ -39,7 +39,10 @@ async function pcwSuggest(c){
   c.pcwSugFor=lab;c.pcwSug=null;
   let tg=[];try{tg=(await papi.tags(lab,"")).tags||[]}catch(e){}
   if(PCOMPOSE!==c||c.pcwSugFor!==lab)return;
-  c.pcwSug=tg.slice(0,12).map(t=>t.tag);if(pcwStep(c)==="place")render();
+  c.pcwSug=tg.slice(0,12).map(t=>t.tag);if(pcwStep(c)!=="place")return;
+  /* landing mid-word keeps the keyboard up and the caret where it was */
+  const typing=document.activeElement&&document.activeElement.id==="pcwtagq";render();
+  if(typing){const q=$("#pcwtagq");if(q){q.focus();try{q.setSelectionRange(q.value.length,q.value.length)}catch(e){}}}
 }
 function pcwToggleTag(c,raw){
   const t=String(raw||"").toLowerCase().replace(/^#+/,"").replace(/[^a-z0-9_]/g,"").slice(0,30);
@@ -75,7 +78,7 @@ function pcwHTML(c,media){
       <h2 class="pcw-h">#Tags</h2>
       <div class="pcw-tags">${sug===null&&!mine.length?`<span class="pcw-sk"></span><span class="pcw-sk"></span><span class="pcw-sk"></span>`
         :all.map(t=>`<button type="button" class="chip pcw-tag${mine.includes(t)?" on":""}" data-pcwtag="${esc(t)}" aria-pressed="${mine.includes(t)}">#${esc(t)}</button>`).join("")}</div>
-      <form class="pcw-add" id="pcwtagf"><span class="pc-hash">#</span><input id="pcwtagq" placeholder="Add your own" autocomplete="off" autocapitalize="off" maxlength="31" enterkeyhint="done"><button class="btn sm ghost" type="submit">Add</button></form>
+      <form class="pcw-add" id="pcwtagf"><span class="pc-hash">#</span><input id="pcwtagq" value="${esc(c.pcwQ||"")}" placeholder="Add your own" autocomplete="off" autocapitalize="off" maxlength="31" enterkeyhint="done"><button class="btn sm ghost" type="submit">Add</button></form>
     </div>`;
     bar=`${!on&&!mine.length?`<button type="button" class="sw-skip" id="pcwskip">Skip — just my profile</button>`:""}<button class="gx-btn" id="pcwnext">Next</button>`;
   }
@@ -99,7 +102,9 @@ function pcwWire(c){
     else{const h=labHome(l);c.ch={id:h.id,label:l.name,lab:l.name}}
     pcwSuggest(c);render()});
   document.querySelectorAll("[data-pcwtag]").forEach(b=>b.onclick=()=>{pcwToggleTag(c,b.dataset.pcwtag);render()});
-  const f=$("#pcwtagf");if(f)f.onsubmit=e=>{e.preventDefault();const q=$("#pcwtagq");if(!q||!q.value.trim())return;
+  /* what you're typing survives a repaint (the suggestions landing mid-word used to wipe it) */
+  const tq=$("#pcwtagq");if(tq)tq.oninput=()=>{c.pcwQ=tq.value};
+  const f=$("#pcwtagf");if(f)f.onsubmit=e=>{e.preventDefault();const q=$("#pcwtagq");if(!q||!q.value.trim())return;c.pcwQ="";
     const t=q.value.trim().toLowerCase().replace(/^#+/,"").replace(/[^a-z0-9_]/g,"");
     if(!pcwTags(c.body).includes(t)){pcwToggleTag(c,t);if(!pcwTags(c.body).includes(t))return}
     render();const q2=$("#pcwtagq");if(q2)q2.focus()};
