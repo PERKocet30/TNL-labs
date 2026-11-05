@@ -132,7 +132,7 @@ function inboxItems(now) {
   const lastBackup = (() => { try { return Math.max(0, ...readdirSync(join(DATA_DIR, "backups")).filter((f) => f.endsWith(".db"))
     .map((f) => statSync(join(DATA_DIR, "backups", f)).mtimeMs)); } catch { return 0; } })();
   if (now - lastBackup > 36 * 3600000) items.push({ kind: "backup", level: "high", text: lastBackup ? "No backup in 36 hours" : "No backups yet", go: "system" });
-  const errors = aone(`SELECT COUNT(*) n FROM error_log WHERE created_at > ?`, now - ADAY);
+  const errors = aone(`SELECT COUNT(*) n FROM error_log WHERE created_at > ? AND kind != 'foreign'`, now - ADAY);
   if (errors) items.push({ kind: "errors", level: errors > 20 ? "high" : "mid", n: errors, text: `${errors} error${errors === 1 ? "" : "s"} in the last 24h`, go: "system" });
   const pending = aone(`SELECT COUNT(*) n FROM collaborators WHERE status = 'pending' AND created_at < ?`, now - 3 * ADAY);
   if (pending) items.push({ kind: "collabs", level: "mid", n: pending, text: `${pending} collab invite${pending === 1 ? "" : "s"} waiting 3+ days`, go: "people" });

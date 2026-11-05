@@ -37,7 +37,7 @@ app.get("/api/report/daily", rateLimit({ max: 20, windowMs: 60000 }), (req, res)
     dayBefore: n(`SELECT COUNT(*) n FROM ${table} WHERE created_at >= ? AND created_at < ?`, d2, d1) });
 
   const errors = {
-    last24h: n(`SELECT COUNT(*) n FROM error_log WHERE created_at >= ?`, d1),
+    last24h: n(`SELECT COUNT(*) n FROM error_log WHERE created_at >= ? AND kind != 'foreign'`, d1),
     byKind: db.prepare(`SELECT kind, COUNT(*) n FROM error_log WHERE created_at >= ? GROUP BY kind ORDER BY n DESC`).all(d1),
     top: db.prepare(`SELECT kind, message, MAX(path) path, COUNT(*) n, COUNT(DISTINCT NULLIF(username, '')) people, MAX(created_at) last
       FROM error_log WHERE created_at >= ? GROUP BY kind, message ORDER BY n DESC LIMIT 8`).all(d1)
