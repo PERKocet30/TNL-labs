@@ -1761,6 +1761,21 @@ console.log("\nMEMBER · PHONE");
     ok(after.length === 1 && after[0].reason === "Spam", "the report didn't reach the admin once: " + JSON.stringify(after.map((r) => r.reason)) + " (before: " + before + ")");   // run again (the computer frame) it's the same report, updated
     ok(await p.evaluate(() => !document.querySelector(".ui-ov") && !PICKER && !CMENU), "something was left open after the report");
   });
+  await step(d, "a Showroom card says who liked it, like Instagram: your like puts your face in 'Liked by …', and a tap opens everyone", async () => {
+    await p.evaluate(() => { closeMenu(); PICKER = null; POSTOPEN = null; PROFILE = null; TAB = "showroom"; render(); });
+    const id = await p.evaluate(() => { const c = SRPOSTS.find((x) => x.author.username === "friend"); return c && c.id; });
+    const card = p.locator(`.sr-card[data-pid="${id}"]`);
+    await card.scrollIntoViewIfNeeded();
+    if (!(await p.evaluate((i) => SRPOSTS.find((x) => x.id === i).likedByMe, id))) await card.locator("[data-like]").tap();
+    await p.waitForTimeout(800);
+    const line = card.locator(".px-likedby");
+    ok(await line.count() === 1, "no 'Liked by' line on the card");
+    ok(/Liked by/.test(await line.innerText()) && await line.locator(".lb-avs .av").count() >= 1, "the line doesn't say who, with a face: " + (await line.innerText()));
+    await line.tap();
+    await p.waitForFunction(() => PICKER && PICKER.title === "Likes" && !PICKER.loading, null, { timeout: 6000 });
+    ok(await p.evaluate(() => PICKER.items.length >= 1), "the list of who liked it is empty");
+    await p.evaluate(() => { closePicker(); });
+  });
   await step(d, "Report a problem (the app itself): a few words and the screen it happened on reach the admin", async () => {
     await p.evaluate(() => { reportProblem(); });
     await p.waitForSelector(".ui-ov .ui-in", { timeout: 5000 });

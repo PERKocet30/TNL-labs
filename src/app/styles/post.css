@@ -30,3 +30,9 @@
 .px-likers{display:block;margin-top:8px;padding:0;border:0;background:none;color:inherit;font:inherit;font-size:14px;line-height:18px;font-weight:700;text-align:left;cursor:pointer}
 .px-likers.zero{font-weight:400;color:var(--dim)}
 .px-likers.theirs.zero{visibility:hidden}
+/* "Liked by … and N others" on a Showroom card (2026-11-04) */
+.px-likedby{display:flex;align-items:center;gap:8px;margin:2px 0 6px;padding:0;border:0;background:none;color:inherit;font:inherit;font-size:14px;line-height:18px;text-align:left;cursor:pointer;min-height:22px}
+.px-likedby b{font-weight:700}
+.lb-avs{display:flex;flex:none}
+.lb-avs .av{width:20px;height:20px;font-size:8px}
+.lb-avs .av+.av{margin-left:-7px}

@@ -51,6 +51,32 @@ t("'Report a problem' (the app): needs words, keeps the screen name, never stack
 t("the screen name is a plain name — nothing else gets through", (send("ana", { kind: "app", reason: "Broken", detail: "<img src=x onerror=alert(1)> and more" }), !/[<>()=]/.test(last().detail)));
 t("the admin list says what each report is about", dash.includes("WHEN 'comment' THEN (SELECT body FROM comments WHERE id = r.target_id)") && readFileSync(join(ROOT, "public/admin-app/4-content.js"), "utf8").includes('const REPORT_KIND = { post: "Post", user: "Person", comment: "Comment", listing: "Listing", track: "Song", app: "Problem" }'));
 
+console.log("\nLIKED BY — on the Showroom card, like Instagram / X");
+const sm = readFileSync(join(ROOT, "src/server/profile/social-meta.js"), "utf8");
+const li = sm.indexOf("function likedByPreview("), lj = sm.indexOf("const viewerUsername = (id) =>"), lk = sm.indexOf("\n", lj);
+const blocks = new Set();
+const L = new Function("db", "blockedIds", "accentHex", sm.slice(li, lk) + "\nreturn likedByPreview;")(db, () => blocks, (a) => a || "#98FC68");
+for (const n of ["cam", "dee", "eve"]) u[n] = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at) VALUES (?,?,?,?,?)`).run(n, n, n + "@x.test", "x", now).lastInsertRowid);
+const lp = Number(db.prepare(`INSERT INTO posts (author_id, channel, body, created_at) VALUES (?, 'showroom', 'liked', ?)`).run(u.ben, now).lastInsertRowid);
+const like = (who, ago) => db.prepare(`INSERT INTO likes (post_id, user_id, created_at) VALUES (?,?,?)`).run(lp, u[who], now - ago);
+like("cam", 10); like("dee", 20); like("eve", 30); like("ana", 40);
+db.prepare(`INSERT INTO follows (follower_id, followee_id, created_at) VALUES (?,?,?)`).run(u.ana, u.eve, now);
+const card = (extra = {}) => ({ id: lp, likeCount: 4, hideLikes: false, author: { username: "ben" }, ...extra });
+let [c] = L([card()], u.ana);
+t("the card carries up to three who liked it — someone you follow first, then the newest", c.likedBy.map((x) => x.username).join() === "eve,cam,dee");
+t("…their name and face, nothing more (no email, no id)", Object.keys(c.likedBy[0]).sort().join() === "accent,accentHex,avatarUrl,displayName,username");
+blocks.add("eve"); [c] = L([card()], u.ana); blocks.clear();
+t("someone on either side of a block with you is never named", !c.likedBy.some((x) => x.username === "eve") && c.likedBy.length === 3);
+[c] = L([card({ hideLikes: true })], u.ana);
+t("a post whose maker hid its likes names nobody…", c.likedBy === undefined);
+[c] = L([card({ hideLikes: true })], u.ben);
+t("…except to the maker", c.likedBy.length === 3);
+[c] = L([card()], 0);
+t("signed out: nobody named", c.likedBy === undefined);
+[c] = L([card({ likeCount: 0 })], u.ana);
+t("no likes: nothing to say", c.likedBy === undefined);
+t("the Showroom feed sends it", readFileSync(join(ROOT, "src/server/posts/collabs-showroom.js"), "utf8").includes("likedByPreview(shapePosts("));
+
 console.log("\nTHE APP");
 const page = readFileSync(join(ROOT, "public/index.html"), "utf8");
 const fn = (name) => { const a = page.indexOf("function " + name + "("); return a < 0 ? "" : page.slice(a, page.indexOf("\nfunction ", a + 1)); };
@@ -61,6 +87,9 @@ t("the flag on an opened post opens the same report", page.includes('b.onclick=(
 t("Instagram's kind of reasons, plus 'something's broken', and reasons that fit each thing", ["Spam", "Scam or fraud", "Stolen work", "Nudity or sexual content", "Hate or harassment", "Violence or threats", "Not allowed for sale", "False information", "Broken", "Something else", "Counterfeit", "Misleading", "Pretending to be someone"].every((r) => rep.includes(`["${r}",`)) && ["post:", "comment:", "user:", "listing:", "track:"].every((k) => rep.includes(k + "[[")));
 t("everywhere: a comment's flag, a profile's Report, a chat's Report @name, a listing's Report listing, a song's Report", page.includes('data-crep="${c.id}"') && page.includes('reportThing({kind:"user",username:u.username})') && page.includes('id="csreport"') && page.includes('on("csreport"') && page.includes('data-mrep="${l.id}"') && page.includes('reportThing({kind:"track",id:t.id'));
 t("'Report a problem' in your settings and on a post that didn't send, with the screen it happened on", page.includes('label:"Report a problem",run:()=>reportProblem()') && page.includes('data-repfail=') && rep.includes("screen=uiScreen()") && rep.includes('kind:"app"'));
+t("a tournament entry you opened has the flag too (it's a post)", page.includes('data-evrep="${e.postId}"') && page.includes('reportThing({kind:"post",id:+b.dataset.evrep'));
+t("the Showroom card says 'Liked by <someone> and N others' with their faces, and a tap opens everyone", fn("srCardHTML").includes("${pxLikedByHTML(p)}") && page.includes('class="px-likedby" data-likers="${p.id}"') && page.includes("Liked by <b>") && page.includes('class="lb-avs"'));
+t("…hidden likes and no likes show nothing; a like of yours puts your face in straight away", fn("pxLikedByHTML").includes("if(p.hideLikes&&p.author.username!==myName())return") && fn("pxLikedByHTML").includes("!p.likeCount)return") && page.includes("lp.forEach(p=>pxLikedBySync(p,liked))"));
 t("a chat is reported as the person — no message goes with it", !/(message|text|body)/.test(page.slice(page.indexOf('on("csreport"'), page.indexOf("\n", page.indexOf('on("csreport"'))).split("//")[0]));
 t("stolen work, broken, misleading, impersonation and something else ask for a few words (optional; Cancel sends nothing)", rep.includes('const REPORT_MORE=["Stolen work","Broken","Something else","Misleading","Pretending to be someone"]') && rep.includes("if(more===null)return;"));
 t("after a report, a thank-you that offers to block (but a bug just says thanks)", rep.includes('"Thanks for letting us know"') && rep.includes("api.block(username)") && rep.includes('if(it.reason==="Broken"){toast("Thanks — we\'ll fix it");return}'));

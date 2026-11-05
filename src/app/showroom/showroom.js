@@ -11,7 +11,7 @@ function showroomHTML(){return `<div class="scroll" id="showroom">
   <div class="sr-gridwrap">${galNavHTML()}<div class="sr-grid${galOn()?" sr-wall":""}" id="sr-grid">${SRPOSTS.length?SRPOSTS.map(srCardHTML).join(""):skel("cards")}</div></div>
 </div>`}
 
-/* SHOWROOM CARD v1.3 — 2026-11-04: a ··· on every card (Report, Send to…, and your own post's Edit / Delete), like Instagram. v1.2 — 2026-10-28: no loops — a card with no picture or video shows its words (the server keeps those off the wall anyway); v1.1 — 2026-10-14: the first card's picture loads right away
+/* SHOWROOM CARD v1.4 — 2026-11-04: "Liked by <someone> and N others" under the buttons, with their faces — a tap shows everyone (like Instagram / X). v1.3 — 2026-11-04: a ··· on every card (Report, Send to…, and your own post's Edit / Delete), like Instagram. v1.2 — 2026-10-28: no loops — a card with no picture or video shows its words (the server keeps those off the wall anyway); v1.1 — 2026-10-14: the first card's picture loads right away
    (it's the first thing anyone sees); every other picture waits until it's near. */
 function srCardHTML(p,i){
   const ld=i===0?'loading="eager" fetchpriority="high"':'loading="lazy"';
@@ -46,6 +46,7 @@ function srCardHTML(p,i){
         ${p.author.username===myName()?`<button class="igact" data-collab="${p.id}" aria-label="Invite a collaborator" title="Invite a collaborator">${IG_COLLAB}</button>`:""}
         ${p.collaborators.find(c=>c.username===myName()&&c.status==="pending")?`<button class="igpill" data-accept="${p.id}">Accept collab</button>`:""}
       </div>
+      ${pxLikedByHTML(p)}
       ${p.body?`<div class="sr-body"><b data-u="${esc(p.author.username)}">${esc(p.author.username)}</b> ${capHTML(p.body)}</div>`:""}
       <div class="post-when">${igAgo(p.createdAt)}${p.editedAt?" · Edited":""}</div>
       <div class="cslot" data-cslot="${p.id}">${cslotHTML(p)}</div>

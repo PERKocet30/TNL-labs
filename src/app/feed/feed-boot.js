@@ -11,7 +11,11 @@ function setLike(id,liked,count){
   document.querySelectorAll('[data-like="'+id+'"]').forEach(b=>{
     if(liked!=null)b.classList.toggle("on",liked);
     const n=b.querySelector(".igact-n");if(n){const p=likeCopies(id)[0];n.textContent=(p&&p.hideLikes&&p.author&&p.author.username!==myName())?"":(count||"")}});
-  document.querySelectorAll('[data-likers="'+id+'"]').forEach(b=>{b.textContent=pxLikersText(count);b.classList.toggle("zero",!count)});   // "12 likes" under the post
+  const lp=likeCopies(id);if(liked!=null)lp.forEach(p=>pxLikedBySync(p,liked));
+  document.querySelectorAll('[data-likers="'+id+'"]').forEach(b=>{
+    if(b.classList.contains("px-likedby")){const h=lp[0]?pxLikedByHTML(lp[0]):"";if(h)b.outerHTML=h;else b.remove();return}   // "Liked by …" on a Showroom card
+    b.textContent=pxLikersText(count);b.classList.toggle("zero",!count)});   // "12 likes" under the post
+  if(count)document.querySelectorAll('.sr-card[data-pid="'+id+'"] .sr-acts').forEach(a=>{if(!a.parentElement.querySelector(".px-likedby")&&lp[0])a.insertAdjacentHTML("afterend",pxLikedByHTML(lp[0]))});
 }
 async function sendLike(id){
   const s=LIKING[id];if(!s||s.busy)return;
