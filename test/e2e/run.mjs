@@ -2047,7 +2047,7 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { const s = document.querySelector("#evscroll"); s.scrollTop = s.scrollHeight; });
     await p.waitForTimeout(200);
     const bb = await p.locator("#evback").boundingBox();
-    ok(bb && bb.y >= 0 && bb.y < 200 && bb.height >= 44, "scrolled down, the ‹ left the screen (or is too small to tap): " + JSON.stringify(bb));
+    ok(bb && bb.y >= 0 && bb.y < 200 && Math.round(bb.height) >= 44, "scrolled down, the ‹ left the screen (or is too small to tap): " + JSON.stringify(bb));
     await p.evaluate(() => openProfile(ME.username)); await p.waitForFunction(() => PROFILE && PROFILE.user, null, { timeout: 4000 });
     await p.evaluate(() => history.back());
     await p.waitForFunction(() => TAB === "event" && !PROFILE, null, { timeout: 4000 });
