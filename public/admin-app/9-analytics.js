@@ -9,7 +9,7 @@ const ATABS = [["members", "Members"], ["reach", "Reach"], ["commerce", "Commerc
 LOADERS.analytics = async () => {
   const q = pulseURL();
   const [p, d, sr, au, fu, re, m] = await Promise.all([req(q), req(q.replace("/pulse", "/direction")), req(q.replace("/pulse", "/series")), req(q.replace("/pulse", "/audience")),
-    req("/api/admin/funnel"), req("/api/admin/retention"), req("/api/admin/market")]);
+    req("/api/admin/funnel"), req("/api/admin/retention"), req("/api/admin/market"), nwLoad()]);   // nwLoad: the member's path at the front (2-network.js)
   Object.assign(D, { pulse: p, dir: d, series: sr, audience: au, funnel: fu, retention: re, market: m });
 };
 VIEWS.analytics = () => {
@@ -55,9 +55,10 @@ VIEWS.analytics = () => {
       ${card("#tags people are using", `<div class="body">${d.tags.length ? `<div class="tgs">${d.tags.map((t) => `<button class="chip tg" data-tagf="${esc(t.tag)}">#${esc(t.tag)} <span>${t.count}</span></button>`).join("")}</div>` : `<div class="empty">No #tags in this period.</div>`}</div>`)}
       <p style="margin-top:12px"><button class="btn ghost sm" data-go="studio">Studio stats ${I.chev}</button></p>`,
   };
-  return `${pageHead("Analytics", "How LABS is doing, in numbers", rangeHTML())}${subTabs(ATABS, ATAB, "data-atab")}<div style="margin-top:14px">${tabs[ATAB]()}</div>`;
+  return `${pageHead("Analytics", "How LABS is doing, in numbers", rangeHTML())}${pathCardHTML()}${subTabs(ATABS, ATAB, "data-atab")}<div style="margin-top:14px">${tabs[ATAB]()}</div>`;
 };
 WIRES.analytics = () => {
+  pathWire();   // the member's path, a spinning model at the front (2026-11-04)
   $$("[data-atab]").forEach((b) => b.onclick = () => { ATAB = b.dataset.atab; paint(); scrollTo(0, 0); });
   $$("[data-tagf]").forEach((b) => b.onclick = () => { CTAG = b.dataset.tagf; CLAB = ""; CKIND = ""; CQ = ""; D.posts = null; go("content"); });
   $$("[data-welcome]").forEach((b) => b.onclick = () => go("home"));

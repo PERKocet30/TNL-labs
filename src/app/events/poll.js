@@ -1,3 +1,4 @@
+/* v2026-11-04: Report on a piece you opened (the flag beside Share) — a tournament entry is a post (app/posts/report). */
 /* v2026-10-20: the share sheet's head comes from the screen kit */
 /* EVENT POLL (2026-10-07): a scoreboard you vote from. EVFOCUS — the piece a link opened (/?e=slug&v=id);
    EVSHARE — the share sheet for any piece (2026-10-26; was the entrant's own only); tnl-evret — back to the piece after confirming email. */
@@ -24,7 +25,7 @@ function evFocusHTML(){
   return `<div class="ev-focus">${evThumb(e,{big:true})}
     <div class="ev-fbar"><div><b data-u="${esc(e.author.username)}">@${esc(e.author.username)}</b>
       ${r?`<div class="dim ev-small">#${r.rank} · ${r.votes} ${r.votes===1?"vote":"votes"}</div>`:""}</div>
-      <div class="ev-facts"><button class="btn ghost" data-evshr="${e.id}">${DI.out} Share</button>${voting?evVoteBtn(e):""}</div></div></div>`;
+      <div class="ev-facts">${ME&&e.author.username!==myName()?`<button class="btn ghost" data-evrep="${e.postId}" data-evrepu="${esc(e.author.username)}" aria-label="Report">${DI.flag}</button>`:""}<button class="btn ghost" data-evshr="${e.id}">${DI.out} Share</button>${voting?evVoteBtn(e):""}</div></div></div>`;
 }
 function evPollHTML(){
   const B=EV.board, me=EV.me;if(!B)return evQualifyHTML();
@@ -77,6 +78,7 @@ function wireEvPoll(){
   const on=(sel,fn)=>{const el=$(sel);if(el)el.onclick=fn};
   on("#evshare",()=>evOpenShare(EV.me.entry.id));
   document.querySelectorAll("#evscroll [data-evshr]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();evOpenShare(Number(b.dataset.evshr))});
+  document.querySelectorAll("#evscroll [data-evrep]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();reportThing({kind:"post",id:+b.dataset.evrep,username:b.dataset.evrepu})});   // a tournament entry is a post (app/posts/report)
   if(!EVSHARE)return;
   const close=()=>{EVSHARE=null;render()};
   on("#evshx",close);

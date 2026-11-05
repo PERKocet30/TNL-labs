@@ -1,11 +1,13 @@
 /* ================================================================
-   LABS CONNECTOR · tools  v1.0 — 2026-10-27
+   LABS CONNECTOR · tools  v1.3 — 2026-11-04 (v1.3: echo_stats never carries a handoff's conversation; the UI-signals tools live in ui-signals/tools.js). v1.2 — 2026-11-04 (knowledge_add / knowledge_edit: Claude and Grok write to Knowledge, the one exception to read-only). v1.1 — 2026-11-04 (knowledge, read). v1.0 — 2026-10-27
    /mcp speaks MCP (JSON-RPC over HTTP, stateless) so Claude can read the
    admin dashboard like it reads GitHub or Railway. Each tool is one of
    the admin GET routes, fetched in-process with the connector key, then
    scrubbed: no emails, addresses, IPs, admin notes or keys ever leave,
    whatever a route returns. Messages (DMs, the Instagram inbox) have no
-   tool at all. Sign-in and keys: server/connector/oauth.js.
+   tool at all. The one exception to read-only (2026-11-04): two tools
+   write Knowledge entries and nothing else (MCP_WRITE_TOOLS, below).
+   Sign-in and keys: server/connector/oauth.js.
 ================================================================ */
 const MCP_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const mcpDays = { type: "integer", enum: [7, 30, 90], description: "Window in days (7, 30 or 90). Default 30." };
@@ -44,10 +46,44 @@ const MCP_TOOLS = [
   ["systems_google", "Google Search Console and Merchant Center: clicks, impressions, indexed pages, feed status.", { fresh: { type: "boolean" } }, (a) => `systems/google${a.fresh ? "?fresh=1" : ""}`],
   ["systems_meta", "Instagram and Facebook numbers: followers, reach, best posts, when followers are online, shop status. Never inbox messages.", { fresh: { type: "boolean" } }, (a) => `systems/meta${a.fresh ? "?fresh=1" : ""}`],
   ["studio", "Studio (beat maker) usage.", {}, "studio"],
+  ["knowledge", "What LABS knows about itself (server/knowledge, 2026-11-04): the creed, how LABS talks, settled decisions, the glossary, notes, sheets. Read this before writing anything in LABS's voice. Filter by kind (creed · voice · decision · glossary · note · sheet) or search.",
+    { kind: { type: "string", description: "creed · voice · decision · glossary · note · sheet" }, q: { type: "string", description: "Search text" } },
+    (a) => `knowledge?kind=${encodeURIComponent(a.kind || "")}&q=${encodeURIComponent(a.q || "")}`],
 ];
+/* The write tools (2026-11-04, "build a knowledge database from my conversations with you and
+   Grok"): the one exception to a read-only connector. Claude or Grok can add or edit a Knowledge
+   entry — the creed, a decision and its reason, a word for the glossary, a policy in human words,
+   a question and its answer — and nothing else: never members, orders, settings or posts, never
+   put away or delete. Each write names its app (knowledge.source = claude · grok), keeps the version
+   before (knowledge_history), is written to admin_log with the admin whose key it is, and counts
+   against MCP_WRITES_PER_HOUR. Jorge sees and edits everything in Admin → Knowledge; Echo answers
+   from it the moment it's saved. */
+const MCP_WRITES_PER_HOUR = 60;
+const mcpKindDesc = () => Object.entries(KNOW_KINDS).map(([k, n]) => `${k} (${n})`).join(" · ");
+const MCP_WRITE_TOOLS = [
+  ["knowledge_add", "Write something LABS should remember, in plain words, in LABS's voice: a decision and its reason, a glossary word, a policy as a person would say it, a real question and the right answer, a note on the plan. Not raw conversation — the settled outcome. Never anything from a private message, and never a member's email or address. It is live in Echo at once and Jorge can edit it in Admin → Knowledge.",
+    { kind: { type: "string", description: "One of: " + "KINDS" }, title: { type: "string", description: "A short title, 160 characters at most" }, body: { type: "string", description: "The words, up to 20000 characters" }, tags: { type: "string", description: "A few words, space-separated (optional)" } }, ["kind", "title", "body"]],
+  ["knowledge_edit", "Change an existing Knowledge entry (find its id with the knowledge tool). Only the fields you pass change; the version before is kept. Entries can't be deleted or put away from here — only in Admin → Knowledge.",
+    { id: { type: "integer" }, kind: { type: "string", description: "One of: " + "KINDS" }, title: { type: "string" }, body: { type: "string" }, tags: { type: "string" } }, ["id"]],
+];
+const mcpWriteList = () => MCP_WRITE_TOOLS.map(([name, description, props, required]) => ({ name, description,
+  inputSchema: { type: "object", properties: JSON.parse(JSON.stringify(props).replaceAll("KINDS", mcpKindDesc())), required, additionalProperties: false },
+  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: name === "knowledge_edit", openWorldHint: false } }));
+function mcpWrite(key, name, a) {
+  const source = ["claude", "grok"].includes(String(key.name || "").toLowerCase()) ? key.name.toLowerCase() : "connector";
+  const recent = db.prepare(`SELECT COUNT(*) n FROM admin_log WHERE admin_id = ? AND action LIKE 'connector knowledge%' AND created_at > ?`).get(key.user_id, Date.now() - 3600000).n;
+  if (recent >= MCP_WRITES_PER_HOUR) return { content: [{ type: "text", text: `That's ${MCP_WRITES_PER_HOUR} writes in an hour — enough for now. Try again later.` }], isError: true };
+  const r = name === "knowledge_add" ? knowAdd(a, key.user_id, source) : knowEdit(Math.max(0, Number(a.id) || 0), { ...(a.kind != null ? { kind: a.kind } : {}), ...(a.title != null ? { title: a.title } : {}), ...(a.body != null ? { body: a.body } : {}), ...(a.tags != null ? { tags: a.tags } : {}) }, key.user_id, source);
+  if (r.error) return { content: [{ type: "text", text: r.error }], isError: true };
+  const id = name === "knowledge_add" ? r.id : Number(a.id);
+  const row = db.prepare(`SELECT id, kind, title FROM knowledge WHERE id = ?`).get(id);
+  db.prepare(`INSERT INTO admin_log (admin_id, action, target, detail, created_at) VALUES (?,?,?,?,?)`).run(key.user_id, `connector ${name}`, String(id), JSON.stringify({ by: source, kind: row?.kind, title: row?.title }).slice(0, 400), Date.now());
+  console.log(`[connector] ${source} ${name === "knowledge_add" ? "added" : "edited"} knowledge #${id}: ${row?.title}`);
+  return { content: [{ type: "text", text: JSON.stringify({ ok: true, id, kind: row?.kind, title: row?.title, changed: r.changed ?? true, note: "Live in Echo now. Jorge can edit or put it away in Admin → Knowledge." }) }] };
+}
 const mcpName = (u) => { const s = String(u || "").trim().toLowerCase().replace(/^@/, ""); if (!/^[a-z0-9._]{2,20}$/.test(s)) throw new Error("That doesn't look like a username."); return s; };
-const mcpToolList = () => MCP_TOOLS.map(([name, description, props]) => ({ name, description, inputSchema: { type: "object", properties: props, additionalProperties: false },
-  annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } }));
+const mcpToolList = () => [...MCP_TOOLS.map(([name, description, props]) => ({ name, description, inputSchema: { type: "object", properties: props, additionalProperties: false },
+  annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } })), ...mcpWriteList()];
 
 /* Privacy scrub. Keys that name a person's private details are dropped wherever
    they sit; the admin log keeps action and target but not the detail. */
@@ -62,6 +98,7 @@ function mcpScrub(v, depth = 0) {
 
 /* Run one tool: fetch the admin route in-process with the same key, scrub, return text. */
 async function mcpCall(key, name, args) {
+  if (MCP_WRITE_TOOLS.some((t) => t[0] === name)) return mcpWrite(key, name, args && typeof args === "object" ? args : {});
   const tool = MCP_TOOLS.find((t) => t[0] === name);
   if (!tool) return { content: [{ type: "text", text: `No tool called ${name}.` }], isError: true };
   const a = args && typeof args === "object" ? args : {};
@@ -71,6 +108,7 @@ async function mcpCall(key, name, args) {
   const body = await r.json().catch(() => ({ error: "not json" }));
   if (!r.ok) return { content: [{ type: "text", text: `LABS said ${r.status}: ${body.error || "no detail"}` }], isError: true };
   if (name === "admin_log" && Array.isArray(body.log)) body.log = body.log.map(({ detail, ...rest }) => rest);   // what was done, not what was typed
+  if (name === "echo_stats" && Array.isArray(body.handoffs)) body.handoffs = body.handoffs.map(({ transcript, ...rest }) => rest);   // who asked for a person and when, never the conversation
   return { content: [{ type: "text", text: JSON.stringify(mcpScrub(body)) }] };
 }
 
@@ -102,7 +140,7 @@ app.post("/mcp", mcpRpcLimit, async (req, res) => {
           const asked = m.params?.protocolVersion;
           reply({ protocolVersion: MCP_VERSIONS.includes(asked) ? asked : MCP_VERSIONS[0], capabilities: { tools: { listChanged: false } },
             serverInfo: { name: "LABS", version: "1.0" },
-            instructions: "Read-only view of the LABS admin dashboard. Numbers, orders, reports, members' public stats, systems. Never messages, emails, addresses or admin notes — those have no tool. Amounts are cents. Times are Unix ms." });
+            instructions: "The LABS admin dashboard, read-only: numbers, orders, reports, members' public stats, systems, and what LABS knows about itself (knowledge). Never messages, emails, addresses or admin notes — those have no tool. The one place you can write is Knowledge (knowledge_add, knowledge_edit): settled decisions, glossary words, policies in plain words, real questions with the right answers — in LABS's voice, never raw conversation, never anything private. Amounts are cents. Times are Unix ms." });
           break;
         }
         case "ping": reply({}); break;

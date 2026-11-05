@@ -1,4 +1,4 @@
-/* MESSAGES v2.0 — 2026-09-29. The live stream.
+/* MESSAGES v2.1 — 2026-11-04 (the "echo" event: Echo's answer as it's written). v2.0 — 2026-09-29. The live stream.
    The server only streams to a signed-in member, so the app trades its
    token for a one-use ticket first (EventSource can't send headers). If
    the stream drops it reconnects with a fresh ticket, backing off. */
@@ -29,6 +29,7 @@ async function startStream(){
   on("chat-update",onChatUpdate);
   on("chat-read",d=>{if(CHAT&&CHAT.id===d.chatId&&CHAT.meta){const p=CHAT.meta.people.find(x=>x.username===d.username);if(p){p.readAt=d.at;paintFeed()}}});
   on("chat-meta",d=>{if(CHAT&&CHAT.id===d.chatId)loadChat(d.chatId);else if(DMOPENPANEL&&!CHAT)loadInbox();else refreshBadges()});
+  on("echo",d=>{if(typeof onEchoLive==="function")onEchoLive(d)});   // Echo writing its answer (app/echo/echo.js)
   on("presence",d=>{
     if(INBOX)for(const t of [...INBOX.threads,...INBOX.requests])if(t.other&&t.other.username===d.username&&"active" in t.other){t.other.active=d.active;t.other.lastSeenAt=d.at}
     const o=chatOther();if(o&&o.username===d.username&&"active" in o){o.active=d.active;o.lastSeenAt=d.at}

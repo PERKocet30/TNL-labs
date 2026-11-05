@@ -1,4 +1,4 @@
-/* LABS admin v4.1 — 2026-10-28 (charts: readable dates and numbers, round scale); v4.0 — 2026-10-20. "Make it more like Shopify's admin, with
+/* LABS admin v4.6 — 2026-11-04 (Systems up front: its own section, second in the sidebar and in the phone's bar, opening on the spinning map; Health is Health again). v4.5 — 2026-11-04 (five groups, eleven sections: Market = Orders · Listings · Sellers, Health = Health · Systems; the phone's sheet grouped; old links land on the tab — SUBTAB). v4.4 — 2026-11-04 (Echo Home: the admin opens on Echo — admin-app/2-echo-home.js; the help desk section is "Help desk"). v4.3 — 2026-11-04 (Knowledge: what LABS knows about itself, admin-app/4-knowledge.js). v4.2 — 2026-11-04 (Echo, the help desk, is a section: admin-app/4-echo.js). v4.1 — 2026-10-28 (charts: readable dates and numbers, round scale); v4.0 — 2026-10-20. "Make it more like Shopify's admin, with
    graphs; one tailored for mobile and one for computer; compare against
    Instagram analytics." Ten sections named by what you manage — Home ·
    Orders · Listings · Sellers · Members · Content · Events · Analytics ·
@@ -16,15 +16,17 @@
    server checks, not this page. */
 const API = location.origin;
 let TOKEN = null; try { TOKEN = localStorage.getItem("tnl-token"); } catch (e) {}
-let ME = null, TAB = "home", RANGE = 30, D = {}, TOASTT = null;
+let ME = null, TAB = "echohome", RANGE = 30, D = {}, TOASTT = null;
 /* the sections, in groups (the sidebar shows the groups; the phone's bar shows the first four and More) */
-const TABS = [["home", "Home"], ["orders", "Orders"], ["listings", "Listings"], ["sellers", "Sellers"],
-  ["people", "Members"], ["content", "Content"], ["events", "Events"], ["instagram", "Instagram"], ["analytics", "Analytics"], ["health", "Health"], ["systems", "Systems"], ["settings", "Settings"]];
-const GROUPS = [["Run", ["home", "orders", "listings", "sellers"]], ["People & content", ["people", "content", "events", "instagram"]], ["Understand", ["analytics", "health", "systems"]], ["Set up", ["settings"]]];
-const PHONE_BAR = ["home", "orders", "people", "content"];
+const TABS = [["echohome", "Echo"], ["home", "Home"], ["market", "Market"], ["orders", "Orders"], ["listings", "Listings"], ["sellers", "Sellers"],
+  ["people", "Members"], ["content", "Content"], ["events", "Events"], ["instagram", "Instagram"], ["echo", "Help desk"], ["analytics", "Analytics"], ["health", "Health"], ["systems", "Systems"], ["knowledge", "Knowledge"], ["settings", "Settings"]];
+const GROUPS = [["Echo", ["echohome", "systems"]], ["The shop", ["market"]], ["People", ["people", "content", "events", "instagram"]], ["LABS itself", ["knowledge", "echo", "settings"]], ["Under the hood", ["analytics", "health"]]];
+const PHONE_BAR = ["echohome", "systems", "market", "people"];   // Systems up front (2026-11-04: "I said I wanted this at the front of the admin dashboard" — the spinning map)
 /* old links and old data-go targets still land somewhere sensible */
-const OLD_TABS = { today: "home", market: "orders", system: "settings" };
-try { const h = OLD_TABS[location.hash.slice(1)] || location.hash.slice(1); if (TABS.some(([k]) => k === h)) TAB = h; RANGE = +localStorage.getItem("tnl-admin-range") || 30; } catch (e) {}
+/* old links and old data-go targets still land somewhere sensible; a folded section opens on its tab (SUBTAB is read by 5-market and 7-systems5-health) */
+const OLD_TABS = { today: "home", system: "settings", orders: "market", listings: "market", sellers: "market" };
+let SUBTAB = "";
+try { const raw = location.hash.slice(1), h = OLD_TABS[raw] || raw; if (TABS.some(([k]) => k === h)) { TAB = h; SUBTAB = raw; } RANGE = +localStorage.getItem("tnl-admin-range") || 30; } catch (e) {}
 let MORE = false;   // the phone's More sheet
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -49,13 +51,15 @@ const I = {
 /* the side menu's icons, one per section */
 const NAVI = {
   home: di('<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>', 18),
-  orders: di('<path d="M4 7h16v13H4zM8 7V4h8v3M4 12h16"/>', 18), listings: di('<path d="M4 4h16v16H4zM4 14l5-5 4 4 3-3 4 4M15 8h.01"/>', 18),
+  market: di('<path d="M4 7h16v13H4zM8 7V4h8v3M4 12h16"/>', 18), orders: di('<path d="M4 7h16v13H4zM8 7V4h8v3M4 12h16"/>', 18), listings: di('<path d="M4 4h16v16H4zM4 14l5-5 4 4 3-3 4 4M15 8h.01"/>', 18),
   sellers: di('<path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2M12 11v6M9.5 14h5"/>', 18),
   analytics: di('<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>', 18), health: di('<path d="M3 12h4l2-6 4 12 2-6h6"/>', 18),
   systems: di('<path d="M4 5h16v6H4zM4 13h16v6H4zM8 8h.01M8 16h.01"/>', 18),
   settings: di('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>', 18),
   more: di('<path d="M4 7h16M4 12h16M4 17h16"/>', 18),
   instagram: di('<rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3.5"/><path d="M16.5 7.5h.01"/>', 18),
+  echo: di('<path d="M4 12h2M8 7v10M12 4v16M16 7v10M20 10v4"/>', 18), echohome: di('<path d="M4 12h2M8 7v10M12 4v16M16 7v10M20 10v4"/>', 18),
+  knowledge: di('<path d="M4 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4zM20 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z"/>', 18),
   people: di('<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3 2.8 3 6"/>', 18),
   content: di('<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>', 18), events: di('<path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M12 14v3M8 20h8M10 17h4v3h-4z"/>', 18),
 };
@@ -176,7 +180,7 @@ function paint() {
     app.innerHTML = `<div class="gate"><div><div class="brand"><img class="bwm" src="/labs-wordmark-ink.png" alt="LABS"> Admin</div>
     <h1>Admins only</h1><p>${TOKEN ? "This account isn't an admin. Log in with one and you'll come straight back here."
       : "This browser isn't signed in — LABS on your home screen keeps its own sign-in, so email links open here signed out. Log in once and it'll remember you."}</p><a class="btn" id="adminlogin" href="${esc(back)}">Log in</a></div></div>`; return; }
-  const n = (k) => (D.pulse && k === "home" && D.pulse.inbox.length) || (D.pulse && k === "content" && (D.pulse.inbox.find((i) => i.kind === "reports") || {}).n) || (k === "instagram" && D.instagram?.unread) || 0;
+  const n = (k) => (D.pulse && (k === "home" || k === "echohome") && D.pulse.inbox.length) || (D.pulse && k === "content" && (D.pulse.inbox.find((i) => i.kind === "reports") || {}).n) || (k === "instagram" && D.instagram?.unread) || 0;
   const badge = (k) => n(k) ? `<b>${n(k)}</b>` : "";
   /* keep the field you're typing in (and where the cursor is) through a repaint */
   const fo = document.activeElement && document.activeElement.id && app.contains(document.activeElement) ? document.activeElement : null;
@@ -195,7 +199,7 @@ function paint() {
       <span class="ph">${theme}</span></div></header>
     <main class="wrap" id="main">${VIEWS[TAB]()}</main>
     <nav class="bbar" aria-label="Admin sections">${bar}</nav>
-    ${MORE ? `<div class="scrim ms" data-more-x></div><div class="msheet"><div class="grp">All sections</div>${TABS.map(([k]) => item(k, "mi")).join("")}<a class="mi" href="/">${I.out}<span>Open the app</span></a></div>` : ""}</div></div>`;
+    ${MORE ? `<div class="scrim ms" data-more-x></div><div class="msheet">${GROUPS.map(([g, ks]) => `<div class="grp">${g}</div><div class="mig">${ks.map((k) => item(k, "mi")).join("")}</div>`).join("")}<a class="mi" href="/">${I.out}<span>Open the app</span></a></div>` : ""}</div></div>`;
   $$("[data-more]").forEach((b) => b.onclick = () => { MORE = !MORE; paint(); });
   $$("[data-more-x]").forEach((b) => b.onclick = () => { MORE = false; paint(); });
   $$("[data-range]").forEach((b) => b.onclick = () => { RANGE = +b.dataset.range; try { localStorage.setItem("tnl-admin-range", RANGE); } catch (e) {} D.pulse = null; D.series = null; D.direction = null; D.topwork = null; D.audience = null; load(); });
@@ -232,9 +236,9 @@ const pageHead = (title, desc, actions = "") => `<div class="pg-hd"><div><h1>${t
 const card = (title, body, sub = "") => `<section class="rc"><header><h3>${title}</h3>${sub ? `<span class="mono">${sub}</span>` : ""}</header>${body}</section>`;
 /* tabs inside a page */
 const subTabs = (list, on, attr) => `<nav class="utabs" role="tablist">${list.map(([k, l]) => `<button role="tab" aria-selected="${on === k}" class="${on === k ? "on" : ""}" ${attr}="${k}">${l}</button>`).join("")}</nav>`;
-function go(tab) { TAB = OLD_TABS[tab] || tab; MORE = false; try { history.replaceState(null, "", "#" + tab); } catch (e) {} paint(); scrollTo(0, 0); load(); }
+function go(tab) { SUBTAB = tab; TAB = OLD_TABS[tab] || tab; MORE = false; try { history.replaceState(null, "", "#" + tab); } catch (e) {} paint(); scrollTo(0, 0); load(); }
 /* a typed or followed #hash (and back/forward) opens that section too */
-addEventListener("hashchange", () => { const h = OLD_TABS[location.hash.slice(1)] || location.hash.slice(1); if (h !== TAB && TABS.some(([k]) => k === h)) go(h); });
+addEventListener("hashchange", () => { const raw = location.hash.slice(1), h = OLD_TABS[raw] || raw; if ((h !== TAB || raw !== SUBTAB) && TABS.some(([k]) => k === h)) go(raw); });
 /* things any view can carry: open a person, message someone in the app */
 function wireCommon() {
   $$("[data-person]").forEach((el) => el.onclick = (e) => { e.stopPropagation(); openPerson(el.dataset.person); });

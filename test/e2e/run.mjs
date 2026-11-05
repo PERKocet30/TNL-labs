@@ -92,6 +92,8 @@ for (let i = 0; ; i++) {
   if (i > 60) { console.log(serverLog); throw new Error("server didn't start"); }
   await new Promise((r) => setTimeout(r, 250));
 }
+/* The composer's picker opens from pickFiles (app/media/pick, 2026-11-04): tap where you add photos, then choose. */
+const pcFiles = async (p, files) => { const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcov [data-pcpick]").first().click()]); await fc.setFiles(files); };
 const api = async (path, token, body) => (await fetch(B + path, {
   method: body ? "POST" : "GET", headers: { "content-type": "application/json", ...(token ? { authorization: "Bearer " + token } : {}) },
   body: body ? JSON.stringify(body) : undefined })).json();
@@ -900,13 +902,23 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { MKTVIEW = "browse"; SELLFORM = null; TAB = "showroom"; render(); });
   });
   /* ---- the post creator v3 (2026-09-30) ---- */
-  const openCreator = async () => { await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcfile", { state: "attached" }); };
+  const openCreator = async () => { await p.locator('.nav [data-tab="post"]').tap(); await p.waitForSelector("#pcov [data-pcpick]"); };
+  await step(d, "the photo picker survives a repaint: photos chosen while the screen repaints still land (an iPhone lost them, 2026-11-04)", async () => {
+    await openCreator();
+    const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcov [data-pcpick]").first().click()]);
+    await p.evaluate(() => { render(); render(); });   // the screen repaints while the picker is up
+    ok(await p.evaluate(() => { const f = document.getElementById("filepick"); return !!f && f.parentElement === document.body && !document.querySelector("#app input[type=file]#pcfile"); }), "the picker's input isn't outside the screen");
+    await fc.setFiles([UPLOAD_PNG, UPLOAD_PNG2]);
+    await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 2, null, { timeout: 8000 }).catch(() => {});
+    ok(await p.evaluate(() => PCOMPOSE && PCOMPOSE.imgs.length) === 2, "the photos chosen during a repaint were lost");
+    await p.evaluate(() => { const c = PCOMPOSE; c.dead = true; PCOMPOSE = null; render(); });
+  });
   const myPosts = async () => (await api("/api/users/tester", token)).posts || [];
   await step(d, "creator: never slides sideways; drag a thumbnail to reorder", async () => {
     await openCreator();
     const side = await p.evaluate(() => { const b = document.querySelector(".pc-body"); b.scrollLeft = 40; return { sl: b.scrollLeft, ox: getComputedStyle(b).overflowX }; });
     ok(side.sl === 0 && side.ox === "hidden", "the form can slide sideways: " + JSON.stringify(side));
-    await p.locator("#pcfile").setInputFiles([UPLOAD_PNG, UPLOAD_PNG2, UPLOAD_PNG3]);
+    await pcFiles(p, [UPLOAD_PNG, UPLOAD_PNG2, UPLOAD_PNG3]);
     /* 2026-10-25 "images aren't uploading": each photo takes its place at once, then its upload lands into that place */
     const at0 = await p.evaluate(() => { PCOMPOSE.imgs.forEach((im, k) => im._k = k); return { n: PCOMPOSE.imgs.length, busy: PCOMPOSE.imgs.filter((i) => i.busy).length, tiles: document.querySelectorAll(".pc-strip .pc-th[data-pci]").length }; });
     ok(at0.n === 3 && at0.tiles === 3, "three photos should have their places the moment they're picked: " + JSON.stringify(at0));
@@ -1062,7 +1074,7 @@ console.log("\nMEMBER · PHONE");
       return c.toDataURL(type, .98).split(",")[1]; }, [w, h, type]).then((b) => Buffer.from(b, "base64"));
     const big = await make(4000, 5000, "image/jpeg"), art = await make(2400, 3000);
     await openCreator();
-    await p.locator("#pcfile").setInputFiles([{ name: "print.jpg", mimeType: "image/jpeg", buffer: big }, { name: "poster.png", mimeType: "image/png", buffer: art }]);
+    await pcFiles(p, [{ name: "print.jpg", mimeType: "image/jpeg", buffer: big }, { name: "poster.png", mimeType: "image/png", buffer: art }]);
     await p.waitForFunction(() => PCOMPOSE.imgs.length === 2 && !PCOMPOSE.upN, null, { timeout: 45000 });
     const [capped, im] = await p.evaluate(() => PCOMPOSE.imgs);
     ok(capped.w === 2400 && capped.h === 3000, "a 4000×5000 upload wasn't capped at 3000: " + JSON.stringify(capped));
@@ -1096,7 +1108,7 @@ console.log("\nMEMBER · PHONE");
     const tee = (await api("/api/market?seller=tester", token)).listings.find((l) => l.title === "E2E Tee");
     ok(tee, "no E2E Tee to tag");
     await openCreator();
-    await p.locator("#pcfile").setInputFiles(UPLOAD_PNG);
+    await pcFiles(p, UPLOAD_PNG);
     await p.locator("#pcshop").tap();
     await p.locator(".pickrow", { hasText: "E2E Tee" }).first().tap();
     ok(await p.evaluate(() => PCOMPOSE.products.length === 1), "product not tagged");
@@ -1116,7 +1128,7 @@ console.log("\nMEMBER · PHONE");
   await step(d, "upload a song from the post creator: name it, add a cover — with no photos the cover is the post's picture; your songs come first, and the same file again is the song you have", async () => {
     await openCreator();
     await p.locator("[data-pcmusadd]").tap();
-    await p.locator("#pcmusfile").setInputFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) });
+    { const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcmusup").click()]); await fc.setFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) }); }
     await p.waitForSelector("#trkeov", { timeout: 10000 });
     ok(await p.evaluate(() => PCOMPOSE.track && PCOMPOSE.track.title === "my-song"), "the song isn't on the post");
     await p.locator("#trketitle").fill("Composer Song");
@@ -1135,7 +1147,7 @@ console.log("\nMEMBER · PHONE");
     await p.locator("[data-pcmusadd]").tap();
     await p.waitForSelector(".pcmus-row", { timeout: 8000 });
     ok(/Composer Song/.test(await p.locator(".pcmus-row").first().innerText()), "your own song isn't first in Add music: " + await p.locator(".pcmus-row").first().innerText());
-    await p.locator("#pcmusfile").setInputFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) });
+    { const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcmusup").click()]); await fc.setFiles({ name: "my-song.wav", mimeType: "audio/wav", buffer: wav(2, 440) }); }
     await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.track && !PCOMPOSE.musup, null, { timeout: 10000 });
     await p.waitForTimeout(300);
     ok(await p.evaluate((id) => PCOMPOSE.track.id === id && PCOMPOSE.track.title === "Composer Song", np.audioTrack.id), "the same file made a second song: " + JSON.stringify(await p.evaluate(() => PCOMPOSE.track)));
@@ -1152,7 +1164,7 @@ console.log("\nMEMBER · PHONE");
   await step(d, "which part of the song plays: drag the window under a long song, the times follow, and the post keeps that start", async () => {
     await openCreator();
     await p.locator("[data-pcmusadd]").tap();
-    await p.locator("#pcmusfile").setInputFiles({ name: "long-song.wav", mimeType: "audio/wav", buffer: wav(24, 330) });
+    { const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcmusup").click()]); await fc.setFiles({ name: "long-song.wav", mimeType: "audio/wav", buffer: wav(24, 330) }); }
     await p.waitForSelector("#trkeov", { timeout: 15000 });
     await p.locator("#trketitle").fill("Long Song");
     await p.locator("#trkesave").tap();
@@ -1237,7 +1249,7 @@ console.log("\nMEMBER · PHONE");
   /* 2026-10-30: "I tried uploading a carousel with a video in the middle of it and it didn't work" */
   await step(d, "a carousel with a video in the middle: photo, video, photo post together in that order, and the video plays in the carousel", async () => {
     await openCreator();
-    await p.locator("#pcfile").setInputFiles([UPLOAD_PNG, UPLOAD_WEBM, UPLOAD_PNG2]);
+    await pcFiles(p, [UPLOAD_PNG, UPLOAD_WEBM, UPLOAD_PNG2]);
     await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 3 && !PCOMPOSE.upN, null, { timeout: 30000 });
     const kinds = await p.evaluate(() => PCOMPOSE.imgs.map((im) => (im.video ? "video" : "photo")).join(","));
     ok(kinds === "photo,video,photo", "the picks didn't keep their order with the video in the middle: " + kinds);
@@ -1256,7 +1268,7 @@ console.log("\nMEMBER · PHONE");
   /* "Update the post maker to simple video editing, cover etc" (2026-10-08). */
   await step(d, "video editor: a cover arrives by itself; trim, sound off and 4:5 ride on the post and the feed honours them", async () => {
     await openCreator();
-    await p.locator("#pcfile").setInputFiles(UPLOAD_WEBM);
+    await pcFiles(p, UPLOAD_WEBM);
     await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.vid && !PCOMPOSE.vidbusy, null, { timeout: 15000 });
     ok(await p.evaluate(() => /^\/uploads\/.+-poster\.jpg$/.test(PCOMPOSE.cover || "")), "no automatic cover: " + await p.evaluate(() => PCOMPOSE.cover));
     await p.locator("[data-pcvedit]").tap();
@@ -1479,11 +1491,31 @@ console.log("\nMEMBER · PHONE");
     ok(await p.locator(".sheetc > .sh .sh-back#sx").count() === 1 && await p.locator(".ksearch #sq").count() === 1, "Search doesn't wear the kit head and search field");
     await p.locator("#sx").tap(); await p.waitForTimeout(300);
   });
+  /* 2026-11-04 Echo: LABS help pinned at the top of Messages (admins only until the switch). The tester is the first member, so an admin. */
+  await step(d, "Echo: pinned at the top of Chats, answers a question with a fact card, takes a thumbs up, learns from 'I meant…', back lands on the inbox", async () => {
+    await p.locator("#dmBtn").tap(); await p.waitForSelector("#cxclose");
+    ok(await p.locator(".cx-list > :first-child").getAttribute("id") === "echorow", "Echo isn't the first row of Chats");
+    await p.locator("#echorow").tap(); await p.waitForSelector("#echodraft", { timeout: 4000 });
+    await p.waitForSelector(".echo-chips .chip", { timeout: 4000 });   // the hello and the starter questions
+    await p.locator("#echodraft").fill("where is my order"); await p.locator("#echosend").tap();
+    await p.waitForSelector("[data-echoturn] .echo-facts", { timeout: 5000 });
+    ok((await p.locator("[data-echoturn] .c-b").first().innerText()).includes("Orders") && await p.locator("[data-echoturn] .echo-rate [data-echoyes]").count() === 1, "no answer with a fact card and thumbs");
+    await p.locator("[data-echoyes]").first().tap(); await p.waitForTimeout(300);
+    ok((await p.locator("[data-echoturn] .echo-rate").first().innerText()).includes("Glad"), "the thumbs up didn't register");
+    await p.locator("#echodraft").fill("zorp"); await p.locator("#echosend").tap();
+    await p.waitForSelector("[data-echoperson]", { timeout: 5000 });   // a miss offers a person
+    ok(await p.locator("[data-echoturn]").count() === 2, "the miss didn't show as a turn");
+    ok(await p.evaluate(() => ECHOOPEN && DMOPENPANEL && !CHAT), "Echo isn't the open screen inside Messages");
+    await p.locator("#echoback").tap(); await p.waitForTimeout(400);
+    ok(await p.evaluate(() => !ECHOOPEN && DMOPENPANEL) && await p.locator("#echorow").count() === 1, "back didn't land on the inbox with Echo still pinned");
+    ok((await p.locator("#echorow .cx-rs").innerText()).includes("don't know"), "the row doesn't carry Echo's last line");
+    await p.locator("#cxclose").tap(); await p.waitForTimeout(300);
+  });
   /* 2026-10-21 "Instagram level": tag people on the picture, Advanced settings, Preview, hidden like count */
   await step(d, "composer: Tag people puts a pin on the photo where you tap; Advanced hides the like count and takes alt text; Preview is the Showroom card; the post carries it all and the person icon shows the pin", async () => {
     await p.evaluate(() => { PCOMPOSE = null; PICKER = null; LAB = null; TAB = "showroom"; render(); });
     await openCreator();
-    await p.locator("#pcfile").setInputFiles([UPLOAD_PNG2]);
+    await pcFiles(p, [UPLOAD_PNG2]);
     await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 1 && !PCOMPOSE.upN, null, { timeout: 10000 });
     await p.waitForSelector("#pctrack .pc-slide img"); await p.waitForTimeout(400);
     await p.locator("#pctag").tap(); await p.waitForSelector(".pc-taghint");
@@ -1708,6 +1740,65 @@ console.log("\nMEMBER · PHONE");
   /* Glitch signals (app/core/glitch.js). Everything above is normal use, so it
      must have recorded nothing: no jumps, no slow screens, no failed saves. */
   const glitches = async () => { await p.evaluate(() => glFlush()); await p.waitForTimeout(600); return api("/api/admin/glitches", token); };
+  /* UI signals (app/ui-signals/signals.js, 2026-11-04): every screen change above was
+     counted; the admin read sees the screens, the paths and a back — and nothing a member typed. */
+  /* Report on every post (app/posts/report, 2026-11-04): "Post should have options to report an issue like Instagram." */
+  await step(d, "a Showroom card's ··· has Report: a reason, then a thank-you that offers to block — the report reaches the admin once", async () => {
+    await p.evaluate(() => { closeMenu(); PICKER = null; POSTOPEN = null; PROFILE = null; TAB = "showroom"; render(); });
+    await p.waitForSelector('.sr-card [data-pmore]', { timeout: 8000 });
+    const id = await p.evaluate(() => { const c = SRPOSTS.find((x) => x.author.username === "friend"); return c && c.id; });
+    ok(!!id, "no post of friend's in the Showroom to report");
+    const before = (await api("/api/admin/reports", token)).reports.filter((r) => r.post_id === id).length;
+    await p.locator(`.sr-card[data-pid="${id}"] [data-pmore]`).scrollIntoViewIfNeeded();
+    await p.locator(`.sr-card[data-pid="${id}"] [data-pmore]`).tap();
+    await p.locator(".c-ma", { hasText: "Report" }).tap({ timeout: 5000 });
+    ok(await p.locator(".pick h2", { hasText: "Why are you reporting this post?" }).count() === 1, "the reasons didn't open");
+    await p.locator(".pickrow", { hasText: "It's spam" }).tap();
+    await p.waitForSelector(".ui-ov .ui-cancel", { timeout: 5000 });
+    ok(await p.locator(".ui-ov", { hasText: "Block @friend" }).count() === 1, "the thank-you didn't offer to block");
+    await p.locator(".ui-ov .ui-cancel").tap();   // Done — no block
+    const after = (await api("/api/admin/reports", token)).reports.filter((r) => r.post_id === id);
+    ok(after.length === 1 && after[0].reason === "Spam", "the report didn't reach the admin once: " + JSON.stringify(after.map((r) => r.reason)) + " (before: " + before + ")");   // run again (the computer frame) it's the same report, updated
+    ok(await p.evaluate(() => !document.querySelector(".ui-ov") && !PICKER && !CMENU), "something was left open after the report");
+  });
+  await step(d, "a Showroom card says who liked it, like Instagram: your like puts your face in 'Liked by …', and a tap opens everyone", async () => {
+    await p.evaluate(() => { closeMenu(); PICKER = null; POSTOPEN = null; PROFILE = null; TAB = "showroom"; render(); });
+    const id = await p.evaluate(() => { const c = SRPOSTS.find((x) => x.author.username === "friend"); return c && c.id; });
+    const card = p.locator(`.sr-card[data-pid="${id}"]`);
+    await card.scrollIntoViewIfNeeded();
+    if (!(await p.evaluate((i) => SRPOSTS.find((x) => x.id === i).likedByMe, id))) await card.locator("[data-like]").tap();
+    await p.waitForTimeout(800);
+    const line = card.locator(".px-likedby");
+    ok(await line.count() === 1, "no 'Liked by' line on the card");
+    ok(/Liked by/.test(await line.innerText()) && await line.locator(".lb-avs .av").count() >= 1, "the line doesn't say who, with a face: " + (await line.innerText()));
+    await line.tap();
+    await p.waitForFunction(() => PICKER && PICKER.title === "Likes" && !PICKER.loading, null, { timeout: 6000 });
+    ok(await p.evaluate(() => PICKER.items.length >= 1), "the list of who liked it is empty");
+    await p.evaluate(() => { closePicker(); });
+  });
+  await step(d, "Report a problem (the app itself): a few words and the screen it happened on reach the admin", async () => {
+    await p.evaluate(() => { reportProblem(); });
+    await p.waitForSelector(".ui-ov .ui-in", { timeout: 5000 });
+    await p.locator(".ui-ov .ui-in").first().fill("the cart shows the wrong size " + d.name);
+    await p.locator(".ui-ov .ui-ok").tap();
+    await p.waitForTimeout(600);
+    const r = (await api("/api/admin/reports", token)).reports.find((x) => x.kind === "app" && x.reason.includes("wrong size " + d.name));
+    ok(!!r && r.detail === "showroom", "the problem didn't reach the admin with its screen: " + JSON.stringify(r));
+    ok(await p.evaluate(() => !document.querySelector(".ui-ov")), "the sheet was left open");
+  });
+  await step(d, "UI signals: screens, the path between them and a back are counted; nothing typed leaves the phone", async () => {
+    await p.evaluate(() => { TAB = "showroom"; render(); TAB = "labs"; render(); TAB = "market"; render(); });
+    await p.waitForTimeout(100);
+    await p.evaluate(() => { TAB = "labs"; render(); });
+    // (the queue flushes itself every 10s, so what's still in it isn't checked — the admin read is)
+    await p.evaluate(() => uiFlush());
+    await p.waitForTimeout(600);
+    const scr = await api("/api/admin/ui/screens?days=1", token), paths = await api("/api/admin/ui/paths?days=1", token);
+    ok(scr.screens.some((x) => /^labs?/.test(x.screen) && x.views >= 2) && scr.screens.some((x) => x.screen === "market"), "the admin read doesn't show the screens: " + JSON.stringify(scr.screens.slice(0, 5)));
+    ok(paths.next.some((x) => /^labs?/.test(x.from) && x.to === "market") || paths.next.length >= 30, "the move labs → market isn't counted: " + JSON.stringify(paths.next.slice(0, 5)));   // the walk above has made many moves; the list keeps the 30 most common
+    ok(!JSON.stringify(scr).includes("tester") && !JSON.stringify(paths).includes("tester"), "a username leaked into the UI signals");
+    ok(await p.evaluate(() => UI.q.every((e) => typeof e.kind === "string" && String(e.prev).length <= 60 && !/[A-Z]{3}/.test(e.screen))), "a signal carries more than a kind, two names and a number");
+  });
   await step(d, "event: the Showroom banner opens the tournament, its gallery and the enter sheet", async () => {
     const mk = await fetch(B + "/api/admin/events", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + token },
       body: JSON.stringify({ slug: "e2e-poster", title: "E2E Poster Tournament", brief: "A poster.", format: "bracket", published: true, opensAt: Date.now() - 1000, submitDays: 7 }) });
@@ -2156,6 +2247,18 @@ console.log("\nMEMBER · COMPUTER");
     await fast(p, 3000, () => p.waitForSelector(".lx-list"), "Labs from the side menu");
     ok(await p.evaluate(() => !DMOPENPANEL && !document.querySelector("#chatlayer .cx")), "Messages stayed open over Labs");
   });
+  // 2026-11-04: the admin opens on Echo (Echo Home) — the chat beside what needs you; without a key it says so and still shows the queue
+  await step(d, "admin → opens on Echo: the chat panel beside Needs you; no key, so it says how to wake it; Home is one tap away", async () => {
+    await settledGoto(p, B + "/admin");
+    await fast(p, 10000, () => p.locator(".eh-off, .eh-hello").first().waitFor(), "Echo Home");   // the shell paints first, the data lands after
+    ok((await p.locator(".pg-hd h1").first().textContent()) === "Echo", "the first page isn't Echo");
+    ok(await p.locator(".eh-off code", { hasText: "ECHO_AI_KEY" }).count() === 1, "without a key, the page doesn't say how to wake Echo");
+    ok(await p.locator(".eh-side .rc h3", { hasText: "Needs you" }).count() === 1 && await p.locator(".eh-side #todocv").count() === 1, "Needs you beside the chat doesn't open on its model");
+    ok((await p.locator(".side .nv").first().getAttribute("data-tab")) === "echohome" && await p.locator(".side .nv[data-tab=echo] span", { hasText: "Help desk" }).count() === 1, "Echo isn't first in the side menu, or the help desk isn't named");
+    await p.locator(".eh-side [data-go=home]").click();
+    await fast(p, 6000, () => p.locator(".tour [data-ev-open]").waitFor(), "Home from Echo Home");
+    ok(await p.evaluate(() => TAB === "home"), "The full Home didn't open Home");
+  });
   await step(d, "admin → Health shows the Glitches panel with the phone's rage tap", async () => {
     // 2026-10-20 (admin v4): Health is its own section; an old #system link lands on Settings
     await settledGoto(p, B + "/admin#health");
@@ -2175,16 +2278,20 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator(".line svg polyline.nw").count() === 1 && await p.locator(".line svg polyline.pv").count() === 1, "no line chart with last period behind");
     ok(await p.locator(".rc h3", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
     // 2026-10-20: on a computer, a grouped side menu with every section and no bottom bar (twelve since Systems and Instagram, 2026-10-26)
-    ok(await p.locator(".side .nv").count() === 12 && !(await p.locator(".bbar").isVisible()), "no twelve-section side menu on a computer");
-    // 2026-10-26: Systems — what's live, what's waiting for a Push; with no keys set, each card says so plainly
+    // 2026-11-04: nine sections in five groups — Orders · Listings · Sellers are Market's tabs, Systems is Health's
+    ok(await p.locator(".side .nv").count() === 12 && !(await p.locator(".bbar").isVisible()), "the side menu isn't the twelve grouped sections (Systems up front)");
+    // 2026-10-26: Systems — what's live, what's waiting for a Push; with no keys set, each card says so plainly (2026-11-04: a tab of Health; the old #systems link lands on it)
+    /* 2026-11-04: "I said I wanted this at the front of the admin dashboard" — Systems is its own section again, second in the side menu */
+    ok((await p.locator(".side .nv").nth(1).getAttribute("data-tab")) === "systems", "Systems isn't up front, right after Echo");
     await p.locator(".side .nv[data-tab=systems]").click();
     await fast(p, 6000, () => p.locator(".pg-hd h1", { hasText: "Systems" }).waitFor(), "the Systems page");
+    ok(await p.evaluate(() => location.hash === "#systems" && TAB === "systems"), "Systems didn't open as its own section (#systems)");
     ok((await p.locator(".empty", { hasText: "isn't connected yet" }).count()) === 4, "Systems doesn't say its keys aren't set yet (Railway, GitHub, Google, Meta)");
     ok(await p.locator("#sysfresh").count() === 1, "no Look again on Systems");
     // 2026-10-26: the week's report sits at the top of Systems with a button that emails it now
     ok(await p.locator(".sec", { hasText: "This week" }).count() === 1 && await p.locator("#wkmail").count() === 1, "Systems doesn't show the week with an Email-me-now button");
-    await p.locator(".side .nv[data-tab=home]").click(); await p.waitForTimeout(400);
-    ok(await p.locator(".side .grp").count() === 4, "the side menu isn't grouped");
+    await p.locator(".side .nv[data-tab=echohome]").click(); await p.waitForTimeout(400);
+    ok(await p.locator(".side .grp").count() === 5, "the side menu isn't in five groups");
     await p.locator("#gq").fill("tester");
     await fast(p, 4000, () => p.locator("#gres [data-gp]").first().waitFor(), "member search results");
     await p.locator("#gres [data-gp]").first().dispatchEvent("mousedown");
@@ -2192,6 +2299,7 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator("#person [data-ptab]").count() === 4, "the record has no tabs");
     await p.keyboard.press("Escape");
     await p.screenshot({ path: join(SHOTS, "admin-home.png"), fullPage: false });
+    await settledGoto(p, B + "/admin#home"); await fast(p, 6000, () => p.locator("[data-labf=pharmacy]").first().waitFor(), "Home again (the labs panel)");   // 2026-11-04: Home isn't in the menu; the lab link lives on it
     await p.locator("[data-labf=pharmacy]").first().click();
     // the lab list arrives with the posts — wait for it, not just the empty select
     await fast(p, 5000, () => p.locator("#clab option[value=pharmacy]").waitFor({ state: "attached" }), "the Labs tab");
@@ -2204,6 +2312,7 @@ console.log("\nMEMBER · COMPUTER");
       await settledGoto(p, B + "/admin#" + tab);
       await fast(p, 6000, () => p.locator(want).first().waitFor(), "admin → " + tab);
       ok(await p.locator(".pg-hd h1").count() === 1, tab + " has no page title");
+      if (["orders", "listings", "sellers"].includes(tab)) ok(await p.locator(`[data-mkt=${tab}][aria-selected=true]`).count() === 1 && await p.evaluate(() => TAB === "market"), "an old #" + tab + " link didn't land on Market's " + tab + " tab");
       /* 2026-11-03: Sellers shows what the walkthrough teaches — the listings made earlier are in it, as counts */
       if (tab === "sellers") ok(await p.locator(".rc", { hasText: "Who's listing" }).count() === 1 && await p.locator(".rc", { hasText: "How far the walkthrough takes people" }).locator(".fun .fs").count() >= 8
         && !(await p.locator(".rc", { hasText: "Who's listing" }).textContent()).includes("tester"), "Sellers doesn't show who lists and the walkthrough funnel (counts only)");
@@ -2260,14 +2369,100 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
   });
   // admin v4 (2026-10-20): on a phone, a bottom bar with four sections and More; tables are cards
   await step(d, "admin on a phone: a bottom bar, More opens the rest, Orders are cards", async () => {
-    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 5 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone");
+    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 5 && await p.locator(".bbar [data-tab=systems]").count() === 1 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone (Echo · Systems · Market · Members · More)");
     await p.locator(".bbar [data-more]").tap();
     await fast(p, 3000, () => p.locator(".msheet .mi[data-tab=analytics]").waitFor(), "the More sheet");
-    await p.locator(".msheet .mi[data-tab=orders]").tap();
+    ok(await p.locator(".msheet .grp").count() === 5 && await p.locator(".msheet .mi").count() === 13, "the phone's sheet isn't the five groups (twelve sections + Open the app)");
+    await p.locator(".msheet .mi[data-tab=market]").tap();
     await fast(p, 6000, () => p.locator("[data-os=paid]").waitFor(), "Orders from More");
     ok(await p.locator(".msheet").count() === 0, "More stayed open");
     ok(!(await p.locator(".toc table").first().isVisible()), "Orders on a phone is a sideways table");
     await p.screenshot({ path: join(SHOTS, "admin-phone-orders.png"), fullPage: false });
+  });
+  // 2026-11-04: "my message keeps getting deleted" — a send whose connection dropped used to empty the box and drop the
+  // question. Now the page asks the server: an answer that was written appears; a question that never arrived says so, words back in the box.
+  await step(d, "Echo Home on a phone: a dropped send isn't lost — the saved answer is fetched; one that never arrived comes back to the box", async () => {
+    const hello = (turns) => ({ name: "Echo", brain: true, model: "claude-opus-5-5", models: [{ id: "claude-opus-5-5", name: "Claude Opus 5.5", short: "Opus 5.5", line: "" }], sub: "LABS's own",
+      hello: "Hi — I'm Echo.", preview: false, topics: [], starters: [], briefToday: true, turns });
+    let serverTurns = [], phase = "saved";
+    await p.route("**/api/echo", (r) => (r.request().method() === "GET" ? r.fulfill({ json: hello(serverTurns) }) : r.continue()));
+    await p.route("**/api/echo/ask", (r) => {
+      const q = r.request().postDataJSON().q;
+      if (phase === "saved") serverTurns = [{ id: 901, asked: q, label: "", files: [], proposals: [], kind: "brain", text: "Here is the answer you nearly lost.", tools: ["overview"], model: "Opus 5.5", createdAt: Date.now() }];
+      return r.abort("failed");   // the phone dropped the line
+    });
+    await settledGoto(p, B + "/admin");
+    await fast(p, 8000, () => p.locator("#ehdraft").waitFor(), "Echo Home with the brain on");
+    await p.locator("#ehdraft").fill("how are we doing?"); await p.locator("#ehsend").tap();
+    await fast(p, 12000, () => p.locator(".eh-a .eh-text", { hasText: "nearly lost" }).waitFor(), "the answer, fetched after the dropped send");
+    ok(await p.locator(".eh-qb", { hasText: "how are we doing?" }).count() === 1, "the question vanished from the conversation");
+    phase = "lost";
+    await p.locator("#ehdraft").fill("second question"); await p.locator("#ehsend").tap();
+    await fast(p, 25000, () => p.locator(".eh-a.failed .eh-text", { hasText: /reach Echo/ }).waitFor(), "a plain 'didn't reach Echo' in the conversation");
+    ok(await p.locator("#ehdraft").inputValue() === "second question", "the words weren't put back in the box");
+    ok(await p.locator(".eh-qb", { hasText: "second question" }).count() === 1, "the question vanished from the conversation");
+    await p.unroute("**/api/echo"); await p.unroute("**/api/echo/ask");
+  });
+  // 2026-11-04: "I don't like having to scroll all the way down — a module I can scroll in, with a button to the bottom, like Claude"
+  await step(d, "Echo Home on a phone: a long conversation scrolls in its own box, Needs you sits right under it, ↓ goes back to the latest", async () => {
+    const turns = Array.from({ length: 14 }, (_, i) => ({ id: 800 + i, asked: "Question " + (i + 1), label: "", files: [], proposals: [], kind: "brain",
+      text: Array.from({ length: 6 }, () => "A long answer line that takes up room on a phone screen.").join("\n\n") + " End " + (i + 1) + ".", tools: [], model: "Opus 5.5", createdAt: Date.now() }));
+    await p.route("**/api/echo", (r) => (r.request().method() === "GET" ? r.fulfill({ json: { name: "Echo", brain: true, model: "claude-opus-5-5", models: [{ id: "claude-opus-5-5", name: "Claude Opus 5.5", short: "Opus 5.5", line: "" }],
+      sub: "LABS's own", hello: "Hi — I'm Echo.", preview: false, topics: [], starters: [], briefToday: true, turns } }) : r.continue()));
+    await settledGoto(p, B + "/admin");
+    await fast(p, 8000, () => p.locator(".eh-a .eh-text", { hasText: "End 14." }).waitFor({ state: "attached" }), "the long conversation");
+    await p.waitForTimeout(300);
+    const m = await p.evaluate(() => { const c = document.querySelector(".eh-chat"), f = document.querySelector("#ehfeed"), n = document.querySelector(".eh-side .rc");
+      return { chatH: c.getBoundingClientRect().height, vh: innerHeight, scrolls: f.scrollHeight - f.clientHeight, atEnd: f.scrollHeight - f.scrollTop - f.clientHeight, needsTop: n.getBoundingClientRect().top + scrollY }; });
+    ok(m.scrolls > 400, "the conversation doesn't scroll in its own box (it grows the page instead)");
+    ok(m.chatH <= m.vh, "the conversation box is taller than the screen");
+    ok(m.needsTop < m.vh * 1.4, "Needs you is far below the conversation, not right under it");
+    ok(m.atEnd < 8 && !(await p.locator("#ehdown.on").count()), "it didn't open on the latest message, or ↓ shows at the bottom");
+    await p.evaluate(() => { const f = document.querySelector("#ehfeed"); f.scrollTop = 0; f.dispatchEvent(new Event("scroll")); });
+    await fast(p, 2000, () => p.locator("#ehdown.on").waitFor(), "the ↓ after scrolling up");
+    await p.locator("#ehdown").tap();
+    await p.waitForFunction(() => { const f = document.querySelector("#ehfeed"); return f.scrollHeight - f.scrollTop - f.clientHeight < 8; }, null, { timeout: 3000 });
+    await p.waitForTimeout(250);
+    ok(!(await p.locator("#ehdown.on").count()), "↓ didn't go away at the latest");
+    await p.unroute("**/api/echo");
+  });
+  /* 2026-11-04: "make Echo interactive too, like speaking with a virtual AI" — Talk. A pretend microphone and voice stand in
+     for the phone's own (a test browser can't hear or speak): you say something, a pause sends it, Echo says it back
+     sentence by sentence, then listens again; End closes it and the conversation is there in writing. */
+  await step(d, "Echo Home → Talk: speak, a pause sends it, Echo answers out loud and listens again; End leaves it all in writing", async () => {
+    const turns = [{ id: 880, asked: "Hi", label: "", files: [], proposals: [], kind: "brain", text: "Hello.", tools: [], model: "Opus 5.5", createdAt: Date.now() }];
+    let asked = null;
+    await p.route("**/api/echo", (r) => (r.request().method() === "GET" ? r.fulfill({ json: { name: "Echo", brain: true, model: "claude-opus-5-5", models: [{ id: "claude-opus-5-5", name: "Claude Opus 5.5", short: "Opus 5.5", line: "" }],
+      sub: "LABS's own", hello: "Hi — I'm Echo.", preview: false, topics: [], starters: [], briefToday: true, turns } }) : r.continue()));
+    await p.route("**/api/echo/ask", async (r) => { asked = JSON.parse(r.request().postData() || "{}").q; await new Promise((x) => setTimeout(x, 300));
+      r.fulfill({ json: { turn: { id: 881, asked, label: "", files: [], proposals: [], kind: "brain", text: "**All good.** Ten members joined this week.\n\n- The tournament is busy.", tools: ["pulse"], model: "Opus 5.5", createdAt: Date.now() } } }); });
+    await settledGoto(p, B + "/admin");
+    await fast(p, 8000, () => p.locator(".eh-a .eh-text", { hasText: "Hello." }).waitFor({ state: "attached" }), "Echo Home");
+    await p.evaluate(() => {
+      window.__spoken = [];
+      window.webkitSpeechRecognition = window.SpeechRecognition = class { start() { window.__rec = this; } stop() { setTimeout(() => this.onend && this.onend(), 0); } };
+      window.__say = (words) => window.__rec.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: words }], { isFinal: true })] });
+      speechSynthesis.speak = (u) => { window.__spoken.push(u.text); setTimeout(() => { u.onstart && u.onstart(); setTimeout(() => u.onend && u.onend(), 40); }, 10); };
+      speechSynthesis.cancel = () => {};
+      ehPaintFoot();
+    });
+    await p.locator("#ehtalk").tap();
+    await fast(p, 3000, () => p.locator("#ev.ev-in").waitFor(), "the Talk screen");
+    await p.waitForFunction(() => EV.state === "listening" && window.__rec, null, { timeout: 4000 });
+    ok(await p.evaluate(() => /listening/i.test(window.__spoken[0] || "")), "Echo didn't say it's listening when Talk opened");
+    await p.evaluate(() => window.__say("How are we doing"));
+    ok(/How are we doing/.test(await p.locator("#evsub").innerText()), "your words don't show as you say them");
+    await p.waitForFunction(() => EV.state === "thinking", null, { timeout: 4000 });
+    await p.waitForFunction(() => window.__spoken.some((s) => /Ten members/.test(s)), null, { timeout: 6000 });
+    ok(asked === "How are we doing", "the pause didn't send what you said");
+    ok(await p.evaluate(() => window.__spoken.some((s) => s === "All good.") && !window.__spoken.some((s) => /\*\*|^- /.test(s))), "Echo didn't speak sentence by sentence, or read out the markdown");
+    await p.waitForFunction(() => EV.state === "listening", null, { timeout: 4000 });
+    ok(true, "Echo listens again after answering");
+    await p.locator("#evend").tap();
+    await p.waitForTimeout(200);
+    ok(!(await p.locator("#ev").count()) && await p.evaluate(() => !EV.open && !EV.raf), "End didn't close Talk, or the orb kept drawing");
+    ok(await p.locator(".eh-a .eh-text", { hasText: "Ten members joined" }).count() === 1, "the spoken conversation isn't in writing behind Talk");
+    await p.unroute("**/api/echo"); await p.unroute("**/api/echo/ask");
   });
   // 2026-10-14: on a phone, People starts in Cards (no sideways swiping) and has one search box, not two
   await step(d, "admin → People on a phone: cards, and one search box", async () => {
@@ -2287,8 +2482,90 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     ok(await p.evaluate(() => { const th = document.querySelector('#pres th [data-pdbk="joined"]').closest("th");
       return th.getAttribute("aria-sort") === "descending" && PPREF.k === "joined" && !PPREF.up; }), "opening Admin again kept the old A→Z sort instead of newest first");
     await p.locator("[data-pview=cards]").tap();
-    await p.locator("[data-tab=home]:visible").tap();
+    await p.locator("[data-tab=echohome]:visible").tap();
     await fast(p, 4000, () => p.locator("#gq").waitFor(), "the top-bar search on other pages");
+  });
+  /* 2026-11-04: "a 3D graphic showing where everyone in the world is logging into LABS from" — the globe on People */
+  await step(d, "admin → People on a phone: the globe draws, a row flies to its country, the page still scrolls past it, and it stops when you leave", async () => {
+    await p.route("**/api/admin/globe**", (r) => r.fulfill({ json: { days: 30, total: 12, placed: 10, countries: [
+      { c: "US", members: 6, active: 4, today: 1, cities: [["Atlanta", 3]] }, { c: "NG", members: 3, active: 2, today: 0, cities: [["Lagos", 3]] }, { c: "GB", members: 1, active: 0, today: 0, cities: [] }] } }));
+    await p.evaluate(() => { D.globe = null; });
+    await p.locator("[data-tab=people]:visible").tap();
+    await fast(p, 6000, () => p.locator("#glcv").waitFor(), "the globe on People");
+    await p.waitForTimeout(400);
+    ok(await p.evaluate(() => { const c = document.querySelector("#glcv"), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 1000; }), "the globe's canvas is blank");
+    ok(await p.locator(".gl-list [data-glc]").count() === 3, "the globe's list doesn't show the three countries");
+    await p.locator('[data-glc="NG"]').tap(); await p.waitForTimeout(900);
+    ok(/Nigeria/.test(await p.locator("#glpick").innerText()) && /Lagos/.test(await p.locator("#glpick").innerText()), "tapping Nigeria didn't say what's there");
+    ok(await p.evaluate(() => Math.abs(GL.rot.lon - 8) < 3), "tapping Nigeria didn't turn the globe to it");
+    ok(await p.evaluate(() => getComputedStyle(document.querySelector("#glcv")).touchAction === "pan-y"), "a finger on the globe can't scroll the page past it");
+    await p.locator("[data-tab=echohome]:visible").tap(); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => GL.raf === 0), "the globe kept drawing after leaving People");
+    await p.unroute("**/api/admin/globe**");
+  });
+  /* 2026-11-04: "the same type of interactive model for the system networks" — the map on Health → Systems */
+  await step(d, "admin → Systems on a phone: the map draws every service, the one that needs a look is picked, a row opens its page, and it stops when you leave", async () => {
+    const node = (id, name, state, go) => ({ id, name, does: name + " does things", state, line: name + " line", facts: [["Thing", 1]], go });
+    await p.route("**/api/admin/systems/map", (r) => r.fulfill({ json: { at: Date.now(), nodes: [node("labs", "LABS", "on", "health"), node("members", "Members' phones", "on", "health"),
+      node("cloudflare", "Cloudflare", "on", "settings"), node("railway", "Railway", "on", "systems"), node("data", "Database", "on", "health"), node("github", "GitHub", "on", "systems"),
+      node("stripe", "Stripe", "warn", "market"), node("resend", "Resend", "on", "health"), node("claude", "Claude", "on", "echohome"), node("connector", "Connected apps", "off", "systems"),
+      node("google", "Google", "off", "systems"), node("meta", "Instagram", "off", "instagram")] } }));
+    await settledGoto(p, B + "/admin#systems");
+    await fast(p, 8000, () => p.locator("#smcv").waitFor(), "the systems map");
+    await p.waitForTimeout(400);
+    ok(await p.evaluate(() => { const c = document.querySelector("#smcv"), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 500; }), "the systems map's canvas is blank");
+    ok(await p.locator(".sm-list [data-smn]").count() === 12, "the map's list doesn't name all twelve");
+    ok(/Stripe/.test(await p.locator("#smpick").innerText()) && /needs a look/.test(await p.locator("#smpick").innerText()), "the service that needs a look wasn't picked first");
+    ok(await p.locator(".sm-list [data-smn]").first().getAttribute("data-smn") === "stripe", "what needs a look isn't at the top of the list");
+    await p.locator('[data-smn="claude"]').tap(); await p.waitForTimeout(800);
+    ok(/Claude/.test(await p.locator("#smpick").innerText()), "tapping Claude didn't show Claude");
+    await p.locator("[data-smgo]").tap();
+    await fast(p, 6000, () => p.waitForFunction(() => TAB === "echohome"), "Open Echo from the map");
+    await p.waitForTimeout(200);
+    ok(await p.evaluate(() => SM.raf === 0), "the map kept drawing after leaving Systems");
+    await p.unroute("**/api/admin/systems/map");
+  });
+  /* 2026-11-04: "I don't see the interactive admin dashboard network. Make the whole admin dashboard interactive." — the Network, in the phone's bar */
+  /* 2026-11-04: "this interactive dashboard is way better and should be front of the admin dashboard, like Echo's to-do and
+     Members and Analytics" — the spinning models at the front: Echo Home's Needs you, and Analytics' member's path */
+  await step(d, "the models at the front: Needs you spins the whole dashboard (a section with something waiting opens it), Analytics opens on a member's path", async () => {
+    const st = (id, name, value, needs = []) => ({ id, name, says: name + " says", value, before: Math.max(0, value - 1), label: "things", facts: [["Thing", 2]], go: "people", goName: "Members", needs: needs.map((text) => ({ text, level: "high" })) });
+    const sec = (id, name, value, needs = []) => ({ id, name, does: name + " does things", value, label: "things", needs: needs.map((text) => ({ text, level: "high" })) });
+    const sv = (id, name, state) => ({ id, name, does: name, state, line: name + " line", facts: [], go: "health" });
+    await p.route("**/api/admin/network**", (r) => r.fulfill({ json: { at: Date.now(), days: 30,
+      stages: [st("arrive", "Arrive", 5), st("join", "Join", 3, ["2 new members haven't posted yet"]), st("see", "See", 9), st("make", "Make", 4), st("respond", "Respond", 12), st("earn", "Earn", 40), { ...st("trade", "Trade", 2500), money: true }, st("talk", "Talk", 7)],
+      sections: [sec("people", "Members", 40), sec("market", "Market", 3), sec("content", "Content", 9, ["2 open reports"]), sec("events", "Events", 1), sec("health", "Health", 0)],
+      outside: [sv("meta", "Instagram", "off"), sv("stripe", "Stripe", "warn"), sv("resend", "Resend", "on")], base: [sv("labs", "LABS", "on"), sv("trust", "Trust", "on")] } }));
+    await settledGoto(p, B + "/admin");
+    await fast(p, 8000, () => p.locator("#todocv").waitFor({ state: "attached" }), "Needs you's model on Echo Home");
+    await p.locator("#todocv").scrollIntoViewIfNeeded(); await p.waitForTimeout(500);
+    const drawn = (sel) => p.evaluate((s) => { const c = document.querySelector(s), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 500; }, sel);
+    ok(await drawn("#todocv"), "Needs you's model is blank");
+    ok(await p.evaluate(() => { const c = document.querySelector(".eh-chat").getBoundingClientRect().top, n = document.querySelector("#todocard").getBoundingClientRect().top; return c < n; }), "Echo isn't first, with Needs you after her");
+    ok(/1 thing needs you/.test(await p.locator("#todopick").innerText()), "the model doesn't say how many things need you");
+    ok(await p.locator("#todocard .q").count() === 1, "the full queue isn't under the model");
+    /* a tap on a node: find Content on the canvas and tap it */
+    await p.evaluate(() => ringAim("todocv", "s:content")); await p.waitForTimeout(800);
+    const at = await p.evaluate(() => { const h = RINGS.todocv.hit.find((x) => x.key === "s:content"), b = document.querySelector("#todocv").getBoundingClientRect(); return h && { x: b.left + h.x, y: b.top + h.y }; });
+    ok(!!at, "Content isn't on the model");
+    await p.mouse.click(at.x, at.y); await p.waitForTimeout(400);
+    ok(/Content/.test(await p.locator("#todopick").innerText()) && /2 open reports/.test(await p.locator("#todopick").innerText()), "tapping Content on the model didn't show what's waiting there");
+    await p.locator("#todopick [data-nwgo]").tap();
+    await fast(p, 6000, () => p.waitForFunction(() => TAB === "content"), "Open Content from the model");
+    await p.waitForTimeout(200);
+    ok(await p.evaluate(() => !RINGS.todocv.raf), "Needs you's model kept drawing after leaving Echo Home");
+    /* Analytics: the member's path at the front */
+    await p.evaluate(() => go("analytics"));
+    await fast(p, 8000, () => p.locator("#pathcv").waitFor(), "Analytics' member's path");
+    await p.waitForTimeout(400);
+    ok(await drawn("#pathcv"), "the member's path model is blank");
+    ok((await p.locator("#pathcard .sm-list .gl-n").allInnerTexts()).map((t) => t.replace(/^\d+ /, "")).join(" ") === "Arrive Join See Make Respond Earn Trade Talk", "the path isn't the Blueprint's eight stages in order");
+    ok(await p.evaluate(() => { const a = document.querySelector("#pathcard").getBoundingClientRect().top, t = document.querySelector("[data-atab]").getBoundingClientRect().top; return a < t; }), "the member's path isn't at the front of Analytics");
+    await p.locator('#pathcard .sm-list [data-nwk="join"]').tap(); await p.waitForTimeout(300);
+    ok(/Join/.test(await p.locator("#pathpick").innerText()) && /haven't posted/.test(await p.locator("#pathpick").innerText()) && /Resend/.test(await p.locator("#pathpick").innerText()), "tapping Join didn't show its needs and what it leans on");
+    await p.locator("#pathpick [data-nwgo]").tap();
+    await fast(p, 6000, () => p.waitForFunction(() => TAB === "people"), "Open Members from the path");
+    await p.unroute("**/api/admin/network**");
   });
   await step(d, "a shared lab link, signed out: join first, and the lab is remembered for after", async () => {
     await p.evaluate(() => localStorage.removeItem("tnl-token"));   // signed out (the step before signed this phone in)

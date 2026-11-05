@@ -122,6 +122,7 @@ app.get("/api/levels", (_req, res) => res.json({
     marketOpen: settingBool("marketOpen"),
     studioOpen: settingBool("studioOpen"),
     loopsOpen: settingBool("loopsOpen"),
+    echoOpen: settingBool("echoOpen"),   // Echo for every member; admins always have it (server/echo)
   },
 }));
 /* commit: which version is live (Railway sets this for GitHub deploys), so the
@@ -228,3 +229,35 @@ app.get("/api/posts/:id/likers", auth, (req, res) => {
     WHERE l.post_id = ? AND COALESCE(u.suspended, 0) = 0 ORDER BY l.created_at DESC LIMIT 500`).all(post.id).filter((u) => u.id === req.user.id || !isBlocked(u.id, req.user.id));
   res.json({ likers: rows.map((u) => ({ username: u.username, displayName: u.display_name, avatarUrl: u.avatar_url || "", accent: u.accent || "lab", accentHex: accentHex(u.accent), at: u.created_at })) });
 });
+
+/* ---- LIKED BY · 2026-11-04 ("everybody can see who liked your post in the Showroom — like
+   Instagram or X") ----
+   The Showroom card says "Liked by <someone> and N others" with their faces; a tap opens the
+   whole list (the route above). Up to three per post, people the viewer follows first, then the
+   newest. The same rules as the list: a post whose maker hid its likes shows nobody (except to
+   the maker), and nobody on either side of a block with the viewer is named. Signed in only. */
+function likedByPreview(posts, viewerId) {
+  if (!viewerId || !posts.length) return posts;
+  const want = posts.filter((p) => p.likeCount > 0 && (!p.hideLikes || p.author.username === viewerUsername(viewerId)));
+  if (!want.length) return posts;
+  const hidden = blockedIds(viewerId);
+  const holes = want.map(() => "?").join(",");
+  const rows = db.prepare(`SELECT post_id, username, display_name, avatar_url, accent FROM (
+      SELECT l.post_id, u.username, u.display_name, u.avatar_url, u.accent,
+        ROW_NUMBER() OVER (PARTITION BY l.post_id ORDER BY (f.follower_id IS NOT NULL) DESC, l.created_at DESC) rn
+      FROM likes l JOIN users u ON u.id = l.user_id
+      LEFT JOIN follows f ON f.follower_id = ? AND f.followee_id = l.user_id
+      WHERE l.post_id IN (${holes}) AND COALESCE(u.suspended, 0) = 0)
+    WHERE rn <= 8 ORDER BY post_id, rn`).all(viewerId, ...want.map((p) => p.id));
+  const by = new Map();
+  for (const r of rows) {
+    if (hidden.has(r.username)) continue;
+    const l = by.get(r.post_id) || [];
+    if (l.length < 3) l.push({ username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "", accent: r.accent || "lab", accentHex: accentHex(r.accent) });
+    by.set(r.post_id, l);
+  }
+  for (const p of want) p.likedBy = by.get(p.id) || [];
+  return posts;
+}
+const viewerNameQ = db.prepare(`SELECT username FROM users WHERE id = ?`);
+const viewerUsername = (id) => viewerNameQ.get(id)?.username || "";

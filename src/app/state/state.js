@@ -75,6 +75,8 @@ let es=null, ESTRY=0, ESTIMER=null;
 let SRSOON=null;
 // messages/labs.js
 let LABDRAFT="", POSTSCH=null, PINIDX=0, ROOMSTICK=true, ROOMSEEN=null, LABUNSEEN=0;
+// echo/echo.js — Echo, LABS's help inside Messages (2026-11-04)
+let ECHO=null, ECHOOPEN=false, ECHOBUSY=false, ECHODRAFT="";
 
 /* ── SHOWROOM · the feed, the builders row, the gallery on a computer ── */
 // showroom/gallery.js

@@ -103,6 +103,24 @@ function pxLikersHTML(p){
   if(!me&&p.hideLikes)return "";
   return `<button type="button" class="px-likers${me?"":" theirs"}${p.likeCount?"":" zero"}" data-likers="${p.id}">${pxLikersText(p.likeCount||0)}</button>`;
 }
+/* "Liked by <someone> and N others", with their faces (2026-11-04: "everybody can see who liked your
+   post in the Showroom — like Instagram or X"). The server sends up to three (likedBy: people you
+   follow first); a tap opens everyone. Nothing when the maker hid the likes, or nobody's liked it. */
+function pxLikedByHTML(p){
+  if(p.pending||p.failed||!myName()||!p.likeCount)return "";
+  if(p.hideLikes&&p.author.username!==myName())return "";
+  const lb=p.likedBy||[],first=lb[0],rest=p.likeCount-1;
+  const who=first?`Liked by <b>${esc(first.username===myName()?"you":first.username)}</b>${rest>0?` and <b>${rest===1?"1 other":rest.toLocaleString()+" others"}</b>`:""}`:`<b>${pxLikersText(p.likeCount)}</b>`;
+  return `<button type="button" class="px-likedby" data-likers="${p.id}">${lb.length?`<span class="lb-avs">${lb.map(u=>avHTML(u,"xs")).join("")}</span>`:""}<span class="lb-t">${who}</span></button>`;
+}
+/* a like or unlike from here: you join or leave the faces, the line follows the count */
+function pxLikedBySync(p,liked){
+  if(!p||!ME)return;
+  const me={username:ME.username,displayName:ME.displayName,avatarUrl:ME.avatarUrl||"",accent:ME.accent,accentHex:ME.accentHex};
+  let lb=(p.likedBy||[]).filter(u=>u.username!==myName());
+  if(liked)lb=[me,...lb].slice(0,3);
+  p.likedBy=lb;
+}
 document.addEventListener("click",async e=>{
   const b=e.target.closest("[data-likers]");if(!b)return;
   e.stopPropagation();const id=+b.dataset.likers;

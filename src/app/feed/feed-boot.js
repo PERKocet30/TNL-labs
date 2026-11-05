@@ -11,7 +11,11 @@ function setLike(id,liked,count){
   document.querySelectorAll('[data-like="'+id+'"]').forEach(b=>{
     if(liked!=null)b.classList.toggle("on",liked);
     const n=b.querySelector(".igact-n");if(n){const p=likeCopies(id)[0];n.textContent=(p&&p.hideLikes&&p.author&&p.author.username!==myName())?"":(count||"")}});
-  document.querySelectorAll('[data-likers="'+id+'"]').forEach(b=>{b.textContent=pxLikersText(count);b.classList.toggle("zero",!count)});   // "12 likes" under the post
+  const lp=likeCopies(id);if(liked!=null)lp.forEach(p=>pxLikedBySync(p,liked));
+  document.querySelectorAll('[data-likers="'+id+'"]').forEach(b=>{
+    if(b.classList.contains("px-likedby")){const h=lp[0]?pxLikedByHTML(lp[0]):"";if(h)b.outerHTML=h;else b.remove();return}   // "Liked by …" on a Showroom card
+    b.textContent=pxLikersText(count);b.classList.toggle("zero",!count)});   // "12 likes" under the post
+  if(count)document.querySelectorAll('.sr-card[data-pid="'+id+'"] .sr-acts').forEach(a=>{if(!a.parentElement.querySelector(".px-likedby")&&lp[0])a.insertAdjacentHTML("afterend",pxLikedByHTML(lp[0]))});
 }
 async function sendLike(id){
   const s=LIKING[id];if(!s||s.busy)return;
@@ -196,12 +200,9 @@ function wireFeed(){
   document.querySelectorAll("[data-cdel]").forEach(b=>b.onclick=async()=>{
     if(!(await uiConfirm("Delete this comment?","",{okLabel:"Delete",danger:true})))return;
     try{await api.delComment(b.dataset.cdel);bumpComments(OPENCOMMENTS,-1);COMMENTS=(await api.comments(OPENCOMMENTS)).comments;paintComments()}catch(e){toast(e.message)}});
-  document.querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>{
-    const id=+b.dataset.report;
-    openPicker({eyebrow:"REPORT",title:"What's wrong?",
-      items:["Spam","Harassment","Stolen work","Nudity or gore","Something else"].map(r=>({label:r,icon:DI.flag,reason:r})),
-      onPick:async(it)=>{try{await api.report({postId:id,reason:it.reason});toast("Reported — thank you")}catch(e){toast(e.message)}}});
-  });
+  document.querySelectorAll("[data-report]").forEach(b=>b.onclick=()=>reportPost(findAnyPost(b.dataset.report)));   // app/posts/report
+  document.querySelectorAll("[data-crep]").forEach(b=>b.onclick=()=>reportThing({kind:"comment",id:+b.dataset.crep,username:b.dataset.crepu}));
+  document.querySelectorAll("[data-repfail]").forEach(b=>b.onclick=()=>reportProblem("A post didn't send"));
   wireProfileLinks();
 }
 function wireSheet(){

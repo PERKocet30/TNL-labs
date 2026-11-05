@@ -84,7 +84,7 @@ function detailHTML(){
         </div>
         ${mine?`<span class="mono dim">${l.views} views</span>`:`<button class="btn sm ghost" data-dmseller="${esc(l.seller.username)}">Message</button>`}
       </div>
-      ${mine?"":`<div class="lpol mono dim">Sold by @${esc(l.seller.username)}${MKTMETA.paymentsEnabled?" · Checkout by Stripe":""} · <a href="/policies" target="_blank" rel="noopener">Shipping &amp; returns</a> · <a href="/terms" target="_blank" rel="noopener">Terms</a></div>`}
+      ${mine?"":`<div class="lpol mono dim">Sold by @${esc(l.seller.username)}${MKTMETA.paymentsEnabled?" · Checkout by Stripe":""} · <a href="/policies" target="_blank" rel="noopener">Shipping &amp; returns</a> · <a href="/terms" target="_blank" rel="noopener">Terms</a>${ME?` · <button type="button" class="lrep" data-mrep="${l.id}">Report listing</button>`:""}</div>`}
       ${mine?`
         <div class="lsec">Offers</div>
         ${MKTOFFERS.length?MKTOFFERS.map(o=>`<div class="orow">
@@ -120,6 +120,7 @@ function paintListingPick(){
 }
 
 function wireListing(){
+  document.querySelectorAll("[data-mrep]").forEach(b=>b.onclick=()=>reportThing({kind:"listing",id:+b.dataset.mrep,username:MKTONE&&MKTONE.seller.username}));   // app/posts/report
   document.querySelectorAll("[data-lvs],[data-lvc]").forEach(b=>b.onclick=()=>{
     if(b.getAttribute("aria-disabled")&&!b.classList.contains("on"))return toast("Sold out");
     if(b.dataset.lvs!==undefined)LPICK.size=LPICK.size===b.dataset.lvs&&lvState(MKTONE).sizes.length>1?"":b.dataset.lvs;

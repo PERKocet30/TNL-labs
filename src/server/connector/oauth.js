@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · sign-in  v1.2 — 2026-10-28 (v1.2: a pasted key for apps that take a key instead of signing in — Manus; owner only, shown once, 90 days, same read-only reach) · v1.1 — 2026-10-27 (v1.1: a key only works from /mcp itself; the allow page escapes its data and can't be framed)
+   LABS CONNECTOR · sign-in  v1.3 — 2026-11-04 (v1.3: a tournament's spam check is readable; ui-signals/tools.js adds its paths) · v1.2 — 2026-10-28 (v1.2: a pasted key for apps that take a key instead of signing in — Manus; owner only, shown once, 90 days, same read-only reach) · v1.1 — 2026-10-27 (v1.1: a key only works from /mcp itself; the allow page escapes its data and can't be framed)
    Claude (and any other MCP client) reads the admin dashboard through
    /mcp (server/connector/tools.js). This part is the key cabinet:
 
@@ -69,14 +69,15 @@ const mcpRedirectOk = (u) => !!mcpAppFor(u);;
 const mcpLimit = rateLimit({ max: 30, windowMs: 600000 });
 
 /* The admin GET routes a connector key may open. Everything that could expose a
-   person — messages, emails, mail log, backups, source, settings, CSV export, the
-   vote-check with voter identities — is simply not on the list. */
+   person — messages, emails, mail log, backups, source, connector keys, CSV
+   export, the vote-check with voter identities — is simply not on the list.
+   Settings (the switches, never a key) joined on 2026-11-04 (ui-signals/tools.js). */
 const MCP_PATHS = new Set(["overview", "pulse", "series", "funnel", "retention", "audience", "direction", "topwork", "people", "content", "posts",
-  "reports", "orders", "market", "sellers", "listings", "events", "health", "errors", "glitches", "log", "nudge", "systems", "systems/google", "systems/meta", "studio"]);
+  "reports", "orders", "market", "sellers", "listings", "events", "health", "errors", "glitches", "log", "nudge", "systems", "systems/google", "systems/meta", "studio", "knowledge"]);
 function mcpPathAllowed(path) {
   const p = String(path || "").split("?")[0].replace(/^\/api\/admin\//, "");
   if (MCP_PATHS.has(p)) return true;
-  return /^people\/[a-z0-9._]{2,20}(\/signals)?$/.test(p) || /^events\/\d+$/.test(p);
+  return /^people\/[a-z0-9._]{2,20}(\/signals)?$/.test(p) || /^events\/\d+(\/spam)?$/.test(p);
 }
 
 /* Called by auth() when a bearer token isn't a member session. A connector key
@@ -144,7 +145,7 @@ app.get("/oauth/authorize", mcpLimit, (req, res) => {
   res.set("X-Frame-Options", "DENY"); res.set("Content-Security-Policy", "frame-ancestors 'none'");
   const params = { client_id: String(client_id), redirect_uri: String(redirect_uri), state: String(state).slice(0, 500), code_challenge: String(code_challenge) };
   res.send(lookPage({ title: "Connect — LABS", center: true, body: `${lookEyebrow("Connect")}
-<h1>Let ${lookEsc(client.name)} read the admin dashboard?</h1>
+<h1>Let ${lookEsc(client.name)} read the admin dashboard and write to Knowledge?</h1>
 <p class="p">Read only. Numbers, orders, reports, systems. Never messages, emails or anything that could expose a member. You can disconnect it any time in Admin → Systems.</p>
 <p class="p"><b>Only allow if you just pressed Connect in your own ${lookEsc(client.name)}.</b></p>
 <div id="who" class="p"></div>

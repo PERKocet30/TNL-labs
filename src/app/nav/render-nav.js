@@ -1,4 +1,4 @@
-/* TOP BAR v1.1 — 2026-10-20: search · messages · bell, no emoji; day/night lives in the profile menu */
+/* TOP BAR v1.2 — 2026-11-04 (render() ends with uiTick(): the UI signals see every screen change). v1.1 — 2026-10-20: search · messages · bell, no emoji; day/night lives in the profile menu */
 /* HISTORY → app/nav/back.js (one trail of screens, 2026-10-12) */
 /* COMPUTER LAYOUT v1.0 — 2026-09-29. From 1024px wide the top bar and the
    bottom nav move into one left sidebar (styles: app/styles/wide.css).
@@ -52,6 +52,7 @@ function render(){
   if(TAB==="market"&&MKTVIEW==="browse"&&!MKT)loadMarket();
   if(TAB==="studio"||(TAB==="labs"&&CH.beatlab))setTimeout(mountStudio,0);
   if(TAB==="labs"&&CH.library&&!TRACKS)loadTracks();
+  uiTick();   // app/ui-signals: which screen this is, as a count
 }
 function topHTML(){
   if(guest())return `

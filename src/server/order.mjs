@@ -111,6 +111,9 @@ export const SERVER = [
   "posts/rank.js",
   "posts/views.js",
 
+  // ui-signals — how people move through the app, as counts (after views: same viewer key)
+  "ui-signals/signals.js",
+
   // admin
   "admin/watch.js",
   "admin/weekly.js",
@@ -129,6 +132,7 @@ export const SERVER = [
 
   // trust
   "trust/signals-admin.js",
+  "trust/globe.js",
 
   // profile
   "profile/social-meta.js",
@@ -146,12 +150,19 @@ export const SERVER = [
   // labs
   "labs/pages.js",
 
+  // knowledge — before the connector (Claude and Grok write to it) and before echo (Echo answers from it)
+  "knowledge/knowledge.js",
+  "knowledge/features.js",
+
   // connector
   "connector/oauth.js",
   "connector/tools.js",
   "connector/songs.js",
   "connector/insights-people.js",
   "connector/insights-shop.js",
+
+  // ui-signals — Echo's eyes for the signals above and the admin pages that had no tool
+  "ui-signals/tools.js",
 
   // shop-feeds
   "shop-feeds/google.js",
@@ -164,8 +175,15 @@ export const SERVER = [
   // pages
   "pages/policies.js",
 
+  // echo — the brain first (admins, when ECHO_AI_KEY is set), the matcher after it
+  "echo/brain.js",
+  "echo/hands.js",
+  "echo/echo.js",
+
   // admin
   "admin/report.js",
+  "admin/systems-map.js",
+  "admin/network.js",
 
   // pages
   "pages/seo.js",

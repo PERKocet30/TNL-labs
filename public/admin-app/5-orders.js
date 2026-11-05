@@ -46,4 +46,3 @@ WIRES.orders = () => {
     await act(() => req("/api/admin/orders/" + b.dataset.voidorder + "/void", { method: "POST" }), "Marked as a test"); load();
   });
 };
-VIEWS.market = () => VIEWS.orders();

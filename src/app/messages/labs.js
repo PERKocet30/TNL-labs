@@ -121,6 +121,7 @@ function labMenu(id){
   if(mine)acts.push({icon:CI.edit,label:"Edit",run:()=>{EDITID=p.id;LABREPLY=null;render();const d=$("#draft");if(d){d.value=p.body||"";d.focus()}}});
   if(admin||cur)acts.push({icon:CI.pin,label:pinned?"Unpin":"Pin",run:async()=>{
     try{const r=await capi.pin(p.id,!pinned);LABPINS=r.pins;PINIDX=0;paintPins();toast(pinned?"Unpinned":"Pinned for everyone in "+(LAB?labMark(LAB.name):"this lab"))}catch(e){toast(e.message)}}});
+  if(!mine)acts.push({icon:DI.flag,label:"Report",danger:true,run:()=>reportPost(p)});
   if(mine||admin||cur)acts.push({icon:CI.trash,label:mine?"Delete":"Take down",danger:true,run:async()=>{
     if(!(await uiConfirm(mine?"Delete this message?":"Take this down?",mine?"":"You're removing someone else's message as "+asWho()+". They'll be told.",{okLabel:mine?"Delete":"Take down",danger:true})))return;
     try{await takeDown(p,mine);POSTS=POSTS.filter(x=>x.id!==p.id);renderRoomFeed()}catch(e){toast(e.message)}}});
@@ -155,6 +156,7 @@ function postMenu(id){
       try{const r=await req("/api/me/pins",{method:"POST",body:{postId:p.id,pin:!pinned}});ME.pinned=r.pinned;
         if(PROFILE&&PROFILE.user.username===myName()){PROFILE.user.pinned=r.pinned;PROFCACHE.delete(myName());render()}
         toast(pinned?"Unpinned":"Pinned to your profile")}catch(e){toast(e.message)}}})}
+  if(!mine)acts.push({icon:DI.flag,label:"Report",danger:true,run:()=>reportPost(p)});   // app/posts/report (2026-11-04)
   if(mine||admin||cur)acts.push({icon:CI.trash,label:mine?"Delete":"Take down",danger:true,run:async()=>{
     if(!(await uiConfirm(mine?"Delete this post?":"Take this post down?",mine?"":"You're removing someone else's post as "+asWho()+". They'll be told.",{okLabel:mine?"Delete":"Take down",danger:true})))return;
     try{await takeDown(p,mine);

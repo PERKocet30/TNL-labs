@@ -35,6 +35,7 @@ export const APP = [
   "styles/sizes.css",
   "styles/soft.css",
   "styles/updating.css",
+  "styles/echo.css",
   "styles/wide.css",
 
   // shell
@@ -48,6 +49,7 @@ export const APP = [
   "core/icons.js",
   "core/theme-labs-api.js",
   "core/updating.js",
+  "core/here.js",
 
   // media
   "media/images.js",
@@ -64,6 +66,7 @@ export const APP = [
 
   // media
   "media/upload.js",
+  "media/pick.js",        // the file picker, outside the screen (2026-11-04: an iPhone lost picked photos to a repaint)
 
   // nav
   "nav/motion.js",
@@ -78,6 +81,9 @@ export const APP = [
   "messages/live.js",
   "messages/labs.js",
   "messages/search.js",
+
+  // echo
+  "echo/echo.js",
 
   // showroom
   "showroom/gallery.js",
@@ -98,6 +104,7 @@ export const APP = [
 
   // posts
   "posts/archive-posts.js",
+  "posts/report.js",       // Report on any post that isn't yours (2026-11-04)
   "posts/comments.js",
   "posts/extras.js",
 
@@ -176,6 +183,9 @@ export const APP = [
 
   // core
   "core/glitch.js",
+
+  // ui-signals — how the app is used, as counts (after glitch: wraps fetch after it)
+  "ui-signals/signals.js",
 
   // shell
   "shell/tail.html",
