@@ -1,6 +1,6 @@
 
 /* ================================================================
-   EVENTS v1.3 — 2026-10-14 (an unused field list out). v1.2 — 2026-10-12 (also: `current`, so admin can show the link to send). Running an event (admin only, enforced
+   EVENTS v1.4 — 2026-11-05 (resultsMail in the admin view). v1.3 — 2026-10-14 (an unused field list out). v1.2 — 2026-10-12 (also: `current`, so admin can show the link to send). Running an event (admin only, enforced
    here) and its public pages: /e/:slug and /e/:slug/rules.
    v1.2: the "entries are open" email to every member (its switch,
    its progress; the sending is in server/events/mail.js).
@@ -60,6 +60,7 @@ function evAdminView(ev) {
     voters: db.prepare(`SELECT COUNT(DISTINCT voter_id) n FROM event_votes WHERE event_id = ?`).get(ev.id).n,
     board: evBoard(ev, EV_STAGE(phaseAt(sched)), phaseAt(sched)),
     mail: evmStatus(ev),
+    resultsMail: evrStatus(ev),   // the "it's over, here's the winner" email to voters (events/resultmail.js)
   };
 }
 
