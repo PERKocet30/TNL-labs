@@ -2306,6 +2306,22 @@ console.log("\nMEMBER · COMPUTER");
     await p.screenshot({ path: join(SHOTS, "admin-glitches.png"), fullPage: false });
     await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
+  // 2026-11-05 "Including the admin dashboard": the design language's motion and shimmer in /admin
+  await step(d, "admin follows the design language: a section's parts rise in turn, loading shimmers (never \"Loading…\"), a number that changes bumps", async () => {
+    await settledGoto(p, B + "/admin#health");
+    await fast(p, 6000, () => p.locator("h2.sec", { hasText: "Glitches" }).first().waitFor(), "the admin Health page");
+    if (await p.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+    const seen = await p.evaluate(() => { D.settings = null; go("settings"); const m = document.getElementById("main");
+      return { cls: m.className, text: m.innerText, ask: !!m.querySelector(".ask"), anim: [...m.children].slice(0, 2).map((e) => getComputedStyle(e).animationName) }; });
+    ok(!/Loading/.test(seen.text), "a section says Loading…: " + seen.text.slice(0, 80));
+    ok(/mv-in/.test(seen.cls) && seen.anim.every((n) => n === "amvRise"), "a section's parts don't rise in: " + JSON.stringify(seen));
+    await fast(p, 6000, () => p.waitForFunction(() => !document.querySelector("#main .ask")), "Settings landing");
+    const bumped = await p.evaluate(() => { const v = document.querySelector("#app .nv b, #app .bb b, #main .kpi .v"); if (!v) return "none";
+      const was = v.textContent; v.textContent = was + "1"; const b = admMvBefore(); v.textContent = was; admMvAfter(b);
+      const now = document.querySelector("#app .nv b, #app .bb b, #main .kpi .v"); return now && now.classList.contains("mv-bump") ? "" : "no bump"; });
+    ok(bumped === "" || bumped === "none", "a changed number doesn't bump");
+    await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
+  });
   // 2026-10-09: Today runs on the direction — the tournament, the labs and their #tags
   await step(d, "admin → Home: the work queue first, numbers with their share, a line chart, the tournament; a lab opens its posts in Content", async () => {
     await settledGoto(p, B + "/admin#today");   // the old link: lands on Home

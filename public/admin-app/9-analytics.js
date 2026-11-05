@@ -14,7 +14,7 @@ LOADERS.analytics = async () => {
 };
 VIEWS.analytics = () => {
   const p = D.pulse, d = D.dir, S = D.series, A = D.audience, F = D.funnel, R = D.retention, m = D.market;
-  if (!p || !d || !S || !A || !F || !R || !m) return `<div class="empty">Loading…</div>`;
+  if (!p || !d || !S || !A || !F || !R || !m) return askel();
   const labels = dayLabels(S.start, S.days), n = p.now, b = p.before;
   const chart = (title, key, fmt = num, sub = "") => card(title, `<div class="body">${lineHTML(S.series[key], S.prev[key], { labels, fmt, h: 190 })}<div class="leg"><span><i></i>Last ${S.days} days</span><span><i class="pv"></i>The ${S.days} before</span></div></div>`, sub);
   const hour = (h) => (h % 12 || 12) + (h < 12 ? "am" : "pm");

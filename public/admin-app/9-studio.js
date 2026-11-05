@@ -6,7 +6,7 @@ VIEWS.studio = () => `${pageHead("Studio stats", "What producers do with the bea
   <div class="studio" style="margin-top:12px">${studioHTML()}</div>`;
 function studioHTML(){
   const d=D.studio;
-  if(!d)return `<div class="empty">Loading…</div>`;
+  if(!d)return askel();
   const f=d.funnel;
   const maxF=Math.max(1,f.opened);
   const names={kick:"KICK",snare:"SNARE",hat:"HAT",clap:"CLAP",perc:"PERC",bass:"808",synth:"SYNTH"};

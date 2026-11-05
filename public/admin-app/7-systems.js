@@ -18,7 +18,7 @@ const sysErr = (e) => `<div class="empty"><span class="tag warn">couldn't read</
 
 VIEWS.systems = () => {
   const S = D.systems;
-  if (!S) return `<div class="empty">Loading…</div>`;
+  if (!S) return askel();
   const L = S.live, R = S.railway, G = S.github;
   const up = `${Math.floor(L.uptimeS / 3600)}h ${Math.floor((L.uptimeS % 3600) / 60)}m`;
   /* the one line at the top: which version is serving, and is anything in motion */

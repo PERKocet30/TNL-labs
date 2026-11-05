@@ -96,7 +96,7 @@ function pcardsHTML(rows) {
     <span class="r">${badge(pstatus(u))}<br>${plast(u) ? ago(plast(u)) : "joined " + ago(u.joined)}</span></button>`).join("")}</div>`;
 }
 function presultsHTML() {
-  if (!D.people) return `<div class="empty">Loading members…</div>`;
+  if (!D.people) return `${askel()}`;
   const rows = prows(), pages = Math.max(1, Math.ceil(rows.length / PPREF.size));
   PPAGE = Math.min(PPAGE, pages - 1);
   const from = PPAGE * PPREF.size, page = rows.slice(from, from + PPREF.size);

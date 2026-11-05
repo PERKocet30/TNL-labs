@@ -3,7 +3,7 @@
 let LSTAT = "active", LQ = "";
 LOADERS.listings = async () => { const [l, m] = await Promise.all([req("/api/admin/listings"), req("/api/admin/market")]); D.listings = l.listings; D.market = m; };
 VIEWS.listings = () => {
-  const L = D.listings, m = D.market; if (!L || !m) return `<div class="empty">Loading…</div>`;
+  const L = D.listings, m = D.market; if (!L || !m) return askel();
   const q = LQ.trim().toLowerCase();
   const rows = L.filter((l) => (LSTAT === "all" || l.status === LSTAT) && (!q || (l.title + " " + l.seller).toLowerCase().includes(q)));
   const count = (s) => L.filter((l) => s === "all" || l.status === s).length;

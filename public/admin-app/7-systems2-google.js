@@ -9,7 +9,7 @@ const GG_TODO = { sitemap: "Search", search: "Search", page: "A page", shopping:
 
 function sysGoogleHTML() {
   const G = D.sysGoogle;
-  if (!G) return `<h2 class="sec">Google</h2><div class="panel"><div class="empty">Loading…</div></div>`;
+  if (!G) return `<h2 class="sec">Google</h2><div class="panel">${askel("rows")}</div>`;
   if (!G.on) return `<h2 class="sec">Google <span class="mono">Search · Shopping</span></h2><div class="panel">${sysOff("Google", "GOOGLE_SERVICE_ACCOUNT")}</div>`;
   if (G.error) return `<h2 class="sec">Google <span class="mono">${esc(G.account || "")}</span></h2><div class="panel">${sysErr(G.error)}</div>`;
   const S = G.search, P = G.shopping;

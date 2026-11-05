@@ -14,7 +14,7 @@ VIEWS.knowledge = () => {
   const d = D.knowledge;
   const head = pageHead("Knowledge", "What LABS knows about itself — the creed, how it talks, what's decided, the words. Kept here, not in a chat. Any model reads the export.",
     `<div class="row wrapx" style="gap:6px"><a class="btn ghost sm" href="/api/admin/knowledge/export?format=text" target="_blank" rel="noopener" id="knowtext">Export as text ${I.out}</a><a class="btn ghost sm" href="/api/admin/knowledge/export" target="_blank" rel="noopener">JSON ${I.out}</a><button class="btn sm" id="knownew">Add</button></div>`);
-  if (!d) return `${head}<div class="empty">Loading…</div>`;
+  if (!d) return `${head}${askel()}`;
   const K = d.kinds;
   const chips = `<div class="row wrapx" style="gap:6px;margin:0 0 10px"><button class="btn ghost sm ${!KNOWKIND ? "on" : ""}" data-knowkind="">All</button>${Object.entries(K).map(([k, n]) => `<button class="btn ghost sm ${KNOWKIND === k ? "on" : ""}" data-knowkind="${k}">${n}</button>`).join("")}
     <input class="in" id="knowq" placeholder="Search" value="${esc(KNOWQ)}" style="max-width:240px;margin-left:auto"><button class="btn ghost sm ${KNOWARCH ? "on" : ""}" id="knowarch" title="Entries put away">Archive</button></div>`;
@@ -25,7 +25,7 @@ VIEWS.knowledge = () => {
     <label class="l" for="kf-tags">Tags (optional)</label><input class="in" id="kf-tags" maxlength="200" value="${esc(f.tags || "")}" placeholder="e.g. rep levels">
     <div class="row wrapx" style="gap:8px;margin-top:12px"><button class="btn sm" id="kf-go">${f.id ? "Save" : "Add"}</button><button class="btn ghost sm" id="kf-x">Cancel</button>
       ${f.id ? `<button class="btn ghost sm" id="kf-hist">History</button><button class="btn ghost sm" id="kf-arch" style="margin-left:auto">${f.archived ? "Bring back" : "Put away"}</button>` : ""}</div></div>`;
-  const hist = (e) => { const h = D.knowhist; if (!h) return `<div class="empty">Loading…</div>`;
+  const hist = (e) => { const h = D.knowhist; if (!h) return askel("rows");
     return `<div class="panel" style="margin:0 0 12px"><div class="row sp"><h3 style="margin:0">Earlier versions of “${esc(e.title)}”</h3><button class="btn ghost sm" id="kh-x">Close</button></div>
       ${h.history.length ? h.history.map((v) => `<div class="set" style="align-items:flex-start"><div class="t" style="flex:1"><b>${esc(v.title)} <span class="tag">${esc(K[v.kind] || v.kind)}</span></b><span style="white-space:pre-wrap">${esc(v.body)}</span><span class="mono">${v.by ? "by @" + esc(v.by) + " · " : ""}${knowWhen(v.at)}</span></div><button class="btn ghost sm" data-knowrestore="${v.version}" data-entry="${e.id}">Restore</button></div>`).join("")
       : `<div class="empty">This is the only version so far.</div>`}</div>`; };

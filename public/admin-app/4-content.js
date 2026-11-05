@@ -24,7 +24,7 @@ VIEWS.content = () => {
     <select class="sel" id="clab" aria-label="Lab"><option value="">Every lab and profile</option>${(P ? P.labs : []).map((l) => `<option value="${l.id}" ${CLAB === l.id ? "selected" : ""}>${l.id === "profile" ? "Profiles" : "// " + esc(l.name)} (${l.n})</option>`).join("")}</select>
     ${CTAG ? `<button class="chip tg on" data-ctagx>#${esc(CTAG)} ${I.x}</button>` : ""}
   </div>
-  ${!P ? `<div class="empty">Loading…</div>` : !P.posts.length ? `<div class="empty">No posts match.</div>` : `<div class="posts">${P.posts.map(postCardHTML).join("")}</div>`}</div>`;
+  ${!P ? askel() : !P.posts.length ? `<div class="empty">No posts match.</div>` : `<div class="posts">${P.posts.map(postCardHTML).join("")}</div>`}</div>`;
 };
 
 const whereLine = (x) => (x.labName && x.labName !== "Profile" ? "// " + x.labName : "Profile") + " · " + (x.isWork ? "work" : "talk");
