@@ -1785,6 +1785,7 @@ console.log("\nMEMBER · PHONE");
     const r = (await api("/api/admin/reports", token)).reports.find((x) => x.kind === "app" && x.reason.includes("wrong size " + d.name));
     ok(!!r && r.detail === "showroom", "the problem didn't reach the admin with its screen: " + JSON.stringify(r));
     ok(await p.evaluate(() => !document.querySelector(".ui-ov")), "the sheet was left open");
+  });
   /* "Sometimes I hit screens without a back button where the only way back is click Labs" (2026-11-04) */
   await step(d, "a listing that won't load still has Back (and Try again) — never bare placeholders with no way out", async () => {
     await p.evaluate(() => { closeMenu(); PICKER = null; POSTOPEN = null; PROFILE = null; pxOpenListing(987654321); });
