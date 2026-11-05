@@ -17,6 +17,8 @@ function wireMarket(){
     render()});
   document.querySelectorAll("[data-ot]").forEach(b=>b.onclick=()=>{ORDTAB=b.dataset.ot;render()});
   const os=$("#openstudio");if(os)os.onclick=()=>{if(guest())return needAccount("Join to use the studio.");TAB="studio";render()};
+  /* the Studio had no way back (2026-11-04: "screens without a back button where the only way back is click Labs") */
+  const sb=$("#studioback");if(sb)sb.onclick=()=>navBack(()=>{TAB="labs";try{openLab("culture")}catch(e){}});
   const rl=$("#rateladder");if(rl)rl.onclick=()=>{if(MKTVIEW==="sell"||MKTVIEW==="edit")stashSell();CLIMB=true;CLIMBOPENRUNG=levelFor(ME.rep).id;render()};
   const cx=$("#climbx");if(cx)cx.onclick=()=>{CLIMB=false;CLIMBUSER=null;render()};
   const cbg=$("#climbbg");if(cbg)cbg.onclick=e=>{if(e.target===cbg){CLIMB=false;CLIMBUSER=null;render()}};
@@ -37,7 +39,7 @@ function wireMarket(){
       MKTONE=d.listing;MKTOFFERS=d.offers||[];MKTSELLER=d.seller||null;MKTSIMILAR=d.similar||[];
       pushView("listing",d.listing.id);render();
       const sc=document.querySelector("#mktscroll");if(sc)sc.scrollTop=0;
-    }catch(x){toast(x.message)}});
+    }catch(x){mktFail(el.dataset.mopen,x)}});
   document.querySelectorAll("[data-mlike]").forEach(b=>b.onclick=async e=>{
     e.stopPropagation();
     if(guest())return needAccount("Join to save items.");

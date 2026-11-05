@@ -27,7 +27,7 @@ function pxPaintActs(id){
 async function pxOpenListing(id){
   PROFILE=null;POSTOPEN=null;OPENCOMMENTS=null;TAB="market";MKTVIEW="detail";MKTONE=null;LPICK={id:0,size:"",colour:""};render();
   try{const d=await api.mktOne(id);MKTONE=d.listing;MKTOFFERS=d.offers||[];MKTSELLER=d.seller||null;MKTSIMILAR=d.similar||[];
-    pushView("listing",d.listing.id);render()}catch(x){toast(x.message)}
+    pushView("listing",d.listing.id);render()}catch(x){mktFail(id,x)}   // Back, the reason, Try again — never bare placeholders
 }
 document.addEventListener("click",e=>{const b=e.target.closest("[data-pxshop]");if(!b)return;e.stopPropagation();pxOpenListing(+b.dataset.pxshop)},true);
 /* "and 3 others" lists everyone tagged. */

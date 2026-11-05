@@ -352,7 +352,7 @@ function paintVerifyBar(){
   else if(qstart!==null&&ME){history.replaceState({},"","/");startGo(qstart)}
   else if(path==="/shop"){TAB="market";MKTVIEW="browse"}
   else if(mm){TAB="market";MKTVIEW="detail";
-    try{const d=await api.mktOne(mm[1]);MKTONE=d.listing;MKTOFFERS=d.offers||[]}catch(e){}}
+    try{const d=await api.mktOne(mm[1]);MKTONE=d.listing;MKTOFFERS=d.offers||[]}catch(e){MKTONE={error:e.message||"That listing isn't available any more.",id:Number(mm[1])||0}}}   // a link to a listing that's gone: Back, not placeholders forever
   render();
   window.LABS_UP=1;   // up: from here an error is reported, never a crash screen over a working app (app/shell/body)
   initHistory();
