@@ -118,8 +118,8 @@ try {
 
   console.log("\nTHE PAGE");
   const core = readFileSync(join(ROOT, "public/admin-app/1-core.js"), "utf8"), page = readFileSync(join(ROOT, "public/admin-app/7-systems.js"), "utf8"), html = readFileSync(join(ROOT, "public/admin.html"), "utf8");
-  /* 2026-11-04: Systems is a tab of Health (Under the hood); an old #systems link still lands on it */
-  t("Systems is a tab of Health under the hood, with its own script, and #systems still lands on it", /\["systems", "Systems"\]/.test(core) && /"Under the hood", \["analytics", "health"\]/.test(core) && /systems: "health"/.test(core) && /7-systems\.js/.test(html) && /7-systems5-health\.js/.test(html));
+  /* 2026-11-04: Systems is up front — its own section, second in the sidebar (Echo's group) and in the phone's bar, opening on the spinning map ("I said I wanted this at the front of the admin dashboard"); Health is Health alone */
+  t("Systems is up front: in Echo's group and the phone's bar, with its own script; Health stands alone", /\["systems", "Systems"\]/.test(core) && /\["Echo", \["echohome", "systems"\]\]/.test(core) && /PHONE_BAR = \["echohome", "systems", "market", "people"\]/.test(core) && !/systems: "health"/.test(core) && /"Under the hood", \["analytics", "health"\]/.test(core) && /7-systems\.js/.test(html) && /7-systems5-health\.js/.test(html));
   t("the page says plainly when a key isn't set", /RAILWAY_PROJECT_TOKEN/.test(page) && /GITHUB_TOKEN/.test(page) && /RAILWAY\.md/.test(page));
   t("it never takes a token from the page or stores one", !/localStorage\.(set|get)Item\(["'](railway|github)/i.test(page));
 } finally { srv.kill(); fake.close(); }

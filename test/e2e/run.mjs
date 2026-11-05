@@ -2235,12 +2235,13 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator(".rc h3", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
     // 2026-10-20: on a computer, a grouped side menu with every section and no bottom bar (twelve since Systems and Instagram, 2026-10-26)
     // 2026-11-04: nine sections in five groups — Orders · Listings · Sellers are Market's tabs, Systems is Health's
-    ok(await p.locator(".side .nv").count() === 11 && !(await p.locator(".bbar").isVisible()), "the side menu isn't the eleven grouped sections");
+    ok(await p.locator(".side .nv").count() === 12 && !(await p.locator(".bbar").isVisible()), "the side menu isn't the twelve grouped sections (Systems up front)");
     // 2026-10-26: Systems — what's live, what's waiting for a Push; with no keys set, each card says so plainly (2026-11-04: a tab of Health; the old #systems link lands on it)
-    await p.locator(".side .nv[data-tab=health]").click(); await fast(p, 6000, () => p.locator("[data-hs=systems]").waitFor(), "Health's tabs");
-    await p.locator("[data-hs=systems]").click();
+    /* 2026-11-04: "I said I wanted this at the front of the admin dashboard" — Systems is its own section again, second in the side menu */
+    ok((await p.locator(".side .nv").nth(1).getAttribute("data-tab")) === "systems", "Systems isn't up front, right after Echo");
+    await p.locator(".side .nv[data-tab=systems]").click();
     await fast(p, 6000, () => p.locator(".pg-hd h1", { hasText: "Systems" }).waitFor(), "the Systems page");
-    ok(await p.evaluate(() => location.hash === "#systems"), "the Systems tab didn't set #systems");
+    ok(await p.evaluate(() => location.hash === "#systems" && TAB === "systems"), "Systems didn't open as its own section (#systems)");
     ok((await p.locator(".empty", { hasText: "isn't connected yet" }).count()) === 4, "Systems doesn't say its keys aren't set yet (Railway, GitHub, Google, Meta)");
     ok(await p.locator("#sysfresh").count() === 1, "no Look again on Systems");
     // 2026-10-26: the week's report sits at the top of Systems with a button that emails it now
@@ -2324,10 +2325,10 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
   });
   // admin v4 (2026-10-20): on a phone, a bottom bar with four sections and More; tables are cards
   await step(d, "admin on a phone: a bottom bar, More opens the rest, Orders are cards", async () => {
-    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 4 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone (Echo · Market · Members · More)");
+    ok(await p.locator(".bbar").isVisible() && await p.locator(".bbar .bb").count() === 5 && await p.locator(".bbar [data-tab=systems]").count() === 1 && !(await p.locator(".side").isVisible()), "no bottom bar on a phone (Echo · Systems · Market · Members · More)");
     await p.locator(".bbar [data-more]").tap();
     await fast(p, 3000, () => p.locator(".msheet .mi[data-tab=analytics]").waitFor(), "the More sheet");
-    ok(await p.locator(".msheet .grp").count() === 5 && await p.locator(".msheet .mi").count() === 12, "the phone's sheet isn't the five groups (eleven sections + Open the app)");
+    ok(await p.locator(".msheet .grp").count() === 5 && await p.locator(".msheet .mi").count() === 13, "the phone's sheet isn't the five groups (twelve sections + Open the app)");
     await p.locator(".msheet .mi[data-tab=market]").tap();
     await fast(p, 6000, () => p.locator("[data-os=paid]").waitFor(), "Orders from More");
     ok(await p.locator(".msheet").count() === 0, "More stayed open");
@@ -2459,7 +2460,7 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     await p.unroute("**/api/admin/globe**");
   });
   /* 2026-11-04: "the same type of interactive model for the system networks" — the map on Health → Systems */
-  await step(d, "admin → Health → Systems on a phone: the map draws every service, the one that needs a look is picked, a row opens its page, and it stops when you leave", async () => {
+  await step(d, "admin → Systems on a phone: the map draws every service, the one that needs a look is picked, a row opens its page, and it stops when you leave", async () => {
     const node = (id, name, state, go) => ({ id, name, does: name + " does things", state, line: name + " line", facts: [["Thing", 1]], go });
     await p.route("**/api/admin/systems/map", (r) => r.fulfill({ json: { at: Date.now(), nodes: [node("labs", "LABS", "on", "health"), node("members", "Members' phones", "on", "health"),
       node("cloudflare", "Cloudflare", "on", "settings"), node("railway", "Railway", "on", "systems"), node("data", "Database", "on", "health"), node("github", "GitHub", "on", "systems"),
