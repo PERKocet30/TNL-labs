@@ -25,5 +25,13 @@ t("every new title has a profile kind on the server", ["Fine Artist", "Composer"
 const scr = readFileSync(join(ROOT, "src/app/gate/screens.js"), "utf8"), logic = readFileSync(join(ROOT, "src/app/gate/logic.js"), "utf8");
 t("sign-up groups the titles under each lab (General last), with a search", scr.includes("${gxRolesHTML(f)}") && scr.includes('<div class="gx-rlab">// ${esc(l.name)}</div>') && scr.includes('LABS.filter(l=>l.id==="hq")') && scr.includes('id="gxrq"'));
 t("the search hides by the start of a word, keeps what you chose, never repaints", logic.includes('const rq=$("#gxrq");if(rq)rq.oninput=') && logic.includes("w.startsWith(q)") && logic.includes('b.classList.contains("on")') && !/rq\.oninput=[^\n]*render\(\)/.test(logic));
+
+console.log("\nSIGN-UP IN MOTION (2026-11-05: 'make the onboarding more interactive so it's not so static. Motion.')");
+const mo = readFileSync(join(ROOT, "src/app/styles/motion.css"), "utf8"), gx = mo.slice(mo.indexOf("SIGN-UP IN MOTION"));
+const page = readFileSync(join(ROOT, "public/index.html"), "utf8");
+t("a new step moves in — forward from the right, back from the left — once; a repaint of the same step doesn't", scr.includes("const fresh=key!==was") && scr.includes('${fresh?" gx-in"+(back?" gx-back":""):""}') && readFileSync(join(ROOT, "src/app/state/state.js"), "utf8").includes('let GXPAINTED=""'));
+t("the parts arrive one after another; titles cascade in lab by lab; the newest progress bar fills", gx.includes(".gx-body.gx-in>*:nth-child(2)") && gx.includes("calc(.12s + var(--g,0) * .07s)") && gx.includes(".gx-prog i.now") && scr.includes('${k===i?" now":""}'));
+t("what you pick pops, the count bumps, your colour ring pops, your photo lands, the welcome bursts", gx.includes(".gx-roles .chip.on") && logic.includes("gxBump(c)") && logic.includes("gxBump(t)") && gx.includes("gxLand") && scr.includes('class="gx-burst"'));
+t("transform and opacity only, and none of it with reduced motion", !/(width|height|top|left|margin|padding)\s*:/.test(gx.split("@media (prefers-reduced-motion:no-preference){")[1].replace(/@keyframes[^\n]*/g, "")) && gx.includes("@media (prefers-reduced-motion:no-preference){"));
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

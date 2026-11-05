@@ -19,7 +19,7 @@ function gxRolesHTML(f){
     .map(l=>[l,ROLES.filter(r=>(ROLE_LABS[r]||[])[0]===l.id)]).filter(([,rs])=>rs.length);
   const other=ROLES.filter(r=>!(ROLE_LABS[r]||[]).length);
   return `<input class="gx-rq" id="gxrq" type="search" placeholder="Search — painter, poet, DJ…" autocapitalize="none" autocomplete="off" aria-label="Search what you make">
-    <div class="gx-roles" id="gxroles">${groups.map(([l,rs])=>`<div class="gx-rgrp" data-rgrp><div class="gx-rlab">// ${esc(l.name)}</div><div class="gx-rchips">${rs.map(chip).join("")}</div></div>`).join("")}${other.length?`<div class="gx-rgrp" data-rgrp><div class="gx-rchips">${other.map(chip).join("")}</div></div>`:""}
+    <div class="gx-roles" id="gxroles">${groups.map(([l,rs],gi)=>`<div class="gx-rgrp" data-rgrp style="--g:${gi}"><div class="gx-rlab">// ${esc(l.name)}</div><div class="gx-rchips">${rs.map(chip).join("")}</div></div>`).join("")}${other.length?`<div class="gx-rgrp" data-rgrp><div class="gx-rchips">${other.map(chip).join("")}</div></div>`:""}
     <div class="gx-rnone" id="gxrnone" hidden>Nothing by that name — pick the closest, or "Artist".</div></div>`;
 }
 function gxNew(){const tour=GATE==="tour";   // ≡ → How LABS works: the walkthrough on its own (app/gate/tour)
@@ -88,7 +88,7 @@ function gateHTML(){
   }else if(!G.made){
     const S=gxSteps(G),i=S.indexOf(G.step);   // with Google / Apple / Facebook: no email or password steps (app/gate/oauth)
     top=`<button class="gx-ic" id="${i>0?"gxback":"gatex"}" aria-label="${i>0?"Back":"Close"}">${i>0?GX_BACK:GX_X}</button>
-      <div class="gx-prog" aria-label="Step ${i+1} of ${S.length}">${S.map((_,k)=>`<i class="${k<=i?"on":""}"></i>`).join("")}</div>
+      <div class="gx-prog" aria-label="Step ${i+1} of ${S.length}">${S.map((_,k)=>`<i class="${k<=i?"on":""}${k===i?" now":""}"></i>`).join("")}</div>
       <span class="gx-sp"></span>`;
     const next=(label,ok)=>`<button class="gx-btn" id="gxnext"${ok&&!G.busy?"":" disabled"}>${G.busy?"One moment…":label}</button>`;
     const mk=`<img class="mark gx-mk" src="/labs-wordmark.png" alt="LABS">`;   // the // LABS logo atop every Join step
@@ -139,7 +139,7 @@ function gateHTML(){
       const cur=(ME&&ME.accent)||"lab",hex=(ACCENTS[cur]||{}).hex||"";
       body=`<div class="gx-mid"><div class="gx-tint" style="--ring:${esc(accFill(hex))}">${av()}</div><h1 class="gx-h">Pick your colour</h1>
         <p class="gx-p">Your profile, your page and your share card wear it. You can change it any time.</p></div>
-        <div class="gx-sw">${Object.entries(ACCENTS).filter(([k,a])=>!a.legacy||cur===k).map(([k,a])=>`<button class="pe-dot ${cur===k?"on":""}" data-gxacc="${esc(k)}" title="${esc(a.name)}" aria-label="${esc(a.name)}"><span style="background:${esc(a.hex)}"></span></button>`).join("")}</div>
+        <div class="gx-sw">${Object.entries(ACCENTS).filter(([k,a])=>!a.legacy||cur===k).map(([k,a],di)=>`<button style="--i:${di}" class="pe-dot ${cur===k?"on":""}" data-gxacc="${esc(k)}" title="${esc(a.name)}" aria-label="${esc(a.name)}"><span style="background:${esc(a.hex)}"></span></button>`).join("")}</div>
         ${err}<div class="gx-stick"><button class="gx-btn" id="gxnext">Next</button></div>`;
     }else if(G.step==="bio"){
       body=`<h1 class="gx-h">Tell people what you make</h1><p class="gx-p">A line or two. It sits under your name on your page.</p>
@@ -150,7 +150,7 @@ function gateHTML(){
     }else if(G.step==="follow"){
       const ppl=G.people||[];
       body=`<h1 class="gx-h">People to follow</h1><p class="gx-p">Some of the people making things here right now.</p>
-        <div class="gx-people">${G.people===null?`<div class="gx-hint">Loading…</div>`:ppl.map(p=>`<div class="gx-person">
+        <div class="gx-people">${G.people===null?`<div class="gx-hint">Loading…</div>`:ppl.map((p,pi)=>`<div class="gx-person" style="--i:${pi}">
           ${avHTML({displayName:p.display_name,avatarUrl:p.avatar_url},"")}
           <div class="gx-person-b"><b>${esc(p.display_name)}</b><span>@${esc(p.username)}${p.role?" · "+esc(p.role):""}</span></div>
           <button class="gx-fbtn ${G.following[p.username]?"on":""}" data-fol="${esc(p.username)}">${G.following[p.username]?"Following":"Follow"}</button>
@@ -159,14 +159,20 @@ function gateHTML(){
     }else{
       const first=(ME&&ME.displayName||"").split(" ")[0];
       center=true;
-      body=`<div class="gx-mid">${av("sm")}<h1 class="gx-h">Welcome to LABS${first?", "+esc(first):""}.</h1>
+      body=`<div class="gx-mid"><div class="gx-burst" aria-hidden="true">${Array.from({length:12},(_,k)=>`<i style="--a:${k*30}deg;--d:${k%3}"></i>`).join("")}</div>${av("sm")}<h1 class="gx-h">Welcome to LABS${first?", "+esc(first):""}.</h1>
         <p class="gx-p">${G.made.mailSent?`We sent a link to <b>${esc(f.email)}</b> to confirm your email.`:"Your account is ready."}</p></div>
         <button class="gx-btn" id="gxdone">Start exploring</button>`;
     }
   }
+  /* A new step moves in — forward from the right, back from the left — and its parts arrive one after
+     another; repaints of the same step (typing, a chip, a colour) don't move anything (2026-11-05). */
+  const key=G?(G.mode||"")+":"+(G.step||"")+(G.made?":in":""):"door",was=GXPAINTED;
+  const ORDER=[...GX_STEPS,"verify","photo","colour","bio","follow","welcome"];
+  const fresh=key!==was,back=fresh&&was&&ORDER.indexOf(String(was).split(":")[1])>ORDER.indexOf(G&&G.step);
+  GXPAINTED=key;
   return `<div class="gate"><div class="gx">
-    <header class="gx-top">${top}</header>
-    <main class="gx-body${center?" center":" long"}">${body}</main>
+    <header class="gx-top${fresh?" gx-in":""}">${top}</header>
+    <main class="gx-body${center?" center":" long"}${fresh?" gx-in"+(back?" gx-back":""):""}">${body}</main>
     ${foot?`<footer class="gx-foot">${foot}</footer>`:""}
   </div></div>`;
 }

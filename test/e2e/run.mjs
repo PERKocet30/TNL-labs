@@ -182,7 +182,10 @@ console.log("\nNEW MEMBER · PHONE");
     await p.locator("#joinBtn").tap();
     const nextOn = async () => { await p.waitForSelector("#gxnext:not([disabled])", { timeout: 4000 }); await p.locator("#gxnext").tap(); };
     /* 2026-10-20 "cleaner, centered, modern": the mark, centred words, the question in the middle of the screen */
-    const look = () => p.evaluate(() => { const h = document.querySelector(".gx-h"), r = h.getBoundingClientRect(), f = document.querySelector(".gxf, .gx-roles");
+    /* 2026-11-05: each step moves in (app/styles/motion.css, sign-up in motion) — measure once it has landed */
+    const settle = () => p.waitForFunction(() => !document.getAnimations().some((a) => a.playState === "running" && a.effect && a.effect.getTiming().iterations !== Infinity), null, { timeout: 3000 }).catch(() => {});
+    const look = async () => { await settle(); return lookNow(); };
+    const lookNow = () => p.evaluate(() => { const h = document.querySelector(".gx-h"), r = h.getBoundingClientRect(), f = document.querySelector(".gxf, .gx-roles");
       return { mark: !!document.querySelector(".gx-body .gx-mk") && document.querySelector(".gx-mk").getBoundingClientRect().height > 30, centred: getComputedStyle(h).textAlign === "center",
         top: r.top / innerHeight, fieldUnder: f ? f.getBoundingClientRect().top > r.bottom : true }; });
     let L = await look();
@@ -200,7 +203,11 @@ console.log("\nNEW MEMBER · PHONE");
     await p.locator("#dn").fill("New Member"); await nextOn();
     await p.locator("#un").fill("newmember"); await nextOn();   // waits for the live username check
     L = await look(); ok(L.centred && L.top < 0.15, "the long list of what you make should start at the top: " + JSON.stringify(L));
-    await p.locator(".gx-roles [data-r]").first().tap(); await nextOn();
+    /* 2026-11-05 sign-up in motion: the step moved in (and only once — typing or a pick doesn't move it again) */
+    ok(await p.evaluate(() => document.querySelector(".gx-body.gx-in") && document.querySelector(".gx-prog i.now")), "the step didn't move in");
+    await p.locator(".gx-roles [data-r]").first().tap();
+    ok(await p.locator(".gx-roles [data-r].on").count() === 1 && await p.evaluate(() => /1 of 5/.test(document.querySelector("#rcount").textContent)), "the pick didn't land");
+    await nextOn();
     await p.waitForFunction(() => typeof ME !== "undefined" && ME && ME.username === "newmember", null, { timeout: 6000 });
   });
   // 2026-10-18 onboarding: "walk through all of the app's features and profile creation"

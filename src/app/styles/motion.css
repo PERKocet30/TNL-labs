@@ -1,4 +1,4 @@
-/* ── MOTION v1.1 · 2026-10-14 (unused selectors out); v1.0 · 2026-09-30 (app/nav/motion.js) ────────────────────────
+/* ── MOTION v1.2 · 2026-11-05 (sign-up in motion, at the end); v1.1 · 2026-10-14 (unused selectors out); v1.0 · 2026-09-30 (app/nav/motion.js) ────────────────────────
    Transform and opacity only — nothing here moves the layout. One curve
    for everything that arrives (fast out, soft landing), short durations,
    and none of it when the phone asks for reduced motion. */
@@ -73,3 +73,45 @@ button,a,[role=button],.lx,.trk,.sr-card,.chip{-webkit-tap-highlight-color:trans
 .sk-tile{display:flex;flex-direction:column;gap:7px}
 .sk-tile .sk-img{aspect-ratio:1;margin:0 0 3px}
 @media (prefers-reduced-motion:no-preference){.sk-shim,.sk-av,.sk-bar,.sk-img{animation:mvShim 1.3s linear infinite}}
+
+/* ── SIGN-UP IN MOTION · 2026-11-05 ("make the onboarding more interactive so it's not so static. Motion.")
+   Each step arrives: the content slides in (forward from the right, back from the left) and its parts
+   rise one after another; the newest progress bar fills; titles cascade in by lab; what you pick pops;
+   the count bumps; your photo lands; your colour ring pops; people slide in; the welcome bursts.
+   Transform and opacity only, once per step (app/gate/screens GXPAINTED), none with reduced motion. */
+@keyframes gxRise{from{opacity:0;transform:translate3d(0,14px,0)}to{opacity:1;transform:none}}
+@keyframes gxInF{from{opacity:0;transform:translate3d(36px,0,0)}to{opacity:1;transform:none}}
+@keyframes gxInB{from{opacity:0;transform:translate3d(-36px,0,0)}to{opacity:1;transform:none}}
+@keyframes gxFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes gxPick{0%{transform:scale(1)}40%{transform:scale(1.1)}70%{transform:scale(.97)}100%{transform:scale(1)}}
+@keyframes gxBump{0%{transform:scale(1)}35%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes gxLand{0%{opacity:0;transform:scale(.6) translate3d(0,10px,0)}60%{opacity:1;transform:scale(1.05)}100%{transform:none}}
+@keyframes gxFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-5px,0)}}
+@keyframes gxBurst{0%{opacity:0;transform:rotate(var(--a)) translate3d(0,0,0) scale(.4)}20%{opacity:1}100%{opacity:0;transform:rotate(var(--a)) translate3d(0,-96px,0) scale(1)}}
+.gx-burst{position:absolute;left:50%;top:56px;width:0;height:0;pointer-events:none}
+.gx-burst i{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:var(--accent-fill);opacity:0}
+.gx-burst i:nth-child(3n+2){width:6px;height:6px;left:-3px;top:-3px}
+.gx-mid{position:relative}
+@media (prefers-reduced-motion:no-preference){
+  .gx-body.gx-in{animation:gxInF .34s var(--mv-ease) both}
+  .gx-body.gx-in.gx-back{animation-name:gxInB}
+  .gx-body.gx-in>*,.gx-body.gx-in .gx-mid>*{animation:gxRise .42s var(--mv-ease) both}
+  .gx-body.gx-in>*:nth-child(2),.gx-body.gx-in .gx-mid>*:nth-child(2){animation-delay:.05s}
+  .gx-body.gx-in>*:nth-child(3),.gx-body.gx-in .gx-mid>*:nth-child(3){animation-delay:.1s}
+  .gx-body.gx-in>*:nth-child(4),.gx-body.gx-in .gx-mid>*:nth-child(4){animation-delay:.15s}
+  .gx-body.gx-in>*:nth-child(5){animation-delay:.2s}
+  .gx-body.gx-in>*:nth-child(n+6){animation-delay:.25s}
+  .gx-top.gx-in .gx-prog i.now{transform-origin:left center;animation:gxFill .5s var(--mv-ease) .08s both}
+  .gx-body.gx-in .gx-roles{animation:none}
+  .gx-body.gx-in .gx-rgrp{animation:gxRise .45s var(--mv-ease) both;animation-delay:calc(.12s + var(--g,0) * .07s)}
+  .gx-roles .chip.on,.gx-fbtn.on,.gx-sw .pe-dot.on{animation:gxPick .34s var(--mv-ease)}
+  .gx-bump{animation:gxBump .3s var(--mv-ease)}
+  .gx-tint.gx-bump .gx-av{animation:gxBump .36s var(--mv-ease)}
+  .gx-body.gx-in .gx-av{animation:gxLand .6s var(--mv-ease) .05s both}
+  .gx-av.sm,.gx-body.gx-in .gx-av.sm{animation:gxLand .6s var(--mv-ease) .05s both,gxFloat 3.2s ease-in-out 1.2s infinite}   /* the welcome: lands, then floats */
+  .gx-body.gx-in .gx-sw .pe-dot{animation:gxRise .36s var(--mv-ease) both;animation-delay:calc(.18s + var(--i,0) * .03s)}
+  .gx-body.gx-in .gx-person{animation:gxRise .4s var(--mv-ease) both;animation-delay:calc(.12s + var(--i,0) * .06s)}
+  .gx-body.gx-in .gx-burst i{animation:gxBurst .9s var(--mv-ease) both;animation-delay:calc(.35s + var(--d,0) * .06s)}
+  .gxf-st.ok svg{animation:gxPick .34s var(--mv-ease)}
+  .gx-btn{transition:opacity .22s ease,transform .14s var(--mv-ease)}
+}
