@@ -164,7 +164,7 @@ function chatSheetHTML(){
       :`<div class="cs-who" data-cxprof="${esc(o.username)}">${avHTML(o,"lg")}<b>${esc(o.displayName||o.username)}</b><span class="mono">@${esc(o.username)}</span></div>`}
       <button class="cs-a" id="csmute">${CI.mute}<span>${m.muted?"Unmute":"Mute messages"}</span></button>
       ${m.isGroup?`<button class="cs-a danger" id="csleave">${CI.back}<span>Leave group</span></button>`
-        :`<button class="cs-a danger" id="csblock">${CI.x}<span>Block @${esc(o.username)}</span></button>`}
+        :`<button class="cs-a danger" id="csreport">${DI.flag}<span>Report @${esc(o.username)}</span></button><button class="cs-a danger" id="csblock">${CI.x}<span>Block @${esc(o.username)}</span></button>`}
       <button class="cs-a danger" id="csclear">${CI.trash}<span>Delete chat</span></button>
     </div>`;
   } else if(s.kind==="mute"){

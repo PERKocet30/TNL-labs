@@ -96,6 +96,7 @@ function wireProfileV2(){
       toast(liteOn()?"Data saver on — videos and music wait for a tap":"Data saver off");render()}},
     {icon:PF_I.share,label:"Share profile",run:()=>shareProfile(myName())},
     ...(ME&&ME.isAdmin?[{icon:PF_I.admin,label:"Admin dashboard",run:()=>{location.href="/admin"}}]:[]),
+    {icon:PF_I.flag,label:"Report a problem",run:()=>reportProblem()},   // the app itself (app/posts/report)
     {icon:PF_I.link,label:"Terms, privacy & help",run:()=>window.open("/contact","_blank","noopener")},
     {icon:PF_I.out,label:"Log out",danger:true,run:logOut}]});
   const mo=$("#profmore");if(mo)mo.onclick=()=>{const u=PROFILE.user;openMenu({react:false,preview:"@"+u.username,actions:[
@@ -104,9 +105,7 @@ function wireProfileV2(){
     ...(ME?[{icon:PF_I.block,label:"Block",danger:true,run:async()=>{
       if(!(await uiConfirm("Block "+u.displayName+"?","You won't see each other's work.",{okLabel:"Block",danger:true})))return;
       try{const d=await api.block(u.username);toast(d.blocked?"Blocked":"Unblocked");PROFILE=null;render()}catch(e){toast(e.message)}}},
-    {icon:PF_I.flag,label:"Report",danger:true,run:()=>openPicker({eyebrow:"REPORT",title:"Why?",
-      items:["Spam","Harassment","Stolen work","Impersonation","Something else"].map(r=>({label:r,icon:DI.flag,reason:r})),
-      onPick:async it=>{try{await api.report({username:u.username,reason:it.reason});toast("Reported — thank you")}catch(e){toast(e.message)}}})}]:[])]})};
+    {icon:PF_I.flag,label:"Report",danger:true,run:()=>reportThing({kind:"user",username:u.username})}]:[])]})};   // app/posts/report
   const lp=$("#lvlpill");if(lp)lp.onclick=()=>{CLIMB=true;CLIMBUSER=PROFILE.user;render()};
   document.querySelectorAll("[data-pflab]").forEach(b=>b.onclick=()=>openLab(b.dataset.pflab));   // "Lead · // Music" (2026-10-28)
   /* followers / following, open lists */

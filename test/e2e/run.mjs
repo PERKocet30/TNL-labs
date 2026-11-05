@@ -1742,6 +1742,50 @@ console.log("\nMEMBER · PHONE");
   const glitches = async () => { await p.evaluate(() => glFlush()); await p.waitForTimeout(600); return api("/api/admin/glitches", token); };
   /* UI signals (app/ui-signals/signals.js, 2026-11-04): every screen change above was
      counted; the admin read sees the screens, the paths and a back — and nothing a member typed. */
+  /* Report on every post (app/posts/report, 2026-11-04): "Post should have options to report an issue like Instagram." */
+  await step(d, "a Showroom card's ··· has Report: a reason, then a thank-you that offers to block — the report reaches the admin once", async () => {
+    await p.evaluate(() => { closeMenu(); PICKER = null; POSTOPEN = null; PROFILE = null; TAB = "showroom"; render(); });
+    await p.waitForSelector('.sr-card [data-pmore]', { timeout: 8000 });
+    const id = await p.evaluate(() => { const c = SRPOSTS.find((x) => x.author.username === "friend"); return c && c.id; });
+    ok(!!id, "no post of friend's in the Showroom to report");
+    const before = (await api("/api/admin/reports", token)).reports.filter((r) => r.post_id === id).length;
+    await p.locator(`.sr-card[data-pid="${id}"] [data-pmore]`).scrollIntoViewIfNeeded();
+    await p.locator(`.sr-card[data-pid="${id}"] [data-pmore]`).tap();
+    await p.locator(".c-ma", { hasText: "Report" }).tap({ timeout: 5000 });
+    ok(await p.locator(".pick h2", { hasText: "Why are you reporting this post?" }).count() === 1, "the reasons didn't open");
+    await p.locator(".pickrow", { hasText: "It's spam" }).tap();
+    await p.waitForSelector(".ui-ov .ui-cancel", { timeout: 5000 });
+    ok(await p.locator(".ui-ov", { hasText: "Block @friend" }).count() === 1, "the thank-you didn't offer to block");
+    await p.locator(".ui-ov .ui-cancel").tap();   // Done — no block
+    const after = (await api("/api/admin/reports", token)).reports.filter((r) => r.post_id === id);
+    ok(after.length === 1 && after[0].reason === "Spam", "the report didn't reach the admin once: " + JSON.stringify(after.map((r) => r.reason)) + " (before: " + before + ")");   // run again (the computer frame) it's the same report, updated
+    ok(await p.evaluate(() => !document.querySelector(".ui-ov") && !PICKER && !CMENU), "something was left open after the report");
+  });
+  await step(d, "a Showroom card says who liked it, like Instagram: your like puts your face in 'Liked by …', and a tap opens everyone", async () => {
+    await p.evaluate(() => { closeMenu(); PICKER = null; POSTOPEN = null; PROFILE = null; TAB = "showroom"; render(); });
+    const id = await p.evaluate(() => { const c = SRPOSTS.find((x) => x.author.username === "friend"); return c && c.id; });
+    const card = p.locator(`.sr-card[data-pid="${id}"]`);
+    await card.scrollIntoViewIfNeeded();
+    if (!(await p.evaluate((i) => SRPOSTS.find((x) => x.id === i).likedByMe, id))) await card.locator("[data-like]").tap();
+    await p.waitForTimeout(800);
+    const line = card.locator(".px-likedby");
+    ok(await line.count() === 1, "no 'Liked by' line on the card");
+    ok(/Liked by/.test(await line.innerText()) && await line.locator(".lb-avs .av").count() >= 1, "the line doesn't say who, with a face: " + (await line.innerText()));
+    await line.tap();
+    await p.waitForFunction(() => PICKER && PICKER.title === "Likes" && !PICKER.loading, null, { timeout: 6000 });
+    ok(await p.evaluate(() => PICKER.items.length >= 1), "the list of who liked it is empty");
+    await p.evaluate(() => { closePicker(); });
+  });
+  await step(d, "Report a problem (the app itself): a few words and the screen it happened on reach the admin", async () => {
+    await p.evaluate(() => { reportProblem(); });
+    await p.waitForSelector(".ui-ov .ui-in", { timeout: 5000 });
+    await p.locator(".ui-ov .ui-in").first().fill("the cart shows the wrong size " + d.name);
+    await p.locator(".ui-ov .ui-ok").tap();
+    await p.waitForTimeout(600);
+    const r = (await api("/api/admin/reports", token)).reports.find((x) => x.kind === "app" && x.reason.includes("wrong size " + d.name));
+    ok(!!r && r.detail === "showroom", "the problem didn't reach the admin with its screen: " + JSON.stringify(r));
+    ok(await p.evaluate(() => !document.querySelector(".ui-ov")), "the sheet was left open");
+  });
   await step(d, "UI signals: screens, the path between them and a back are counted; nothing typed leaves the phone", async () => {
     await p.evaluate(() => { TAB = "showroom"; render(); TAB = "labs"; render(); TAB = "market"; render(); });
     await p.waitForTimeout(100);

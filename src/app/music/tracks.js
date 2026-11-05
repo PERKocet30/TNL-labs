@@ -83,7 +83,8 @@ function trackMenu(t,ctx){
   acts.push({icon:DI.music,label:"Go to @"+t.by.username,run:()=>openProfile(t.by.username)});
   /* the song's own page (/s/:id: its cover, a player, Open in the app), not the artist's profile (2026-10-18) */
   acts.push({icon:DI.out,label:"Share",run:()=>shareMenu({title:t.title+" · @"+t.by.username,link:songLink(t),story:`/tr/${t.id}/story.jpg`,video:`/tr/${t.id}/story.mp4`})});
-  if(t.by.username!==myName())return openMenu({react:false,preview:(t.title+" · @"+t.by.username).slice(0,120),actions:acts});
+  if(t.by.username!==myName()){if(ME)acts.push({icon:DI.flag,label:"Report",danger:true,run:()=>reportThing({kind:"track",id:t.id,username:t.by.username})});
+    return openMenu({react:false,preview:(t.title+" · @"+t.by.username).slice(0,120),actions:acts})}
   acts.push({icon:DI.edit,label:"Edit title and cover",run:()=>{
     TRKEDIT={id:t.id,title:t.title,artworkUrl:t.artworkUrl||"",busy:false,fresh:false};render()}});
   acts.push({icon:DI.trash,label:"Delete",danger:true,run:async()=>{

@@ -230,7 +230,7 @@ app.get("/api/feed/showroom", maybeAuth, (req, res) => {
   const hidden = req.user ? blockedIds(req.user.id) : new Set();
   /* Only work you can see: a picture or a video (2026-10-28 — a text post
      showed as a loop card, then as a bare text card). */
-  res.json({ posts: shapePosts(rows.filter((r) => !hidden.has(r.author_username) && (r.image_url || r.video_url))) });
+  res.json({ posts: likedByPreview(shapePosts(rows.filter((r) => !hidden.has(r.author_username) && (r.image_url || r.video_url))), req.user?.id) });   // "Liked by …" (profile/social-meta)
 });
 
 /* Who's building. Names and faces only — it isn't a scoreboard. */

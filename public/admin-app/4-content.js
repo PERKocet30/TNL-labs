@@ -40,13 +40,17 @@ function postCardHTML(x) {
       <button class="btn danger sm" data-del="${x.id}" aria-label="Delete post">${I.trash}</button>
     </div></div>`;
 }
+/* v3.2 — 2026-11-04: reports come from everywhere now (app/posts/report) — a post, a person, a comment,
+   a listing, a song, or a problem with the app itself — so each says what it's about. */
+const REPORT_KIND = { post: "Post", user: "Person", comment: "Comment", listing: "Listing", track: "Song", app: "Problem" };
 function reportHTML(r) {
   return `<div class="report">
     ${r.post_img ? `<img src="${esc(r.post_img)}" alt="" style="width:64px;height:64px;object-fit:cover;flex-shrink:0">` : ""}
-    <div style="flex:1;min-width:0"><b>${esc(r.reason || "Reported")}</b>
+    <div style="flex:1;min-width:0"><span class="tag">${esc(REPORT_KIND[r.kind] || (r.post_id ? "Post" : "Person"))}</span> <b>${esc(r.reason || "Reported")}</b>
       <div class="dim" style="font-size:12.5px;margin:3px 0 8px">${r.reported ? `about <button data-person="${esc(r.reported)}"><b>@${esc(r.reported)}</b></button> · ` : ""}by @${esc(r.reporter || "?")} · ${ago(r.created_at)}${r.post_lab ? " · " + esc(r.post_lab === "Profile" ? "Profile" : "// " + r.post_lab) : ""}</div>
-      ${r.post_body ? `<div style="font-size:13px;margin-bottom:8px">“${esc(r.post_body.slice(0, 220))}”</div>` : ""}
-      <div class="acts">${r.post_id ? `<button class="btn danger sm" data-del="${r.post_id}" data-rep="${r.id}">Remove post</button>` : ""}
+      ${r.target_text ? `<div style="font-size:13px;margin-bottom:8px">“${esc(r.target_text.slice(0, 220))}”</div>` : r.post_body ? `<div style="font-size:13px;margin-bottom:8px">“${esc(r.post_body.slice(0, 220))}”</div>` : ""}
+      ${r.detail ? `<div class="dim" style="font-size:12px;margin-bottom:8px">${r.kind === "app" ? "on " : ""}${esc(r.detail)}</div>` : ""}
+      <div class="acts">${r.post_id && (r.kind === "post" || !r.kind) ? `<button class="btn danger sm" data-del="${r.post_id}" data-rep="${r.id}">Remove post</button>` : ""}
         ${r.reported ? `<button class="btn ghost sm" data-person="${esc(r.reported)}">Open @${esc(r.reported)}</button>` : ""}
         <button class="btn ghost sm" data-dismiss="${r.id}">Dismiss</button></div>
     </div></div>`;

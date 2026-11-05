@@ -113,7 +113,9 @@ textarea.in{resize:vertical;line-height:1.5}
 /* Instagram order: who it is on top, media, then what they said. */
 .sr-head{padding:11px 11px 9px}
 .sr-meta{padding:9px 11px 11px}
-.sr-who{display:flex;align-items:center;gap:8px;cursor:pointer}
+.sr-who{display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;min-width:0}
+.sr-card .sr-head{display:flex;align-items:center;gap:6px}
+.sr-more{flex:none;margin-left:auto}
 .sr-name{font-size:12.5px;font-weight:900}
 
 .sr-body{font-size:14px;line-height:1.45;color:var(--tx);margin-top:6px}

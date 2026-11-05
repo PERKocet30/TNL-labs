@@ -48,6 +48,7 @@ function wireChatSheet(){
     if(!(await uiConfirm("Leave group?","You'll stop getting its messages. Someone in it can add you back.",{okLabel:"Leave",danger:true})))return;
     try{await capi.remove(CHAT.id,myName());CHATSHEET=null;CHAT=null;paintLayer();loadInbox()}catch(e){toast(e.message)}});
   on("csblock",()=>blockOther());
+  on("csreport",()=>{const o=chatOther();CHATSHEET=null;paintLayer();if(o)reportThing({kind:"user",username:o.username})});   // the person, never the messages
   on("csclear",()=>clearChat(false));
   L.querySelectorAll("[data-csmute]").forEach(b=>b.onclick=async()=>{
     const h=+b.dataset.csmute,chat=s.chat;
