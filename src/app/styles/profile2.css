@@ -1,4 +1,4 @@
-/* ── PROFILE v2.1 · 2026-10-20 (the edit bar is the kit's formHead) · v2 · 2026-10-07 (app/profile/profile.js, app/profile/edit.js) ── */
+/* ── PROFILE v2.4 · 2026-11-05 (tournament badges as game emblems) · v2.1 · 2026-10-20 (the edit bar is the kit's formHead) · v2 · 2026-10-07 (app/profile/profile.js, app/profile/edit.js) ── */
 .pig-stats button.pstat{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
 .pig-stats .pstat span{font-size:13px;color:var(--tx2)}
 .pig-name{align-items:center}
@@ -59,3 +59,47 @@
 .lv2-r.on b{color:var(--green)}
 .lv2-r>span:last-child{color:var(--tx2)}
 @media(min-width:1024px){.sheetc.pe{max-width:600px;margin:0 auto;width:100%}}
+
+/* Tournament badges (v2.4 · 2026-11-05, "like video games", "Champion prestige"): an achievement shelf —
+   emblem over the place over the tournament. Champion: Lab green crest + crown;
+   Finalist: solid crest; Entrant: outline crest. Theme tokens only. */
+.pig-badges{display:flex;gap:10px;margin:8px 0 6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.pig-badges::-webkit-scrollbar{display:none}
+.pbadge{flex:none;width:80px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:0;border:0;background:none;color:var(--tx);font:inherit;cursor:pointer;text-align:center}
+.pbadge .bd-em{width:66px;height:63px;display:block;margin-bottom:2px;overflow:visible}
+.pbadge.t-champion{width:92px}
+.pbadge.t-champion .bd-em{width:80px;height:76px}
+.pbadge.t-entrant .bd-em{width:58px;height:56px;margin-top:7px}
+.pbadge b{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.2}
+.pbadge span{font-size:10.5px;line-height:1.25;color:var(--dim);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:100%}
+.bd-shield{stroke-width:2;stroke-linejoin:round}
+.bd-rim{fill:none;stroke-width:1.5;stroke-linejoin:round}
+.bd-star{stroke-linejoin:round;stroke-width:1.5}
+.bd-crown{stroke-width:2;stroke-linejoin:round}
+.t-champion .bd-shield,.t-champion .bd-crown{fill:var(--accent-fill);stroke:var(--tx)}
+.t-champion .bd-rim{stroke:var(--on-accent);opacity:.35}
+.t-champion .bd-star{fill:var(--on-accent);stroke:var(--on-accent)}
+.t-finalist .bd-shield{fill:var(--tx);stroke:var(--tx)}
+.t-finalist .bd-rim{stroke:var(--bg);opacity:.3}
+.t-finalist .bd-star{fill:var(--bg);stroke:var(--bg)}
+.t-entrant .bd-shield{fill:var(--el);stroke:var(--line2)}
+.t-entrant .bd-rim{stroke:var(--line);opacity:1}
+.t-entrant .bd-star{fill:none;stroke:var(--dim)}
+.t-entrant b{color:var(--dim)}
+/* prestige: the Champion's rays, wreath and glint; a Finalist's smaller wreath */
+.bd-rays line{stroke:var(--accent-fill);stroke-width:2.5;stroke-linecap:square;opacity:.45}
+.t-champion .bd-laurel ellipse{fill:var(--accent-fill);stroke:var(--tx);stroke-width:1}
+.t-finalist .bd-laurel ellipse{fill:var(--tx)}
+.bd-glint{fill:var(--accent-fill);stroke:var(--tx);stroke-width:1;transform-box:fill-box;transform-origin:center;animation:bd-twinkle 2.8s var(--mv-ease) infinite}
+.t-champion b{color:var(--tx)}
+@keyframes bd-twinkle{0%,70%,100%{opacity:1;transform:scale(1)}82%{opacity:.25;transform:scale(.6)}}
+@media (prefers-reduced-motion:reduce){.bd-glint{animation:none}}
+/* OG: the first tournament ever. A ribbon on every badge from it; its Entrant crest steps up
+   from the outline to solid with a green star, so entering the first one still feels collected. */
+.bd-ribbon{fill:var(--accent-fill);stroke:var(--tx);stroke-width:1.5;stroke-linejoin:round}
+.bd-og{fill:var(--on-accent);font:900 8px/1 Helvetica,Arial,sans-serif;letter-spacing:.12em}
+.t-entrant.is-og .bd-shield{fill:var(--tx);stroke:var(--tx)}
+.t-entrant.is-og .bd-rim{stroke:var(--bg);opacity:.3}
+.t-entrant.is-og .bd-star{fill:none;stroke:var(--accent-fill);stroke-width:2}
+.t-entrant.is-og b{color:var(--tx)}
+.t-entrant.is-og .bd-em{width:62px;height:60px;margin-top:3px}
