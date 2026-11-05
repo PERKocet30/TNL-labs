@@ -2497,7 +2497,7 @@ console.log("\nADMIN LINK FROM AN EMAIL · PHONE");
     const drawn = (sel) => p.evaluate((s) => { const c = document.querySelector(s), x = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < x.length; i += 16) if (x[i]) n++; return n > 500; }, sel);
     ok(await drawn("#todocv"), "Needs you's model is blank");
     ok(await p.evaluate(() => { const c = document.querySelector(".eh-chat").getBoundingClientRect().top, n = document.querySelector("#todocard").getBoundingClientRect().top; return c < n; }), "Echo isn't first, with Needs you after her");
-    ok(/2 things need you/.test(await p.locator("#todopick").innerText()), "the model doesn't say how many things need you");
+    ok(/1 thing needs you/.test(await p.locator("#todopick").innerText()), "the model doesn't say how many things need you");
     ok(await p.locator("#todocard .q").count() === 1, "the full queue isn't under the model");
     /* a tap on a node: find Content on the canvas and tap it */
     await p.evaluate(() => ringAim("todocv", "s:content")); await p.waitForTimeout(800);
