@@ -1,5 +1,5 @@
 /* ================================================================
-   EVENT BADGES v1.0 — 2026-11-05. "Finals badge is a good idea."
+   EVENT BADGES v1.1 — 2026-11-05. "Finals badge is a good idea."
    Every member who took part in a tournament keeps a mark of it on
    their profile, once the results are in:
      champion — the winner
@@ -11,6 +11,9 @@
    event, an unpublished one or a disqualified entry gives no badge.
    Best place first (Champion, Finalist, Entrant), newest first within
    each; one badge per event (the best place reached).
+   OG (v1.1 — 2026-11-05, "entrants need something too, it's the first
+   tournament"): every badge from the first tournament LABS ever ran
+   carries og: true — an OG ribbon on the emblem, whatever the place.
    Tapping a badge opens the event (data-evopen in the app).
 ================================================================ */
 const BADGE_RANK = { champion: 3, finalist: 2, entrant: 1 };
@@ -22,6 +25,7 @@ function eventBadges(userId) {
     FROM event_entries e JOIN events ev ON ev.id = e.event_id
     WHERE e.user_id = ? AND e.dq_reason IS NULL AND ev.published = 1
     ORDER BY ev.id DESC, e.id`).all(userId);
+  const firstId = db.prepare(`SELECT MIN(id) AS id FROM events WHERE published = 1`).get()?.id;   // the first tournament ever
   const byEvent = new Map();
   for (const r of rows) {
     const st = evJSON(r.state, {});
@@ -29,7 +33,7 @@ function eventBadges(userId) {
     const tier = st.results.winner === r.entry_id ? "champion"
       : (st.finalists || []).includes(r.entry_id) ? "finalist" : "entrant";
     const had = byEvent.get(r.id);
-    if (!had || BADGE_RANK[tier] > BADGE_RANK[had.tier]) byEvent.set(r.id, { tier, slug: r.slug, title: r.title });
+    if (!had || BADGE_RANK[tier] > BADGE_RANK[had.tier]) byEvent.set(r.id, { tier, slug: r.slug, title: r.title, og: r.id === firstId });
   }
   // best place first (Champion leads), then newest — byEvent keeps newest-first order
   return [...byEvent.values()].sort((a, b) => BADGE_RANK[b.tier] - BADGE_RANK[a.tier]);

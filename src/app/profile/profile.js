@@ -1,4 +1,4 @@
-/* PROFILE v2026-11-05: tournament badges under the name (Champion · Finalist · Entrant), tap → the event. v2026-10-28: a Lab Lead's profile says which labs they lead (tap → the lab). v2026-10-20: the head comes from the screen kit (app/core/kit.js); Follow is the black main action */
+/* PROFILE v2026-11-05b: tournament badges as achievement emblems (crest + star, crown for Champion), tap → the event. v2026-11-05: tournament badges under the name. v2026-10-28: a Lab Lead's profile says which labs they lead (tap → the lab). v2026-10-20: the head comes from the screen kit (app/core/kit.js); Follow is the black main action */
 function workCardHTML(p, collab, K, pinned) {
   K = K || KIND;
   const accepted = p.collaborators.filter(c => c.status === "accepted");
@@ -154,14 +154,35 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
   :`<div class="empty">${PTAB==="collabs"?"No collabs yet.":mine?K.empty+" Hit + Post and it lands here.":esc(K.empty)}</div>`}
 </div></div>`}
 
-/* Tournament badges (2026-11-05). One per event, newest first; the server
-   only sends them once an event's results are locked. Tapping opens the
-   event through the app-wide data-evopen handler (app/events/wire.js). */
-const PF_BADGE_ICON=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z"/></svg>`;
+/* Tournament badges (2026-11-05, v2 "more of a badge like video games"):
+   an achievement shelf under the name. Each badge is an emblem — a crest
+   with a star, a crown, a laurel wreath, light rays and a glint for the
+   Champion (the prestige one), a smaller wreath for a Finalist; an OG ribbon on every badge from the
+   first tournament ever, so its Entrants hold something rare too — with the place and the
+   tournament under it. Champion wears the Lab green, Finalist is solid,
+   Entrant an outline. Best place first; the shelf scrolls sideways when
+   it's long. A tap opens the event (the app-wide data-evopen handler,
+   app/events/wire.js). Colours come from the theme (profile2.css). */
 const PF_BADGE_NAME={champion:"Champion",finalist:"Finalist",entrant:"Entrant"};
+function pfEmblem(tier,og){
+  const c=tier==="champion",f=tier==="finalist";
+  return `<svg class="bd-em" viewBox="0 0 88 84" aria-hidden="true">
+    ${c?`<g class="bd-rays"><line x1="44.0" y1="20.0" x2="44.0" y2="-2.0"/><line x1="54.0" y1="22.7" x2="65.0" y2="3.6"/><line x1="61.3" y1="30.0" x2="80.4" y2="19.0"/><line x1="64.0" y1="40.0" x2="86.0" y2="40.0"/><line x1="61.3" y1="50.0" x2="80.4" y2="61.0"/><line x1="54.0" y1="57.3" x2="65.0" y2="76.4"/><line x1="44.0" y1="60.0" x2="44.0" y2="82.0"/><line x1="34.0" y1="57.3" x2="23.0" y2="76.4"/><line x1="26.7" y1="50.0" x2="7.6" y2="61.0"/><line x1="24.0" y1="40.0" x2="2.0" y2="40.0"/><line x1="26.7" y1="30.0" x2="7.6" y2="19.0"/><line x1="34.0" y1="22.7" x2="23.0" y2="3.6"/></g>`:""}
+    ${c?`<g class="bd-laurel"><ellipse cx="28.4" cy="79.5" rx="3" ry="6.5" transform="rotate(-10 28.4 79.5)"/><ellipse cx="18.2" cy="72.5" rx="3" ry="6.5" transform="rotate(9 18.2 72.5)"/><ellipse cx="10.9" cy="62.6" rx="3" ry="6.5" transform="rotate(28 10.9 62.6)"/><ellipse cx="7.3" cy="50.8" rx="3" ry="6.5" transform="rotate(48 7.3 50.8)"/><ellipse cx="7.8" cy="38.5" rx="3" ry="6.5" transform="rotate(67 7.8 38.5)"/><ellipse cx="12.2" cy="27.0" rx="3" ry="6.5" transform="rotate(86 12.2 27.0)"/><ellipse cx="20.2" cy="17.7" rx="3" ry="6.5" transform="rotate(105 20.2 17.7)"/><ellipse cx="59.6" cy="79.5" rx="3" ry="6.5" transform="rotate(10 59.6 79.5)"/><ellipse cx="69.8" cy="72.5" rx="3" ry="6.5" transform="rotate(-9 69.8 72.5)"/><ellipse cx="77.1" cy="62.6" rx="3" ry="6.5" transform="rotate(-28 77.1 62.6)"/><ellipse cx="80.7" cy="50.8" rx="3" ry="6.5" transform="rotate(-48 80.7 50.8)"/><ellipse cx="80.2" cy="38.5" rx="3" ry="6.5" transform="rotate(-67 80.2 38.5)"/><ellipse cx="75.8" cy="27.0" rx="3" ry="6.5" transform="rotate(-86 75.8 27.0)"/><ellipse cx="67.8" cy="17.7" rx="3" ry="6.5" transform="rotate(-105 67.8 17.7)"/></g>`:f?`<g class="bd-laurel"><ellipse cx="28.4" cy="79.5" rx="3" ry="6.5" transform="rotate(-10 28.4 79.5)"/><ellipse cx="16.4" cy="70.6" rx="3" ry="6.5" transform="rotate(13 16.4 70.6)"/><ellipse cx="8.9" cy="57.6" rx="3" ry="6.5" transform="rotate(37 8.9 57.6)"/><ellipse cx="7.1" cy="42.8" rx="3" ry="6.5" transform="rotate(60 7.1 42.8)"/><ellipse cx="59.6" cy="79.5" rx="3" ry="6.5" transform="rotate(10 59.6 79.5)"/><ellipse cx="71.6" cy="70.6" rx="3" ry="6.5" transform="rotate(-13 71.6 70.6)"/><ellipse cx="79.1" cy="57.6" rx="3" ry="6.5" transform="rotate(-37 79.1 57.6)"/><ellipse cx="80.9" cy="42.8" rx="3" ry="6.5" transform="rotate(-60 80.9 42.8)"/></g>`:""}
+    <g transform="translate(12 10)">
+    ${c?`<path class="bd-crown" d="M19 15 L21 3 L27 9 L32 1 L37 9 L43 3 L45 15 Z"/>`:""}
+    <path class="bd-shield" d="M32 10 L56 18 V38 C56 53 45 63 32 68 C19 63 8 53 8 38 V18 Z"/>
+    <path class="bd-rim" d="M32 15 L51 21.5 V38 C51 50 42.5 58 32 62.5 C21.5 58 13 50 13 38 V21.5 Z"/>
+    <polygon class="bd-star" points="32.0,26.0 34.9,34.0 43.4,34.3 36.8,39.5 39.1,47.7 32.0,43.0 24.9,47.7 27.2,39.5 20.6,34.3 29.1,34.0"/>
+    ${og?`<path class="bd-ribbon" d="M2 51 H62 L58 57 L62 63 H2 L6 57 Z"/><text class="bd-og" x="32" y="60" text-anchor="middle">OG</text>`:""}
+    </g>
+    ${c?`<path class="bd-glint" d="M66 6 L67.6 10.4 L72 12 L67.6 13.6 L66 18 L64.4 13.6 L60 12 L64.4 10.4 Z"/>`:""}
+  </svg>`;
+}
 function pfBadgesHTML(list){
   if(!list||!list.length)return"";
-  return `<div class="pig-badges">${list.map(b=>`<button class="pbadge t-${esc(b.tier)}" data-evopen="${esc(b.slug)}" aria-label="${esc(PF_BADGE_NAME[b.tier]||"")} · ${esc(b.title)}">${PF_BADGE_ICON}<b>${esc(PF_BADGE_NAME[b.tier]||"")}</b><span>${esc(b.title)}</span></button>`).join("")}</div>`;
+  return `<div class="pig-badges" role="list">${list.map(b=>{const n=PF_BADGE_NAME[b.tier]||"";
+    return `<button class="pbadge t-${esc(b.tier)}${b.og?" is-og":""}" role="listitem" data-evopen="${esc(b.slug)}" aria-label="${b.og?"OG · ":""}${esc(n)} · ${esc(b.title)}">${pfEmblem(b.tier,b.og)}<b>${esc(n)}</b><span>${esc(b.title)}</span></button>`}).join("")}</div>`;
 }
 
 /* ---- wiring ---- */

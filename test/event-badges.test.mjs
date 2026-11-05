@@ -72,7 +72,8 @@ try {
   t("a void tournament gives no badge", !e.some((b) => b.slug === "void-one"));
   t("a disqualified entry gives no badge", (await badges("dq")).length === 0);
   t("an unpublished tournament gives no badge", (await badges("none")).length === 0);
-  t("only slug, title and tier leave the server", Object.keys(c[0]).sort().join() === "slug,tier,title");
+  t("only slug, title, tier and og leave the server", Object.keys(c[0]).sort().join() === "og,slug,tier,title");
+  t("every badge from the first tournament is OG — entrants too", c[0].og === true && f[0].og === true && e[0].og === true);
 } finally { await stop(srv); }
 
 // 4. the app draws them under the name and taps open the event
