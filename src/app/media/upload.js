@@ -5,16 +5,20 @@
    fail. Now a dropped connection is retried twice (after 3s, then 10s —
    long enough for a restart), progress says so, and every failure is
    reported to Admin → Glitches with its size, how long it ran and why.
-================================================================ */
-/* Streams the raw file straight to the server — no base64, no giant string
-   in memory, and we get real progress. XHR rather than fetch because fetch
-   still can't report UPLOAD progress, and a 600MB upload with no feedback
-   is indistinguishable from a hang.
-
+   IN PIECES (2026-11-06): "Now it's getting stuck at 5%. I've been trying
+   to upload this video this whole week." One long request over a phone
+   signal can stall with no error, and a retry began again at 0%. Like Meta
+   and YouTube, a file over PIECE_FROM goes up in 4MB pieces: a piece with no
+   progress for PIECE_STALL is dropped and sent again, a dropped signal waits
+   and asks the server how much landed, and the upload carries on from there.
+   It gives up only after a long run of failures in a row.
+   STREAMS the raw file straight to the server — no base64, no giant string
+   in memory, and real progress (XHR: fetch can't report upload progress).
    Falls back to the older base64 route if the server doesn't have the
-   streaming one yet. Frontend and backend get deployed separately and
-   sometimes drift; a photo upload shouldn't just die because of that. */
-/* Videos (2026-11-05): up to 2GB; over 650MB the server keeps a 1080p copy (server/uploads/big-video.js). */
+   streaming one yet (frontend and backend deploy separately).
+   VIDEOS (2026-11-05): up to 2GB; over 650MB the server keeps a 1080p copy
+   (server/uploads/big-video.js).
+================================================================ */
 const VID_MAX=2048*1024*1024,VID_KEEP=650*1024*1024;
 const vidMB=f=>(f.size/1073741824>=1?(f.size/1073741824).toFixed(1)+"GB":Math.round(f.size/1048576)+"MB");
 const vidTooBig=f=>"That video is "+vidMB(f)+" — LABS takes up to 2GB. Trim it in Photos (Edit), or record at 1080p";
@@ -39,7 +43,6 @@ function uploadOnce(fileOrBlob,onProgress){
     x.send(fileOrBlob);
   });
 }
-/* The old route. Kept only as a safety net for a stale server. */
 async function uploadB64(blob){
   const data=await new Promise((res,rej)=>{
     const fr=new FileReader();fr.onerror=()=>rej(new Error("Couldn't read that file"));
@@ -47,7 +50,6 @@ async function uploadB64(blob){
   });
   return req("/api/upload",{method:"POST",body:{data}});
 }
-/* Say what actually went wrong. "Upload failed" helps nobody. */
 function uploadError(status,d){
   if(d&&d.error){
     if(d.needsVerify)return "Confirm your email first — check your inbox, or hit Resend up top";
@@ -61,14 +63,6 @@ function uploadError(status,d){
   return "Upload failed ("+status+")";
 }
 
-/* ── In pieces (2026-11-06) ──────────────────────────────────────────
-   "Now it's getting stuck at 5%. I've been trying to upload this video this
-   whole week." One long request over a phone signal can stall with no error,
-   and a retry began again at 0%. Like Meta and YouTube, a file over
-   PIECE_FROM goes up in 4MB pieces: a piece with no progress for PIECE_STALL
-   is dropped and sent again, a dropped signal waits and asks the server how
-   much landed, and the upload carries on from there. It gives up only after
-   a long run of failures in a row. */
 const PIECE_FROM=8*1024*1024,PIECE_STALL=30000;
 function pieceXhr(method,path,body,{json=false,onUp=null}={}){
   return new Promise((resolve,reject)=>{
@@ -78,9 +72,9 @@ function pieceXhr(method,path,body,{json=false,onUp=null}={}){
     x.open(method,API+path);
     x.setRequestHeader("Content-Type",json?"application/json":"application/octet-stream");
     if(TOKEN)x.setRequestHeader("Authorization","Bearer "+TOKEN);
-    if(body&&!json){x.upload.onprogress=e=>{watch();if(onUp)onUp(e.loaded)};watch()}   // a piece that stops moving is sent again
+    if(body&&!json){x.upload.onprogress=e=>{watch();if(onUp)onUp(e.loaded)};watch()}
     x.onload=()=>{clearTimeout(stall);let d={};try{d=JSON.parse(x.responseText)}catch(e){}
-      if(x.status>=502&&x.status<=504||x.status===0)return net();   // the server's restarting
+      if(x.status>=502&&x.status<=504||x.status===0)return net();
       resolve({status:x.status,d})};
     x.onerror=()=>net();
     x.onabort=()=>{clearTimeout(stall);reject(new Error("Upload cancelled"))};
@@ -92,14 +86,14 @@ async function uploadPieces(file,onProgress){
   const size=file.size,prog=n=>{if(onProgress)onProgress(Math.min(1,n/size))};
   const fail=(st,d)=>new Error(uploadError(st,d));
   let r=await pieceXhr("POST","/api/upload/pieces",JSON.stringify({size}),{json:true});
-  if(r.status===404)return null;                       // a server from before pieces: one stream, as before
+  if(r.status===404)return null;
   if(r.status!==200)throw fail(r.status,r.d);
   const id=r.d.id,P=r.d.piece||4194304;let have=0,fails=0,said=false;
   while(have<size){
     try{
       r=await pieceXhr("PUT","/api/upload/pieces/"+id+"?at="+have,file.slice(have,Math.min(size,have+P)),{onUp:l=>prog(have+l)});
       if(r.status===200){have=r.d.have;fails=0;prog(have);if(said){said=false;toast("Back online — still uploading")}continue}
-      if(r.status===409&&typeof r.d.have==="number"){have=r.d.have;continue}   // the server says where it is
+      if(r.status===409&&typeof r.d.have==="number"){have=r.d.have;continue}
       throw fail(r.status,r.d);
     }catch(e){
       if(!e.net)throw e;
