@@ -1,5 +1,5 @@
 /* ================================================================
-   UPLOADS v1.1 — 2026-10-08. Moved out of app/state/state-ui (24KB) when
+   UPLOADS v1.2 — 2026-11-05 (videos up to 2GB: VID_MAX; one over VID_KEEP is made 1080p on the server — the screen says so after 100%; a too-big one says its size and what to do). v1.1 — 2026-10-08. Moved out of app/state/state-ui (24KB) when
    uploads learned to survive a dropped connection: a phone video over a
    weak signal, or a deploy restarting the server mid-upload, used to just
    fail. Now a dropped connection is retried twice (after 3s, then 10s —
@@ -14,6 +14,10 @@
    Falls back to the older base64 route if the server doesn't have the
    streaming one yet. Frontend and backend get deployed separately and
    sometimes drift; a photo upload shouldn't just die because of that. */
+/* Videos (2026-11-05): up to 2GB; over 650MB the server keeps a 1080p copy (server/uploads/big-video.js). */
+const VID_MAX=2048*1024*1024,VID_KEEP=650*1024*1024;
+const vidMB=f=>(f.size/1073741824>=1?(f.size/1073741824).toFixed(1)+"GB":Math.round(f.size/1048576)+"MB");
+const vidTooBig=f=>"That video is "+vidMB(f)+" — LABS takes up to 2GB. Trim it in Photos (Edit), or record at 1080p";
 function uploadOnce(fileOrBlob,onProgress){
   return new Promise((resolve,reject)=>{
     const x=new XMLHttpRequest();
@@ -52,6 +56,7 @@ function uploadError(status,d){
   if(status===401)return "You've been signed out — sign in and try again";
   if(status===403)return "Confirm your email first — check your inbox, or hit Resend up top";
   if(status===413)return "That file's too big";
+  if(status===507)return "LABS is short on space for a video this big right now — try a shorter one";
   if(status===429)return "Too many uploads — give it a minute";
   return "Upload failed ("+status+")";
 }

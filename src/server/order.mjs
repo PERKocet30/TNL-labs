@@ -34,6 +34,7 @@ export const SERVER = [
 
   // uploads
   "uploads/upload-dm-notifications.js",
+  "uploads/big-video.js",
 
   // admin
   "admin/mods.js",

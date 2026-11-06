@@ -1,4 +1,4 @@
-/* WIRE v1.1 — 2026-10-27: the lab message box grows and keeps line breaks; Enter sends on a keyboard, makes a new line on a phone (like DMs). */
+/* WIRE v1.2 — 2026-11-05: videos up to 2GB (VID_MAX); a too-big one says its size. v1.1 — 2026-10-27: the lab message box grows and keeps line breaks; Enter sends on a keyboard, makes a new line on a phone (like DMs). */
 function wire(){
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=async()=>{
     if(PCOMPOSE&&b.dataset.tab!=="post"&&!await pcLeave())return;
@@ -210,7 +210,7 @@ function wire(){
     for(const f of files){
       if(QUEUE.length>=10){toast("10 at a time");break}
       if(f.type.startsWith("video/")){
-        if(f.size>650*1024*1024){toast(f.name+" is over 650MB");continue}
+        if(f.size>VID_MAX){toast(vidTooBig(f));continue}
         QUEUE.push({file:f,kind:"video",name:f.name,state:"ok",preview:null});
         continue;
       }
