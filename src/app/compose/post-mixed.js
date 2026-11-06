@@ -1,3 +1,4 @@
+/* v1.1 · 2026-11-05: videos up to 2GB (VID_MAX, app/media/upload); the bar says the size, and after 100% that a big one is being made 1080p. */
 /* ── PHOTOS AND VIDEOS IN ONE POST · v1.0 · 2026-10-30 ── "a carousel with a video in the middle didn't work":
    up to 10 of either, in picked order. A video slide carries a still (url/thumb); caroSlide plays it. */
 const pcIsVid=f=>f.type.startsWith("video/")||(!f.type&&/\.(mp4|m4v|mov|webm)$/i.test(f.name));
@@ -14,14 +15,17 @@ function pcPick(c,files){
   }
   pcAddMixed(c,files);
 }
+/* what the bar says: how far, of how much — and after 100%, that a big one is being made 1080p */
+const pcVidText=(pr,size)=>pr>=1&&size>VID_KEEP?"Making it 1080p for LABS… a big video takes a minute or two"
+  :"Uploading video · "+Math.round((pr||0)*100)+"%"+(size?" of "+vidMB({size}):"");
 async function pcPickVideo(c,f){
-  if(f.size>650*1024*1024){toast(f.name+" is over 650MB");return}
-  c.vid=null;c.cover=null;c.vedit=null;c.vidbusy=true;c.vidprog=0;render();
+  if(f.size>VID_MAX){toast(vidTooBig(f));return}
+  c.vid=null;c.cover=null;c.vedit=null;c.vidbusy=true;c.vidprog=0;c.vidsize=f.size;render();
   try{const v=document.createElement("video");v.preload="metadata";v.muted=true;const u=URL.createObjectURL(f);
     v.onloadedmetadata=()=>{c.vw=v.videoWidth||undefined;c.vh=v.videoHeight||undefined;URL.revokeObjectURL(u)};v.src=u}catch(e){}
   try{
     const up=await uploadStream(f,pr=>{if(c.dead)return;c.vidprog=pr;
-      const t=$("#pcvidprog"),b=$("#pcvidbar");if(t)t.textContent="Uploading video · "+Math.round(pr*100)+"%";if(b)b.style.width=Math.round(pr*100)+"%";
+      const t=$("#pcvidprog"),b=$("#pcvidbar");if(t)t.textContent=pcVidText(pr,f.size);if(b)b.style.width=Math.round(pr*100)+"%";
       if(c.queued)pqPaint()});
     if(c.dead)return;   // discarded mid-upload
     if(up.kind!=="video")throw new Error("That file isn't a video");
@@ -58,7 +62,7 @@ function pcAddMixed(c,files){
       try{
         if(!vid){const up=await uploadWork(file);if(c.dead)return;delete im.busy;Object.assign(im,up)}
         else{
-          if(file.size>650*1024*1024)throw new Error(file.name+" is over 650MB");
+          if(file.size>VID_MAX)throw new Error(vidTooBig(file));
           const fr=pcFrame(file);
           fr.then(f=>{if(f&&im.busy&&!c.dead){try{im.local=URL.createObjectURL(f.blob);im.thumb=im.url=im.local}catch(e){}pcRepaint(c)}});
           const up=await uploadStream(file,()=>{});if(c.dead)return;

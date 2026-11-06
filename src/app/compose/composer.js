@@ -1,3 +1,4 @@
+/* v2026-11-05 (later): the video bar's words come from pcVidText (app/compose/post-mixed) — the size, and "making it 1080p" after 100% for a big one. */
 /* v2026-11-05 (latest): while iOS gets a picked video ready, the work area says "Getting it from your phone…" (c.picking, app/media/pick onWait) instead of sitting empty.
 /* v2026-11-05 (later): a new post walks you through it — your work → where it belongs → caption & details (app/compose/composer-walk); this page is the last step.
 /* v2026-11-05: tapping Post counts the post flow as done — it posts after the screen closes, so Echo's flows showed every post as abandoned. */
@@ -39,7 +40,7 @@ function pcomposeHTML(){
       <button type="button" class="btn sm ghost" id="pcpickstop">Stop</button></div>`;
   else if(c.vidbusy)media=`<div class="pc-stage pc-busy"><span class="spin"></span>
       <div class="pc-prog"><i id="pcvidbar" style="width:${Math.round((c.vidprog||0)*100)}%"></i></div>
-      <span class="dim" id="pcvidprog">Uploading video · ${Math.round((c.vidprog||0)*100)}%</span>
+      <span class="dim" id="pcvidprog">${esc(pcVidText(c.vidprog,c.vidsize))}</span>
       <span class="dim pc-keep">Keep LABS open until it's done</span></div>`;
   else if(c.vid){const ve=c.vedit||{},r=VRATIO[ve.ratio];
     media=`<div class="pc-stage"><video id="pcvid" class="${r?"vfill":""}" src="${esc(c.vid.url)}#t=${((ve.start||0)/1000||.1).toFixed(2)}"${c.cover?` poster="${esc(c.cover)}"`:""}${r?` style="aspect-ratio:${r}"`:""} playsinline ${ve.muted?"muted ":""}controls preload="metadata"></video>

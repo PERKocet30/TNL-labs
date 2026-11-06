@@ -1,5 +1,5 @@
 /* ================================================================
-   UPLOAD (v1.1 2026-10-28: a lab's Lead or a Mod can take down comments in that lab — mayTakeDown, server/labs/leads.js)
+   UPLOAD (v1.2 2026-11-05: videos up to 2GB; one over 650MB is made 1080p before it's saved, and a full disk says so before the upload — uploads/big-video.js. v1.1 2026-10-28: a lab's Lead or a Mod can take down comments in that lab — mayTakeDown, server/labs/leads.js)
    Two paths, deliberately:
 
    /api/upload        — small stuff (avatars, beat audio) as base64 JSON.
@@ -56,7 +56,8 @@ function sniff(buf) {
 
 /* Instagram: 650MB Reels, 30MB photos. We match on video and beat them on
    images, because a designer's poster is the whole point here. */
-const LIMITS = { image: 30 * 1024 * 1024, video: 650 * 1024 * 1024, audio: 100 * 1024 * 1024 };
+/* 2026-11-05: video up to VIDEO_MAX (2GB); over VIDEO_KEEP it's made 1080p (uploads/big-video.js). */
+const LIMITS = { image: 30 * 1024 * 1024, get video() { return VIDEO_MAX; }, audio: 100 * 1024 * 1024 };
 const B64_LIMIT = 8 * 1024 * 1024; // the JSON path stays small on purpose
 
 /* 10 photos = 30 files now (original + feed + grid copies). */
@@ -68,7 +69,10 @@ app.post("/api/upload/stream", auth, verified, rateLimit({ max: 120, windowMs: 3
   res.once("close", () => { UPLOADS_IN_FLIGHT--; });
   const declared = Number(req.get("content-length") || 0);
   if (declared > LIMITS.video) {
-    return res.status(413).json({ error: `That file's too big — ${LIMITS.video / 1048576}MB max` });
+    return res.status(413).json({ error: `That file's too big — ${LIMITS.video / 1073741824}GB max` });
+  }
+  if (declared && !videoRoom(declared)) {
+    return res.status(507).json({ error: declared > VIDEO_KEEP ? "LABS is short on space for a video this big right now — try a shorter one" : "LABS is short on space right now — try again later" });
   }
 
   const tmp = join(UPLOAD_DIR, `.part-${randomBytes(10).toString("hex")}`);
@@ -96,10 +100,10 @@ app.post("/api/upload/stream", auth, verified, rateLimit({ max: 120, windowMs: 3
       type = sniff(head);
       if (!type) return fail(400, "unsupported file type");
       if (written > LIMITS[type.kind]) {
-        return fail(413, `That ${type.kind} is too big — ${LIMITS[type.kind] / 1048576}MB max`);
+        return fail(413, `That ${type.kind} is too big — ${type.kind === "video" ? "2GB" : LIMITS[type.kind] / 1048576 + "MB"} max`);
       }
     } else if (written > LIMITS[type.kind]) {
-      return fail(413, `That ${type.kind} is too big — ${LIMITS[type.kind] / 1048576}MB max`);
+      return fail(413, `That ${type.kind} is too big — ${type.kind === "video" ? "2GB" : LIMITS[type.kind] / 1048576 + "MB"} max`);
     }
   });
 
@@ -112,12 +116,25 @@ app.post("/api/upload/stream", auth, verified, rateLimit({ max: 120, windowMs: 3
     if (done) return;
     if (!type) { done = true; rm(tmp, { force: true }, () => {}); return res.status(400).json({ error: "empty file" }); }
     done = true;
-    const name = `${Date.now()}-${randomBytes(8).toString("hex")}.${type.ext}`;
+    const stem = `${Date.now()}-${randomBytes(8).toString("hex")}`;
+    let name = `${stem}.${type.ext}`, bytes = written, shrunk = false;
     const land = () => rename(tmp, join(UPLOAD_DIR, name), (err) => {
       if (err) return res.status(500).json({ error: "couldn't save" });
-      if (type.kind !== "video") return res.json({ url: `/uploads/${name}`, kind: type.kind, bytes: written });
-      videoPoster(name, (poster) => res.json({ url: `/uploads/${name}`, kind: type.kind, bytes: written, poster }));
+      if (type.kind !== "video") return res.json({ url: `/uploads/${name}`, kind: type.kind, bytes });
+      videoPoster(name, (poster) => res.json({ url: `/uploads/${name}`, kind: type.kind, bytes, poster, ...(shrunk ? { shrunk } : {}) }));
     });
+    /* a big video: LABS keeps a 1080p copy, not the original (uploads/big-video.js) */
+    if (type.kind === "video" && written > VIDEO_KEEP) {
+      const small = `${tmp}.1080.mp4`;
+      return videoShrink(tmp, small).then((ok) => {
+        if (!ok) return videoFaststart(tmp, type.ext, land);   // never worse than before
+        rm(tmp, { force: true }, () => rename(small, tmp, (e) => {
+          if (e) { rm(small, { force: true }, () => {}); return res.status(500).json({ error: "couldn't save" }); }
+          try { bytes = statSync(tmp).size; } catch {}
+          name = `${stem}.mp4`; shrunk = true; land();
+        }));
+      });
+    }
     if (type.kind === "video" && /^(mov|mp4|m4v)$/.test(type.ext)) videoFaststart(tmp, type.ext, land);
     else land();
   });
