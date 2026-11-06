@@ -1,5 +1,5 @@
 /* ================================================================
-   UPLOAD (v1.2 2026-11-05: videos up to 2GB; one over 650MB is made 1080p before it's saved, and a full disk says so before the upload — uploads/big-video.js. v1.1 2026-10-28: a lab's Lead or a Mod can take down comments in that lab — mayTakeDown, server/labs/leads.js)
+   UPLOAD (v1.3 2026-11-06: what happens once a file has arrived is uploadLand(), shared with uploads in pieces — uploads/chunks.js. v1.2 2026-11-05: videos up to 2GB; one over 650MB is made 1080p before it's saved, and a full disk says so before the upload — uploads/big-video.js. v1.1 2026-10-28: a lab's Lead or a Mod can take down comments in that lab — mayTakeDown, server/labs/leads.js)
    Two paths, deliberately:
 
    /api/upload        — small stuff (avatars, beat audio) as base64 JSON.
@@ -116,6 +116,13 @@ app.post("/api/upload/stream", auth, verified, rateLimit({ max: 120, windowMs: 3
     if (done) return;
     if (!type) { done = true; rm(tmp, { force: true }, () => {}); return res.status(400).json({ error: "empty file" }); }
     done = true;
+    uploadLand(tmp, type, written, res);
+  });
+});
+
+/* A whole file has arrived at `tmp` (one stream, or in pieces — uploads/chunks.js):
+   make a big video 1080p, put the index first, save it under its name and answer. */
+function uploadLand(tmp, type, written, res) {
     const stem = `${Date.now()}-${randomBytes(8).toString("hex")}`;
     let name = `${stem}.${type.ext}`, bytes = written, shrunk = false;
     const land = () => rename(tmp, join(UPLOAD_DIR, name), (err) => {
@@ -137,8 +144,7 @@ app.post("/api/upload/stream", auth, verified, rateLimit({ max: 120, windowMs: 3
     }
     if (type.kind === "video" && /^(mov|mp4|m4v)$/.test(type.ext)) videoFaststart(tmp, type.ext, land);
     else land();
-  });
-});
+}
 
 /* ── A video that shows up at once (2026-10-08) ─────────────────────
    An iPhone writes a .mov with its index (the "moov") at the END, so a
