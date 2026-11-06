@@ -933,6 +933,22 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => !!(PCOMPOSE && (PCOMPOSE.imgs.length || PCOMPOSE.upN))), "the file chosen after a cancel was lost");
     await p.evaluate(() => { const c = PCOMPOSE; c.dead = true; PCOMPOSE = null; render(); });
   });
+  /* 2026-11-06 "Now it's getting stuck at 5%. I've been trying to upload this video this whole week" */
+  await step(d, "a big upload goes up in pieces and carries on through a dropped connection and a stalled piece", async () => {
+    let dropped = 0, stalled = 0;
+    await p.route("**/api/upload/pieces/*?at=4194304", (r) => { if (!dropped++) return r.abort("connectionreset"); return r.continue(); });   // the signal drops on piece 2
+    await p.route("**/api/upload/pieces/*?at=8388608", async (r) => { if (!stalled++) { await new Promise((ok) => setTimeout(ok, 1500)); return r.abort("timedout"); } return r.continue(); });   // piece 3 freezes once
+    const out = await p.evaluate(async () => {
+      const b = new Uint8Array(10 * 1024 * 1024); b.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);   // a 10MB "PNG"
+      const seen = [];
+      try { const r = await uploadStream(new Blob([b], { type: "image/png" }), (f) => seen.push(f)); return { url: r.url, bytes: r.bytes, max: Math.max(...seen) }; }
+      catch (e) { return { err: e.message }; }
+    });
+    await p.unroute("**/api/upload/pieces/*?at=4194304"); await p.unroute("**/api/upload/pieces/*?at=8388608");
+    ok(!out.err, "the upload in pieces failed: " + out.err);
+    ok(dropped >= 2 && stalled >= 2, "the dropped and stalled pieces weren't sent again");
+    ok(out.bytes === 10 * 1024 * 1024 && /^\/uploads\//.test(out.url) && out.max === 1, "the file didn't arrive whole (" + out.bytes + ")");
+  });
   /* 2026-11-05 "if it needs time to load the video from my camera roll let it load up like Instagram" */
   await step(d, "on an iPhone, picking waits like Instagram: Getting it from your phone… until the files arrive, then they land; Stop goes back", async () => {
     const real = await p.evaluate(() => navigator.userAgent);

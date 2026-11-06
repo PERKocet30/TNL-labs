@@ -1,3 +1,4 @@
+/* CONTROLS · BACKUPS v1.1 — 2026-11-06: Clean up leaves an upload still coming in (a .part touched in the last hour — uploads in pieces, uploads/chunks.js). */
 /* ---- controls. A dashboard you can't act from is a wall poster. ---- */
 app.post("/api/admin/members/:username/rep", auth, admin, (req, res) => {
   const u = q.userByName.get(req.params.username);
@@ -127,8 +128,8 @@ app.post("/api/admin/cleanup", auth, admin, (req, res) => {
   let removed = 0, freed = 0;
   try {
     for (const f of readdirSync(UPLOAD_DIR)) {
-      if (f.startsWith(".part-")) { // abandoned partial uploads
-        try { freed += statSync(join(UPLOAD_DIR, f)).size; rmSync(join(UPLOAD_DIR, f)); removed++; } catch {}
+      if (f.startsWith(".part-")) { // abandoned partial uploads — not one still coming in (a piece in the last hour, uploads/chunks.js)
+        try { const st = statSync(join(UPLOAD_DIR, f)); if (Date.now() - st.mtimeMs < 3600 * 1000) continue; freed += st.size; rmSync(join(UPLOAD_DIR, f)); removed++; } catch {}
         continue;
       }
       if (f.startsWith(".") || referenced.has(f)) continue;
