@@ -157,6 +157,7 @@ app.get("/shop", (req, res) => {
     shopHtml.set(base, readFileSync(join(__dirname, "..", "public", "index.html"), "utf8")
       .replace(/<title>[^<]*<\/title>/, `<title>${e(title)}</title>`)
       .replace(/(property="og:url" content=")[^"]*/, `$1${e(url)}`)
+      .replace(/(rel="canonical" href=")[^"]*/, `$1${e(url)}`)   // its own address, not the home page's (Search Console, 2026-11-09)
       .replace(/(property="og:title" content=")[^"]*/, `$1${e(title)}`)
       .replace(/(name="twitter:title" content=")[^"]*/, `$1${e(title)}`)
       .replace(/(property="og:description" content=")[^"]*/, `$1${e(MARKET_PITCH)}`)

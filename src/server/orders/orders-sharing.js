@@ -1,9 +1,10 @@
-/* ---- buying ---- ORDERS v2.1 — 2026-10-27 (ship / received only once paid: canShip, canReceive in server/core/guard); v2.0 — 2026-10-18
+/* ---- buying ---- ORDERS v2.2 — 2026-11-09 (a deleted post says 410 Gone, Search Console); v2.1 — 2026-10-27 (ship / received only once paid: canShip, canReceive in server/core/guard); v2.0 — 2026-10-18
    v2.0: after paying, the buyer lands on "Order confirmed" for that order
    (?checkout=paid&o=), a payment that's still clearing says so instead of
    "failed", and paid orders settle in the background every few minutes —
    a buyer who pays and closes the tab (Instagram's browser does that) no
    longer leaves the seller waiting until someone opens their orders. */
+const postIdWasUsed = (id) => Number.isInteger(id) && id > 0 && id <= (db.prepare(`SELECT seq FROM sqlite_sequence WHERE name='posts'`).get() || {}).seq;
 app.post("/api/market/:id/buy", auth, verified, rateLimit({ max: 20, windowMs: 3600000, key: "user" }), async (req, res) => {
   const l = db.prepare(`SELECT * FROM listings WHERE id = ?`).get(Number(req.params.id));
   if (!l) return res.status(404).json({ error: "no listing" });
@@ -328,7 +329,9 @@ app.get("/p/:id", (req, res) => {
   const rows = feedRows({ viewerId: 0, limit: 1, postId: Number(req.params.id) });
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const notFound = lookNotFound("This work isn't public, or it's been removed.");
-  if (!rows.length) return res.status(404).send(notFound);
+  /* Search Console 2026-11-09: a post that was deleted (its number was used — ids never come back) says 410 Gone,
+     so Google drops the page in days instead of re-trying it for weeks; a number that never existed stays 404 */
+  if (!rows.length) return res.status(postIdWasUsed(Number(req.params.id)) ? 410 : 404).send(notFound);
   const p = shapePost(rows[0]);
   // Only published work is shareable. Chat stays private, by design.
   if (!p.isWork) return res.status(404).send(notFound);
