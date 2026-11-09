@@ -65,7 +65,8 @@ try {
   t("the Market's own page names its own address", (await html("/shop")).includes(`<link rel="canonical" href="${B}/shop">`) && !(await html("/shop")).includes('<link rel="canonical" href="https://tnllabs.com/">'));
   db.prepare(`DELETE FROM posts WHERE id = ?`).run(chat);
   t("a post that was deleted says 410 Gone", (await fetch(B + `/p/${chat}`)).status === 410);
-  t("…a post that never existed stays 404", (await fetch(B + "/p/987654321")).status === 404 && (await fetch(B + "/p/abc")).status === 404);
+  t("…a post that never existed stays 404", (await fetch(B + "/p/987654321")).status === 404);
+  t("…and /p/abc is 404 too, not the newest post (it was, until 2026-11-09)", (await fetch(B + "/p/abc")).status === 404 && (await fetch(B + "/p/-1")).status === 404);
   t("the guest Showroom's tagline is the page's headline", readFileSync(join(ROOT, "src/app/showroom/showroom.js"), "utf8").includes('<h1 class="wi-tag">Social media by creatives, for creatives.</h1>'));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);

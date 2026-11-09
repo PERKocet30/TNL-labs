@@ -326,12 +326,14 @@ app.get("/api/posts/:id", maybeAuth, (req, res) => {
 });
 
 app.get("/p/:id", (req, res) => {
-  const rows = feedRows({ viewerId: 0, limit: 1, postId: Number(req.params.id) });
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const notFound = lookNotFound("This work isn't public, or it's been removed.");
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(404).send(notFound);   // /p/abc used to show the newest post (2026-11-09)
+  const rows = feedRows({ viewerId: 0, limit: 1, postId: id });
   /* Search Console 2026-11-09: a post that was deleted (its number was used — ids never come back) says 410 Gone,
      so Google drops the page in days instead of re-trying it for weeks; a number that never existed stays 404 */
-  if (!rows.length) return res.status(postIdWasUsed(Number(req.params.id)) ? 410 : 404).send(notFound);
+  if (!rows.length) return res.status(postIdWasUsed(id) ? 410 : 404).send(notFound);
   const p = shapePost(rows[0]);
   // Only published work is shareable. Chat stays private, by design.
   if (!p.isWork) return res.status(404).send(notFound);
