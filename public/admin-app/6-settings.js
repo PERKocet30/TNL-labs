@@ -52,7 +52,7 @@ VIEWS.settings = (only) => {
     <button class="btn" id="savetext" style="margin-top:12px">Save</button></div></div></div>`,
     health: () => `<div class="grid g2 g4">
     <div class="kpi"><div class="k">Database</div><div class="v">${mb(h.dbBytes)}</div><div class="d">${h.sessions} signed-in sessions</div></div>
-    ${h.disk && h.disk.totalBytes ? `<div class="kpi"><div class="k">Storage</div><div class="v">${gb(h.disk.totalBytes - h.disk.freeBytes)} <span class="dim" style="font-size:14px">of ${gb(h.disk.totalBytes)}</span></div><div class="d">${Math.round(100 * (1 - h.disk.freeBytes / h.disk.totalBytes))}% full · ${num(h.uploadCount)} files · ${h.orphans} unused</div></div>`
+    ${h.disk && h.disk.totalBytes ? `<div class="kpi"><div class="k">Storage</div><div class="v">${gb(h.disk.totalBytes - h.disk.freeBytes)}</div><div class="d">of ${gb(h.disk.totalBytes)} · ${Math.round(100 * (1 - h.disk.freeBytes / h.disk.totalBytes))}% full · ${num(h.uploadCount)} files · ${h.orphans} unused</div></div>`
       : `<div class="kpi"><div class="k">Uploads</div><div class="v">${mb(h.uploadBytes)}</div><div class="d">${num(h.uploadCount)} files · ${h.orphans} unused</div></div>`}
     <div class="kpi"><div class="k">Errors, 24h</div><div class="v">${E ? E.last24h : "—"}</div><div class="d">${E && E.byKind.length ? E.byKind.map((k) => k.n + " " + k.kind).join(" · ") : "all quiet"}</div></div>
     <div class="kpi"><div class="k">Glitches, 24h</div><div class="v">${G ? G.last24h : "—"}</div><div class="d">${G && G.byKind.some((k) => k.day) ? G.byKind.filter((k) => k.day).map((k) => k.day + " " + (GNAME[k.kind] || k.kind)).join(" · ") : "feels smooth"}</div></div>
