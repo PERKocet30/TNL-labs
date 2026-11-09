@@ -1,17 +1,22 @@
-/* UI SIGNALS v1.0 — 2026-11-04. "Think of all data that can help improve the
+/* UI SIGNALS v1.1 — 2026-11-09 ("get rid of any data that isn't useful and
+   track what is"): the load timer is gone (it read 0ms — a slow screen is
+   the glitch watcher's to tell), and a post that Share sent on its way is a
+   post finished: the creator closes before the post goes (compose/queue), so
+   every one used to count as abandoned.
+   v1.0 — 2026-11-04. "Think of all data that can help improve the
    user interface. Make sure Echo can access all of this."
    Quietly, from members' own phones, how the app is used — as counts the
    admin and Echo read (server/ui-signals): which screens open and in what
    order, where the app gets closed, backs, tabs, taps that did nothing, the
    same change sent twice, things started and not finished, empty screens,
-   searches that found nothing, how long screens take, pictures that didn't
+   searches that found nothing, pictures that didn't
    load, uploads that failed, the first use of a feature, and once a session
    what the app is being looked at on. Never a word anyone typed, never a
    title, a price or a message — a search miss keeps three counted words.
    render() and paintLayer() call uiTick() last; back.js calls uiBack().
    Batched (POST /api/ui) every 10s and when the page goes away; nothing
    waits on it and nothing on screen changes. */
-const UI={screen:"",at:0,q:[],timer:null,renders:0,fetches:0,flow:null,flowDone:false,empty:null,load:null,exited:false,misses:{},sent:{}};
+const UI={screen:"",at:0,q:[],timer:null,renders:0,fetches:0,flow:null,flowDone:false,empty:null,postWait:0,exited:false,misses:{},sent:{}};
 const UI_FLOWS={"compose":"post","market:sell":"sell","event:enter":"enter"};
 const UI_CONTROLS="button,a,input,select,textarea,label,summary,video,audio,[role=button],[contenteditable],[tabindex]";
 /* a plain name for what's on screen — no ids, no names, no titles */
@@ -51,26 +56,24 @@ function uiTick(){
   UI.renders++;
   let s;try{s=uiScreen()}catch(e){return}
   const now=Date.now();
-  if(s===UI.screen){uiLoadCheck(now);return}
+  if(s===UI.screen)return;
   const prev=UI.screen,ms=prev?now-UI.at:0;
   uiEmptyLeave(prev,ms,"moved");
   uiPush("view",s,prev,ms);
   /* flows: started here, finished (a success below) or not */
   const f=UI_FLOWS[s];
-  if(UI.flow&&UI.flow!==f){uiPush("flow",UI.flow,UI.flowDone?"done":"abandon");UI.flow=null}
+  if(UI.flow&&UI.flow!==f){
+    if(UI.flow==="post"&&!UI.flowDone&&uiPostQueued())UI.postWait++;   // Share closed the creator; the post itself is still on its way — done when it lands
+    else uiPush("flow",UI.flow,UI.flowDone?"done":"abandon");
+    UI.flow=null}
   if(f&&UI.flow!==f){UI.flow=f;UI.flowDone=false;uiPush("flow",f,"start")}
   if(s==="studio")uiFeature("studio");if(s==="playlist")uiFeature("playlist");
   if(s==="market:confirmed")uiPush("flow","checkout","done");
-  UI.screen=s;UI.at=now;UI.load={screen:s,at:now};
-  uiLoadCheck(now);
+  UI.screen=s;UI.at=now;
   setTimeout(uiEmptyCheck,50);
 }
-/* how long until the screen had its data: no shimmer left */
-function uiLoadCheck(now){
-  const l=UI.load;if(!l||l.screen!==UI.screen)return;
-  if(document.querySelector("#app .content .skel, #chatlayer .skel")){if(now-l.at<15000&&!l.t)l.t=setTimeout(()=>{l.t=null;uiLoadCheck(Date.now())},300);return}
-  uiPush("load",l.screen,"",now-l.at);UI.load=null;
-}
+/* compose/queue: a post Share has sent on its way (waiting on its photos, or posting) */
+function uiPostQueued(){try{return PQ.some(c=>c.queued&&!c.dead&&c.state!=="done"&&c.state!=="failed")}catch(e){return false}}
 /* an empty screen, and what happened next */
 function uiEmptyCheck(){
   if(UI.empty||!document.querySelector("#app .content .empty, #chatlayer .empty"))return;
@@ -137,7 +140,7 @@ window.fetch=function(url,init){
       return}
     if(p.startsWith("/api/upload")){if(!res.ok)uiPush("upload_fail",UI.screen,res.status===413?"big":res.status===415||res.status===400?"type":"net");return}
     if(!res.ok)return;
-    if(m==="POST"&&p==="/api/posts"){UI.flowDone=UI.flow==="post"||UI.flowDone}
+    if(m==="POST"&&p==="/api/posts"){if(UI.flow==="post")UI.flowDone=true;else if(UI.postWait>0){UI.postWait--;uiPush("flow","post","done")}}
     else if(m==="POST"&&p==="/api/market"){UI.flowDone=UI.flow==="sell"||UI.flowDone;uiFeature("sell")}
     else if(/^\/api\/market\/\d+\/buy$/.test(p)){uiPush("flow","checkout","start")}   // off to Stripe; "confirmed" on the way back is done
     else if(/^\/api\/events\/[^/]+\/enter$/.test(p)){UI.flowDone=UI.flow==="enter"||UI.flowDone;uiFeature("enter")}

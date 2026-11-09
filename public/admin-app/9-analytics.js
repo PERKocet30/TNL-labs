@@ -1,4 +1,10 @@
-/* LABS admin v4.0 — 2026-10-20. Analytics, in one place: Members (active,
+/* LABS admin v4.1 — 2026-11-09 ("get rid of any data that isn't useful and track
+   what is"): "Do new members stay?" is who came back (it was who's still
+   posting, 1% of a week that half came back from), with the real never-posted
+   and gone-quiet counts (the lists behind them stop at 20); Reach shows where
+   new members stop and which ways in bring people who stay — both were only
+   Echo's to read — in place of "Not tracked yet" and a made-up "Posted first
+   work". v4.0 — 2026-10-20. Analytics, in one place: Members (active,
    new, retention, who they are — by what they make, by lab, by hour),
    Reach (the funnel from sign-up to sale; sign-ups by source when the tags
    land), Commerce (sales, fees, by seller), Content (posts by lab, how
@@ -6,15 +12,20 @@
    a page of their own (9-studio.js). */
 let ATAB = "members";
 const ATABS = [["members", "Members"], ["reach", "Reach"], ["commerce", "Commerce"], ["content", "Content"]];
+const insDays = () => (RANGE <= 7 ? 7 : RANGE <= 30 ? 30 : 90);   // the insight windows: members who joined in the last 7, 30 or 90 days
 LOADERS.analytics = async () => {
   const q = pulseURL();
-  const [p, d, sr, au, fu, re, m] = await Promise.all([req(q), req(q.replace("/pulse", "/direction")), req(q.replace("/pulse", "/series")), req(q.replace("/pulse", "/audience")),
-    req("/api/admin/funnel"), req("/api/admin/retention"), req("/api/admin/market"), nwLoad()]);   // nwLoad: the member's path at the front (2-network.js)
-  Object.assign(D, { pulse: p, dir: d, series: sr, audience: au, funnel: fu, retention: re, market: m });
+  const [p, d, sr, au, fu, re, m, ir, ic] = await Promise.all([req(q), req(q.replace("/pulse", "/direction")), req(q.replace("/pulse", "/series")), req(q.replace("/pulse", "/audience")),
+    req("/api/admin/funnel"), req("/api/admin/retention"), req("/api/admin/market"), req("/api/admin/insights/retention?days=" + insDays()), req("/api/admin/insights/conversion?days=" + insDays()), nwLoad()]);   // nwLoad: the member's path at the front (2-network.js)
+  Object.assign(D, { pulse: p, dir: d, series: sr, audience: au, funnel: fu, retention: re, market: m, insRet: ir, insConv: ic });
 };
 VIEWS.analytics = () => {
-  const p = D.pulse, d = D.dir, S = D.series, A = D.audience, F = D.funnel, R = D.retention, m = D.market;
-  if (!p || !d || !S || !A || !F || !R || !m) return askel();
+  const p = D.pulse, d = D.dir, S = D.series, A = D.audience, F = D.funnel, R = D.retention, m = D.market, IR = D.insRet, IC = D.insConv;
+  if (!p || !d || !S || !A || !F || !R || !m || !IR || !IC) return askel();
+  const step = (name) => (IC.steps.find((x) => x.step.startsWith(name)) || { members: 0, pct: 0 });
+  const wk = (w) => (w === 0 ? "This week" : w === 1 ? "Last week" : `${w} weeks ago`);
+  const pc = (n) => (n == null ? `<span class="dim">too soon</span>` : n + "%");
+  const DO = IC.dropOffs;
   const labels = dayLabels(S.start, S.days), n = p.now, b = p.before;
   const chart = (title, key, fmt = num, sub = "") => card(title, `<div class="body">${lineHTML(S.series[key], S.prev[key], { labels, fmt, h: 190 })}<div class="leg"><span><i></i>Last ${S.days} days</span><span><i class="pv"></i>The ${S.days} before</span></div></div>`, sub);
   const hour = (h) => (h % 12 || 12) + (h < 12 ? "am" : "pm");
@@ -28,15 +39,16 @@ VIEWS.analytics = () => {
       <div class="two">${card("What they make", `<div class="body">${A.byRole.length ? breakHTML(A.byRole.map((r) => ({ label: r.role, n: r.n }))) : `<div class="empty">No roles picked yet.</div>`}</div>`, "roles members picked")}
         ${card("Active in which lab", `<div class="body">${breakHTML(A.byLab.map((l) => ({ label: l.name, n: l.people })))}</div>`, "people who posted there this period")}</div>
       <div class="two">${card("When they're on the app", `<div class="body">${barsHTML(A.hours, { labels: A.hours.map((_, h) => hour(h)), h: 110 })}</div>`, "activity by hour, your time")}
-        ${card("Do new members stay?", `<div class="body"><table class="tbl"><thead><tr><th>Joined</th><th class="num">People</th><th class="num">Still posting</th></tr></thead><tbody>${R.cohorts.map((c) => `<tr><td>${esc(c.week)}</td><td class="num">${c.joined}</td><td class="num">${c.stillPosting} <span class="dim">${c.joined ? c.pct + "%" : ""}</span></td></tr>`).join("")}</tbody></table>
-          <p class="mono" style="margin-top:8px">${R.silent.length} never posted · ${R.quiet.length} gone quiet (14+ days) · see Members for who</p></div>`, "by the week they joined")}</div>`,
+        ${card("Do new members stay?", `<div class="body"><table class="tbl"><thead><tr><th>Joined</th><th class="num">People</th><th class="num">Back next day</th><th class="num">Back after a week</th></tr></thead><tbody>${IR.byJoinWeek.filter((c) => c.joined).map((c) => `<tr><td>${wk(c.joinedWeeksAgo)}</td><td class="num">${num(c.joined)}</td><td class="num">${pc(c.back1)}</td><td class="num">${pc(c.back7)}</td></tr>`).join("") || `<tr><td colspan="4" class="dim">No one joined in this period.</td></tr>`}</tbody></table>
+          <p class="mono" style="margin-top:8px">${num(R.neverPosted)} never posted · ${num(R.goneQuiet)} gone quiet (14+ days) · see Members for who</p></div>`, "came back = opened the app or did anything, by the week they joined")}</div>`,
     reach: () => `<div class="grid g2 g4">
       ${kpiHTML("Members", num(A.members), { share: `${num(A.verified)} with email confirmed` })}
       ${kpiHTML("Opened the app", num(p.seen), { share: `${pct(p.seen, A.members)} of members, this period` })}
       ${kpiHTML("Signed up", num(n.signups), { now: n.signups, before: b.signups })}
-      ${kpiHTML("Posted first work", num(n.work ? Math.min(n.signups, n.work) : 0), { share: "new members who posted, this period" })}</div>
+      ${kpiHTML("Posted", num(step("Posted").members), { share: `${step("Posted").pct}% of the ${num(IC.joined)} who joined in ${IC.windowDays} days` })}</div>
       ${card("From sign-up to sale", `<div class="body">${funnelHTML(F.steps)}</div>`, "members, all time")}
-      ${card("Sign-ups by source", `<div class="body"><div class="empty">Not tracked yet. Source-tagged links (?src=ig-story, ig-bio, ig-chat, discord) are on the launch plan; this chart fills in once they ship.</div></div>`)}`,
+      ${card("Where new members stop", `<div class="body">${breakHTML([{ label: "Joined and only looked", n: DO.joinedAndOnlyLooked.members }, { label: "Voted, never posted", n: DO.votedButNeverPosted.members }, { label: "Voted, never entered", n: DO.votedButNeverEntered.members }, { label: "Posted once, then quiet", n: DO.postedOnceThenQuiet.members }, { label: "Never posted", n: DO.neverPosted.members }])}</div>`, `of the ${num(IC.joined)} who joined in ${IC.windowDays} days`)}
+      ${card("Ways in", `<div class="body">${IC.waysIn.length ? `<table class="tbl"><thead><tr><th>Came from</th><th class="num">Joined</th><th class="num">Voted</th><th class="num">Posted</th><th class="num">Came back</th></tr></thead><tbody>${IC.waysIn.slice(0, 8).map((w) => `<tr><td>${esc(w.wayIn)}</td><td class="num">${num(w.joined)}</td><td class="num">${w.votedPct}%</td><td class="num">${w.postedPct}%</td><td class="num">${w.cameBackPct}%</td></tr>`).join("")}</tbody></table>` : `<div class="empty">No one joined in this period.</div>`}</div>`, "which doors bring people who vote, post and return · noted from 26 Oct")}`,
     commerce: () => `<div class="grid g2 g4">
       ${kpiHTML("Sales", money(sum(S.series.gmv)), { now: sum(S.series.gmv), before: sum(S.prev.gmv), fmt: money, series: S.series.gmv })}
       ${kpiHTML("Orders", num(sum(S.series.orders)), { now: sum(S.series.orders), before: sum(S.prev.orders), series: S.series.orders })}

@@ -1,5 +1,5 @@
 /* ================================================================
-   ADMIN v2.4 — 2026-10-28 (record lists the labs they lead). v2.3 — 2026-10-28 (record says Mod; private notes owner-only). v2.2 — 2026-10-14 (People rows carry the member ID). What the dashboard runs on.
+   ADMIN v2.5 — 2026-11-09 (Needs you leaves out collab invites an admin sent: they wait on someone else, there's nothing to do about them from here). v2.4 — 2026-10-28 (record lists the labs they lead). v2.3 — 2026-10-28 (record says Mod; private notes owner-only). v2.2 — 2026-10-14 (People rows carry the member ID). What the dashboard runs on.
    - /api/admin/pulse: the numbers that matter for a date range, each
      against the range before it, plus daily series and "needs you".
      (v2.1: labs, #tags, the tournament and how people take part moved
@@ -134,7 +134,8 @@ function inboxItems(now) {
   if (now - lastBackup > 36 * 3600000) items.push({ kind: "backup", level: "high", text: lastBackup ? "No backup in 36 hours" : "No backups yet", go: "system" });
   const errors = aone(`SELECT COUNT(*) n FROM error_log WHERE created_at > ? AND kind != 'foreign'`, now - ADAY);
   if (errors) items.push({ kind: "errors", level: errors > 20 ? "high" : "mid", n: errors, text: `${errors} error${errors === 1 ? "" : "s"} in the last 24h`, go: "system" });
-  const pending = aone(`SELECT COUNT(*) n FROM collaborators WHERE status = 'pending' AND created_at < ?`, now - 3 * ADAY);
+  /* 2026-11-09: members' invites only — the six that sat here for weeks were LABS's own, waiting on other people */
+  const pending = aone(`SELECT COUNT(*) n FROM collaborators c JOIN posts p ON p.id = c.post_id JOIN users a ON a.id = p.author_id WHERE c.status = 'pending' AND c.created_at < ? AND a.is_admin = 0`, now - 3 * ADAY);
   if (pending) items.push({ kind: "collabs", level: "mid", n: pending, text: `${pending} collab invite${pending === 1 ? "" : "s"} waiting 3+ days`, go: "people" });
   const fresh = db.prepare(`SELECT username, display_name, avatar_url FROM users u WHERE created_at > ? AND suspended = 0
     AND NOT EXISTS (SELECT 1 FROM posts p WHERE p.author_id = u.id) ORDER BY created_at DESC LIMIT 12`).all(now - 7 * ADAY);

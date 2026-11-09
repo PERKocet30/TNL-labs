@@ -107,11 +107,15 @@ app.get("/api/admin/overview", auth, admin, (req, res) => {
   }
 
   res.json({
-    members: one(`SELECT COUNT(*) n FROM users`),
-    verified: one(`SELECT COUNT(*) n FROM users WHERE email_verified = 1`),
-    newWeek: one(`SELECT COUNT(*) n FROM users WHERE created_at > ?`, since(7)),
-    active: one(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE created_at > ?`, since(7)),
-    activeMonth: one(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE created_at > ?`, since(30)),
+    /* 2026-11-09, one meaning each: a member isn't suspended (as in the pulse), and "active" is did anything —
+       posting has its own name. These two used to say 464 and 23 where the pulse said 455 and 278. */
+    members: one(`SELECT COUNT(*) n FROM users WHERE suspended = 0`),
+    verified: one(`SELECT COUNT(*) n FROM users WHERE email_verified = 1 AND suspended = 0`),
+    newWeek: one(`SELECT COUNT(*) n FROM users WHERE created_at > ? AND suspended = 0`, since(7)),
+    active: one(`SELECT COUNT(DISTINCT u) n FROM (${ACTIVITY}) WHERE t > ?`, since(7)),
+    activeMonth: one(`SELECT COUNT(DISTINCT u) n FROM (${ACTIVITY}) WHERE t > ?`, since(30)),
+    postedWeek: one(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE created_at > ?`, since(7)),
+    postedMonth: one(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE created_at > ?`, since(30)),
     posts: one(`SELECT COUNT(*) n FROM posts`),
     work: one(`SELECT COUNT(*) n FROM posts WHERE is_work = 1`),
     workWeek: one(`SELECT COUNT(*) n FROM posts WHERE is_work = 1 AND created_at > ?`, since(7)),
@@ -249,8 +253,8 @@ app.delete("/api/admin/posts/:id", auth, admin, (req, res) => {
 /* ---- the funnel. Where people fall out is the only growth question. ---- */
 app.get("/api/admin/funnel", auth, admin, (req, res) => {
   const one = (sql, ...p) => db.prepare(sql).get(...p)?.n ?? 0;
-  const members = one(`SELECT COUNT(*) n FROM users`);
-  const verified = one(`SELECT COUNT(*) n FROM users WHERE email_verified = 1`);
+  const members = one(`SELECT COUNT(*) n FROM users WHERE suspended = 0`);   // suspended (spam) accounts aren't members — the same count everywhere (2026-11-09)
+  const verified = one(`SELECT COUNT(*) n FROM users WHERE email_verified = 1 AND suspended = 0`);
   const posted = one(`SELECT COUNT(DISTINCT author_id) n FROM posts`);
   const published = one(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE is_work = 1`);
   const collabed = one(`SELECT COUNT(DISTINCT user_id) n FROM collaborators WHERE status='accepted'`);
@@ -301,7 +305,10 @@ app.get("/api/admin/retention", auth, admin, (req, res) => {
     FROM users u
     WHERE posts > 0 AND last_post < ?
     ORDER BY last_post DESC LIMIT 20`).all(now - 14 * D);
-  res.json({ cohorts, silent, quiet });
+  /* the lists stop at 20; the counts don't (2026-11-09: the page said "20 never posted" with 405 who hadn't) */
+  const neverPosted = db.prepare(`SELECT COUNT(*) n FROM users u WHERE u.suspended = 0 AND NOT EXISTS (SELECT 1 FROM posts p WHERE p.author_id = u.id)`).get().n;
+  const goneQuiet = db.prepare(`SELECT COUNT(*) n FROM (SELECT author_id, MAX(created_at) last FROM posts GROUP BY author_id) WHERE last < ?`).get(now - 14 * D).n;
+  res.json({ cohorts, silent, quiet, neverPosted, goneQuiet });
 });
 
 /* ---- the market, as a business ---- */

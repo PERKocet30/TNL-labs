@@ -1,5 +1,7 @@
 /* ================================================================
-   THE WEEKLY REMINDER v1.0 — 2026-10-23. "An update that automatically
+   THE WEEKLY REMINDER v1.1 — 2026-11-09 (does it work? — reminded: members
+   who got one; cameBack: the ones seen in the app since their last one).
+   v1.0 — 2026-10-23. "An update that automatically
    sends you emails to finish making your account: no profile pic, it
    tells you; a producer with no music, it reminds you to upload; never
    picked a colour, it asks you to. Tailored. Not spam — weekly."
@@ -119,6 +121,9 @@ app.get("/api/admin/nudge", auth, admin, (req, res) => {
     due: db.prepare(`SELECT COUNT(*) n ${REMIND_WHO}`).get(...nudgeWhoArgs(now)).n,
     sentToday: nudgeSentToday(now), sentWeek: db.prepare(`SELECT COUNT(*) n FROM nudge_mail WHERE last_at >= ? AND last_items != ''`).get(now - 7 * 86400000).n,
     sentTotal: db.prepare(`SELECT COALESCE(SUM(sent), 0) n FROM nudge_mail WHERE last_items != ''`).get().n,
+    /* 2026-11-09: hundreds had gone out and nothing said whether one brought anyone back */
+    reminded: db.prepare(`SELECT COUNT(*) n FROM nudge_mail WHERE last_items != '' AND last_error IS NULL`).get().n,
+    cameBack: db.prepare(`SELECT COUNT(*) n FROM nudge_mail m JOIN users u ON u.id = m.user_id WHERE m.last_items != '' AND m.last_error IS NULL AND u.last_seen_at > m.last_at`).get().n,
     lastError: db.prepare(`SELECT last_error FROM nudge_mail WHERE last_error IS NOT NULL ORDER BY last_at DESC LIMIT 1`).get()?.last_error || null,
   });
 });

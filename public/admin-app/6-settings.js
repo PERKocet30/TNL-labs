@@ -1,4 +1,4 @@
-/* LABS admin v4.3 — 2026-11-04 (v4.3: the country vote wait is minutes spent in the app). v4.2 — 2026-10-29 (v4.2: Who can get in → a longer wait to vote by country). v4.1 — 2026-10-23 (v4.1: Email → "Weekly reminders": the finish-your-page email, its numbers and a preview to yourself, server/mail/nudge). v4.0 — 2026-10-20 (v4: System is two sections — Settings here: switches, email, backups, the admin log; Health is its own page, 6-health.js, built from the same loader). v2.5 — 2026-10-19. v2.5: "Email them a new confirm link" under Email — everyone unconfirmed gets a fresh link (server/admin/verify-nudge). v2.4 — 2026-10-15. v2.4: the landing headline and tagline fields are gone — nothing in the app showed them.
+/* LABS admin v4.4 — 2026-11-09 (v4.4: Health → Storage is used of the volume's size, with how full; Weekly reminders say how many came back after one). v4.3 — 2026-11-04 (v4.3: the country vote wait is minutes spent in the app). v4.2 — 2026-10-29 (v4.2: Who can get in → a longer wait to vote by country). v4.1 — 2026-10-23 (v4.1: Email → "Weekly reminders": the finish-your-page email, its numbers and a preview to yourself, server/mail/nudge). v4.0 — 2026-10-20 (v4: System is two sections — Settings here: switches, email, backups, the admin log; Health is its own page, 6-health.js, built from the same loader). v2.5 — 2026-10-19. v2.5: "Email them a new confirm link" under Email — everyone unconfirmed gets a fresh link (server/admin/verify-nudge). v2.4 — 2026-10-15. v2.4: the landing headline and tagline fields are gone — nothing in the app showed them.
    v2.3 — 2026-10-14. v2.3: the unused archive-board field is gone.
    v2.2 — 2026-10-14. System, in tabs: Settings · Health · Backups & email · Admin log.
    v2.1 — 2026-10-09. System: switches, safety nets, and the log of who changed what.
@@ -11,6 +11,7 @@ LOADERS.settings = LOADERS.health = async () => {
   Object.assign(D, { health, settings, backups, errors, maillog, log, glitches, nudge });
 };
 const mb = (b) => ((b || 0) / 1048576).toFixed(1) + " MB";
+const gb = (b) => ((b || 0) / 1073741824).toFixed(1) + " GB";
 const ACTIONS = [[/\/rep$/, "Adjusted rep"], [/\/feature$/, "Featured"], [/\/verify$/, "Confirmed email"], [/\/suspend$/, "Suspended / restored"],
   [/\/note$/, "Wrote a note"], [/\/signout$/, "Signed out everywhere"], [/broadcast/, "Messaged a group"], [/DELETE .*posts/, "Deleted a post"],
   [/DELETE .*listings/, "Removed a listing"], [/reports\/.*handle/, "Handled a report"], [/settings/, "Changed settings"], [/cleanup/, "Cleaned up files"],
@@ -51,7 +52,8 @@ VIEWS.settings = (only) => {
     <button class="btn" id="savetext" style="margin-top:12px">Save</button></div></div></div>`,
     health: () => `<div class="grid g2 g4">
     <div class="kpi"><div class="k">Database</div><div class="v">${mb(h.dbBytes)}</div><div class="d">${h.sessions} signed-in sessions</div></div>
-    <div class="kpi"><div class="k">Uploads</div><div class="v">${mb(h.uploadBytes)}</div><div class="d">${num(h.uploadCount)} files · ${h.orphans} unused</div></div>
+    ${h.disk && h.disk.totalBytes ? `<div class="kpi"><div class="k">Storage</div><div class="v">${gb(h.disk.totalBytes - h.disk.freeBytes)} <span class="dim" style="font-size:14px">of ${gb(h.disk.totalBytes)}</span></div><div class="d">${Math.round(100 * (1 - h.disk.freeBytes / h.disk.totalBytes))}% full · ${num(h.uploadCount)} files · ${h.orphans} unused</div></div>`
+      : `<div class="kpi"><div class="k">Uploads</div><div class="v">${mb(h.uploadBytes)}</div><div class="d">${num(h.uploadCount)} files · ${h.orphans} unused</div></div>`}
     <div class="kpi"><div class="k">Errors, 24h</div><div class="v">${E ? E.last24h : "—"}</div><div class="d">${E && E.byKind.length ? E.byKind.map((k) => k.n + " " + k.kind).join(" · ") : "all quiet"}</div></div>
     <div class="kpi"><div class="k">Glitches, 24h</div><div class="v">${G ? G.last24h : "—"}</div><div class="d">${G && G.byKind.some((k) => k.day) ? G.byKind.filter((k) => k.day).map((k) => k.day + " " + (GNAME[k.kind] || k.kind)).join(" · ") : "feels smooth"}</div></div>
     <div class="kpi"><div class="k">Server</div><div class="v">${h.memMB} MB</div><div class="d">up ${Math.floor(h.uptimeS / 3600)}h ${Math.floor((h.uptimeS % 3600) / 60)}m · Node ${esc(h.node)}</div></div>
@@ -78,7 +80,7 @@ VIEWS.settings = (only) => {
     <button class="btn sm" id="nudgeall" style="margin-top:10px">Email them a new confirm link</button>
     <div class="dim" style="font-size:12px;margin-top:6px">Everyone who hasn't confirmed, not just these. Nobody gets it twice in a day.</div>` : ""}
     ${N ? `<div style="margin-top:14px">${tog("nudgeMail", "Weekly reminders", `A member whose page has gaps — photo, colour, bio, first piece, music for a producer — gets one email a week saying which, until it's done or ${N.max} have gone. Each has an unsubscribe.`)}
-    <div class="row sp" style="margin-top:6px"><span class="dim" style="font-size:12px">${N.ready ? `${N.due} due now · ${N.sentWeek} sent this week · ${N.sentTotal} ever · up to ${N.perDay} a day` : N.mailOn ? (N.on ? "Paused: email is on Resend's test sender." : "Off.") : "Off: email isn't set up."}${N.lastError ? ` · <span class="warn">last error: ${esc(N.lastError)}</span>` : ""}</span>
+    <div class="row sp" style="margin-top:6px"><span class="dim" style="font-size:12px">${N.ready ? `${N.due} due now · ${N.sentWeek} sent this week · ${N.sentTotal} ever · up to ${N.perDay} a day${N.reminded ? ` · ${N.cameBack} of ${N.reminded} came back after one` : ""}` : N.mailOn ? (N.on ? "Paused: email is on Resend's test sender." : "Off.") : "Off: email isn't set up."}${N.lastError ? ` · <span class="warn">last error: ${esc(N.lastError)}</span>` : ""}</span>
       <button class="btn ghost sm" id="nudgeme">Send me mine</button></div></div>` : ""}</div></div></div>`,
     log: () => `<h2 class="sec">Admin log <span class="mono">every change made from here, newest first</span></h2>
   <div class="panel scroll">${D.log && D.log.log.length ? `<table class="tbl"><thead><tr><th>Who</th><th>What</th><th>About</th><th>Detail</th><th class="num">When</th></tr></thead>

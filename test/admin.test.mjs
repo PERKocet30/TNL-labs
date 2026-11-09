@@ -98,6 +98,22 @@ try {
   t("labs listed with counts (General holds #general)", c.labs.find((x) => x.id === "hq").n === 3 && c.labs.some((x) => x.id === "profile"));
   t("each post says its lab", c.posts.every((x) => x.labName === "General"));
   t("search by text or author", (await call("boss", "GET", "/api/admin/posts?q=ben")).j.posts.length === 1);
+
+  console.log("\nONE MEANING EACH (2026-11-09) — members, active, posted");
+  { const { DatabaseSync } = await import("node:sqlite"); const r = new DatabaseSync(join(DATA, "tnl.db"));
+    /* a suspended account, and two collab invites waiting 5 days: one LABS sent itself (boss's post), one a member's (ana's) */
+    r.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, suspended) VALUES ('spam','SPAM','spam@x.test','x',?,1,1)`).run(now - 60 * D);
+    const pb = Number(r.prepare(`INSERT INTO posts (author_id, channel, body, is_work, created_at) VALUES (?,?,?,1,?)`).run(U.boss, "general", "by boss", now - 20 * D).lastInsertRowid);
+    r.prepare(`INSERT INTO collaborators (post_id, user_id, status, created_at) VALUES (?,?,'pending',?), (?,?,'pending',?)`).run(pb, U.dee, now - 5 * D, p1, U.dee, now - 5 * D); r.close(); }
+  const p9 = (await call("boss", "GET", "/api/admin/pulse?days=7&tz=240")).j;
+  t("needs you: a member's collab invite waiting 3+ days — not the one LABS sent itself", p9.inbox.find((i) => i.kind === "collabs")?.n === 1);
+  const ov = (await call("boss", "GET", "/api/admin/overview")).j, fu = (await call("boss", "GET", "/api/admin/funnel")).j, au = (await call("boss", "GET", "/api/admin/audience?days=7")).j;
+  t("a suspended account isn't a member — the same count in the overview, the funnel, the audience and the pulse", ov.members === 5 && fu.steps[0].n === 5 && au.members === 5 && p9.totals.members === 5);
+  t("active is did anything, as in the pulse; posting has its own number", ov.active === p9.now.active && ov.active >= 2 && ov.postedWeek === 2 && ov.postedMonth === 3 && ov.activeMonth >= ov.active);
+  const re = (await call("boss", "GET", "/api/admin/retention")).j;
+  t("never posted and gone quiet are counts, not the length of a list of 20", re.neverPosted === 1 && re.goneQuiet === 2);
+  const he = (await call("boss", "GET", "/api/admin/health")).j;
+  t("health says how big the volume is and how much is left", he.disk && he.disk.totalBytes > 0 && he.disk.freeBytes > 0 && he.disk.freeBytes <= he.disk.totalBytes);
 } catch (e) {
   fail++; console.log("  ✗  threw: " + e.message); console.log(log.slice(-1500));
 } finally { srv.kill(); }
