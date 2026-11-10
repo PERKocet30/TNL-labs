@@ -1,5 +1,13 @@
 /* ================================================================
-   INSTAGRAM INBOX v1.0 — 2026-10-26. "Can you access messages on
+   INSTAGRAM INBOX v1.1 — 2026-11-10 ("fix the Instagram integration" — the inbox):
+   · older conversations arrive. A check only ever read the newest page (15 on a
+     busy inbox, 25 otherwise) and stopped at the first one it already had, so
+     anything older than the day LABS connected never showed up. Now each check
+     also reads the next IG_OLDER_STEP (5) older ones (ig_account.walk_after remembers where),
+     until the inbox is whole or IG_KEEP_MAX (300) are in.
+   · "new" means new. A message is read once you've answered after it in
+     Instagram, and history brought in from before LABS connected isn't new.
+   v1.0 — 2026-10-26. "Can you access messages on
    Instagram now?" — read only, inside Admin → Instagram.
 
    How it gets in: Instagram API with Instagram Login (Meta's own door for
@@ -57,6 +65,7 @@ CREATE TABLE IF NOT EXISTS ig_messages (
   via TEXT NOT NULL DEFAULT 'poll'
 );
 CREATE INDEX IF NOT EXISTS idx_ig_messages_conv ON ig_messages(conv_id, created_at);`);
+for (const col of ["walk_after TEXT", "walk_done INTEGER NOT NULL DEFAULT 0"]) { try { db.exec(`ALTER TABLE ig_account ADD COLUMN ${col}`); } catch {} }   // 2026-11-10: where the read of older conversations has got to
 
 const IG_APP_ID = (process.env.IG_APP_ID || "").trim(), IG_APP_SECRET = (process.env.IG_APP_SECRET || "").trim();
 const IG_GRAPH = "https://graph.instagram.com/v24.0";
@@ -125,18 +134,47 @@ async function igRetry(fn, tries = 3) {
    up to IG_WALK_MAX, stopping at the first conversation that hasn't moved since last time. */
 const IG_RETRY_MS = Math.max(0, Number(process.env.IG_RETRY_MS ?? 1200));
 const IG_WALK_MAX = Math.max(1, Number(process.env.IG_WALK_MAX) || 15);
+const IG_KEEP_MAX = Math.max(1, Number(process.env.IG_KEEP_MAX) || 300);
+const IG_OLDER_STEP = Math.max(1, Number(process.env.IG_OLDER_STEP) || 5);   // older conversations a check: small, so a full read stays well inside Meta's hourly limit
+/* Returns the newest conversations, and `next`: the cursor just past them (null = that was the end), where the older ones start. */
 async function igListConvs(token, moved) {
-  try { return (await igRetry(() => igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: 25 }, token), 1)).data || []; }
+  try { const d = await igRetry(() => igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: 25 }, token), 1);
+    return { list: d.data || [], next: (d.data || []).length ? d.paging?.cursors?.after || null : null, one: false }; }
   catch (e) { if (!igTooBig(e)) throw e; }
-  const out = []; let after = null;
+  const out = []; let after = null, next = null;
   while (out.length < IG_WALK_MAX) {
     const d = await igRetry(() => igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: 1, after }, token));
-    const c = (d.data || [])[0]; if (!c) break;
+    const c = (d.data || [])[0]; if (!c) { next = null; break; }
     out.push(c);
+    next = after = d.paging?.cursors?.after || null;
     if (!moved(c)) break;   // everything after this is older and already read
-    after = d.paging?.cursors?.after; if (!after) break;
+    if (!after) break;
   }
+  return { list: out, next, one: true };
+}
+/* The older ones (2026-11-10): from where the last check stopped, a few more each time, until the inbox is whole. */
+async function igOlderConvs(acc, head) {
+  if (acc.walk_done) return [];
+  const have = db.prepare(`SELECT COUNT(*) n FROM ig_conversations`).get().n;
+  let after = acc.walk_after || head.next;
+  const done = () => db.prepare(`UPDATE ig_account SET walk_done = 1, walk_after = NULL WHERE id = 1`).run();
+  if (!after || have >= IG_KEEP_MAX) { done(); return []; }
+  const out = [];
+  try {
+    if (head.one) { while (out.length < IG_OLDER_STEP) {
+      const d = await igRetry(() => igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: 1, after }, acc.token));
+      const c = (d.data || [])[0]; if (c) out.push(c);
+      after = c ? d.paging?.cursors?.after || null : null; if (!after) break; } }
+    else { const d = await igRetry(() => igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: IG_OLDER_STEP, after }, acc.token), 1);
+      out.push(...(d.data || [])); after = (d.data || []).length ? d.paging?.cursors?.after || null : null; }
+  } catch (e) { console.error("[instagram] older conversations:", e.message); if (!igTooBig(e)) after = null; else { db.prepare(`UPDATE ig_account SET walk_after = ? WHERE id = 1`).run(after); return out; } }   // a stale cursor ends it; too busy tries again next check
+  if (after) db.prepare(`UPDATE ig_account SET walk_after = ? WHERE id = 1`).run(after); else done();
   return out;
+}
+/* "New" means new (2026-11-10): what you've answered after in Instagram is read; history from before LABS connected isn't news. */
+function igSettle(acc, convId, history) {
+  db.prepare(`UPDATE ig_messages SET seen = 1 WHERE conv_id = ?1 AND mine = 0 AND seen = 0 AND created_at < COALESCE((SELECT MAX(created_at) FROM ig_messages WHERE conv_id = ?1 AND mine = 1), 0)`).run(convId);
+  if (history) db.prepare(`UPDATE ig_messages SET seen = 1 WHERE conv_id = ? AND mine = 0 AND seen = 0 AND created_at < ?`).run(convId, acc.connected_at);
 }
 /* ── polling: what moved since last time ── */
 let IG_SYNCING = false;
@@ -145,7 +183,9 @@ async function igSync(reason = "tick") {
   IG_SYNCING = true; let fresh = 0, convs = 0;
   try {
     const moved = (c) => { const k = db.prepare(`SELECT synced_updated_at FROM ig_conversations WHERE id = ?`).get(String(c.id)); return !k || k.synced_updated_at < igTime(c.updated_time); };
-    const list = await igListConvs(acc.token, moved);
+    const head = await igListConvs(acc.token, moved);
+    const olderList = await igOlderConvs(acc, head), older = new Set(olderList.map((c) => String(c.id)));
+    const list = [...head.list, ...olderList.filter((c) => !head.list.some((h) => String(h.id) === String(c.id)))];
     let skipped = 0;
     for (const c of list) {
       const id = String(c.id), up = igTime(c.updated_time);
@@ -159,6 +199,7 @@ async function igSync(reason = "tick") {
       igPutConv.run(id, "", "", up);
       for (const m of d.messages?.data || []) if (igStore(acc, m, id, "poll")) fresh++;
       db.prepare(`UPDATE ig_conversations SET synced_updated_at = ? WHERE id = ?`).run(up, id);
+      igSettle(acc, id, older.has(id));
     }
     db.prepare(`UPDATE ig_account SET synced_at = ?, last_error = ? WHERE id = 1`).run(Date.now(), skipped ? `${skipped} conversation${skipped === 1 ? "" : "s"} too big for Instagram to send — tried again next check.` : null);
     return { ok: true, fresh, conversations: convs, skipped };
@@ -206,7 +247,7 @@ app.get("/api/instagram/callback", rateLimit({ max: 20, windowMs: 600000 }), asy
     if (!igId) throw new Error("Instagram didn't say which account that is.");
     db.prepare(`INSERT INTO ig_account (id, ig_id, username, token, token_at, expires_at, connected_by, connected_at) VALUES (1,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET ig_id = excluded.ig_id, username = excluded.username, token = excluded.token, token_at = excluded.token_at,
-      expires_at = excluded.expires_at, connected_by = excluded.connected_by, connected_at = excluded.connected_at, last_error = NULL`)
+      expires_at = excluded.expires_at, connected_by = excluded.connected_by, connected_at = excluded.connected_at, last_error = NULL, walk_after = NULL, walk_done = 0`)
       .run(igId, String(me.username || "").slice(0, 60), token, Date.now(), Date.now() + ttl, st.by, Date.now());
     try { db.prepare(`INSERT INTO admin_log (admin_id, action, target, detail, created_at) VALUES (?,?,?,?,?)`).run(st.by, "instagram connect", "@" + (me.username || igId), "", Date.now()); } catch {}
     igSync("connect");
@@ -223,14 +264,14 @@ app.post("/api/admin/instagram/disconnect", auth, admin, (req, res) => {
 function igStatus(req) {
   const a = igAccount();
   return { ready: igReady(), connected: !!a, username: a?.username || "", igId: a?.ig_id || "", connectedAt: a?.connected_at || null, syncedAt: a?.synced_at || null,
-    expiresAt: a?.expires_at || null, lastError: a?.last_error || null, pollMinutes: Math.round(IG_POLL_MS / 60000),
+    expiresAt: a?.expires_at || null, lastError: a?.last_error || null, readingOlder: !!a && !a.walk_done, pollMinutes: Math.round(IG_POLL_MS / 60000),
     webhook: { url: `${baseUrl(req)}/api/instagram/webhook`, verifyToken: igVerifyToken(), redirect: igRedirect(req) },
     unread: db.prepare(`SELECT COUNT(*) n FROM ig_messages WHERE seen = 0 AND mine = 0`).get().n };
 }
 app.get("/api/admin/instagram", auth, admin, (req, res) => {
   const convs = db.prepare(`SELECT c.*, (SELECT COUNT(*) FROM ig_messages m WHERE m.conv_id = c.id AND m.seen = 0 AND m.mine = 0) unread,
       (SELECT COUNT(*) FROM ig_messages m WHERE m.conv_id = c.id) count
-    FROM ig_conversations c ORDER BY c.updated_at DESC LIMIT 100`).all().map((c) => {
+    FROM ig_conversations c ORDER BY c.updated_at DESC LIMIT 300`).all().map((c) => {
     const last = db.prepare(`SELECT mid, mine, text, attachments, created_at, from_username FROM ig_messages WHERE conv_id = ? ORDER BY created_at DESC LIMIT 1`).get(c.id);
     const name = c.with_username || last?.from_username && !last.mine && last.from_username || "";
     return { id: c.id, username: name, withId: c.with_id, updatedAt: Math.max(c.updated_at, last?.created_at || 0), unread: c.unread, count: c.count,

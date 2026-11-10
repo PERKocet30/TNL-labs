@@ -10,7 +10,7 @@ import { randomBytes, createHash, createHmac, timingSafeEqual } from "node:crypt
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const TMP = join(ROOT, "test", ".tmp", "instagram-inbox");
 rmSync(TMP, { recursive: true, force: true }); mkdirSync(TMP, { recursive: true });
-process.env.IG_RETRY_MS = "0"; process.env.TNL_DATA = TMP; process.env.PUBLIC_URL = "https://labs.test";
+process.env.IG_RETRY_MS = "0"; process.env.IG_OLDER_STEP = "15"; process.env.TNL_DATA = TMP; process.env.PUBLIC_URL = "https://labs.test";
 process.env.IG_APP_ID = "123456"; process.env.IG_APP_SECRET = "shh-app-secret"; delete process.env.IG_VERIFY_TOKEN;
 const { db } = await import(join(ROOT, "src/db.js"));
 db.exec(`CREATE TABLE IF NOT EXISTS admin_log (id INTEGER PRIMARY KEY, admin_id INTEGER, action TEXT, target TEXT, detail TEXT, created_at INTEGER)`);
@@ -99,13 +99,14 @@ t("a state can't be used twice", /stale/.test(decodeURIComponent(cb.redirect)));
 console.log("\nREADING (POLLING)");
 r = await call("GET /api/admin/instagram");
 t("connecting read the inbox straight away: one conversation, with @ana.paints, newest last message first", r.body.connected && r.body.conversations.length === 1 && r.body.conversations[0].username === "ana.paints" && r.body.conversations[0].last.mine === true && r.body.conversations[0].count === 2);
-t("one new message (hers), ours doesn't count as new", r.body.unread === 1 && r.body.conversations[0].unread === 1);
+t("nothing is new: her message was answered after in Instagram, and ours never counts (2026-11-10)", r.body.unread === 0 && r.body.conversations[0].unread === 0);
 let { calls } = await sinceCalls(() => call("POST /api/admin/instagram/sync"));
 t("Check now again: Instagram asked for the list, but not a conversation that hasn't moved", calls.some((u) => /me\/conversations/.test(u)) && !calls.some((u) => /\/c1\?/.test(u)));
 CONVS = [{ id: "c1", updated_time: "2026-10-26T10:05:00+0000" }];
 MSGS.c1.unshift({ id: "m3", created_time: "2026-10-26T10:05:00+0000", from: { id: "U9", username: "ana.paints" }, to: { data: [{ id: "ME1" }] }, message: "Voted 🧪" });
 r = await call("POST /api/admin/instagram/sync");
 t("a conversation that moved is read again; only the new message is new", r.body.fresh === 1 && db.prepare(`SELECT COUNT(*) n FROM ig_messages`).get().n === 3);
+t("…and her message after our reply is the one that's new", (await call("GET /api/admin/instagram")).body.unread === 1);
 r = await call("GET /api/admin/instagram/thread/:id", { params: { id: "c1" } });
 t("the thread: oldest first, hers and ours told apart, the picture kept as an attachment", r.body.username === "ana.paints" && r.body.messages.map((m) => m.mid).join() === "m1,m2,m3" && r.body.messages[0].mine === false && r.body.messages[1].mine === true
   && r.body.messages[0].attachments[0].type === "image" && r.body.messages[0].attachments[0].url === "https://cdn.test/a.jpg");
@@ -136,6 +137,25 @@ TOO_BIG = false;
 db.exec(`DELETE FROM ig_messages WHERE mid IN ('m8','m9'); DELETE FROM ig_conversations WHERE id IN ('c2','c3')`); CONVS = [{ id: "c1", updated_time: "2026-10-26T10:08:00+0000" }];   // back to the one conversation the webhook checks below count on
 SLOW = false; globalThis.fetch = realFetch;
 t("it waits up to 30 seconds for Instagram", /Number\(process\.env\.IG_WAIT_MS\) \|\| 30000/.test(src));
+
+console.log("\nOLDER CONVERSATIONS (2026-11-10) — the inbox fills in, a few each check, and history isn't \"new\"");
+{ db.exec(`UPDATE ig_account SET walk_done = 0, walk_after = NULL`);
+  const before = (await call("GET /api/admin/instagram")).body.unread;
+  TOO_BIG = true; CONVS = [{ id: "c1", updated_time: "2026-10-26T10:08:00+0000" }];
+  for (let i = 1; i <= 20; i++) { const id = "c" + (100 + i); CONVS.push({ id, updated_time: `2026-10-${String(21 - Math.ceil(i / 2)).padStart(2, "0")}T08:00:00+0000` });
+    MSGS[id] = [{ id: "old" + i, created_time: "2026-10-10T08:00:00+0000", from: { id: "O" + i, username: "old" + i }, to: { data: [{ id: "ME1" }] }, message: "from before" }]; }
+  let { r: r1, calls: k1 } = await sinceCalls(() => call("POST /api/admin/instagram/sync"));
+  let st = (await call("GET /api/admin/instagram")).body;
+  t("a check reads the newest, then 15 older ones it never had", r1.body.ok !== false && r1.body.fresh === 15 && st.conversations.length === 16 && st.readingOlder === true && k1.filter((u) => /me\/conversations/.test(u)).length <= 18);
+  t("history from before LABS connected isn't new", st.unread === before);
+  ({ r: r1 } = await sinceCalls(() => call("POST /api/admin/instagram/sync")));
+  st = (await call("GET /api/admin/instagram")).body;
+  t("the next check brings the rest, and then it's whole", r1.body.fresh === 5 && st.conversations.length === 21 && st.readingOlder === false && st.conversations.some((c) => c.username === "old20"));
+  ({ calls: k1 } = await sinceCalls(() => call("POST /api/admin/instagram/sync")));
+  t("once whole, a check asks only for the newest again", k1.filter((u) => /me\/conversations/.test(u)).length === 2 && !k1.some((u) => /\/c1\d\d\?/.test(u)));
+  TOO_BIG = false; CONVS = [{ id: "c1", updated_time: "2026-10-26T10:08:00+0000" }];
+  db.exec(`DELETE FROM ig_messages WHERE mid LIKE 'old%'; DELETE FROM ig_conversations WHERE id LIKE 'c1__'`);
+  t("connecting again starts the read of older ones over", /walk_after = NULL, walk_done = 0`\)/.test(src)); }
 
 console.log("\nWEBHOOKS");
 const vt = (await call("GET /api/admin/instagram")).body.webhook.verifyToken;

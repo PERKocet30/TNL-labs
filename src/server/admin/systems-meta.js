@@ -1,5 +1,11 @@
 /* ================================================================
-   ADMIN · SYSTEMS · META v1.0 — 2026-10-26. Part 3 of "integrate our admin
+   ADMIN · SYSTEMS · META v1.1 — 2026-11-10 ("fix the Instagram integration" — the
+   numbers): people reached is the 28-day count Instagram itself shows (each person
+   once), not the 28 days added up; the hours followers are online are asked for
+   the way Meta wants (a week's range), and a read Meta refuses is no longer
+   swallowed — it comes back in `misses` with Meta's own reason, so an empty card
+   says why; the Facebook Page says when its reach couldn't be read.
+   v1.0 — 2026-10-26. Part 3 of "integrate our admin
    dashboard with …": Instagram and Facebook, read-only, in the Systems page —
    and the moves that get more reach from them.
      GET /api/admin/systems/meta   (admins only)
@@ -66,22 +72,36 @@ async function mtWho() {
 async function mtInstagram(ig) {
   const now = Date.now(), D28 = 28 * 86400000, since = (t) => Math.floor(t / 1000);
   const cur = { since: since(now - D28), until: since(now) }, prev = { since: since(now - 2 * D28), until: since(now - D28) };
-  const [acct, reachD, reachP, followD, tot, totP, media, stories, country, city, age, online] = await Promise.all([
+  /* A read Meta refuses is noted, not swallowed (2026-11-10): the card it feeds says why it's empty. */
+  const misses = [], soft = (what, p) => p.catch((e) => { misses.push({ what, why: /abort|timeout/i.test(e.message) ? "Meta didn't answer in time." : mtLine(e.message) }); return {}; });
+  const week = { since: since(now - 7 * 86400000), until: since(now) };
+  const [acct, reachD, reachP, reachT, reachTP, followD, tot, totP, media, stories, country, city, age, onlineW] = await Promise.all([
     mtGet(ig, { fields: "username,name,followers_count,follows_count,media_count,profile_picture_url" }),
     mtGet(`${ig}/insights`, { metric: "reach", period: "day", ...cur }),
     mtGet(`${ig}/insights`, { metric: "reach", period: "day", ...prev }).catch(() => ({})),
-    mtGet(`${ig}/insights`, { metric: "follower_count", period: "day", ...cur }).catch(() => ({})),
-    mtGet(`${ig}/insights`, { metric: "profile_views,website_clicks,accounts_engaged,total_interactions", period: "day", metric_type: "total_value", ...cur }).catch(() => ({})),
+    mtGet(`${ig}/insights`, { metric: "reach", period: "day", metric_type: "total_value", ...cur }).catch(() => ({})),   // each person once, as Instagram shows it
+    mtGet(`${ig}/insights`, { metric: "reach", period: "day", metric_type: "total_value", ...prev }).catch(() => ({})),
+    soft("new followers", mtGet(`${ig}/insights`, { metric: "follower_count", period: "day", ...cur })),
+    soft("profile views and link taps", mtGet(`${ig}/insights`, { metric: "profile_views,website_clicks,accounts_engaged,total_interactions", period: "day", metric_type: "total_value", ...cur })),
     mtGet(`${ig}/insights`, { metric: "profile_views,website_clicks,accounts_engaged,total_interactions", period: "day", metric_type: "total_value", ...prev }).catch(() => ({})),
-    mtGet(`${ig}/media`, { fields: "id,caption,media_type,media_product_type,timestamp,permalink,like_count,comments_count,insights.metric(reach,saved,shares)", limit: 30 }).catch(() => ({})),
-    mtGet(`${ig}/stories`, { fields: "id,timestamp,media_type,permalink,insights.metric(reach,replies,navigation)" }).catch(() => ({})),
-    mtGet(`${ig}/insights`, { metric: "follower_demographics", period: "lifetime", metric_type: "total_value", breakdown: "country" }).catch(() => ({})),
+    soft("posts", mtGet(`${ig}/media`, { fields: "id,caption,media_type,media_product_type,timestamp,permalink,like_count,comments_count,insights.metric(reach,saved,shares)", limit: 30 })),
+    soft("stories", mtGet(`${ig}/stories`, { fields: "id,timestamp,media_type,permalink,insights.metric(reach,replies,navigation)" })),
+    soft("where followers are", mtGet(`${ig}/insights`, { metric: "follower_demographics", period: "lifetime", metric_type: "total_value", breakdown: "country" })),
     mtGet(`${ig}/insights`, { metric: "follower_demographics", period: "lifetime", metric_type: "total_value", breakdown: "city" }).catch(() => ({})),
     mtGet(`${ig}/insights`, { metric: "follower_demographics", period: "lifetime", metric_type: "total_value", breakdown: "age" }).catch(() => ({})),
-    mtGet(`${ig}/insights`, { metric: "online_followers", period: "lifetime" }).catch(() => ({})),
+    mtGet(`${ig}/insights`, { metric: "online_followers", period: "lifetime", ...week }).catch((e) => ({ failed: e })),
   ]);
+  /* when followers are online: Meta wants a range for this one; without it the answer is empty. If the range is refused, ask the old way. */
+  const hasHours = (o) => (((o.data || [])[0] || {}).values || []).some((v) => v.value && Object.keys(v.value).length);
+  let online = onlineW;
+  if (!hasHours(online)) { const plain = await mtGet(`${ig}/insights`, { metric: "online_followers", period: "lifetime" }).catch((e) => ({ failed: e })); if (hasHours(plain) || !online.failed) online = plain; }
+  if (!hasHours(online)) misses.push({ what: "when followers are online", why: online.failed ? mtLine(online.failed.message) : "Instagram sent no hours this time — it runs a day or two behind." });
   const days = mtSeries(reachD, "reach"), follow = mtSeries(followD, "follower_count");
-  const reach = mtSum(days.map((d) => d.value)), reachBefore = mtSum(mtSeries(reachP, "reach").map((d) => d.value));
+  const added = mtSum(days.map((d) => d.value)), addedBefore = mtSum(mtSeries(reachP, "reach").map((d) => d.value));
+  const once = (ins0) => Number(((ins0.data || []).find((d) => d.name === "reach") || {}).total_value?.value) || 0;
+  /* each person once when Meta gives it (both windows, so the change compares like with like); otherwise the days added up, and said so */
+  const unique = once(reachT) > 0 && (once(reachTP) > 0 || !addedBefore);
+  const reach = unique ? once(reachT) : added, reachBefore = unique ? once(reachTP) : addedBefore;
   const T = (k) => mtTotal(tot, k), TP = (k) => mtTotal(totP, k);
   const kind = (m) => m.media_product_type === "REELS" ? "reel" : m.media_type === "CAROUSEL_ALBUM" ? "carousel" : m.media_type === "VIDEO" ? "video" : "photo";
   const ins = (m, k) => { const d = ((m.insights || {}).data || []).find((x) => x.name === k); return d ? Number((d.values || [{}])[0].value) || 0 : 0; };
@@ -97,18 +117,19 @@ async function mtInstagram(ig) {
   return {
     username: String(acct.username || "").slice(0, 40), name: String(acct.name || "").slice(0, 60), followers: Number(acct.followers_count) || 0, following: Number(acct.follows_count) || 0, posts: Number(acct.media_count) || 0,
     netFollowers: mtSum(follow.map((d) => d.value)),
-    totals: { reach, reachBefore, reachChange: mtPct(reach, reachBefore), profileViews: T("profile_views"), linkTaps: T("website_clicks"), engaged: T("accounts_engaged"), interactions: T("total_interactions"),
+    totals: { reach, reachBefore, reachChange: mtPct(reach, reachBefore), reachIsDays: !unique, profileViews: T("profile_views"), linkTaps: T("website_clicks"), engaged: T("accounts_engaged"), interactions: T("total_interactions"),
       before: { profileViews: TP("profile_views"), linkTaps: TP("website_clicks"), engaged: TP("accounts_engaged"), interactions: TP("total_interactions") } },
     days, recent: posts.slice(0, 30), top: [...posts].sort((a, b) => b.reach - a.reach).slice(0, 8), kinds,
     stories: (stories.data || []).slice(0, 50).map((s) => ({ id: String(s.id), at: Date.parse(s.timestamp || "") || null, url: mtUrl(s.permalink), reach: ins(s, "reach"), replies: ins(s, "replies") })),
-    where: { countries: demo(country), cities: demo(city), ages: demo(age) }, bestHours,
+    where: { countries: demo(country), cities: demo(city), ages: demo(age) }, bestHours, misses: misses.slice(0, 8),
   };
 }
 async function mtFacebook(page) {
   const now = Date.now(), since = Math.floor((now - 28 * 86400000) / 1000), until = Math.floor(now / 1000);
-  const [p, ins] = await Promise.all([mtGet(page, { fields: "name,followers_count,fan_count,link" }), mtGet(`${page}/insights`, { metric: "page_impressions_unique", period: "day", since, until }).catch(() => ({}))]);
+  let reachMiss = "";   // 2026-11-10: "0 people reached" when Meta had refused the read was a number that meant nothing
+  const [p, ins] = await Promise.all([mtGet(page, { fields: "name,followers_count,fan_count,link" }), mtGet(`${page}/insights`, { metric: "page_impressions_unique", period: "day", since, until }).catch((e) => { reachMiss = /abort|timeout/i.test(e.message) ? "Meta didn't answer in time." : mtLine(e.message); return {}; })]);
   const days = mtSeries(ins, "page_impressions_unique");
-  return { name: String(p.name || "").slice(0, 60), followers: Number(p.followers_count ?? p.fan_count) || 0, url: mtUrl(p.link), reach: mtSum(days.map((d) => d.value)), days };
+  return { name: String(p.name || "").slice(0, 60), followers: Number(p.followers_count ?? p.fan_count) || 0, url: mtUrl(p.link), reach: mtSum(days.map((d) => d.value)), reachMiss, days };
 }
 async function mtShop(catalog) {
   if (!catalog) return null;

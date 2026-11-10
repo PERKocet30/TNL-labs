@@ -1,4 +1,6 @@
-/* LABS admin · Systems · Meta v1.0 — 2026-10-26. Part 3: Instagram and Facebook in the Systems page, read-only,
+/* LABS admin · Systems · Meta v1.1 — 2026-11-10 ("fix the Instagram integration" — the numbers): people reached is each person once, as Instagram
+   shows it; "+N new" followers is what it is (new, not net); an empty card says Meta's own reason (it claimed "needs 100+ followers" at 4,500);
+   the Facebook Page doesn't show a 0 that was really a refused read. v1.0 — 2026-10-26. Part 3: Instagram and Facebook in the Systems page, read-only,
    with the moves that get more reach (server/admin/systems-meta.js). Rendered under Google by 7-systems.js. */
 LOADERS.systemsMeta = async () => { D.sysMeta = await req("/api/admin/systems/meta" + (D.systemsFresh ? "?fresh=1" : "")); };
 const mtChg = (a, b) => { if (!b) return ""; const c = Math.round(((a - b) / b) * 1000) / 10; return `<i class="${c > 0 ? "up" : c < 0 ? "dn" : ""}">${c > 0 ? "+" : ""}${c}% vs the 28 days before</i>`; };
@@ -17,28 +19,31 @@ function sysMetaHTML() {
   const ig = () => {
     if (!I || I.error) return `<div class="panel">${sysErr(I ? I.error : "No answer.")}</div>`;
     const T = I.totals, days = I.days || [];
+    /* why a card is empty: Meta's own words when it refused the read */
+    const why = (what) => { const m = (I.misses || []).find((x) => x.what === what); return m ? `Meta didn't give this: ${m.why}` : "Meta hasn't said yet."; };
+    const other = (I.misses || []).filter((m) => !["when followers are online", "where followers are"].includes(m.what));
     const post = (p) => `<${p.url ? `a href="${esc(p.url)}" target="_blank" rel="noopener"` : "div"} class="li"><span class="b"><b style="font-weight:500;font-size:13px">${esc(p.caption || MT_KIND[p.kind] || "Post")}</b>
       <span>${esc(MT_KIND[p.kind] || p.kind)} · ${p.at ? ago(p.at) + " ago" : ""} · ${num(p.likes)} likes · ${num(p.comments)} comments</span></span><span class="r">${num(p.reach)} reached<br>${num(p.saves)} saved · ${num(p.shares)} shared</span></${p.url ? "a" : "div"}>`;
-    return `<div class="grid g2 g4">
-      ${kpiHTML("Followers", num(I.followers), { share: I.netFollowers ? `<i class="${I.netFollowers > 0 ? "up" : "dn"}">${I.netFollowers > 0 ? "+" : ""}${num(I.netFollowers)} in 28 days</i>` : "" })}
-      ${kpiHTML("People reached", num(T.reach), { share: mtChg(T.reach, T.reachBefore) })}
+    return `${other.length ? `<div class="panel"><p class="warnl" style="margin:0">Meta didn't give everything this time — ${other.map((m) => `${esc(m.what)}: ${esc(m.why)}`).join(" · ")}</p></div>` : ""}<div class="grid g2 g4">
+      ${kpiHTML("Followers", num(I.followers), { share: I.netFollowers ? `<i class="${I.netFollowers > 0 ? "up" : "dn"}">${I.netFollowers > 0 ? "+" : ""}${num(I.netFollowers)} new in 28 days</i>` : "" })}
+      ${kpiHTML(T.reachIsDays ? "Reached, days added up" : "People reached", num(T.reach), { share: mtChg(T.reach, T.reachBefore) })}
       ${kpiHTML("Profile views", num(T.profileViews), { share: mtChg(T.profileViews, T.before.profileViews) })}
       ${kpiHTML("Tapped the link", num(T.linkTaps), { share: mtChg(T.linkTaps, T.before.linkTaps) })}
     </div>
     <div class="panel">${days.length > 1 ? lineHTML(days.map((d) => d.value), null, { labels: days.map((d) => d.day.slice(5)), h: 160 }) : `<div class="empty">Not enough days yet.</div>`}
-      <p class="dim" style="margin:8px 0 0;font-size:12px">People reached a day, last 28 days · ${num(T.engaged)} engaged · ${num(T.interactions)} likes, comments, saves and shares.</p></div>
+      <p class="dim" style="margin:8px 0 0;font-size:12px">People reached each day, last 28 days${T.reachIsDays ? "" : " (someone reached on three days counts once in the total above)"} · ${num(T.engaged)} engaged · ${num(T.interactions)} likes, comments, saves and shares.</p></div>
     <div class="split">
       <div><h2 class="sec">Posts that reached most <span class="mono">last 30 posts</span></h2><div class="panel">${I.top.length ? `<div class="list">${I.top.map(post).join("")}</div>` : `<div class="empty">No posts yet.</div>`}</div>
         <h2 class="sec">What kind of post works <span class="mono">people reached, each</span></h2><div class="panel">${I.kinds.length ? breakHTML(I.kinds.map((k) => ({ label: `${MT_KIND[k.kind] || k.kind}s (${k.n})`, n: k.avgReach }))) : `<div class="empty">No posts yet.</div>`}</div></div>
       <div><h2 class="sec">Stories up now</h2><div class="panel">${I.stories.length ? `<div class="list">${I.stories.map((s) => `<${s.url ? `a href="${esc(s.url)}" target="_blank" rel="noopener"` : "div"} class="li"><span class="b"><b style="font-weight:500;font-size:13px">Story · ${s.at ? ago(s.at) + " ago" : ""}</b></span><span class="r">${num(s.reach)} reached · ${num(s.replies)} replies</span></${s.url ? "a" : "div"}>`).join("")}</div>` : `<div class="empty">None up right now.</div>`}</div>
-        <h2 class="sec">When followers are online</h2><div class="panel">${I.bestHours.length ? `<div class="set"><div class="t"><b>${I.bestHours.map((h) => mtHour(h.hour)).join(" · ")}</b><span>the busiest hours this week — post then</span></div></div>` : `<div class="empty">Meta hasn't said yet (needs 100+ followers).</div>`}</div>
-        <h2 class="sec">Where followers are</h2><div class="panel">${I.where.countries.length ? breakHTML(I.where.countries) : `<div class="empty">Meta hasn't said yet (needs 100+ followers).</div>`}
+        <h2 class="sec">When followers are online</h2><div class="panel">${I.bestHours.length ? `<div class="set"><div class="t"><b>${I.bestHours.map((h) => mtHour(h.hour)).join(" · ")}</b><span>the busiest hours this week — post then</span></div></div>` : `<div class="empty">${esc(why("when followers are online"))}</div>`}</div>
+        <h2 class="sec">Where followers are</h2><div class="panel">${I.where.countries.length ? breakHTML(I.where.countries) : `<div class="empty">${esc(why("where followers are"))}</div>`}
           ${I.where.cities.length ? `<p class="dim" style="font-size:12px;margin:10px 0 0">Cities: ${I.where.cities.map((c) => esc(c.label)).join(", ")}</p>` : ""}${I.where.ages.length ? `<p class="dim" style="font-size:12px;margin:6px 0 0">Ages: ${I.where.ages.map((a) => `${esc(a.label)} (${num(a.n)})`).join(", ")}</p>` : ""}</div></div>
     </div>`;
   };
   const fb = () => {
     if (!F || F.error) return `<div class="panel">${sysErr(F ? F.error : "No answer.")}</div>`;
-    return `<div class="panel"><div class="set"><div class="t"><b>${esc(F.name || M.page.name || "Page")} · ${num(F.followers)} followers</b><span>${num(F.reach)} people reached in 28 days${F.url ? ` · <a href="${esc(F.url)}" target="_blank" rel="noopener">open the Page</a>` : ""}</span></div></div></div>`;
+    return `<div class="panel"><div class="set"><div class="t"><b>${esc(F.name || M.page.name || "Page")} · ${num(F.followers)} followers</b><span>${F.reachMiss ? `Meta didn't give the Page's reach: ${esc(F.reachMiss)}` : `${num(F.reach)} people reached in 28 days`}${F.url ? ` · <a href="${esc(F.url)}" target="_blank" rel="noopener">open the Page</a>` : ""}</span></div></div></div>`;
   };
   const shop = () => {
     if (!S) return "";

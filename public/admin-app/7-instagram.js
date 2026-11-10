@@ -1,4 +1,5 @@
-/* LABS admin — Instagram v1.0, 2026-10-26. The messages people send
+/* LABS admin — Instagram v1.1, 2026-11-10 ("fix the Instagram integration"): says while older conversations are still being read in
+   (server/instagram/inbox v1.1 brings them a few at a time). v1.0, 2026-10-26. The messages people send
    @tnl.labs on Instagram, read here (server/instagram/inbox): who
    wrote, what, when, and which are new. Read only — a reply opens the
    conversation in Instagram itself. Connect once (Instagram's own
@@ -22,6 +23,7 @@ VIEWS.instagram = () => {
     : d.ready ? `<button class="btn sm" id="igconnect">Connect Instagram</button>` : "";
   const status = d.connected ? `<div class="panel igst"><div><b>Connected as @${esc(d.username)}</b>
       <p class="dim">Checked ${d.syncedAt ? igWhen(d.syncedAt) : "not yet"} · looks every ${d.pollMinutes} min · key good until ${igDay(d.expiresAt)}, renewed on its own while it's used.</p>
+      ${d.readingOlder ? `<p class="dim">Still bringing in older conversations — a few more every check, until the inbox is whole.</p>` : ""}
       ${d.lastError ? `<p class="warnl">Instagram said: ${esc(d.lastError)}</p>` : ""}</div>
       <button class="btn ghost sm" id="igoff">Disconnect</button></div>` : "";
   const L = d.conversations || [];
