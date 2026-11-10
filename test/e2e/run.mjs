@@ -467,6 +467,8 @@ console.log("\nMEMBER · PHONE");
     const fav = await fetch(B + "/favicon.ico");
     ok(fav.status === 200 && /icon|image/.test(fav.headers.get("content-type") || ""), "no /favicon.ico: " + fav.status + " " + fav.headers.get("content-type"));
     await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
+    /* 2026-11-10: the feed can be mid-refresh right after the repaint — wait for the carousel post instead of assuming it's there (failed twice on #254 with "reading 'images'") */
+    await p.waitForFunction(() => SRPOSTS.some((q) => q.images && q.images.length > 2), null, { timeout: 8000 });
     const id = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.images && q.images.length > 2); x.__orig = x.images;
       x.images = [x.images[0], { url: "/uploads/missing-1.jpg", w: 800, h: 1000 }, x.images[1], { url: "/uploads/missing-2.jpg", w: 800, h: 1000 }]; render(); return x.id; });
     const cnt = (id) => p.evaluate((id) => { const c = document.querySelector(`#sr-grid [data-caro="s${id}"]`); return c ? { slides: c.querySelectorAll(".caro-i").length, dots: c.querySelectorAll(".caro-d span").length, n: c.querySelector(".caro-n") && c.querySelector(".caro-n").textContent } : null; }, id);
