@@ -1,5 +1,5 @@
 /* ================================================================
-   ADMIN v4 · 2026-10-20. The rebuilt admin (public/admin-app) reads
+   ADMIN v4.1 · 2026-11-09 (members and email-confirmed leave out suspended accounts, the same count as the pulse). v4 · 2026-10-20. The rebuilt admin (public/admin-app) reads
    these on top of the routes it already had. "Make it more like
    Shopify's admin, with graphs; compare against Instagram analytics."
      GET /api/admin/series    every day series, this window AND the one
@@ -34,7 +34,7 @@ app.get("/api/admin/series", auth, admin, (req, res) => {
   for (const k of Object.keys(prev)) prev[k] = cut(prev[k]);
   const fees = (a, b) => db.prepare(`SELECT o.amount_cents, u.rep seller_rep, u.is_admin seller_admin FROM orders o JOIN users u ON u.id = o.seller_id
     WHERE o.status IN ${PAID} AND o.created_at > ? AND o.created_at <= ?`).all(a, b).reduce((s, o) => s + feeOf(o), 0);
-  res.json({ days, start, prevStart, series, prev, members: aone(`SELECT COUNT(*) n FROM users`),
+  res.json({ days, start, prevStart, series, prev, members: aone(`SELECT COUNT(*) n FROM users WHERE suspended = 0`),
     fees: { now: fees(start, now), before: fees(prevStart, start) } });
 });
 
@@ -66,7 +66,7 @@ app.get("/api/admin/audience", auth, admin, (req, res) => {
   const hours = new Array(24).fill(0);
   for (const r of db.prepare(`SELECT CAST(((t - ?1) % ${ADAY}) / 3600000 AS INTEGER) h, COUNT(*) n FROM (${ACTIVITY}) WHERE t >= ?2 GROUP BY h`).all(tz, start))
     if (r.h >= 0 && r.h < 24) hours[r.h] = r.n;
-  const verified = aone(`SELECT COUNT(*) n FROM users WHERE email_verified = 1`), members = aone(`SELECT COUNT(*) n FROM users`);
+  const verified = aone(`SELECT COUNT(*) n FROM users WHERE email_verified = 1 AND suspended = 0`), members = aone(`SELECT COUNT(*) n FROM users WHERE suspended = 0`);   // one count of members everywhere (2026-11-09)
   const sellers = aone(`SELECT COUNT(*) n FROM users WHERE stripe_ready = 1`);
   res.json({ byRole, byLab, hours, members, verified, sellers,
     active30: aone(`SELECT COUNT(DISTINCT u) n FROM (${ACTIVITY}) WHERE t >= ?`, now - 30 * ADAY) });

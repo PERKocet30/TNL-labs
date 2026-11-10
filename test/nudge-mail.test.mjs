@@ -84,6 +84,9 @@ try {
   t("never the finished (boss, ben), the new (dee), the unconfirmed, suspended or unsubscribed", !SENT.some((m) => /boss|ben|dee|unv|sus|quiet/.test(to(m))));
   const st = (await call("boss", "/api/admin/nudge")).j;
   t("admin sees it: on, 3 today, 1 still due (fay, tomorrow)", st.on && st.ready && st.sentToday === 3 && st.due === 1 && st.max === 2 && st.perDay === 3);
+  { const r = raw(); r.prepare(`UPDATE users SET last_seen_at = 0`).run(); const none = (await call("boss", "/api/admin/nudge")).j;
+    r.prepare(`UPDATE users SET last_seen_at = ? WHERE id = ?`).run(Date.now() + 60000, ana); r.close(); const one = (await call("boss", "/api/admin/nudge")).j;
+    t("does it work? reminded = members who got one; came back = seen in the app since (2026-11-09)", none.reminded === 3 && none.cameBack === 0 && one.cameBack === 1); }
   {
     const r = raw(); const b = r.prepare(`SELECT sent, last_items FROM nudge_mail WHERE user_id = ?`).get(ben); r.close();
     t("a finished page is remembered as done — never asked", b && b.sent === 2 && b.last_items === "");

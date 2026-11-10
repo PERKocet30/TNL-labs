@@ -1903,6 +1903,10 @@ console.log("\nMEMBER · PHONE");
     ok(scr.screens.some((x) => /^labs?/.test(x.screen) && x.views >= 2) && scr.screens.some((x) => x.screen === "market"), "the admin read doesn't show the screens: " + JSON.stringify(scr.screens.slice(0, 5)));
     ok(paths.next.some((x) => /^labs?/.test(x.from) && x.to === "market") || paths.next.length >= 30, "the move labs → market isn't counted: " + JSON.stringify(paths.next.slice(0, 5)));   // the walk above has made many moves; the list keeps the 30 most common
     ok(!JSON.stringify(scr).includes("tester") && !JSON.stringify(paths).includes("tester"), "a username leaked into the UI signals");
+    /* 2026-11-09: Share closes the creator before the post goes, so every post this walk made used to count as abandoned */
+    const fl = (await api("/api/admin/ui/flows?days=1", token)).flows.find((f) => f.flow === "post") || {};
+    ok(fl.done >= 2, "posts shared from the creator aren't counted as finished: " + JSON.stringify(fl));
+    ok(await p.evaluate(() => typeof uiLoadCheck === "undefined" && !("load" in UI)), "the load timer is still running — it measured nothing");
     ok(await p.evaluate(() => UI.q.every((e) => typeof e.kind === "string" && String(e.prev).length <= 60 && !/[A-Z]{3}/.test(e.screen))), "a signal carries more than a kind, two names and a number");
   });
   await step(d, "event: the Showroom banner opens the tournament, its gallery and the enter sheet", async () => {

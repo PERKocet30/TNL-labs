@@ -1,4 +1,4 @@
-/* CONTROLS · BACKUPS v1.1 — 2026-11-06: Clean up leaves an upload still coming in (a .part touched in the last hour — uploads in pieces, uploads/chunks.js). */
+/* CONTROLS · BACKUPS v1.2 — 2026-11-09: Health says how full the volume is (disk: total and free) — it gave the uploads' size with nothing to hold it against. v1.1 — 2026-11-06: Clean up leaves an upload still coming in (a .part touched in the last hour — uploads in pieces, uploads/chunks.js). */
 /* ---- controls. A dashboard you can't act from is a wall poster. ---- */
 app.post("/api/admin/members/:username/rep", auth, admin, (req, res) => {
   const u = q.userByName.get(req.params.username);
@@ -83,8 +83,10 @@ app.get("/api/admin/health", auth, admin, (req, res) => {
       if (!referenced.has(f)) { orphans++; try { orphanBytes += statSync(join(UPLOAD_DIR, f)).size; } catch {} }
     }
   } catch {}
+  let disk = null;   // the volume everything lives on: how big, how much is left
+  try { const s = statfsSync(DATA_DIR); disk = { totalBytes: Number(s.blocks) * Number(s.bsize), freeBytes: Number(s.bavail) * Number(s.bsize) }; } catch {}
   res.json({
-    dbBytes, uploadBytes, uploadCount, orphans, orphanBytes,
+    dbBytes, uploadBytes, uploadCount, orphans, orphanBytes, disk,
     onVolume: !!process.env.TNL_DATA,
     publicUrl: process.env.PUBLIC_URL || null,
     mail: MAIL_ENABLED, payments: PAYMENTS_ENABLED,

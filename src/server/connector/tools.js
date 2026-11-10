@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · tools  v1.3 — 2026-11-04 (v1.3: echo_stats never carries a handoff's conversation; the UI-signals tools live in ui-signals/tools.js). v1.2 — 2026-11-04 (knowledge_add / knowledge_edit: Claude and Grok write to Knowledge, the one exception to read-only). v1.1 — 2026-11-04 (knowledge, read). v1.0 — 2026-10-27
+   LABS CONNECTOR · tools  v1.4 — 2026-11-09 (v1.4: overview, retention and nudge say what they hold now — one meaning for members and active, the nudge's result). v1.3 — 2026-11-04 (v1.3: echo_stats never carries a handoff's conversation; the UI-signals tools live in ui-signals/tools.js). v1.2 — 2026-11-04 (knowledge_add / knowledge_edit: Claude and Grok write to Knowledge, the one exception to read-only). v1.1 — 2026-11-04 (knowledge, read). v1.0 — 2026-10-27
    /mcp speaks MCP (JSON-RPC over HTTP, stateless) so Claude can read the
    admin dashboard like it reads GitHub or Railway. Each tool is one of
    the admin GET routes, fetched in-process with the connector key, then
@@ -14,11 +14,11 @@ const mcpDays = { type: "integer", enum: [7, 30, 90], description: "Window in da
 const mcpTz = { type: "integer", description: "Minutes east of UTC for day boundaries, e.g. -240 for New York in summer. Default 0." };
 /* name → what it reads. `path` may be a function of the arguments. */
 const MCP_TOOLS = [
-  ["overview", "The big picture: members, active now, work posted, confirmed collabs, orders, fees earned, verified, rep — this week vs before.", {}, "overview"],
+  ["overview", "The big picture: members (suspended accounts aren't counted), active (did anything: posted, liked, commented, followed, voted) and posted this week and month, work posted, confirmed collabs, orders, fees earned, verified, rep — this week vs before.", {}, "overview"],
   ["pulse", "Day-by-day pulse of the app for a window: joins, posts, likes, collabs, orders, and what moved.", { days: mcpDays, tz: mcpTz }, (a) => `pulse?days=${a.days || 30}&tz=${a.tz || 0}`],
   ["series", "Daily series for charts (joins, posts, likes, orders…) over a window, with the window before for comparison.", { days: mcpDays, tz: mcpTz }, (a) => `series?days=${a.days || 30}&tz=${a.tz || 0}`],
   ["funnel", "Sign-up funnel: joined → verified → posted → collab → sold, with percentages.", {}, "funnel"],
-  ["retention", "Retention: who came back by week since joining.", {}, "retention"],
+  ["retention", "By the week they joined: how many are still posting; plus how many members have never posted and how many have gone quiet (no post in 14+ days), with the latest 20 of each. For who came back at all, use insights_retention.", {}, "retention"],
   ["audience", "Who the members are: roles, when they're online, where they came from.", { days: mcpDays, tz: mcpTz }, (a) => `audience?days=${a.days || 30}&tz=${a.tz || 0}`],
   ["direction", "Which labs and kinds of work are growing or fading over the window.", { days: mcpDays, tz: mcpTz }, (a) => `direction?days=${a.days || 30}&tz=${a.tz || 0}`],
   ["top_work", "The pieces that earned the most reaction over the window.", { days: mcpDays, tz: mcpTz }, (a) => `topwork?days=${a.days || 30}&tz=${a.tz || 0}`],
@@ -41,7 +41,7 @@ const MCP_TOOLS = [
   ["errors", "Recent server and client errors with counts.", {}, "errors"],
   ["glitches", "Layout glitches reported by the app (jumps, overlaps) by screen.", {}, "glitches"],
   ["admin_log", "What admins changed recently (action and target; details kept private).", {}, "log"],
-  ["nudge", "Who's due a nudge email and why.", {}, "nudge"],
+  ["nudge", "The weekly reminder email: how many are due, sent today, this week and ever — and whether it works: reminded (members who got one) and cameBack (the ones seen in the app since their last one).", {}, "nudge"],
   ["systems", "Railway and GitHub: what's live, building, and waiting for a Push.", { fresh: { type: "boolean", description: "Skip the cache" } }, (a) => `systems${a.fresh ? "?fresh=1" : ""}`],
   ["systems_google", "Google Search Console and Merchant Center: clicks, impressions, indexed pages, feed status.", { fresh: { type: "boolean" } }, (a) => `systems/google${a.fresh ? "?fresh=1" : ""}`],
   ["systems_meta", "Instagram and Facebook numbers: followers, reach, best posts, when followers are online, shop status. Never inbox messages.", { fresh: { type: "boolean" } }, (a) => `systems/meta${a.fresh ? "?fresh=1" : ""}`],
