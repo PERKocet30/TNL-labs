@@ -1,5 +1,6 @@
 /* LABS admin — Instagram v1.1, 2026-11-10 ("fix the Instagram integration"): says while older conversations are still being read in
-   (server/instagram/inbox v1.1 brings them a few at a time). v1.0, 2026-10-26. The messages people send
+   (server/instagram/inbox v1.1 brings them a few at a time), and when Instagram answers a check with no conversations at all it says so, with the
+   two switches on Instagram's side that cause it — it used to say "No conversations yet" for weeks. v1.0, 2026-10-26. The messages people send
    @tnl.labs on Instagram, read here (server/instagram/inbox): who
    wrote, what, when, and which are new. Read only — a reply opens the
    conversation in Instagram itself. Connect once (Instagram's own
@@ -22,7 +23,7 @@ VIEWS.instagram = () => {
     ? `<div class="row wrapx" style="gap:6px"><button class="btn ghost sm" id="igsync">Check now</button>${d.unread ? `<button class="btn ghost sm" id="igseen">Mark all read</button>` : ""}</div>`
     : d.ready ? `<button class="btn sm" id="igconnect">Connect Instagram</button>` : "";
   const status = d.connected ? `<div class="panel igst"><div><b>Connected as @${esc(d.username)}</b>
-      <p class="dim">Checked ${d.syncedAt ? igWhen(d.syncedAt) : "not yet"} · looks every ${d.pollMinutes} min · key good until ${igDay(d.expiresAt)}, renewed on its own while it's used.</p>
+      <p class="dim">Checked ${d.syncedAt ? igWhen(d.syncedAt) : "not yet"} · ${d.listed == null ? "" : `Instagram listed ${d.listed} conversation${d.listed === 1 ? "" : "s"} · `}looks every ${d.pollMinutes} min · key good until ${igDay(d.expiresAt)}, renewed on its own while it's used.</p>
       ${d.readingOlder ? `<p class="dim">Still bringing in older conversations — a few more every check, until the inbox is whole.</p>` : ""}
       ${d.lastError ? `<p class="warnl">Instagram said: ${esc(d.lastError)}</p>` : ""}</div>
       <button class="btn ghost sm" id="igoff">Disconnect</button></div>` : "";
@@ -31,7 +32,11 @@ VIEWS.instagram = () => {
     <div class="list">${L.length ? L.map((c) => `<button class="li" data-igc="${esc(c.id)}"><div class="b"><b>@${esc(c.username || "someone")}${c.unread ? `<span class="tag on">${c.unread} new</span>` : ""}</b>
       <span>${c.last ? `${c.last.mine ? "You: " : ""}${esc(c.last.text || (c.last.attachments ? "📎 attachment" : "…")).slice(0, 90)}` : "No messages yet"}</span></div>
       <div class="r">${igWhen(c.updatedAt)}</div>${I.chev}</button>`).join("")
-      : `<div class="empty">No conversations yet. ${d.syncedAt ? "Instagram shows the last 30 days of requests and every open chat." : "The first check runs within a minute."}</div>`}</div>`;
+      : !d.syncedAt ? `<div class="empty">No conversations yet. The first check runs within a minute.</div>`
+      : `<div class="igzero"><p><b>Instagram answered the last check, but listed no conversations.</b> LABS asked and got an empty list — no error. Two switches on Instagram's side do that:</p>
+        <p><b>1 · In the Instagram app</b>, signed in as @${esc(d.username)}: Settings → Messages and story replies → Message controls → Connected tools → turn on <b>Allow access to messages</b>.</p>
+        <p><b>2 · In your Meta app</b> (developers.facebook.com): Instagram → API setup with Instagram login → under <b>Generate access tokens</b>, @${esc(d.username)} must be listed. If it isn't, add it, then Disconnect and Connect again here.</p>
+        <p class="dim">Then press Check now. Instagram only lists open chats and the last 30 days of requests.</p></div>`}</div>`;
   return `${pageHead("Instagram", `Messages people send ${who} on Instagram, read here. Replies happen in Instagram — each conversation has a button for that.`, actions)}
     ${status}${list}${igSetupHTML(d)}`;
 };

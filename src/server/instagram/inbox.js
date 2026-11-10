@@ -7,6 +7,12 @@
      until the inbox is whole or IG_KEEP_MAX (300) are in.
    · "new" means new. A message is read once you've answered after it in
      Instagram, and history brought in from before LABS connected isn't new.
+   · an empty page isn't the end. Meta can answer a page with nothing on it and
+     still a cursor to the next (a conversation it won't list); the read stopped
+     there, with no error, and the inbox stayed empty ("No conversations yet" on
+     a connected account, 2026-11-09). It now steps past up to IG_EMPTY_MAX (12).
+   · the page says what Instagram answered (ig_account.last_listed), and when it
+     lists nothing at all, the two switches on Instagram's side that cause it.
    v1.0 — 2026-10-26. "Can you access messages on
    Instagram now?" — read only, inside Admin → Instagram.
 
@@ -65,7 +71,7 @@ CREATE TABLE IF NOT EXISTS ig_messages (
   via TEXT NOT NULL DEFAULT 'poll'
 );
 CREATE INDEX IF NOT EXISTS idx_ig_messages_conv ON ig_messages(conv_id, created_at);`);
-for (const col of ["walk_after TEXT", "walk_done INTEGER NOT NULL DEFAULT 0"]) { try { db.exec(`ALTER TABLE ig_account ADD COLUMN ${col}`); } catch {} }   // 2026-11-10: where the read of older conversations has got to
+for (const col of ["walk_after TEXT", "walk_done INTEGER NOT NULL DEFAULT 0", "last_listed INTEGER"]) { try { db.exec(`ALTER TABLE ig_account ADD COLUMN ${col}`); } catch {} }   // 2026-11-10: where the read of older conversations has got to
 
 const IG_APP_ID = (process.env.IG_APP_ID || "").trim(), IG_APP_SECRET = (process.env.IG_APP_SECRET || "").trim();
 const IG_GRAPH = "https://graph.instagram.com/v24.0";
@@ -135,22 +141,28 @@ async function igRetry(fn, tries = 3) {
 const IG_RETRY_MS = Math.max(0, Number(process.env.IG_RETRY_MS ?? 1200));
 const IG_WALK_MAX = Math.max(1, Number(process.env.IG_WALK_MAX) || 15);
 const IG_KEEP_MAX = Math.max(1, Number(process.env.IG_KEEP_MAX) || 300);
+const IG_EMPTY_MAX = Math.max(1, Number(process.env.IG_EMPTY_MAX) || 12);   // empty pages stepped past in one check before calling it the end
 const IG_OLDER_STEP = Math.max(1, Number(process.env.IG_OLDER_STEP) || 5);   // older conversations a check: small, so a full read stays well inside Meta's hourly limit
 /* Returns the newest conversations, and `next`: the cursor just past them (null = that was the end), where the older ones start. */
 async function igListConvs(token, moved) {
+  let one = false, after = null;
   try { const d = await igRetry(() => igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: 25 }, token), 1);
-    return { list: d.data || [], next: (d.data || []).length ? d.paging?.cursors?.after || null : null, one: false }; }
-  catch (e) { if (!igTooBig(e)) throw e; }
-  const out = []; let after = null, next = null;
+    if ((d.data || []).length || !d.paging?.cursors?.after) return { list: d.data || [], next: (d.data || []).length ? d.paging?.cursors?.after || null : null, one: false };
+    after = d.paging.cursors.after; }   // nothing on the page but a way on: step past it below
+  catch (e) { if (!igTooBig(e)) throw e; one = true; }
+  const out = []; let next = null, empty = 0;
   while (out.length < IG_WALK_MAX) {
-    const d = await igRetry(() => igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: 1, after }, token));
-    const c = (d.data || [])[0]; if (!c) { next = null; break; }
+    const d = await igRetry(() => igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: one ? 1 : 25, after }, token), one ? 3 : 1);
+    if (!one) { out.push(...(d.data || [])); next = d.paging?.cursors?.after || null; if ((d.data || []).length || !next || ++empty >= IG_EMPTY_MAX) break; after = next; continue; }
+    const c = (d.data || [])[0];
+    if (!c) { next = d.paging?.cursors?.after || null; if (!next || ++empty >= IG_EMPTY_MAX) { next = null; break; } after = next; continue; }   // an empty page with a way on isn't the end (2026-11-10)
+    empty = 0;
     out.push(c);
     next = after = d.paging?.cursors?.after || null;
     if (!moved(c)) break;   // everything after this is older and already read
     if (!after) break;
   }
-  return { list: out, next, one: true };
+  return { list: out, next, one };
 }
 /* The older ones (2026-11-10): from where the last check stopped, a few more each time, until the inbox is whole. */
 async function igOlderConvs(acc, head) {
@@ -159,14 +171,14 @@ async function igOlderConvs(acc, head) {
   let after = acc.walk_after || head.next;
   const done = () => db.prepare(`UPDATE ig_account SET walk_done = 1, walk_after = NULL WHERE id = 1`).run();
   if (!after || have >= IG_KEEP_MAX) { done(); return []; }
-  const out = [];
+  const out = []; let empty = 0;
   try {
     if (head.one) { while (out.length < IG_OLDER_STEP) {
       const d = await igRetry(() => igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: 1, after }, acc.token));
-      const c = (d.data || [])[0]; if (c) out.push(c);
-      after = c ? d.paging?.cursors?.after || null : null; if (!after) break; } }
+      const c = (d.data || [])[0]; if (c) out.push(c); else if (++empty >= IG_EMPTY_MAX) { after = null; break; }
+      after = d.paging?.cursors?.after || null; if (!after) break; } }
     else { const d = await igRetry(() => igGet("/me/conversations", { platform: "instagram", fields: "id,updated_time", limit: IG_OLDER_STEP, after }, acc.token), 1);
-      out.push(...(d.data || [])); after = (d.data || []).length ? d.paging?.cursors?.after || null : null; }
+      out.push(...(d.data || [])); after = d.paging?.cursors?.after || null; }
   } catch (e) { console.error("[instagram] older conversations:", e.message); if (!igTooBig(e)) after = null; else { db.prepare(`UPDATE ig_account SET walk_after = ? WHERE id = 1`).run(after); return out; } }   // a stale cursor ends it; too busy tries again next check
   if (after) db.prepare(`UPDATE ig_account SET walk_after = ? WHERE id = 1`).run(after); else done();
   return out;
@@ -186,6 +198,7 @@ async function igSync(reason = "tick") {
     const head = await igListConvs(acc.token, moved);
     const olderList = await igOlderConvs(acc, head), older = new Set(olderList.map((c) => String(c.id)));
     const list = [...head.list, ...olderList.filter((c) => !head.list.some((h) => String(h.id) === String(c.id)))];
+    db.prepare(`UPDATE ig_account SET last_listed = ? WHERE id = 1`).run(list.length);   // what Instagram answered, for the page
     let skipped = 0;
     for (const c of list) {
       const id = String(c.id), up = igTime(c.updated_time);
@@ -264,7 +277,7 @@ app.post("/api/admin/instagram/disconnect", auth, admin, (req, res) => {
 function igStatus(req) {
   const a = igAccount();
   return { ready: igReady(), connected: !!a, username: a?.username || "", igId: a?.ig_id || "", connectedAt: a?.connected_at || null, syncedAt: a?.synced_at || null,
-    expiresAt: a?.expires_at || null, lastError: a?.last_error || null, readingOlder: !!a && !a.walk_done, pollMinutes: Math.round(IG_POLL_MS / 60000),
+    expiresAt: a?.expires_at || null, lastError: a?.last_error || null, readingOlder: !!a && !a.walk_done, listed: a?.last_listed ?? null, pollMinutes: Math.round(IG_POLL_MS / 60000),
     webhook: { url: `${baseUrl(req)}/api/instagram/webhook`, verifyToken: igVerifyToken(), redirect: igRedirect(req) },
     unread: db.prepare(`SELECT COUNT(*) n FROM ig_messages WHERE seen = 0 AND mine = 0`).get().n };
 }

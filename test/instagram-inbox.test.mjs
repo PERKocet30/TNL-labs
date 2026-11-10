@@ -38,8 +38,8 @@ globalThis.fetch = async (u, opts = {}) => {
   if (p === "/me/conversations") {
     const lim = Number(url.searchParams.get("limit"));
     if (TOO_BIG && lim > 1) return json(big, 500);   // a busy inbox: only one at a time (the real Meta, Oct 26)
-    if (lim === 1) { const i = Number(url.searchParams.get("after") || 0); return json({ data: CONVS.slice(i, i + 1), paging: i + 1 < CONVS.length ? { cursors: { after: String(i + 1) } } : {} }); }
-    return json({ data: CONVS }); }
+    if (lim === 1) { const i = Number(url.searchParams.get("after") || 0); return json({ data: CONVS.slice(i, i + 1).filter(Boolean), paging: i + 1 < CONVS.length ? { cursors: { after: String(i + 1) } } : {} }); }   // a null in CONVS = a page with nothing on it, and a way on
+    return json({ data: CONVS.filter(Boolean) }); }
   const m = p.match(/^\/(c\d+)$/);
   if (m) { const f = url.searchParams.get("fields");
     if (TOO_BIG && Number((/limit\((\d+)\)/.exec(f) || [])[1]) > 5) return json(big, 500);
@@ -157,6 +157,20 @@ console.log("\nOLDER CONVERSATIONS (2026-11-10) — the inbox fills in, a few ea
   db.exec(`DELETE FROM ig_messages WHERE mid LIKE 'old%'; DELETE FROM ig_conversations WHERE id LIKE 'c1__'`);
   t("connecting again starts the read of older ones over", /walk_after = NULL, walk_done = 0`\)/.test(src)); }
 
+console.log("\nAN EMPTY PAGE ISN'T THE END (2026-11-10) — \"No conversations yet\" on a connected account");
+{ db.exec(`DELETE FROM ig_messages; DELETE FROM ig_conversations; UPDATE ig_account SET walk_done = 1, walk_after = NULL`);
+  TOO_BIG = true; CONVS = [null, null, { id: "c1", updated_time: "2026-10-26T10:08:00+0000" }];   // Meta answers two pages with nothing on them first
+  const { r: e1, calls: ek } = await sinceCalls(() => call("POST /api/admin/instagram/sync"));
+  let st = (await call("GET /api/admin/instagram")).body;
+  t("the read steps past pages with nothing on them and finds the conversation behind", e1.body.ok !== false && st.conversations.length === 1 && st.conversations[0].username === "ana.paints" && ek.filter((u) => /me\/conversations.*limit=1(&|$)/.test(u)).length === 3);
+  t("the page is told what Instagram answered", st.listed === 1);
+  db.exec(`DELETE FROM ig_messages; DELETE FROM ig_conversations`); CONVS = [];
+  await call("POST /api/admin/instagram/sync"); st = (await call("GET /api/admin/instagram")).body;
+  t("…and when Instagram lists nothing at all, that's what it says: 0, no error", st.listed === 0 && st.conversations.length === 0 && !st.lastError);
+  TOO_BIG = false; CONVS = [{ id: "c1", updated_time: "2026-10-26T10:09:00+0000" }]; await call("POST /api/admin/instagram/sync");
+  db.exec(`UPDATE ig_messages SET seen = 1`);
+  t("back to one conversation, all read, for the checks below", ((b) => b.conversations.length === 1 && b.unread === 0)((await call("GET /api/admin/instagram")).body)); }
+
 console.log("\nWEBHOOKS");
 const vt = (await call("GET /api/admin/instagram")).body.webhook.verifyToken;
 r = await call("GET /api/instagram/webhook", { query: { "hub.mode": "subscribe", "hub.verify_token": vt, "hub.challenge": "12345" } });
@@ -209,5 +223,7 @@ t("read only: it never posts a message, and sends you to Instagram to reply", !/
 t("the Meta setup values are on the page with Copy", /data-igcopy/.test(tab) && /Verify token/.test(tab) && /Callback URL/.test(tab) && /Redirect URI/.test(tab));
 t("the JSON parser keeps the raw bytes for the webhook only", /req\.path === "\/api\/instagram\/webhook"\) req\.rawBody = buf/.test(readFileSync(join(ROOT, "src/server/core/json.js"), "utf8")));
 
+{ const pg = readFileSync(join(ROOT, "public/admin-app/7-instagram.js"), "utf8");
+  t("the page says when Instagram listed nothing, and the two switches that cause it (2026-11-10)", pg.includes("listed no conversations") && pg.includes("Allow access to messages") && pg.includes("Generate access tokens") && pg.includes("Instagram listed ${d.listed}")); }
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
