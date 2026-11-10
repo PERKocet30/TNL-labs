@@ -20,6 +20,7 @@ let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
 const seen = { tokens: new Set(), calls: 0, paths: [] };
+let broken = false;   // 2026-11-10: Meta refusing the newer reads — the page has to say so, not show zeros
 const iso = (d) => new Date(now - d * 86400000).toISOString();
 const dayVals = (f) => Array.from({ length: 28 }, (_, i) => ({ value: f(i), end_time: iso(27 - i) }));
 const fake = createServer((req, res) => {
@@ -32,12 +33,15 @@ const fake = createServer((req, res) => {
   if (p === "me/accounts") return json(200, { data: [{ id: "111", name: "LABS", instagram_business_account: { id: "222" } }] });
   if (p === "222" ) return json(200, { username: "tnl.labs", name: "LABS", followers_count: 4581, follows_count: 2566, media_count: 499 });
   if (p === "222/insights") {
+    if (q.metric === "reach" && q.metric_type === "total_value") return broken ? json(400, { error: { message: "(#100) metric_type is not supported", code: 100 } }) : json(200, { data: [{ name: "reach", total_value: { value: prev ? 1500 : 3000 } }] });
     if (q.metric === "reach") return json(200, { data: [{ name: "reach", values: dayVals((i) => prev ? 100 : 200 + i) }] });
     if (q.metric === "follower_count") return json(200, { data: [{ name: "follower_count", values: dayVals((i) => (i % 2 ? 3 : -1)) }] });
     if (q.metric_type === "total_value" && /profile_views/.test(q.metric)) return json(200, { data: [{ name: "profile_views", total_value: { value: prev ? 300 : 500 } }, { name: "website_clicks", total_value: { value: prev ? 20 : 9 } }, { name: "accounts_engaged", total_value: { value: 900 } }, { name: "total_interactions", total_value: { value: 1500 } }] });
     if (q.metric === "follower_demographics" && q.breakdown === "country") return json(200, { data: [{ name: "follower_demographics", total_value: { breakdowns: [{ dimension_keys: ["country"], results: [{ dimension_values: ["US"], value: 3000 }, { dimension_values: ["GB"], value: 400 }, { dimension_values: ["SV"], value: 300 }] }] } }] });
     if (q.metric === "follower_demographics" && q.breakdown === "city") return json(200, { data: [{ name: "follower_demographics", total_value: { breakdowns: [{ results: [{ dimension_values: ["New York, New York"], value: 800 }, { dimension_values: ["Washington, District of Columbia"], value: 500 }] }] } }] });
     if (q.metric === "follower_demographics") return json(400, { error: { message: "Not enough data", code: 100 } });
+    if (q.metric === "online_followers" && broken) return json(400, { error: { message: "(#100) The online_followers metric is not available for this account", code: 100 } });
+    if (q.metric === "online_followers" && !q.since) return json(200, { data: [{ name: "online_followers", values: [] }] });   // Meta's way: no range, no hours
     if (q.metric === "online_followers") return json(200, { data: [{ name: "online_followers", values: [{ value: { 9: 50, 13: 80, 20: 120, 21: 110, 3: 5 } }, { value: { 20: 100, 21: 130, 13: 70 } }] }] });
   }
   if (p === "222/media") return json(200, { data: [
@@ -46,6 +50,7 @@ const fake = createServer((req, res) => {
     { id: "m3", caption: "", media_type: "CAROUSEL_ALBUM", media_product_type: "FEED", timestamp: iso(9), permalink: "javascript:alert(1)", like_count: 50, comments_count: 2, insights: { data: [{ name: "reach", values: [{ value: 900 }] }] } }] });
   if (p === "222/stories") return json(200, { data: [] });
   if (p === "111") return json(200, { name: "LABS", followers_count: 1200, link: "https://www.facebook.com/tnllabs" });
+  if (p === "111/insights" && broken) return json(400, { error: { message: "(#100) The value must be a valid insights metric", code: 100 } });
   if (p === "111/insights") return json(200, { data: [{ name: "page_impressions_unique", values: dayVals(() => 10) }] });
   if (p === "333") return json(200, { name: "LABS shop", product_count: 3 });
   if (p === "333/products") return json(200, { data: [{ id: "1", retailer_id: "labs-5", name: "Drop 01 Tee", review_status: "approved" }, { id: "2", retailer_id: "labs-7-s1", name: "Camo Shiesty", review_status: "rejected", errors: [{ title: "Image too small", description: "Images must be at least 500×500" }] },
@@ -74,7 +79,9 @@ try {
 
   console.log("\nINSTAGRAM");
   const I = M.instagram, T = I.totals;
-  t("followers, net change, reach over 28 days against the 28 before", I.followers === 4581 && I.netFollowers === 28 && T.reach === 28 * 200 + 378 && T.reachBefore === 2800 && T.reachChange > 100);
+  t("followers, net change, reach over 28 days against the 28 before", I.followers === 4581 && I.netFollowers === 28 && T.reach === 3000 && T.reachBefore === 1500 && T.reachChange === 100);
+  t("people reached is each person once, as Instagram shows it — not the 28 days added up (2026-11-10)", T.reachIsDays === false && I.days.reduce((n, d) => n + d.value, 0) === 28 * 200 + 378);
+  t("nothing was refused, so nothing is listed as missing", I.misses.length === 0 && M.facebook.reachMiss === "");
   t("profile views and link taps with their before", T.profileViews === 500 && T.before.profileViews === 300 && T.linkTaps === 9 && T.engaged === 900);
   t("a line per day", I.days.length === 28 && I.days[0].day < I.days[27].day);
   t("posts with reach, saves, shares; the reel on top", I.top[0].kind === "reel" && I.top[0].reach === 6200 && I.top[0].saves === 90 && I.top[1].caption === "LABS ART TOURNAMENT 🎨");
@@ -112,10 +119,21 @@ try {
   srv = start({ META_CATALOG_ID: "" }); await ready();
   t("no catalog id: the shop card is simply left out", (await (await get("/api/admin/systems/meta", "boss")).json()).shop === null);
 
+  console.log("\nWHEN META REFUSES A READ (2026-11-10) — the page says why, never a zero that means nothing");
+  srv.kill(); await new Promise((r) => setTimeout(r, 300));
+  broken = true; srv = start(); await ready();
+  const B2 = await (await get("/api/admin/systems/meta", "boss")).json();
+  t("no unique reach: the days added up, and marked as that", B2.instagram.totals.reachIsDays === true && B2.instagram.totals.reach === 28 * 200 + 378 && B2.instagram.totals.reachBefore === 2800);
+  t("no hours: the card gets Meta's own reason", B2.instagram.bestHours.length === 0 && B2.instagram.misses.some((m) => m.what === "when followers are online" && /online_followers metric is not available/.test(m.why)));
+  t("the Facebook Page's reach: Meta's reason instead of 0", /valid insights metric/.test(B2.facebook.reachMiss) && B2.facebook.followers === 1200);
+  t("the rest still loads", B2.instagram.followers === 4581 && B2.instagram.top.length === 3 && !JSON.stringify(B2).includes("EAAB"));
+  broken = false;
+
   console.log("\nTHE PAGE");
   const page = readFileSync(join(ROOT, "public/admin-app/7-systems3-meta.js"), "utf8"), html = readFileSync(join(ROOT, "public/admin.html"), "utf8");
   t("its own script, after Google", /7-systems2-google\.js.*\n.*7-systems3-meta\.js/.test(html));
   t("says plainly when the token isn't set", /META_ACCESS_TOKEN/.test(page));
+  t("an empty card gives Meta's reason — no more \"needs 100+ followers\" on an account with thousands", !page.replace(/\/\*[\s\S]*?\*\//g, "").includes("needs 100+ followers") && page.includes("Meta didn't give this: ") && page.includes("F.reachMiss") && page.includes("new in 28 days"));
 } finally { srv.kill(); fake.close(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

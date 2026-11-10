@@ -44,5 +44,11 @@ for (const c of [".mbcard", ".mbgrid", ".mbrow", ".mbname", ".mbempty", ".pasteb
   t(c + " is gone", !css.includes(c + "{") && !css.includes(c + " ") && !css.includes(c + ","));
 t("and don't touch .bcard", !/\.bcard img\s*\{/.test(css));
 
+console.log("\nONE POST AT A TIME, LIKE INSTAGRAM (2026-11-10)");
+{ const bare = css.replace(/\/\*[\s\S]*?\*\//g, ""), cols = [...bare.matchAll(/\.sr-grid(?:\.sr-wall)?\{[^}]*columns:\s*([^;}]+)/g)].map((m) => m[1].trim());
+  const touch = "@media(min-width:601px) and (hover:none) and (pointer:coarse){.sr-grid{columns:1;max-width:min(560px,max(360px,100vh));margin-left:auto;margin-right:auto}}";
+  t("on a touch screen the Showroom is one centred column from 601px — a phone on its side, a tablet: never two posts side by side", bare.includes(touch));
+  t("  computers operate the same: a mouse keeps the rules it had, and the touch rule comes after them", bare.includes(".sr-grid{columns:2;column-gap:11px;padding:0 20px 30px}") && bare.includes("@media(min-width:1000px){.sr-grid{columns:3}}") && bare.indexOf(touch) > bare.indexOf("@media(min-width:1000px){.sr-grid{columns:3}}") && cols.join() === "2,1,3,1,auto"); }
+
 console.log("\n" + "=".repeat(46));
 console.log(pass + " passed, " + fail + " failed");
