@@ -99,13 +99,17 @@ textarea.in{resize:vertical;line-height:1.5}
 .bcard .av{margin:0 auto 8px}
 .bname{font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-.sr-grid{columns:2;column-gap:11px;padding:0 20px 30px}
+/* One post at a time, like Instagram (2026-11-10, "it doesn't make sense to have two posts with their own music fighting each
+   other, or posts being skipped just because they're on the other side"): the Showroom is a single column at every width below
+   the computer's gallery. It was two columns from 601px — a phone on its side, a tablet upright — so two posts sat in the middle
+   of the screen at once, both asked for the speaker, and the one beside the post that had it never played. On a short screen
+   (a phone on its side) the column narrows so a post isn't far taller than the screen. */
+.sr-grid{columns:1;padding:0 20px 30px}
+@media(min-width:601px){.sr-grid{max-width:min(560px,max(360px,100vh));margin-left:auto;margin-right:auto}}
 /* "New work" waits here: a zero-height sticky rail, so showing it can't push the feed */
 .sr-newwrap{position:sticky;top:0;height:0;z-index:6}
 .sr-new{position:absolute;left:50%;top:10px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:6px;background:var(--tx);color:var(--bg);border:0;border-radius:999px;padding:9px 16px;font:inherit;font-size:13px;font-weight:700;box-shadow:0 6px 18px rgba(var(--fg-rgb),.18);cursor:pointer;animation:mvToast .26s var(--mv-ease)}
 .sr-new[hidden]{display:none}
-@media(max-width:600px){.sr-grid{columns:1}}
-@media(min-width:1000px){.sr-grid{columns:3}}
 .sr-card{break-inside:avoid;margin-bottom:11px;background:var(--card);border:1px solid var(--line);border-radius:0;overflow:hidden}
 .sr-card:hover{border-color:var(--line2)}
 .sr-img{width:100%;display:block;cursor:zoom-in}

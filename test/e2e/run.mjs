@@ -1909,6 +1909,21 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => typeof uiLoadCheck === "undefined" && !("load" in UI)), "the load timer is still running — it measured nothing");
     ok(await p.evaluate(() => UI.q.every((e) => typeof e.kind === "string" && String(e.prev).length <= 60 && !/[A-Z]{3}/.test(e.screen))), "a signal carries more than a kind, two names and a number");
   });
+  await step(d, "a phone on its side, or a tablet: the Showroom is still one post at a time — two never sit side by side fighting for the sound", async () => {
+    await p.evaluate(() => { POSTOPEN = null; PROFILE = null; TAB = "showroom"; render(); });
+    await p.waitForFunction(() => document.querySelectorAll("#sr-grid .sr-card").length >= 2, null, { timeout: 6000 });
+    const cols = () => p.evaluate(() => { const cs = [...document.querySelectorAll("#sr-grid .sr-card")].slice(0, 6).map((c) => c.getBoundingClientRect());
+      return { lefts: [...new Set(cs.map((r) => Math.round(r.left)))], w: Math.round(cs[0].width), vw: innerWidth, stacked: cs.every((r, i) => !i || r.top >= cs[i - 1].bottom - 1) }; });
+    for (const [name, vp] of [["a phone on its side", { width: 844, height: 390 }], ["a tablet upright", { width: 820, height: 1180 }]]) {
+      await p.setViewportSize(vp); await p.waitForTimeout(350);
+      const c = await cols();
+      ok(c.lefts.length === 1 && c.stacked, `${name}: posts sit side by side (${JSON.stringify(c)})`);
+      ok(c.w <= 560 && c.w >= 300, `${name}: a post is ${c.w}px wide of ${c.vw}px`);
+    }
+    await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(250);
+    const c = await cols();
+    ok(c.lefts.length === 1 && c.w === 390, "upright, a post is the full width as before: " + JSON.stringify(c));
+  });
   await step(d, "event: the Showroom banner opens the tournament, its gallery and the enter sheet", async () => {
     const mk = await fetch(B + "/api/admin/events", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + token },
       body: JSON.stringify({ slug: "e2e-poster", title: "E2E Poster Tournament", brief: "A poster.", format: "bracket", published: true, opensAt: Date.now() - 1000, submitDays: 7 }) });

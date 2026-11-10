@@ -44,5 +44,10 @@ for (const c of [".mbcard", ".mbgrid", ".mbrow", ".mbname", ".mbempty", ".pasteb
   t(c + " is gone", !css.includes(c + "{") && !css.includes(c + " ") && !css.includes(c + ","));
 t("and don't touch .bcard", !/\.bcard img\s*\{/.test(css));
 
+console.log("\nONE POST AT A TIME, LIKE INSTAGRAM (2026-11-10)");
+{ const bare = css.replace(/\/\*[\s\S]*?\*\//g, ""), cols = [...bare.matchAll(/\.sr-grid(?:\.sr-wall)?\{[^}]*columns:\s*([^;}]+)/g)].map((m) => m[1].trim());
+  t("the Showroom is one column at every width below the computer's gallery — never two posts side by side", cols.length > 0 && cols.every((c) => c === "1" || c === "auto"));
+  t("  a phone on its side or a tablet gets a centred column, not the full width", /@media\(min-width:601px\)\{\.sr-grid\{max-width:min\(560px,max\(360px,100vh\)\);margin-left:auto;margin-right:auto\}\}/.test(bare)); }
+
 console.log("\n" + "=".repeat(46));
 console.log(pass + " passed, " + fail + " failed");
