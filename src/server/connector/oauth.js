@@ -70,15 +70,18 @@ const mcpRedirectOk = (u) => !!mcpAppFor(u);;
    (developers.google.com/connected-apps/mcp/oauth). That host serves every developer's app, not only Jorge's Gemini —
    a stranger's project there could ask for a code too. So the shape alone opens nothing: an address must be PINNED.
    The owner opens the door (10 minutes, Admin → Systems → Add LABS to Gemini); the first registration in that window
-   pins its addresses and shuts the door. After that, only those exact addresses are Gemini. */
-db.exec(`CREATE TABLE IF NOT EXISTS mcp_gemini (uri TEXT PRIMARY KEY, pinned_by INTEGER, pinned_at INTEGER NOT NULL);
+   pins its addresses and shuts the door. After that, only those exact addresses are Gemini.
+   A pin is PROVISIONAL until the owner's Allow lands on that exact address (security review, same day): a stranger
+   polling the registration door could take the window before the owner's own Gemini does. An unapproved pin lasts
+   15 minutes, is dropped when the door is opened again, and never becomes Gemini without the owner's tap. */
+db.exec(`CREATE TABLE IF NOT EXISTS mcp_gemini (uri TEXT PRIMARY KEY, pinned_by INTEGER, pinned_at INTEGER NOT NULL, approved INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS mcp_door (app TEXT PRIMARY KEY, until INTEGER NOT NULL, opened_by INTEGER)`);
-const MCP_DOOR_MS = 10 * 60000;
+const MCP_DOOR_MS = 10 * 60000, MCP_PIN_WAIT_MS = 15 * 60000;
 function mcpGeminiShape(u) {
   try { const x = new URL(String(u)); return x.protocol === "https:" && x.hostname === "oauth-redirect.googleusercontent.com" && !x.username && !x.password && !x.port && !x.search && !x.hash && /^\/(r|a)\/[A-Za-z0-9._~-]{1,200}$/.test(x.pathname); }
   catch (e) { return false; }
 }
-const mcpGeminiPinned = (u) => !!db.prepare(`SELECT 1 FROM mcp_gemini WHERE uri = ?`).get(String(u));
+const mcpGeminiPinned = (u) => !!db.prepare(`SELECT 1 FROM mcp_gemini WHERE uri = ? AND (approved = 1 OR pinned_at > ?)`).get(String(u), Date.now() - MCP_PIN_WAIT_MS);
 const mcpGeminiDoor = () => { const d = db.prepare(`SELECT until, opened_by FROM mcp_door WHERE app = 'gemini'`).get(); return d && d.until > Date.now() ? d : null; };
 const mcpLimit = rateLimit({ max: 30, windowMs: 600000 });
 
@@ -143,7 +146,7 @@ app.post("/oauth/register", mcpLimit, (req, res) => {
     const door = mcpGeminiDoor();
     if (!uris.every(mcpGeminiPinned)) {
       if (!door) return res.status(400).json({ error: "invalid_redirect_uri", error_description: "Gemini isn't expected right now. In LABS: Admin → Systems → Connected apps → Add LABS to Gemini, then connect within ten minutes." });
-      for (const u of uris) db.prepare(`INSERT OR IGNORE INTO mcp_gemini (uri, pinned_by, pinned_at) VALUES (?,?,?)`).run(u, door.opened_by, Date.now());
+      for (const u of uris) db.prepare(`INSERT INTO mcp_gemini (uri, pinned_by, pinned_at) VALUES (?,?,?) ON CONFLICT(uri) DO UPDATE SET pinned_by = excluded.pinned_by, pinned_at = excluded.pinned_at`).run(u, door.opened_by, Date.now());
       db.prepare(`DELETE FROM mcp_door WHERE app = 'gemini'`).run();
       try { db.prepare(`INSERT INTO admin_log (admin_id, action, target, detail, created_at) VALUES (?,?,?,?,?)`).run(door.opened_by, "connector gemini pinned", "Gemini", JSON.stringify({ addresses: uris.length }), Date.now()); } catch {}
     }
@@ -196,6 +199,7 @@ app.post("/oauth/approve", auth, admin, mcpLimit, (req, res) => {
   if (!client || !JSON.parse(client.redirect_uris).includes(String(redirect_uri))) return res.status(400).json({ error: "That app isn't known." });
   if (client.name === "Gemini" && !mcpGeminiPinned(redirect_uri)) return res.status(400).json({ error: "That Gemini connection was forgotten in Admin → Systems. Add LABS to Gemini again." });
   if (!/^[A-Za-z0-9_-]{43,128}$/.test(String(code_challenge || ""))) return res.status(400).json({ error: "PKCE is required." });
+  if (client.name === "Gemini") db.prepare(`UPDATE mcp_gemini SET approved = 1 WHERE uri = ?`).run(String(redirect_uri));   // the owner's own tap is what makes a pin stay
   const code = mcpRandom("labs_code_");
   db.prepare(`DELETE FROM mcp_codes WHERE expires_at < ?`).run(Date.now());
   db.prepare(`INSERT INTO mcp_codes (code, client_id, user_id, redirect_uri, challenge, expires_at) VALUES (?,?,?,?,?,?)`)
@@ -222,6 +226,7 @@ app.post("/oauth/token", mcpLimit, express.urlencoded({ extended: false, limit: 
     const verifier = String(b.code_verifier || "");
     if (createHash("sha256").update(verifier).digest("base64url") !== row.challenge) return fail("invalid_grant", "PKCE check failed.");
     const client = db.prepare(`SELECT name FROM mcp_clients WHERE id = ?`).get(row.client_id);
+    if (client?.name === "Gemini" && !mcpGeminiPinned(row.redirect_uri)) return fail("invalid_grant", "That Gemini connection was forgotten. Connect again.");   // a code approved just before Forget buys nothing
     return res.json(mcpIssue(row.user_id, row.client_id, client?.name || "Claude"));
   }
   if (b.grant_type === "refresh_token") {
@@ -244,7 +249,7 @@ app.get("/api/admin/connectors", auth, admin, (req, res) => {
   const rows = db.prepare(`SELECT t.id, t.name, t.client_id, t.created_at, t.expires_at, t.last_used_at, t.calls, u.username FROM mcp_tokens t JOIN users u ON u.id = t.user_id
     WHERE t.revoked = 0 AND t.expires_at > ? ORDER BY t.created_at DESC LIMIT 20`).all(Date.now());
   const door = mcpGeminiDoor();
-  res.json({ url: baseUrl(req) + "/mcp", gemini: { openUntil: door ? door.until : null, pinned: db.prepare(`SELECT COUNT(*) n FROM mcp_gemini`).get().n }, keys: rows.map((r) => ({ id: r.id, name: r.name, by: r.username, pasted: r.client_id === "pasted", createdAt: r.created_at, expiresAt: r.expires_at, lastUsedAt: r.last_used_at, calls: r.calls })) });
+  res.json({ url: baseUrl(req) + "/mcp", gemini: { openUntil: door ? door.until : null, pinned: db.prepare(`SELECT COUNT(*) n FROM mcp_gemini WHERE approved = 1`).get().n }, keys: rows.map((r) => ({ id: r.id, name: r.name, by: r.username, pasted: r.client_id === "pasted", createdAt: r.created_at, expiresAt: r.expires_at, lastUsedAt: r.last_used_at, calls: r.calls })) });
 });
 /* A pasted key (2026-10-28, "help me connect to Manus"): some apps take a server
    address and a key in a header instead of signing in. Owner only (not in
@@ -263,12 +268,13 @@ app.post("/api/admin/connectors/key", auth, admin, mcpLimit, (req, res) => {
 /* Gemini's door (owner only — not in MOD_MAY): open it for ten minutes, or forget Gemini altogether (its addresses and its keys). */
 app.post("/api/admin/connectors/gemini/open", auth, admin, mcpLimit, (req, res) => {
   const until = Date.now() + MCP_DOOR_MS;
+  db.prepare(`DELETE FROM mcp_gemini WHERE approved = 0`).run();   // whoever took the last window without the owner's Allow is out
   db.prepare(`INSERT INTO mcp_door (app, until, opened_by) VALUES ('gemini', ?, ?) ON CONFLICT(app) DO UPDATE SET until = excluded.until, opened_by = excluded.opened_by`).run(until, req.user.id);
   auditAdmin(req, "connector gemini door opened");
   res.json({ ok: true, openUntil: until });
 });
 app.delete("/api/admin/connectors/gemini", auth, admin, (req, res) => {
-  db.exec(`DELETE FROM mcp_gemini; DELETE FROM mcp_door WHERE app = 'gemini'`);
+  db.exec(`DELETE FROM mcp_gemini; DELETE FROM mcp_door WHERE app = 'gemini'; DELETE FROM mcp_codes WHERE client_id IN (SELECT id FROM mcp_clients WHERE name = 'Gemini')`);
   const cut = db.prepare(`UPDATE mcp_tokens SET revoked = 1 WHERE name = 'Gemini' AND client_id != 'pasted' AND revoked = 0`).run().changes;
   auditAdmin(req, "connector gemini forgotten");
   res.json({ ok: true, disconnected: cut });
