@@ -1,5 +1,8 @@
 
 /* ================================================================
+   THE POLICIES · v1.3 — 2026-11-14 (v1.3: the company behind LABS is named —
+   TNL LABS LLC, formed in Virginia that day — in Terms, Privacy, Contact and
+   the footer; LEGAL_NAME is the one place it's typed).
    THE POLICIES · v1.2 — 2026-10-29 (v1.2: the days you use the app, slow-request
    logs, xAI's Grok beside Claude. v1.1: caught up with the app — signing in
    with Google/Apple/Facebook, no throwaway emails, one vote per phone and the
@@ -15,7 +18,11 @@
    SUPPORT_EMAIL (Railway → Variables) is the inbox shown everywhere.
 ================================================================ */
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@tnllabs.com";
-const POLICY_UPDATED = "October 29, 2026";
+const POLICY_UPDATED = "November 14, 2026";
+/* The company that runs LABS (2026-11-14). The app is still LABS everywhere; the legal name shows only where
+   the law wants the company named — policies, the footer's ©, event rules. Typed here and nowhere else
+   (test/naming.test.mjs checks). */
+const LEGAL_NAME = "TNL LABS LLC", LEGAL_STATE = "Virginia";
 const POLICY_PAGES = [
   ["/shop", "Shop"], ["/terms", "Terms"], ["/privacy", "Privacy"],
   ["/policies", "Shipping & returns"], ["/contact", "Contact"],
@@ -24,7 +31,7 @@ const POLICY_PAGES = [
 /* The footer every public page wears (lookPage appends it). */
 function lookFoot() {
   return `<footer class="foot">${POLICY_PAGES.map(([h, t]) => `<a href="${h}">${t}</a>`).join("")}
-<div class="cap">© ${new Date().getFullYear()} LABS · <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></div></footer>`;
+<div class="cap">© ${new Date().getFullYear()} ${LEGAL_NAME} · <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></div></footer>`;
 }
 
 const feeRange = () => {
@@ -52,7 +59,7 @@ app.get("/terms", (_req, res) => policyPage(res, {
   path: "/terms", title: "Terms of service", eyebrow: "Terms",
   lead: "The rules for using LABS — the app at tnllabs.com, its Market and its events. By making an account or buying something here, you agree to them.",
   sections: [
-    ["Who we are", `<p>LABS is a social platform and marketplace for creatives, run by LABS (“we”, “us”). Reach us any time at ${mail()}.</p>`],
+    ["Who we are", `<p>LABS is a social platform and marketplace for creatives, run by ${LEGAL_NAME}, a ${LEGAL_STATE} limited liability company (“we”, “us”). Reach us any time at ${mail()}.</p>`],
     ["Your account", `<ul><li>You must be at least 13 to make an account, and at least 18 (or have a parent or guardian's permission) to buy or sell.</li>
 <li>Give a real email address you can open — temporary or throwaway inboxes can't make an account — and keep your password to yourself. You can also sign in with Google, Apple or Facebook where it's offered. You're responsible for what happens on your account.</li>
 <li>One person per account, and it's yours alone — don't sell, buy or hand over accounts or usernames. Usernames that impersonate someone, or are only held to sell, can be reclaimed.</li>
@@ -75,7 +82,7 @@ app.get("/terms", (_req, res) => policyPage(res, {
     ["Copyright complaints", `<p>If something here infringes your copyright, email ${mail()} with the link, what work it copies, and your contact details. We'll take it down and tell the poster, who can reply if they think it's a mistake.</p>`],
     ["Ending", `<p>You can stop using LABS and ask us to delete your account at any time (see <a href="/privacy#s6">Privacy</a>). We can suspend or close an account that breaks these terms; open orders still have to be shipped or refunded.</p>`],
     ["The legal part", `<p>LABS is provided “as is”. We work hard to keep it running and safe but can't promise it will always be available or error-free. To the extent the law allows, we aren't liable for indirect or consequential losses, and our total liability to you is limited to the greater of the fees we earned from your orders in the last 12 months or $100. Nothing here limits rights you have under consumer law that can't be waived.</p>
-<p>These terms are governed by the laws of the United States and of the state where LABS is based. If we change them in a way that matters, we'll say so in the app before the change takes effect.</p>`],
+<p>These terms are governed by the laws of the United States and of the Commonwealth of ${LEGAL_STATE}, where ${LEGAL_NAME} is based. If we change them in a way that matters, we'll say so in the app before the change takes effect.</p>`],
   ],
 }));
 
@@ -101,7 +108,7 @@ app.get("/privacy", (_req, res) => policyPage(res, {
     ["Your choices", `<ul><li>Edit or delete your posts and profile in the app at any time.</li>
 <li>To get a copy of your data or delete your account — including anything that came from signing in with Google, Apple or Facebook — email ${mail()} from your account's email. We'll do it within 30 days. We keep order records the law requires (usually up to 7 years) and backups roll off within 30 days.</li></ul>`],
     ["Kids", `<p>LABS isn't for children under 13 and we don't knowingly collect their data. If you think a child has an account, email us and we'll remove it.</p>`],
-    ["Changes and contact", `<p>If this policy changes in a way that matters, we'll say so in the app. Questions: ${mail()}.</p>`],
+    ["Changes and contact", `<p>If this policy changes in a way that matters, we'll say so in the app. LABS is run by ${LEGAL_NAME}. Questions: ${mail()}.</p>`],
   ],
 }));
 
@@ -137,7 +144,7 @@ app.get("/contact", (_req, res) => {
 <p class="p">Questions, a problem with an order, a report, or a copyright complaint — email us and a real person answers within 2 business days.</p>
 <a class="btn acc" href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
 <section class="pol"><h2>Order problems</h2><p>Include your order number and username. Start by messaging the seller — see <a href="/policies#s4">If something goes wrong</a>.</p></section>
-<section class="pol"><h2>About LABS</h2><p>Social media by creatives, for creatives: share work, collaborate, enter events, and buy and sell in the Market. Based in the United States.</p></section>`,
+<section class="pol"><h2>About LABS</h2><p>Social media by creatives, for creatives: share work, collaborate, enter events, and buy and sell in the Market. Run by ${LEGAL_NAME}, based in ${LEGAL_STATE}, United States.</p></section>`,
   }));
 });
 
