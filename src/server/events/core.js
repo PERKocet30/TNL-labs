@@ -1,5 +1,8 @@
 
 /* ================================================================
+   EVENTS v1.2 — 2026-11-14 (weighted votes: with `weighted` on, a vote
+   counts by the voter's level — VOTE_WEIGHT in db.js — and the tallies
+   add the weights).
    EVENTS v1.1 — 2026-10-07. The engine behind TNL's events. The first
    is the graphic design / art tournament.
 
@@ -99,6 +102,11 @@ const EV_DAY = 86400000;
    "resets at midnight" means midnight for the people running it. */
 /* 2026-10-28, "make it a rule you need a profile pic to vote": on for every event unless an admin switches it off. */
 if (!db.prepare(`PRAGMA table_info(events)`).all().some((c) => c.name === "require_avatar")) db.exec(`ALTER TABLE events ADD COLUMN require_avatar INTEGER NOT NULL DEFAULT 1`);
+/* 2026-11-14, weighted votes: an event can count each vote by the voter's level when they cast it.
+   Off for every event made before; the weight is kept on the vote, so a level change later doesn't rewrite the past. */
+if (!db.prepare(`PRAGMA table_info(events)`).all().some((c) => c.name === "weighted")) db.exec(`ALTER TABLE events ADD COLUMN weighted INTEGER NOT NULL DEFAULT 0`);
+if (!db.prepare(`PRAGMA table_info(event_votes)`).all().some((c) => c.name === "weight")) db.exec(`ALTER TABLE event_votes ADD COLUMN weight INTEGER NOT NULL DEFAULT 1`);
+const evVoteWeight = (ev, user) => (ev.weighted ? voteWeightFor(user?.rep || 0) : 1);
 const evDayKey = (t = Date.now()) => Number(new Date(t).toLocaleDateString("en-CA", { timeZone: "America/New_York" }).replace(/-/g, ""));
 const evJSON = (s, d) => { try { return JSON.parse(s); } catch { return d; } };
 const evRow = (idOrSlug) => typeof idOrSlug === "number"
@@ -165,7 +173,7 @@ function advanceSchedule(sched, t = Date.now()) {
 const liveEntries = (evId) => db.prepare(`SELECT * FROM event_entries WHERE event_id = ? AND dq_reason IS NULL ORDER BY created_at`).all(evId);
 const votesFor = (evId, stage) => {
   const m = new Map();
-  for (const r of db.prepare(`SELECT entry_id, COUNT(*) n FROM event_votes WHERE event_id = ? AND stage = ? GROUP BY entry_id`).all(evId, stage)) m.set(r.entry_id, r.n);
+  for (const r of db.prepare(`SELECT entry_id, SUM(weight) n FROM event_votes WHERE event_id = ? AND stage = ? GROUP BY entry_id`).all(evId, stage)) m.set(r.entry_id, r.n);
   return m;
 };
 const isDQ = (entryId) => !!db.prepare(`SELECT dq_reason FROM event_entries WHERE id = ?`).get(entryId)?.dq_reason;

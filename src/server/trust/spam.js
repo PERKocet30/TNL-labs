@@ -1,5 +1,5 @@
 /* ================================================================
-   SPAM CHECK v1.1 — 2026-10-28 (a Mod can't remove the owner or another Mod). v1.0 — 2026-10-27. "Any account with multiple linked
+   SPAM CHECK v1.2 — 2026-11-14 (a removed vote keeps its weight, so a restore puts it back as it was). v1.1 — 2026-10-28 (a Mod can't remove the owner or another Mod). v1.0 — 2026-10-27. "Any account with multiple linked
    accounts needs to be deleted and their vote disregarded. Spam
    accounts… I'll manually do. I don't like my member count being filled
    with bots." Admin-only, enforced here.
@@ -27,7 +27,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS removed_votes (
   voter_id INTEGER NOT NULL, created_at INTEGER NOT NULL, device TEXT NOT NULL DEFAULT '',
   removed_at INTEGER NOT NULL, removed_by INTEGER
 )`);
-try { db.exec(`ALTER TABLE users ADD COLUMN spam_at INTEGER`); } catch {}   // when an admin removed it as spam (null: never)
+try { db.exec(`ALTER TABLE users ADD COLUMN spam_at INTEGER`); } catch {}
+try { db.exec(`ALTER TABLE removed_votes ADD COLUMN weight INTEGER NOT NULL DEFAULT 1`); } catch {}   // 2026-11-14: weighted votes   // when an admin removed it as spam (null: never)
 
 const SPAM_NEAR_MS = 2 * 3600000;   // "joined within … of each other" counts inside two hours
 function spamGroups(evId) {
@@ -98,8 +99,8 @@ app.post("/api/admin/spam/remove", auth, admin, rateLimit({ max: 60, windowMs: 6
       const u = q.userByName.get(n);
       if (!u) continue;
       if (u.is_admin || u.id === req.user.id || (u.is_mod && !req.user.is_admin)) { skipped.push(n); continue; }
-      const moved = db.prepare(`INSERT INTO removed_votes (event_id, stage, matchup, entry_id, voter_id, created_at, device, removed_at, removed_by)
-        SELECT event_id, stage, matchup, entry_id, voter_id, created_at, COALESCE(device, ''), ?, ? FROM event_votes WHERE voter_id = ?`).run(now, req.user.id, u.id).changes;
+      const moved = db.prepare(`INSERT INTO removed_votes (event_id, stage, matchup, entry_id, voter_id, created_at, device, removed_at, removed_by, weight)
+        SELECT event_id, stage, matchup, entry_id, voter_id, created_at, COALESCE(device, ''), ?, ?, weight FROM event_votes WHERE voter_id = ?`).run(now, req.user.id, u.id).changes;
       db.prepare(`DELETE FROM event_votes WHERE voter_id = ?`).run(u.id);
       db.prepare(`UPDATE users SET suspended = 1, spam_at = ? WHERE id = ?`).run(now, u.id);
       db.prepare(`DELETE FROM sessions WHERE user_id = ?`).run(u.id);
@@ -118,8 +119,8 @@ app.post("/api/admin/spam/restore", auth, admin, rateLimit({ max: 60, windowMs: 
     for (const n of names) {
       const u = q.userByName.get(n);
       if (!u || !u.spam_at) continue;
-      votes += db.prepare(`INSERT OR IGNORE INTO event_votes (event_id, stage, matchup, entry_id, voter_id, created_at, device)
-        SELECT event_id, stage, matchup, entry_id, voter_id, created_at, device FROM removed_votes WHERE voter_id = ?`).run(u.id).changes;
+      votes += db.prepare(`INSERT OR IGNORE INTO event_votes (event_id, stage, matchup, entry_id, voter_id, created_at, device, weight)
+        SELECT event_id, stage, matchup, entry_id, voter_id, created_at, device, weight FROM removed_votes WHERE voter_id = ?`).run(u.id).changes;
       db.prepare(`DELETE FROM removed_votes WHERE voter_id = ?`).run(u.id);
       db.prepare(`UPDATE users SET suspended = 0, spam_at = NULL WHERE id = ?`).run(u.id);
       accounts++;
