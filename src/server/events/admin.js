@@ -1,6 +1,6 @@
 
 /* ================================================================
-   EVENTS v1.5 — 2026-11-14 (weighted votes: the switch, and the rules say so). v1.4 — 2026-11-05 (resultsMail in the admin view). v1.3 — 2026-10-14 (an unused field list out). v1.2 — 2026-10-12 (also: `current`, so admin can show the link to send). Running an event (admin only, enforced
+   EVENTS v1.6 — 2026-11-14 (the rules name the sponsor by its legal name). v1.5 — 2026-11-14 (weighted votes: the switch, and the rules say so). v1.4 — 2026-11-05 (resultsMail in the admin view). v1.3 — 2026-10-14 (an unused field list out). v1.2 — 2026-10-12 (also: `current`, so admin can show the link to send). Running an event (admin only, enforced
    here) and its public pages: /e/:slug and /e/:slug/rules.
    v1.2: the "entries are open" email to every member (its switch,
    its progress; the sending is in server/events/mail.js).
@@ -170,7 +170,7 @@ function evDefaultRules(ev) {
   return [
     `${ev.title} — Official Rules`,
     `NO PURCHASE OR PAYMENT NECESSARY TO ENTER OR WIN. A purchase will not improve your chances. This is a contest of skill; chance plays no part in picking the winner.`,
-    `Sponsor. LABS ("LABS"), tnllabs.com.`,
+    `Sponsor. ${LEGAL_NAME} ("LABS"), tnllabs.com.`,
     `Who can enter. You must be 18 or older and have a LABS account. LABS staff, this event's judges and their households can't enter. Void where prohibited.`,
     `Dates. Entries open ${evDate(at("submit").start)} and close ${evDate(at("submit").end)}. Voting runs until the final, which ends ${evDate(final.end)}. Times are US Eastern.`,
     `How to enter. Post one piece through the event page in the app. One entry per person; you can withdraw and replace it until entries close.`,

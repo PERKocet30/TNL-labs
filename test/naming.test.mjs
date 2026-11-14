@@ -1,3 +1,4 @@
+// NAMING v1.1 — 2026-11-14 (the legal name, TNL LABS LLC, is allowed once: LEGAL_NAME in the policies).
 // NAMING v1.0 — 2026-10-18: "Everything in the app should reference LABS not
 // TNL. TNL is a separate brand." Nothing a member, a buyer, a link preview,
 // an email or the admin shows says "TNL" — the app, its pages and its mail
@@ -10,6 +11,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/<!--[\s\S]*?-->/g, "").split("\n").map((l) => /^\s*\/\//.test(l) ? "" : l.replace(/(^|[^:"'`\\])\/\/[^"'`]*$/, "$1")).join("\n");
+// 2026-11-14: the one exception — the company's legal name, typed once (LEGAL_NAME in server/pages/policies.js).
+const LEGAL = "TNL LABS LLC";
 const WORD = /(?<![\w.@/-])TNL(?![\w])/g;
 const files = [
   ...(await import("../src/app/order.mjs")).APP.map((f) => "src/app/" + f), ...(await import("../src/server/order.mjs")).SERVER.map((f) => "src/server/" + f),
@@ -18,13 +21,15 @@ const files = [
 ];
 const hits = [];
 for (const f of files) {
-  const lines = strip(readFileSync(join(ROOT, f), "utf8")).split("\n");
+  const lines = strip(readFileSync(join(ROOT, f), "utf8")).replaceAll(LEGAL, "").split("\n");
   lines.forEach((l, i) => { if (WORD.test(l)) hits.push(`${f}:${i + 1}: ${l.trim().slice(0, 100)}`); WORD.lastIndex = 0; });
 }
 console.log("\nTHE APP IS LABS");
 t("no \"TNL\" anywhere members, buyers, previews, emails or admin read", hits.length === 0);
 hits.slice(0, 10).forEach((h) => console.log("       " + h));
-t("not \"TNL LABS\" either", files.every((f) => !strip(readFileSync(join(ROOT, f), "utf8")).includes("TNL LABS")));
+t("not \"TNL LABS\" either", files.every((f) => !strip(readFileSync(join(ROOT, f), "utf8")).replaceAll(LEGAL, "").includes("TNL LABS")));
+t("the legal name is typed once, in the policies", files.filter((f) => strip(readFileSync(join(ROOT, f), "utf8")).includes(LEGAL)).join() === "src/server/pages/policies.js"
+  && strip(readFileSync(join(ROOT, "src/server/pages/policies.js"), "utf8")).split(LEGAL).length === 2);
 const head = readFileSync(join(ROOT, "src/app/shell/head.html"), "utf8");
 t("the page title and link previews say LABS", head.includes("<title>LABS") && head.includes('content="LABS'));
 t("installed on a phone it's called LABS", JSON.parse(readFileSync(join(ROOT, "public/manifest.webmanifest"), "utf8")).name === "LABS");

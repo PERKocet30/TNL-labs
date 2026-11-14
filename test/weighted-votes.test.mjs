@@ -85,6 +85,7 @@ try {
 
   console.log("\nTHE RULES SAY SO");
   const rules = await (await fetch(`http://127.0.0.1:${PORT}/e/music/rules`)).text();
+  t("the rules name the sponsor by its legal name (2026-11-14)", /Sponsor\. TNL LABS LLC \((&quot;|")LABS/.test(rules));
   t("the rules page explains weighted votes and the numbers", /weighted by level/.test(rules) && /Leadership 100/.test(rules));
 
   console.log("\nOFF BY DEFAULT ON THE SERVER");
