@@ -1,5 +1,7 @@
 /* ================================================================
-   LINK PREVIEWS — 2026-09-29 v1.0
+   LINK PREVIEWS — v1.1 2026-11-14 (a page built to be slow to read can't
+   hold the server up: tags are found by position — metaTags, pageTitle) ·
+   2026-09-29 v1.0
    Paste a link in a chat or a lab and a card appears under it (title,
    site, image), fetched once by the server and stored on the message.
 
@@ -80,22 +82,45 @@ const unescapeHtml = (s) => String(s || "").replace(/&(#x[0-9a-f]+|#\d+|amp|lt|g
 
 const siteOf = (url) => { try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return ""; } };
 
+/* Reading someone else's page (v1.1, 2026-11-14). One pattern run across a
+   whole page can be made to take minutes by a page written for it (ReDoS),
+   and the server does one thing at a time — everyone waits. So tags are
+   found by position (indexOf), each one is cut to a short piece, and only
+   that piece meets a pattern. The time is the page's length, whatever it says. */
+const META_ATTR = /([a-z:-]{1,20})\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+function metaTags(html) {
+  const out = new Map(), low = html.toLowerCase();
+  for (let i = low.indexOf("<meta"), n = 0; i !== -1 && n < 400; i = low.indexOf("<meta", i + 5), n++) {
+    const end = html.indexOf(">", i);
+    if (end === -1) break;
+    if (end - i > 2000) continue;
+    const at = {};
+    for (const m of html.slice(i + 5, end).matchAll(META_ATTR)) at[m[1].toLowerCase()] ??= m[2] ?? m[3] ?? "";
+    const key = String(at.property || at.name || "").toLowerCase();
+    if (key && at.content && !out.has(key)) out.set(key, at.content);
+  }
+  return out;
+}
+function pageTitle(html) {
+  const low = html.toLowerCase(), a = low.indexOf("<title");
+  if (a === -1) return "";
+  const b = html.indexOf(">", a), c = b === -1 ? -1 : low.indexOf("</title", b);
+  return b === -1 || c === -1 ? "" : html.slice(b + 1, Math.min(c, b + 1 + 600));
+}
+
 /* Title, site, description and image for a link — or throws. */
 async function previewFor(url) {
   if (/\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(url)) return { url, site: siteOf(url), title: "", description: "", image: url };
   const r = await safeGet(url);
   const html = /html|xml/i.test(r.type) || !r.type ? r.body : "";
-  const meta = (prop) => {
-    const m = new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']+)["']`, "i").exec(html)
-      || new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${prop}["']`, "i").exec(html);
-    return m ? unescapeHtml(m[1]) : "";
-  };
+  const tags = metaTags(html);
+  const meta = (prop) => unescapeHtml(tags.get(prop) || "");
   let image = meta("og:image") || meta("twitter:image") || meta("og:image:url");
   try { image = image ? new URL(image, r.url).href : ""; } catch { image = ""; }
   if (!/^https:\/\//i.test(image)) image = "";
   return {
     url, site: (meta("og:site_name") || siteOf(url)).slice(0, 60),
-    title: (meta("og:title") || meta("twitter:title") || unescapeHtml((/<title[^>]*>([^<]+)<\/title>/i.exec(html) || [, ""])[1])).slice(0, 140),
+    title: (meta("og:title") || meta("twitter:title") || unescapeHtml(pageTitle(html))).slice(0, 140),
     description: (meta("og:description") || meta("description")).slice(0, 200),
     image: image.slice(0, 600) || null,
   };

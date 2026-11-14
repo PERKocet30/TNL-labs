@@ -350,7 +350,8 @@ function isBlocked(aId, bId) {
 }
 
 /* ================================================================
-   PASSWORD RESET
+   PASSWORD RESET  (2026-11-14: on the live site the answer doesn't wait
+   for the email, so it's as quick for an address with an account as without)
 ================================================================ */
 app.post("/api/auth/forgot", rateLimit({ max: 5, windowMs: 900000 }), rateLimitBy((req) => req.body?.email, { max: 5, windowMs: 3600000 }), async (req, res) => {
   const email = (req.body?.email || "").toString().trim();
@@ -363,6 +364,8 @@ app.post("/api/auth/forgot", rateLimit({ max: 5, windowMs: 900000 }), rateLimitB
   db.prepare(`INSERT INTO reset_tokens (token, user_id, expires_at, created_at) VALUES (?,?,?,?)`)
     .run(token, user.id, Date.now() + 3600000, Date.now());
   const url = `${baseUrl(req)}/reset?token=${token}`;
+  /* Waiting for the email made "there is an account" slower than "there isn't". */
+  if (ON_RAILWAY) { res.json({ ok: true }); sendResetEmail(user.email, user.display_name, url).catch((e) => console.error("[mail] reset", e.message)); return; }
   const mail = await sendResetEmail(user.email, user.display_name, url);
   // Same answer as "no such account" unless this is a laptop with no mail (server/core/guard).
   res.json(mailLinkOk(mail) ? { ok: true, resetUrl: url } : { ok: true });
