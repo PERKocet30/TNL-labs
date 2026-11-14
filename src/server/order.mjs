@@ -164,6 +164,7 @@ export const SERVER = [
   "connector/songs.js",
   "connector/insights-people.js",
   "connector/insights-shop.js",
+  "admin/assist.js",   // Chrome's built-in AI and Gemini, for the admin (2026-11-14); after insights-shop for INS_NOT_OURS
 
   // ui-signals — Echo's eyes for the signals above and the admin pages that had no tool
   "ui-signals/tools.js",
