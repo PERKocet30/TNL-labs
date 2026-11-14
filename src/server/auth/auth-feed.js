@@ -1,5 +1,5 @@
 /* ================================================================
-   AUTH  (connector keys accepted 2026-10-27; visit days 2026-10-29)
+   AUTH  (2026-11-14: signing in takes as long for a name nobody has as for one somebody has; connector keys accepted 2026-10-27; visit days 2026-10-29)
 ================================================================ */
 /* Checked on EVERY authenticated request. A suspension that only removes
    sessions is worthless the moment they log back in. */
@@ -178,6 +178,7 @@ function usersByEmail(email) {
   return db.prepare(`SELECT * FROM users WHERE LOWER(TRIM(email)) = ? ORDER BY id`).all(e.toLowerCase());
 }
 
+const NOBODY_HASH = bcrypt.hashSync(randomBytes(24).toString("hex"), 10);
 /* Sign in with a username or an email. Usernames can't contain "@"
    (see register), so anything shaped like an address is an email;
    a leading "@" on a handle is just how people type it. */
@@ -198,6 +199,9 @@ app.post("/api/auth/login", rateLimit({ max: 8, windowMs: 900000 }),
   for (const c of candidates) {
     if (await bcrypt.compare(password, c.password_hash)) { user = c; break; }
   }
+  /* Nobody by that name: check the password against a made-up one anyway, so
+     how long the answer takes doesn't say which names and emails have accounts. */
+  if (!candidates.length) await bcrypt.compare(password, NOBODY_HASH);
   if (!user) return res.status(401).json({ error: "Username or email and password don't match." });
   const token = randomBytes(24).toString("hex");
   q.createSession.run(token, user.id, Date.now());
