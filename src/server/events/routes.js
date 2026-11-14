@@ -1,5 +1,7 @@
 
 /* ================================================================
+   EVENTS v1.4 — 2026-11-14 (v1.4: weighted votes — each vote is stored with its
+   weight and the scoreboard adds them).
    EVENTS v1.3 — 2026-11-04 (v1.3: the country vote wait counts time
    spent in the app, not time since joining).
    EVENTS v1.2 — 2026-10-12 (v1.2: says which event is the current one,
@@ -102,7 +104,7 @@ function evBoard(ev, stage, cur, now = Date.now()) {
   const ids = [...evInPlay(ev, stage).ids];
   const count = (before) => {
     const m = new Map(ids.map((id) => [id, 0]));
-    for (const r of db.prepare(`SELECT entry_id, COUNT(*) n FROM event_votes WHERE event_id = ? AND stage = ? AND created_at <= ? GROUP BY entry_id`).all(ev.id, stage, before))
+    for (const r of db.prepare(`SELECT entry_id, SUM(weight) n FROM event_votes WHERE event_id = ? AND stage = ? AND created_at <= ? GROUP BY entry_id`).all(ev.id, stage, before))
       if (m.has(r.entry_id)) m.set(r.entry_id, r.n);
     return m;
   };
@@ -252,7 +254,9 @@ app.post("/api/events/:slug/vote", auth, rateLimit({ max: 120, windowMs: 60000, 
   const device = deviceOf(req);
   if (on && evSamePhone(ev, stage, entryId, req.user.id, device)) return res.status(403).json({ error: "This phone already voted for this piece today. One vote per phone." });
   const del = db.prepare(`DELETE FROM event_votes WHERE event_id = ? AND stage = ? AND voter_id = ? AND entry_id = ?`);
-  const add = db.prepare(`INSERT OR IGNORE INTO event_votes (event_id, stage, matchup, entry_id, voter_id, created_at, device) VALUES (?,?,?,?,?,?,?)`);
+  const weight = evVoteWeight(ev, q.userById.get(req.user.id));   // the voter's level now, kept on the vote
+  const ins = db.prepare(`INSERT OR IGNORE INTO event_votes (event_id, stage, matchup, entry_id, voter_id, created_at, device, weight) VALUES (?,?,?,?,?,?,?,?)`);
+  const add = { run: (...a) => ins.run(...a, weight) };
   db.exec("BEGIN");
   try {
     if (ev.format === "poll") {

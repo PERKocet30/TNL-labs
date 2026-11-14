@@ -805,6 +805,18 @@ export function levelFor(rep) {
   return LEVELS.reduce((a, l) => (rep >= l.at ? l : a), LEVELS[0]);
 }
 
+/* Weighted tournament votes (2026-11-14, Jorge: "votes of the people who've
+   contributed to the app the most will be valued the most"; "5 is too
+   little"). A vote in an event with `weighted` on counts this many times,
+   by the voter's level when they cast it. Contribution is the progression
+   ladder — rep only ever comes from other people, so this can't be farmed.
+   @type {Record<number, number>} */
+export const VOTE_WEIGHT = { 1: 1, 2: 5, 3: 15, 4: 40, 5: 100 };
+/** @param {number} rep @returns {number} */
+export function voteWeightFor(rep) {
+  return VOTE_WEIGHT[levelFor(rep || 0).id] || 1;
+}
+
 /* Commission by level. It starts at 10% and falls as the
    community vouches for you — the loyalty system paying out in money
    rather than badges.
