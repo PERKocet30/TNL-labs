@@ -603,7 +603,8 @@ GET    /api/admin/systems/google   (admin)
 GET    /api/admin/systems/meta   (admin)
 GET    /api/admin/assist   (admin)    # Chrome's built-in AI / Gemini for the admin: which engines there are
 GET    /api/admin/assist/health   (admin)    # the week's errors, glitches and slow requests as text (for Chrome's AI)
-POST   /api/admin/assist/health   (admin)    # the same, summarised by Gemini (GEMINI_API_KEY)
+POST   /api/admin/assist/health   (admin)    # the same, summarised by Gemini (GEMINI_API_KEY); kept in Knowledge for Echo
+POST   /api/admin/assist/health/keep   (admin)    # a summary Chrome's AI made, kept in Knowledge for Echo ("What went wrong, week by week")
 GET    /api/admin/weekly   (admin)
 PATCH  /api/admin/events/:id   (admin)
 POST   /api/admin/connectors/key   (admin)
