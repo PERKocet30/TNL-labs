@@ -1,4 +1,4 @@
-/* PROFILE v2026-10-28: a Lab Lead's profile says which labs they lead (tap → the lab). v2026-10-20: the head comes from the screen kit (app/core/kit.js); Follow is the black main action */
+/* PROFILE v2026-11-14: your own empty Work tab is one line and one black button, Post your first work (design language v2.2: an empty screen has one line and one button — 92 of 180 left an empty profile in a month). v2026-10-28: a Lab Lead's profile says which labs they lead (tap → the lab). v2026-10-20: the head comes from the screen kit (app/core/kit.js); Follow is the black main action */
 function workCardHTML(p, collab, K, pinned) {
   K = K || KIND;
   const accepted = p.collaborators.filter(c => c.status === "accepted");
@@ -76,6 +76,10 @@ function songMenu(t){
         if(PROFILE){PROFILE.pinnedTrack=d.pinnedTrack;PROFCACHE.delete(PROFILE.user.username)}
         toast(pinned?"Unpinned":"Pinned to the top");render()}catch(e){toast(e.message)}}});
 }
+/* Post your first work: the same + Post as the Get started list (gsPost). */
+(function wireProfileFirst(){
+  document.addEventListener("click",e=>{const b=e.target.closest("[data-pfirst]");if(!b)return;e.preventDefault();gsPost()});
+})();
 (function wireProfileMusic(){
   /* capture phase, like the post music chips — before anything else takes the tap */
   document.addEventListener("click",e=>{
@@ -150,6 +154,7 @@ function sheetHTML(){const u=PROFILE.user,l=levelFor(u.rep);
   :PTAB==="shop"?`<div class="mkt-grid" style="padding:14px 0 30px">${PROFLISTINGS===null?`${skel("tiles")}`:PROFLISTINGS.length?PROFLISTINGS.map(mktCardHTML).join(""):`<div class="empty">${mine?"Nothing listed yet. Head to Market → Sell to put something up.":"Not selling anything right now."}</div>`}</div>`
   :ld?`<div class="worklist asgrid">${[0,1,2].map(()=>`<div class="work skel"><div class="skelbar"></div></div>`).join("")}</div>`
   :list.length?`<div class="worklist ${K.grid?"asgrid":""}">${list.map(p=>workCardHTML(p,PTAB==="collabs",K,PTAB==="work"&&pins.includes(Number(p.id)))).join("")}</div>`
+  :PTAB==="work"&&mine&&!st.posts?`<div class="empty pf-first"><p>Your work lives here.</p><button class="btn pf-firstb" data-pfirst>Post your first work</button></div>`
   :`<div class="empty">${PTAB==="collabs"?"No collabs yet.":mine?K.empty+" Hit + Post and it lands here.":esc(K.empty)}</div>`}
 </div></div>`}
 
