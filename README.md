@@ -125,6 +125,7 @@ Server features: `core` (boot, guards, headers, live stream) · `auth` · `trust
 | `server/messages/core` · `groups` · `routes` | Messages v2: schema migration (groups; backup first), requests, replies, reactions, edit/unsend, forward, mute |
 | `server/posts/links` · `server/core/live` | link previews behind a DNS-level SSRF guard; the signed-in live stream, typing, presence, lab reactions and pins |
 | `server/labs/places` | Labs as places: `PLACES` (each lab's channels and home), #tags read from captions plus the old channel's tag for posts from before the cutover, and the lab feed / work / tags and #tag routes; pins from any of the lab's channels |
+| `server/admin/measures` | The dictionary (2026-11-15): one meaning for every number the admin, the Monday email, Echo and the connector read — `M` (members, joined, opened, took part, posted, work, feedback, messages, votes, collabs, orders, sales), `M_ACT` (what counts as taking part), `M_MEMBER` (suspended accounts aren't members), `M_SALE` (the pieces, never shipping), `mWindow` (the one period) and `MEASURES`, the name and one line for each (`GET /api/admin/measures`, printed under Analytics as What the numbers mean). A new number gets a line here first; `test/measures.test.mjs` fails when a page counts on its own. The screen register — one name per screen, with plain words — is `SCREENS` in `server/ui-signals/signals.js`. |
 | `server/admin/pulse-labs` | Admin · the direction: `/api/admin/direction` — each lab's work, talk and #tags, trending #tags, the tournament and what needs you about it, how people take part, and group chats members started themselves (`groupChatStats()`, counts only — also on `/api/admin/overview`; 2026-11-03). `LAB_NAME` must match `LABS` |
 | `server/admin/weekly` | The week: `/api/admin/weekly` (+ `/send`) and the Monday 13:00 UTC email to `ADMIN_EMAIL` — last week against the week before, every table, counts only, never a name. Uses `labName` from pulse-labs and `worstSpots` from watch |
 | `server/admin/v4` | Admin v4 (2026-10-20): the per-day series behind the charts with the period before, top work, the audience breakdown, every seller and every listing |
@@ -544,6 +545,7 @@ GET    /api/report/daily      (Bearer TNL_REPORT_KEY; off without it — the mor
 # admin
 GET    /api/admin/pulse?days=&tz=   (admin)  Home: numbers, series, needs-you
 GET    /api/admin/direction?days=&tz=   (admin)  Home: labs + #tags, the tournament, taking part, tournament needs
+GET    /api/admin/measures            (admin)  the dictionary: each number's name and what it counts (server/admin/measures.js)
 GET    /api/admin/series?days=&tz=   (admin)  per-day series for the charts, the period before, fees (server/admin/v4.js)
 GET    /api/admin/topwork?days=   (admin)  the work people reacted to most
 GET    /api/admin/audience?days=&tz=   (admin)  members by role and lab, hours people are on, verified, sellers

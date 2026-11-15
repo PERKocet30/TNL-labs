@@ -1,5 +1,5 @@
 /* ================================================================
-   THE WEEK · v1.1 — 2026-11-01 ("update my weekly notifications to match the
+   THE WEEK · v1.2 — 2026-11-15 (joined, confirmed and opened count members as the dictionary does, admin/measures.js). v1.1 — 2026-11-01 ("update my weekly notifications to match the
    current app"): who opened the app (visits, server/trust/visits), came back by
    visit as well as by action, #tags and the song most used in posts, Lab
    Leads instead of "generals", Instagram messages waiting for a reply, slow
@@ -38,16 +38,16 @@ const wkS = (n, w) => `${n.toLocaleString()} ${n === 1 ? w : /[^aeiou]y$/.test(w
 function weeklyApp(now) {
   const a = now - WK, b = now - 2 * WK;
   const both = (sql) => [wkN(sql, a, now), wkN(sql, b, a)];
-  const joined = both(`SELECT COUNT(*) n FROM users WHERE created_at >= ? AND created_at < ?`);
-  const confirmed = wkN(`SELECT COUNT(*) n FROM users WHERE created_at >= ? AND created_at < ? AND email_verified = 1`, a, now);
+  const joined = both(`SELECT COUNT(*) n FROM users WHERE ${M_MEMBER} AND created_at >= ? AND created_at < ?`);   // members, as the dictionary counts them
+  const confirmed = wkN(`SELECT COUNT(*) n FROM users WHERE ${M_MEMBER} AND created_at >= ? AND created_at < ? AND email_verified = 1`, a, now);
   const finished = wkN(`SELECT COUNT(*) n FROM users WHERE created_at >= ? AND created_at < ? AND COALESCE(avatar_url,'') <> '' AND COALESCE(bio,'') <> ''`, a, now);
   const firstPost = wkN(`SELECT COUNT(DISTINCT u.id) n FROM users u JOIN posts p ON p.author_id = u.id WHERE u.created_at >= ? AND u.created_at < ?`, a, now);
   const posted = both(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE created_at >= ? AND created_at < ?`);
   /* came back: members who joined the week before last and did something (post, like, comment, follow) last week */
-  const cohort = wkN(`SELECT COUNT(*) n FROM users WHERE created_at >= ? AND created_at < ?`, b, a);
+  const cohort = wkN(`SELECT COUNT(*) n FROM users WHERE ${M_MEMBER} AND created_at >= ? AND created_at < ?`, b, a);
   const dayA = Math.floor(a / 86400000), dayB = Math.floor(b / 86400000), dayNow = Math.floor(now / 86400000) + 1;
   /* opened the app signed in (member_days, since 2026-10-29) — the widest "active" there is */
-  const opened = [wkTry(`SELECT COUNT(DISTINCT user_id) n FROM member_days WHERE day >= ? AND day < ?`, dayA, dayNow), wkTry(`SELECT COUNT(DISTINCT user_id) n FROM member_days WHERE day >= ? AND day < ?`, dayB, dayA)];
+  const opened = [wkTry(`SELECT COUNT(DISTINCT user_id) n FROM member_days WHERE day >= ? AND day < ? AND user_id IN ${M_IS_MEMBER}`, dayA, dayNow), wkTry(`SELECT COUNT(DISTINCT user_id) n FROM member_days WHERE day >= ? AND day < ? AND user_id IN ${M_IS_MEMBER}`, dayB, dayA)];
   const visits = wkHas("member_days");
   const back = cohort ? wkN(`SELECT COUNT(DISTINCT u.id) n FROM users u WHERE u.created_at >= ? AND u.created_at < ? AND (
       ${visits ? `EXISTS (SELECT 1 FROM member_days d WHERE d.user_id = u.id AND d.day >= ${dayA}) OR ` : ""}EXISTS (SELECT 1 FROM posts p WHERE p.author_id = u.id AND p.created_at >= ?) OR EXISTS (SELECT 1 FROM likes l WHERE l.user_id = u.id AND l.created_at >= ?)

@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · insights (people)  v1.0 — 2026-10-29
+   LABS CONNECTOR · insights (people)  v1.1 — 2026-11-15 (lab names from the one list). v1.0 — 2026-10-29
    Grok, reading the connector: "The gaps are mainly the drop-off points,
    marketplace behaviour, and what happens after someone votes or posts
    once." Two admin GET routes, read-only, answered from what LABS already
@@ -108,7 +108,7 @@ app.get("/api/admin/insights/retention", auth, admin, (req, res) => {
   const group = (keyOf) => { const m = new Map(); for (const p of el7) { const f = firsts.get(p.id); if (!f) continue; const k = keyOf(f);
     const g = m.get(k) || { members: 0, stayed: 0 }; g.members++; if (insBack(p, 7)) g.stayed++; m.set(k, g); }
     return [...m].map(([k, g]) => ({ group: k, ...g, stayedPct: insPct(g.stayed, g.members) })).sort((a, b) => b.members - a.members); };
-  const labName = { hq: "General", pharmacy: "Visual", culture: "Music", fashion: "Fashion", akatsuki: "Anime", casino: "News", tna: "Business" };
+  const labName = LAB_NAME;   // one list of lab names (admin/pulse-labs.js)
   res.json({
     windowDays: days, joined: all.length,
     cameBack: { after1Day: back(1), after7Days: back(7), after30Days: back(30) },

@@ -1,5 +1,5 @@
 /* ================================================================
-   ADMIN v2.5 — 2026-11-09 (Needs you leaves out collab invites an admin sent: they wait on someone else, there's nothing to do about them from here). v2.4 — 2026-10-28 (record lists the labs they lead). v2.3 — 2026-10-28 (record says Mod; private notes owner-only). v2.2 — 2026-10-14 (People rows carry the member ID). What the dashboard runs on.
+   ADMIN v2.6 — 2026-11-15 (one meaning for every number: the dictionary, admin/measures.js). v2.5 — 2026-11-09 (Needs you leaves out collab invites an admin sent: they wait on someone else, there's nothing to do about them from here). v2.4 — 2026-10-28 (record lists the labs they lead). v2.3 — 2026-10-28 (record says Mod; private notes owner-only). v2.2 — 2026-10-14 (People rows carry the member ID). What the dashboard runs on.
    - /api/admin/pulse: the numbers that matter for a date range, each
      against the range before it, plus daily series and "needs you".
      (v2.1: labs, #tags, the tournament and how people take part moved
@@ -46,44 +46,26 @@ function auditAdmin(req, action) {
 const ADAY = 86400000;
 const PAID = `('paid','shipped','complete')`;
 const aone = (sql, ...p) => db.prepare(sql).get(...p)?.n ?? 0;
-/* Doing anything counts as active: posting, feedback, a like or reaction,
-   a message, a tournament vote (v2.1). Opening the app only counts from messaging v2 on (last_seen_at). */
-const ACTIVITY = `
-  SELECT author_id u, created_at t FROM posts
-  UNION ALL SELECT author_id, created_at FROM comments
-  UNION ALL SELECT user_id, created_at FROM likes
-  UNION ALL SELECT user_id, created_at FROM reactions
-  UNION ALL SELECT sender_id, created_at FROM dm_messages WHERE kind = 'msg'
-  UNION ALL SELECT voter_id, created_at FROM event_votes`;
+/* "Active" is Took part, as the dictionary says it (admin/measures.js, 2026-11-15): one list of
+   what counts, here, in the series, the audience, the overview and the Monday email. */
+const ACTIVITY = M_ACT;
 const feeOf = (o) => orderFee(o, o.seller_rep, o.seller_admin);   // the fee the order carries (core/guard, 2026-11-15)
 
 function windowStats(a, b) {
   const orders = db.prepare(`SELECT o.amount_cents, o.fee_cents, o.shipping_cents, u.rep seller_rep, u.is_admin seller_admin FROM orders o JOIN users u ON u.id = o.seller_id
     WHERE o.status IN ${PAID} AND o.created_at > ? AND o.created_at <= ?`).all(a, b);
   return {
-    signups: aone(`SELECT COUNT(*) n FROM users WHERE created_at > ? AND created_at <= ?`, a, b),
-    active: aone(`SELECT COUNT(DISTINCT u) n FROM (${ACTIVITY}) WHERE t > ? AND t <= ?`, a, b),
+    signups: M.joined(a, b), active: M.tookPart(a, b), opened: M.opened(a, b),
     posts: aone(`SELECT COUNT(*) n FROM posts WHERE created_at > ? AND created_at <= ?`, a, b),
-    work: aone(`SELECT COUNT(*) n FROM posts WHERE is_work = 1 AND created_at > ? AND created_at <= ?`, a, b),
-    feedback: aone(`SELECT (SELECT COUNT(*) FROM comments WHERE created_at > ?1 AND created_at <= ?2)
-      + (SELECT COUNT(*) FROM likes WHERE created_at > ?1 AND created_at <= ?2)
-      + (SELECT COUNT(*) FROM reactions WHERE created_at > ?1 AND created_at <= ?2) n`, a, b),
-    messages: aone(`SELECT COUNT(*) n FROM dm_messages WHERE kind = 'msg' AND created_at > ? AND created_at <= ?`, a, b),
-    collabs: aone(`SELECT COUNT(*) n FROM collaborators WHERE status = 'accepted' AND created_at > ? AND created_at <= ?`, a, b),
+    work: M.work(a, b), feedback: M.feedback(a, b), messages: M.messages(a, b), collabs: M.collabs(a, b),
     orders: orders.length,
-    gmv: orders.reduce((s, o) => s + o.amount_cents + o.shipping_cents, 0),
+    gmv: orders.reduce((s, o) => s + o.amount_cents, 0),   // Sales: the pieces, never shipping
     commission: orders.reduce((s, o) => s + feeOf(o), 0),
   };
 }
 
 app.get("/api/admin/pulse", auth, admin, (req, res) => {
-  const days = [7, 30, 90].includes(Number(req.query.days)) ? Number(req.query.days) : 30;
-  const tz = Math.max(-840, Math.min(840, Number(req.query.tz) || 0)) * 60000;   // Date#getTimezoneOffset, in ms
-  const now = Date.now();
-  // day buckets start at the admin's local midnight, `days` days back including today
-  const localMidnight = Math.floor((now - tz) / ADAY) * ADAY + tz;
-  const start = localMidnight - (days - 1) * ADAY;
-  const prevStart = start - days * ADAY;
+  const now = Date.now(), { days, start, prevStart } = mWindow(req.query, now);   // the period, as the dictionary says it
 
   const bucket = (sql, ...p) => {
     const out = new Array(days).fill(0);
@@ -92,12 +74,12 @@ app.get("/api/admin/pulse", auth, admin, (req, res) => {
   };
   const dayExpr = `CAST((created_at - ?1) / ${ADAY} AS INTEGER)`;
   const series = {
-    signups: bucket(`SELECT ${dayExpr} d, COUNT(*) n FROM users WHERE created_at >= ?1 GROUP BY d`),
-    active: bucket(`SELECT CAST((t - ?1) / ${ADAY} AS INTEGER) d, COUNT(DISTINCT u) n FROM (${ACTIVITY}) WHERE t >= ?1 GROUP BY d`),
+    signups: bucket(`SELECT ${dayExpr} d, COUNT(*) n FROM users WHERE ${M_MEMBER} AND created_at >= ?1 GROUP BY d`),
+    active: bucket(`SELECT CAST((t - ?1) / ${ADAY} AS INTEGER) d, COUNT(DISTINCT u) n FROM (${ACTIVITY}) WHERE t >= ?1 AND u IN ${M_IS_MEMBER} GROUP BY d`),
     posts: bucket(`SELECT ${dayExpr} d, COUNT(*) n FROM posts WHERE created_at >= ?1 GROUP BY d`),
     work: bucket(`SELECT ${dayExpr} d, COUNT(*) n FROM posts WHERE is_work = 1 AND created_at >= ?1 GROUP BY d`),
     messages: bucket(`SELECT ${dayExpr} d, COUNT(*) n FROM dm_messages WHERE kind = 'msg' AND created_at >= ?1 GROUP BY d`),
-    gmv: bucket(`SELECT ${dayExpr} d, SUM(amount_cents + shipping_cents) n FROM orders WHERE status IN ${PAID} AND created_at >= ?1 GROUP BY d`),
+    gmv: bucket(`SELECT ${dayExpr} d, SUM(${M_SALE}) n FROM orders WHERE status IN ${PAID} AND created_at >= ?1 GROUP BY d`),
   };
 
   const top = db.prepare(`
@@ -107,11 +89,9 @@ app.get("/api/admin/pulse", auth, admin, (req, res) => {
   res.json({
     days, start,
     now: windowStats(start, now), before: windowStats(prevStart, start),
-    seen: aone(`SELECT COUNT(*) n FROM users WHERE last_seen_at >= ?`, start),
+    seen: M.opened(start, now),   // Opened the app: member_days, the one meaning (it was last_seen_at, a third count)
     totals: {
-      members: aone(`SELECT COUNT(*) n FROM users WHERE suspended = 0`),   // suspended (spam) accounts aren't members (2026-10-27)
-      collabs: aone(`SELECT COUNT(*) n FROM collaborators WHERE status = 'accepted'`),
-      gmv: aone(`SELECT COALESCE(SUM(amount_cents + shipping_cents), 0) n FROM orders WHERE status IN ${PAID}`),
+      members: M.members(), collabs: M.collabs(), gmv: M.sales(),
     },
     series,
     top: top.map((t) => ({ username: t.username, displayName: t.display_name, avatarUrl: t.avatar_url || "", n: t.n })),

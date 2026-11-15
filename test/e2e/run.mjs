@@ -2569,7 +2569,7 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator(".rc h3", { hasText: "Needs you" }).count() === 1, "no work queue");
     ok(await p.locator(".kpi .s").count() >= 4, "the numbers don't say their share");
     ok(await p.locator(".line svg polyline.nw").count() === 1 && await p.locator(".line svg polyline.pv").count() === 1, "no line chart with last period behind");
-    ok(await p.locator(".rc h3", { hasText: "How people take part" }).count() === 1, "no taking-part panel");
+    ok(await p.locator(".rc h3", { hasText: "How members take part" }).count() === 1, "no taking-part panel");
     // 2026-10-20: on a computer, a grouped side menu with every section and no bottom bar (twelve since Systems and Instagram, 2026-10-26)
     // 2026-11-04: nine sections in five groups — Orders · Listings · Sellers are Market's tabs, Systems is Health's
     ok(await p.locator(".side .nv").count() === 12 && !(await p.locator(".bbar").isVisible()), "the side menu isn't the twelve grouped sections (Systems up front)");

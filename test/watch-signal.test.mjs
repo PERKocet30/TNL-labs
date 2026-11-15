@@ -25,11 +25,11 @@ let answer = null;   // the "network": resolves when the test says so
 let FAIL_NEXT = false;
 const win = { fetch: (u) => FAIL_NEXT ? (FAIL_NEXT = false, Promise.reject(new TypeError("Load failed"))) : u.includes("/api/glitch") ? Promise.resolve({ status: 200 }) : new Promise((r) => { answer = () => r({ status: 200 }); }) };
 const run = new Function("window", "document", "Date", "setTimeout", "clearTimeout", "PerformanceObserver",
-  "GATE", "PCOMPOSE", "TRKEDIT", "CHAT", "DMOPENPANEL", "POSTOPEN", "PROFILE", "TAB", "API", "TOKEN", "isWide", "MV_MEDIA", "navigator",
+  "GATE", "PCOMPOSE", "TRKEDIT", "CHAT", "DMOPENPANEL", "POSTOPEN", "PROFILE", "TAB", "API", "TOKEN", "isWide", "MV_MEDIA", "navigator", "uiScreen",   // glPlace is uiScreen since 2026-11-15: one name per screen
   src.replace(/^function glitch\(kind,detail\)\{/m, "function glitch(kind,detail){__seen(kind,detail);") + "\nreturn null;");
 globalThis.__seen = (k, d) => reports.push(k + " " + d);
 run(win, doc, { now: () => clock }, () => 0, () => {}, undefined,
-  null, null, null, null, null, null, null, "showroom", "", "", () => false, "x", { onLine: true });
+  null, null, null, null, null, null, null, "showroom", "", "", () => false, "x", { onLine: true }, () => "showroom");
 const call = async (path, during) => { const p = win.fetch(path); const begun = clock; await during?.(); clock = begun + 9000; answer(); await p; };
 reports = [];
 await call("/api/feed/showroom");

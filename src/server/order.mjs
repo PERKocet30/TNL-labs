@@ -39,6 +39,7 @@ export const SERVER = [
 
   // admin
   "admin/mods.js",
+  "admin/measures.js",   // the dictionary: one meaning for every number (2026-11-15)
   "admin/dashboard.js",
   "admin/controls-backups.js",
   "admin/verify-nudge.js",

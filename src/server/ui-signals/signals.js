@@ -1,5 +1,6 @@
 /* ================================================================
-   UI SIGNALS v1.1 — 2026-11-09 ("get rid of any data that isn't useful and track
+   UI SIGNALS v1.2 — 2026-11-15 (the screen register: one name per screen, with the plain words for it;
+   rage taps from before today are read under the same names). v1.1 — 2026-11-09 ("get rid of any data that isn't useful and track
    what is": the load time is gone — it read 0ms on almost every screen, and a
    slow screen is already the glitch watcher's to tell; an exit only counts when
    the person really left — nothing more from them for 30 minutes — because the
@@ -39,6 +40,36 @@ CREATE INDEX IF NOT EXISTS idx_ui_events_kind ON ui_events(kind, created_at);
 CREATE INDEX IF NOT EXISTS idx_ui_events_screen ON ui_events(screen, created_at);
 CREATE INDEX IF NOT EXISTS idx_ui_events_viewer ON ui_events(viewer, id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_ui_events_once ON ui_events(viewer, kind, screen, day) WHERE kind IN ('feature', 'profile')`);
+/* THE SCREEN REGISTER (2026-11-15). One name for every screen, and the plain words the admin reads for it.
+   The app names a screen once (uiScreen in app/ui-signals/signals.js — the glitch watcher uses the same
+   names now; it used to say "post creator" where this said "compose"). A new screen gets a line here:
+   test/measures.test.mjs fails on a name the app sends that isn't listed. */
+const SCREENS = {
+  "sign-up": "Joining", showroom: "The Showroom", labs: "The labs", tag: "A #tag", playlist: "A playlist", music: "Music",
+  post: "An opened post", picture: "A picture, opened", compose: "New post", "track edit": "Song details", "now playing": "Now playing",
+  profile: "Someone's profile", "my profile": "Their own profile", "edit profile": "Edit profile", work: "Profile · Work", collabs: "Profile · Collabs", shop: "Profile · Shop",
+  search: "Search", notifications: "Notifications", messages: "Messages", chat: "A chat", chats: "Messages · Chats", requests: "Messages · Requests", echo: "Echo",
+  event: "The tournament", "event:enter": "Entering the tournament",
+  market: "The Market", "market:detail": "A listing", "market:bag": "The bag", "market:sell": "Selling", "market:edit": "Editing a listing",
+  "market:orders": "Orders", "market:saved": "Saved", "market:confirmed": "Order confirmed", buying: "Orders · Buying", selling: "Orders · Selling",
+  studio: "The Studio", app: "The app",
+};
+/* what the glitch watcher called a screen before 2026-11-15 → its one name */
+const SCREEN_WAS = { "post creator": "compose", "opened post": "post", "a profile": "profile" };
+const screenLabs = () => (typeof LAB_NAME === "undefined" ? {} : LAB_NAME);   // the labs' names (admin/pulse-labs.js)
+function screenId(place) {
+  const p = String(place || "").trim(), was = SCREEN_WAS[p.toLowerCase()];
+  if (was) return was;
+  const lab = /^lab (.+?) \/ (.+)$/i.exec(p);
+  const labId = lab && Object.keys(screenLabs()).find((id) => screenLabs()[id].toLowerCase() === lab[1].toLowerCase());
+  if (labId) return `lab:${labId}/${/talk/i.test(lab[2]) ? "talk" : "work"}`;
+  return p;
+}
+function screenName(id) {
+  const s = screenId(id), lab = /^lab:([a-z]+)\/(work|talk)$/.exec(s);
+  if (lab && screenLabs()[lab[1]]) return `// ${screenLabs()[lab[1]]} · ${lab[2] === "talk" ? "Talk" : "Work"}`;
+  return SCREENS[s] || s;
+}
 const UI_KINDS = ["view", "exit", "back", "tab", "tap", "double", "flow", "empty", "search_miss", "media_fail", "upload_fail", "feature", "profile"];
 const UI_WORDS = { tap: ["img", "name", "text", "card"], flow: ["start", "done", "abandon"], empty: ["left", "acted", "stayed"], media_fail: ["img", "audio", "video"], upload_fail: ["big", "type", "net"] };
 const UI_KEEP_DAYS = 90, UI_MAX_ROWS = 400000, UI_DAY = 86400000, UI_AWAY_MS = 30 * 60000;
@@ -98,7 +129,7 @@ function uiScreens(days, now = Date.now()) {
   for (const r of db.prepare(`SELECT prev screen, ms FROM ui_events WHERE kind = 'view' AND prev != '' AND ms > 0 AND created_at > ?`).all(since)) { if (!onScreen.has(r.screen)) onScreen.set(r.screen, []); onScreen.get(r.screen).push(r.ms); }
   const count = (kind) => new Map(db.prepare(`SELECT screen, COUNT(*) n FROM ui_events WHERE kind = ? AND created_at > ? GROUP BY screen`).all(kind, since).map((r) => [r.screen, r.n]));
   const exits = uiLeft(since), backs = count("back"), taps = count("tap");
-  return { days, screens: views.map((r) => ({ screen: r.screen, views: r.views, people: r.people, newcomers: r.newcomers, medianSeconds: Math.round(median(onScreen.get(r.screen) || []) / 100) / 10,
+  return { days, screens: views.map((r) => ({ screen: r.screen, name: screenName(r.screen), views: r.views, people: r.people, newcomers: r.newcomers, medianSeconds: Math.round(median(onScreen.get(r.screen) || []) / 100) / 10,
     exits: exits.get(r.screen) || 0, exitRate: Math.round(100 * (exits.get(r.screen) || 0) / r.views), backOuts: backs.get(r.screen) || 0, deadTaps: taps.get(r.screen) || 0 })) };
 }
 /* paths: where people go next, the common three-step routes, and the dead ends */
@@ -126,7 +157,8 @@ function uiPaths(days, now = Date.now()) {
 /* taps: rage taps (from the glitch watcher), taps that did nothing, and double sends */
 function uiTaps(days, now = Date.now()) {
   const since = uiSince(days, now);
-  const rage = db.prepare(`SELECT place screen, detail what, COUNT(*) n FROM glitch_events WHERE kind = 'rage_tap' AND created_at > ? GROUP BY place, detail ORDER BY n DESC LIMIT 20`).all(since);
+  const rage = db.prepare(`SELECT place screen, detail what, COUNT(*) n FROM glitch_events WHERE kind = 'rage_tap' AND created_at > ? GROUP BY place, detail ORDER BY n DESC LIMIT 20`).all(since)
+    .map((r) => ({ ...r, screen: screenId(r.screen) }));   // one name per screen, old rows too
   const dead = db.prepare(`SELECT screen, prev role, COUNT(*) n, COUNT(DISTINCT viewer) people FROM ui_events WHERE kind = 'tap' AND created_at > ? GROUP BY screen, prev ORDER BY n DESC LIMIT 30`).all(since);
   const doubles = db.prepare(`SELECT screen, COUNT(*) n FROM ui_events WHERE kind = 'double' AND created_at > ? GROUP BY screen ORDER BY n DESC LIMIT 20`).all(since);
   return { days, rageTaps: rage, deadTaps: dead, doubleSends: doubles };

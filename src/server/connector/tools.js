@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · tools  v1.5 — 2026-11-14 (v1.5: what the signed-in Gemini writes to Knowledge says Gemini wrote it). v1.4 — 2026-11-09 (v1.4: overview, retention and nudge say what they hold now — one meaning for members and active, the nudge's result). v1.3 — 2026-11-04 (v1.3: echo_stats never carries a handoff's conversation; the UI-signals tools live in ui-signals/tools.js). v1.2 — 2026-11-04 (knowledge_add / knowledge_edit: Claude and Grok write to Knowledge, the one exception to read-only). v1.1 — 2026-11-04 (knowledge, read). v1.0 — 2026-10-27
+   LABS CONNECTOR · tools  v1.6 — 2026-11-15 (v1.6: each tool says what its route returns, in the dictionary's words). v1.5 — 2026-11-14 (v1.5: what the signed-in Gemini writes to Knowledge says Gemini wrote it). v1.4 — 2026-11-09 (v1.4: overview, retention and nudge say what they hold now — one meaning for members and active, the nudge's result). v1.3 — 2026-11-04 (v1.3: echo_stats never carries a handoff's conversation; the UI-signals tools live in ui-signals/tools.js). v1.2 — 2026-11-04 (knowledge_add / knowledge_edit: Claude and Grok write to Knowledge, the one exception to read-only). v1.1 — 2026-11-04 (knowledge, read). v1.0 — 2026-10-27
    /mcp speaks MCP (JSON-RPC over HTTP, stateless) so Claude can read the
    admin dashboard like it reads GitHub or Railway. Each tool is one of
    the admin GET routes, fetched in-process with the connector key, then
@@ -14,32 +14,32 @@ const mcpDays = { type: "integer", enum: [7, 30, 90], description: "Window in da
 const mcpTz = { type: "integer", description: "Minutes east of UTC for day boundaries, e.g. -240 for New York in summer. Default 0." };
 /* name → what it reads. `path` may be a function of the arguments. */
 const MCP_TOOLS = [
-  ["overview", "The big picture: members (suspended accounts aren't counted), active (did anything: posted, liked, commented, followed, voted) and posted this week and month, work posted, confirmed collabs, orders, fees earned, verified, rep — this week vs before.", {}, "overview"],
-  ["pulse", "Day-by-day pulse of the app for a window: joins, posts, likes, collabs, orders, and what moved.", { days: mcpDays, tz: mcpTz }, (a) => `pulse?days=${a.days || 30}&tz=${a.tz || 0}`],
-  ["series", "Daily series for charts (joins, posts, likes, orders…) over a window, with the window before for comparison.", { days: mcpDays, tz: mcpTz }, (a) => `series?days=${a.days || 30}&tz=${a.tz || 0}`],
-  ["funnel", "Sign-up funnel: joined → verified → posted → collab → sold, with percentages.", {}, "funnel"],
+  ["overview", "The big picture: members (suspended accounts aren't counted), active (took part: posted, gave feedback, liked, reacted, followed, messaged, voted or entered), opened the app (openedWeek, openedMonth) and posted this week and month, work posted, confirmed collabs, orders, fees earned, verified, rep — this week vs before.", {}, "overview"],
+  ["pulse", "The app over a period against the same number of days before: joined (signups), took part (active), opened the app (opened), posts, work, feedback, messages, collabs, orders, sales (gmv: the pieces, never shipping) and fees — with day-by-day series for joined, took part, posts, work, messages and sales.", { days: mcpDays, tz: mcpTz }, (a) => `pulse?days=${a.days || 30}&tz=${a.tz || 0}`],
+  ["series", "Daily series for charts (joined, took part, work, posts, votes, orders, sales) over a period, with the period before for comparison.", { days: mcpDays, tz: mcpTz }, (a) => `series?days=${a.days || 30}&tz=${a.tz || 0}`],
+  ["funnel", "The path from joining to a sale, members only, all time: joined → confirmed email → posted → posted work → collab → listed → sold, with percentages.", {}, "funnel"],
   ["retention", "By the week they joined: how many are still posting; plus how many members have never posted and how many have gone quiet (no post in 14+ days), with the latest 20 of each. For who came back at all, use insights_retention.", {}, "retention"],
-  ["audience", "Who the members are: roles, when they're online, where they came from.", { days: mcpDays, tz: mcpTz }, (a) => `audience?days=${a.days || 30}&tz=${a.tz || 0}`],
+  ["audience", "Who the members are: what they make (roles), which lab they posted in, the hours they take part, how many confirmed their email, and how many took part and opened the app in 30 days. Where they came from is in insights_conversion (ways in).", { days: mcpDays, tz: mcpTz }, (a) => `audience?days=${a.days || 30}&tz=${a.tz || 0}`],
   ["direction", "Which labs and kinds of work are growing or fading over the window.", { days: mcpDays, tz: mcpTz }, (a) => `direction?days=${a.days || 30}&tz=${a.tz || 0}`],
   ["top_work", "The pieces that earned the most reaction over the window.", { days: mcpDays, tz: mcpTz }, (a) => `topwork?days=${a.days || 30}&tz=${a.tz || 0}`],
   ["members", "Members list (usernames, level, rep, posts, sales, joined, last active). Filter: all, new, silent, quiet, sellers, tournament, admins, suspended, unverified. Search by username or display name.",
     { q: { type: "string", description: "Search text" }, filter: { type: "string", description: "all · new · silent · quiet · sellers · tournament · admins · suspended · unverified" }, all: { type: "boolean", description: "Every member, not just the first 300" } },
     (a) => `people?q=${encodeURIComponent(a.q || "")}&filter=${encodeURIComponent(a.filter || "all")}${a.all ? "&all=1" : ""}`],
   ["member", "One member's public profile, stats, rep history and sales — never their email, address or admin notes.", { username: { type: "string" } }, (a) => `people/${mcpName(a.username)}`],
-  ["member_signals", "One member's activity signals: streaks, sessions, what they do most.", { username: { type: "string" } }, (a) => `people/${mcpName(a.username)}/signals`],
-  ["content", "Content totals: posts, work, by lab and channel, media kinds.", {}, "content"],
+  ["member_signals", "How one member joined and signs in: the way in, the device, the country, and their joins, sign-ins and votes over time — for telling a real person from a made-up account.", { username: { type: "string" } }, (a) => `people/${mcpName(a.username)}/signals`],
+  ["content", "The latest posts with their lab, kind and reaction counts.", {}, "content"],
   ["posts", "Recent posts, filterable by lab or channel, searchable.", { q: { type: "string" }, lab: { type: "string" }, channel: { type: "string" } },
     (a) => `posts?q=${encodeURIComponent(a.q || "")}&lab=${encodeURIComponent(a.lab || "")}&channel=${encodeURIComponent(a.channel || "")}`],
   ["reports", "Open member reports (who reported what, and why) and blocks.", {}, "reports"],
   ["orders", "The last 80 orders: title, buyer and seller usernames, amount, fee, status, tracking.", {}, "orders"],
-  ["market", "Market totals: listings, sales, revenue, fees, by category.", {}, "market"],
+  ["market", "Market totals: sales (the pieces, never shipping), fees earned, orders, the average order, listings live and sold, who can sell, top sellers, and listings nobody is looking at.", {}, "market"],
   ["sellers", "Sellers: who sells, Stripe readiness, sales and fee level.", {}, "sellers"],
   ["listings", "Listings: live, sold out, by seller, views and likes.", {}, "listings"],
   ["events", "Tournaments: every event, stage, entries and deadlines.", {}, "events"],
   ["event", "One tournament in detail (stage, entries, tallies where the stage allows).", { id: { type: "integer" } }, (a) => `events/${Math.max(0, Number(a.id) || 0)}`],
   ["health", "Server health: uptime, memory, database size, queue, mail and payments status.", {}, "health"],
   ["errors", "Recent server and client errors with counts.", {}, "errors"],
-  ["glitches", "Layout glitches reported by the app (jumps, overlaps) by screen.", {}, "glitches"],
+  ["glitches", "What felt broken in the app, by screen: rage taps, the screen jumping, slow screens and saves that failed.", {}, "glitches"],
   ["admin_log", "What admins changed recently (action and target; details kept private).", {}, "log"],
   ["nudge", "The weekly reminder email: how many are due, sent today, this week and ever — and whether it works: reminded (members who got one) and cameBack (the ones seen in the app since their last one).", {}, "nudge"],
   ["systems", "Railway and GitHub: what's live, building, and waiting for a Push.", { fresh: { type: "boolean", description: "Skip the cache" } }, (a) => `systems${a.fresh ? "?fresh=1" : ""}`],

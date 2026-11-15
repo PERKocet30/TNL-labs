@@ -1,5 +1,5 @@
 /* ================================================================
-   MODERATION v1.1 — 2026-10-28 (admin() lets Mods through modMay()). Block, report, admin removal.
+   MODERATION v1.2 — 2026-11-15 (the overview, funnel, retention and market numbers: one meaning for every number: the dictionary, admin/measures.js). v1.1 — 2026-10-28 (admin() lets Mods through modMay()). Block, report, admin removal.
 ================================================================ */
 app.post("/api/users/:username/block", auth, (req, res) => {
   const target = q.userByName.get(req.params.username);
@@ -92,8 +92,8 @@ app.get("/api/admin/overview", auth, admin, (req, res) => {
   const levels = LEVELS.map((l, i) => ({
     level: l.id, name: l.name,
     n: i < LEVELS.length - 1
-      ? one(`SELECT COUNT(*) n FROM users WHERE rep >= ? AND rep < ?`, l.at, LEVELS[i + 1].at)
-      : one(`SELECT COUNT(*) n FROM users WHERE rep >= ?`, l.at),
+      ? one(`SELECT COUNT(*) n FROM users WHERE ${M_MEMBER} AND rep >= ? AND rep < ?`, l.at, LEVELS[i + 1].at)
+      : one(`SELECT COUNT(*) n FROM users WHERE ${M_MEMBER} AND rep >= ?`, l.at),   // the levels add up to Members (2026-11-15)
   }));
 
   const daily = [];
@@ -102,20 +102,17 @@ app.get("/api/admin/overview", auth, admin, (req, res) => {
     daily.push({
       d: new Date(to).toISOString().slice(5, 10),
       posts: one(`SELECT COUNT(*) n FROM posts WHERE created_at > ? AND created_at <= ?`, from, to),
-      joins: one(`SELECT COUNT(*) n FROM users WHERE created_at > ? AND created_at <= ?`, from, to),
+      joins: M.joined(from, to),
     });
   }
 
   res.json({
     /* 2026-11-09, one meaning each: a member isn't suspended (as in the pulse), and "active" is did anything —
        posting has its own name. These two used to say 464 and 23 where the pulse said 455 and 278. */
-    members: one(`SELECT COUNT(*) n FROM users WHERE suspended = 0`),
-    verified: one(`SELECT COUNT(*) n FROM users WHERE email_verified = 1 AND suspended = 0`),
-    newWeek: one(`SELECT COUNT(*) n FROM users WHERE created_at > ? AND suspended = 0`, since(7)),
-    active: one(`SELECT COUNT(DISTINCT u) n FROM (${ACTIVITY}) WHERE t > ?`, since(7)),
-    activeMonth: one(`SELECT COUNT(DISTINCT u) n FROM (${ACTIVITY}) WHERE t > ?`, since(30)),
-    postedWeek: one(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE created_at > ?`, since(7)),
-    postedMonth: one(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE created_at > ?`, since(30)),
+    members: M.members(), verified: M.confirmed(), newWeek: M.joined(since(7), now),
+    active: M.tookPart(since(7), now), activeMonth: M.tookPart(since(30), now),       // Took part
+    openedWeek: M.opened(since(7), now), openedMonth: M.opened(since(30), now),       // Opened the app
+    postedWeek: M.posted(since(7), now), postedMonth: M.posted(since(30), now),
     posts: one(`SELECT COUNT(*) n FROM posts`),
     work: one(`SELECT COUNT(*) n FROM posts WHERE is_work = 1`),
     workWeek: one(`SELECT COUNT(*) n FROM posts WHERE is_work = 1 AND created_at > ?`, since(7)),
@@ -127,10 +124,10 @@ app.get("/api/admin/overview", auth, admin, (req, res) => {
     crossLab: one(`SELECT COUNT(*) n FROM posts s JOIN posts o ON o.id = s.shared_from WHERE s.channel != o.channel`),
     listings: one(`SELECT COUNT(*) n FROM listings WHERE status = 'active'`),
     sold: one(`SELECT COUNT(*) n FROM orders WHERE status IN ('paid','shipped','complete')`),
-    gmv: db.prepare(`SELECT COALESCE(SUM(amount_cents + shipping_cents),0) n FROM orders WHERE status IN ('paid','shipped','complete')`).get().n,
+    gmv: M.sales(),
     earned,
     openReports: one(`SELECT COUNT(*) n FROM reports WHERE handled_at IS NULL`),
-    dms: one(`SELECT COUNT(*) n FROM dm_messages`),
+    dms: M.messages(),
     groups: groupChatStats(now),   // counts only (server/admin/pulse-labs.js)
     beats: one(`SELECT COUNT(*) n FROM beat_projects`),
     levels, daily,
@@ -253,22 +250,21 @@ app.delete("/api/admin/posts/:id", auth, admin, (req, res) => {
 /* ---- the funnel. Where people fall out is the only growth question. ---- */
 app.get("/api/admin/funnel", auth, admin, (req, res) => {
   const one = (sql, ...p) => db.prepare(sql).get(...p)?.n ?? 0;
-  const members = one(`SELECT COUNT(*) n FROM users WHERE suspended = 0`);   // suspended (spam) accounts aren't members — the same count everywhere (2026-11-09)
-  const verified = one(`SELECT COUNT(*) n FROM users WHERE email_verified = 1 AND suspended = 0`);
-  const posted = one(`SELECT COUNT(DISTINCT author_id) n FROM posts`);
-  const published = one(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE is_work = 1`);
-  const collabed = one(`SELECT COUNT(DISTINCT user_id) n FROM collaborators WHERE status='accepted'`);
-  const listed = one(`SELECT COUNT(DISTINCT seller_id) n FROM listings`);
-  const sold = one(`SELECT COUNT(DISTINCT seller_id) n FROM orders WHERE status IN ('paid','shipped','complete')`);
+  /* every step counts members only (2026-11-15: the first step left suspended accounts out and the rest didn't) */
+  const members = M.members(), verified = M.confirmed(), posted = M.posted();
+  const published = one(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE is_work = 1 AND author_id IN ${M_IS_MEMBER}`);
+  const collabed = one(`SELECT COUNT(DISTINCT user_id) n FROM collaborators WHERE status='accepted' AND user_id IN ${M_IS_MEMBER}`);
+  const listed = one(`SELECT COUNT(DISTINCT seller_id) n FROM listings WHERE seller_id IN ${M_IS_MEMBER}`);
+  const sold = one(`SELECT COUNT(DISTINCT seller_id) n FROM orders WHERE status IN ('paid','shipped','complete') AND seller_id IN ${M_IS_MEMBER}`);
   const pct = (n) => (members ? Math.round((n / members) * 100) : 0);
   res.json({
     steps: [
-      { label: "Signed up", n: members, pct: 100 },
-      { label: "Verified email", n: verified, pct: pct(verified) },
+      { label: "Joined", n: members, pct: 100 },
+      { label: "Confirmed email", n: verified, pct: pct(verified) },
       { label: "Posted anything", n: posted, pct: pct(posted) },
-      { label: "Published work", n: published, pct: pct(published) },
+      { label: "Posted work", n: published, pct: pct(published) },
       { label: "Confirmed a collab", n: collabed, pct: pct(collabed) },
-      { label: "Listed an item", n: listed, pct: pct(listed) },
+      { label: "Listed something", n: listed, pct: pct(listed) },
       { label: "Sold something", n: sold, pct: pct(sold) },
     ],
   });
@@ -280,7 +276,7 @@ app.get("/api/admin/retention", auth, admin, (req, res) => {
   const cohorts = [];
   for (let w = 3; w >= 0; w--) {
     const from = now - (w + 1) * 7 * D, to = now - w * 7 * D;
-    const joined = db.prepare(`SELECT id FROM users WHERE created_at > ? AND created_at <= ?`).all(from, to);
+    const joined = db.prepare(`SELECT id FROM users WHERE ${M_MEMBER} AND created_at > ? AND created_at <= ?`).all(from, to);
     const stillActive = joined.filter((u) =>
       db.prepare(`SELECT 1 FROM posts WHERE author_id = ? AND created_at > ?`).get(u.id, now - 7 * D)
     ).length;
@@ -295,7 +291,7 @@ app.get("/api/admin/retention", auth, admin, (req, res) => {
   const silent = db.prepare(`
     SELECT u.username, u.display_name, u.created_at,
       (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) AS posts
-    FROM users u WHERE (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) = 0
+    FROM users u WHERE u.suspended = 0 AND (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) = 0
     ORDER BY u.created_at DESC LIMIT 20`).all();
   // who's gone quiet — used to post, hasn't in 14 days
   const quiet = db.prepare(`
@@ -303,11 +299,11 @@ app.get("/api/admin/retention", auth, admin, (req, res) => {
       (SELECT MAX(created_at) FROM posts p WHERE p.author_id = u.id) AS last_post,
       (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id) AS posts
     FROM users u
-    WHERE posts > 0 AND last_post < ?
+    WHERE u.suspended = 0 AND posts > 0 AND last_post < ?
     ORDER BY last_post DESC LIMIT 20`).all(now - 14 * D);
   /* the lists stop at 20; the counts don't (2026-11-09: the page said "20 never posted" with 405 who hadn't) */
   const neverPosted = db.prepare(`SELECT COUNT(*) n FROM users u WHERE u.suspended = 0 AND NOT EXISTS (SELECT 1 FROM posts p WHERE p.author_id = u.id)`).get().n;
-  const goneQuiet = db.prepare(`SELECT COUNT(*) n FROM (SELECT author_id, MAX(created_at) last FROM posts GROUP BY author_id) WHERE last < ?`).get(now - 14 * D).n;
+  const goneQuiet = db.prepare(`SELECT COUNT(*) n FROM (SELECT author_id, MAX(created_at) last FROM posts WHERE author_id IN ${M_IS_MEMBER} GROUP BY author_id) WHERE last < ?`).get(now - 14 * D).n;
   res.json({ cohorts, silent, quiet, neverPosted, goneQuiet });
 });
 
@@ -326,7 +322,7 @@ app.get("/api/admin/market", auth, admin, (req, res) => {
     const rows = paidOrders.filter((o) => o.created_at > from && o.created_at <= to);
     daily.push({
       d: new Date(to).toISOString().slice(5, 10),
-      gmv: rows.reduce((s, o) => s + o.amount_cents + o.shipping_cents, 0),
+      gmv: rows.reduce((s, o) => s + o.amount_cents, 0),
       fee: rows.reduce((s, o) => s + orderFee(o, o.seller_rep, o.seller_admin), 0),
       n: rows.length,
     });
@@ -345,10 +341,10 @@ app.get("/api/admin/market", auth, admin, (req, res) => {
     ORDER BY l.views ASC LIMIT 10`).all(now - 14 * D);
 
   res.json({
-    gmv: paidOrders.reduce((s, o) => s + o.amount_cents + o.shipping_cents, 0),
+    gmv: paidOrders.reduce((s, o) => s + o.amount_cents, 0),   // Sales: the pieces, never shipping (the dictionary)
     revenue: rev,
     orders: paidOrders.length,
-    aov: paidOrders.length ? Math.round(paidOrders.reduce((s, o) => s + o.amount_cents + o.shipping_cents, 0) / paidOrders.length) : 0,
+    aov: paidOrders.length ? Math.round(paidOrders.reduce((s, o) => s + o.amount_cents, 0) / paidOrders.length) : 0,
     active: one(`SELECT COUNT(*) n FROM listings WHERE status='active'`),
     sold: one(`SELECT COUNT(*) n FROM listings WHERE status='sold'`),
     sellers: one(`SELECT COUNT(DISTINCT seller_id) n FROM listings`),
