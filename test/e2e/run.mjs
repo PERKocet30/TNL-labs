@@ -510,7 +510,7 @@ console.log("\nMEMBER · PHONE");
       return { ratio: +(tw / th).toFixed(2), style: t.style.aspectRatio, slides: [...t.querySelectorAll(".caro-i")].map((im) => [Math.round(im.getBoundingClientRect().width - tw), Math.round(im.getBoundingClientRect().height - th)]) }; }, id);
     ok(Math.abs(m.ratio - 1.78) < 0.03 && m.style, "the frame isn't the first picture's shape, set before loading: " + JSON.stringify(m));
     ok(m.slides.every(([w, h]) => Math.abs(w) <= 1 && Math.abs(h) <= 1), "slides aren't exactly the frame (they'd land half on): " + JSON.stringify(m.slides));
-    await p.evaluate((id) => { const x = SRPOSTS.find((q) => q.id === id); x.images = x.__orig; delete x.__orig; render(); }, id);
+    await p.evaluate((id) => { const x = SRPOSTS.find((q) => q.id === id); if (x && x.__orig) { x.images = x.__orig; delete x.__orig; } render(); }, id);   // only if it's still the object that was changed: a Showroom refresh mid-step brings a fresh one, already right (2026-11-15: restoring from a fresh one wiped its pictures)
   });
   /* Fix today's issues (2026-10-13): one July carousel lost 7 of its 8 pictures on the server and the
      Showroom showed swipeable blank slides; browsers asked for /favicon.ico 33 times a day and got nothing. */
@@ -529,7 +529,7 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => render());
     r = await cnt(id);
     ok(r && r.slides === 2 && r.n === "1/2", "a repaint brought the missing slides back: " + JSON.stringify(r));
-    await p.evaluate((id) => { const x = SRPOSTS.find((q) => q.id === id); x.images = x.__orig; delete x.__orig; render(); }, id);
+    await p.evaluate((id) => { const x = SRPOSTS.find((q) => q.id === id); if (x && x.__orig) { x.images = x.__orig; delete x.__orig; } render(); }, id);   // only if it's still the object that was changed: a Showroom refresh mid-step brings a fresh one, already right (2026-11-15: restoring from a fresh one wiped its pictures)
     /* 2026-11-15: a picture that fails once (a deploy's restart, a weak signal) is tried again before it's called unavailable —
        290 pictures "failed" on the Showroom in a month, most of them still on the server */
     let hits = 0;
@@ -538,7 +538,7 @@ console.log("\nMEMBER · PHONE");
     await p.waitForFunction(() => { const im = document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] img.sr-img`); return im && im.complete && im.naturalWidth > 0; }, null, { timeout: 6000 });
     ok(hits === 2 && await p.evaluate(() => !document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] .img-gone`) && !BADIMG.has("/uploads/e2e-flaky.png")), `a picture that failed once wasn't tried again (asked for ${hits} times)`);
     await p.unroute("**/uploads/e2e-flaky.png*");
-    await p.evaluate(() => { const x = SRPOSTS.find((q) => q.id === window.__flaky); [x.imageUrl, x.thumbUrl, x.images] = x.__u; delete x.__u; IMG_RETRY_MS = 2000; render(); });
+    await p.evaluate(() => { const x = SRPOSTS.find((q) => q.id === window.__flaky); if (x && x.__u) { [x.imageUrl, x.thumbUrl, x.images] = x.__u; delete x.__u; } IMG_RETRY_MS = 2000; render(); });
   });
   await step(d, "back from a profile lands where you were in the feed", async () => {
     await p.evaluate(() => { TAB = "showroom"; PROFILE = null; render(); });
