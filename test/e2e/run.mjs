@@ -1676,9 +1676,9 @@ console.log("\nMEMBER · PHONE");
     ok((await p.locator("#pcgo").innerText()).trim() === "Post" && await p.locator("#pclab").count() === 1 && await p.locator(".pc-opt", { hasText: "Share to a lab" }).count() === 0, "the composer still says Share for posting");
     await p.locator("#pcto [data-pclabrm]").tap(); await p.waitForTimeout(200);
     ok(await p.locator("#pcto .pc-labchip").count() === 0 && /Add a lab/.test(await p.locator("#pclab").innerText()), "taking the lab out didn't leave + Add a lab");
-    await p.locator("#pclab").tap(); await p.waitForSelector(".pickrow");
-    ok(await p.locator(".pick h2", { hasText: "Add a lab" }).count() === 1 && await p.locator(".pickrow", { hasText: "Profile only" }).count() === 0, "the picker still offers Profile only");
-    await p.locator(".pickrow", { hasText: "Visual" }).first().tap(); await p.waitForTimeout(200);
+    await p.locator("#pclab").tap(); await p.waitForSelector("[data-pcwlab]");   // 2026-11-15: a new post's + Add a lab opens the lab & #tags screen
+    ok(/Lab & #tags/.test(await p.locator(".pc .kform").innerText()) && !/Profile only/.test(await p.locator("#pcov").innerText()), "+ Add a lab didn't open the lab & #tags screen (or it offers Profile only)");
+    await p.locator('[data-pcwlab="pharmacy"]').tap(); await p.locator("#pcwnext").tap(); await p.waitForSelector("#pcbody");
     ok(/Visual/.test(await p.locator("#pcto .pc-labchip").innerText()), "picking a lab didn't add its chip");
     await p.evaluate(() => { PCOMPOSE = null; PICKER = null; render(); }); await p.waitForTimeout(200);   // drop the draft without the "discard?" question
     await p.evaluate(() => setLabView("archive")); await p.waitForSelector("#archscroll");
