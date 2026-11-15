@@ -137,6 +137,50 @@ try {
   const et2 = (await A("GET", "/api/admin/knowledge/export?format=text")).text;
   t("the export carries what Claude and Grok wrote, like everything else", et2.includes("### Drop") && et2.includes("### Echo is admin-only"));
 
+  console.log("\nORGANISED — search, one entry by id, what Echo carries (2026-11-15)");
+  await A("POST", "/api/admin/knowledge", { kind: "note", title: "A failed picture tries once more", body: "The Showroom keeps the space and asks for the picture again before giving up." });
+  const find = async (q) => (await A("GET", "/api/admin/knowledge?q=" + encodeURIComponent(q))).j.entries.map((e) => e.title);
+  t("search matches every word in any order, not the phrase as typed", (await find("picture retry")).length === 0 && (await find("showroom picture again")).includes("A failed picture tries once more") && (await find("again picture")).includes("A failed picture tries once more"));
+  t("a word that isn't there finds nothing", (await find("picture zebra")).length === 0);
+  const one = (await A("GET", "/api/admin/knowledge?id=" + creed.id)).j.entries;
+  t("?id= opens one entry", one.length === 1 && one[0].key === "creed");
+  const tl = (await rpc("tools/list", {})).result.tools.find((x) => x.name === "knowledge");
+  t("the connector's knowledge tool takes an id", !!tl && !!tl.inputSchema.properties.id && !!tl.inputSchema.properties.q);
+  const byId = await rpc("tools/call", { name: "knowledge", arguments: { id: creed.id } });
+  t("…and returns just that entry", /take over/.test(JSON.stringify(byId.result)) && !/Rep only comes from other people/.test(JSON.stringify(byId.result)));
+  const brief = (await A("GET", "/api/admin/knowledge/export?format=brief")).text, whole = (await A("GET", "/api/admin/knowledge/export?format=text")).text;
+  t("what Echo carries: the core in full (creed, voice, decisions, policies, glossary, the plan)", /### The creed/.test(brief) && /### Rep only comes from other people/.test(brief) && /### Plain words/.test(brief) && /### Cultivators/.test(brief));
+  t("…and one line each for the rest, with its number", /## Everything else — the index/.test(brief) && /- #\d+ The Showroom — The front page: /.test(brief) && /- #\d+ A failed picture tries once more — /.test(brief) && !/### The Showroom\n/.test(brief));
+  t("…so it's well under half the whole", brief.length < whole.length / 2);
+
+  console.log("\nIN STEP WITH THE BUILD (2026-11-15)");
+  /* Stop the server, make three built-in entries look the way production's did, boot again:
+     one nobody touched whose words fell behind, one an app edited after an older build, one Jorge edited himself. */
+  srv.kill(); await new Promise((r) => setTimeout(r, 400));
+  const { DatabaseSync } = await import("node:sqlite");
+  const d2 = new DatabaseSync(join(DATA, "tnl.db"));
+  const idOf = (k) => d2.prepare("SELECT id FROM knowledge WHERE key = ?").get(k).id;
+  const stale = idOf("f-rep"), byApp = idOf("f-levels"), byJorge = idOf("f-follow"), fresh = idOf("f-door");
+  d2.prepare("UPDATE knowledge SET body = 'What the app used to do.', built = '' WHERE id = ?").run(stale);
+  d2.prepare("UPDATE knowledge SET body = 'An app wrote this after an older build.', source = 'claude', updated_by = ?, built = 'the older build''s words' WHERE id = ?").run(boss, byApp);
+  d2.prepare("UPDATE knowledge SET body = 'Jorge wrote this himself.', source = 'admin', updated_by = ?, built = 'the older build''s words' WHERE id = ?").run(boss, byJorge);
+  d2.prepare("UPDATE knowledge SET body = 'An app wrote this yesterday.', source = 'claude', updated_by = ?, built = '' WHERE id = ?").run(boss, fresh);
+  d2.close();
+  const PORT2 = PORT + 211;
+  const srv2 = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], { cwd: ROOT, env: { ...process.env, PORT: String(PORT2), TNL_DATA: DATA, TNL_NO_WATCH: "1", PUBLIC_URL: `http://127.0.0.1:${PORT2}` } });
+  let log2 = ""; srv2.stdout.on("data", (x) => log2 += x); srv2.stderr.on("data", (x) => log2 += x);
+  for (let i = 0; i < 150 && !/listening/.test(log2); i++) await new Promise((r) => setTimeout(r, 100));
+  try {
+    const A2 = async (path) => { const r = await fetch(`http://127.0.0.1:${PORT2}${path}`, { headers: { authorization: "Bearer tok-boss" } }); return r.json(); };
+    const now2 = (await A2("/api/admin/knowledge")).entries, e2 = (id) => now2.find((e) => e.id === id);
+    t("an entry nobody touched takes the build's words", /Rep is never earned by posting/.test(e2(stale).body) && e2(stale).source === "built-in");
+    t("…and the version before is kept", (await A2(`/api/admin/knowledge/${stale}/history`)).history.some((h) => h.body === "What the app used to do."));
+    t("an entry an app edited takes the new build's words when the build has changed since", /Entry \(0 rep\)/.test(e2(byApp).body) && (await A2(`/api/admin/knowledge/${byApp}/history`)).history.some((h) => h.body === "An app wrote this after an older build."));
+    t("an entry Jorge edited himself is never touched", e2(byJorge).body === "Jorge wrote this himself.");
+    t("the first time round, yesterday's edit by an app isn't undone", e2(fresh).body === "An app wrote this yesterday.");
+    t("the build's own words are never sent out", now2.every((e) => !("built" in e)));
+  } finally { srv2.kill(); }
+
   console.log("\nNEVER MESSAGES");
   const src = readFileSync(join(ROOT, "src/server/knowledge/knowledge.js"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
   t("the knowledge code never touches a message table", !/dm_messages|dm_threads|dm_members|group_|ig_messages|ig_conv/.test(src));
