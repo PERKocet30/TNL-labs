@@ -72,6 +72,7 @@ export const SERVER = [
 
   // posts
   "posts/collabs-showroom.js",
+  "posts/collab-answer.js",   // Not this time, and one nudge for an invite left waiting (2026-11-15)
 
   // messages
   "messages/core.js",

@@ -123,6 +123,7 @@ h1,h2,h3{letter-spacing:-.02em}
 .post-acts{display:flex;align-items:center;gap:18px;margin-top:11px}
 .igflag{margin-left:auto;color:var(--dim)}
 .igpill{background:var(--accent-fill);color:var(--on-accent);border:0;border-radius:999px;padding:6px 14px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer}
+.igpill.ghost{background:transparent;color:var(--tx);border:1px solid var(--line2);margin-left:6px}   /* Not this time (2026-11-15) */
 .igact{background:none;border:0;padding:0;color:var(--tx);display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .igact .igi{font-size:23px;line-height:1;font-style:normal;display:flex;align-items:center;justify-content:center;transition:transform .12s ease}
 .igact:active .igi{transform:scale(.85)}

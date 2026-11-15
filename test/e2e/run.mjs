@@ -403,6 +403,22 @@ console.log("\nMEMBER · PHONE");
     await p.waitForFunction((id) => !POSTOPEN && TAB === "labs" && LAB && LAB.id === id, lp, { timeout: 5000 });
     await p.evaluate(() => { TAB = "showroom"; LAB = null; render(); }); await p.waitForTimeout(300);
   });
+  /* 2026-11-15, the fix list's number 5: 6 of 14 collab invites sat ignored — the invite gets "Not this time" beside Accept */
+  await step(d, "a collab invite on an opened post has Accept and Not this time; Not this time takes the invite away", async () => {
+    const fp = await p.evaluate(() => SRPOSTS.find((q) => q.author.username === "friend" && !q.pending));
+    ok(fp, "no post by friend in the Showroom to test with");
+    const r = await api(`/api/posts/${fp.id}/collab`, "e2e-friend-session", { username: "tester" });
+    ok(r.ok, "friend couldn't invite tester: " + JSON.stringify(r));
+    const fresh = await api(`/api/posts/${fp.id}`, token);
+    await p.evaluate((q) => openPost(q), fresh.post || fresh);
+    await p.waitForSelector(`#poov [data-decline="${fp.id}"]`, { timeout: 5000 });
+    ok(await p.locator(`#poov [data-accept="${fp.id}"]`).isVisible() && /Not this time/.test(await p.locator(`#poov [data-decline="${fp.id}"]`).innerText()), "the invite doesn't offer Accept and Not this time");
+    await p.locator(`#poov [data-decline="${fp.id}"]`).tap();
+    await p.waitForFunction((id) => !document.querySelector(`#poov [data-decline="${id}"]`) && !document.querySelector(`#poov [data-accept="${id}"]`), fp.id, { timeout: 4000 });
+    const after = await api(`/api/posts/${fp.id}`, token);
+    ok(!((after.post || after).collaborators || []).some((c) => c.username === "tester"), "the invite is still there on the server");
+    await p.evaluate(() => { POSTOPEN = null; render(); });
+  });
   await step(d, "share from an opened post: menu on top, Into a lab works", async () => {
     await p.evaluate(() => openPost(SRPOSTS[1])); await p.waitForSelector(".po-ov [data-share]");
     await p.locator(".po-ov [data-share]").first().tap(); await p.waitForTimeout(300);

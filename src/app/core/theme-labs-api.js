@@ -295,6 +295,7 @@ const api={
   share:(id,b)=>req("/api/posts/"+id+"/share",{method:"POST",body:b||{}}),
   invite:(id,username)=>req("/api/posts/"+id+"/collab",{method:"POST",body:{username}}),
   accept:id=>req("/api/posts/"+id+"/collab/accept",{method:"POST"}),
+  decline:id=>req("/api/posts/"+id+"/collab/decline",{method:"POST"}),   // Not this time (2026-11-15)
   profile:u=>req("/api/users/"+encodeURIComponent(u)),
   follow:u=>req("/api/users/"+encodeURIComponent(u)+"/follow",{method:"POST"}),
   levels:()=>req("/api/levels"),

@@ -20,7 +20,7 @@ let FFMPEG = null;
 try { FFMPEG = (await import("ffmpeg-static")).default || null; } catch { FFMPEG = null; }
 import { db, awardRep, revokeRep, levelFor, LEVELS, VOTE_WEIGHT, voteWeightFor, DATA_DIR, notify, ensureAdmin, feeForRep, feeFor, feeForSeller, FEE_BY_LEVEL, ACCENTS, accentHex,
          setting, settingBool, setSetting, allSettings, SETTING_DEFAULTS, logError, backupTo, studioEvent } from "./db.js";
-import { sendVerifyEmail, sendResetEmail, sendAlertEmail, sendEventOpenEmail, eventOpenEmail, eventOpenSubject, nudgeEmail, nudgeSubject, sendNudgeEmail, NUDGE_ITEMS, MAIL_ENABLED, MAIL_TEST_SENDER } from "./mail.js";
+import { sendVerifyEmail, sendResetEmail, sendAlertEmail, sendEventOpenEmail, eventOpenEmail, eventOpenSubject, nudgeEmail, nudgeSubject, sendNudgeEmail, collabNudgeEmail, collabNudgeSubject, NUDGE_ITEMS, MAIL_ENABLED, MAIL_TEST_SENDER } from "./mail.js";
 import { PALETTE, paletteCss, accentVars, inkFor, onAccent, accentFill } from "./palette.js";
 import { APP } from "./app/order.mjs";
 import { SERVER } from "./server/order.mjs";   // the parts, for the admin source download (server/admin/controls-backups)

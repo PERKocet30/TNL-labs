@@ -9,7 +9,8 @@
    the chat, your orders; tap the name or picture for their profile.
    Server: /api/notifications sends thumb, listingId, actor.youFollow. */
 const NF_SAY={like:"liked your post.",comment:"commented:",reply:"replied:",mention:"mentioned you:",tag:"tagged you in a post.",
-  follow:"started following you.",collab_invite:"wants to collab on your post.",collab_accept:"accepted your collab.",
+  follow:"started following you.",collab_invite:"invited you to collab on their post.",collab_accept:"accepted your collab.",
+  collab_nudge:"is waiting on your answer to their collab.",collab_decline:"passed on your collab — invite someone else any time.",   // 2026-11-15: the invite said "your post"
   feature:"featured your work.",dm:"sent you a message."};
 /* Shop rows with no listing to open land on your orders, on the right side. */
 const NF_ORDERS={sale:"selling",order_complete:"selling",review:"selling",download:"selling",shipped:"buying",offer_accepted:"buying",offer_declined:"buying"};
