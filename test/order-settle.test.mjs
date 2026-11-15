@@ -36,7 +36,7 @@ const os = read("server/orders/orders-sharing.js");
 const part = os.slice(os.indexOf('app.get("/api/market/checkout/done"'), os.indexOf("\n", os.indexOf("setInterval(() => { reconcileAll()")) + 1);
 const X = new Function("db", "randomBytes", "q", "notify", "app", "auth", "verified", "maybeAuth", "rateLimit", "baseUrl", "feeFor",
   "createCheckout", "verifySession", "awardRep", "LISTING_SELECT", "shapeListings", "PAYMENTS_ENABLED", "setInterval",
-  read("server/market/stock.js") + "\n" + read("server/orders/cart.js") + "\n" + part + "\nreturn {reconcileAll, reconcileOrders, settlePaidOrder};")(
+  read("server/market/stock.js") + "\n" + read("server/orders/cart.js") + "\n" + part + "\nreturn {reconcileAll, reconcileOrders, settlePaidOrder, offerFor, offerTake};")(
   db, randomBytes, q, (...a) => told.push(a),
   { post: (p, ...h) => { routes["POST " + p] = h.at(-1); }, get: (p, ...h) => { routes["GET " + p] = h.at(-1); } },
   null, null, null, () => null, () => "https://x", () => 10, async () => ({}), verifySession,
@@ -92,11 +92,38 @@ const noref = O(cap, 3000, 0, null, 1);
 await routes["GET /api/market/checkout/done"]({ query: { session_id: "cs_lookalike", o: String(noref) } }, res);
 t("…nor an order LABS never started a payment for", to === "/?checkout=failed" && status(noref) === "pending");
 /* an accepted offer buys one piece: it is spent when that order is paid */
-db.prepare(`INSERT INTO offers (listing_id, buyer_id, amount_cents, status, created_at) VALUES (?,?,?,'accepted',?)`).run(tee, buyer, 4000, now);
+const offerId = Number(db.prepare(`INSERT INTO offers (listing_id, buyer_id, amount_cents, status, created_at) VALUES (?,?,?,'accepted',?)`).run(tee, buyer, 4000, now).lastInsertRowid);
+const full = O(tee, 5000, 800, "cs_full", 1);   // an older checkout at the full price, not priced by the offer
+SESS.cs_full = { paid: true, orderId: String(full), amount: 5800 };
+await routes["GET /api/market/checkout/done"]({ query: { session_id: "cs_full", o: String(full) } }, res);
+t("paying an order the offer didn't price leaves the offer alone", status(full) === "paid" && db.prepare(`SELECT status FROM offers WHERE id=?`).get(offerId).status === "accepted");
 const off = O(tee, 4000, 800, "cs_offer", 1);
+db.prepare(`UPDATE orders SET offer_id = ? WHERE id = ?`).run(offerId, off);
 SESS.cs_offer = { paid: true, orderId: String(off), amount: 4800 };
 await routes["GET /api/market/checkout/done"]({ query: { session_id: "cs_offer", o: String(off) } }, res);
 t("paying with an accepted offer spends it — the next piece is at the listing's price", status(off) === "paid" && db.prepare(`SELECT status FROM offers WHERE listing_id=? AND buyer_id=?`).get(tee, buyer).status === "used");
+
+/* one order per offer: starting again closes the earlier checkout at the offer; one that's being paid can't be closed */
+const closed = []; let paidAlready = false;
+globalThis.expireSession = async (sid) => { closed.push(sid); return !paidAlready; };
+const hat = L("Hat", 6000, 0, 10);
+const hatRow = db.prepare(`SELECT * FROM listings WHERE id=?`).get(hat), sellerRow = q.userById.get(seller);
+const hatOffer = Number(db.prepare(`INSERT INTO offers (listing_id, buyer_id, amount_cents, status, created_at) VALUES (?,?,?,'accepted',?)`).run(hat, buyer, 3500, now).lastInsertRowid);
+const o1 = await X.offerFor(hatRow, buyer, sellerRow);
+const first = O(hat, o1.amount, 0, "cs_hat1", 1); X.offerTake(first, o1);
+t("an accepted offer prices the order, and the order remembers which offer", o1.amount === 3500 && db.prepare(`SELECT offer_id FROM orders WHERE id=?`).get(first).offer_id === hatOffer);
+const o2 = await X.offerFor(hatRow, buyer, sellerRow);
+t("starting again closes the earlier checkout first — two can't both be paid at the offer", o2 && o2.amount === 3500 && closed.includes("cs_hat1") && status(first) === "cancelled");
+const second = O(hat, o2.amount, 0, "cs_hat2", 1); X.offerTake(second, o2);
+SESS.cs_hat1 = { paid: true, orderId: String(first), amount: 3500 };
+await routes["GET /api/market/checkout/done"]({ query: { session_id: "cs_hat1", o: String(first) } }, res);
+t("…and the closed one can't settle even if someone comes back with it", status(first) === "cancelled");
+paidAlready = true;   // Stripe: that checkout is complete — it can't be closed
+const o3 = await X.offerFor(hatRow, buyer, sellerRow);
+t("while the offer's checkout is being paid, another can't be opened at the offer", o3 && o3.busy === true && status(second) === "pending");
+SESS.cs_hat2 = { paid: true, orderId: String(second), amount: 3500 };
+await routes["GET /api/market/checkout/done"]({ query: { session_id: "cs_hat2", o: String(second) } }, res);
+t("paid: the offer is spent, and the next piece is at the listing's price", status(second) === "paid" && db.prepare(`SELECT status FROM offers WHERE id=?`).get(hatOffer).status === "used" && (await X.offerFor(hatRow, buyer, sellerRow)) === null);
 
 console.log("\nIN THE APP");
 const app = read("app/market/order-done.js"), boot = read("app/feed/feed-boot.js"), router = read("app/music/tracks.js");

@@ -18,12 +18,12 @@ const { db } = await import("../src/db.js");
 const now = Date.now();
 const mk = (u, admin = 0) => { const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified, is_admin, avatar_url) VALUES (?,?,?,?,?,1,?,'/uploads/a.jpg')`).run(u, u, u + "@x.test", "x", now - 30 * 86400000, admin).lastInsertRowid);
   db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?,?,?)`).run("tok-" + u, id, now); return id; };
-const boss = mk("boss", 1), seller = mk("seller"), bad = mk("bad"), ann = mk("ann"), bo = mk("bo");
+const boss = mk("boss", 1), seller = mk("seller"), bad = mk("bad"), ann = mk("ann"), bo = mk("bo"), cy = mk("cy");
 const L = (who, title, price, qty = 5) => Number(db.prepare(`INSERT INTO listings (seller_id,title,price_cents,shipping_cents,images,quantity,variants,kind,accepts_offers,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,1,?,?)`)
   .run(who, title, price, 500, '["/uploads/a.jpg"]', qty, "[]", "physical", now, now).lastInsertRowid);
 const tee = L(seller, "Tee", 8000), cap = L(seller, "Cap", 3000), fake = L(bad, "Fake", 9000), gone = L(seller, "Gone", 2000);
 const offer = (lid, who, cents) => db.prepare(`INSERT INTO offers (listing_id, buyer_id, amount_cents, status, created_at) VALUES (?,?,?,'accepted',?)`).run(lid, who, cents, now);
-offer(tee, ann, 5000); offer(tee, bo, 5000);
+offer(tee, ann, 5000); offer(tee, bo, 5000); offer(tee, cy, 5000);
 db.close();
 
 const PORT = 19240 + (process.pid % 30), B = `http://127.0.0.1:${PORT}`;
@@ -40,12 +40,14 @@ try {
   console.log("\nAN ACCEPTED OFFER");
   const b1 = await call("ann", `/api/market/${tee}/buy`, {});
   t("the offer is the price for that piece ($50 on an $80 tee)", b1.s === 200 && lastOrder(ann).amount_cents === 5000);
+  const again = await call("ann", `/api/market/${tee}/buy`, {});
+  t("the offer buys one piece: the next one is at the listing's price", again.s === 200 && lastOrder(ann).amount_cents === 8000 && sql((r) => r.prepare(`SELECT status FROM offers WHERE listing_id = ? AND buyer_id = ?`).get(tee, ann)).status === "used");
   sql((r) => r.prepare(`UPDATE listings SET price_cents = 4000 WHERE id = ?`).run(tee));
   const b2 = await call("bo", `/api/market/${tee}/buy`, {});
   t("the seller lowers the price under the offer: the buyer pays the lower price, never more than it asks", b2.s === 200 && lastOrder(bo).amount_cents === 4000);
   sql((r) => { r.prepare(`UPDATE listings SET price_cents = 8000 WHERE id = ?`).run(tee); r.prepare(`DELETE FROM orders`).run(); });
-  const bag = await call("ann", "/api/cart/checkout", { items: [{ listingId: tee }, { listingId: cap }] });
-  const rows = sql((r) => r.prepare(`SELECT listing_id, amount_cents FROM orders WHERE buyer_id = ? ORDER BY id`).all(ann));
+  const bag = await call("cy", "/api/cart/checkout", { items: [{ listingId: tee }, { listingId: cap }] });
+  const rows = sql((r) => r.prepare(`SELECT listing_id, amount_cents FROM orders WHERE buyer_id = ? ORDER BY id`).all(cy));
   t("in a bag the offer prices its own piece only", bag.s === 200 && rows.length === 2 && rows.find((x) => x.listing_id === tee).amount_cents === 5000 && rows.find((x) => x.listing_id === cap).amount_cents === 3000);
 
   console.log("\nA SUSPENDED SELLER");
@@ -61,6 +63,10 @@ try {
   const down = await call("boss", `/api/admin/listings/${gone}`, null, "DELETE");
   t("the admin takes it down", down.s === 200 && sql((r) => r.prepare(`SELECT status, taken_down FROM listings WHERE id = ?`).get(gone)).taken_down === 1);
   const up = await call("seller", `/api/market/${gone}`, { status: "active" }, "PATCH");
+  const fake2 = sql((r) => Number(r.prepare(`INSERT INTO listings (seller_id,title,price_cents,shipping_cents,images,quantity,variants,kind,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`).run(seller, "Also gone", 2000, 0, '["/uploads/a.jpg"]', 1, "[]", "physical", Date.now(), Date.now()).lastInsertRowid));
+  await call("boss", `/api/market/${fake2}`, null, "DELETE");
+  await call("seller", `/api/market/${fake2}`, { status: "active" }, "PATCH");
+  t("…whichever way the admin removed it", sql((r) => r.prepare(`SELECT status, taken_down FROM listings WHERE id = ?`).get(fake2)).status === "removed");
   t("the seller can't put it back on sale", sql((r) => r.prepare(`SELECT status FROM listings WHERE id = ?`).get(gone)).status === "removed" && !(await call(null, "/api/market")).j.listings.some((l) => l.id === gone));
   const own = await call("seller", `/api/market/${cap}`, { status: "sold" }, "PATCH");
   const back = await call("seller", `/api/market/${cap}`, { status: "active" }, "PATCH");

@@ -369,7 +369,7 @@ app.delete("/api/market/:id", auth, (req, res) => {
   const l = db.prepare(`SELECT * FROM listings WHERE id = ?`).get(Number(req.params.id));
   if (!l) return res.status(404).json({ error: "no listing" });
   if (l.seller_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: "not yours" });
-  db.prepare(`UPDATE listings SET status = 'removed', updated_at = ? WHERE id = ?`).run(Date.now(), l.id);
+  db.prepare(`UPDATE listings SET status = 'removed', taken_down = CASE WHEN ? THEN 1 ELSE taken_down END, updated_at = ? WHERE id = ?`).run(l.seller_id !== req.user.id ? 1 : 0, Date.now(), l.id);   // an admin removing someone else's: it stays down (2026-11-15)
   res.json({ ok: true });
 });
 
