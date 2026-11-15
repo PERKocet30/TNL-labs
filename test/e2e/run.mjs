@@ -95,7 +95,7 @@ for (let i = 0; ; i++) {
 /* The composer's picker opens from pickFiles (app/media/pick, 2026-11-04): tap where you add photos, then choose. */
 const pcFiles = async (p, files) => { const [fc] = await Promise.all([p.waitForEvent("filechooser", { timeout: 8000 }), p.locator("#pcov [data-pcpick]").first().click()]); await fc.setFiles(files); };
 /* 2026-11-05: a new post walks through steps (app/compose/composer-walk): straight to its last, caption & details */
-const toDetails = async (p) => { await p.evaluate(() => { if (PCOMPOSE && !PCOMPOSE.edit) { PCOMPOSE.step = "details"; render(); } }); await p.waitForSelector("#pcbody"); };
+const toDetails = async (p) => { await p.evaluate(() => { if (PCOMPOSE && !PCOMPOSE.edit) { PCOMPOSE.step = "details"; PCOMPOSE.more = true; render(); } }); await p.waitForSelector("#pcbody"); };   // more: the rows under Add more (2026-11-15)
 const toFirst = async (p) => { await p.evaluate(() => { if (PCOMPOSE && !PCOMPOSE.edit) { PCOMPOSE.step = "media"; render(); } }); await p.waitForSelector("#pccancel"); };
 const api = async (path, token, body) => (await fetch(B + path, {
   method: body ? "POST" : "GET", headers: { "content-type": "application/json", ...(token ? { authorization: "Bearer " + token } : {}) },
@@ -1076,25 +1076,29 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => { POSTOPEN = null; OPENCOMMENTS = null; PROFILE = null; TAB = "showroom"; render(); });
   });
   /* 2026-11-05 "make the post composer walk you through the posting process like Instagram and the onboarding or the listing" */
-  await step(d, "New post walks you through it: your work → where it belongs (a lab, #tags) → caption & details; the phone's back goes a step back; the post lands in the lab with its #tag", async () => {
+  /* 2026-11-15, the fix list's number 1: "Pick the picture, add a line, done" — 89 posts started, 11 finished in 30 days */
+  await step(d, "New post is two screens: your work → a line and Post; the rest waits under Add more; + Add a lab opens the lab & #tags and Done comes back; the phone's back goes a step back; the post lands in the lab with its #tag", async () => {
     await p.evaluate(() => { PCOMPOSE = null; PICKER = null; LAB = null; TAB = "showroom"; render(); });
     await openCreator();
-    ok(await p.locator("#pcwnext[disabled]").count() === 1 && /1 \/ 3/.test(await p.locator(".pc .kform").innerText()), "step 1 isn't 1 / 3 with Next off until there's work");
+    ok(await p.locator("#pcwnext[disabled]").count() === 1 && /1 \/ 2/.test(await p.locator(".pc .kform").innerText()), "screen 1 isn't 1 / 2 with Next off until there's work");
     await pcFiles(p, [UPLOAD_PNG2]);
     await p.waitForFunction(() => PCOMPOSE && PCOMPOSE.imgs.length === 1 && !PCOMPOSE.upN, null, { timeout: 10000 });
-    await p.locator("#pcwnext").tap(); await p.waitForSelector("[data-pcwlab]");
-    ok(await p.locator("#pcwskip").count() === 1, "step 2 with nothing picked has no Skip");
+    await p.locator("#pcwnext").tap(); await p.waitForSelector("#pcbody");
+    ok(await p.locator("#pcpost").isVisible() && await p.locator("#pcmore").isVisible() && !(await p.locator("#pccollab").isVisible()) && !(await p.locator("#pcmusadd, [data-pcmusadd]").first().isVisible()),
+      "screen 2 should be the line and a big Post, with people and music waiting under Add more");
+    await p.locator("#pclab").tap(); await p.waitForSelector("[data-pcwlab]");
     await p.locator('[data-pcwlab="pharmacy"]').tap();
-    ok(await p.locator('[data-pcwlab="pharmacy"].on').count() === 1 && await p.locator("#pcwskip").count() === 0, "picking // Visual didn't take");
+    ok(await p.locator('[data-pcwlab="pharmacy"].on').count() === 1, "picking // Visual didn't take");
     await p.locator("#pcwtagq").fill("e2ewalk"); await p.locator("#pcwtagf button").tap();
     ok(await p.locator('[data-pcwtag="e2ewalk"].on').count() === 1, "my own #tag didn't land");
     await p.locator("#pcwnext").tap(); await p.waitForSelector("#pcbody");
     ok(/#e2ewalk/.test(await p.locator("#pcbody").inputValue()) && /Visual/.test(await p.locator("#pcto .pc-labchip").innerText()), "the caption or Posting to doesn't carry the lab and the #tag");
-    await p.goBack(); await p.waitForSelector("[data-pcwlab]", { timeout: 4000 });
-    ok(await p.evaluate(() => PCOMPOSE && PCOMPOSE.step === "place"), "the phone's back didn't go back a step");
+    await p.goBack(); await p.waitForSelector("[data-pcpick]", { timeout: 4000 });
+    ok(await p.evaluate(() => PCOMPOSE && PCOMPOSE.step === "media"), "the phone's back didn't go back to screen 1");
     await p.locator("#pcwnext").tap(); await p.waitForSelector("#pcbody");
+    await p.locator("#pcmore").tap(); await p.waitForSelector("#pccollab", { state: "visible" });
     await p.locator("#pcbody").fill("walked through #e2ewalk");
-    await p.locator("#pcgo").tap();
+    await p.locator("#pcpost").tap();
     await p.waitForFunction(() => !PCOMPOSE && PQ.length && PQ.every((c) => c.state === "done"), null, { timeout: 10000 });
     const np = (await myPosts())[0];
     ok(np && /#e2ewalk/.test(np.body) && np.channel !== "profile", "the post didn't land in the lab with its #tag: " + JSON.stringify(np && { b: np.body, c: np.channel }));
@@ -1672,9 +1676,9 @@ console.log("\nMEMBER · PHONE");
     ok((await p.locator("#pcgo").innerText()).trim() === "Post" && await p.locator("#pclab").count() === 1 && await p.locator(".pc-opt", { hasText: "Share to a lab" }).count() === 0, "the composer still says Share for posting");
     await p.locator("#pcto [data-pclabrm]").tap(); await p.waitForTimeout(200);
     ok(await p.locator("#pcto .pc-labchip").count() === 0 && /Add a lab/.test(await p.locator("#pclab").innerText()), "taking the lab out didn't leave + Add a lab");
-    await p.locator("#pclab").tap(); await p.waitForSelector(".pickrow");
-    ok(await p.locator(".pick h2", { hasText: "Add a lab" }).count() === 1 && await p.locator(".pickrow", { hasText: "Profile only" }).count() === 0, "the picker still offers Profile only");
-    await p.locator(".pickrow", { hasText: "Visual" }).first().tap(); await p.waitForTimeout(200);
+    await p.locator("#pclab").tap(); await p.waitForSelector("[data-pcwlab]");   // 2026-11-15: a new post's + Add a lab opens the lab & #tags screen
+    ok(/Lab & #tags/.test(await p.locator(".pc .kform").innerText()) && !/Profile only/.test(await p.locator("#pcov").innerText()), "+ Add a lab didn't open the lab & #tags screen (or it offers Profile only)");
+    await p.locator('[data-pcwlab="pharmacy"]').tap(); await p.locator("#pcwnext").tap(); await p.waitForSelector("#pcbody");
     ok(/Visual/.test(await p.locator("#pcto .pc-labchip").innerText()), "picking a lab didn't add its chip");
     await p.evaluate(() => { PCOMPOSE = null; PICKER = null; render(); }); await p.waitForTimeout(200);   // drop the draft without the "discard?" question
     await p.evaluate(() => setLabView("archive")); await p.waitForSelector("#archscroll");
