@@ -318,7 +318,7 @@ function liveSession(token) {
   if (!s) return undefined;
   const now = Date.now(), used = s.last_used_at || s.created_at;
   if (now - used > SESSION_IDLE_MS) { q.deleteSession.run(token); return undefined; }
-  if (now - used > 86400000) sessionTouch.run(now, token);
+  if (now - used > Math.min(86400000, SESSION_IDLE_MS / 2)) sessionTouch.run(now, token);   // once a day — or sooner if the limit is ever set short, so use always keeps it alive
   return s;
 }
 const sessionSweep = () => { try { db.prepare(`DELETE FROM sessions WHERE COALESCE(last_used_at, created_at) < ?`).run(Date.now() - SESSION_IDLE_MS); } catch (e) { console.error("[auth] session sweep", e.message); } };
