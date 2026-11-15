@@ -253,6 +253,20 @@ export async function expireSession(sessionId, sellerAccount) {
   return /status of ["'`]?expired/i.test(String(out.error));
 }
 
+/** Was this paid checkout given back? (2026-11-15: LABS never heard about a refund — the order stayed paid, the rep
+    stayed.) Asked by the five-minute check, not a webhook: no new key, nothing to set up in Stripe. `refunded` is a
+    full refund only; `error` means Stripe didn't answer and nothing should change.
+    @param {string} sessionId @param {string} [sellerAccount]
+    @returns {Promise<{ refunded: boolean, partial?: boolean, error?: boolean }>} */
+export async function refundState(sessionId, sellerAccount) {
+  if (!KEY || !sessionId) return { refunded: false };
+  const out = await stripe(`checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=payment_intent.latest_charge`, { method: "GET", account: sellerAccount });
+  if (out.error) return { refunded: false, error: true };
+  const ch = out.payment_intent && typeof out.payment_intent === "object" ? out.payment_intent.latest_charge : null;
+  if (!ch || typeof ch !== "object") return { refunded: false };
+  return { refunded: ch.refunded === true, partial: !ch.refunded && Number(ch.amount_refunded) > 0 };
+}
+
 /** Confirm payment server-side. Never trust the browser redirect. */
 export async function verifySession(sessionId, sellerAccount) {
   if (!KEY) return { paid: false };

@@ -85,9 +85,9 @@ app.get("/api/admin/overview", auth, admin, (req, res) => {
   const one = (sql, ...p) => db.prepare(sql).get(...p)?.n ?? 0;
 
   const feeRows = db.prepare(`
-    SELECT o.amount_cents, u.rep, u.is_admin FROM orders o JOIN users u ON u.id = o.seller_id
+    SELECT o.amount_cents, o.fee_cents, u.rep, u.is_admin FROM orders o JOIN users u ON u.id = o.seller_id
     WHERE o.status IN ('paid','shipped','complete')`).all();
-  const earned = feeRows.reduce((s, r) => s + Math.round(r.amount_cents * (feeForSeller(r.rep, r.is_admin) / 100)), 0);
+  const earned = feeRows.reduce((s, r) => s + orderFee(r, r.rep, r.is_admin), 0);   // the fee each order carries (2026-11-15)
 
   const levels = LEVELS.map((l, i) => ({
     level: l.id, name: l.name,
@@ -215,7 +215,7 @@ app.get("/api/admin/orders", auth, admin, (req, res) => {
     orders: rows.map((r) => ({
       id: r.id, title: r.title, buyer: r.buyer, seller: r.seller,
       amount: r.amount_cents, shipping: r.shipping_cents,
-      fee: Math.round(r.amount_cents * (feeForSeller(r.seller_rep, r.seller_admin) / 100)),
+      fee: orderFee(r, r.seller_rep, r.seller_admin),
       feePct: feeForSeller(r.seller_rep, r.seller_admin),
       status: r.status, tracking: r.tracking, paid: ["paid","shipped","complete"].includes(r.status), createdAt: r.created_at,
     })),
@@ -318,7 +318,7 @@ app.get("/api/admin/market", auth, admin, (req, res) => {
   const paidOrders = db.prepare(`
     SELECT o.*, u.rep AS seller_rep, u.is_admin AS seller_admin FROM orders o JOIN users u ON u.id = o.seller_id
     WHERE o.status IN ('paid','shipped','complete')`).all();
-  const rev = paidOrders.reduce((s, o) => s + Math.round(o.amount_cents * (feeForSeller(o.seller_rep, o.seller_admin) / 100)), 0);
+  const rev = paidOrders.reduce((s, o) => s + orderFee(o, o.seller_rep, o.seller_admin), 0);
 
   const daily = [];
   for (let i = 13; i >= 0; i--) {
@@ -327,7 +327,7 @@ app.get("/api/admin/market", auth, admin, (req, res) => {
     daily.push({
       d: new Date(to).toISOString().slice(5, 10),
       gmv: rows.reduce((s, o) => s + o.amount_cents + o.shipping_cents, 0),
-      fee: rows.reduce((s, o) => s + Math.round(o.amount_cents * (feeForSeller(o.seller_rep, o.seller_admin) / 100)), 0),
+      fee: rows.reduce((s, o) => s + orderFee(o, o.seller_rep, o.seller_admin), 0),
       n: rows.length,
     });
   }

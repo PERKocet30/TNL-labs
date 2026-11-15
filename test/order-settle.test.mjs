@@ -30,23 +30,25 @@ const O = (lid, amt, ship, ref, ageMin, checkedMin = ageMin) => Number(db.prepar
 const SESS = {}, asked = [];
 const verifySession = async (sid) => { asked.push(sid); return SESS[sid] || { paid: false, clearing: false }; };
 const q = { userById: db.prepare(`SELECT * FROM users WHERE id = ?`) };
-const told = [], rep = [], routes = {}, timers = [];
+const told = [], rep = [], routes = {}, timers = [], REFUNDS = {}, took = [];
 const read = (f) => readFileSync(join(ROOT, "src", f), "utf8");
 const os = read("server/orders/orders-sharing.js");
 const part = os.slice(os.indexOf('app.get("/api/market/checkout/done"'), os.indexOf("\n", os.indexOf("setInterval(() => { reconcileAll()")) + 1);
 const X = new Function("db", "randomBytes", "q", "notify", "app", "auth", "verified", "maybeAuth", "rateLimit", "baseUrl", "feeFor",
-  "createCheckout", "verifySession", "awardRep", "LISTING_SELECT", "shapeListings", "PAYMENTS_ENABLED", "setInterval",
-  read("server/market/stock.js") + "\n" + read("server/orders/cart.js") + "\n" + part + "\nreturn {reconcileAll, reconcileOrders, settlePaidOrder, offerFor, offerTake};")(
+  "createCheckout", "verifySession", "awardRep", "LISTING_SELECT", "shapeListings", "PAYMENTS_ENABLED", "setInterval", "refundState", "revokeRep", "platformFee",
+  read("server/market/stock.js") + "\n" + read("server/orders/cart.js") + "\n" + part + "\nreturn {reconcileAll, reconcileOrders, settlePaidOrder, offerFor, offerTake, refundSweep, feeStamp, repPairRecent};")(
   db, randomBytes, q, (...a) => told.push(a),
   { post: (p, ...h) => { routes["POST " + p] = h.at(-1); }, get: (p, ...h) => { routes["GET " + p] = h.at(-1); } },
   null, null, null, () => null, () => "https://x", () => 10, async () => ({}), verifySession,
-  (...a) => rep.push(a), "", (r) => r, true, (fn, ms) => { timers.push({ fn, ms }); return { unref() {} }; });
+  (...a) => { rep.push(a); db.prepare(`INSERT INTO rep_events (user_id, kind, amount, source_id, created_at) VALUES (?,?,15,?,?)`).run(a[0], a[1], a[2], Date.now()); }, "", (r) => r, true, (fn, ms) => { timers.push({ fn, ms }); return { unref() {} }; },
+  async (sid) => REFUNDS[sid] || { refunded: false }, (...a) => { took.push(a); db.prepare(`INSERT INTO rep_events (user_id, kind, amount, source_id, created_at) VALUES (?,?,-15,?,?)`).run(a[0], a[1], a[2], Date.now()); return -15; }, (cents, pct) => Math.round(cents * pct / 100));
 
 const status = (id) => db.prepare(`SELECT status FROM orders WHERE id=?`).get(id).status;
 const tee = L("Tee", 5000, 800, 3), cap = L("Cap", 3000, 0, 1);
 
 console.log("\nIN THE BACKGROUND");
 t("a background check is scheduled every 5 minutes", timers.length === 1 && timers[0].ms === 300000);
+t("…and so is one that asks Stripe about refunds", os.includes('setInterval(() => { refundSweep().catch((e) => console.error("[orders] refund check", e?.message || e)); }, 300000)'));
 const paidGone = O(tee, 5000, 800, "cs_paid", 10);
 SESS.cs_paid = { paid: true, orderId: String(paidGone), amount: 5800, ship: { name: "B", address: "1 St" } };
 const fresh = O(tee, 5000, 800, "cs_fresh", 2);           // still on Stripe's page
@@ -124,6 +126,28 @@ t("while the offer's checkout is being paid, another can't be opened at the offe
 SESS.cs_hat2 = { paid: true, orderId: String(second), amount: 3500 };
 await routes["GET /api/market/checkout/done"]({ query: { session_id: "cs_hat2", o: String(second) } }, res);
 t("paid: the offer is spent, and the next piece is at the listing's price", status(second) === "paid" && db.prepare(`SELECT status FROM offers WHERE id=?`).get(hatOffer).status === "used" && (await X.offerFor(hatRow, buyer, sellerRow)) === null);
+
+console.log("\nSALE REP CAN'T BE FARMED · THE FEE IS SAVED · A REFUND IS HEARD (2026-11-15)");
+const pal = U("pal"), shop = U("shop", 1);
+const PO = (lid, who, amt, ref) => Number(db.prepare(`INSERT INTO orders (listing_id,buyer_id,seller_id,amount_cents,shipping_cents,payment_ref,status,created_at,updated_at) VALUES (?,?,?,?,0,?,'pending',?,?)`).run(lid, who, shop, amt, ref, now, now).lastInsertRowid);
+const sock = Number(db.prepare(`INSERT INTO listings (seller_id,title,price_cents,shipping_cents,images,quantity,variants,kind,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`).run(shop, "Sock", 100, 0, '["/u/a.jpg"]', 50, "[]", "physical", now, now).lastInsertRowid);
+const before = rep.filter((a) => a[0] === shop && a[1] === "sale_made").length;
+for (let i = 0; i < 3; i++) { const id = PO(sock, pal, 100, "cs_sock" + i); X.settlePaidOrder(db.prepare(`SELECT * FROM orders WHERE id=?`).get(id), { paid: true }); }
+t("three $1 sales to the same buyer: all paid, sale rep once", db.prepare(`SELECT COUNT(*) n FROM orders WHERE seller_id=? AND status='paid'`).get(shop).n === 3 && rep.filter((a) => a[0] === shop && a[1] === "sale_made").length - before === 1);
+const other = PO(sock, buyer, 100, "cs_sock_b"); X.settlePaidOrder(db.prepare(`SELECT * FROM orders WHERE id=?`).get(other), { paid: true });
+t("a sale to a different buyer still earns it", rep.filter((a) => a[0] === shop && a[1] === "sale_made").length - before === 2);
+const fo = PO(sock, pal, 5000, "cs_fee"); X.feeStamp(fo, 5000, q.userById.get(shop));
+t("the commission is written on the order when it's made (the stand-in rate here is 10%)", db.prepare(`SELECT fee_cents FROM orders WHERE id=?`).get(fo).fee_cents === 500);
+/* refunds: asked on the five-minute check; a full refund marks the order, takes the sale's rep back, tells both people */
+const sold = db.prepare(`SELECT id FROM orders WHERE seller_id=? AND status='paid' AND payment_ref='cs_sock0'`).get(shop).id;
+REFUNDS.cs_sock1 = { refunded: false, partial: true }; REFUNDS.cs_sock0 = { refunded: true };
+told.length = 0; await X.refundSweep();
+t("a full refund on Stripe: the order says refunded, the rep that sale gave is taken back, both are told", status(sold) === "refunded" && took.some((a) => a[0] === shop && a[1] === "sale_made" && a[2] === sold) && told.filter((a) => a[2] === "refunded").length === 2);
+t("a part refund, and orders nobody refunded, are left as they are", db.prepare(`SELECT status FROM orders WHERE payment_ref='cs_sock1'`).get().status === "paid" && status(other) === "paid");
+REFUNDS.cs_sock2 = { refunded: true }; took.length = 0; await X.refundSweep();
+t("each order is asked about at most every six hours", db.prepare(`SELECT status FROM orders WHERE payment_ref='cs_sock2'`).get().status === "paid" && took.length === 0);
+db.prepare(`UPDATE orders SET refund_checked_at = ? WHERE payment_ref = 'cs_sock2'`).run(now - 7 * 3600000); await X.refundSweep();
+t("…then again: that one is refunded too, and it gave no rep, so none is taken", db.prepare(`SELECT status FROM orders WHERE payment_ref='cs_sock2'`).get().status === "refunded" && took.length === 0);
 
 console.log("\nIN THE APP");
 const app = read("app/market/order-done.js"), boot = read("app/feed/feed-boot.js"), router = read("app/music/tracks.js");

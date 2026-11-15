@@ -51,6 +51,7 @@ app.post("/api/market/:id/buy", auth, verified, rateLimit({ max: 20, windowMs: 3
     isLoop ? "" : (address || "").trim().slice(0, 300), v?.id || "", vLabel, now, now);
   const orderId = Number(info.lastInsertRowid);
   offerTake(orderId, offer);
+  feeStamp(orderId, amount, seller);
 
   if (PAYMENTS_ENABLED) {
     const base = baseUrl(req);
@@ -110,6 +111,44 @@ app.get("/api/market/checkout/done", async (req, res) => {
   res.redirect(`/?checkout=paid&o=${order.cart_id || order.id}`);
 });
 
+/* SALE REP CAN'T BE FARMED (2026-11-15, the audit). Two accounts trading $1 pieces reached the top level for about $10:
+   15 for each sale and 10 for each "received", with no limit and no need to ship. Now a seller earns sale rep and
+   delivery rep from the same buyer once in 30 days, and delivery rep only for an order that was marked shipped. */
+const REP_PAIR_MS = 30 * 86400000;
+const repPairRecent = (sellerId, buyerId, kind) => !!db.prepare(`SELECT 1 FROM rep_events r JOIN orders o ON o.id = r.source_id
+  WHERE r.user_id = ? AND r.kind = ? AND r.amount > 0 AND o.seller_id = ? AND o.buyer_id = ? AND r.created_at > ? LIMIT 1`)
+  .get(sellerId, kind, sellerId, buyerId, Date.now() - REP_PAIR_MS);
+
+/* A REFUND IS HEARD (2026-11-15, the audit). Nothing told LABS a seller had refunded: the order stayed paid, the rep
+   stayed, the totals counted it. On the same five-minute check, Stripe is asked about paid orders from the last 120
+   days — each at most every 6 hours, 10 a tick. A full refund marks the order (and the rest of its bag) refunded,
+   takes back the rep that sale gave through the log, and tells both people. A part refund changes nothing. */
+const REFUND_WINDOW_MS = 120 * 86400000, REFUND_EVERY_MS = 6 * 3600000;
+function markRefunded(order) {
+  const group = order.cart_id ? db.prepare(`SELECT * FROM orders WHERE cart_id = ?`).all(order.cart_id) : [order];
+  const given = db.prepare(`SELECT COALESCE(SUM(amount), 0) n FROM rep_events WHERE user_id = ? AND kind = ? AND source_id = ?`);
+  for (const g of group) {
+    if (!["paid", "shipped", "complete"].includes(g.status)) continue;
+    for (const kind of ["sale_made", "delivery_confirmed"]) if (given.get(g.seller_id, kind, g.id).n > 0) revokeRep(g.seller_id, kind, g.id);
+    db.prepare(`UPDATE orders SET status='refunded', updated_at=? WHERE id=?`).run(Date.now(), g.id);
+    const l = db.prepare(`SELECT title FROM listings WHERE id=?`).get(g.listing_id);
+    notify(g.buyer_id, g.seller_id, "refunded", null, `refunded "${l?.title || "your order"}"`);
+    notify(g.seller_id, null, "refunded", null, `Your refund for "${l?.title || "an order"}" is recorded — the sale no longer counts`);
+  }
+}
+async function refundSweep(now = Date.now()) {
+  if (!PAYMENTS_ENABLED) return 0;
+  const rows = db.prepare(`SELECT * FROM orders WHERE status IN ('paid','shipped','complete') AND payment_ref IS NOT NULL AND payment_ref != ''
+    AND created_at > ? AND (refund_checked_at IS NULL OR refund_checked_at < ?) AND (cart_id IS NULL OR cart_id = id)
+    ORDER BY COALESCE(refund_checked_at, 0), created_at DESC LIMIT 10`).all(now - REFUND_WINDOW_MS, now - REFUND_EVERY_MS);
+  for (const o of rows) {
+    db.prepare(`UPDATE orders SET refund_checked_at = ? WHERE id = ?`).run(now, o.id);
+    const st = await refundState(o.payment_ref, q.userById.get(o.seller_id)?.stripe_account);
+    if (st.refunded) markRefunded(o);
+  }
+  return rows.length;
+}
+
 /* Settle one verified-paid order. Shared by the checkout redirect above
    and the reconciler below — one definition, so the two paths can't
    drift. Re-reads status at the moment of settling: the caller's row
@@ -134,7 +173,7 @@ function settlePaidOrder(order, out) {
   if (l && !takeStock(l.id, order.variant_id)) notify(order.seller_id, order.buyer_id, "sale", null,
     `OVERSOLD: "${l.title}"${vl} was already sold out when this payment landed — refund it from Market → Orders → Sold → Your payouts`);
   // A sale is validation with money behind it — the hardest signal to fake.
-  awardRep(order.seller_id, "sale_made", order.id);
+  if (!repPairRecent(order.seller_id, order.buyer_id, "sale_made")) awardRep(order.seller_id, "sale_made", order.id);
   notify(order.seller_id, order.buyer_id, "sale", null, `paid for "${l?.title || "your listing"}"${vl} — ship it`, l?.id);
 }
 
@@ -182,6 +221,7 @@ async function reconcileAll() {
   return rows.length;
 }
 setInterval(() => { reconcileAll().catch((e) => console.error("[orders] background settle", e?.message || e)); }, 300000).unref?.();
+setInterval(() => { refundSweep().catch((e) => console.error("[orders] refund check", e?.message || e)); }, 300000).unref?.();
 
 app.get("/api/orders", auth, async (req, res) => {
   await reconcileOrders(req.user.id).catch(() => {});
@@ -222,11 +262,13 @@ app.post("/api/orders/:id/received", auth, (req, res) => {
   if (!o) return res.status(404).json({ error: "no order" });
   if (o.buyer_id !== req.user.id) return res.status(403).json({ error: "not your order" });
   if (o.status === "void") return res.status(400).json({ error: "that order was a test" });
+  if (o.status === "refunded") return res.status(400).json({ error: "that order was refunded" });
   if (o.status === "complete") return res.json({ ok: true });
   if (!canReceive(o)) return res.status(400).json({ error: "that order hasn't shipped yet" });
   // Only pay rep for deliveries on orders that were actually PAID. An
   // arrange-mode order is two people clicking buttons — no evidence, no rep.
-  if (o.status !== "complete" && (o.status === "shipped" || o.status === "paid") && o.payment_ref) {
+  /* 2026-11-15: and only for an order that was marked shipped, once per buyer in 30 days (repPairRecent, above) */
+  if (o.status === "shipped" && o.payment_ref && !repPairRecent(o.seller_id, o.buyer_id, "delivery_confirmed")) {
     awardRep(o.seller_id, "delivery_confirmed", o.id);
   }
   db.prepare(`UPDATE orders SET status='complete', updated_at=? WHERE id=?`).run(Date.now(), o.id);

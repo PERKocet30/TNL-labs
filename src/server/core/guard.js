@@ -62,6 +62,10 @@ const mailLinkOk = (result) => !ON_RAILWAY && !!result && !result.sent && result
 /* 5 ── Paid, or arrange-mode (no Stripe session) waiting on the seller.
    A Stripe order still waiting for its money can't be shipped or received:
    both count as "paid" everywhere else (stats, rep, loop downloads). */
+/* What LABS earned on an order (2026-11-15). The commission is written on the order when it's made (orders.fee_cents),
+   so a seller levelling up later — or being made an admin — no longer re-prices their past sales in every admin total.
+   Orders from before that fall back to the seller's rate today, as all of them used to. */
+const orderFee = (o, rep, isAdmin) => o.fee_cents != null ? o.fee_cents : Math.round(o.amount_cents * (feeForSeller(rep, isAdmin) / 100));
 const canShip = (o) => o.status === "paid" || (o.status === "pending" && !o.payment_ref);
 const canReceive = (o) => o.status === "paid" || o.status === "shipped";
 
