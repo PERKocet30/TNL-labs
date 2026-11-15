@@ -532,13 +532,15 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate((id) => { const x = SRPOSTS.find((q) => q.id === id); if (x && x.__orig) { x.images = x.__orig; delete x.__orig; } render(); }, id);   // only if it's still the object that was changed: a Showroom refresh mid-step brings a fresh one, already right (2026-11-15: restoring from a fresh one wiped its pictures)
     /* 2026-11-15: a picture that fails once (a deploy's restart, a weak signal) is tried again before it's called unavailable —
        290 pictures "failed" on the Showroom in a month, most of them still on the server */
-    let hits = 0;
-    await p.route("**/uploads/e2e-flaky.png*", async (r) => { hits++; if (hits === 1) return r.abort(); const res = await r.fetch({ url: B + "/uploads/e2e-p3.png" }); return r.fulfill({ response: res }); });
-    await p.evaluate(() => { const x = SRPOSTS.find((q) => q.imageUrl && !(q.images && q.images.length > 1)); x.__u = [x.imageUrl, x.thumbUrl, x.images]; x.imageUrl = x.thumbUrl = "/uploads/e2e-flaky.png"; x.images = null; window.__flaky = x.id; render();
+    /* a real file that isn't there the first time and is the second (the app's own cache layer answers pictures, so a pretend failure never reaches it) */
+    rmSync(join(DATA, "uploads", "e2e-flaky.png"), { force: true });
+    await p.evaluate(() => { IMG_RETRY_MS = 1500; const x = SRPOSTS.find((q) => q.imageUrl && !(q.images && q.images.length > 1)); x.__u = [x.imageUrl, x.thumbUrl, x.images]; x.imageUrl = x.thumbUrl = "/uploads/e2e-flaky.png"; x.images = null; window.__flaky = x.id; render();
       const c = document.querySelector(`#sr-grid .sr-card[data-pid="${x.id}"]`); if (c) c.scrollIntoView({ block: "center" }); });   // on screen: a picture further down waits to be asked for
-    await p.waitForFunction(() => { const im = document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] img.sr-img`); return im && im.complete && im.naturalWidth > 0; }, null, { timeout: 6000 });
-    ok(hits === 2 && await p.evaluate(() => !document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] .img-gone`) && !BADIMG.has("/uploads/e2e-flaky.png")), `a picture that failed once wasn't tried again (asked for ${hits} times)`);
-    await p.unroute("**/uploads/e2e-flaky.png*");
+    await p.waitForFunction(() => IMGRETRY.has("/uploads/e2e-flaky.png"), null, { timeout: 6000 });   // it failed once
+    ok(await p.evaluate(() => !BADIMG.has("/uploads/e2e-flaky.png") && !document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] .img-gone`)), "one failure was enough to call the picture unavailable");
+    writeFileSync(join(DATA, "uploads", "e2e-flaky.png"), Buffer.from(PNG[0], "base64"));   // and now it's there
+    await p.waitForFunction(() => { const im = document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] img.sr-img`); return im && im.complete && im.naturalWidth > 0; }, null, { timeout: 8000 });
+    ok(await p.evaluate(() => !document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] .img-gone`) && !BADIMG.has("/uploads/e2e-flaky.png")), "a picture that failed once and then loaded was still called unavailable");
     await p.evaluate(() => { const x = SRPOSTS.find((q) => q.id === window.__flaky); if (x && x.__u) { [x.imageUrl, x.thumbUrl, x.images] = x.__u; delete x.__u; } IMG_RETRY_MS = 2000; render(); });
   });
   await step(d, "back from a profile lands where you were in the feed", async () => {
