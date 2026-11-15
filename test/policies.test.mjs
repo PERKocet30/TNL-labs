@@ -36,7 +36,8 @@ try {
     ["no selling accounts", terms, "don't sell, buy or hand over accounts"], ["no bots or impersonation", terms, "no accounts run by bots or scripts"], ["no bought likes, follows or votes", terms, "buying or trading likes, follows, votes or rep"],
     ["asking us to look again", terms, "we'll look at it again"], ["deleting what came from signing in", priv, "came from signing in with Google, Apple or Facebook"]])
     t(`policies cover ${what}`, page.includes(txt));
-  t("dated November 14, 2026", priv.includes("Last updated November 14, 2026"));
+  t("dated November 15, 2026", priv.includes("Last updated November 15, 2026"));
+  t("Privacy says LABS counts visits itself, with no outside tracker (2026-11-15)", priv.includes("We also count visits ourselves, with no outside tracker") && priv.includes("admins see totals, not one person's trail"));
   const termsPg = await (await fetch(`http://127.0.0.1:${PORT}/terms`)).text();
   t("the company is named: Terms, the footer and Virginia law (2026-11-14)", /run by TNL LABS LLC, a Virginia limited liability company/.test(termsPg) && /© \d{4} TNL LABS LLC/.test(termsPg) && /Commonwealth of Virginia/.test(termsPg));
   if (FEE_BY_LEVEL) { const v = Object.values(FEE_BY_LEVEL); t("the fee range comes from FEE_BY_LEVEL", terms.includes(`${Math.min(...v)}–${Math.max(...v)}%`)); }

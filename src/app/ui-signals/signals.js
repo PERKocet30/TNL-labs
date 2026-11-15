@@ -1,4 +1,6 @@
-/* UI SIGNALS v1.1 — 2026-11-09 ("get rid of any data that isn't useful and
+/* UI SIGNALS v1.2 — 2026-11-15 (every batch says which visit it belongs to: a random id for this
+   sitting, the link it came in on and the site before it — uiVisit; a new visit after 30 minutes away.
+   Never the page on that site, never who). v1.1 — 2026-11-09 ("get rid of any data that isn't useful and
    track what is"): the load timer is gone (it read 0ms — a slow screen is
    the glitch watcher's to tell), and a post that Share sent on its way is a
    post finished: the creator closes before the post goes (compose/queue), so
@@ -16,7 +18,7 @@
    render() and paintLayer() call uiTick() last; back.js calls uiBack().
    Batched (POST /api/ui) every 10s and when the page goes away; nothing
    waits on it and nothing on screen changes. */
-const UI={screen:"",at:0,q:[],timer:null,renders:0,fetches:0,flow:null,flowDone:false,empty:null,postWait:0,exited:false,misses:{},sent:{}};
+const UI={visit:null,screen:"",at:0,q:[],timer:null,renders:0,fetches:0,flow:null,flowDone:false,empty:null,postWait:0,exited:false,misses:{},sent:{}};
 const UI_FLOWS={"compose":"post","market:sell":"sell","event:enter":"enter"};
 const UI_CONTROLS="button,a,input,select,textarea,label,summary,video,audio,[role=button],[contenteditable],[tabindex]";
 /* a plain name for what's on screen — no ids, no names, no titles */
@@ -43,12 +45,23 @@ function uiPush(kind,screen,prev,ms){
   UI.q.push({kind,screen:String(screen||"").slice(0,40),prev:String(prev||"").slice(0,60),ms:Math.round(ms||0)});
   if(UI.q.length>=40)uiFlush();else if(!UI.timer)UI.timer=setTimeout(uiFlush,10000);
 }
+/* this sitting: a random id kept for the tab, renewed after 30 minutes away. The first one of a page load
+   carries where it came from (the link, and the site before it); one that starts later came from nowhere new. */
+function uiVisit(){
+  const now=Date.now();let v=UI.visit,first=false;
+  if(!v){try{v=JSON.parse(sessionStorage.getItem("tnl-visit")||"null")}catch(e){v=null}first=!v}
+  if(!v||!/^[a-f0-9]{24}$/.test(v.id||"")||now-(v.t||0)>18e5){
+    let id="";try{id=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,"0")).join("")}catch(e){return null}
+    v={id,r:first?(document.referrer||"").slice(0,300):"",l:(location.pathname+location.search).slice(0,300)}}
+  v.t=now;UI.visit=v;try{sessionStorage.setItem("tnl-visit",JSON.stringify(v))}catch(e){}
+  return {id:v.id,ref:v.r,land:v.l,wide:isWide()?1:0};
+}
 function uiFlush(now){
   if(UI.timer){clearTimeout(UI.timer);UI.timer=null}
   if(!UI.q.length)return;
   const events=UI.q.splice(0,60),h={"Content-Type":"application/json"};
   if(TOKEN)h.Authorization="Bearer "+TOKEN;const dv=devId();if(dv)h["X-Device"]=dv;
-  try{UIFETCH(API+"/api/ui",{method:"POST",headers:h,body:JSON.stringify({events}),keepalive:!!now}).catch(()=>{})}catch(e){}
+  try{UIFETCH(API+"/api/ui",{method:"POST",headers:h,body:JSON.stringify({events,visit:uiVisit()}),keepalive:!!now}).catch(()=>{})}catch(e){}
   if(UI.q.length)UI.timer=setTimeout(uiFlush,now?0:1000);
 }
 /* every repaint: did the screen change? */

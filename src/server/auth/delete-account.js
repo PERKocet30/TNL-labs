@@ -1,5 +1,5 @@
 /* ================================================================
-   DELETING AN ACCOUNT v1.0 — 2026-10-19. "Make sure I can delete the
+   DELETING AN ACCOUNT v1.1 — 2026-11-15 (their visits and screen signals go too). v1.0 — 2026-10-19. "Make sure I can delete the
    account I created to test." Then: "Just focus on admin." Members still
    email us to close an account (/privacy); an admin does it here:
      DELETE /api/admin/members/:username   (never another admin, never yourself)
@@ -17,6 +17,8 @@ function accountOrders(id) {
 }
 function deleteAccount(id) {
   db.prepare(`DELETE FROM users WHERE id = ?`).run(id);
+  /* v1.1: what was counted under their name goes with them — their visits and screen signals (no ON DELETE rule: the key is "u:<id>") */
+  try { db.prepare(`DELETE FROM visits WHERE user_id = ? OR viewer = ?`).run(id, "u:" + id); db.prepare(`DELETE FROM ui_events WHERE viewer = ?`).run("u:" + id); } catch (e) {}
   console.log(`[account] deleted user ${id}`);
 }
 

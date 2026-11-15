@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · insights (people)  v1.1 — 2026-11-15 (lab names from the one list). v1.0 — 2026-10-29
+   LABS CONNECTOR · insights (people)  v1.2 — 2026-11-15 (a way in is read by the one reading visits use: a tag on the link counts). v1.1 — 2026-11-15 (lab names from the one list). v1.0 — 2026-10-29
    Grok, reading the connector: "The gaps are mainly the drop-off points,
    marketplace behaviour, and what happens after someone votes or posts
    once." Two admin GET routes, read-only, answered from what LABS already
@@ -40,11 +40,9 @@ const insBack = (p, days) => p.last >= p.joined + days * INS_D;
 /* Where a member came in, from what join_signals kept (since 2026-10-26). */
 function insWayIn(j) {
   if (!j) return null;
-  const ref = j.referrer || "", land = j.landing || "", dev = j.device || "";
-  const from = /Instagram/.test(dev) || /instagram\.com/.test(ref) ? "Instagram" : /Facebook/.test(dev) || /facebook\.com/.test(ref) ? "Facebook"
-    : /TikTok/.test(dev) || /tiktok\.com/.test(ref) ? "TikTok" : /google\./.test(ref) ? "Google" : ref && !/tnllabs\.com/.test(ref) ? "Another site" : "Direct";
-  const page = /[?&]e=|^\/e\//.test(land) ? "a tournament link" : /[?&]p=|^\/p\//.test(land) ? "a post link" : /[?&]u=|^\/u\//.test(land) ? "a profile link"
-    : /^\/s\//.test(land) ? "a song link" : "the front door";
+  /* one reading of a link and a referrer, for joins and for visits (srcOf · landingKind, ui-signals/visits.js) */
+  const s = srcOf({ referrer: j.referrer || "", landing: j.landing || "", device: j.device || "" });
+  const from = s.medium === "another site" ? "Another site" : s.source, page = landingKind(j.landing || "");
   return `${from} → ${page}${j.via && j.via !== "email" ? ` (joined with ${j.via})` : ""}`;
 }
 function insKind(p) { return p.video_url ? "video" : p.audio_track_id || p.beat_json ? "music" : p.image_url || (p.images && p.images !== "[]") ? "picture" : "words"; }

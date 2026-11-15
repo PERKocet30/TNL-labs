@@ -1,5 +1,7 @@
 
 /* ================================================================
+   THE POLICIES · v1.4 — 2026-11-15 (v1.4: Privacy says LABS counts visits itself — screens, length, where from,
+   device, country — with no outside tracker).
    THE POLICIES · v1.3 — 2026-11-14 (v1.3: the company behind LABS is named —
    TNL LABS LLC, formed in Virginia that day — in Terms, Privacy, Contact and
    the footer; LEGAL_NAME is the one place it's typed).
@@ -18,7 +20,7 @@
    SUPPORT_EMAIL (Railway → Variables) is the inbox shown everywhere.
 ================================================================ */
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@tnllabs.com";
-const POLICY_UPDATED = "November 14, 2026";
+const POLICY_UPDATED = "November 15, 2026";
 /* The company that runs LABS (2026-11-14). The app is still LABS everywhere; the legal name shows only where
    the law wants the company named — policies, the footer's ©, event rules. Typed here and nowhere else
    (test/naming.test.mjs checks). */
@@ -94,7 +96,7 @@ app.get("/privacy", (_req, res) => policyPage(res, {
     ["What we collect", `<ul><li><b>Account:</b> email, password (stored only as a one-way hash), name, username, and what you add to your profile. If you sign in with Google, Apple or Facebook, we get your name, email and an account ID from them — never your password.</li>
 <li><b>What you make:</b> posts, images, audio, comments, messages, listings, offers, votes and event entries.</li>
 <li><b>Orders:</b> what you bought or sold, and the shipping address you enter at checkout, which goes to the seller so they can ship. Card details go to Stripe and never reach us.</li>
-<li><b>Running the app:</b> your IP address and basic request logs (for security and rate limits), the days you use the app signed in (just the date — so we know who comes back), requests that are slow or fail, error reports when something breaks, and reports of screens that load slowly, jump or don't respond to a tap, so we can fix them.</li>
+<li><b>Running the app:</b> your IP address and basic request logs (for security and rate limits), the days you use the app signed in (just the date — so we know who comes back), requests that are slow or fail, error reports when something breaks, and reports of screens that load slowly, jump or don't respond to a tap, so we can fix them. We also count visits ourselves, with no outside tracker: which screens open and in what order, how long a visit lasts, the site or tagged link it came from, whether it's a phone or a computer, and the country. A visit is kept against your account, or your phone's random code if you aren't signed in; admins see totals, not one person's trail.</li>
 <li><b>Keeping accounts real:</b> when you join, sign in or vote, we note the network you used (kept as a code, not the address itself), the country and city it's in, the time zone your phone is set to, your device and browser, and the link that first brought you to LABS. The app also saves a random code on your phone (it isn't your name, number or phone ID) so each phone counts once per piece when voting. Only LABS admins see this, to spot fake accounts and vote rigging.</li>
 <li><b>Instagram messages:</b> if you message @tnl.labs on Instagram, LABS admins read and answer it in our admin, through Meta's tools.</li></ul>`],
     ["Why", `<p>To run your account and show your work, process orders, send email (verification, password reset and order updates, plus event announcements and reminders — those have a one-tap unsubscribe), keep the app safe from spam and abuse, and fix bugs.</p>`],

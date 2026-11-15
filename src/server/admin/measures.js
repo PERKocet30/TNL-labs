@@ -1,5 +1,6 @@
 /* ================================================================
-   THE DICTIONARY v1.0 — 2026-11-15. "Improve the admin dashboard to meet
+   THE DICTIONARY v1.1 — 2026-11-15 (any dates: mWindow takes from= and to=; visits, visitors, new
+   visitors and left straight away join the numbers — server/ui-signals/visits.js). v1.0 — 2026-11-15. "Improve the admin dashboard to meet
    Google level analytics. From the data collection to how it's organised,
    categorised and worded." The first step: one meaning for every number.
    The dashboard said 7 active where another card said 277, counted
@@ -35,6 +36,11 @@ const MEASURES = [
   { id: "members", name: "Members", says: "Everyone who joined. Suspended accounts aren't counted." },
   { id: "joined", name: "Joined", says: "New members in the period." },
   { id: "confirmed", name: "Email confirmed", says: "Members who confirmed their email. LABS can reach them without Instagram." },
+  { id: "visits", name: "Visits", says: "One sitting in the app, signed in or not. A new one starts after 30 minutes away. Counted since 15 Nov." },
+  { id: "visitors", name: "Visitors", says: "People who visited — a member counts once, and so does a phone that isn't signed in." },
+  { id: "newVisitors", name: "New visitors", says: "Visitors LABS hadn't seen before." },
+  { id: "bounce", name: "Left straight away", says: "Visits that saw one screen and went." },
+  { id: "source", name: "Where from", says: "The site or app a visit came from, or the tag on the link (utm_source). Direct means a typed address, a saved link or an app that doesn't say." },
   { id: "opened", name: "Opened the app", says: "Members who used LABS signed in, on at least one day in the period. Counted since 29 Oct." },
   { id: "tookPart", name: "Took part", says: "Members who did something: posted, gave feedback, liked, reacted, followed, messaged, voted or entered." },
   { id: "cameBack", name: "Came back", says: "Opened the app or did anything, a day or more after joining." },
@@ -47,7 +53,7 @@ const MEASURES = [
   { id: "orders", name: "Orders", says: "Orders that were paid for." },
   { id: "sales", name: "Sales", says: "What buyers paid for the pieces, before shipping." },
   { id: "fees", name: "Fees earned", says: "LABS's share of each sale." },
-  { id: "period", name: "The period", says: "The last 7, 30 or 90 days, counted from midnight your time, today included. Each is compared with the same number of days before it." },
+  { id: "period", name: "The period", says: "The last 7, 30 or 90 days, or any dates you pick, counted from midnight your time, both ends included. Each is compared with the same number of days before it." },
 ];
 
 const mOne = (sql, ...p) => { try { return db.prepare(sql).get(...p)?.n ?? 0; } catch (e) { return 0; } };
@@ -74,11 +80,18 @@ const M = {
 /* The period: `days` days back from the admin's local midnight, today included,
    and the same length before it. tz is Date#getTimezoneOffset (minutes). */
 function mWindow(q = {}, now = Date.now(), allowed = [7, 30, 90]) {
+  const tz = Math.max(-840, Math.min(840, Number(q.tz) || 0)) * 60000;
+  /* any dates (v1.1): from=2026-11-01&to=2026-11-07, both days included, in the admin's own time — a year at most */
+  const day = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || "")); const t = m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : NaN; return Number.isFinite(t) ? t + tz : null; };
+  const from = day(q.from), to = day(q.to);
+  if (from != null && to != null && to >= from && from <= now) {
+    const days = Math.min(366, Math.round((to - from) / M_DAY) + 1);
+    return { days, tz, start: from, end: Math.min(now, from + days * M_DAY), prevStart: from - days * M_DAY, custom: true };
+  }
   const asked = Math.round(Number(q.days) || 0);
   const days = allowed ? (allowed.includes(asked) ? asked : 30) : Math.max(1, Math.min(365, asked || 30));
-  const tz = Math.max(-840, Math.min(840, Number(q.tz) || 0)) * 60000;
   const start = Math.floor((now - tz) / M_DAY) * M_DAY + tz - (days - 1) * M_DAY;
-  return { days, tz, start, prevStart: start - days * M_DAY };
+  return { days, tz, start, end: now, prevStart: start - days * M_DAY, custom: false };
 }
 
 app.get("/api/admin/measures", auth, admin, (req, res) => res.json({ measures: MEASURES }));
