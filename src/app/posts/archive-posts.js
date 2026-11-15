@@ -153,7 +153,7 @@ function postHTML(p){const mine=p.author.username===myName();
       data-u="${esc(p.author.username)}">${(i===3&&p.images.length>4)?`<span class="galn mono">+${p.images.length-4}</span>`:""}`).join("")}
   </div>`)
   :p.imageUrl?`<img class="post-img" ${imgAttrs(pxImgs(p)[0],CSLOTPO)} alt="attached work" loading="lazy" decoding="async"${CSLOTPO?` data-zoom="${esc(p.imageUrl)}"`:""}
-    ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
+    ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:`data-nosize style="aspect-ratio:4/5"`}
     ${CSLOTPO?"":`data-u="${esc(p.author.username)}"`}>`:""}
   ${p.videoUrl?`<div class="vwrap">
     ${pxVideo(p,"post-vid")}
@@ -165,7 +165,7 @@ function postHTML(p){const mine=p.author.username===myName();
     <button class="igact" data-comments="${p.id}" aria-label="Comment"${p.commentsOff?" hidden":""}>${IG_COMMENT}<span class="igact-n">${p.commentCount||""}</span></button>
     <button class="igact" data-share="${p.id}" aria-label="Send">${IG_SEND}<span class="igact-n">${p.shareCount||""}</span></button>
     ${mine?`<button class="igact" data-collab="${p.id}" aria-label="Invite a collaborator" title="Invite a collaborator">${IG_COLLAB}</button>`:""}
-    ${myPending?`<button class="igpill" data-accept="${p.id}">Accept collab</button>`:""}
+    ${myPending?`<button class="igpill" data-accept="${p.id}">Accept collab</button><button class="igpill ghost" data-decline="${p.id}">Not this time</button>`:""}
     ${!mine?`<button class="igact igflag" data-report="${p.id}" aria-label="Report" title="Report">${IG_FLAG}</button>`:""}
   </div>
   ${pxLikersHTML(p)}

@@ -382,6 +382,57 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => document.getElementById("showroom").scrollTop) === top, "share threw the feed to the top");
     await p.evaluate(() => closePicker()); await p.waitForTimeout(200);
   });
+  /* 2026-11-15, the fix list's number 3: "every piece leads on" — opened posts were backed out of almost every time */
+  await step(d, "an opened post leads on: its lab opens the lab, More from @artist opens their work, Next piece and a sideways swipe go to the next piece, the swipe back returns", async () => {
+    const at = await p.evaluate(() => { const i = SRPOSTS.findIndex((q, k) => k < SRPOSTS.length - 1 && !q.pending); openPost(SRPOSTS[i]); return i; });
+    await p.waitForSelector("#ponext .po-nx", { timeout: 5000 });
+    const ids = await p.evaluate((i) => [SRPOSTS[i].id, SRPOSTS[i + 1].id], at);
+    ok(/Next piece/.test(await p.locator("#ponext .po-nx").innerText()), "an opened post has no Next piece");
+    await p.locator("#ponext .po-nx").tap();
+    await p.waitForFunction((id) => POSTOPEN && POSTOPEN.id === id, ids[1], { timeout: 4000 });
+    ok(await p.evaluate(() => document.querySelector("#poov .po-body").scrollTop) === 0, "the next piece didn't open at its top");
+    // a sideways swipe on the post (not its carousel): right goes back, left goes on
+    const swipe = (dx) => p.evaluate((dx) => { const b = document.querySelector("#poov .po-body"), el = b.querySelector(".post-h") || b, r = el.getBoundingClientRect(), y = r.top + r.height / 2, x0 = innerWidth / 2;
+      const t = (x) => new Touch({ identifier: 1, target: el, clientX: x, clientY: y });
+      el.dispatchEvent(new TouchEvent("touchstart", { bubbles: true, touches: [t(x0)], changedTouches: [t(x0)] }));
+      el.dispatchEvent(new TouchEvent("touchend", { bubbles: true, touches: [], changedTouches: [t(x0 + dx)] })); }, dx);
+    await swipe(160);
+    await p.waitForFunction((id) => POSTOPEN && POSTOPEN.id === id, ids[0], { timeout: 4000 });
+    await swipe(-160);
+    await p.waitForFunction((id) => POSTOPEN && POSTOPEN.id === id, ids[1], { timeout: 4000 });
+    // More from @artist: their other work, three across; a tap opens it here
+    const who = await p.evaluate(() => POSTOPEN.author.username);
+    await p.waitForFunction(() => document.querySelector("#ponext .po-more .po-mt img") || (POMORE[POSTOPEN.author.username] || []).filter((q) => q.id !== POSTOPEN.id && (q.imageUrl || (q.images || []).length)).length === 0, null, { timeout: 6000 });
+    if (await p.locator("#ponext .po-more [data-popen]").count()) {
+      ok(new RegExp("More from @" + who).test(await p.locator("#ponext").innerText()), "More from @artist isn't named");
+      const other = await p.locator("#ponext .po-more [data-popen]").first().getAttribute("data-popen");
+      await p.locator("#ponext .po-more [data-popen]").first().tap();
+      await p.waitForFunction((id) => POSTOPEN && String(POSTOPEN.id) === id, other, { timeout: 4000 });
+    }
+    // the lab: a post in a lab says which, and one tap goes in
+    const lp = await p.evaluate(() => { const q = SRPOSTS.find((x) => x.channel && x.channel !== "profile" && labOfCh(x.channel)); if (q) openPost(q); return q ? labOfCh(q.channel).id : null; });
+    ok(lp, "no Showroom post in a lab to test with");
+    await p.waitForSelector("#ponext [data-polab]", { timeout: 4000 });
+    await p.locator("#ponext [data-polab]").tap();
+    await p.waitForFunction((id) => !POSTOPEN && TAB === "labs" && LAB && LAB.id === id, lp, { timeout: 5000 });
+    await p.evaluate(() => { TAB = "showroom"; LAB = null; render(); }); await p.waitForTimeout(300);
+  });
+  /* 2026-11-15, the fix list's number 5: 6 of 14 collab invites sat ignored — the invite gets "Not this time" beside Accept */
+  await step(d, "a collab invite on an opened post has Accept and Not this time; Not this time takes the invite away", async () => {
+    const fp = await p.evaluate(() => SRPOSTS.find((q) => q.author.username === "friend" && !q.pending));
+    ok(fp, "no post by friend in the Showroom to test with");
+    const r = await api(`/api/posts/${fp.id}/collab`, "e2e-friend-session", { username: "tester" });
+    ok(r.ok, "friend couldn't invite tester: " + JSON.stringify(r));
+    const fresh = await api(`/api/posts/${fp.id}`, token);
+    await p.evaluate((q) => openPost(q), fresh.post || fresh);
+    await p.waitForSelector(`#poov [data-decline="${fp.id}"]`, { timeout: 5000 });
+    ok(await p.locator(`#poov [data-accept="${fp.id}"]`).isVisible() && /Not this time/.test(await p.locator(`#poov [data-decline="${fp.id}"]`).innerText()), "the invite doesn't offer Accept and Not this time");
+    await p.locator(`#poov [data-decline="${fp.id}"]`).tap();
+    await p.waitForFunction((id) => !document.querySelector(`#poov [data-decline="${id}"]`) && !document.querySelector(`#poov [data-accept="${id}"]`), fp.id, { timeout: 4000 });
+    const after = await api(`/api/posts/${fp.id}`, token);
+    ok(!((after.post || after).collaborators || []).some((c) => c.username === "tester"), "the invite is still there on the server");
+    await p.evaluate(() => { POSTOPEN = null; render(); });
+  });
   await step(d, "share from an opened post: menu on top, Into a lab works", async () => {
     await p.evaluate(() => openPost(SRPOSTS[1])); await p.waitForSelector(".po-ov [data-share]");
     await p.locator(".po-ov [data-share]").first().tap(); await p.waitForTimeout(300);
@@ -467,13 +518,13 @@ console.log("\nMEMBER · PHONE");
      half a slide off, the first sat in a grey box, and the feed jumped as slides loaded. */
   await step(d, "carousel of mixed shapes: the first picture sets the frame, it's sized before anything loads, every slide is exactly the frame", async () => {
     await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
-    const id = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.images && q.images.length > 2); x.__orig = x.images;
+    const id = await p.evaluate(() => { IMG_RETRY_MS = 300; const x = SRPOSTS.find((q) => q.images && q.images.length > 2); x.__orig = x.images;
       x.images = x.images.slice(0, 3).map((im, i) => Object.assign({}, im, [{ w: 1600, h: 900 }, { w: 800, h: 1400 }, { w: 1000, h: 1000 }][i])); render(); return x.id; });
     const m = await p.evaluate((id) => { const c = document.querySelector(`#sr-grid [data-caro="s${id}"]`), t = c.querySelector(".caro-t"), tw = t.clientWidth, th = t.clientHeight;
       return { ratio: +(tw / th).toFixed(2), style: t.style.aspectRatio, slides: [...t.querySelectorAll(".caro-i")].map((im) => [Math.round(im.getBoundingClientRect().width - tw), Math.round(im.getBoundingClientRect().height - th)]) }; }, id);
     ok(Math.abs(m.ratio - 1.78) < 0.03 && m.style, "the frame isn't the first picture's shape, set before loading: " + JSON.stringify(m));
     ok(m.slides.every(([w, h]) => Math.abs(w) <= 1 && Math.abs(h) <= 1), "slides aren't exactly the frame (they'd land half on): " + JSON.stringify(m.slides));
-    await p.evaluate((id) => { const x = SRPOSTS.find((q) => q.id === id); x.images = x.__orig; delete x.__orig; render(); }, id);
+    await p.evaluate((id) => { const x = SRPOSTS.find((q) => q.id === id); if (x && x.__orig) { x.images = x.__orig; delete x.__orig; } render(); }, id);   // only if it's still the object that was changed: a Showroom refresh mid-step brings a fresh one, already right (2026-11-15: restoring from a fresh one wiped its pictures)
   });
   /* Fix today's issues (2026-10-13): one July carousel lost 7 of its 8 pictures on the server and the
      Showroom showed swipeable blank slides; browsers asked for /favicon.ico 33 times a day and got nothing. */
@@ -492,7 +543,19 @@ console.log("\nMEMBER · PHONE");
     await p.evaluate(() => render());
     r = await cnt(id);
     ok(r && r.slides === 2 && r.n === "1/2", "a repaint brought the missing slides back: " + JSON.stringify(r));
-    await p.evaluate((id) => { const x = SRPOSTS.find((q) => q.id === id); x.images = x.__orig; delete x.__orig; render(); }, id);
+    await p.evaluate((id) => { const x = SRPOSTS.find((q) => q.id === id); if (x && x.__orig) { x.images = x.__orig; delete x.__orig; } render(); }, id);   // only if it's still the object that was changed: a Showroom refresh mid-step brings a fresh one, already right (2026-11-15: restoring from a fresh one wiped its pictures)
+    /* 2026-11-15: a picture that fails once (a deploy's restart, a weak signal) is tried again before it's called unavailable —
+       290 pictures "failed" on the Showroom in a month, most of them still on the server */
+    /* a real file that isn't there the first time and is the second (the app's own cache layer answers pictures, so a pretend failure never reaches it) */
+    rmSync(join(DATA, "uploads", "e2e-flaky.png"), { force: true });
+    await p.evaluate(() => { IMG_RETRY_MS = 1500; const x = SRPOSTS.find((q) => q.imageUrl && !(q.images && q.images.length > 1)); x.__u = [x.imageUrl, x.thumbUrl, x.images]; x.imageUrl = x.thumbUrl = "/uploads/e2e-flaky.png"; x.images = null; window.__flaky = x.id; render();
+      const c = document.querySelector(`#sr-grid .sr-card[data-pid="${x.id}"]`); if (c) c.scrollIntoView({ block: "center" }); });   // on screen: a picture further down waits to be asked for
+    await p.waitForFunction(() => IMGRETRY.has("/uploads/e2e-flaky.png"), null, { timeout: 6000 });   // it failed once
+    ok(await p.evaluate(() => !BADIMG.has("/uploads/e2e-flaky.png") && !document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] .img-gone`)), "one failure was enough to call the picture unavailable");
+    writeFileSync(join(DATA, "uploads", "e2e-flaky.png"), Buffer.from(PNG[0], "base64"));   // and now it's there
+    await p.waitForFunction(() => { const im = document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] img.sr-img`); return im && im.complete && im.naturalWidth > 0; }, null, { timeout: 8000 });
+    ok(await p.evaluate(() => !document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] .img-gone`) && !BADIMG.has("/uploads/e2e-flaky.png")), "a picture that failed once and then loaded was still called unavailable");
+    await p.evaluate(() => { const x = SRPOSTS.find((q) => q.id === window.__flaky); if (x && x.__u) { [x.imageUrl, x.thumbUrl, x.images] = x.__u; delete x.__u; } IMG_RETRY_MS = 2000; render(); });
   });
   await step(d, "back from a profile lands where you were in the feed", async () => {
     await p.evaluate(() => { TAB = "showroom"; PROFILE = null; render(); });
@@ -1633,6 +1696,7 @@ console.log("\nMEMBER · PHONE");
     await p.waitForSelector("#pctrack .pc-slide img"); await toDetails(p); await p.waitForTimeout(400);
     await p.locator("#pctag").tap(); await p.waitForSelector(".pc-taghint");
     const img = p.locator("#pctrack .pc-slide img").first();
+    await p.waitForFunction(() => { const im = document.querySelector("#pctrack .pc-slide img"); return im && im.complete && im.naturalWidth > 0; }, null, { timeout: 8000 });   // Tag people repaints the stage: the picture is a new element, measured only once it has loaded (2026-11-15: measured too soon once on GitHub, and every step after it fell over)
     const at = await p.evaluate(() => { const im = document.querySelector("#pctrack .pc-slide img"), r = im.getBoundingClientRect(), nw = im.naturalWidth, nh = im.naturalHeight, s = Math.min(r.width / nw, r.height / nh), w = nw * s, h = nh * s;
       return { x: r.left + (r.width - w) / 2 + w * 0.5, y: r.top + (r.height - h) / 2 + h * 0.25 }; });
     await p.mouse.click(at.x, at.y); await p.waitForSelector(".pickrow", { timeout: 5000 });

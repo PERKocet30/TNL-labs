@@ -55,7 +55,7 @@ db.close();
 const PORT = 18960 + (process.pid % 30);
 const srv = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], { cwd: ROOT, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env,
   PORT: String(PORT), TNL_DATA: DATA, RESEND_API_KEY: "re_test", MAIL_FROM: "LABS <noreply@tnllabs.com>", SUPPORT_EMAIL: "support@tnllabs.com",
-  RESEND_API_BASE: `http://127.0.0.1:${fake.address().port}`, NUDGE_TICK_MS: "300", NUDGE_EVERY_MS: "60000", NUDGE_PER_DAY: "3", NUDGE_MAX: "2", NUDGE_GAP_MS: "0",
+  RESEND_API_BASE: `http://127.0.0.1:${fake.address().port}`, NUDGE_TICK_MS: "300", NUDGE_EVERY_MS: "60000", NUDGE_PER_DAY: "3", NUDGE_MAX: "2", NUDGE_NEVER_MAX: "2", NUDGE_GAP_MS: "0",   // the weekly run's own rules; one-for-never-posted is nudge-never.test
   PUBLIC_URL: "https://labs.tnllabs.com" } });
 let log = ""; srv.stdout.on("data", (d) => log += d); srv.stderr.on("data", (d) => log += d);
 for (let i = 0; i < 100 && !/listening/.test(log); i++) await wait(100);

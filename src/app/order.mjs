@@ -163,6 +163,7 @@ export const APP = [
 
   // media
   "media/media.js",
+  "posts/post-next.js",    // an opened post leads on: its lab, More from @artist, Next piece (2026-11-15)
 
   // compose
   "compose/preview.js",

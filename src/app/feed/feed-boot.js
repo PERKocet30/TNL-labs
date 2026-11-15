@@ -129,7 +129,11 @@ function wireFeed(){
     try{const d=await api.mentionable("");
       if(PICKER){PICKER.items=toItems(d.people);PICKER.loading=false;render()}}catch(e){}
   });
-  document.querySelectorAll("[data-accept]").forEach(b=>b.onclick=async()=>{try{await api.accept(b.dataset.accept);await refreshMe();toast("Collab confirmed");render()}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-accept]").forEach(b=>b.onclick=async()=>{if(b.disabled)return;b.disabled=true;try{await api.accept(b.dataset.accept);await refreshMe();toast("Collab confirmed");render()}catch(e){b.disabled=false;toast(e.message)}});
+  /* Not this time (2026-11-15): the invite goes, kindly; the author can ask someone else */
+  document.querySelectorAll("[data-decline]").forEach(b=>b.onclick=async()=>{if(b.disabled)return;b.disabled=true;const id=b.dataset.decline;
+    try{await api.decline(id);for(const p of [postById(id),POSTOPEN&&String(POSTOPEN.id)===String(id)?POSTOPEN:null])if(p&&p.collaborators)p.collaborators=p.collaborators.filter(c=>!(c.username===myName()&&c.status==="pending"));toast("Passed — they'll know");render()}
+    catch(e){b.disabled=false;toast(e.message)}});
   document.querySelectorAll("[data-remix]").forEach(b=>b.onclick=()=>{
     if(guest())return needAccount("Join to remix — open their loop in your studio and make it yours.");
     const id=b.dataset.remix;

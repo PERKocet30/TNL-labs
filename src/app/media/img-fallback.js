@@ -1,3 +1,6 @@
+/* v1.1 — 2026-11-15: a picture that fails is tried once more before it's called unavailable (a deploy's restart or
+   a weak signal looked the same as a deleted file: 290 on the Showroom in a month); and a picture with no size on
+   record keeps a 4:5 space until it loads, then takes its own shape (the fix list's "zero layout jumps"). */
 /* ── A PICTURE THAT WON'T LOAD · v1.0 · 2026-10-13 ──────────────────────
    One July carousel (8 pictures) lost 7 of its files on the server, so the
    Showroom showed blank slides you could swipe into (Railway logs, 35
@@ -33,11 +36,19 @@ function imgMissingBox(im){
   b.style.aspectRatio=ar||"4/5";return b;
 }
 /* Every failed picture in the app passes through here (error doesn't bubble — capture). */
+const IMGRETRY=new Set();   // paths tried a second time this visit
 document.addEventListener("error",e=>{
   const im=e.target;if(!im||im.tagName!=="IMG")return;
   const p=imgPath(im);if(!p.startsWith("/uploads/"))return;
+  /* once more, a moment later, before giving up (2026-11-15) */
+  if(!IMGRETRY.has(p)){IMGRETRY.add(p);
+    setTimeout(()=>{if(!im.isConnected)return;im.removeAttribute("srcset");im.src=p+(p.includes("?")?"&":"?")+"again=1"},IMG_RETRY_MS);return}
   BADIMG.add(p);
   const c=im.closest(".caro");
   if(c&&im.classList.contains("caro-i")){caroPrune(c);if(typeof wireCaros==="function")wireCaros();return}
   if(im.classList.contains("post-img")||im.classList.contains("sr-img"))im.replaceWith(imgMissingBox(im));
 },true);
+
+/* No size on record (older posts): the 4:5 space it was given becomes its own shape once it has loaded. */
+document.addEventListener("load",e=>{const im=e.target;if(!im||im.tagName!=="IMG"||!im.hasAttribute("data-nosize")||!im.naturalWidth)return;
+  im.style.aspectRatio=im.naturalWidth+"/"+im.naturalHeight;im.removeAttribute("data-nosize")},true);

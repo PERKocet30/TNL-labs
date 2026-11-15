@@ -10,7 +10,7 @@ app.post("/api/posts/:id/collab", auth, verified, (req, res) => {
   if (!invitee) return res.status(404).json({ error: "no such user" });
   if (invitee.id === req.user.id) return res.status(400).json({ error: "cannot collab with yourself" });
   q.addCollab.run(post.id, invitee.id, Date.now());
-  notify(invitee.id, req.user.id, "collab_invite", post.id, "wants to collab on your work");
+  notify(invitee.id, req.user.id, "collab_invite", post.id, "invited you to collab on their post");   // their post, not yours (2026-11-15: it said "your work")
   broadcast("collab-invite", { postId: post.id, username: invitee.username });
   res.json({ ok: true, status: "pending" });
 });

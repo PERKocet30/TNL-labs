@@ -277,6 +277,18 @@ export function roleEmail({ name, role, lab, by, url }) {
     cta: `Open // ${lab}`, url, note: "Not expecting this? Reply to this email.", preheader: `You're now Lead of // ${lab}.`,
   });
 }
+/** A collab invite still waiting after two days (2026-11-15, server/posts/collab-answer): the piece and a way to it. */
+export function collabNudgeEmail({ name, by, byUsername, caption, url, unsub }) {
+  return renderEmail({
+    eyebrow: "Collab", title: `${by} is waiting on you`,
+    lines: [`${name ? name + ", " : ""}@${byUsername} asked you to collab on a piece — your name goes on it once you accept.`,
+      caption ? `“${caption}”` : "", "Open it to see the piece, then Accept or Not this time. Either is fine."].filter(Boolean),
+    cta: "See the piece", url, unsub,
+    note: "One reminder per invite, never more. You're getting this because you're a member of LABS.",
+    preheader: `@${byUsername} asked you to collab on a piece.`,
+  });
+}
+export const collabNudgeSubject = (by) => `${by} is waiting on your collab — LABS`;
 export const roleSubject = (role, lab) => role === "mod" ? "You're a Mod on LABS" : `You lead // ${lab} — LABS`;
 export async function sendRoleEmail(to, subject, mail) {
   return send(to, subject, mail, `${subject} — role email to ${to}`);

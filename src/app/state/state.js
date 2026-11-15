@@ -115,6 +115,8 @@ let VSEEN=new Set(), VQUEUE=[], VTIMER=null, VWOBS=null;   // pieces seen this s
 
 /* ── POSTS · comments in place ── */
 // posts/comments.js
+let IMG_RETRY_MS=2000;   // a failed picture is tried once more after this (app/media/img-fallback, 2026-11-15); the tap-through shortens it
+let POMORE={};   // an artist's other work for "More from @artist" under an opened post (app/posts/post-next, 2026-11-15)
 let CSLOTPO=false;   // true while the opened post (#poov) is being drawn
 
 /* ── MUSIC · the player, now playing, playlists, trending ── */

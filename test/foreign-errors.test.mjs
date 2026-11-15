@@ -34,6 +34,6 @@ t("'Script error.' is still dropped", (send("Script error.", ""), kinds().client
 const watch = readFileSync(join(ROOT, "src/server/admin/watch.js"), "utf8");
 t("the crash email counts only ours", watch.includes(`"SELECT COUNT(*) n FROM error_log WHERE kind = 'client' AND created_at >= ?"`));
 t("the headline counts (Needs you, the digest, the week, Health) leave foreign out", ["network.js", "admin.js", "weekly.js", "watch.js", "report.js", "controls-backups.js"].every((f) => readFileSync(join(ROOT, "src/server/admin/" + f), "utf8").includes("kind != 'foreign'")));
-t("the tournament share picture failing after the sheet closed does nothing (no crash)", readFileSync(join(ROOT, "src/app/events/poll.js"), "utf8").includes("pic.onerror=()=>{if(!EVSHARE)return;EVSHARE.failed=true;render()}"));
+t("the tournament share picture failing after the sheet closed does nothing (no crash)", readFileSync(join(ROOT, "src/app/events/poll.js"), "utf8").includes("pic.onerror=()=>{if(!EVSHARE)return;"));   // 2026-11-15: and it's tried once more before the sheet says it couldn't
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
