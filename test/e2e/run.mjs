@@ -1679,6 +1679,7 @@ console.log("\nMEMBER · PHONE");
     await p.waitForSelector("#pctrack .pc-slide img"); await toDetails(p); await p.waitForTimeout(400);
     await p.locator("#pctag").tap(); await p.waitForSelector(".pc-taghint");
     const img = p.locator("#pctrack .pc-slide img").first();
+    await p.waitForFunction(() => { const im = document.querySelector("#pctrack .pc-slide img"); return im && im.complete && im.naturalWidth > 0; }, null, { timeout: 8000 });   // Tag people repaints the stage: the picture is a new element, measured only once it has loaded (2026-11-15: measured too soon once on GitHub, and every step after it fell over)
     const at = await p.evaluate(() => { const im = document.querySelector("#pctrack .pc-slide img"), r = im.getBoundingClientRect(), nw = im.naturalWidth, nh = im.naturalHeight, s = Math.min(r.width / nw, r.height / nh), w = nw * s, h = nh * s;
       return { x: r.left + (r.width - w) / 2 + w * 0.5, y: r.top + (r.height - h) / 2 + h * 0.25 }; });
     await p.mouse.click(at.x, at.y); await p.waitForSelector(".pickrow", { timeout: 5000 });
