@@ -373,7 +373,6 @@ console.log("\nMEMBER · PHONE");
     const at = await p.evaluate(() => { const i = SRPOSTS.findIndex((q, k) => k < SRPOSTS.length - 1 && !q.pending); openPost(SRPOSTS[i]); return i; });
     await p.waitForSelector("#ponext .po-nx", { timeout: 5000 });
     const ids = await p.evaluate((i) => [SRPOSTS[i].id, SRPOSTS[i + 1].id], at);
-    if (process.env.SHOT && !globalThis.__s3) { globalThis.__s3 = 1; await p.waitForTimeout(1500); await p.evaluate(() => document.querySelector("#ponext").scrollIntoView({ block: "end" })); await p.waitForTimeout(400); await p.screenshot({ path: process.env.SHOT }); }
     ok(/Next piece/.test(await p.locator("#ponext .po-nx").innerText()), "an opened post has no Next piece");
     await p.locator("#ponext .po-nx").tap();
     await p.waitForFunction((id) => POSTOPEN && POSTOPEN.id === id, ids[1], { timeout: 4000 });
