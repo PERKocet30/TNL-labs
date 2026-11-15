@@ -1,4 +1,4 @@
-/* LABS admin — FIND v1.0 — 2026-11-15 ("the search bar should let you find anything in the dashboard").
+/* LABS admin — FIND v1.1 — 2026-11-15 (v1.1: Analytics' tabs follow the member's path — Now · Arrive · Join · Use · Make · Stay · Trade). v1.0 — 2026-11-15 ("the search bar should let you find anything in the dashboard").
    The bar at the top found members only. It finds, in this order:
      · Go to — a page, a tab, a card, a switch or a number, from the dashboard's own map (FIND_MAP, below;
        nothing is asked of the server for these, so they answer as you type);
@@ -29,21 +29,36 @@ const FIND_MAP = [
   ["Backups & email", "Settings", "settings", () => { SYSTAB = "data"; }, "backup download code resend test email"],
   ["Admin log", "Settings", "settings", () => { SYSTAB = "log"; }, "history changes who did what"],
   // Analytics, by tab and card
-  ["Members", "Analytics", "analytics", () => { ATAB = "members"; }, "took part opened the app joined email confirmed active new"],
-  ["Joining", "Analytics", "analytics", () => { ATAB = "reach"; }, "reach funnel conversion came back sign up"],
-  ["Market", "Analytics", "analytics", () => { ATAB = "commerce"; }, "commerce sales orders fees average order revenue"],
-  ["Work", "Analytics", "analytics", () => { ATAB = "content"; }, "content posts feedback votes tags studio stats"],
-  ["What they make", "Analytics › Members", "analytics", () => { ATAB = "members"; }, "roles"],
-  ["Posted in which lab", "Analytics › Members", "analytics", () => { ATAB = "members"; }, "labs"],
-  ["When they're on the app", "Analytics › Members", "analytics", () => { ATAB = "members"; }, "hours time of day"],
-  ["Do new members stay?", "Analytics › Members", "analytics", () => { ATAB = "members"; }, "retention cohorts back next day after a week never posted gone quiet"],
-  ["From joining to a sale", "Analytics › Joining", "analytics", () => { ATAB = "reach"; }, "funnel"],
-  ["Where new members stop", "Analytics › Joining", "analytics", () => { ATAB = "reach"; }, "drop off never posted only looked voted"],
-  ["Ways in", "Analytics › Joining", "analytics", () => { ATAB = "reach"; }, "sources referrer instagram google direct came from acquisition"],
-  ["By seller", "Analytics › Market", "analytics", () => { ATAB = "commerce"; }, "top sellers"],
-  ["Posts by lab", "Analytics › Work", "analytics", () => { ATAB = "content"; }, "labs"],
-  ["How members take part", "Analytics › Work", "analytics", () => { ATAB = "content"; }, "taking part group chats"],
-  ["#tags people are using", "Analytics › Work", "analytics", () => { ATAB = "content"; }, "hashtags trending"],
+  ["Now", "Analytics", "analytics", () => { ATAB = "now"; }, "live realtime who's here right now today"],
+  ["Arrive", "Analytics", "analytics", () => { ATAB = "arrive"; }, "visits visitors sources traffic acquisition where from"],
+  ["Join", "Analytics", "analytics", () => { ATAB = "join"; }, "joining reach funnel conversion sign up"],
+  ["Use", "Analytics", "analytics", () => { ATAB = "use"; }, "took part opened the app screens engagement active behaviour"],
+  ["Make", "Analytics", "analytics", () => { ATAB = "make"; }, "work content posts feedback votes tags"],
+  ["Stay", "Analytics", "analytics", () => { ATAB = "stay"; }, "retention came back cohorts churn"],
+  ["Trade", "Analytics", "analytics", () => { ATAB = "trade"; }, "market commerce sales orders fees average order revenue"],
+  ["Where from", "Analytics › Arrive", "analytics", () => { ATAB = "arrive"; }, "sources referrer instagram google direct traffic"],
+  ["Campaigns", "Analytics › Arrive", "analytics", () => { ATAB = "arrive"; }, "utm tag on the link story ads"],
+  ["The link they came in on", "Analytics › Arrive", "analytics", () => { ATAB = "arrive"; }, "landing page tournament link post link profile link"],
+  ["Phone or computer", "Analytics › Arrive", "analytics", () => { ATAB = "arrive"; }, "devices iphone android mac"],
+  ["Countries", "Analytics › Arrive", "analytics", () => { ATAB = "arrive"; }, "where in the world geography"],
+  ["From joining to a sale", "Analytics › Join", "analytics", () => { ATAB = "join"; }, "funnel"],
+  ["Where new members stop", "Analytics › Join", "analytics", () => { ATAB = "join"; }, "drop off never posted only looked voted"],
+  ["Ways in", "Analytics › Join", "analytics", () => { ATAB = "join"; }, "which doors bring members who post"],
+  ["Screens", "Analytics › Use", "analytics", () => { ATAB = "use"; }, "pages views time on screen exits back outs"],
+  ["Where they go next", "Analytics › Use", "analytics", () => { ATAB = "use"; }, "paths routes moves"],
+  ["Where visits end", "Analytics › Use", "analytics", () => { ATAB = "use"; }, "dead ends exits leave"],
+  ["Started and not finished", "Analytics › Use", "analytics", () => { ATAB = "use"; }, "flows abandoned gave up post listing checkout"],
+  ["Taps that did nothing", "Analytics › Use", "analytics", () => { ATAB = "use"; }, "dead taps rage taps hammered"],
+  ["When they're on the app", "Analytics › Use", "analytics", () => { ATAB = "use"; }, "hours time of day"],
+  ["What they make", "Analytics › Make", "analytics", () => { ATAB = "make"; }, "roles"],
+  ["Posted in which lab", "Analytics › Make", "analytics", () => { ATAB = "make"; }, "labs"],
+  ["Posts by lab", "Analytics › Make", "analytics", () => { ATAB = "make"; }, "labs"],
+  ["How members take part", "Analytics › Make", "analytics", () => { ATAB = "make"; }, "taking part group chats"],
+  ["#tags people are using", "Analytics › Make", "analytics", () => { ATAB = "make"; }, "hashtags trending"],
+  ["Do new members stay?", "Analytics › Stay", "analytics", () => { ATAB = "stay"; }, "retention cohorts back next day after a week never posted gone quiet"],
+  ["What the ones who stayed did on day one", "Analytics › Stay", "analytics", () => { ATAB = "stay"; }, "first day"],
+  ["By seller", "Analytics › Trade", "analytics", () => { ATAB = "trade"; }, "top sellers"],
+  ["Any dates", "The date range on every page", "analytics", () => { RPICK = true; }, "custom date range period calendar from to"],
   ["What the numbers mean", "Analytics", "analytics", null, "dictionary definitions meaning"],
   ["Studio stats", "Analytics", "studio", null, "beat maker sounds"],
   ["Echo open to everyone", "Help desk", "echo", null, "switch members help admins only"],
@@ -53,7 +68,7 @@ const FIND_MAP = [
     .map(([l, k]) => [l, "Settings › Switches", "settings", () => { SYSTAB = "settings"; }, k + " switch setting toggle"]),
 ];
 /* a number from the dictionary opens the Analytics tab that shows it */
-const FIND_NUM = { members: "members", joined: "members", confirmed: "members", opened: "members", tookPart: "members", cameBack: "reach", posted: "reach", work: "content", feedback: "content", votes: "content", collabs: "content", messages: "members", orders: "commerce", sales: "commerce", fees: "commerce", period: "members" };
+const FIND_NUM = { visits: "arrive", visitors: "arrive", newVisitors: "arrive", bounce: "arrive", source: "arrive", members: "join", joined: "join", confirmed: "join", opened: "use", tookPart: "use", cameBack: "stay", posted: "join", work: "make", feedback: "make", votes: "make", collabs: "make", messages: "use", orders: "trade", sales: "trade", fees: "trade", period: "arrive" };
 function findLocal(term) {
   const words = term.toLowerCase().split(/\s+/).filter(Boolean), open = (k) => TABS.some(([t]) => t === (OLD_TABS[k] || k)) || k === "studio";
   const nums = (D.measures || []).filter((m) => FIND_NUM[m.id]).map((m) => [m.name, "A number · " + m.says, "analytics", () => { ATAB = FIND_NUM[m.id]; }, ""]);

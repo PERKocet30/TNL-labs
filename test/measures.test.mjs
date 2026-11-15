@@ -80,9 +80,11 @@ try {
   t("the dictionary runs before the pages that read it", (() => { const o = read("src/server/order.mjs"); return o.indexOf('"admin/measures.js"') > 0 && o.indexOf('"admin/measures.js"') < o.indexOf('"admin/dashboard.js"'); })());
 
   console.log("\nTHE WORDS ON THE DASHBOARD");
-  const an = src("public/admin-app/9-analytics.js"), home = src("public/admin-app/2-home.js");
+  const an = ["9-analytics.js", "9-analytics2-arrive.js", "9-analytics3-use.js"].map((f) => src("public/admin-app/" + f)).join("\n"), home = src("public/admin-app/2-home.js");
   t("Analytics says Took part, Opened the app, Joined, Came back", ["Took part", "Opened the app", "Joined", "Came back"].every((w) => an.includes(`kpiHTML("${w}"`)));
   t("…and no longer Active, New, Signed up, Commerce, Content or Reach", !/kpiHTML\("(Active|New|Signed up|Active in 30 days)"/.test(an) && !/"(Commerce|Content|Reach)"\]/.test(an) && !/sign-up to sale/.test(an));
+  t("the tabs follow a member's path, one question each", /\["now", "Now"\], \["arrive", "Arrive"\], \["join", "Join"\], \["use", "Use"\], \["make", "Make"\], \["stay", "Stay"\], \["trade", "Trade"\]/.test(an) && ["now", "arrive", "join", "use", "make", "stay", "trade"].every((k) => an.includes(`ATABV.${k} = `) && new RegExp(`${k}: "[A-Z][^"]+\\?"`).test(an)));
+  t("an old link to a tab lands on the one that holds it now", /AOLD = \{ members: "use", reach: "join", commerce: "trade", content: "make" \}/.test(an));
   t("Home uses the same words", home.includes('kpiHTML("Took part"') && home.includes('kpiHTML("Joined"') && !/Active members|New members/.test(home));
   t("the page prints the dictionary", an.includes("meansHTML()") && an.includes("/api/admin/measures"));
 

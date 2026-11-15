@@ -1,4 +1,4 @@
-/* LABS admin v4.7 — 2026-11-15 (the bar at the top finds anything in the dashboard: 1-find.js). v4.6 — 2026-11-04 (Systems up front: its own section, second in the sidebar and in the phone's bar, opening on the spinning map; Health is Health again). v4.5 — 2026-11-04 (five groups, eleven sections: Market = Orders · Listings · Sellers, Health = Health · Systems; the phone's sheet grouped; old links land on the tab — SUBTAB). v4.4 — 2026-11-04 (Echo Home: the admin opens on Echo — admin-app/2-echo-home.js; the help desk section is "Help desk"). v4.3 — 2026-11-04 (Knowledge: what LABS knows about itself, admin-app/4-knowledge.js). v4.2 — 2026-11-04 (Echo, the help desk, is a section: admin-app/4-echo.js). v4.1 — 2026-10-28 (charts: readable dates and numbers, round scale); v4.0 — 2026-10-20. "Make it more like Shopify's admin, with
+/* LABS admin v4.8 — 2026-11-15 (the date range takes any dates, and a card can be downloaded: 1-range.js). v4.7 — 2026-11-15 (the bar at the top finds anything in the dashboard: 1-find.js). v4.6 — 2026-11-04 (Systems up front: its own section, second in the sidebar and in the phone's bar, opening on the spinning map; Health is Health again). v4.5 — 2026-11-04 (five groups, eleven sections: Market = Orders · Listings · Sellers, Health = Health · Systems; the phone's sheet grouped; old links land on the tab — SUBTAB). v4.4 — 2026-11-04 (Echo Home: the admin opens on Echo — admin-app/2-echo-home.js; the help desk section is "Help desk"). v4.3 — 2026-11-04 (Knowledge: what LABS knows about itself, admin-app/4-knowledge.js). v4.2 — 2026-11-04 (Echo, the help desk, is a section: admin-app/4-echo.js). v4.1 — 2026-10-28 (charts: readable dates and numbers, round scale); v4.0 — 2026-10-20. "Make it more like Shopify's admin, with
    graphs; one tailored for mobile and one for computer; compare against
    Instagram analytics." Ten sections named by what you manage — Home ·
    Orders · Listings · Sellers · Members · Content · Events · Analytics ·
@@ -148,8 +148,7 @@ const sparkLine = (a) => { const w = 120, h = 26, mx = Math.max(1, ...a), n = Ma
   return `<svg class="spk" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${a.map((v, i) => `${(i * (w / (n - 1))).toFixed(1)},${(h - 2 - (v / mx) * (h - 5)).toFixed(1)}`).join(" ")}"/></svg>`; };
 const pct = (a, b) => b ? Math.round((a / b) * 100) + "%" : "—";
 const sum = (a) => (a || []).reduce((s, v) => s + (v || 0), 0);
-/* the range picker every page with time on it shows */
-const rangeHTML = () => `<div class="seg" role="group" aria-label="Date range">${[7, 30, 90].map((d) => `<button class="${RANGE === d ? "on" : ""}" data-range="${d}">${d} days</button>`).join("")}</div>`;
+/* the range picker (any dates) and a card's download: 1-range.js */
 function wireTips(root = document) {
   $$("[data-plot]", root).forEach((p) => {
     const tip = p.parentElement.querySelector(".tip"); if (!tip) return;
@@ -203,7 +202,7 @@ function paint() {
     ${MORE ? `<div class="scrim ms" data-more-x></div><div class="msheet">${GROUPS.map(([g, ks]) => `<div class="grp">${g}</div><div class="mig">${ks.map((k) => item(k, "mi")).join("")}</div>`).join("")}<a class="mi" href="/">${I.out}<span>Open the app</span></a></div>` : ""}</div></div>`;
   $$("[data-more]").forEach((b) => b.onclick = () => { MORE = !MORE; paint(); });
   $$("[data-more-x]").forEach((b) => b.onclick = () => { MORE = false; paint(); });
-  $$("[data-range]").forEach((b) => b.onclick = () => { RANGE = +b.dataset.range; try { localStorage.setItem("tnl-admin-range", RANGE); } catch (e) {} D.pulse = null; D.series = null; D.direction = null; D.topwork = null; D.audience = null; load(); });
+  wireRange();
   $$("[data-tab]").forEach((b) => b.onclick = () => go(b.dataset.tab));
   $$(".thm").forEach((t) => t.onclick = () => { const th = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = th; try { localStorage.setItem("tnl-theme", th); } catch (e) {} paint(); });
@@ -235,7 +234,6 @@ async function load() {
   try { await (LOADERS[TAB] || (() => {}))(); if (!D.pulse && TAB !== "home") D.pulse = await req(pulseURL()); paint(); }
   catch (e) { if (/admins only|token|401|403/i.test(e.message)) { ME = null; paint(); } else toast(e.message); }
 }
-const pulseURL = () => `/api/admin/pulse?days=${RANGE}&tz=${new Date().getTimezoneOffset()}`;
 
 async function boot() {
   if (!TOKEN) return paint();

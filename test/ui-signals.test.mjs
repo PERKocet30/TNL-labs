@@ -17,8 +17,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS glitch_events (id INTEGER PRIMARY KEY AUTOIN
 const src = readFileSync(join(ROOT, "src/server/ui-signals/signals.js"), "utf8");
 const routes = {};
 const deviceOf = (req) => String(req.get?.("x-device") || "");
-const S = new Function("db", "app", "auth", "admin", "maybeAuth", "rateLimit", "deviceOf", "process", src + "\nreturn { uiLog, uiPrune, uiScreens, uiPaths, uiTaps, uiFlows, uiEmpties, uiSpeed, uiDevices, uiFeatures, UI_KINDS };")(
-  db, { post: (p, ...h) => routes[p] = h.at(-1), get: (p, ...h) => routes[p] = h.at(-1) }, null, null, null, () => null, deviceOf, { env: { TNL_NO_WATCH: "1" } });
+const S = new Function("db", "app", "auth", "admin", "maybeAuth", "rateLimit", "deviceOf", "process", "visitTouch", src + "\nreturn { uiLog, uiPrune, uiScreens, uiPaths, uiTaps, uiFlows, uiEmpties, uiSpeed, uiDevices, uiFeatures, UI_KINDS };")(
+  db, { post: (p, ...h) => routes[p] = h.at(-1), get: (p, ...h) => routes[p] = h.at(-1) }, null, null, null, () => null, deviceOf, { env: { TNL_NO_WATCH: "1" } }, () => true);   // visitTouch: the sitting a batch belongs to is ui-signals/visits.js (test/visits.test.mjs)
 const now = Date.now(), D = 86400000, H = 3600000;
 const u = {};
 for (const [n, age] of [["ana", 2], ["ben", 40], ["cam", 40]]) u[n] = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at) VALUES (?,?,?,?,?)`).run(n, n, n + "@x.test", "x", now - age * D).lastInsertRowid);
@@ -105,7 +105,7 @@ t("Echo's help stats never carry a handoff's conversation", conn.includes('name 
 t("the parts are in order: signals after views on the server, tools after the connector; the app part after the glitch watcher", (() => { const so = readFileSync(join(ROOT, "src/server/order.mjs"), "utf8"), ao = readFileSync(join(ROOT, "src/app/order.mjs"), "utf8"); return so.indexOf("ui-signals/signals.js") > so.indexOf("posts/views.js") && so.indexOf("ui-signals/tools.js") > so.indexOf("connector/tools.js") && ao.indexOf("ui-signals/signals.js") > ao.indexOf("core/glitch.js"); })());
 
 console.log("\nON THE DASHBOARD (2026-11-09) — what's useful is on the page, what wasn't is gone");
-{ const an = readFileSync(join(ROOT, "public/admin-app/9-analytics.js"), "utf8").replace(/\/\*[\s\S]*?\*\//g, ""), st = readFileSync(join(ROOT, "public/admin-app/6-settings.js"), "utf8");
+{ const an = ["9-analytics.js", "9-analytics2-arrive.js", "9-analytics3-use.js"].map((f) => readFileSync(join(ROOT, "public/admin-app/" + f), "utf8")).join("\n").replace(/\/\*[\s\S]*?\*\//g, ""), st = readFileSync(join(ROOT, "public/admin-app/6-settings.js"), "utf8");
   t("Analytics reads who came back and where new members stop", an.includes('"/api/admin/insights/retention?days="') && an.includes('"/api/admin/insights/conversion?days="') && an.includes("Back after a week") && an.includes("Where new members stop") && an.includes('card("Ways in"'));
   t("…and no longer says sign-ups aren't tracked, counts who's still posting as staying, or makes up \"Posted first work\"", !an.includes("Not tracked yet") && !an.includes("stillPosting") && !an.includes("Math.min(n.signups, n.work)") && !an.includes("R.silent.length"));
   t("Health shows storage against the volume's size; reminders say who came back", st.includes("h.disk.totalBytes") && st.includes("% full") && st.includes("came back after one")); }

@@ -119,6 +119,7 @@ export const SERVER = [
 
   // ui-signals — how people move through the app, as counts (after views: same viewer key)
   "ui-signals/signals.js",
+  "ui-signals/visits.js",   // the visit: one sitting, how long, where from (2026-11-15)
 
   // admin
   "admin/watch.js",

@@ -1,5 +1,5 @@
 /* ================================================================
-   UI SIGNALS · tools v1.1 — 2026-11-09 (speed says what it holds now the load time is gone; an exit is a real leave). v1.0 — 2026-11-04. "I want access to the full admin
+   UI SIGNALS · tools v1.2 — 2026-11-15 (visits and now: Echo reads where people come from and who's here). v1.1 — 2026-11-09 (speed says what it holds now the load time is gone; an exit is a real leave). v1.0 — 2026-11-04. "I want access to the full admin
    dashboard, not to change things, to see everything and learn how to make
    the UI better." Echo's eyes for how people move (ui-signals/signals.js),
    plus the admin pages that had no tool until now: Settings (the switches,
@@ -11,8 +11,12 @@
 ================================================================ */
 const uiDaysArg = { type: "integer", description: "Window in days, 1–90. Default 7." };
 const uiD = (a) => Math.min(90, Math.max(1, Number(a.days) || 7));
-for (const p of ["ui/screens", "ui/paths", "ui/taps", "ui/flows", "ui/empties", "ui/speed", "ui/devices", "ui/features", "settings", "echo", "events/:id/spam"]) MCP_PATHS.add(p);
+for (const p of ["ui/screens", "ui/paths", "ui/taps", "ui/flows", "ui/empties", "ui/speed", "ui/devices", "ui/features", "settings", "echo", "events/:id/spam", "visits", "now"]) MCP_PATHS.add(p);
 MCP_TOOLS.push(
+  ["visits", "Visits and where they come from (since 2026-11-15): visits (one sitting; a new one after 30 minutes away), visitors, new visitors, left straight away (saw one screen), screens a visit, how long the middle visit lasts and how many ended in a Join — for the period and the one before, day by day, and by source (Instagram, Google, Direct, a tagged link…), campaign (utm_campaign), the kind of link they came in on, phone or computer, and country. Filter by source, device (phone · computer) or who (new · back).",
+    { days: { type: "integer", description: "Period in days, 1–365. Default 30." }, source: { type: "string", description: "Only this source, e.g. Instagram" }, device: { type: "string", description: "phone · computer" }, who: { type: "string", description: "new · back" } },
+    (a) => `visits?days=${Math.min(365, Math.max(1, Number(a.days) || 30))}&source=${encodeURIComponent(a.source || "")}&device=${encodeURIComponent(a.device || "")}&who=${encodeURIComponent(a.who || "")}`],
+  ["now", "Who's in the app right now: people heard from in the last 5 minutes and how many are signed in, the last half hour minute by minute, the screens they're on, where they came from, and today so far (visits, joined, took part, work posted, sales).", {}, "now"],
   ["screens", "How the app's screens are used: views per screen, how many people, how many of them new (joined this week), median seconds on the screen, exits from it (the person left there — nothing more from them for 30 minutes; a photo picker or a locked phone isn't a leave), back-outs (opened and left straight away) and dead taps (tapped something that did nothing). A screen with many views and short time is a pass-through; many exits or back-outs means people didn't find what they came for.", { days: uiDaysArg }, (a) => `ui/screens?days=${uiD(a)}`],
   ["paths", "Where people go next: the most common screen-to-screen moves, the top three-step routes in one sitting, dead ends (screens where 40%+ of visits end with the person leaving for 30 minutes or more) and which tabs get tapped. Shows the routes members actually take, against the ones the design assumes.", { days: uiDaysArg }, (a) => `ui/paths?days=${uiD(a)}`],
   ["taps", "Taps that went wrong: rage taps (the same control hit three times in a second, from the glitch watcher), dead taps by screen and what was tapped (a picture, a name, text, a card — things people expected to open), and double sends (the same change sent twice because the first felt like nothing happened).", { days: uiDaysArg }, (a) => `ui/taps?days=${uiD(a)}`],

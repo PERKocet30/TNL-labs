@@ -65,7 +65,7 @@ function windowStats(a, b) {
 }
 
 app.get("/api/admin/pulse", auth, admin, (req, res) => {
-  const now = Date.now(), { days, start, prevStart } = mWindow(req.query, now);   // the period, as the dictionary says it
+  const now = Date.now(), { days, start, prevStart, end } = mWindow(req.query, now);   // the period, as the dictionary says it
 
   const bucket = (sql, ...p) => {
     const out = new Array(days).fill(0);
@@ -87,9 +87,9 @@ app.get("/api/admin/pulse", auth, admin, (req, res) => {
     FROM (${ACTIVITY}) a JOIN users u ON u.id = a.u WHERE a.t >= ? GROUP BY a.u ORDER BY n DESC LIMIT 6`).all(start);
 
   res.json({
-    days, start,
-    now: windowStats(start, now), before: windowStats(prevStart, start),
-    seen: M.opened(start, now),   // Opened the app: member_days, the one meaning (it was last_seen_at, a third count)
+    days, start, end,
+    now: windowStats(start, end), before: windowStats(prevStart, start),
+    seen: M.opened(start, end),   // Opened the app: member_days, the one meaning (it was last_seen_at, a third count)
     totals: {
       members: M.members(), collabs: M.collabs(), gmv: M.sales(),
     },

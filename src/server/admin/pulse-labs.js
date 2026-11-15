@@ -21,8 +21,8 @@ const LAB_CHANNELS = Object.values(PLACES).flatMap((p) => p.channels);
 /* The same window /api/admin/pulse uses: `days` days back from the
    admin's local midnight, and the same length before it. */
 function adminWindow(q, now = Date.now()) {
-  const { days, start, prevStart } = mWindow(q, now);   // one period everywhere (admin/measures.js)
-  return { days, start, prevStart };
+  const { days, start, prevStart, end } = mWindow(q, now);   // one period everywhere (admin/measures.js)
+  return { days, start, prevStart, end };
 }
 
 /* The tournament to show: the live published one, else a draft being
@@ -95,8 +95,8 @@ function groupChatStats(now = Date.now()) {
 }
 
 app.get("/api/admin/direction", auth, admin, (req, res) => {
-  const now = Date.now(), { days, start, prevStart } = adminWindow(req.query, now);
-  const rows = db.prepare(`SELECT channel, author_id, is_work, body, created_at FROM posts WHERE created_at >= ?`).all(start);
+  const now = Date.now(), { days, start, prevStart, end } = adminWindow(req.query, now);
+  const rows = db.prepare(`SELECT channel, author_id, is_work, body, created_at FROM posts WHERE created_at >= ? AND created_at <= ?`).all(start, end);
 
   // each lab this period, in the app's order; work posted on profiles last
   const groups = [...Object.keys(PLACES), "profile"].map((id) => ({ id, rows: rows.filter((r) => (id === "profile" ? r.channel === "profile" : LAB_OF[r.channel] === id)) }));
@@ -120,6 +120,6 @@ app.get("/api/admin/direction", auth, admin, (req, res) => {
   const T = tournamentNow(now);
   res.json({
     days, start, labs, tags, tournament: T, needs: tournamentNeeds(T, now), takingPart: takingPart(),
-    votes: { now: votesIn(start, now), before: votesIn(prevStart, start) }, series: { votes },
+    votes: { now: votesIn(start, end), before: votesIn(prevStart, start) }, series: { votes },
   });
 });

@@ -14,10 +14,10 @@
    Messages are counted as rows, never read.
 ================================================================ */
 app.get("/api/admin/network", auth, admin, rateLimit({ max: 30, windowMs: 60000, key: "user" }), (req, res) => {
-  const now = Date.now(), DAYMS = 86400000, { days, start: a, prevStart: b } = mWindow(req.query, now, null);   // the period, as the dictionary says it: this one [a, now), the one before [b, a)
+  const now = Date.now(), DAYMS = 86400000, { days, start: a, prevStart: b, end } = mWindow(req.query, now, null);   // the period, as the dictionary says it: this one [a, now), the one before [b, a)
   const n = (sql, ...p) => { try { return db.prepare(sql).get(...p)?.n ?? 0; } catch { return 0; } };
-  const both = (sql, ...extra) => [n(sql, a, now, ...extra), n(sql, b, a, ...extra)];   // sql takes (from, to, …)
-  const dayA = Math.floor(a / DAYMS), dayB = Math.floor(b / DAYMS), dayNow = Math.floor(now / DAYMS) + 1;
+  const both = (sql, ...extra) => [n(sql, a, end, ...extra), n(sql, b, a, ...extra)];   // sql takes (from, to, …)
+  const dayA = Math.floor(a / DAYMS), dayB = Math.floor(b / DAYMS), dayNow = Math.floor((end - 1) / DAYMS) + 1;
   const dboth = (sql) => [n(sql, dayA, dayNow), n(sql, dayB, dayA)];
 
   /* what needs you, onto the stage it belongs to */
@@ -35,7 +35,7 @@ app.get("/api/admin/network", auth, admin, rateLimit({ max: 30, windowMs: 60000,
   const rep = both(`SELECT COALESCE(SUM(amount), 0) n FROM rep_events WHERE created_at >= ? AND created_at < ?`);
   const sales = both(`SELECT COALESCE(SUM(${M_SALE}), 0) n FROM orders WHERE status IN ('paid','shipped','complete') AND created_at >= ? AND created_at < ?`);
   const msgs = both(`SELECT COUNT(*) n FROM dm_messages WHERE kind = 'msg' AND created_at >= ? AND created_at < ?`);
-  const W = [a, now];
+  const W = [a, end];
   const stages = [
     S("arrive", "Arrive", "From Instagram, a link, a search", strangers, "visitors looked at work",
       [["Joined from Instagram", n(`SELECT COUNT(*) n FROM join_signals WHERE (referrer LIKE '%instagram%' OR landing LIKE '%utm_source=ig%') AND created_at >= ? AND created_at < ?`, ...W)],

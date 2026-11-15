@@ -1,5 +1,5 @@
 /* ================================================================
-   ADMIN v4.2 · 2026-11-15 (one meaning for every number: the dictionary, admin/measures.js). v4.1 · 2026-11-09 (members and email-confirmed leave out suspended accounts, the same count as the pulse). v4 · 2026-10-20. The rebuilt admin (public/admin-app) reads
+   ADMIN v4.3 · 2026-11-15 (any dates: every window here ends where the period does). v4.2 · 2026-11-15 (one meaning for every number: the dictionary, admin/measures.js). v4.1 · 2026-11-09 (members and email-confirmed leave out suspended accounts, the same count as the pulse). v4 · 2026-10-20. The rebuilt admin (public/admin-app) reads
    these on top of the routes it already had. "Make it more like
    Shopify's admin, with graphs; compare against Instagram analytics."
      GET /api/admin/series    every day series, this window AND the one
@@ -11,7 +11,7 @@
    Admin-only on the server, like every /api/admin route.
 ================================================================ */
 app.get("/api/admin/series", auth, admin, (req, res) => {
-  const now = Date.now(), { days, start, prevStart } = mWindow(req.query, now);
+  const now = Date.now(), { days, start, prevStart, end } = mWindow(req.query, now);
   const bucket = (sql, from) => {
     const out = new Array(days).fill(0);
     for (const r of db.prepare(sql).all(from)) if (r.d >= 0 && r.d < days) out[r.d] = r.n;
@@ -35,19 +35,19 @@ app.get("/api/admin/series", auth, admin, (req, res) => {
   const fees = (a, b) => db.prepare(`SELECT o.amount_cents, o.fee_cents, u.rep seller_rep, u.is_admin seller_admin FROM orders o JOIN users u ON u.id = o.seller_id
     WHERE o.status IN ${PAID} AND o.created_at > ? AND o.created_at <= ?`).all(a, b).reduce((s, o) => s + feeOf(o), 0);
   res.json({ days, start, prevStart, series, prev, members: M.members(),
-    fees: { now: fees(start, now), before: fees(prevStart, start) } });
+    fees: { now: fees(start, end), before: fees(prevStart, start) } });
 });
 
 /* The pieces that did best this window: likes + comments + shares, with the maker. */
 app.get("/api/admin/topwork", auth, admin, (req, res) => {
-  const { start } = adminWindow(req.query);
+  const { start, end } = adminWindow(req.query);
   const rows = db.prepare(`SELECT p.id, p.body, p.channel, COALESCE(p.thumb_url, p.image_url) img, p.created_at, u.username, u.display_name, u.avatar_url,
       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) likes,
       (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) comments,
       (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) shares
     FROM posts p JOIN users u ON u.id = p.author_id
-    WHERE p.is_work = 1 AND p.created_at >= ? AND COALESCE(u.suspended, 0) = 0
-    ORDER BY likes * 1 + comments * 2 + shares * 3 DESC, p.created_at DESC LIMIT 6`).all(start);
+    WHERE p.is_work = 1 AND p.created_at >= ? AND p.created_at <= ? AND COALESCE(u.suspended, 0) = 0
+    ORDER BY likes * 1 + comments * 2 + shares * 3 DESC, p.created_at DESC LIMIT 6`).all(start, end);
   res.json({ work: rows.map((r) => ({ id: r.id, text: String(r.body || "").slice(0, 60), lab: LAB_OF[r.channel] ? LAB_NAME[LAB_OF[r.channel]] : "Profile", img: r.img,
     user: { username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url || "" }, likes: r.likes, comments: r.comments, shares: r.shares, createdAt: r.created_at })) });
 });
@@ -55,16 +55,16 @@ app.get("/api/admin/topwork", auth, admin, (req, res) => {
 /* Who the members are, the way Instagram's Audience page would say it:
    by what they make, which lab they're active in, and what hour they're on. */
 app.get("/api/admin/audience", auth, admin, (req, res) => {
-  const now = Date.now(), { start } = adminWindow(req.query, now);
+  const now = Date.now(), { start, end } = mWindow(req.query, now);
   const tz = Math.max(-840, Math.min(840, Number(req.query.tz) || 0)) * 60000;
   const roles = {};
   for (const u of db.prepare(`SELECT roles FROM users WHERE suspended = 0`).all())
     for (const r of jsonList(u.roles)) roles[r] = (roles[r] || 0) + 1;
   const byRole = Object.entries(roles).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([role, n]) => ({ role, n }));
   const byLab = Object.keys(PLACES).map((id) => ({ id, name: LAB_NAME[id],
-    people: aone(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE created_at >= ? AND channel IN (${inList(PLACES[id].channels)})`, start) }));
+    people: aone(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE created_at >= ? AND created_at <= ? AND channel IN (${inList(PLACES[id].channels)})`, start, end) }));
   const hours = new Array(24).fill(0);
-  for (const r of db.prepare(`SELECT CAST(((t - ?1) % ${ADAY}) / 3600000 AS INTEGER) h, COUNT(*) n FROM (${ACTIVITY}) WHERE t >= ?2 GROUP BY h`).all(tz, start))
+  for (const r of db.prepare(`SELECT CAST(((t - ?1) % ${ADAY}) / 3600000 AS INTEGER) h, COUNT(*) n FROM (${ACTIVITY}) WHERE t >= ?2 AND t <= ?3 GROUP BY h`).all(tz, start, end))
     if (r.h >= 0 && r.h < 24) hours[r.h] = r.n;
   const verified = M.confirmed(), members = M.members();   // one count of members everywhere (the dictionary)
   const sellers = aone(`SELECT COUNT(*) n FROM users WHERE stripe_ready = 1`);

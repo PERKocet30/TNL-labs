@@ -2600,15 +2600,15 @@ console.log("\nMEMBER · COMPUTER");
     await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
   /* 2026-11-15: "the search bar should let you find anything in the dashboard" — it found members only */
-  await step(d, "admin → the search bar finds a card, a tab and a member: Ways in opens Analytics on Joining, Backups opens Settings on its tab", async () => {
+  await step(d, "admin → the search bar finds a card, a tab and a member: Ways in opens Analytics on Join, Backups opens Settings on its tab", async () => {
     await settledGoto(p, B + "/admin#home");
     await p.locator("#gq").waitFor();
     await p.fill("#gq", "ways in");
     await p.locator("#gres .gsec", { hasText: "Go to" }).waitFor({ timeout: 3000 });
     ok(await p.locator("#gres .li", { hasText: "Ways in" }).count() === 1, "Ways in isn't found");
     await p.keyboard.press("Enter");
-    await fast(p, 6000, () => p.locator(".rc h3", { hasText: "Ways in" }).waitFor(), "Analytics → Joining from the search bar");
-    ok(await p.evaluate(() => TAB === "analytics" && ATAB === "reach") && await p.inputValue("#gq") === "", "the result didn't open its tab, or the bar kept the words");
+    await fast(p, 6000, () => p.locator(".rc h3", { hasText: "Ways in" }).waitFor(), "Analytics → Join from the search bar");
+    ok(await p.evaluate(() => TAB === "analytics" && ATAB === "join") && await p.inputValue("#gq") === "", "the result didn't open its tab, or the bar kept the words");
     await p.fill("#gq", "backups");
     await p.locator("#gres .li", { hasText: "Backups & email" }).first().dispatchEvent("mousedown");
     await fast(p, 6000, () => p.locator("h2.sec", { hasText: "Backups" }).first().waitFor(), "Settings → Backups from the search bar");
@@ -2620,9 +2620,44 @@ console.log("\nMEMBER · COMPUTER");
     await p.keyboard.press("Escape");
     ok(await p.locator("#gres").isHidden(), "Esc didn't close the results");
   });
+  /* 2026-11-15: "meet Google level analytics" — Analytics follows the member's path, counts visits and where they came from
+     (this very walk is the visits), takes any dates, and shows the screens only Echo could read */
+  await step(d, "admin → Analytics follows the member's path: Arrive counts visits and where they came from (never this automated browser's), any dates narrow it, Use lists the screens, Now says who's here", async () => {
+    /* this browser says it's automated, so its own walk rightly isn't a visit: two phones arrive instead, one from a tagged Story link */
+    const UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
+    for (const [n, land, screens] of [[1, "/?utm_source=ig&utm_medium=story&utm_campaign=e2e-open", ["sign-up", "showroom", "event"]], [2, "/", ["showroom", "post"]]])
+      await p.request.post(B + "/api/ui", { headers: { "User-Agent": UA, "X-Device": String(n).repeat(24), "Content-Type": "application/json" },
+        data: { visit: { id: "e2e".split("").map((c) => c.charCodeAt(0).toString(16)).join("").padEnd(23, "0") + n, ref: "", land, wide: 0 }, events: screens.map((sc, i) => ({ kind: "view", screen: sc, prev: screens[i - 1] || "", ms: 1500 })) } });
+    await settledGoto(p, B + "/admin#analytics");
+    await fast(p, 6000, () => p.locator("[data-atab=arrive]").waitFor(), "Analytics");
+    ok(await p.locator("[data-atab]").count() === 7 && (await p.locator("[data-atab]").allInnerTexts()).join(" ") === "Now Arrive Join Use Make Stay Trade", "the tabs aren't the member's path");
+    await p.locator("[data-atab=arrive]").click();
+    await fast(p, 6000, () => p.locator(".rc h3", { hasText: "Where from" }).waitFor(), "Arrive");
+    const v = await p.evaluate(() => D.visits && { visits: D.visits.now.visits, visitors: D.visits.now.visitors, sources: D.visits.bySource.map((s) => s.name), screens: D.visits.now.screens });
+    ok(v && v.visits === 2 && v.visitors === 2 && v.sources.includes("Direct") && v.sources.includes("Instagram") && v.screens > 1, "the two visits weren't counted, or this automated browser's were: " + JSON.stringify(v));
+    ok(await p.locator(".rc", { hasText: "Campaigns" }).locator("tbody td", { hasText: "e2e-open" }).count() === 1, "the tag on the link isn't a campaign");
+    ok(await p.locator(".kpi .k", { hasText: /^Visits$/ }).count() === 1 && await p.locator(".kpi .k", { hasText: "Left straight away" }).count() === 1, "Arrive doesn't lead with Visits and Left straight away");
+    ok(await p.locator("[data-csv]").count() >= 5 && await p.locator("[data-af]").count() === 3, "Arrive has no downloads or filters");
+    /* any dates: yesterday alone holds none of today's visits; back to 7 days and they return */
+    await p.locator("[data-range-pick]").click(); await p.locator("#rfrom").waitFor();
+    const yday = await p.evaluate(() => rDay(new Date(Date.now() - 86400000)));
+    await p.fill("#rfrom", yday); await p.fill("#rto", yday); await p.locator("#rgo").click();
+    await p.waitForFunction(() => D.visits && D.visits.days === 1, null, { timeout: 6000 });
+    ok(await p.evaluate(() => D.visits.now.visits === 0 && RANGE === 1 && !!RFROM), "a single day in the past still shows today's visits");
+    await p.locator("[data-range='7']").click();
+    await p.waitForFunction(() => D.visits && D.visits.days === 7 && D.visits.now.visits >= 2, null, { timeout: 6000 });
+    await p.locator("[data-atab=use]").click();
+    await fast(p, 6000, () => p.locator(".rc h3", { hasText: /^Screens$/ }).waitFor(), "Use");
+    ok(await p.locator(".rc", { hasText: "Screens" }).first().locator("tbody tr").count() >= 3 && await p.locator(".rc tbody td", { hasText: "The Showroom" }).count() >= 1, "Use doesn't list the screens in plain words");
+    ok(await p.locator(".rc h3", { hasText: "Started and not finished" }).count() === 1 && await p.locator(".rc h3", { hasText: "Where they go next" }).count() === 1, "Use is missing what people start and where they go next");
+    await p.locator("[data-atab=now]").click();
+    await fast(p, 6000, () => p.locator(".kpi .k", { hasText: "Here now" }).waitFor(), "Now");
+    ok(await p.evaluate(() => D.now && D.now.here >= 2 && D.now.today.visits === 2 && D.now.minutes.length === 30), "Now doesn't count the two who just arrived");
+    ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "Analytics is wider than the screen");
+  });
   /* admin v4 (2026-10-20): every section opens, with its frame; Orders has status tabs; Analytics its four tabs */
   await step(d, "admin → every section opens on a computer: Orders, Listings, Sellers, Analytics, Settings", async () => {
-    for (const [tab, want] of [["orders", "[data-os=paid]"], ["listings", "[data-ls=active]"], ["sellers", ".kpi"], ["analytics", "[data-atab=commerce]"], ["settings", "[data-systab=data]"]]) {
+    for (const [tab, want] of [["orders", "[data-os=paid]"], ["listings", "[data-ls=active]"], ["sellers", ".kpi"], ["analytics", "[data-atab=trade]"], ["settings", "[data-systab=data]"]]) {
       await settledGoto(p, B + "/admin#" + tab);
       await fast(p, 6000, () => p.locator(want).first().waitFor(), "admin → " + tab);
       ok(await p.locator(".pg-hd h1").count() === 1, tab + " has no page title");
@@ -2631,9 +2666,10 @@ console.log("\nMEMBER · COMPUTER");
       if (tab === "sellers") ok(await p.locator(".rc", { hasText: "Who's listing" }).count() === 1 && await p.locator(".rc", { hasText: "How far the walkthrough takes people" }).locator(".fun .fs").count() >= 8
         && !(await p.locator(".rc", { hasText: "Who's listing" }).textContent()).includes("tester"), "Sellers doesn't show who lists and the walkthrough funnel (counts only)");
     }
-    await settledGoto(p, B + "/admin#analytics"); await fast(p, 6000, () => p.locator("[data-atab=commerce]").waitFor(), "Analytics");
-    await p.locator("[data-atab=commerce]").click();
-    ok(await p.locator(".line").count() >= 2, "Commerce has no charts");
+    await settledGoto(p, B + "/admin#analytics"); await fast(p, 6000, () => p.locator("[data-atab=trade]").waitFor(), "Analytics");
+    await p.locator("[data-atab=trade]").click();
+    await fast(p, 6000, () => p.locator(".line").nth(1).waitFor(), "Trade's charts");
+    ok(await p.locator(".line").count() >= 2, "Trade has no charts");
     await settledGoto(p, B + "/admin#orders"); await fast(p, 6000, () => p.locator("[data-os=paid]").waitFor(), "Orders");
     ok(await p.locator(".toc table").first().isVisible() && !(await p.locator(".toc .cards2").first().isVisible()), "Orders on a computer isn't a table");
     await p.screenshot({ path: join(SHOTS, "admin-orders.png"), fullPage: false });

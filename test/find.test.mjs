@@ -60,9 +60,10 @@ const tabs = [...core.slice(core.indexOf("const TABS = ["), core.indexOf("const 
 t("every section of the dashboard is in it", tabs.length >= 14 && tabs.every((k) => new RegExp(`", "${k}", `).test(map)));
 const subs = (file, name) => [...R(file).match(new RegExp(`const ${name} = \\[(.*)\\];`))[1].matchAll(/\["([a-z]+)", "([^"]+)"\]/g)].map((m) => m[2]);
 t("every Analytics and Settings tab is in it, by the name on the tab", [...subs("public/admin-app/9-analytics.js", "ATABS"), ...subs("public/admin-app/6-settings.js", "SYSTABS").slice(1)].every((l) => map.includes(`["${l}", `)));
+t("a number opens the tab that shows it — and that tab exists", (() => { const tabs = subs("public/admin-app/9-analytics.js", "ATABS").map((l) => l.toLowerCase()); return [...find1.match(/const FIND_NUM = \{(.*)\};/)[1].matchAll(/: "([a-z]+)"/g)].every((m) => tabs.includes(m[1])); })());
 t("every switch in Settings is in it", [...R("public/admin-app/6-settings.js").matchAll(/tog\("[a-zA-Z]+", "([^"]+)"/g)].every((m) => map.includes(`["${m[1]}", `)));
 t("the numbers come from the dictionary", /D\.measures/.test(find1) && /FIND_NUM/.test(find1));
-t("the bar says what it does, and loads after the core", core.includes('placeholder="Search LABS"') && !core.includes("function wireSearch") && html.indexOf("1-core.js") < html.indexOf("1-find.js") && html.indexOf("1-find.js") < html.indexOf("1-motion.js"));
+t("the bar says what it does, and loads after the core", core.includes('placeholder="Search LABS"') && !core.includes("function wireSearch") && html.indexOf("1-core.js") < html.indexOf("1-range.js") && html.indexOf("1-range.js") < html.indexOf("1-find.js") && html.indexOf("1-find.js") < html.indexOf("1-motion.js"));
 t("members, then the rest from /api/admin/find — the owner's only", find1.includes("/api/admin/people?q=") && /ACCESS === "owner" \? req\("\/api\/admin\/find\?q="/.test(find1));
 t("what a result shows is escaped", !/\$\{r\.(title|text|seller|buyer|username|kind|status)\}/.test(find1));
 

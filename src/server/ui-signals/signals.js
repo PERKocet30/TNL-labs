@@ -1,5 +1,5 @@
 /* ================================================================
-   UI SIGNALS v1.2 — 2026-11-15 (the screen register: one name per screen, with the plain words for it;
+   UI SIGNALS v1.3 — 2026-11-15 (a batch carries its visit: ui-signals/visits.js). v1.2 — 2026-11-15 (the screen register: one name per screen, with the plain words for it;
    rage taps from before today are read under the same names). v1.1 — 2026-11-09 ("get rid of any data that isn't useful and track
    what is": the load time is gone — it read 0ms on almost every screen, and a
    slow screen is already the glitch watcher's to tell; an exit only counts when
@@ -16,7 +16,7 @@
    anything typed into a form. A search with no results keeps up to three
    counted words. Rows go after 90 days — a signal, not an archive.
      ui_events   viewer "u:<id>" | "d:<device>" · kind · screen · prev · ms · day
-     POST /api/ui { events: [{ kind, screen, prev, ms }] }   ≤ 60 a batch
+     POST /api/ui { events: [{ kind, screen, prev, ms }], visit: { id, ref, land, wide } }   ≤ 60 a batch
    Kinds (anything else is dropped):
      view      a screen opened — screen, prev = the screen before, ms = time on it
      exit      the page hidden — screen = the last one. Read as a leave only when nothing follows for 30 minutes (uiLeft)
@@ -92,11 +92,14 @@ const uiViewer = (req) => (req.user ? "u:" + req.user.id : (deviceOf(req) ? "d:"
 app.post("/api/ui", maybeAuth, rateLimit({ max: 60, windowMs: 60000 }), (req, res) => {
   const viewer = uiViewer(req);
   const list = Array.isArray(req.body?.events) ? req.body.events.slice(0, 60) : [];
-  if (!viewer || !list.length) return res.json({ ok: true, n: 0 });
+  if (!viewer || (!list.length && !req.body?.visit)) return res.json({ ok: true, n: 0 });
   let n = 0;
   const now = Date.now();
   db.exec("BEGIN");
-  try { for (const e of list) if (uiLog(viewer, e, now)) n++; db.exec("COMMIT"); }
+  let views = 0;
+  try { for (const e of list) if (uiLog(viewer, e, now)) { n++; if (e.kind === "view") views++; }
+    visitTouch(req, viewer, req.body.visit, views, now);   // the sitting these belong to (ui-signals/visits.js)
+    db.exec("COMMIT"); }
   catch (e) { try { db.exec("ROLLBACK"); } catch (_) {} return res.status(500).json({ error: "couldn't save" }); }
   if ((uiWrites += n) >= 5000) { uiWrites = 0; uiPrune(); }
   res.json({ ok: true, n });
