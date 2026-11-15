@@ -24,7 +24,7 @@ import { sendVerifyEmail, sendResetEmail, sendEmailChangedEmail, sendAlertEmail,
 import { PALETTE, paletteCss, accentVars, inkFor, onAccent, accentFill } from "./palette.js";
 import { APP } from "./app/order.mjs";
 import { SERVER } from "./server/order.mjs";   // the parts, for the admin source download (server/admin/controls-backups)
-import { createCheckout, verifySession, PAYMENTS_ENABLED, platformFee,
+import { createCheckout, verifySession, expireSession, PAYMENTS_ENABLED, platformFee,
          createSellerAccount, onboardingLink, accountStatus, loginLink } from "./pay.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

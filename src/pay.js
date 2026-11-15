@@ -243,6 +243,16 @@ export async function createCheckout({
   return { url: out.url, id: out.id };
 }
 
+/** Close an unpaid checkout so it can't be paid later (2026-11-15: an offer's earlier checkout, when its buyer starts
+    another). True when it is closed now or was already expired; false when it can't be — it was paid, or Stripe didn't answer.
+    @param {string} sessionId @param {string} [sellerAccount] */
+export async function expireSession(sessionId, sellerAccount) {
+  if (!KEY || !sessionId) return true;
+  const out = await stripe(`checkout/sessions/${encodeURIComponent(sessionId)}/expire`, { account: sellerAccount });
+  if (!out.error) return true;
+  return /status of ["'`]?expired/i.test(String(out.error));
+}
+
 /** Confirm payment server-side. Never trust the browser redirect. */
 export async function verifySession(sessionId, sellerAccount) {
   if (!KEY) return { paid: false };

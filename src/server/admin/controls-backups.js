@@ -35,7 +35,7 @@ app.post("/api/admin/members/:username/suspend", auth, admin, (req, res) => {
 app.delete("/api/admin/listings/:id", auth, admin, (req, res) => {
   const l = db.prepare(`SELECT * FROM listings WHERE id = ?`).get(Number(req.params.id));
   if (!l) return res.status(404).json({ error: "no listing" });
-  db.prepare(`UPDATE listings SET status='removed', updated_at=? WHERE id=?`).run(Date.now(), l.id);
+  db.prepare(`UPDATE listings SET status='removed', taken_down=1, updated_at=? WHERE id=?`).run(Date.now(), l.id);   // taken_down: the seller can't put it back (2026-11-15)
   notify(l.seller_id, req.user.id, "removed", null, `"${l.title}" was removed by a mod`);
   res.json({ ok: true });
 });

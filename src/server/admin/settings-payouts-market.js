@@ -176,9 +176,13 @@ app.get("/api/market/connect/dashboard", auth, async (req, res) => {
   res.json({ url: l.url });
 });
 
+try { db.exec(`ALTER TABLE listings ADD COLUMN taken_down INTEGER NOT NULL DEFAULT 0`); } catch {}   // 2026-11-15: removed by an admin or Mod — not the seller's to bring back
+/* A listing's photos are LABS uploads, like a post's (2026-11-15, the audit: any web address was accepted, so a seller
+   could point a listing at a picture on their own server and change it after people had looked). */
+const listingImgs = (images) => (Array.isArray(images) ? images : []).filter((i) => typeof i === "string" && /^\/uploads\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(i)).slice(0, 8);
 app.get("/api/market", maybeAuth, (req, res) => {
   const { category, size, condition, brand, q: term, sort, seller, max, min, kind, key, bpm, free, type } = req.query;
-  const where = [`l.status = 'active'`, `l.kind != 'loop'`];   // loops are gone (2026-10-28)
+  const where = [`l.status = 'active'`, `l.kind != 'loop'`, `u.suspended = 0`];   // loops are gone (2026-10-28); a suspended seller's pieces aren't for sale (2026-11-15)
   const params = [];
   if (kind) { where.push(`l.kind = ?`); params.push(kind); }
   if (type) { where.push(`l.sell_type = ?`); params.push(String(type)); }
@@ -274,7 +278,7 @@ app.post("/api/market", auth, verified, rateLimit({ max: 15, windowMs: 3600000, 
   }
   if (cents > 5000000) return res.status(400).json({ error: "price too high" });
 
-  const imgs = Array.isArray(images) ? images.filter((i) => typeof i === "string").slice(0, 8) : [];
+  const imgs = listingImgs(images);
   // A loop is heard, not seen — artwork is optional.
   if (!isLoop && !imgs.length) return res.status(400).json({ error: "add at least one photo" });
 
@@ -313,7 +317,7 @@ app.patch("/api/market/:id", auth, (req, res) => {
   const isLoop = l.kind === "loop";
   let imgs = null;
   if (images !== undefined) {
-    imgs = Array.isArray(images) ? images.filter((i) => typeof i === "string").slice(0, 8) : [];
+    imgs = listingImgs(images);
     if (!isLoop && !imgs.length) return res.status(400).json({ error: "keep at least one photo" });
   }
   const next = {
@@ -321,7 +325,7 @@ app.patch("/api/market/:id", auth, (req, res) => {
     description: (description ?? l.description).toString().slice(0, 2000),
     price_cents: price !== undefined ? Math.round(Number(price) * 100) : l.price_cents,
     shipping_cents: shipping !== undefined ? Math.max(0, Math.round(Number(shipping) * 100)) : l.shipping_cents,
-    status: ["active", "sold", "removed"].includes(status) ? status : l.status,
+    status: l.taken_down ? l.status : ["active", "sold", "removed"].includes(status) ? status : l.status,   // taken down by a mod: it stays down (2026-11-15)
     /* Restock: quantity edits are how a brand adds a second run. Loops
        stay single — changing their semantics is a decision, not a
        side-effect of an edit route. */
@@ -342,7 +346,9 @@ app.patch("/api/market/:id", auth, (req, res) => {
   };
   /* Free loops are legal (price 0) — the old unconditional check made
      them permanently uneditable. */
+  if (!Number.isFinite(next.price_cents) || !Number.isFinite(next.shipping_cents)) return res.status(400).json({ error: "That price isn't a number." });   // NaN slipped past the checks below (2026-11-15)
   if (next.price_cents < 100 && !(isLoop && next.price_cents === 0)) return res.status(400).json({ error: "price too low" });
+  if (next.price_cents > 5000000) return res.status(400).json({ error: "price too high" });   // the same cap as a new listing
   /* Variants replace size and quantity: the stock is theirs to add up. */
   next.variants = l.variants || "[]";
   if (!isLoop && req.body?.variants !== undefined) {
@@ -363,7 +369,7 @@ app.delete("/api/market/:id", auth, (req, res) => {
   const l = db.prepare(`SELECT * FROM listings WHERE id = ?`).get(Number(req.params.id));
   if (!l) return res.status(404).json({ error: "no listing" });
   if (l.seller_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: "not yours" });
-  db.prepare(`UPDATE listings SET status = 'removed', updated_at = ? WHERE id = ?`).run(Date.now(), l.id);
+  db.prepare(`UPDATE listings SET status = 'removed', taken_down = CASE WHEN ? THEN 1 ELSE taken_down END, updated_at = ? WHERE id = ?`).run(l.seller_id !== req.user.id ? 1 : 0, Date.now(), l.id);   // an admin removing someone else's: it stays down (2026-11-15)
   res.json({ ok: true });
 });
 

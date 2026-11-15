@@ -10,6 +10,27 @@ function orderGroup(order) {
   if (!order?.cart_id) return order ? [order] : [];
   return db.prepare(`SELECT * FROM orders WHERE cart_id = ? ORDER BY id`).all(order.cart_id);
 }
+/* AN ACCEPTED OFFER BUYS ONE PIECE (2026-11-15). The offer prices one order (orders.offer_id), never above what the
+   listing asks now, and is spent when that order is paid. Starting again while an earlier checkout at the offer is
+   still open closes that one first (its Stripe page stops taking payment) — otherwise several could be opened at
+   the offer price and all paid. {busy} = the earlier one can't be closed: it is being paid. */
+try { db.exec(`ALTER TABLE orders ADD COLUMN offer_id INTEGER`); } catch {}
+async function offerFor(l, buyerId, seller) {
+  const o = db.prepare(`SELECT id, amount_cents FROM offers WHERE listing_id=? AND buyer_id=? AND status='accepted' ORDER BY created_at DESC LIMIT 1`).get(l.id, buyerId);
+  if (!o) return null;
+  for (const p of db.prepare(`SELECT * FROM orders WHERE offer_id = ? AND status = 'pending'`).all(o.id)) {
+    if (PAYMENTS_ENABLED && p.payment_ref && !(await expireSession(p.payment_ref, seller?.stripe_account))) return { busy: true };
+    db.prepare(`UPDATE orders SET status='cancelled', updated_at=? WHERE status='pending' AND (id = ? OR (cart_id IS NOT NULL AND cart_id = ?))`).run(Date.now(), p.id, p.cart_id || -1);
+  }
+  return { id: o.id, amount: Math.min(o.amount_cents, l.price_cents) };
+}
+/* the order an offer priced remembers it; with no payments switched on nothing ever settles, so it is spent at once */
+function offerTake(orderId, offer) {
+  if (!offer) return;
+  db.prepare(`UPDATE orders SET offer_id = ? WHERE id = ?`).run(offer.id, orderId);
+  if (!PAYMENTS_ENABLED) db.prepare(`UPDATE offers SET status='used' WHERE id = ? AND status='accepted'`).run(offer.id);
+}
+const OFFER_BUSY = "Your payment at your offer price is going through. Check your orders in a moment.";
 const groupTotal = (g) => g.reduce((n, o) => n + o.amount_cents + (o.shipping_cents || 0), 0);
 /* A paid session is only good for the group it was made for. */
 function sessionFits(order, out) {
@@ -37,11 +58,14 @@ app.post("/api/cart/checkout", auth, verified, rateLimit({ max: 20, windowMs: 36
     // Two lines of the same size can't take more than there is.
     const same = lines.filter((x) => x.l.id === l.id && (x.v?.id || "") === (v?.id || "")).length;
     if (!v && same >= (l.quantity ?? 1)) continue;
-    const offer = db.prepare(`SELECT amount_cents FROM offers WHERE listing_id=? AND buyer_id=? AND status='accepted' ORDER BY created_at DESC LIMIT 1`).get(l.id, req.user.id);
-    lines.push({ l, v, amount: offer ? offer.amount_cents : l.price_cents });
+    /* an accepted offer: one piece of that listing at the offer, never above the price it asks now (offerFor, above) */
+    const offer = lines.some((x) => x.l.id === l.id) ? null : await offerFor(l, req.user.id, q.userById.get(l.seller_id));
+    if (offer?.busy) return res.status(409).json({ error: OFFER_BUSY });
+    lines.push({ l, v, amount: offer ? offer.amount : l.price_cents, offer });
   }
   if (!lines.length) return res.status(400).json({ error: "Nothing in your bag is left to buy" });
   const seller = q.userById.get(lines[0].l.seller_id);
+  if (!seller || seller.suspended) return res.status(409).json({ error: "These pieces aren't available right now." });   // a suspended seller sells nothing (2026-11-15)
   if (PAYMENTS_ENABLED && (!seller?.stripe_account || !seller.stripe_ready)) {
     notify(seller.id, req.user.id, "sale", null, "Someone tried to check out your items — finish your payout setup so you can sell them");
     return res.status(409).json({ error: "This seller hasn't finished setting up payments yet. We've let them know.", sellerNotConnected: true });
@@ -55,6 +79,7 @@ app.post("/api/cart/checkout", auth, verified, rateLimit({ max: 20, windowMs: 36
     lines.forEach((x, i) => ids.push(Number(ins.run(x.l.id, req.user.id, seller.id, x.amount, i ? 0 : ship,
       x.v?.id || "", variantLabel(x.v), now, now).lastInsertRowid)));
     db.prepare(`UPDATE orders SET cart_id = ? WHERE id IN (${ids.map(() => "?").join(",")})`).run(ids[0], ...ids);
+    lines.forEach((x, i) => offerTake(ids[i], x.offer));
     db.exec("COMMIT");
   } catch (e) { db.exec("ROLLBACK"); throw e; }
   const lead = ids[0], drop = () => db.prepare(`DELETE FROM orders WHERE cart_id = ?`).run(lead);
