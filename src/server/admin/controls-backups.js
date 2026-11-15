@@ -135,7 +135,9 @@ app.post("/api/admin/cleanup", auth, admin, (req, res) => {
         continue;
       }
       if (f.startsWith(".") || referenced.has(f)) continue;
-      try { freed += statSync(join(UPLOAD_DIR, f)).size; rmSync(join(UPLOAD_DIR, f)); removed++; } catch {}
+      /* 2026-11-15 (the audit): nothing under a day old — a photo or video a member has uploaded but not posted yet
+         (the post maker, a draft, the queue) isn't pointed at by anything, and Cleanup used to take it. */
+      try { const st = statSync(join(UPLOAD_DIR, f)); if (Date.now() - st.mtimeMs < 86400000) continue; freed += st.size; rmSync(join(UPLOAD_DIR, f)); removed++; } catch {}
     }
   } catch (e) { return res.status(500).json({ error: e.message }); }
   console.log(`[admin] cleanup removed ${removed} orphaned files (${(freed / 1048576).toFixed(1)}MB)`);

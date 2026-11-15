@@ -421,7 +421,7 @@ app.get("/api/search", maybeAuth, (req, res) => {
   const like = `%${term}%`;
   const people = db.prepare(`
     SELECT username, display_name, avatar_url, role, roles, rep, bio, accent FROM users
-    WHERE (? = '' OR display_name LIKE ? OR username LIKE ? OR bio LIKE ?)
+    WHERE suspended = 0 AND (? = '' OR display_name LIKE ? OR username LIKE ? OR bio LIKE ?)
       AND (? = '' OR roles LIKE ? OR role = ?)
     ORDER BY rep DESC LIMIT 24`).all(term, like, like, like, role, `%"${role}"%`, role);
   const posts = term ? db.prepare(`
@@ -431,7 +431,7 @@ app.get("/api/search", maybeAuth, (req, res) => {
       (SELECT COUNT(*) FROM posts s WHERE s.shared_from = p.id) AS share_count,
       0 AS liked_by_me
     FROM posts p JOIN users u ON u.id = p.author_id
-    WHERE p.is_work = 1 AND p.body LIKE ? ORDER BY p.created_at DESC LIMIT 20`).all(like) : [];
+    WHERE p.is_work = 1 AND u.suspended = 0 AND p.body LIKE ? ORDER BY p.created_at DESC LIMIT 20`).all(like) : [];
   res.json({
     people: people.filter((p) => !hidden.has(p.username)).map((p) => ({
       username: p.username, displayName: p.display_name, avatarUrl: p.avatar_url || "", accentHex: accentHex(p.accent),

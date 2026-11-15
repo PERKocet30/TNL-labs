@@ -180,9 +180,13 @@ const avHTML=(u,cls)=>{const [rc,rs]=avRing(u);return u&&u.avatarUrl?`<img class
 // other way round, or you've built an XSS hole.
 function rich(t){
   let h=esc(t);
-  h=h.replace(/(https?:\/\/[^\s<]+)/g,(u)=>`<a class="lnk" href="${u}" target="_blank" rel="noreferrer nofollow">${u.replace(/^https?:\/\//,"").slice(0,42)}${u.length>50?"…":""}</a>`);
+  /* 2026-11-15: links are set aside first, so an @ or a # inside one (youtube.com/@name, a page's #part) isn't turned
+     into a mention or a tag in the middle of the link — that broke every YouTube, TikTok and Threads profile link. */
+  const links=[];
+  h=h.replace(/(https?:\/\/[^\s<]+)/g,(u)=>{links.push(`<a class="lnk" href="${u}" target="_blank" rel="noreferrer nofollow">${u.replace(/^https?:\/\//,"").slice(0,42)}${u.length>50?"…":""}</a>`);return "\u0000"+(links.length-1)+"\u0000"});
   h=h.replace(/@([a-z0-9._]{1,19}[a-z0-9_])/gi,(m,u)=>`<span class="mention" data-u="${esc(u.toLowerCase())}">@${esc(u)}</span>`);
   h=h.replace(/(^|\s)#([a-z0-9_]{2,30})(?!\w)/gi,(m,s,t)=>`${s}<span class="htag" data-tag="${t.toLowerCase()}">#${t}</span>`);
+  h=h.replace(/\u0000(\d+)\u0000/g,(m,i)=>links[+i]||"");
   return h;
 }
 function firstUrl(t){const m=/(https?:\/\/[^\s<]+)/.exec(t||"");return m?m[1]:null}

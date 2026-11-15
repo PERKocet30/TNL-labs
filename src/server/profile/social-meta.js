@@ -64,7 +64,7 @@ function profileUser(u, viewer) {
    stats that make standing legible: work, validation received, collabs. */
 app.get("/api/users/:username", maybeAuth, (req, res) => {
   const u = userByLooseName(req.params.username);
-  if (!u) return res.status(404).json({ error: "no such user" });
+  if (!u || u.suspended) return res.status(404).json({ error: "no such user" });   // suspended: not in the app either (2026-11-15)
   const posts = shapePosts(feedRows({ authorId: u.id, viewerId: req.user?.id, limit: 40, workOnly: true }));
 
   // work they collaborated ON (someone else's post they accepted)

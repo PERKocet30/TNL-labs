@@ -25,6 +25,11 @@ document.addEventListener("click",e=>{
   if(p==="google"&&INAPP){   // Google refuses embedded browsers: go out first (app/instagram/inapp)
     uiConfirm("Continue in "+outBrowser(),`Google doesn't allow signing in inside ${INAPP}. We'll open LABS in ${outBrowser()} to finish.`,{okLabel:"Open "+outBrowser()})
       .then(y=>{if(y)openOutside(location.origin+"/?oauth=google&mode="+encodeURIComponent(mode))});return}
+  /* 2026-11-15: the page takes seconds to leave on a phone and nothing showed it — people tapped again and again */
+  if(b.dataset.going)return;
+  document.querySelectorAll("[data-oauth]").forEach(x=>{x.dataset.going="1";x.style.opacity=".5"});b.style.opacity="1";
+  const lbl=b.querySelector("span")||b;lbl.textContent="Opening "+p[0].toUpperCase()+p.slice(1)+"…";
+  setTimeout(()=>document.querySelectorAll("[data-oauth]").forEach(x=>{delete x.dataset.going;x.style.opacity=""}),8000);   // came back (or it never left): usable again
   oauthStart(p,mode);
 });
 const OA_WHY={off:"That sign-in isn't switched on yet.",cancelled:"Sign-in was cancelled.",expired:"That took too long. Try again.",

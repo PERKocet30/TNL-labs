@@ -81,7 +81,7 @@ app.get("/u/:username", (req, res) => {
   const u = userByLooseName(req.params.username);
   /* 064: every page is public — the only 404 is a name that doesn't exist. */
   if (u && u.username !== req.params.username) return res.redirect(301, profileHref(u.username));
-  if (!u) {
+  if (!u || u.suspended) {   // suspended: gone from the public page too (2026-11-15)
     return res.status(404).send(lookNotFound("This portfolio doesn't exist."));
   }
   const posts = shapePosts(feedRows({ authorId: u.id, viewerId: 0, limit: 60, workOnly: true }));

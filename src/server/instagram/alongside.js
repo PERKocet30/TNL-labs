@@ -51,7 +51,7 @@ ${ldJson({ "@context": "https://schema.org", "@type": "Product", name: l.title, 
   const out = html
     .replace(/<title>[^<]*<\/title>\n?/, "")
     .replace(/<meta (?:property="og:[^"]*"|name="twitter:[^"]*"|name="description")[^>]*>\n?/g, "")
-    .replace(/(<meta charset="utf-8" \/>\n?)/, `$1${tags}`);
+    .replace(/(<meta charset="utf-8" \/>\n?)/, (m) => m + tags);   // a function: "$15" in the tags was read as "group 1" then "5" and garbled the title (2026-11-15)
   res.set("Cache-Control", "public, max-age=0, must-revalidate");
   res.type("html").send(out);
 }
