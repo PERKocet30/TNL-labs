@@ -1,5 +1,7 @@
 /* ================================================================
-   EVENT SCREEN v1.3 — 2026-11-15 (the vote wait, to the brief: no held votes — "Vote soon" round a ring that fills,
+   EVENT SCREEN v1.4 — 2026-11-14 (a vote on its way reads "Sending" — design language v2.2, the Sending state: the
+   button holds, in words, until the server answers, and goes back to what it said if the answer is no).
+   v1.3 — 2026-11-15 (the vote wait, to the brief: no held votes — "Vote soon" round a ring that fills,
    the pieces to look at meanwhile, Vote by hand when it's over; a refusal that's the member's to fix opens with the
    fix; a used-up day answers on the phone; a scoreboard row and a name in the results open the piece and the artist).
    v1.2 — 2026-10-12 (wiring; v1.2: the ‹ back bar, and "Every entry is in // Visual"). Opening an event, the
@@ -78,15 +80,25 @@ async function evPick(id,btn){
   if(evSpent(id))return toast(EV.event.picks===1?"You've voted today. Take it back to pick another, or come back tomorrow.":"You've used today's votes. Take one back to pick another.");   // no call that can only be refused
   if(btn&&btn.classList.contains("busy"))return;   // on its way: it can't send twice
   const on=!mine;
-  if(btn)btn.classList.add("busy");
+  evBusy(btn,true);
   try{const d=await evApi.vote(EVSLUG,id,on);EV.me.myVotes=d.myVotes;if(d.board)EV.board=d.board;render();
     if(on){if(navigator.vibrate)navigator.vibrate(8);evCounted()}}
   catch(e){
-    const m=e.message||"";if(btn)btn.classList.remove("busy");
+    const m=e.message||"";evBusy(btn,false);
     if(/finish setting up/i.test(m)){EV.me.voteBlock=m;if(EV.me.wait==null)EV.me.wait=.95;render();evWaitWatch();return evSoon()}   // the server knows best: show the wait
     if(/profile photo/i.test(m))return evPhotoAsk(id);
     if(/confirm your email/i.test(m))return evMailAsk(id);
     toast(m)}
+}
+/* SENDING (design language v2.2, 2026-11-14): a button waiting on the server says so and holds. The Vote pill swaps
+   its words for "Sending"; the round pick dot on a thumbnail has no words, so it only dims. A yes repaints the
+   screen; a no puts back what the button said. */
+function evBusy(btn,on){
+  if(!btn)return;
+  btn.classList.toggle("busy",on);
+  if(!btn.classList.contains("ev-vote"))return;
+  if(on){btn.dataset.was=btn.innerHTML;btn.textContent="Sending";btn.setAttribute("aria-busy","true")}
+  else{if(btn.dataset.was!=null)btn.innerHTML=btn.dataset.was;delete btn.dataset.was;btn.removeAttribute("aria-busy")}
 }
 const evSoon=()=>toast("You can vote soon. While you wait, see all the pieces.");
 /* "Your vote counted" — once on this phone, the first time a vote goes in. */

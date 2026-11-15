@@ -2122,6 +2122,21 @@ console.log("\nMEMBER · PHONE");
     await p.unroute("**/api/events/e2e-art/vote");
     await p.waitForTimeout(300);
     ok(await p.locator(".ev-focus .ev-vote.on").count() === 1 && await p.locator(`.ev-row .ev-vote.on`).count() === 1, "the button and the board row should both say Voted");
+    /* 2026-11-14 — Sending (design language v2.2). A vote on its way only dimmed the button; now the pill says
+       "Sending", a second tap sends nothing, and a no puts back what it said. */
+    const sending = await p.evaluate(async () => {
+      const real = evApi.vote; let calls = 0;
+      evApi.vote = () => { calls++; return new Promise((_, no) => setTimeout(() => no(new Error("Try again")), 400)); };
+      const b = document.querySelector(".ev-focus .ev-vote"), was = b.textContent.trim(), w0 = b.getBoundingClientRect().width;
+      b.click(); b.click();
+      const mid = b.textContent.trim(), busy = b.classList.contains("busy"), w1 = b.getBoundingClientRect().width;
+      await new Promise((r) => setTimeout(r, 700));
+      evApi.vote = real;
+      return { was, mid, busy, calls, same: Math.abs(w0 - w1) < 0.5, after: b.textContent.trim(), still: b.classList.contains("busy") };
+    });
+    ok(sending.mid === "Sending" && sending.busy && sending.calls === 1 && sending.same && sending.after === sending.was && !sending.still,
+      `a vote on its way should say Sending, hold its width, send once, and go back on a no (${JSON.stringify(sending)})`);
+    await p.waitForTimeout(2300);   // the "Try again" toast clears before the next step reads one
     // 2026-10-28: on a small phone (360px) Share and Vote ran off the right edge
     await p.setViewportSize({ width: 360, height: 780 }); await p.waitForTimeout(250);
     const fr = await p.evaluate(() => Math.max(...[...document.querySelectorAll(".ev-focus .ev-fbar button")].map((b) => b.getBoundingClientRect().right)));
