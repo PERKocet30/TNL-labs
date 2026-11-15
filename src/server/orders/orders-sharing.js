@@ -116,7 +116,8 @@ app.get("/api/market/checkout/done", async (req, res) => {
    delivery rep from the same buyer once in 30 days, and delivery rep only for an order that was marked shipped. */
 const REP_PAIR_MS = 30 * 86400000;
 const repPairRecent = (sellerId, buyerId, kind) => !!db.prepare(`SELECT 1 FROM rep_events r JOIN orders o ON o.id = r.source_id
-  WHERE r.user_id = ? AND r.kind = ? AND r.amount > 0 AND o.seller_id = ? AND o.buyer_id = ? AND r.created_at > ? LIMIT 1`)
+  WHERE r.user_id = ? AND r.kind = ? AND r.amount > 0 AND o.seller_id = ? AND o.buyer_id = ? AND r.created_at > ?
+    AND o.status IN ('paid','shipped','complete') LIMIT 1`)   // only a sale that still stands: one that was refunded or voided doesn't block the next real one
   .get(sellerId, kind, sellerId, buyerId, Date.now() - REP_PAIR_MS);
 
 /* A REFUND IS HEARD (2026-11-15, the audit). Nothing told LABS a seller had refunded: the order stayed paid, the rep

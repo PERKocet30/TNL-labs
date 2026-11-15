@@ -145,6 +145,11 @@ told.length = 0; await X.refundSweep();
 t("a full refund on Stripe: the order says refunded, the rep that sale gave is taken back, both are told", status(sold) === "refunded" && took.some((a) => a[0] === shop && a[1] === "sale_made" && a[2] === sold) && told.filter((a) => a[2] === "refunded").length === 2);
 t("a part refund, and orders nobody refunded, are left as they are", db.prepare(`SELECT status FROM orders WHERE payment_ref='cs_sock1'`).get().status === "paid" && status(other) === "paid");
 REFUNDS.cs_sock2 = { refunded: true }; took.length = 0; await X.refundSweep();
+/* a refunded sale doesn't block the next real one to the same buyer (the review of this change, 2026-11-15) */
+{ const n0 = rep.filter((a) => a[0] === shop && a[1] === "sale_made").length;
+  const re = PO(sock, pal, 100, "cs_sock_re"); X.settlePaidOrder(db.prepare(`SELECT * FROM orders WHERE id=?`).get(re), { paid: true });
+  t("the sale that earned the rep was refunded, so the buyer's next real purchase earns it", rep.filter((a) => a[0] === shop && a[1] === "sale_made").length - n0 === 1);
+  db.prepare(`UPDATE orders SET refund_checked_at = ? WHERE id = ?`).run(now, re); }
 t("each order is asked about at most every six hours", db.prepare(`SELECT status FROM orders WHERE payment_ref='cs_sock2'`).get().status === "paid" && took.length === 0);
 db.prepare(`UPDATE orders SET refund_checked_at = ? WHERE payment_ref = 'cs_sock2'`).run(now - 7 * 3600000); await X.refundSweep();
 t("…then again: that one is refunded too, and it gave no rep, so none is taken", db.prepare(`SELECT status FROM orders WHERE payment_ref='cs_sock2'`).get().status === "refunded" && took.length === 0);
