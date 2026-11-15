@@ -16,5 +16,11 @@ t("Next piece — the one after it in the list it was opened from", w.includes("
 t("a sideways swipe goes next or back — not on a carousel or a video, which swipe themselves", w.includes('!e.target.closest(".caro,.vwrap,video,input,textarea")') && /Math\.abs\(dx\)>70&&Math\.abs\(dx\)>2\*Math\.abs\(dy\)/.test(w));
 t("nothing here decides an order or explains the ranking", !/rank|score|boost/i.test(w.replace(/rank\.js's/g, "")));
 
+console.log("\nPICTURES: ONE MORE TRY, AND THEIR SPACE KEPT (2026-11-15)");
+const fb = R("src/app/media/img-fallback.js"), sr = R("src/app/showroom/showroom.js"), ap = R("src/app/posts/archive-posts.js"), poll = R("src/app/events/poll.js");
+t("a picture that fails is asked for once more before it's called unavailable", /if\(!IMGRETRY\.has\(p\)\)\{IMGRETRY\.add\(p\);/.test(fb) && fb.indexOf("IMGRETRY.add(p)") < fb.indexOf("BADIMG.add(p);") && /^let IMG_RETRY_MS=2000;/m.test(state));
+t("a picture with no size on record keeps a 4:5 space, then takes its own shape", sr.includes('`data-nosize style="aspect-ratio:4/5"`') && ap.includes('`data-nosize style="aspect-ratio:4/5"`') && fb.includes('im.style.aspectRatio=im.naturalWidth+"/"+im.naturalHeight'));
+t("a Story card that fails to draw is tried once more before the sheet says it couldn't", /if\(!EVSHARE\.again\)\{EVSHARE\.again=1;/.test(poll) && poll.indexOf("EVSHARE.again=1") < poll.indexOf("EVSHARE.failed=true"));
+
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

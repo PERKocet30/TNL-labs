@@ -504,7 +504,7 @@ console.log("\nMEMBER · PHONE");
      half a slide off, the first sat in a grey box, and the feed jumped as slides loaded. */
   await step(d, "carousel of mixed shapes: the first picture sets the frame, it's sized before anything loads, every slide is exactly the frame", async () => {
     await p.evaluate(() => { POSTOPEN = null; TAB = "showroom"; render(); });
-    const id = await p.evaluate(() => { const x = SRPOSTS.find((q) => q.images && q.images.length > 2); x.__orig = x.images;
+    const id = await p.evaluate(() => { IMG_RETRY_MS = 300; const x = SRPOSTS.find((q) => q.images && q.images.length > 2); x.__orig = x.images;
       x.images = x.images.slice(0, 3).map((im, i) => Object.assign({}, im, [{ w: 1600, h: 900 }, { w: 800, h: 1400 }, { w: 1000, h: 1000 }][i])); render(); return x.id; });
     const m = await p.evaluate((id) => { const c = document.querySelector(`#sr-grid [data-caro="s${id}"]`), t = c.querySelector(".caro-t"), tw = t.clientWidth, th = t.clientHeight;
       return { ratio: +(tw / th).toFixed(2), style: t.style.aspectRatio, slides: [...t.querySelectorAll(".caro-i")].map((im) => [Math.round(im.getBoundingClientRect().width - tw), Math.round(im.getBoundingClientRect().height - th)]) }; }, id);
@@ -530,6 +530,15 @@ console.log("\nMEMBER · PHONE");
     r = await cnt(id);
     ok(r && r.slides === 2 && r.n === "1/2", "a repaint brought the missing slides back: " + JSON.stringify(r));
     await p.evaluate((id) => { const x = SRPOSTS.find((q) => q.id === id); x.images = x.__orig; delete x.__orig; render(); }, id);
+    /* 2026-11-15: a picture that fails once (a deploy's restart, a weak signal) is tried again before it's called unavailable —
+       290 pictures "failed" on the Showroom in a month, most of them still on the server */
+    let hits = 0;
+    await p.route("**/uploads/e2e-flaky.png*", async (r) => { hits++; if (hits === 1) return r.abort(); const res = await r.fetch({ url: B + "/uploads/e2e-p3.png" }); return r.fulfill({ response: res }); });
+    await p.evaluate(() => { const x = SRPOSTS.find((q) => q.imageUrl && !(q.images && q.images.length > 1)); x.__u = [x.imageUrl, x.thumbUrl, x.images]; x.imageUrl = x.thumbUrl = "/uploads/e2e-flaky.png"; x.images = null; window.__flaky = x.id; render(); });
+    await p.waitForFunction(() => { const im = document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] img.sr-img`); return im && im.complete && im.naturalWidth > 0; }, null, { timeout: 6000 });
+    ok(hits === 2 && await p.evaluate(() => !document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] .img-gone`) && !BADIMG.has("/uploads/e2e-flaky.png")), `a picture that failed once wasn't tried again (asked for ${hits} times)`);
+    await p.unroute("**/uploads/e2e-flaky.png*");
+    await p.evaluate(() => { const x = SRPOSTS.find((q) => q.id === window.__flaky); [x.imageUrl, x.thumbUrl, x.images] = x.__u; delete x.__u; IMG_RETRY_MS = 2000; render(); });
   });
   await step(d, "back from a profile lands where you were in the feed", async () => {
     await p.evaluate(() => { TAB = "showroom"; PROFILE = null; render(); });

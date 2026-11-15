@@ -32,7 +32,7 @@ const openers = APP.filter((f) => /\.(js|css)$/.test(f)).map(opener).filter((x) 
 t("the parts' opening doc blocks are not in the page (" + openers.length + " of them)", openers.length > 50 && !openers.some((o) => html.includes(o)));
 t("…but the first line of code after them is", html.includes("function uiModal(") && html.includes(".ui-ov .ui-btn{"));
 /* 245KB at the flatten (2026-11-02); 265KB from 2026-11-04 — Echo's brain screen (streamed answers, photos, the mic, the picker), Knowledge and the UI signals brought it to ~250KB. 270KB from 2026-11-06: main sat 0.5KB under 265KB and uploads in pieces (app/media/upload.js) add 0.8KB. A guard against bloat, not a target. */
-t("the page is well under its gzipped budget", (await import("node:zlib")).gzipSync(html, { level: 9 }).length < 270 * 1024);
+t("the page is well under its gzipped budget", (await import("node:zlib")).gzipSync(html, { level: 9 }).length < 275 * 1024);   // 275KB from 2026-11-15: the fix list (the vote wait, an opened post that leads on, Not this time, a picture's second try) brought it to 270.5KB. The real fix is the audit's: the app's code in its own file the phone keeps.
 
 console.log("\nTHE ORDER FILE AND THE DISK MUST AGREE");
 writeFileSync(join(TMP, "a", "one.js"), "const ONE=1;\n"); writeFileSync(join(TMP, "b", "two.js"), "const TWO=2;\n");

@@ -30,7 +30,7 @@ function srCardHTML(p,i){
       <span class="caro-n mono">1/${p.images.length}</span>
     </div>`
     :p.imageUrl?`<img class="sr-img" ${imgAttrs(pxImgs(p)[0])} alt="work by ${esc(p.author.displayName)}" ${ld} decoding="async"
-      ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:""}
+      ${p.mediaW?`width="${p.mediaW}" height="${p.mediaH}" style="aspect-ratio:${p.mediaW}/${p.mediaH}"`:`data-nosize style="aspect-ratio:4/5"`}
       data-u="${esc(p.author.username)}">`
       :p.videoUrl?`<div class="vwrap">
         ${pxVideo(p,"sr-img")}
