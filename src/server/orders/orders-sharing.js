@@ -19,15 +19,18 @@ app.post("/api/market/:id/buy", auth, verified, rateLimit({ max: 20, windowMs: 3
   // and saved back on payment — so we don't demand them up front.
   // Loops ship nowhere.
 
-  // an accepted offer beats the sticker price
+  /* An accepted offer is the price — for one piece, and never more than the listing asks now (2026-11-15, the audit:
+     it used to be good for every unit in stock, for ever, and charged MORE than the price once the seller lowered it).
+     It is marked used when the order is paid (settlePaidOrder). */
   const accepted = db.prepare(`SELECT * FROM offers WHERE listing_id=? AND buyer_id=? AND status='accepted' ORDER BY created_at DESC LIMIT 1`)
     .get(l.id, req.user.id);
-  const amount = accepted ? accepted.amount_cents : l.price_cents;
+  const amount = accepted ? Math.min(accepted.amount_cents, l.price_cents) : l.price_cents;
 
   /* Check we can actually route the money BEFORE writing an order row.
      Doing it after leaves orphaned orders every time someone bumps into
      an unconfigured seller. */
   const seller = q.userById.get(l.seller_id);
+  if (!seller || seller.suspended) return res.status(409).json({ error: "This listing isn't available right now." });   // a suspended seller sells nothing (2026-11-15)
   if (PAYMENTS_ENABLED && (!seller?.stripe_account || !seller.stripe_ready)) {
     /* Don't hand this off to a DM. Every sale goes through the platform or
        it doesn't happen — that's the only way the commission exists, and
@@ -84,6 +87,10 @@ app.get("/api/market/checkout/done", async (req, res) => {
   const order = db.prepare(`SELECT * FROM orders WHERE id = ?`).get(Number(req.query.o || 0));
   if (!order) return res.redirect("/?checkout=failed");
   const seller = q.userById.get(order.seller_id);
+  /* 2026-11-15 (the audit): only the payment LABS itself started for this order can settle it. A seller on the Standard
+     kind holds their own Stripe keys and could make a look-alike payment (same order number, same total) with no
+     commission on it; the checks below would have passed it. */
+  if (!sid || !order.payment_ref || sid !== order.payment_ref) return res.redirect("/?checkout=failed");
   const out = await verifySession(sid, seller?.stripe_account);
   if (!out.paid) return res.redirect(out.clearing ? `/?checkout=processing&o=${order.cart_id || order.id}` : "/?checkout=failed");
   /* Bind the session to THIS order. "Paid" only proves money moved on the
@@ -110,6 +117,8 @@ function settlePaidOrder(order, out) {
   const cur = db.prepare(`SELECT status FROM orders WHERE id=?`).get(order.id);
   if (!cur || cur.status !== "pending") return;
   db.prepare(`UPDATE orders SET status='paid', updated_at=? WHERE id=?`).run(Date.now(), order.id);
+  /* the offer that set this price is spent: one accepted offer buys one piece (2026-11-15) */
+  db.prepare(`UPDATE offers SET status='used' WHERE listing_id=? AND buyer_id=? AND status='accepted'`).run(order.listing_id, order.buyer_id);
   if (out.ship) db.prepare(`UPDATE orders SET ship_name=?, ship_address=? WHERE id=?`)
     .run((out.ship.name || "").slice(0, 80), (out.ship.address || "").slice(0, 300), order.id);
   const l = db.prepare(`SELECT * FROM listings WHERE id=?`).get(order.listing_id);

@@ -82,6 +82,22 @@ t("still clearing: says processing, not failed", to === `/?checkout=processing&o
 await routes["GET /api/market/checkout/done"]({ query: { session_id: "cs_nope", o: String(slow) } }, res);
 t("not paid: failed", to === "/?checkout=failed");
 
+console.log("\nTHE AUDIT, 2026-11-15");
+/* only the payment LABS started for this order settles it — a look-alike on the seller's own Stripe (same order number, same total, no commission) doesn't */
+const mine = O(cap, 3000, 0, "cs_mine", 1);
+SESS.cs_lookalike = { paid: true, orderId: String(mine), amount: 3000 };
+await routes["GET /api/market/checkout/done"]({ query: { session_id: "cs_lookalike", o: String(mine) } }, res);
+t("a paid session that isn't the one LABS started for this order: refused, nothing settles", to === "/?checkout=failed" && status(mine) === "pending" && !asked.includes("cs_lookalike"));
+const noref = O(cap, 3000, 0, null, 1);
+await routes["GET /api/market/checkout/done"]({ query: { session_id: "cs_lookalike", o: String(noref) } }, res);
+t("…nor an order LABS never started a payment for", to === "/?checkout=failed" && status(noref) === "pending");
+/* an accepted offer buys one piece: it is spent when that order is paid */
+db.prepare(`INSERT INTO offers (listing_id, buyer_id, amount_cents, status, created_at) VALUES (?,?,?,'accepted',?)`).run(tee, buyer, 4000, now);
+const off = O(tee, 4000, 800, "cs_offer", 1);
+SESS.cs_offer = { paid: true, orderId: String(off), amount: 4800 };
+await routes["GET /api/market/checkout/done"]({ query: { session_id: "cs_offer", o: String(off) } }, res);
+t("paying with an accepted offer spends it — the next piece is at the listing's price", status(off) === "paid" && db.prepare(`SELECT status FROM offers WHERE listing_id=? AND buyer_id=?`).get(tee, buyer).status === "used");
+
 console.log("\nIN THE APP");
 const app = read("app/market/order-done.js"), boot = read("app/feed/feed-boot.js"), router = read("app/music/tracks.js");
 t("the return opens Order confirmed for that order", boot.includes('if(p.get("o"))orderDoneOpen(p.get("o"),st)') && router.includes('if(MKTVIEW==="confirmed")return orderDoneHTML();'));

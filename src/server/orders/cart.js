@@ -37,11 +37,14 @@ app.post("/api/cart/checkout", auth, verified, rateLimit({ max: 20, windowMs: 36
     // Two lines of the same size can't take more than there is.
     const same = lines.filter((x) => x.l.id === l.id && (x.v?.id || "") === (v?.id || "")).length;
     if (!v && same >= (l.quantity ?? 1)) continue;
-    const offer = db.prepare(`SELECT amount_cents FROM offers WHERE listing_id=? AND buyer_id=? AND status='accepted' ORDER BY created_at DESC LIMIT 1`).get(l.id, req.user.id);
-    lines.push({ l, v, amount: offer ? offer.amount_cents : l.price_cents });
+    /* an accepted offer: one piece of that listing at the offer, never above the price it asks now (2026-11-15) */
+    const offer = lines.some((x) => x.l.id === l.id) ? null
+      : db.prepare(`SELECT amount_cents FROM offers WHERE listing_id=? AND buyer_id=? AND status='accepted' ORDER BY created_at DESC LIMIT 1`).get(l.id, req.user.id);
+    lines.push({ l, v, amount: offer ? Math.min(offer.amount_cents, l.price_cents) : l.price_cents });
   }
   if (!lines.length) return res.status(400).json({ error: "Nothing in your bag is left to buy" });
   const seller = q.userById.get(lines[0].l.seller_id);
+  if (!seller || seller.suspended) return res.status(409).json({ error: "These pieces aren't available right now." });   // a suspended seller sells nothing (2026-11-15)
   if (PAYMENTS_ENABLED && (!seller?.stripe_account || !seller.stripe_ready)) {
     notify(seller.id, req.user.id, "sale", null, "Someone tried to check out your items — finish your payout setup so you can sell them");
     return res.status(409).json({ error: "This seller hasn't finished setting up payments yet. We've let them know.", sellerNotConnected: true });
