@@ -89,7 +89,19 @@ try {
   const r5 = await fetch(B + "/api/events/art/vote", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + fresh.j.token, "X-Device": "abcdefabcdefabcdefab" }, body: JSON.stringify({ entryId, on: true }) });
   const j5 = await r5.json();
   t("a brand-new account can't vote yet, and is just told to finish its account", fresh.s === 200 && r5.status === 403 && j5.error === "Finish setting up your account to vote.");
-  { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db")); w.prepare(`UPDATE users SET created_at = created_at - 301000, email_verified = 1 WHERE username = 'fresh1'`).run(); w.close(); }
+  /* 2026-11-15 (the brief of 2026-11-04): the wait shows as a ring that fills — a share, never minutes — and nothing is held */
+  const seen = async (tok) => (await (await fetch(B + "/api/events/art", { headers: { Authorization: "Bearer " + tok } })).json()).me;
+  const w0 = await seen("tok-fresh1");
+  t("the app is told how far through the wait this account is: a share between 0 and 1, never minutes", w0.voteBlock === "Finish setting up your account to vote." && typeof w0.wait === "number" && w0.wait >= 0 && w0.wait < 1 && Math.round(w0.wait * 20) === w0.wait * 20);
+  { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db")); w.prepare(`UPDATE users SET created_at = created_at - 150000 WHERE username = 'fresh1'`).run(); w.close(); }
+  const w1 = await seen("tok-fresh1");
+  t("…it fills as the time passes (half way at two and a half minutes)", w1.wait === 0.5);
+  { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db")); w.prepare(`UPDATE users SET created_at = created_at - 151000, email_verified = 1 WHERE username = 'fresh1'`).run(); w.close(); }
+  const w2 = await seen("tok-fresh1");
+  t("…and once the wait is over there's no ring and nothing blocking: the member votes by hand", w2.wait === null && w2.voteBlock === null && w2.myVotes.length === 0);
+  { const fs = await import("node:fs"); const app = ["wire.js", "poll.js", "screen.js"].map((f) => fs.readFileSync(join(ROOT, "src/app/events", f), "utf8")).join("\n") + fs.readFileSync(join(ROOT, "src/app/state/state.js"), "utf8");
+    t("no vote is held and sent later (decided 2026-11-04): the app keeps no waiting pick and has no quiet retry", !/\bEVWAIT\b|EV_HOLD_MS/.test(app) && !/evPick\([^)]*,\s*true\)/.test(app));
+    t("no code hides behind a comment on its own line in the tournament's wiring", !app.split("\n").some((l) => /\/\/[^\n]*\)(if|toast|return|await)\(/.test(l) && !/https?:\/\//.test(l))); }
   const r6 = await fetch(B + "/api/events/art/vote", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + fresh.j.token, "X-Device": "abcdefabcdefabcdefab" }, body: JSON.stringify({ entryId, on: true }) });
   t("five minutes on, the vote goes through", r6.status === 200);
 

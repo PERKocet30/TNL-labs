@@ -128,7 +128,7 @@ window.fetch=function(url,init){
   UI.fetches++;
   const now=Date.now();
   if(m!=="GET"){
-    const k=m+" "+p+" "+String(init&&init.body||"").length;
+    const k=m+" "+p+" "+String(init&&init.body||"");   // the change itself, not its length: a vote for another piece isn't the same change sent twice (2026-11-15)
     if(UI.last&&UI.last.k===k&&now-UI.last.at<2000)uiPush("double",UI.screen);
     UI.last={k,at:now};
   }

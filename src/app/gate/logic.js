@@ -36,7 +36,7 @@ function wireGate(){
       TOKEN=d.token;localStorage.setItem("tnl-token",TOKEN);ME=d.user;
       if(GNEXT){location.replace(GNEXT);return}   // sent here to log in (Admin's Log in): straight back
       gateClose();
-      applyAccent(ME.accentHex);startStream();refreshBadges();loadUnreads();if(!labNext())render()}
+      applyAccent(ME.accentHex);startStream();refreshBadges();loadUnreads();if(!labNext()&&!evBackTo())render()}   // signed in from "Join to vote": that piece, with what this member may do
     catch(e){G.busy=false;G.err=e.message||"Couldn't log in. Try again.";render()}});
 
   /* ── forgot ── */
@@ -116,7 +116,7 @@ function wireGate(){
     try{const d=await api.follow(u);G.following[u]=!!d.following}
     catch(e){G.following[u]=was;toast(e.message)}
     b.classList.toggle("on",!!G.following[u]);b.textContent=G.following[u]?"Following":"Follow"});
-  on("#gxdone",()=>{gateClose();if(!labNext()){TAB="showroom";render()}setTimeout(maybeOfferInstall,600)});   // joined from a shared lab: into that lab
+  on("#gxdone",()=>{gateClose();if(!labNext()&&!evBackTo()){TAB="showroom";render()}setTimeout(maybeOfferInstall,600)});   // joined from a shared lab: into that lab
 }
 
 /* Debounced availability check; paints only the username bits so the field keeps focus. */

@@ -59,6 +59,15 @@ function evVoteCountryWaiting(user) {
   if (user.created_at < EV_HERE_FROM) return Date.now() - user.created_at < mins * 60000;
   return activeSecs(user.id) < mins * 60;
 }
+/* How far through the wait a new account is — for the ring on the vote button (2026-11-15, the brief of 2026-11-04).
+   A share in twentieths, never minutes and never the country; null once the wait is over. */
+function evVoteWait(user) {
+  if (!user) return null;
+  let p = EV_NEW_VOTE_WAIT_MS > 0 ? (Date.now() - user.created_at) / EV_NEW_VOTE_WAIT_MS : 1;
+  const mins = evVoteCountryMins(user);
+  if (mins) p = Math.min(p, (user.created_at < EV_HERE_FROM ? (Date.now() - user.created_at) / 1000 : activeSecs(user.id)) / (mins * 60));
+  return p >= 1 ? null : Math.max(0, Math.floor(p * 20) / 20);
+}
 /* Who may vote on what, right now. null = yes; otherwise the reason. */
 function evVoteBlock(ev, user, stage, entryId) {
   if (!user) return "Sign in to vote.";
@@ -143,6 +152,7 @@ function evPublic(ev, viewer) {
     }
     bracket = { size: st.size, rounds };
   }
+  const block = stage ? evVoteBlock(ev, viewer, stage, null) : null;
   return {
     event: { slug: ev.slug, title: ev.title, brief: ev.brief, prize: ev.prize, coverUrl: ev.cover_url, channel: ev.channel,
       format: ev.format, picks: ev.picks, judgeWeight: ev.judge_weight, minAccountDays: ev.min_account_days,
@@ -152,7 +162,7 @@ function evPublic(ev, viewer) {
       current: evCurrent()?.id === ev.id,   // the one /tournament opens (2026-10-12)
       judges: judges.map((j) => ({ username: j.username, displayName: j.display_name, avatarUrl: j.avatar_url })) },
     me: { signedIn: !!viewer, isJudge, entry: mine ? shaped.get(mine.id) || null : null, myVotes, myScores,
-      voteBlock: stage ? evVoteBlock(ev, viewer, stage, null) : null },
+      voteBlock: block, wait: /^Finish setting up/.test(block || "") ? evVoteWait(viewer) ?? 0.95 : null },   // wait: the ring (2026-11-15)
     entries: evShuffle([...shaped.values()].filter((e) => !e.dq), (viewer?.id || 0) ^ ev.id),
     inPlay: stage ? [...evInPlay(ev, stage).ids] : [],
     bracket,

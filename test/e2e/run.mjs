@@ -2084,21 +2084,38 @@ console.log("\nMEMBER · PHONE");
     await p.waitForSelector(".ev-focus [data-evpick]", { timeout: 6000 });
     ok(await p.evaluate(() => EVFOCUS && location.search === ""), "the vote link didn't open that piece");
     const y0 = await p.evaluate(() => document.querySelector("#evscroll").scrollTop);
-    /* 2026-10-27: a brand-new account is told "Finish setting up your account to vote." — new members tapped Vote
-       again and again, and one left without voting. The vote now waits on the button and goes in by itself. */
-    let posts = 0, held = 2;
-    await p.route("**/api/events/e2e-art/vote", (r) => { posts++;
-      if (held-- > 0) return r.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ error: "Finish setting up your account to vote." }) });
-      return r.continue(); });
-    await p.evaluate(() => { EV_HOLD_MS = 400; });
+    /* 2026-11-15, to the brief of 2026-11-04 ("No held votes"): a brand-new account waits before its first vote. The
+       vote used to be held and sent later, and its message sat behind a comment — the button only dimmed, and new
+       members tapped it 125 times in a month. Now the button reads "Vote soon" round a ring, a tap says so and sends
+       nothing, the note offers the pieces to look at, and when the wait is over the member votes by hand. */
+    let posts = 0, waiting = true;
+    await p.route("**/api/events/e2e-art/vote", (r) => { posts++; return r.continue(); });
+    await p.route("**/api/events/e2e-art", async (r) => { const res = await r.fetch(), j = await res.json();
+      if (waiting) { j.me.voteBlock = "Finish setting up your account to vote."; j.me.wait = 0.4; }
+      return r.fulfill({ response: res, json: j }); });
+    await p.evaluate(async () => { EV_WAIT_MS = 500; await loadEvent(); });
+    await p.waitForSelector(".ev-focus .ev-vote.soon", { timeout: 4000 });
+    ok(/Vote soon/.test(await p.locator(".ev-focus .ev-vote.soon").innerText()) && await p.locator(".ev-focus .ev-vote.soon .ev-ring .fg").getAttribute("stroke-dasharray") === "20.1 50.27",
+      "a waiting account's button should read Vote soon round a ring filled as far as the wait has run");
+    ok(/You can vote soon/.test(await p.locator(".ev-note").first().innerText()) && await p.locator("#evseeall").isVisible() && !/\d+\s*min/i.test(await p.locator(".ev-note").first().innerText()),
+      "the note should say the vote is coming and offer the pieces to look at — with no minutes");
     await p.locator(".ev-focus [data-evpick]").tap();
-    await p.waitForTimeout(150);
-    ok(await p.locator(".ev-focus .ev-vote.busy").count() === 1, "the held vote doesn't show it's on its way");
-    // clicks, not taps: the guard is what's tested, and 3 real taps in a second is a rage tap the glitch check would (rightly) count
-    for (let k = 0; k < 4; k++) await p.evaluate(() => document.querySelector(".ev-focus [data-evpick]").click());
+    await p.waitForFunction(() => /You can vote soon/.test((document.querySelector("#toastl") || {}).textContent || ""), null, { timeout: 2000 });
+    waiting = false;   // the wait ends
+    await p.waitForSelector(".ev-focus .ev-vote:not(.soon)", { timeout: 6000 });
+    ok(posts === 0 && await p.evaluate(() => EV.me.myVotes.length === 0), `nothing may be held: ${posts} vote calls went out during the wait`);
+    ok(/Vote/.test(await p.locator(".ev-focus .ev-vote").innerText()) && await p.locator("#evscroll .ev-ring").count() === 0, "when the wait is over the button should turn into Vote by itself");
+    await p.evaluate(() => { EV_WAIT_MS = 20000; try { localStorage.removeItem("tnl-voted"); } catch (e) {} });
+    await p.unroute("**/api/events/e2e-art");
+    await p.waitForTimeout(2300);   // "You can vote now" clears: the vote's own answer is read next
+    await p.locator(".ev-focus [data-evpick]").tap();
     await p.waitForFunction((id) => EV.me.myVotes.includes(id) && EV.board.rows.find((r) => r.entryId === id).votes === 1, fid, { timeout: 6000 });
-    ok(posts === 3, `${posts} vote calls: more taps should do nothing while it waits (1 tap + 2 quiet tries)`);
-    await p.unroute("**/api/events/e2e-art/vote"); await p.evaluate(() => { EV_HOLD_MS = 30000; });
+    ok(/Your vote counted/.test(await p.evaluate(() => (document.querySelector("#toastl") || {}).textContent || "")), "the first vote should say it counted");
+    // clicks, not taps: 3 real taps in a second is a rage tap the glitch check would (rightly) count
+    await p.evaluate((id) => { for (let k = 0; k < 3; k++) document.querySelector(`.ev-row:not(.on) [data-evpick]`)?.click(); }, fid);
+    await p.waitForTimeout(300);
+    ok(posts === 1, `${posts} vote calls: one vote is one call, and a used-up day answers on the phone`);
+    await p.unroute("**/api/events/e2e-art/vote");
     await p.waitForTimeout(300);
     ok(await p.locator(".ev-focus .ev-vote.on").count() === 1 && await p.locator(`.ev-row .ev-vote.on`).count() === 1, "the button and the board row should both say Voted");
     // 2026-10-28: on a small phone (360px) Share and Vote ran off the right edge
@@ -2132,6 +2149,19 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate((id) => window.__files.length === 1 && window.__files[0].size > 1000 && window.__clip.endsWith("/e/e2e-art/" + id), fid), "Share picture to your Story didn't hand over that piece's picture and copy its link");
     await p.locator("#evshx").tap();
     ok(await p.evaluate(() => document.querySelector("#evscroll").scrollTop) === y1, "sharing jumped the screen");
+    /* 2026-11-15: a scoreboard row's words opened nothing (140 dead taps in a month) — the row opens the piece, and back returns */
+    await p.locator(`.ev-row:has([data-evshr="${fid}"]) .ev-rwho .dim`).tap();
+    await p.waitForFunction(() => POSTOPEN && TAB === "event", null, { timeout: 5000 });
+    await p.evaluate(() => history.back());
+    await p.waitForFunction(() => !POSTOPEN && TAB === "event" && document.querySelector(".ev-row"), null, { timeout: 4000 }); await p.waitForTimeout(250);
+    /* …and a refusal that's the member's to fix says so at the tap, with the fix: an unconfirmed email */
+    await p.evaluate(() => { ME.emailVerified = false; EV.event.requireVerified = true; EV.me.myVotes = []; render(); });
+    await p.locator(`.ev-row [data-evpick="${fid}"]`).tap();
+    await p.waitForSelector(".ui-ov", { timeout: 3000 });
+    ok(/Confirm your email to vote/.test(await p.locator(".ui-ov").innerText()) && /Send it again/.test(await p.locator(".ui-ok").innerText()), "tapping Vote with an unconfirmed email didn't say so with a way to send the link again");
+    await p.getByRole("button", { name: "OK", exact: true }).first().tap();
+    await p.waitForFunction(() => !document.querySelector(".ui-ov"), null, { timeout: 3000 });
+    await p.evaluate(() => { ME.emailVerified = true; localStorage.removeItem("tnl-evret"); render(); });
     /* 2026-10-29: "remind people they need to upload a profile pic in order to vote when they try to vote" */
     const pic = await p.evaluate(() => { const a = ME.avatarUrl; ME.avatarUrl = ""; EV.me.myVotes = []; render(); return a; });
     await p.locator(`.ev-row [data-evpick="${fid}"]`).tap();

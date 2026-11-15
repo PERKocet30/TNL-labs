@@ -36,7 +36,7 @@ function tourHTML(G){
 function tourDone(G){
   try{localStorage.setItem("tnl-toured","1")}catch(e){}
   if(G.made){gsMark("new");   // their Get started list's numbers first, so it's there as the Showroom opens
-    gsLoad(true).finally(()=>{gateClose();if(!labNext()){TAB="showroom";render()}setTimeout(maybeOfferInstall,600)});return}
+    gsLoad(true).finally(()=>{gateClose();if(!labNext()&&!evBackTo()){TAB="showroom";render()}setTimeout(maybeOfferInstall,600)});return}   // joined to vote: back to that piece (2026-11-15)
   gateClose();render();
 }
 function wireTour(G){

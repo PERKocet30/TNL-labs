@@ -149,8 +149,8 @@ let EVENTER=null;         // the enter sheet: {prep, caption, agree, busy, pct}
 // events/wire.js
 let EVPRE=null;   // the tournament asked for at boot, before the rest (app/feed/feed-boot)
 let EVDELEG=false;
-let EVWAIT=null;
-let EV_HOLD_MS=30000;   // let: the tap-through shortens it
+let EVWAITT=null;   // the timer that looks again while a new account's wait runs (no vote is held: decided 2026-11-04)
+let EV_WAIT_MS=20000;   // let: the tap-through shortens it
 // events/poll.js
 let EVFOCUS=null, EVSHARE=null;
 
