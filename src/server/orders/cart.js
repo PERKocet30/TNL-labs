@@ -15,6 +15,9 @@ function orderGroup(order) {
    still open closes that one first (its Stripe page stops taking payment) — otherwise several could be opened at
    the offer price and all paid. {busy} = the earlier one can't be closed: it is being paid. */
 try { db.exec(`ALTER TABLE orders ADD COLUMN offer_id INTEGER`); } catch {}
+try { db.exec(`ALTER TABLE orders ADD COLUMN fee_cents INTEGER`); } catch {}          // LABS's commission on this order, fixed when it's made (2026-11-15)
+try { db.exec(`ALTER TABLE orders ADD COLUMN refund_checked_at INTEGER`); } catch {}  // when Stripe was last asked whether it was given back
+const feeStamp = (orderId, amountCents, seller) => db.prepare(`UPDATE orders SET fee_cents = ? WHERE id = ?`).run(platformFee(amountCents, feeFor(seller)), orderId);
 async function offerFor(l, buyerId, seller) {
   const o = db.prepare(`SELECT id, amount_cents FROM offers WHERE listing_id=? AND buyer_id=? AND status='accepted' ORDER BY created_at DESC LIMIT 1`).get(l.id, buyerId);
   if (!o) return null;
@@ -79,7 +82,7 @@ app.post("/api/cart/checkout", auth, verified, rateLimit({ max: 20, windowMs: 36
     lines.forEach((x, i) => ids.push(Number(ins.run(x.l.id, req.user.id, seller.id, x.amount, i ? 0 : ship,
       x.v?.id || "", variantLabel(x.v), now, now).lastInsertRowid)));
     db.prepare(`UPDATE orders SET cart_id = ? WHERE id IN (${ids.map(() => "?").join(",")})`).run(ids[0], ...ids);
-    lines.forEach((x, i) => offerTake(ids[i], x.offer));
+    lines.forEach((x, i) => { offerTake(ids[i], x.offer); feeStamp(ids[i], x.amount, seller); });
     db.exec("COMMIT");
   } catch (e) { db.exec("ROLLBACK"); throw e; }
   const lead = ids[0], drop = () => db.prepare(`DELETE FROM orders WHERE cart_id = ?`).run(lead);

@@ -32,7 +32,7 @@ app.get("/api/admin/series", auth, admin, (req, res) => {
   /* a day in the previous window that's past `start` belongs to this window; cut it */
   const cut = (arr) => arr.map((v, i) => (prevStart + i * ADAY >= start ? 0 : v));
   for (const k of Object.keys(prev)) prev[k] = cut(prev[k]);
-  const fees = (a, b) => db.prepare(`SELECT o.amount_cents, u.rep seller_rep, u.is_admin seller_admin FROM orders o JOIN users u ON u.id = o.seller_id
+  const fees = (a, b) => db.prepare(`SELECT o.amount_cents, o.fee_cents, u.rep seller_rep, u.is_admin seller_admin FROM orders o JOIN users u ON u.id = o.seller_id
     WHERE o.status IN ${PAID} AND o.created_at > ? AND o.created_at <= ?`).all(a, b).reduce((s, o) => s + feeOf(o), 0);
   res.json({ days, start, prevStart, series, prev, members: aone(`SELECT COUNT(*) n FROM users WHERE suspended = 0`),
     fees: { now: fees(start, now), before: fees(prevStart, start) } });

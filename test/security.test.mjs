@@ -68,8 +68,10 @@ const O = (status, ref) => Number(db.prepare(`INSERT INTO orders (listing_id,buy
 const orders = read("server/orders/orders-sharing.js");
 const from = orders.indexOf(`app.post("/api/orders/:id/ship"`), to = orders.indexOf("\n});\n", orders.indexOf(`app.post("/api/orders/:id/received"`)) + 5;
 const routes = {}, rep = [];
-new Function("app", "auth", "db", "notify", "awardRep", "canShip", "canReceive", orders.slice(from, to))(
-  { post: (p, ...h) => { routes[p] = h.at(-1); } }, null, db, () => {}, (...a) => rep.push(a), G.canShip, G.canReceive);
+/* 2026-11-15: delivery rep is once per buyer in 30 days and only for an order that was shipped (repPairRecent) — the real rule, with the suite's own rep list standing in for the log */
+const pairFrom = orders.indexOf("const REP_PAIR_MS"), pairTo = orders.indexOf("\n\n", pairFrom);
+new Function("app", "auth", "db", "notify", "awardRep", "canShip", "canReceive", orders.slice(pairFrom, pairTo) + "\n" + orders.slice(from, to))(
+  { post: (p, ...h) => { routes[p] = h.at(-1); } }, null, db, () => {}, (...a) => { rep.push(a); db.prepare(`INSERT INTO rep_events (user_id, kind, amount, source_id, created_at) VALUES (?,?,10,?,?)`).run(a[0], a[1], a[2], Date.now()); }, G.canShip, G.canReceive);
 const hit = (path, id, uid) => { let code = 200, out; routes[path]({ params: { id: String(id) }, user: { id: uid }, body: {} },
   { status: (c) => { code = c; return { json: (x) => { out = x; } }; }, json: (x) => { out = x; } }); return { code, out }; };
 const st = (id) => db.prepare(`SELECT status FROM orders WHERE id=?`).get(id).status;
@@ -81,6 +83,12 @@ const paid = O("paid", "cs_paid");
 t("a paid order ships", hit("/api/orders/:id/ship", paid, seller).code === 200 && st(paid) === "shipped");
 t("and is received", hit("/api/orders/:id/received", paid, buyer).code === 200 && st(paid) === "complete" && rep.some((a) => a[1] === "delivery_confirmed"));
 t("receiving twice is harmless", hit("/api/orders/:id/received", paid, buyer).code === 200 && rep.filter((a) => a[1] === "delivery_confirmed").length === 1);
+const again = O("paid", "cs_again"); hit("/api/orders/:id/ship", again, seller);
+t("a second order from the same buyer inside 30 days: received, but no second delivery rep (it was farmed with $1 trades)", hit("/api/orders/:id/received", again, buyer).code === 200 && st(again) === "complete" && rep.filter((a) => a[1] === "delivery_confirmed").length === 1);
+const notShipped = O("paid", "cs_ns"); db.prepare(`DELETE FROM rep_events`).run();
+t("received without ever being shipped: complete, and no delivery rep", hit("/api/orders/:id/received", notShipped, buyer).code === 200 && st(notShipped) === "complete" && rep.filter((a) => a[1] === "delivery_confirmed").length === 1);
+const back = O("refunded", "cs_back");
+t("a refunded order can't be marked received", hit("/api/orders/:id/received", back, buyer).code === 400 && st(back) === "refunded");
 const arrange = O("pending", "");
 t("arrange-mode still works: ship, then received", hit("/api/orders/:id/ship", arrange, seller).code === 200 && hit("/api/orders/:id/received", arrange, buyer).code === 200 && st(arrange) === "complete");
 t("someone else's order: still refused", hit("/api/orders/:id/ship", O("paid", "cs_2"), stranger).code === 403);

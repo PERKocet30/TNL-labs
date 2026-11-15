@@ -32,12 +32,12 @@ let PAYMENTS_ENABLED = false, lastCheckout = null;
 const stock = readFileSync(join(ROOT, "src/server/market/stock.js"), "utf8");
 const cart = readFileSync(join(ROOT, "src/server/orders/cart.js"), "utf8");
 const LISTING_SELECT = `SELECT l.*, u.username AS seller_username FROM listings l JOIN users u ON u.id = l.seller_id`;
-const X = new Function("db", "randomBytes", "q", "notify", "app", "auth", "verified", "maybeAuth", "rateLimit", "baseUrl", "feeFor", "createCheckout", "LISTING_SELECT", "shapeListings", "getPay",
+const X = new Function("db", "randomBytes", "q", "notify", "app", "auth", "verified", "maybeAuth", "rateLimit", "baseUrl", "feeFor", "createCheckout", "LISTING_SELECT", "shapeListings", "getPay", "platformFee", "expireSession",
   stock + "\n" + cart.replace(/PAYMENTS_ENABLED/g, "getPay()") + "\nreturn {orderGroup,sessionFits,groupTotal,priceChanged,priceDrop,takeStock};")(
   db, randomBytes, q, (...a) => told.push(a),
   { post: (p, ...h) => { routes["POST " + p] = h.at(-1); }, get: (p, ...h) => { routes["GET " + p] = h.at(-1); } },
   null, null, null, () => null, () => "https://x", () => 10,
-  async (o) => { lastCheckout = o; return { url: "https://stripe/x", id: "cs_" + o.orderId }; }, LISTING_SELECT, (r) => r, () => PAYMENTS_ENABLED);
+  async (o) => { lastCheckout = o; return { url: "https://stripe/x", id: "cs_" + o.orderId }; }, LISTING_SELECT, (r) => r, () => PAYMENTS_ENABLED, (cents, pct) => Math.round(cents * pct / 100), async () => true);   // 2026-11-15: the fee written on each order, and closing an offer's earlier checkout
 const checkout = async (items, user = buyer) => { let out, code = 200;
   await routes["POST /api/cart/checkout"]({ body: { items }, user: q.userById.get(user) },
     { json: (o) => (out = o), status: (s) => { code = s; return { json: (o) => (out = o) }; } });
