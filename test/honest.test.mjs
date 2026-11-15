@@ -101,6 +101,10 @@ try {
   t("…and once the wait is over there's no ring and nothing blocking: the member votes by hand", w2.wait === null && w2.voteBlock === null && w2.myVotes.length === 0);
   { const fs = await import("node:fs"); const app = ["wire.js", "poll.js", "screen.js"].map((f) => fs.readFileSync(join(ROOT, "src/app/events", f), "utf8")).join("\n") + fs.readFileSync(join(ROOT, "src/app/state/state.js"), "utf8");
     t("no vote is held and sent later (decided 2026-11-04): the app keeps no waiting pick and has no quiet retry", !/\bEVWAIT\b|EV_HOLD_MS/.test(app) && !/evPick\([^)]*,\s*true\)/.test(app));
+    const css = fs.readFileSync(join(ROOT, "src/app/styles/event.css"), "utf8");
+    t("a vote on its way says Sending and holds (design language v2.2): words on the pill, put back if the answer is no, a raised pill and never just a dimmer one",
+      /function evBusy\(/.test(app) && /textContent="Sending"/.test(app) && /dataset\.was/.test(app) && /classList\.contains\("busy"\)\)return/.test(app)
+      && /\.ev-vote\.busy[^{]*\{[^}]*background:var\(--el\)/.test(css) && !/\.ev-vote\.busy[^{]*\{[^}]*opacity/.test(css));
     t("no code hides behind a comment on its own line in the tournament's wiring", !app.split("\n").some((l) => /\/\/[^\n]*\)(if|toast|return|await)\(/.test(l) && !/https?:\/\//.test(l))); }
   const r6 = await fetch(B + "/api/events/art/vote", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + fresh.j.token, "X-Device": "abcdefabcdefabcdefab" }, body: JSON.stringify({ entryId, on: true }) });
   t("five minutes on, the vote goes through", r6.status === 200);
