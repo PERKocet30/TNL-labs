@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · tools  v1.4 — 2026-11-09 (v1.4: overview, retention and nudge say what they hold now — one meaning for members and active, the nudge's result). v1.3 — 2026-11-04 (v1.3: echo_stats never carries a handoff's conversation; the UI-signals tools live in ui-signals/tools.js). v1.2 — 2026-11-04 (knowledge_add / knowledge_edit: Claude and Grok write to Knowledge, the one exception to read-only). v1.1 — 2026-11-04 (knowledge, read). v1.0 — 2026-10-27
+   LABS CONNECTOR · tools  v1.5 — 2026-11-14 (v1.5: what the signed-in Gemini writes to Knowledge says Gemini wrote it). v1.4 — 2026-11-09 (v1.4: overview, retention and nudge say what they hold now — one meaning for members and active, the nudge's result). v1.3 — 2026-11-04 (v1.3: echo_stats never carries a handoff's conversation; the UI-signals tools live in ui-signals/tools.js). v1.2 — 2026-11-04 (knowledge_add / knowledge_edit: Claude and Grok write to Knowledge, the one exception to read-only). v1.1 — 2026-11-04 (knowledge, read). v1.0 — 2026-10-27
    /mcp speaks MCP (JSON-RPC over HTTP, stateless) so Claude can read the
    admin dashboard like it reads GitHub or Railway. Each tool is one of
    the admin GET routes, fetched in-process with the connector key, then
@@ -70,7 +70,7 @@ const mcpWriteList = () => MCP_WRITE_TOOLS.map(([name, description, props, requi
   inputSchema: { type: "object", properties: JSON.parse(JSON.stringify(props).replaceAll("KINDS", mcpKindDesc())), required, additionalProperties: false },
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: name === "knowledge_edit", openWorldHint: false } }));
 function mcpWrite(key, name, a) {
-  const source = ["claude", "grok"].includes(String(key.name || "").toLowerCase()) ? key.name.toLowerCase() : "connector";
+  const source = ["claude", "grok", "gemini"].includes(String(key.name || "").toLowerCase()) && (String(key.name).toLowerCase() !== "gemini" || key.client_id !== "pasted") ? key.name.toLowerCase() : "connector";   // gemini (2026-11-14): only the signed-in Gemini, not a pasted key that happens to be named so
   const recent = db.prepare(`SELECT COUNT(*) n FROM admin_log WHERE admin_id = ? AND action LIKE 'connector knowledge%' AND created_at > ?`).get(key.user_id, Date.now() - 3600000).n;
   if (recent >= MCP_WRITES_PER_HOUR) return { content: [{ type: "text", text: `That's ${MCP_WRITES_PER_HOUR} writes in an hour — enough for now. Try again later.` }], isError: true };
   const r = name === "knowledge_add" ? knowAdd(a, key.user_id, source) : knowEdit(Math.max(0, Number(a.id) || 0), { ...(a.kind != null ? { kind: a.kind } : {}), ...(a.title != null ? { title: a.title } : {}), ...(a.body != null ? { body: a.body } : {}), ...(a.tags != null ? { tags: a.tags } : {}) }, key.user_id, source);

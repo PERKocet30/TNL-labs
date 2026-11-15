@@ -70,7 +70,7 @@ function sysMapNodes(req) {
 
   /* the connector: Claude, Grok and other apps reading the dashboard */
   const keys = n(`SELECT COUNT(*) n FROM mcp_tokens WHERE revoked = 0 AND expires_at > ?`, now), lastUse = n(`SELECT MAX(last_used_at) n FROM mcp_tokens WHERE revoked = 0`);
-  const connector = { id: "connector", name: "Connected apps", does: "Claude and Grok reading the dashboard, writing Knowledge", state: keys ? "on" : "off",
+  const connector = { id: "connector", name: "Connected apps", does: "Claude, Grok and Gemini reading the dashboard, writing Knowledge", state: keys ? "on" : "off",
     line: keys ? `${keys} app${keys === 1 ? "" : "s"} connected · used ${ago(lastUse)}` : "None connected", facts: [["Connected", keys], ["Last used", ago(lastUse)]], go: "systems" };
 
   /* Google and Meta (Instagram) */
