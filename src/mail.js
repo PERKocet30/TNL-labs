@@ -294,6 +294,17 @@ export async function sendRoleEmail(to, subject, mail) {
   return send(to, subject, mail, `${subject} — role email to ${to}`);
 }
 
+/** To the address an account just moved off (2026-11-15): so a change its owner didn't make doesn't pass in silence. */
+export async function sendEmailChangedEmail(to, name, url) {
+  const mail = renderEmail({
+    eyebrow: "Your account", title: "Your LABS email was changed",
+    lines: [`${name ? name + ", the" : "The"} email on your LABS account was just changed to a different address, and other devices were signed out.`,
+      "If that was you, there's nothing to do.", `If it wasn't, reply to this email straight away and we'll put it right.`],
+    cta: "Open LABS", url, note: "Sent to the address the account used until now.", preheader: "If this wasn't you, reply to this email.",
+  });
+  return send(to, "Your LABS email was changed", mail, `email changed — notice to ${to}`);
+}
+
 /** Password reset. Same honest fallback as verification. */
 export async function sendResetEmail(to, name, url) {
   return send(to, "Reset your password — LABS", resetEmail(name, url), `reset link: ${url}`);

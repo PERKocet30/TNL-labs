@@ -118,6 +118,11 @@ function oaLink(user, p, sub, email) {
     /* Never confirmed: whoever typed this address in may not own it. The owner just proved they do. */
     db.prepare(`DELETE FROM sessions WHERE user_id = ?`).run(user.id);
     db.prepare(`UPDATE users SET password_hash = ? WHERE id = ?`).run(bcrypt.hashSync(randomBytes(24).toString("hex"), 10), user.id);
+    /* 2026-11-15 (the audit): and every other way in the first person had — another Google/Apple/Facebook sign-in tied to
+       the account, an open reset link, an open confirm link. Before this they could still get in afterwards. */
+    db.prepare(`DELETE FROM user_identities WHERE user_id = ? AND NOT (provider = ? AND sub = ?)`).run(user.id, p, sub);
+    db.prepare(`DELETE FROM reset_tokens WHERE user_id = ?`).run(user.id);
+    db.prepare(`DELETE FROM verify_tokens WHERE user_id = ?`).run(user.id);
     q.markVerified.run(user.id);
   }
 }

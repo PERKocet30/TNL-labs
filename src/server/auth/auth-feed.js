@@ -33,10 +33,14 @@ function maybeAuth(req, _res, next) {
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
   if (token) {
     const s = q.sessionByToken.get(token);
-    if (s) req.user = q.userById.get(s.user_id);
+    const u = s && q.userById.get(s.user_id);
+    if (u && !u.suspended) req.user = u;   // a suspended account is nobody here too (2026-11-15)
   }
   next();
 }
+/* The address as the router reads it: any capitals, a trailing slash (2026-11-15). Express matches /api/auth/Register
+   and /api/auth/register/ to the same route, so a check that compares req.path letter for letter is skipped by either. */
+const routePath = (req) => String(req.path || "").toLowerCase().replace(/\/+$/, "") || "/";
 
 function baseUrl(req) {
   let u = (process.env.PUBLIC_URL || "").trim();
@@ -93,11 +97,11 @@ app.post("/api/auth/register", rateLimit({ max: 5, windowMs: 3600000 }), async (
   if (emailThrowaway(email)) return res.status(400).json({ error: "Use a real email address — temporary inboxes can't join." });   // server/trust/honest
   if (!tk) { const pwBad = pwProblem(password, { username, email }); if (pwBad) return res.status(400).json({ error: pwBad }); }   // server/auth/passwords
   if (q.userByName.get(username)) return res.status(409).json({ error: "username taken" });
-  if (db.prepare(`SELECT 1 FROM users WHERE email = ?`).get(email.trim()))
+  if (db.prepare(`SELECT 1 FROM users WHERE email = ? COLLATE NOCASE`).get(email.trim()))   // capitals don't make a new address (2026-11-15)
     return res.status(409).json({ error: "email already registered" });
 
   const hash = await bcrypt.hash(tk ? randomBytes(24).toString("hex") : password, 10);   // with a ticket: no password to log in with
-  const info = q.createUser.run(username, displayName.trim(), email.trim(), roleList[0] || "Member", hash, Date.now());
+  const info = q.createUser.run(username, displayName.trim().slice(0, 40), email.trim(), roleList[0] || "Member", hash, Date.now());   // 40, as Edit profile allows: the name goes into the confirm email (2026-11-15)
   db.prepare(`UPDATE users SET roles = ? WHERE id = ?`).run(JSON.stringify(roleList), info.lastInsertRowid);
   const user = q.userById.get(info.lastInsertRowid);
   const token = randomBytes(24).toString("hex");
@@ -175,7 +179,7 @@ function usersByEmail(email) {
   if (!e) return [];
   const exact = db.prepare(`SELECT * FROM users WHERE email = ?`).get(e);
   if (exact) return [exact];
-  return db.prepare(`SELECT * FROM users WHERE LOWER(TRIM(email)) = ? ORDER BY id`).all(e.toLowerCase());
+  return db.prepare(`SELECT * FROM users WHERE LOWER(TRIM(email)) = ? ORDER BY email_verified DESC, id`).all(e.toLowerCase());   // the confirmed one first, then the oldest (2026-11-15)
 }
 
 /* Sign in with a username or an email. Usernames can't contain "@"
@@ -217,7 +221,17 @@ app.post("/api/auth/email", auth, rateLimit({ max: 4, windowMs: 900000, key: "us
   if (emailThrowaway(email)) return res.status(400).json({ error: "Use a real email address — temporary inboxes can't join." });
   if (email.toLowerCase() === String(req.user.email).toLowerCase()) return res.status(400).json({ error: "That's already your email." });
   if (db.prepare(`SELECT 1 FROM users WHERE email = ? COLLATE NOCASE AND id != ?`).get(email, req.user.id)) return res.status(409).json({ error: "There's already an account with this email." });
+  /* 2026-11-15 (the audit): moving an account off a real address takes its password — a signed-in phone alone could
+     move the account to someone else's email and then reset the password. Replacing a throwaway address (the only
+     place the app offers this) stays as it was. Every other device is signed out, open reset links go, and the old
+     address is told. */
+  const old = String(req.user.email || ""), real = !emailThrowaway(old);
+  if (real && !(await bcrypt.compare(String(req.body?.password || ""), req.user.password_hash)))
+    return res.status(403).json({ error: "Enter your password to change your email.", needPassword: true });
   db.prepare(`UPDATE users SET email = ?, email_verified = 0 WHERE id = ?`).run(email, req.user.id);
+  db.prepare(`DELETE FROM sessions WHERE user_id = ? AND token != ?`).run(req.user.id, req.token);
+  db.prepare(`DELETE FROM reset_tokens WHERE user_id = ?`).run(req.user.id);
+  if (real && req.user.email_verified && MAIL_ENABLED) sendEmailChangedEmail(old, req.user.display_name || req.user.username, baseUrl(req)).catch(() => {});
   const mail = await issueVerification({ ...req.user, email }, req);
   console.log(`[auth] @${req.user.username} changed email`);
   res.json({ ok: true, email, mailSent: mail.sent, verifyUrl: mail.url });
