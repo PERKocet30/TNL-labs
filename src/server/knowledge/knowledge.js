@@ -1,5 +1,8 @@
 /* ================================================================
-   KNOWLEDGE v1.2 — 2026-11-04 (more kinds — policies, questions, story, plan, scenes, playbooks; Claude and Grok write here through the connector, server/connector/tools.js). v1.1 — 2026-11-04 (the features, knowledge/features.js; Echo answers from here, and learns which words mean which entry). v1.0 — 2026-11-04. "LABS owns the memory, Claude only updates it."
+   KNOWLEDGE v1.3 — 2026-11-15 ("the same way Claude already works": a core Echo always carries — creed, voice,
+   decisions, policies, glossary, the plan — and a one-line index of everything else, opened by id when a question needs
+   it (knowBrief, KNOW_CORE); search matches every word, in any order; a built-in entry follows the build when the
+   build's words change (knowSync), so a feature's words can't fall behind the app). v1.2 — 2026-11-04 (more kinds — policies, questions, story, plan, scenes, playbooks; Claude and Grok write here through the connector, server/connector/tools.js). v1.1 — 2026-11-04 (the features, knowledge/features.js; Echo answers from here, and learns which words mean which entry). v1.0 — 2026-11-04. "LABS owns the memory, Claude only updates it."
    What LABS knows about itself, kept inside LABS (this database, on the
    Railway volume), not in anyone's chat: the creed, how LABS talks
    (voice), settled decisions, a glossary, notes, the blueprint sheets.
@@ -51,7 +54,7 @@ const KNOW_SEED = [
   { key: "decide-rep", kind: "decision", title: "Rep only comes from other people", body: "Rep is earned only from what other people do with your work — likes, shares, collabs both sides confirm, completed sales. Every point is written to the append-only rep_events log. Never self-awarded. Listing or posting earns nothing on its own.", tags: "rep standing levels" },
   { key: "decide-showroom", kind: "decision", title: "The Showroom ranking is not explained", body: "The Showroom ranking (RANK) is the one place feed order is decided. Nothing in the app explains it to members and nothing needs to. Views are a ranking signal only — never shown, never a count on a post. Your own taps never count; work made together gets a lift; a clique can't carry a piece.", tags: "showroom ranking views" },
   { key: "decide-collabs", kind: "decision", title: "Collabs count once accepted", body: "A collab counts only once the other person accepts — then it counts for both. An invite alone counts for nothing.", tags: "collabs" },
-  { key: "decide-ids", kind: "decision", title: "Lab and channel IDs never change", body: "Lab and channel IDs never change; names are display-only. Labs are places, one per genre, each explained by its #tags: Work · Talk, no sub-channels on screen.", tags: "labs" },
+  { key: "decide-ids", kind: "decision", title: "Lab and channel IDs never change", body: "Lab and channel IDs never change; names are display-only. Why labs are one place per genre is in \"Labs are places, not channels\".", tags: "labs" },
   { key: "decide-instagram", kind: "decision", title: "Instagram is for reach, votes count in the app", body: "Instagram is where people find LABS; every share card and public page leads back into LABS, where they take part. Votes only count in the app. Most visitors arrive inside Instagram's in-app browser, so every share or save flow has to work there.", tags: "instagram tournament sharing" },
   { key: "decide-fees", kind: "decision", title: "Fees fall with standing; admins sell at 0%", body: "The platform fee is on the item price, never on shipping: 10% at Entry, 8% Verified, 6% Collaborator, 4% Core, 2% Leadership. An admin selling on the app pays 0% — a fee that goes back to Jorge makes no sense.", tags: "market fees levels" },
   { key: "decide-private", kind: "decision", title: "Messages are private, and never training data", body: "DMs and group chats are never read by any tool, never exported, never trained on: members wrote them to one person. Members' public work is not AI training data either (robots.txt turns the training crawlers away; every response says noai). Any future training on public LABS content needs the privacy page to say so, with an opt-out, first.", tags: "privacy ai messages" },
@@ -63,11 +66,32 @@ const KNOW_SEED = [
   { key: "g-collab", kind: "glossary", title: "Collab", body: "Work made together. Two-sided: the author invites, the other person accepts, and only then does it count — for both of them.", tags: "collabs" },
   { key: "g-market", kind: "glossary", title: "Market", body: "One shared market for what members make. Listings with photos, pricing, sizes and colours, inventory and shipping. Offers, saves, one checkout per seller through Stripe Connect, delivery confirmation and reviews.", tags: "market" },
   { key: "g-tournament", kind: "glossary", title: "The tournament", body: "One prompt, one entry each, fresh votes every day with a live scoreboard that goes dark for the last hours, then a final. tickEvent() is the only thing that moves an event forward.", tags: "tournament events" },
-  { key: "g-echo", kind: "glossary", title: "Echo", body: "LABS's help, pinned at the top of Messages. Answers from what it's been taught, looks up the asking member's own account, learns from thumbs and from what the admin teaches it. No outside AI. Admins only until the switch.", tags: "echo ai help" },
+  { key: "g-echo", kind: "glossary", title: "Echo", body: "Two things under one name. For members: LABS's help, pinned at the top of Messages. It answers from what it's been taught and from Knowledge, looks up the asking member's own account, and learns from thumbs. No outside AI reads what members say. Admins only until the switch. For Jorge: LABS's own intelligence. A model that reasons (Claude), with the live tools as its eyes and Knowledge as its memory. It proposes; nothing happens without his Confirm.", tags: "echo ai help" },
   { key: "g-door", kind: "glossary", title: "The door", body: "\"Enter the lab\" — the landing with the vial loader. One tap in, every visit; it also unlocks audio on iOS. A link from outside lands on the exact thing it pointed at.", tags: "door landing" },
 ];
 const knowSeed = db.prepare(`INSERT OR IGNORE INTO knowledge (key, kind, title, body, tags, source, created_at, updated_at) VALUES (?,?,?,?,?,'built-in',?,?)`);
 for (const k of KNOW_SEED) knowSeed.run(k.key, k.kind, k.title, k.body, k.tags, Date.now(), Date.now());
+/* In step with the build (2026-11-15). INSERT OR IGNORE only ever added what was missing, so a feature rewritten in
+   the code (features.js) never reached an entry that already existed: by mid-November thirteen features said what the
+   app used to do. Now each built-in entry remembers the build's words it last saw (`built`). When a new build says
+   something different, the entry takes the new words — the build is the newest account of what the app does — and the
+   version before is kept like any other edit, so Restore brings it back. Two things are never touched: an entry Jorge
+   last edited himself in /admin (source "admin": his words stick, as they always have) and one that's put away.
+   The first time an entry is seen, only one nobody has edited is brought up to the build; the rest just start
+   remembering, so a deploy can't undo what an app or Echo wrote the day before. */
+if (!db.prepare(`PRAGMA table_info(knowledge)`).all().some((c) => c.name === "built")) db.exec(`ALTER TABLE knowledge ADD COLUMN built TEXT NOT NULL DEFAULT ''`);
+function knowSync(k) {
+  const cur = db.prepare(`SELECT * FROM knowledge WHERE key = ?`).get(k.key); if (!cur) return false;
+  const tags = k.tags || "", sig = [k.title, k.body, tags].join("\n");
+  const moved = cur.built ? cur.built !== sig : cur.source === "built-in" && cur.updated_by == null;
+  if (cur.built !== sig) db.prepare(`UPDATE knowledge SET built = ? WHERE id = ?`).run(sig, cur.id);
+  if (!moved || cur.archived || cur.source === "admin") return false;
+  if (cur.title === k.title && cur.body === k.body && cur.tags === tags) return false;
+  knowRemember(cur, null);
+  db.prepare(`UPDATE knowledge SET title = ?, body = ?, tags = ?, source = 'built-in', updated_by = NULL, updated_at = ? WHERE id = ?`).run(k.title, k.body, tags, Date.now(), cur.id);
+  return true;
+}
+for (const k of KNOW_SEED) knowSync(k);
 
 const knowClean = (b) => ({
   kind: Object.hasOwn(KNOW_KINDS, b.kind) ? b.kind : "",   // own property only: "constructor" is not a kind (2026-11-04 review)
@@ -78,10 +102,12 @@ const knowClean = (b) => ({
 const knowRow = (r) => ({ id: r.id, key: r.key, kind: r.kind, title: r.title, body: r.body, tags: r.tags, source: r.source, archived: !!r.archived,
   createdBy: r.created_by_name || "", updatedBy: r.updated_by_name || (r.source === "built-in" && !r.updated_by ? "LABS" : ""), createdAt: r.created_at, updatedAt: r.updated_at });
 const knowSelect = `SELECT k.*, c.username created_by_name, u.username updated_by_name FROM knowledge k LEFT JOIN users c ON c.id = k.created_by LEFT JOIN users u ON u.id = k.updated_by`;
-function knowList({ kind = "", q = "", archived = false } = {}) {
+function knowList({ kind = "", q = "", archived = false, id = 0 } = {}) {
   const where = [archived ? "k.archived = 1" : "k.archived = 0"], p = [];
+  if (id) { where.push("k.id = ?"); p.push(id); }
   if (Object.hasOwn(KNOW_KINDS, kind)) { where.push("k.kind = ?"); p.push(kind); }
-  if (q) { where.push("(k.title LIKE ? OR k.body LIKE ? OR k.tags LIKE ?)"); const like = "%" + q.replace(/[%_]/g, "") + "%"; p.push(like, like, like); }
+  /* every word, in any order (2026-11-15): the whole phrase had to appear as typed, so "picture retry showroom" found nothing */
+  for (const w of String(q).replace(/[%_]/g, "").split(/\s+/).filter(Boolean).slice(0, 8)) { where.push("(k.title LIKE ? OR k.body LIKE ? OR k.tags LIKE ?)"); const like = "%" + w + "%"; p.push(like, like, like); }
   return db.prepare(`${knowSelect} WHERE ${where.join(" AND ")} ORDER BY k.kind, k.id`).all(...p).map(knowRow);
 }
 /* One plain text for any model: the kinds in order, each entry as a heading
@@ -92,6 +118,26 @@ function knowText(rows) {
     const here = rows.filter((r) => r.kind === kind); if (!here.length) continue;
     out.push(`## ${name}`, "");
     for (const r of here) out.push(`### ${r.title}`, r.body, r.tags ? `(${r.tags})` : "", "");
+  }
+  return out.join("\n");
+}
+/* What Echo carries (2026-11-15): the core in full, and one line for everything else. The core is what an answer
+   must never get wrong — who LABS is, how it talks, what was decided, what members are promised, its words, the plan.
+   The rest (features, questions, the story, scenes, playbooks, notes) is an index: number, title, first line. The
+   whole entry is one call away (the knowledge tool with its id), so a finished audit or a long feature stops riding
+   along in every conversation. */
+const KNOW_CORE = ["creed", "voice", "decision", "policy", "glossary", "plan"];
+const knowLine = (r) => { const s = String(r.body || "").replace(/\s+/g, " ").trim(), cut = s.search(/[.!?](\s|$)/);
+  return cut > 20 && cut < 180 ? s.slice(0, cut + 1) : s.length > 160 ? s.slice(0, 160) + "…" : s; };
+function knowBrief(rows) {
+  const core = rows.filter((r) => KNOW_CORE.includes(r.kind)), rest = rows.filter((r) => !KNOW_CORE.includes(r.kind));
+  const out = [knowText(core), "", "## Everything else — the index",
+    "One line an entry: its number, its title, its first line. To read one whole, call the knowledge tool with that id.", ""];
+  for (const [kind, name] of Object.entries(KNOW_KINDS)) {
+    const here = rest.filter((r) => r.kind === kind); if (!here.length) continue;
+    out.push(`### ${name}`);
+    for (const r of here) out.push(`- #${r.id} ${r.title} — ${knowLine(r)}`);
+    out.push("");
   }
   return out.join("\n");
 }
@@ -120,12 +166,13 @@ function knowEdit(id, b, byUser, source = "admin") {
 }
 
 app.get("/api/admin/knowledge", auth, admin, (req, res) => {
-  res.json({ kinds: KNOW_KINDS, entries: knowList({ kind: String(req.query.kind || ""), q: String(req.query.q || "").slice(0, 80), archived: req.query.archived === "1" }) });
+  res.json({ kinds: KNOW_KINDS, entries: knowList({ kind: String(req.query.kind || ""), q: String(req.query.q || "").slice(0, 80), archived: req.query.archived === "1", id: Math.max(0, Number(req.query.id) || 0) }) });
 });
 app.get("/api/admin/knowledge/export", auth, admin, (req, res) => {
   const rows = knowList();
   res.set("Cache-Control", "private, no-store");
   if (req.query.format === "text") { res.type("text/plain; charset=utf-8"); return res.send(knowText(rows)); }
+  if (req.query.format === "brief") { res.type("text/plain; charset=utf-8"); return res.send(knowBrief(rows)); }   // what Echo carries: the core, and the index
   res.json({ app: "LABS", exportedAt: Date.now(), kinds: KNOW_KINDS, entries: rows.map(({ id, kind, title, body, tags, updatedAt }) => ({ id, kind, title, body, tags, updatedAt })) });
 });
 app.get("/api/admin/knowledge/:id/history", auth, admin, (req, res) => {

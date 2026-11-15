@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · tools  v1.5 — 2026-11-14 (v1.5: what the signed-in Gemini writes to Knowledge says Gemini wrote it). v1.4 — 2026-11-09 (v1.4: overview, retention and nudge say what they hold now — one meaning for members and active, the nudge's result). v1.3 — 2026-11-04 (v1.3: echo_stats never carries a handoff's conversation; the UI-signals tools live in ui-signals/tools.js). v1.2 — 2026-11-04 (knowledge_add / knowledge_edit: Claude and Grok write to Knowledge, the one exception to read-only). v1.1 — 2026-11-04 (knowledge, read). v1.0 — 2026-10-27
+   LABS CONNECTOR · tools  v1.6 — 2026-11-15 (v1.6: the knowledge tool opens one entry by its id, and its search matches every word). v1.5 — 2026-11-14 (v1.5: what the signed-in Gemini writes to Knowledge says Gemini wrote it). v1.4 — 2026-11-09 (v1.4: overview, retention and nudge say what they hold now — one meaning for members and active, the nudge's result). v1.3 — 2026-11-04 (v1.3: echo_stats never carries a handoff's conversation; the UI-signals tools live in ui-signals/tools.js). v1.2 — 2026-11-04 (knowledge_add / knowledge_edit: Claude and Grok write to Knowledge, the one exception to read-only). v1.1 — 2026-11-04 (knowledge, read). v1.0 — 2026-10-27
    /mcp speaks MCP (JSON-RPC over HTTP, stateless) so Claude can read the
    admin dashboard like it reads GitHub or Railway. Each tool is one of
    the admin GET routes, fetched in-process with the connector key, then
@@ -46,9 +46,9 @@ const MCP_TOOLS = [
   ["systems_google", "Google Search Console and Merchant Center: clicks, impressions, indexed pages, feed status.", { fresh: { type: "boolean" } }, (a) => `systems/google${a.fresh ? "?fresh=1" : ""}`],
   ["systems_meta", "Instagram and Facebook numbers: followers, reach, best posts, when followers are online, shop status. Never inbox messages.", { fresh: { type: "boolean" } }, (a) => `systems/meta${a.fresh ? "?fresh=1" : ""}`],
   ["studio", "Studio (beat maker) usage.", {}, "studio"],
-  ["knowledge", "What LABS knows about itself (server/knowledge, 2026-11-04): the creed, how LABS talks, settled decisions, the glossary, notes, sheets. Read this before writing anything in LABS's voice. Filter by kind (creed · voice · decision · glossary · note · sheet) or search.",
-    { kind: { type: "string", description: "creed · voice · decision · glossary · note · sheet" }, q: { type: "string", description: "Search text" } },
-    (a) => `knowledge?kind=${encodeURIComponent(a.kind || "")}&q=${encodeURIComponent(a.q || "")}`],
+  ["knowledge", "What LABS knows about itself (server/knowledge, 2026-11-04): the creed, how LABS talks, settled decisions, policies, the glossary, every feature, questions and answers, the story, the plan, scenes, playbooks, notes. Read this before answering or writing anything about LABS. Open one entry by its id, filter by kind, or search (every word has to appear, in any order — a few plain words work best).",
+    { id: { type: "integer", description: "One entry, by its number" }, kind: { type: "string", description: "creed · voice · decision · policy · glossary · feature · qa · story · plan · scene · playbook · note · sheet" }, q: { type: "string", description: "Search words" } },
+    (a) => `knowledge?kind=${encodeURIComponent(a.kind || "")}&q=${encodeURIComponent(a.q || "")}${Number(a.id) > 0 ? "&id=" + Math.floor(Number(a.id)) : ""}`],
 ];
 /* The write tools (2026-11-04, "build a knowledge database from my conversations with you and
    Grok"): the one exception to a read-only connector. Claude or Grok can add or edit a Knowledge
