@@ -534,7 +534,8 @@ console.log("\nMEMBER · PHONE");
        290 pictures "failed" on the Showroom in a month, most of them still on the server */
     let hits = 0;
     await p.route("**/uploads/e2e-flaky.png*", async (r) => { hits++; if (hits === 1) return r.abort(); const res = await r.fetch({ url: B + "/uploads/e2e-p3.png" }); return r.fulfill({ response: res }); });
-    await p.evaluate(() => { const x = SRPOSTS.find((q) => q.imageUrl && !(q.images && q.images.length > 1)); x.__u = [x.imageUrl, x.thumbUrl, x.images]; x.imageUrl = x.thumbUrl = "/uploads/e2e-flaky.png"; x.images = null; window.__flaky = x.id; render(); });
+    await p.evaluate(() => { const x = SRPOSTS.find((q) => q.imageUrl && !(q.images && q.images.length > 1)); x.__u = [x.imageUrl, x.thumbUrl, x.images]; x.imageUrl = x.thumbUrl = "/uploads/e2e-flaky.png"; x.images = null; window.__flaky = x.id; render();
+      const c = document.querySelector(`#sr-grid .sr-card[data-pid="${x.id}"]`); if (c) c.scrollIntoView({ block: "center" }); });   // on screen: a picture further down waits to be asked for
     await p.waitForFunction(() => { const im = document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] img.sr-img`); return im && im.complete && im.naturalWidth > 0; }, null, { timeout: 6000 });
     ok(hits === 2 && await p.evaluate(() => !document.querySelector(`#sr-grid .sr-card[data-pid="${window.__flaky}"] .img-gone`) && !BADIMG.has("/uploads/e2e-flaky.png")), `a picture that failed once wasn't tried again (asked for ${hits} times)`);
     await p.unroute("**/uploads/e2e-flaky.png*");
