@@ -4,7 +4,7 @@
 // the private live stream, link-preview guard, and admin Cleanup.
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { mkdirSync, rmSync, writeFileSync, existsSync, readdirSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync, existsSync, readdirSync, utimesSync } from "node:fs";
 import { spawn } from "node:child_process";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = join(ROOT, "test/.tmp/messaging");
@@ -207,8 +207,13 @@ try {
   console.log("\nCLEANUP — every file a member uses is kept");
   peek.prepare(`UPDATE dm_messages SET audio_url = '/uploads/voice-note.m4a' WHERE id = ?`).run(rep.j.message.id);
   writeFileSync(join(DATA, "uploads", "voice-note.m4a"), "x");
+  /* 2026-11-15 (the audit): Cleanup leaves anything under a day old — a photo uploaded but not posted yet is pointed at by nothing */
+  writeFileSync(join(DATA, "uploads", "just-uploaded.jpg"), "x");
+  const twoDays = new Date(Date.now() - 2 * 86400000);
+  for (const f of ["orphan.bin", "unsent.jpg"]) if (existsSync(join(DATA, "uploads", f))) utimesSync(join(DATA, "uploads", f), twoDays, twoDays);
   const cl = await call("ana", "POST", "/api/admin/cleanup");
   const left = readdirSync(join(DATA, "uploads"));
+  t("a file uploaded today that nothing points at yet is left alone", left.includes("just-uploaded.jpg"));
   t("the orphan goes", cl.j.removed >= 1 && !left.includes("orphan.bin"));
   t("a track's audio stays (the old list missed tracks)", left.includes("track-keys.mp3"));
   t("a voice note stays", left.includes("voice-note.m4a"));

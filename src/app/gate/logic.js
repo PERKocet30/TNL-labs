@@ -173,10 +173,11 @@ async function gxCreate(){
 }
 async function gxVerified(asked){
   const G=GFLOW;if(!G||G.step!=="verify")return;
-  try{const d=await api.authStatus();if(GFLOW!==G||G.step!=="verify")return;
+  if(asked){if(G.checking)return;G.checking=true;const b=document.getElementById("gxnext");if(b){b.disabled=true;b.textContent="Checking…"}}   // it answers: no more tapping into silence (2026-11-15)
+  try{const d=await api.authStatus();if(asked)G.checking=false;if(GFLOW!==G||G.step!=="verify")return;
     if(d&&d.verified){clearInterval(GXPOLL);if(ME)ME.emailVerified=true;G.err="";G.note="";G.step="photo";return render()}
     if(asked){G.note="";G.err="Not confirmed yet. Open the email from LABS and tap the link (check spam too).";render()}}
-  catch(e){if(asked){G.err=e.message;render()}}
+  catch(e){if(asked){G.checking=false;G.err=e.message;render()}}
 }
 function gxAfterPhoto(){const G=GFLOW;if(!G)return;G.step="colour";render()}
 /* a line about you, and where else to find you; then people to follow */

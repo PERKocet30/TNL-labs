@@ -308,7 +308,7 @@ const q = {
 /* Feed query builder — returns posts enriched with author, counts, and
    whether the current viewer liked them. */
 function feedRows({ channel, authorId, viewerId, limit = 50, workOnly = false, postId = null, ids = null }) {
-  const where = [];
+  const where = [`u.suspended = 0`];   // a suspended account's posts are nowhere: feeds, labs, an opened post, /p/ (2026-11-15, the audit)
   const params = {};
   if (postId) { where.push(`p.id = $postId`); params.postId = postId; }
   if (ids) { where.push(ids.length ? `p.id IN (${ids.map((id) => Number(id)).join(",")})` : `0`); }

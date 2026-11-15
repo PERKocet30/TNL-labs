@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS comments (
   created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_comments_post ON comments(post_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_comments_author ON comments(author_id, created_at);   -- 2026-11-15: the ranking asks "what has this viewer commented on" on every Showroom load
 
 CREATE TABLE IF NOT EXISTS notifications (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
