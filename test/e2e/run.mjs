@@ -277,6 +277,20 @@ console.log("\nNEW MEMBER · PHONE");
     await p.evaluate(() => render()); await p.waitForTimeout(200);
     ok(!(await p.locator("#gs").count()), "✕ didn't put the list away");
   });
+  /* 2026-11-14, design language v2.2: an empty screen has one line and one button. 92 of 180 people who saw their own
+     empty profile in a month left it; the Work tab said "No posts up yet. Hit + Post and it lands here." */
+  await step(d, "your own empty profile: one line and one black button, Post your first work, that opens a new post", async () => {
+    await p.evaluate(() => openProfile(ME.username));
+    await p.waitForSelector(".pf-first [data-pfirst]", { timeout: 6000 });
+    const e = await p.evaluate(() => { const b = document.querySelector(".pf-first [data-pfirst]"), s = getComputedStyle(b);
+      return { line: document.querySelector(".pf-first p").textContent, label: b.textContent.trim(), bg: s.backgroundColor, h: b.getBoundingClientRect().height,
+        buttons: document.querySelectorAll(".pf-first button, .pf-first a").length, old: /Hit \+ Post/.test(document.querySelector(".pf-first").textContent) }; });
+    ok(e.line === "Your work lives here." && e.label === "Post your first work" && e.bg === "rgb(0, 0, 0)" && e.h >= 44 && e.buttons === 1 && !e.old,
+      "the empty profile should be one line and one black button: " + JSON.stringify(e));
+    await p.locator(".pf-first [data-pfirst]").tap();
+    await p.waitForFunction(() => !!PCOMPOSE, null, { timeout: 4000 });
+    await p.evaluate(() => { PCOMPOSE = null; PROFILE = null; TAB = "showroom"; render(); }); await p.waitForTimeout(200);
+  });
   await step(d, "≡ → How LABS works opens the walkthrough again", async () => {
     await p.evaluate(() => openTour()); await p.waitForSelector(".tour-card");
     const n = await p.evaluate(() => TOUR.length);
