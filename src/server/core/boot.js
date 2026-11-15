@@ -274,7 +274,7 @@ const q = {
      VALUES (?, ?, ?, ?, ?, 1, ?)`
   ),
   createSession: db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)`),
-  sessionByToken: db.prepare(`SELECT * FROM sessions WHERE token = ?`),
+  sessionByToken: { get: (token) => liveSession(token) },   // every look-up goes through the 90-day rule (liveSession, below; 2026-11-15)
   deleteSession: db.prepare(`DELETE FROM sessions WHERE token = ?`),
 
   createPost: db.prepare(
@@ -304,6 +304,25 @@ const q = {
   clearVerifyTokens: db.prepare(`DELETE FROM verify_tokens WHERE user_id = ?`),
   markVerified: db.prepare(`UPDATE users SET email_verified = 1 WHERE id = ?`),
 };
+
+/* A SIGN-IN ENDS AFTER 90 DAYS WITHOUT USE (2026-11-15, the audit: "sign-ins never expire" — a key copied from a lost
+   phone or a shared computer worked for ever). Use keeps it alive: last_used_at moves forward at most once a day, so
+   someone who opens LABS is never signed out. The day this arrived every existing sign-in started a fresh 90 days,
+   so nobody was signed out by the change itself. Old ones are cleared at boot and once a day. */
+const SESSION_IDLE_MS = Math.max(60000, Number(process.env.SESSION_IDLE_MS) || 90 * 86400000);
+try { db.exec(`ALTER TABLE sessions ADD COLUMN last_used_at INTEGER`); db.prepare(`UPDATE sessions SET last_used_at = ?`).run(Date.now()); } catch {}
+const sessionRow = db.prepare(`SELECT * FROM sessions WHERE token = ?`);
+const sessionTouch = db.prepare(`UPDATE sessions SET last_used_at = ? WHERE token = ?`);
+function liveSession(token) {
+  const s = sessionRow.get(token);
+  if (!s) return undefined;
+  const now = Date.now(), used = s.last_used_at || s.created_at;
+  if (now - used > SESSION_IDLE_MS) { q.deleteSession.run(token); return undefined; }
+  if (now - used > 86400000) sessionTouch.run(now, token);
+  return s;
+}
+const sessionSweep = () => { try { db.prepare(`DELETE FROM sessions WHERE COALESCE(last_used_at, created_at) < ?`).run(Date.now() - SESSION_IDLE_MS); } catch (e) { console.error("[auth] session sweep", e.message); } };
+sessionSweep(); setInterval(sessionSweep, 86400000).unref?.();
 
 /* Feed query builder — returns posts enriched with author, counts, and
    whether the current viewer liked them. */
