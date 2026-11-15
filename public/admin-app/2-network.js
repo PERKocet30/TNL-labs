@@ -1,4 +1,4 @@
-/* LABS admin — the models at the front v1.2, 2026-11-04 ("this interactive dashboard is way better and should be front of the
+/* LABS admin — the models at the front v1.3, 2026-11-15 (the period starts at your midnight, like every page). v1.2, 2026-11-04 ("this interactive dashboard is way better and should be front of the
    admin dashboard, like Echo's to-do and Members and Analytics" — of the Systems map). Two spinning models on the 3D ring
    (2-ring.js), each the first card of its page:
      · Echo Home's to-do (todoCardHTML): LABS in the middle, every section of the dashboard round it — red, with how many,
@@ -15,7 +15,7 @@ const NW = { pick: "", todo: "" };
 const NW_LINKS = [["o:meta", "arrive"], ["o:cloudflare", "arrive"], ["o:google", "arrive"], ["o:resend", "join"], ["o:stripe", "trade"], ["o:resend", "talk"], ["o:claude", "talk"],
   ["o:railway", "b:labs"], ["o:github", "b:labs"], ["o:connector", "b:labs"], ["b:trust", "join"], ["b:trust", "respond"], ["b:members", "see"], ["b:labs", "see"], ["b:data", "earn"]];
 const NW_OPEN = { health: "Health", settings: "Settings", market: "Market", echohome: "Echo", instagram: "Instagram", systems: "Systems", content: "Content", people: "Members", events: "Events", knowledge: "Knowledge", echo: "Help desk", analytics: "Analytics" };
-async function nwLoad() { try { D.network = await req(`/api/admin/network?days=${RANGE}`); } catch (e) { D.network = null; } }   // with Echo Home's and Analytics' loaders
+async function nwLoad() { try { D.network = await req(`/api/admin/network?days=${RANGE}&tz=${new Date().getTimezoneOffset()}`); } catch (e) { D.network = null; } }   // with Echo Home's and Analytics' loaders
 const nwStages = () => (D.network && D.network.stages) || [];
 const nwSections = () => (D.network && D.network.sections) || [];
 const nwAll = () => { const N = D.network || {}; return [...(N.outside || []).map((x) => ({ ...x, key: "o:" + x.id })), ...(N.base || []).map((x) => ({ ...x, key: "b:" + x.id, name: x.id === "labs" ? "Server" : x.name }))]; };

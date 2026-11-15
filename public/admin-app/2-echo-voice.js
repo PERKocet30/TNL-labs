@@ -1,4 +1,4 @@
-/* LABS admin — Echo Home · Talk v1.1, 2026-11-04 ("like Jarvis": the orb is a HUD — a core, a ring of bars, turning rings, a sweep — with today's readouts over it). v1.0 ("make Echo interactive too, like speaking with a virtual AI"). The Talk
+/* LABS admin — Echo Home · Talk v1.2, 2026-11-15 (Took part and Joined, the dictionary's words). v1.1, 2026-11-04 ("like Jarvis": the orb is a HUD — a core, a ring of bars, turning rings, a sweep — with today's readouts over it). v1.0 ("make Echo interactive too, like speaking with a virtual AI"). The Talk
    button over the box opens a full screen conversation by voice: an orb that moves with you and with Echo, your words
    as you say them, Echo's sentence as it says it. You talk; a pause sends it (the same /api/echo/ask as typing — ehAsk);
    Echo speaks each sentence as soon as it's written (the live stream feeds evText), then listens again — hands free.
@@ -160,6 +160,6 @@ function evFrame(now) {
 function evHud() {
   const p = D.pulse, d = D.dir; if (!p || !p.now) return "";
   const needs = (p.inbox || []).length + ((d && d.needs) || []).length;
-  const R = [["Needs you", num(needs), needs > 0], ["Active", num(p.now.active)], ["New", num(p.now.signups)], ["Sales", money(p.now.gmv)]];
+  const R = [["Needs you", num(needs), needs > 0], ["Took part", num(p.now.active)], ["Joined", num(p.now.signups)], ["Sales", money(p.now.gmv)]];
   return R.map(([k, v, hot]) => `<div class="ev-ro${hot ? " hot" : ""}"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join("");
 }

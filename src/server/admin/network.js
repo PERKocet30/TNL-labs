@@ -1,5 +1,5 @@
 /* ================================================================
-   ADMIN · THE NETWORK v1.0 — 2026-11-04. "I don't see the interactive admin
+   ADMIN · THE NETWORK v1.1 — 2026-11-15 (one meaning for every number: the dictionary, admin/measures.js; the period starts at the admin's midnight like every other page). v1.0 — 2026-11-04. "I don't see the interactive admin
    dashboard network. Make the whole admin dashboard interactive" — "use the
    organization" of the LABS Blueprint (sheet A-0). The Network section
    (admin-app/2-network.js) reads this:
@@ -14,8 +14,7 @@
    Messages are counted as rows, never read.
 ================================================================ */
 app.get("/api/admin/network", auth, admin, rateLimit({ max: 30, windowMs: 60000, key: "user" }), (req, res) => {
-  const now = Date.now(), DAYMS = 86400000, days = Math.max(1, Math.min(365, Math.round(Number(req.query.days) || 30)));
-  const a = now - days * DAYMS, b = a - days * DAYMS;   // this window [a, now); the one before [b, a)
+  const now = Date.now(), DAYMS = 86400000, { days, start: a, prevStart: b } = mWindow(req.query, now, null);   // the period, as the dictionary says it: this one [a, now), the one before [b, a)
   const n = (sql, ...p) => { try { return db.prepare(sql).get(...p)?.n ?? 0; } catch { return 0; } };
   const both = (sql, ...extra) => [n(sql, a, now, ...extra), n(sql, b, a, ...extra)];   // sql takes (from, to, …)
   const dayA = Math.floor(a / DAYMS), dayB = Math.floor(b / DAYMS), dayNow = Math.floor(now / DAYMS) + 1;
@@ -29,13 +28,13 @@ app.get("/api/admin/network", auth, admin, rateLimit({ max: 30, windowMs: 60000,
 
   const S = (id, name, says, [value, before], label, facts, go, goName) => ({ id, name, says, value, before, label, facts, go, goName, needs: needs[id] || [] });
   const strangers = dboth(`SELECT COUNT(DISTINCT viewer) n FROM post_views WHERE viewer LIKE 'd:%' AND day >= ? AND day < ?`);
-  const joins = both(`SELECT COUNT(*) n FROM users WHERE created_at >= ? AND created_at < ?`);
-  const active = dboth(`SELECT COUNT(DISTINCT user_id) n FROM member_days WHERE day >= ? AND day < ?`);
+  const joins = both(`SELECT COUNT(*) n FROM users WHERE ${M_MEMBER} AND created_at >= ? AND created_at < ?`);
+  const active = dboth(`SELECT COUNT(DISTINCT user_id) n FROM member_days WHERE day >= ? AND day < ? AND user_id IN ${M_IS_MEMBER}`);
   const work = both(`SELECT COUNT(*) n FROM posts WHERE is_work = 1 AND created_at >= ? AND created_at < ?`);
-  const responded = both(`SELECT (SELECT COUNT(*) FROM likes WHERE created_at >= ?1 AND created_at < ?2) + (SELECT COUNT(*) FROM comments WHERE created_at >= ?1 AND created_at < ?2) n`);
+  const responded = both(`SELECT (SELECT COUNT(*) FROM likes WHERE created_at >= ?1 AND created_at < ?2) + (SELECT COUNT(*) FROM comments WHERE created_at >= ?1 AND created_at < ?2) + (SELECT COUNT(*) FROM reactions WHERE created_at >= ?1 AND created_at < ?2) n`);
   const rep = both(`SELECT COALESCE(SUM(amount), 0) n FROM rep_events WHERE created_at >= ? AND created_at < ?`);
-  const sales = both(`SELECT COALESCE(SUM(amount_cents), 0) n FROM orders WHERE status IN ('paid','shipped','complete') AND created_at >= ? AND created_at < ?`);
-  const msgs = both(`SELECT COUNT(*) n FROM dm_messages WHERE created_at >= ? AND created_at < ?`);
+  const sales = both(`SELECT COALESCE(SUM(${M_SALE}), 0) n FROM orders WHERE status IN ('paid','shipped','complete') AND created_at >= ? AND created_at < ?`);
+  const msgs = both(`SELECT COUNT(*) n FROM dm_messages WHERE kind = 'msg' AND created_at >= ? AND created_at < ?`);
   const W = [a, now];
   const stages = [
     S("arrive", "Arrive", "From Instagram, a link, a search", strangers, "visitors looked at work",
@@ -43,28 +42,28 @@ app.get("/api/admin/network", auth, admin, rateLimit({ max: 30, windowMs: 60000,
        ["Came in on a shared link", n(`SELECT COUNT(*) n FROM join_signals WHERE (landing LIKE '/?u=%' OR landing LIKE '/?p=%' OR landing LIKE '/?e=%' OR landing LIKE '/?l=%') AND created_at >= ? AND created_at < ?`, ...W)]], "instagram", "Instagram"),
     S("join", "Join", "One question a screen", joins, "new members",
       [["With Google or Apple", n(`SELECT COUNT(*) n FROM join_signals WHERE via != 'email' AND created_at >= ? AND created_at < ?`, ...W)],
-       ["Haven't confirmed email", n(`SELECT COUNT(*) n FROM users WHERE email_verified = 0 AND created_at >= ? AND created_at < ?`, ...W)],
-       ["Members in all", n(`SELECT COUNT(*) n FROM users`)]], "people", "Members"),
-    S("see", "See", "The Showroom, the labs, search", active, "members used the app",
+       ["Haven't confirmed email", n(`SELECT COUNT(*) n FROM users WHERE ${M_MEMBER} AND email_verified = 0 AND created_at >= ? AND created_at < ?`, ...W)],
+       ["Members in all", M.members()]], "people", "Members"),
+    S("see", "See", "The Showroom, the labs, search", active, "members opened the app",
       [["Pieces seen", n(`SELECT COUNT(*) n FROM post_views WHERE day >= ? AND day < ?`, dayA, dayNow)],
        ["In the app today", n(`SELECT COUNT(*) n FROM member_days WHERE day = ?`, dayNow - 1)]], "analytics", "Analytics"),
     S("make", "Make", "Work, songs, posts", work, "pieces of work posted",
       [["Songs uploaded", n(`SELECT COUNT(*) n FROM tracks WHERE created_at >= ? AND created_at < ?`, ...W)],
        ["People who posted", n(`SELECT COUNT(DISTINCT author_id) n FROM posts WHERE is_work = 1 AND created_at >= ? AND created_at < ?`, ...W)]], "content", "Content"),
-    S("respond", "Respond", "What other people do with it", responded, "likes and comments",
+    S("respond", "Respond", "What other people do with it", responded, "likes, comments and reactions",
       [["Collabs accepted", n(`SELECT COUNT(*) n FROM collaborators WHERE status = 'accepted' AND created_at >= ? AND created_at < ?`, ...W)],
        ["Tournament votes", n(`SELECT COUNT(*) n FROM event_votes WHERE created_at >= ? AND created_at < ?`, ...W)],
        ["Open reports", n(`SELECT COUNT(*) n FROM reports WHERE handled_at IS NULL`)]], "events", "Events"),
     S("earn", "Earn", "Standing, levels, fees", rep, "rep earned",
       [["Members who earned rep", n(`SELECT COUNT(DISTINCT user_id) n FROM rep_events WHERE amount > 0 AND created_at >= ? AND created_at < ?`, ...W)],
-       ["Verified or higher (40+)", n(`SELECT COUNT(*) n FROM users WHERE rep >= 40`)]], "people", "Members"),
+       ["Verified or higher (40+)", n(`SELECT COUNT(*) n FROM users WHERE ${M_MEMBER} AND rep >= 40`)]], "people", "Members"),
     S("trade", "Trade", "Sell what you make", sales, "in sales",
       [["Orders", n(`SELECT COUNT(*) n FROM orders WHERE status IN ('paid','shipped','complete') AND created_at >= ? AND created_at < ?`, ...W)],
        ["Started selling", n(`SELECT COUNT(DISTINCT walk) n FROM sell_walk WHERE step = 'what' AND created_at >= ? AND created_at < ?`, ...W)],
        ["…and listed", n(`SELECT COUNT(DISTINCT walk) n FROM sell_walk WHERE step = 'listed' AND created_at >= ? AND created_at < ?`, ...W)],
        ["Listings live", n(`SELECT COUNT(*) n FROM listings WHERE status = 'active'`)]], "market", "Market"),
     S("talk", "Talk", "And hear back", msgs, "messages sent",
-      [["People messaging", n(`SELECT COUNT(DISTINCT sender_id) n FROM dm_messages WHERE created_at >= ? AND created_at < ?`, ...W)],
+      [["People messaging", n(`SELECT COUNT(DISTINCT sender_id) n FROM dm_messages WHERE kind = 'msg' AND created_at >= ? AND created_at < ?`, ...W)],
        ["Questions to Echo", n(`SELECT COUNT(*) n FROM echo_turns WHERE created_at >= ? AND created_at < ?`, ...W)],
        ["Handed to you", n(`SELECT COUNT(*) n FROM echo_handoffs WHERE status = 'open'`)]], "echo", "Help desk"),
   ];
@@ -87,7 +86,7 @@ app.get("/api/admin/network", auth, admin, rateLimit({ max: 30, windowMs: 60000,
   const wk = now - 7 * DAYMS;
   const SEC = (id, name, does, value, label) => ({ id, name, does, value, label, needs: todo[id] || [] });
   const sections = [
-    SEC("people", "Members", "Everyone on LABS — accounts, standing, the globe", n(`SELECT COUNT(*) n FROM users`), "members"),
+    SEC("people", "Members", "Everyone on LABS — accounts, standing, the globe", M.members(), "members"),
     SEC("market", "Market", "Orders, listings and sellers", n(`SELECT COUNT(*) n FROM listings WHERE status = 'active'`), "listings live"),
     SEC("content", "Content", "Posts, comments and reports", n(`SELECT COUNT(*) n FROM posts WHERE created_at > ?`, wk), "posts this week"),
     SEC("events", "Events", "The tournament", live, "live now"),

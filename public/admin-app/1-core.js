@@ -1,4 +1,4 @@
-/* LABS admin v4.6 — 2026-11-04 (Systems up front: its own section, second in the sidebar and in the phone's bar, opening on the spinning map; Health is Health again). v4.5 — 2026-11-04 (five groups, eleven sections: Market = Orders · Listings · Sellers, Health = Health · Systems; the phone's sheet grouped; old links land on the tab — SUBTAB). v4.4 — 2026-11-04 (Echo Home: the admin opens on Echo — admin-app/2-echo-home.js; the help desk section is "Help desk"). v4.3 — 2026-11-04 (Knowledge: what LABS knows about itself, admin-app/4-knowledge.js). v4.2 — 2026-11-04 (Echo, the help desk, is a section: admin-app/4-echo.js). v4.1 — 2026-10-28 (charts: readable dates and numbers, round scale); v4.0 — 2026-10-20. "Make it more like Shopify's admin, with
+/* LABS admin v4.7 — 2026-11-15 (the bar at the top finds anything in the dashboard: 1-find.js). v4.6 — 2026-11-04 (Systems up front: its own section, second in the sidebar and in the phone's bar, opening on the spinning map; Health is Health again). v4.5 — 2026-11-04 (five groups, eleven sections: Market = Orders · Listings · Sellers, Health = Health · Systems; the phone's sheet grouped; old links land on the tab — SUBTAB). v4.4 — 2026-11-04 (Echo Home: the admin opens on Echo — admin-app/2-echo-home.js; the help desk section is "Help desk"). v4.3 — 2026-11-04 (Knowledge: what LABS knows about itself, admin-app/4-knowledge.js). v4.2 — 2026-11-04 (Echo, the help desk, is a section: admin-app/4-echo.js). v4.1 — 2026-10-28 (charts: readable dates and numbers, round scale); v4.0 — 2026-10-20. "Make it more like Shopify's admin, with
    graphs; one tailored for mobile and one for computer; compare against
    Instagram analytics." Ten sections named by what you manage — Home ·
    Orders · Listings · Sellers · Members · Content · Events · Analytics ·
@@ -196,7 +196,7 @@ function paint() {
     <aside class="side" aria-label="Admin sections"><div class="brand"><img class="bwm" src="/labs-wordmark-ink.png" alt="LABS"> Admin</div><nav class="side-nav">${side}</nav>
       <div class="side-ft"><span class="mono">Signed in as @${esc(ME.username)}</span><div class="row">${theme}<a class="btn ghost sm" href="/">Open the app ${I.out}</a></div></div></aside>
     <div class="mainc"><header class="top"><div class="bar1"><div class="brand ph"><img class="bwm" src="/labs-wordmark-ink.png" alt="LABS"> Admin</div>
-      ${TAB === "people" ? "" : `<div class="gsrch" role="search">${di('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>', 16)}<input id="gq" placeholder="Search members" value="${esc(GQ)}" autocomplete="off" aria-label="Search members"><div class="gres" id="gres" hidden></div></div>`}
+      ${TAB === "people" ? "" : `<div class="gsrch" role="search">${di('<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>', 16)}<input id="gq" placeholder="Search LABS" value="${esc(GQ)}" autocomplete="off" aria-label="Search the dashboard"><div class="gres" id="gres" hidden></div></div>`}
       <span class="ph">${theme}</span></div></header>
     <main class="wrap" id="main">${VIEWS[TAB]()}</main>
     <nav class="bbar" aria-label="Admin sections">${bar}</nav>
@@ -212,24 +212,7 @@ function paint() {
   admMvAfter(mvb);
 }
 
-/* ---- search any member from any page (the bar at the top) ---- */
-let GQ = "";
-function wireSearch() {
-  const q = $("#gq"), box = $("#gres"); if (!q) return;
-  let t, n = 0;
-  const show = (html) => { box.innerHTML = html; box.hidden = !html; };
-  q.oninput = () => { GQ = q.value; clearTimeout(t); const term = GQ.trim(); if (!term) return show("");
-    t = setTimeout(async () => { const me = ++n;
-      try { const r = await req("/api/admin/people?q=" + encodeURIComponent(term)); if (me !== n) return;
-        show(r.people.length ? r.people.slice(0, 8).map((u) => `<button class="li" data-gp="${esc(u.username)}">${av(u)}<span class="b"><b>${esc(u.displayName)}</b><span>@${esc(u.username)} · #${u.id}${u.email ? " · " + esc(u.email) : ""}</span></span></button>`).join("")
-          + (r.people.length > 8 ? `<button class="gall" data-gall>See all ${r.people.length} in People ${I.chev}</button>` : "") : `<div class="empty">No member matches “${esc(term)}”.</div>`);
-        $$("[data-gp]", box).forEach((b) => b.onmousedown = (e) => { e.preventDefault(); show(""); openPerson(b.dataset.gp); });
-        const all = $("[data-gall]", box); if (all) all.onmousedown = (e) => { e.preventDefault(); seeAll(); };
-      } catch (e) {} }, 180); };
-  const seeAll = () => { PQ = GQ.trim(); GQ = ""; show(""); go("people"); };
-  q.onkeydown = (e) => { if (e.key === "Enter" && GQ.trim()) seeAll(); if (e.key === "Escape") { GQ = ""; q.value = ""; show(""); q.blur(); } };
-  q.onblur = () => setTimeout(() => show(""), 120);
-}
+/* ---- the bar at the top finds anything in the dashboard: wireSearch() is 1-find.js (2026-11-15) ---- */
 
 /* ---- the pieces every page is built from ---- */
 /* a page's title, one line on what it's for, and its main actions */

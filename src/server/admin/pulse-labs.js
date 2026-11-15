@@ -1,6 +1,6 @@
 
 /* ================================================================
-   ADMIN · THE DIRECTION v1.0 — 2026-10-09. What /admin's Today runs on
+   ADMIN · THE DIRECTION v1.1 — 2026-11-15 (adminWindow is the dictionary's period, admin/measures.js). v1.0 — 2026-10-09. What /admin's Today runs on
    now that labs are places and the tournament is the centre:
      - each lab (genre): work, talk, who's there, its #tags this period
      - the #tags people are using, across every lab
@@ -21,10 +21,8 @@ const LAB_CHANNELS = Object.values(PLACES).flatMap((p) => p.channels);
 /* The same window /api/admin/pulse uses: `days` days back from the
    admin's local midnight, and the same length before it. */
 function adminWindow(q, now = Date.now()) {
-  const days = [7, 30, 90].includes(Number(q.days)) ? Number(q.days) : 30;
-  const tz = Math.max(-840, Math.min(840, Number(q.tz) || 0)) * 60000;
-  const start = Math.floor((now - tz) / ADAY) * ADAY + tz - (days - 1) * ADAY;
-  return { days, start, prevStart: start - days * ADAY };
+  const { days, start, prevStart } = mWindow(q, now);   // one period everywhere (admin/measures.js)
+  return { days, start, prevStart };
 }
 
 /* The tournament to show: the live published one, else a draft being

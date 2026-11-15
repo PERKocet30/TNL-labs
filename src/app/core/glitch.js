@@ -1,4 +1,4 @@
-/* GLITCH SIGNALS v1.0 — 2026-09-29
+/* GLITCH SIGNALS v1.1 — 2026-11-15 (a screen has one name: the screen signals'). v1.0 — 2026-09-29
    Crashes already go to /api/client-error. This catches what doesn't crash
    but feels broken, and tells the admin page (server/core/glitch.js):
      rage_tap       the same control tapped 3+ times within ~1s
@@ -9,13 +9,9 @@
    Quiet by design: one report per kind and spot every 30s, sent in batches,
    never the content of a post or message. */
 const GL={q:[],seen:{},timer:null};
-function glPlace(){
-  if(GATE)return "sign-up";if(PCOMPOSE)return "post creator";if(TRKEDIT)return "track edit";
-  if(CHAT)return "chat";if(DMOPENPANEL)return "messages";if(POSTOPEN)return "opened post";
-  if(PROFILE)return MYPAGE()?"my profile":"a profile";
-  if(TAB==="labs")return ROOMOPEN&&LAB&&CH?"lab "+LAB.name+" / "+(CH.label||CH.id):"labs";
-  return TAB||"app";
-}
+/* one name per screen (2026-11-15): the same names the screen signals use (uiScreen, app/ui-signals/signals.js),
+   so a rage tap and a dead tap on the same screen land on the same line of the admin's report */
+function glPlace(){return uiScreen()}
 function glitch(kind,detail){
   const place=glPlace(),key=kind+"|"+place+"|"+detail,now=Date.now();
   if(GL.seen[key]&&now-GL.seen[key]<30000)return;

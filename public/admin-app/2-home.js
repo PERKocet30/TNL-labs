@@ -1,4 +1,4 @@
-/* LABS admin v4.1 — 2026-11-03 (group chats members started, counts only, under "How people take part"). v4.0 — 2026-10-20. Home: what needs you first (the work queue), then
+/* LABS admin v4.2 — 2026-11-15 (Took part and Joined, the dictionary's words). v4.1 — 2026-11-03 (group chats members started, counts only, under "How people take part"). v4.0 — 2026-10-20. Home: what needs you first (the work queue), then
    this period's numbers with their share, the activity line with last period behind,
    the pieces that did best, the tournament, the labs. v3.1 — 2026-10-14 (page header; the chart's choices sit in its card). Today, for the app's direction: labs
    are places (genres explained by #tags), the tournament is the centre,
@@ -6,7 +6,7 @@
    What needs you → the tournament → how it's going → how people take part
    → the labs and their #tags. Numbers: /api/admin/pulse + /api/admin/direction. */
 let METRIC = "active";
-const METRICS = [["active", "Active members"], ["work", "Work posted"], ["votes", "Votes"], ["signups", "New members"], ["gmv", "Sales"]];
+const METRICS = [["active", "Took part"], ["work", "Work posted"], ["votes", "Votes"], ["signups", "Joined"], ["gmv", "Sales"]];
 const WAYS = { build: "build", talk: "talk", feedback: "learn", compete: "compete", collab: "collaborate", sell: "sell" };
 
 LOADERS.home = async () => {
@@ -26,8 +26,8 @@ VIEWS.home = () => {
   ${pageHead("Home", `${today} · what needs you, then the last ${p.days} days`, rangeHTML())}
   ${card(`Needs you`, `<div class="body"><div class="q">${needs.length ? needs.map(queueHTML).join("") : `<div class="clear">${I.check} Nothing waiting. Go make something.</div>`}</div></div>`, needs.length ? `${needs.length} thing${needs.length === 1 ? "" : "s"}` : "")}
   <div class="grid g2 g4" style="margin-top:12px">
-    ${kpiHTML("Active members", num(n.active), { now: n.active, before: b.active, share: `${pct(n.active, M)} of ${num(M)} members`, series: S.series.active })}
-    ${kpiHTML("New members", num(n.signups), { now: n.signups, before: b.signups, share: `${num(p.seen)} opened the app`, series: S.series.signups })}
+    ${kpiHTML("Took part", num(n.active), { now: n.active, before: b.active, share: `${pct(n.active, M)} of ${num(M)} members`, series: S.series.active })}
+    ${kpiHTML("Joined", num(n.signups), { now: n.signups, before: b.signups, share: `${num(p.seen)} opened the app`, series: S.series.signups })}
     ${kpiHTML("Work posted", num(n.work), { now: n.work, before: b.work, share: `${num(n.feedback)} likes, comments and reactions`, series: S.series.work })}
     ${kpiHTML("Sales", money(n.gmv), { now: n.gmv, before: b.gmv, fmt: money, share: `${n.orders} order${n.orders === 1 ? "" : "s"} · ${money(S.fees.now)} in fees`, series: S.series.gmv })}
   </div>
@@ -41,7 +41,7 @@ VIEWS.home = () => {
     <div>
       ${card("The tournament", tourHTML(d.tournament).replace('class="panel tour"', 'class="body tour"'), "votes only count in the app")}
       ${card("Labs this period", `<div class="body">${labsHTML(d.labs)}</div>`, "tap for the posts")}
-      ${card("How people take part", `<div class="body">${partHTML(d.takingPart)}</div>`, "members, all time")}
+      ${card("How members take part", `<div class="body">${partHTML(d.takingPart)}</div>`, "members, all time")}
     </div>
   </div>`;
 };
