@@ -156,7 +156,7 @@ try {
   console.log("\nIN STEP WITH THE BUILD (2026-11-15)");
   /* Stop the server, make three built-in entries look the way production's did, boot again:
      one nobody touched whose words fell behind, one an app edited after an older build, one Jorge edited himself. */
-  srv.kill(); await new Promise((r) => setTimeout(r, 400));
+  await new Promise((r) => { srv.once("exit", r); srv.kill(); });   // the same port again once the first server has let go of it and the database
   const { DatabaseSync } = await import("node:sqlite");
   const d2 = new DatabaseSync(join(DATA, "tnl.db"));
   const idOf = (k) => d2.prepare("SELECT id FROM knowledge WHERE key = ?").get(k).id;
@@ -166,7 +166,7 @@ try {
   d2.prepare("UPDATE knowledge SET body = 'Jorge wrote this himself.', source = 'admin', updated_by = ?, built = 'the older build''s words' WHERE id = ?").run(boss, byJorge);
   d2.prepare("UPDATE knowledge SET body = 'An app wrote this yesterday.', source = 'claude', updated_by = ?, built = '' WHERE id = ?").run(boss, fresh);
   d2.close();
-  const PORT2 = PORT + 211;
+  const PORT2 = PORT;
   const srv2 = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], { cwd: ROOT, env: { ...process.env, PORT: String(PORT2), TNL_DATA: DATA, TNL_NO_WATCH: "1", PUBLIC_URL: `http://127.0.0.1:${PORT2}` } });
   let log2 = ""; srv2.stdout.on("data", (x) => log2 += x); srv2.stderr.on("data", (x) => log2 += x);
   for (let i = 0; i < 150 && !/listening/.test(log2); i++) await new Promise((r) => setTimeout(r, 100));
