@@ -1,3 +1,4 @@
+/* v2026-11-15: during a new account's wait the button reads "Vote soon" round a ring (no vote is held); a used-up day dims the other Vote buttons; a row opens the piece; evBackTo — the piece someone joined to vote for, once they're in. */
 /* v2026-11-04: Report on a piece you opened (the flag beside Share) — a tournament entry is a post (app/posts/report). */
 /* v2026-10-20: the share sheet's head comes from the screen kit */
 /* EVENT POLL (2026-10-07): a scoreboard you vote from. EVFOCUS — the piece a link opened (/?e=slug&v=id);
@@ -10,7 +11,8 @@ function evVoteBtn(e){
   const me=EV.me, mine=me.entry&&me.entry.id===e.id, picked=me.myVotes.includes(e.id);
   if(mine)return `<span class="ev-mine-s">Yours</span>`;
   if(me.isJudge&&EV.event.stage==="final")return "";
-  return `<button class="ev-vote ${picked?"on":""}${EVWAIT&&EVWAIT.id===e.id?" busy":""}" data-evpick="${e.id}">${picked?DI.check+" Voted":"Vote"}</button>`;
+  if(!picked&&me.wait!=null)return `<button class="ev-vote soon" data-evpick="${e.id}" aria-label="You can vote soon">${evRing(me.wait)} Vote soon</button>`;
+  return `<button class="ev-vote ${picked?"on":""}${evSpent(e.id)?" spent":""}" data-evpick="${e.id}">${picked?DI.check+" Voted":"Vote"}</button>`;
 }
 function evPollNote(){
   const me=EV.me, B=EV.board, n=EV.event.picks, left=Math.max(0,n-me.myVotes.length);
@@ -35,7 +37,7 @@ function evPollHTML(){
       <button class="btn ghost" id="evshare">${DI.out} Share to Instagram</button></div>`:""}
     <div class="ev-sec"><h3>${EV.event.stage==="final"?"The final":"Scoreboard"} · ${B.total} ${B.total===1?"vote":"votes"}${B.frozen?" · frozen":""}</h3>
     <div class="ev-board">${B.rows.map(r=>{const e=evById(r.entryId);if(!e)return "";
-      return `<div class="ev-row ${me.myVotes.includes(e.id)?"on":""}">
+      return `<div class="ev-row ${me.myVotes.includes(e.id)?"on":""}" data-evpost="${e.postId}">
         <span class="ev-rk">${r.rank}</span>
         <img ${imgAttrs({url:e.imageUrl,thumb:e.thumbUrl,w:e.w,h:e.h,tw:e.tw,sm:e.sm,sw:e.sw})} alt="" loading="lazy" data-evzoom="${esc(e.imageUrl)}">
         <div class="ev-rwho"><b data-u="${esc(e.author.username)}">@${esc(e.author.username)}</b>
@@ -89,6 +91,14 @@ function wireEvPoll(){
   on("#evshcopy",async()=>{try{await navigator.clipboard.writeText(evVoteUrl(EVSHARE.id));toast("Link copied")}catch(e){toast("Couldn't copy")}});
 }
 
+/* Joined (or signed in) from "Join to vote": straight back to that piece, not the Showroom (2026-11-15). The note is kept
+   until the email is confirmed, so the link in the inbox comes back here too. */
+function evBackTo(){
+  try{const r=JSON.parse(localStorage.getItem("tnl-evret")||"null");if(!r||!r.slug||Date.now()-r.t>3*864e5)return false;
+    if(ME&&ME.emailVerified)localStorage.removeItem("tnl-evret");
+    if(TAB==="event"&&EVSLUG===r.slug){EVFOCUS=r.v||EVFOCUS;render();loadEvent()}else{openEvent(r.slug);EVFOCUS=r.v||null}
+    return true}catch(e){return false}
+}
 /* Back to the piece after signing up / confirming email somewhere else. */
 function evRemember(){try{localStorage.setItem("tnl-evret",JSON.stringify({slug:EVSLUG,v:EVFOCUS,t:Date.now()}))}catch(e){}}
 function evReturn(){

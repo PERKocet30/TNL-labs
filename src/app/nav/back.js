@@ -75,7 +75,7 @@ function navRestore(s){
   if(wasTab==="studio"&&TAB!=="studio"&&window.TNLStudio)TNLStudio.unmount();
   if(TAB==="labs"&&LAB&&ROOMOPEN&&(wasTab!=="labs"||LAB.id!==wasLab||LABVIEW!==wasView)){placeCH();setTimeout(loadPlace,0)}
   else if(TAB==="labs"&&!LAB&&!TAGVIEW&&(wasLab||wasTab!=="labs"))loadLabs();
-  if(TAB==="event"&&EVSLUG&&(EVSLUG!==wasEv||!EV))loadEvent();
+  if(TAB==="event"&&EVSLUG&&(EVSLUG!==wasEv||!EV||wasTab!=="event"))loadEvent();   // back from Edit profile with a photo: the tournament knows (2026-11-15)
   if(POSTOPEN&&POSTOPEN.id!==wasPost){const id=POSTOPEN.id;COMMENTS=[];
     api.comments(id).then(r=>{if(POSTOPEN&&POSTOPEN.id===id){COMMENTS=r.comments;render()}}).catch(()=>{})}
 }

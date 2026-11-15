@@ -47,6 +47,9 @@
 .ev-pick{position:absolute;right:8px;bottom:30px;width:40px;height:40px;border-radius:999px;border:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);color:#fff;cursor:pointer}
 .ev-th.on .ev-pick{background:var(--accent-fill);color:var(--on-accent)}
 .ev-pick.busy{opacity:.5}
+.ev-ring{width:16px;height:16px;flex:none;vertical-align:-3px}
+.ev-ring circle{fill:none;stroke:var(--line);stroke-width:2.5}
+.ev-ring .fg{stroke:var(--accent-fill)}
 .ev-mine,.ev-seed{position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:999px;background:var(--tx);color:var(--bg);font-size:11px;font-weight:700}
 .ev-seed{left:auto;right:8px;background:rgba(0,0,0,.6);color:#fff}
 .ev-shr{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:999px;border:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);color:#fff;cursor:pointer}
@@ -101,6 +104,9 @@
 .ev-vote svg{width:14px;height:14px}
 .ev-vote.on{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
 .ev-vote.busy{opacity:.5}
+.ev-vote.spent{opacity:.35}
+.ev-vote.soon{border-color:var(--line);color:var(--dim);white-space:nowrap}
+.ev-row[data-evpost],.ev-rank[data-evpost],.ev-win h2[data-u],.ev-rank b[data-u]{cursor:pointer}
 .ev-mine-s{font-size:12px;font-weight:700;color:var(--dim);padding:0 6px}
 .ev-you{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 4px;font-size:15px;line-height:21px}
 .ev-you .btn svg,.ev-yours .btn svg{width:16px;height:16px;margin-right:6px}

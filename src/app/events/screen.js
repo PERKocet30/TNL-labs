@@ -58,7 +58,7 @@ function evThumb(e,opts={}){
   const mine=EV.me.entry&&EV.me.entry.id===e.id, picked=EV.me.myVotes.includes(e.id);
   return `<div class="ev-th ${picked?"on":""} ${opts.big?"big":""}">
     <img ${imgAttrs({url:e.imageUrl,thumb:e.thumbUrl,w:e.w,h:e.h,tw:e.tw,sm:e.sm,sw:e.sw},!!opts.big)} alt="" ${opts.big?`style="aspect-ratio:${e.w&&e.h?e.w+"/"+e.h:"4/5"}"`:`loading="lazy"`} data-evzoom="${esc(e.imageUrl)}">
-    ${opts.pick&&!mine?`<button class="ev-pick${EVWAIT&&EVWAIT.id===e.id?" busy":""}" data-evpick="${e.id}" aria-label="${picked?"Take back":"Pick"}">${picked?DI.check:DI.plus}</button>`:""}
+    ${opts.pick&&!mine?`<button class="ev-pick" data-evpick="${e.id}" aria-label="${picked?"Take back":"Pick"}">${picked?DI.check:DI.plus}</button>`:""}
     ${mine?`<span class="ev-mine">Yours</span>`:""}
     ${opts.seed&&e.seed?`<span class="ev-seed">${e.seed}</span>`:`<button class="ev-shr" data-evshr="${e.id}" aria-label="Share @${esc(e.author.username)}'s piece">${DI.out}</button>`}
     <div class="ev-by" data-u="${esc(e.author.username)}">@${esc(e.author.username)}</div></div>`;
@@ -108,7 +108,11 @@ function evSubmitHTML(){
 }
 
 /* The reason you can't vote, and the one that's yours to fix gets a button (2026-10-28: a profile photo). */
-const evBlockHTML=b=>esc(b)+(/profile photo/i.test(b)?` <button class="btn ghost ev-fix" id="evaddphoto">Add a photo</button>`:"");
+const evBlockHTML=b=>EV.me.wait!=null?`${evRing(EV.me.wait)} <b>You can vote soon.</b> New accounts spend a little time in the app first. <button class="btn ghost ev-fix" id="evseeall">While you wait: see all the pieces</button>`   // 2026-11-15: the wait, shown — nothing is held
+  :esc(b)+(/profile photo/i.test(b)?` <button class="btn ghost ev-fix" id="evaddphoto">Add a photo</button>`:/confirm your email/i.test(b)?` <button class="btn ghost ev-fix" id="evresend">Send it again</button>`:"");
+/* The ring on a waiting vote: how far through the wait, a share of the circle (r 8 → 50.27 round). */
+const evRingDash=p=>(Math.max(0,Math.min(1,p))*50.27).toFixed(1)+" 50.27";
+const evRing=p=>`<svg class="ev-ring" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8"/><circle class="fg" cx="10" cy="10" r="8" stroke-dasharray="${evRingDash(p)}" transform="rotate(-90 10 10)"/></svg>`;
 function evQualifyHTML(){
   const me=EV.me, left=EV.event.picks-me.myVotes.length;
   return `<div class="ev-note">${me.voteBlock?evBlockHTML(me.voteBlock):`Pick your favourites — <b>${left} of ${EV.event.picks}</b> picks left. Counts stay hidden until voting closes.`}</div>
@@ -144,9 +148,9 @@ function evResultsHTML(){
   const R=EV.results;if(!R||!R.winner)return `<div class="ev-note">No winner this time.</div>`;
   const w=evById(R.winner);
   return `<div class="ev-win">${evThumb(w,{big:true})}<div class="ev-eye"><b>//</b> Winner</div>
-      <h2>${esc(w?w.author.displayName:"")}</h2></div>
-    <div class="ev-sec"><h3>The final</h3>${R.ranking.map((r,i)=>{const e=evById(r.entryId);return e?`<div class="ev-rank">
-      <span class="ev-n">${i+1}</span>${evThumb(e)}<div><b>${esc(e.author.displayName)}</b>
+      <h2${w?` data-u="${esc(w.author.username)}"`:""}>${esc(w?w.author.displayName:"")}</h2></div>
+    <div class="ev-sec"><h3>The final</h3>${R.ranking.map((r,i)=>{const e=evById(r.entryId);return e?`<div class="ev-rank" data-evpost="${e.postId}">
+      <span class="ev-n">${i+1}</span>${evThumb(e)}<div><b data-u="${esc(e.author.username)}">${esc(e.author.displayName)}</b>
       <div class="dim ev-small">${EV.event.judgeWeight?`Judges ${r.judgePct}% · Votes ${r.votePct}% · Score ${r.score}`:`${r.votePct}% of the votes`}</div></div></div>`:""}).join("")}</div>
     ${evBracketHTML()}`;
 }

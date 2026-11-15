@@ -267,7 +267,7 @@ async function refreshBadges(){
   if(!ME)return;
   if(!ME.emailVerified){
     try{const st=await api.authStatus();
-      if(st.verified){await refreshMe();toast("Email confirmed — you're in");paintVerifyBar()}
+      if(st.verified){await refreshMe();toast("Email confirmed — you're in");paintVerifyBar();if(TAB==="event"&&EV)loadEvent()}   // the tournament stops saying "Confirm your email" (2026-11-15)
     }catch(e){}
   }
   try{const [n,d]=await Promise.all([api.notifs(),api.dmList()]);
