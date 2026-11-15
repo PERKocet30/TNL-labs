@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · sign-in  v1.4 — 2026-11-14 ("Gemini should have the same access as Claude or Grok": the Gemini app signs in the way they do, with one difference — Google's callback host is shared by every app built on its platform, so it is not trusted wholesale: the owner opens the door for ten minutes in Admin → Systems, the first Gemini address to register in that window is pinned, and only pinned addresses are accepted after. Gemini's refresh key isn't swapped on renewal, as Google asks.) · v1.3 — 2026-11-04 (v1.3: a tournament's spam check is readable; ui-signals/tools.js adds its paths) · v1.2 — 2026-10-28 (v1.2: a pasted key for apps that take a key instead of signing in — Manus; owner only, shown once, 90 days, same read-only reach) · v1.1 — 2026-10-27 (v1.1: a key only works from /mcp itself; the allow page escapes its data and can't be framed)
+   LABS CONNECTOR · sign-in  v1.5 — 2026-11-15 (the real Gemini, from Developer Mode, was turned away at registration although its address — oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-… — has the right shape: a registration is now read whatever label its body carries, a Gemini registration keeps its Google addresses and leaves any other it sent, and a refused one says why in the server log and in Admin → Systems, so the next surprise is visible at once) · v1.4 — 2026-11-14 ("Gemini should have the same access as Claude or Grok": the Gemini app signs in the way they do, with one difference — Google's callback host is shared by every app built on its platform, so it is not trusted wholesale: the owner opens the door for ten minutes in Admin → Systems, the first Gemini address to register in that window is pinned, and only pinned addresses are accepted after. Gemini's refresh key isn't swapped on renewal, as Google asks.) · v1.3 — 2026-11-04 (v1.3: a tournament's spam check is readable; ui-signals/tools.js adds its paths) · v1.2 — 2026-10-28 (v1.2: a pasted key for apps that take a key instead of signing in — Manus; owner only, shown once, 90 days, same read-only reach) · v1.1 — 2026-10-27 (v1.1: a key only works from /mcp itself; the allow page escapes its data and can't be framed)
    Claude (and any other MCP client) reads the admin dashboard through
    /mcp (server/connector/tools.js). This part is the key cabinet:
 
@@ -138,14 +138,37 @@ app.get(["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-
 });
 
 /* ---- dynamic client registration ---- */
-app.post("/oauth/register", mcpLimit, (req, res) => {
-  const b = req.body || {};
-  const uris = Array.isArray(b.redirect_uris) ? b.redirect_uris.map(String).slice(0, 5) : [];
+/* Why the last registration was refused (2026-11-15): the addresses it brought and the reason — the server log and Admin → Systems show it.
+   Callback addresses aren't secrets; nothing else from the request is kept. */
+let MCP_LAST_REFUSAL = null;
+function mcpRefuse(res, uris, why, desc) {
+  MCP_LAST_REFUSAL = { at: Date.now(), why, uris: uris.map((u) => String(u).slice(0, 200)).slice(0, 5) };
+  console.log(`[connector] registration refused (${why}): ${JSON.stringify(MCP_LAST_REFUSAL.uris)}`);
+  return res.status(400).json({ error: "invalid_redirect_uri", error_description: desc });
+}
+/* A registration's body, whatever label it carries: Gemini's sign-in library may send JSON without saying so, or a form. */
+const mcpRegBody = express.text({ type: (req) => !/json/i.test(req.get("content-type") || ""), limit: "20kb" });
+function mcpRegParse(req) {
+  if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
+  const raw = String(req.body || "").trim();
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch (e) {}
+  const f = new URLSearchParams(raw), out = {};
+  for (const k of new Set(f.keys())) out[k] = k === "redirect_uris" ? f.getAll(k) : f.get(k);
+  return out;
+}
+app.post("/oauth/register", mcpLimit, mcpRegBody, (req, res) => {
+  const b = mcpRegParse(req);
+  const sent = Array.isArray(b.redirect_uris) ? b.redirect_uris.map(String).slice(0, 5) : typeof b.redirect_uris === "string" ? [b.redirect_uris] : [];
+  /* Gemini (2026-11-15): if it brings a Google address, those are what it's registered with — any other it sent alongside is left out, never trusted */
+  const gem = sent.filter(mcpGeminiShape), uris = gem.length ? gem : sent;
+  if (!sent.length) return mcpRefuse(res, sent, "no addresses", "No callback address was sent.");
+  if (gem.length && sent.some(mcpRedirectOk)) return mcpRefuse(res, sent, "two apps", "One app per registration.");   // a Google address can't ride in beside Claude's or Grok's
   /* Gemini: every address its shape, and either all pinned already, or the door is open — then they're pinned and the door shuts (one connection a door) */
-  if (uris.length && uris.every(mcpGeminiShape)) {
+  if (gem.length) {
     const door = mcpGeminiDoor();
     if (!uris.every(mcpGeminiPinned)) {
-      if (!door) return res.status(400).json({ error: "invalid_redirect_uri", error_description: "Gemini isn't expected right now. In LABS: Admin → Systems → Connected apps → Add LABS to Gemini, then connect within ten minutes." });
+      if (!door) return mcpRefuse(res, sent, "door closed", "Gemini isn't expected right now. In LABS: Admin → Systems → Connected apps → Add LABS to Gemini, then connect within ten minutes.");
       for (const u of uris) db.prepare(`INSERT INTO mcp_gemini (uri, pinned_by, pinned_at) VALUES (?,?,?) ON CONFLICT(uri) DO UPDATE SET pinned_by = excluded.pinned_by, pinned_at = excluded.pinned_at`).run(u, door.opened_by, Date.now());
       db.prepare(`DELETE FROM mcp_door WHERE app = 'gemini'`).run();
       try { db.prepare(`INSERT INTO admin_log (admin_id, action, target, detail, created_at) VALUES (?,?,?,?,?)`).run(door.opened_by, "connector gemini pinned", "Gemini", JSON.stringify({ addresses: uris.length }), Date.now()); } catch {}
@@ -154,9 +177,9 @@ app.post("/oauth/register", mcpLimit, (req, res) => {
     db.prepare(`INSERT INTO mcp_clients (id, name, redirect_uris, created_at) VALUES (?,?,?,?)`).run(gid, "Gemini", JSON.stringify(uris), Date.now());
     return res.status(201).json({ client_id: gid, client_name: "Gemini", redirect_uris: uris, token_endpoint_auth_method: "none", grant_types: ["authorization_code", "refresh_token"], response_types: ["code"] });
   }
-  if (!uris.length || !uris.every(mcpRedirectOk)) return res.status(400).json({ error: "invalid_redirect_uri", error_description: "Only Claude's or Grok's callback is accepted — or Gemini's, once Admin → Systems has opened the door for it." });
+  if (!uris.every(mcpRedirectOk)) return mcpRefuse(res, sent, "unknown address", "Only Claude's or Grok's callback is accepted — or Gemini's, once Admin → Systems has opened the door for it.");
   const apps = new Set(uris.map(mcpAppFor));
-  if (apps.size > 1) return res.status(400).json({ error: "invalid_redirect_uri", error_description: "One app per registration." });
+  if (apps.size > 1) return mcpRefuse(res, sent, "two apps", "One app per registration.");
   const id = mcpRandom("labs_client_");
   const name = [...apps][0];   // Claude or Grok, from the callback — not from client_name
   db.prepare(`INSERT INTO mcp_clients (id, name, redirect_uris, created_at) VALUES (?,?,?,?)`).run(id, name, JSON.stringify(uris), Date.now());
@@ -249,7 +272,7 @@ app.get("/api/admin/connectors", auth, admin, (req, res) => {
   const rows = db.prepare(`SELECT t.id, t.name, t.client_id, t.created_at, t.expires_at, t.last_used_at, t.calls, u.username FROM mcp_tokens t JOIN users u ON u.id = t.user_id
     WHERE t.revoked = 0 AND t.expires_at > ? ORDER BY t.created_at DESC LIMIT 20`).all(Date.now());
   const door = mcpGeminiDoor();
-  res.json({ url: baseUrl(req) + "/mcp", gemini: { openUntil: door ? door.until : null, pinned: db.prepare(`SELECT COUNT(*) n FROM mcp_gemini WHERE approved = 1`).get().n }, keys: rows.map((r) => ({ id: r.id, name: r.name, by: r.username, pasted: r.client_id === "pasted", createdAt: r.created_at, expiresAt: r.expires_at, lastUsedAt: r.last_used_at, calls: r.calls })) });
+  res.json({ url: baseUrl(req) + "/mcp", lastRefusal: MCP_LAST_REFUSAL && Date.now() - MCP_LAST_REFUSAL.at < 86400000 ? MCP_LAST_REFUSAL : null, gemini: { openUntil: door ? door.until : null, pinned: db.prepare(`SELECT COUNT(*) n FROM mcp_gemini WHERE approved = 1`).get().n }, keys: rows.map((r) => ({ id: r.id, name: r.name, by: r.username, pasted: r.client_id === "pasted", createdAt: r.created_at, expiresAt: r.expires_at, lastUsedAt: r.last_used_at, calls: r.calls })) });
 });
 /* A pasted key (2026-10-28, "help me connect to Manus"): some apps take a server
    address and a key in a header instead of signing in. Owner only (not in
