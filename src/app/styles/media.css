@@ -288,3 +288,19 @@ video.vfill{object-fit:cover}
 .gx-mail svg{width:48px;height:48px}
 .caro-vw{position:relative;cursor:default}
 .caro-v{width:100%;height:100%;object-fit:contain;display:block;background:var(--el)}
+
+/* 2026-11-15: an opened post leads on (app/posts/post-next) — its lab, More from @artist, Next piece */
+.po-next{padding:8px 16px 24px;display:flex;flex-direction:column;gap:14px;border-top:1px solid var(--line)}
+.po-lab{display:flex;align-items:center;gap:8px;width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:var(--rad);background:var(--bg);color:var(--tx);font:inherit;font-size:15px;font-weight:700;cursor:pointer;text-align:left}
+.po-lab .lg{color:var(--accent-fill);font-style:normal}
+.po-lab .dim{margin-left:auto;font-weight:400;font-size:13px}
+.po-moreh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.po-see{border:0;background:none;color:var(--dim);font:inherit;font-size:13px;cursor:pointer;padding:6px 0}
+.po-more{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.po-mt{display:block;aspect-ratio:1/1;padding:0;border:0;background:var(--el);overflow:hidden;cursor:pointer}
+.po-mt img{width:100%;height:100%;object-fit:cover;display:block}
+.po-nx{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--rad);background:var(--bg);color:var(--tx);font:inherit;cursor:pointer;text-align:left}
+.po-nx img{width:48px;height:48px;object-fit:cover;border-radius:var(--rad-s);flex:none;background:var(--el)}
+.po-nx>span{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.po-nx .dim{font-size:13px}
+.po-more .sk-img{aspect-ratio:1/1;margin:0}

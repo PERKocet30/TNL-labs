@@ -270,7 +270,7 @@ function postOpenHTML(){
       <button class="po-x" id="poclose" aria-label="Close"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
       <div class="po-ttl">Post</div><span class="po-sp"></span>
     </header>
-    <div class="po-body">${(CSLOTPO=true,postHTML(p))}${(CSLOTPO=false,"")}</div>
+    <div class="po-body">${(CSLOTPO=true,postHTML(p))}${(CSLOTPO=false,"")}${poNextHTML(p)}</div>
   </div>`;
 }
 /* Any post currently in memory, wherever it came from. */
@@ -363,6 +363,7 @@ function wireMusAuto(){
 function wirePostOpen(){
   const ov=$("#poov");if(!ov)return;
   const x=$("#poclose");if(x)x.onclick=()=>{POSTOPEN=null;OPENCOMMENTS=null;render()};
+  poWire();   // its lab, More from @artist, Next piece (app/posts/post-next, 2026-11-15)
 }
 
 /* Name + cover, owner only. The server already scopes PATCH /api/tracks/:id to

@@ -368,6 +368,41 @@ console.log("\nMEMBER · PHONE");
     ok(await p.evaluate(() => document.getElementById("showroom").scrollTop) === top, "share threw the feed to the top");
     await p.evaluate(() => closePicker()); await p.waitForTimeout(200);
   });
+  /* 2026-11-15, the fix list's number 3: "every piece leads on" — opened posts were backed out of almost every time */
+  await step(d, "an opened post leads on: its lab opens the lab, More from @artist opens their work, Next piece and a sideways swipe go to the next piece, the swipe back returns", async () => {
+    const at = await p.evaluate(() => { const i = SRPOSTS.findIndex((q, k) => k < SRPOSTS.length - 1 && !q.pending); openPost(SRPOSTS[i]); return i; });
+    await p.waitForSelector("#ponext .po-nx", { timeout: 5000 });
+    const ids = await p.evaluate((i) => [SRPOSTS[i].id, SRPOSTS[i + 1].id], at);
+    ok(/Next piece/.test(await p.locator("#ponext .po-nx").innerText()), "an opened post has no Next piece");
+    await p.locator("#ponext .po-nx").tap();
+    await p.waitForFunction((id) => POSTOPEN && POSTOPEN.id === id, ids[1], { timeout: 4000 });
+    ok(await p.evaluate(() => document.querySelector("#poov .po-body").scrollTop) === 0, "the next piece didn't open at its top");
+    // a sideways swipe on the post (not its carousel): right goes back, left goes on
+    const swipe = (dx) => p.evaluate((dx) => { const b = document.querySelector("#poov .po-body"), el = b.querySelector(".post-h") || b, r = el.getBoundingClientRect(), y = r.top + r.height / 2, x0 = innerWidth / 2;
+      const t = (x) => new Touch({ identifier: 1, target: el, clientX: x, clientY: y });
+      el.dispatchEvent(new TouchEvent("touchstart", { bubbles: true, touches: [t(x0)], changedTouches: [t(x0)] }));
+      el.dispatchEvent(new TouchEvent("touchend", { bubbles: true, touches: [], changedTouches: [t(x0 + dx)] })); }, dx);
+    await swipe(160);
+    await p.waitForFunction((id) => POSTOPEN && POSTOPEN.id === id, ids[0], { timeout: 4000 });
+    await swipe(-160);
+    await p.waitForFunction((id) => POSTOPEN && POSTOPEN.id === id, ids[1], { timeout: 4000 });
+    // More from @artist: their other work, three across; a tap opens it here
+    const who = await p.evaluate(() => POSTOPEN.author.username);
+    await p.waitForFunction(() => document.querySelector("#ponext .po-more .po-mt img") || (POMORE[POSTOPEN.author.username] || []).filter((q) => q.id !== POSTOPEN.id && (q.imageUrl || (q.images || []).length)).length === 0, null, { timeout: 6000 });
+    if (await p.locator("#ponext .po-more [data-popen]").count()) {
+      ok(new RegExp("More from @" + who).test(await p.locator("#ponext").innerText()), "More from @artist isn't named");
+      const other = await p.locator("#ponext .po-more [data-popen]").first().getAttribute("data-popen");
+      await p.locator("#ponext .po-more [data-popen]").first().tap();
+      await p.waitForFunction((id) => POSTOPEN && String(POSTOPEN.id) === id, other, { timeout: 4000 });
+    }
+    // the lab: a post in a lab says which, and one tap goes in
+    const lp = await p.evaluate(() => { const q = SRPOSTS.find((x) => x.channel && x.channel !== "profile" && labOfCh(x.channel)); if (q) openPost(q); return q ? labOfCh(q.channel).id : null; });
+    ok(lp, "no Showroom post in a lab to test with");
+    await p.waitForSelector("#ponext [data-polab]", { timeout: 4000 });
+    await p.locator("#ponext [data-polab]").tap();
+    await p.waitForFunction((id) => !POSTOPEN && TAB === "labs" && LAB && LAB.id === id, lp, { timeout: 5000 });
+    await p.evaluate(() => { TAB = "showroom"; LAB = null; render(); }); await p.waitForTimeout(300);
+  });
   await step(d, "share from an opened post: menu on top, Into a lab works", async () => {
     await p.evaluate(() => openPost(SRPOSTS[1])); await p.waitForSelector(".po-ov [data-share]");
     await p.locator(".po-ov [data-share]").first().tap(); await p.waitForTimeout(300);
