@@ -1,5 +1,8 @@
 /* ================================================================
-   THE WEEKLY REMINDER v1.1 — 2026-11-09 (does it work? — reminded: members
+   THE WEEKLY REMINDER v1.2 — 2026-11-15 (the fix list's number 4: "the reminder email goes down to one, on day 2,
+   for people who've never posted; the four-email run stays for people who have" — 673 had gone out and 16 came
+   back. A member with no piece yet gets ONE, from their second day (NUDGE_NEVER_MAX 1, NUDGE_NEVER_AGE_DAYS 2); a
+   member who has posted keeps the weekly run below). v1.1 — 2026-11-09 (does it work? — reminded: members
    who got one; cameBack: the ones seen in the app since their last one).
    v1.0 — 2026-10-23. "An update that automatically
    sends you emails to finish making your account: no profile pic, it
@@ -39,10 +42,15 @@ const REMIND_MAX = Math.max(1, Number(process.env.NUDGE_MAX) || 4);
 const REMIND_PER_DAY = Math.max(1, Number(process.env.NUDGE_PER_DAY) || 40);
 const REMIND_GAP_MS = Math.max(0, Number(process.env.NUDGE_GAP_MS ?? 250));
 const REMIND_TICK_MS = Math.max(200, Number(process.env.NUDGE_TICK_MS) || 600000);
+/* Never posted (2026-11-15): one reminder, from day 2 — not the weekly run. */
+const REMIND_NEVER_AGE_MS = Math.max(0, Number(process.env.NUDGE_NEVER_AGE_MS ?? Number(process.env.NUDGE_NEVER_AGE_DAYS || 2) * 86400000));
+const REMIND_NEVER_MAX = Math.max(1, Number(process.env.NUDGE_NEVER_MAX) || 1);
+const REMIND_POSTED = `EXISTS (SELECT 1 FROM posts p WHERE p.author_id = u.id AND p.is_work = 1)`;
 const REMIND_WHO = `FROM users u LEFT JOIN nudge_mail n ON n.user_id = u.id
-  WHERE u.email_verified = 1 AND u.suspended = 0 AND u.mail_off = 0 AND u.email LIKE '%_@_%' AND u.created_at <= ?
-    AND COALESCE(n.sent, 0) < ? AND (n.last_at IS NULL OR n.last_at <= ?)`;
-const nudgeWhoArgs = (now = Date.now()) => [now - REMIND_MIN_AGE_MS, REMIND_MAX, now - REMIND_EVERY_MS];
+  WHERE u.email_verified = 1 AND u.suspended = 0 AND u.mail_off = 0 AND u.email LIKE '%_@_%'
+    AND u.created_at <= CASE WHEN ${REMIND_POSTED} THEN ? ELSE ? END
+    AND COALESCE(n.sent, 0) < CASE WHEN ${REMIND_POSTED} THEN ? ELSE ? END AND (n.last_at IS NULL OR n.last_at <= ?)`;
+const nudgeWhoArgs = (now = Date.now()) => [now - REMIND_MIN_AGE_MS, now - REMIND_NEVER_AGE_MS, REMIND_MAX, REMIND_NEVER_MAX, now - REMIND_EVERY_MS];
 const nudgeDayStart = (now = Date.now()) => now - (now % 86400000);   // Resend's day ends at midnight UTC
 const nudgeSentToday = (now = Date.now()) => db.prepare(`SELECT COUNT(*) n FROM nudge_mail WHERE last_at >= ? AND last_items != ''`).get(nudgeDayStart(now)).n;   // real sends; a page marked done isn't one
 const REMIND_MUSIC = new Set(["Producer", "Beatmaker", "Lyricist / Singer", "Rapper", "DJ", "Audio Engineer", "Musician"]);
@@ -118,6 +126,7 @@ app.get("/api/admin/nudge", auth, admin, (req, res) => {
   res.json({
     on: settingBool("nudgeMail"), ready: nudgeReady(), mailOn: MAIL_ENABLED, testSender: MAIL_TEST_SENDER,
     everyDays: Math.round(REMIND_EVERY_MS / 86400000), max: REMIND_MAX, perDay: REMIND_PER_DAY,
+    neverPosted: { max: REMIND_NEVER_MAX, fromDay: Math.round(REMIND_NEVER_AGE_MS / 86400000) },   // 2026-11-15
     due: db.prepare(`SELECT COUNT(*) n ${REMIND_WHO}`).get(...nudgeWhoArgs(now)).n,
     sentToday: nudgeSentToday(now), sentWeek: db.prepare(`SELECT COUNT(*) n FROM nudge_mail WHERE last_at >= ? AND last_items != ''`).get(now - 7 * 86400000).n,
     sentTotal: db.prepare(`SELECT COALESCE(SUM(sent), 0) n FROM nudge_mail WHERE last_items != ''`).get().n,
