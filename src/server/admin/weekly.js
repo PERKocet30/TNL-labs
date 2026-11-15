@@ -101,7 +101,11 @@ function weeklyApp(now) {
 }
 
 /* Reach, from the Systems readers — each only when its key is set, each failure one line. */
-async function weeklyReach() {
+/* 2026-11-15 (the audit): the dashboard asked Google and Meta afresh on every open — 2.9s each time, the slowest route
+   in the app. The answer is kept ten minutes; the Monday email still asks afresh. */
+const WK_REACH = { at: 0, body: null };
+async function weeklyReach(fresh = false) {
+  if (!fresh && WK_REACH.body && Date.now() - WK_REACH.at < 600000) return WK_REACH.body;
   const out = { google: null, meta: null };
   try {
     const key = typeof ggKey === "function" ? ggKey() : null;
@@ -113,6 +117,7 @@ async function weeklyReach() {
       const [ig, fb, shop] = await Promise.all([mtInstagram(who.ig).catch((e) => ({ error: e.message })), mtFacebook(who.page).catch((e) => ({ error: e.message })), MT.catalog() ? mtShop(MT.catalog()).catch((e) => ({ error: e.message })) : null]);
       out.meta = { instagram: ig, facebook: fb, shop, todo: mtTodo(ig, fb, shop) }; }
   } catch (e) { out.meta = { error: String(e.message || "").slice(0, 120) }; }
+  WK_REACH.at = Date.now(); WK_REACH.body = out;
   return out;
 }
 
@@ -183,8 +188,8 @@ function weeklyLines(A, R) {
   return L;
 }
 
-async function weeklyReport(now = Date.now()) {
-  const A = weeklyApp(now), R = await weeklyReach();
+async function weeklyReport(now = Date.now(), fresh = false) {
+  const A = weeklyApp(now), R = await weeklyReach(fresh);
   const lines = weeklyLines(A, R);
   const subject = `LABS this week: ${A.joined[0]} joined · ${A.posts[0]} posts · ${A.sales[0]} sale${A.sales[0] === 1 ? "" : "s"}`;
   return { at: now, subject, lines, week: { from: new Date(now - WK).toISOString().slice(0, 10), to: new Date(now).toISOString().slice(0, 10) } };
@@ -203,7 +208,7 @@ async function weeklyTick(now) {
   const monday = d.getUTCDay() === 1 && d.getUTCHours() >= 13, due = !prev || (monday && now - prev.last_at > 6 * 86400000);
   if (!due || !weeklyTo()) return false;
   db.prepare(`INSERT INTO alert_log (rule, last_at) VALUES ('weekly', ?) ON CONFLICT(rule) DO UPDATE SET last_at = excluded.last_at`).run(now);
-  await weeklySend(weeklyTo(), await weeklyReport(now));
+  await weeklySend(weeklyTo(), await weeklyReport(now, true));   // the email: asked afresh
   return true;
 }
 if (weeklyTo() && !process.env.TNL_NO_WATCH) {
