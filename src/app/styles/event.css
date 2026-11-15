@@ -1,3 +1,4 @@
+/* v2026-11-14: Sending (design language v2.2) — a Vote on its way is a raised pill that says so; Vote, Voted and Sending are one width, so nothing beside them moves. */
 /* v2026-10-20: the tournament's top is the kit's head (.ev>.sh in app/styles/kit.css) */
 /* EVENTS v1.2 — 2026-10-12 (v1.2: the ‹ back bar, held at the top as you scroll; Invite people).
    EVENTS v1.1 — 2026-10-07. The tournament screen, the Showroom banner,
@@ -100,10 +101,10 @@
 .ev-rwho .dim{font-size:13px;line-height:17px;font-variant-numeric:tabular-nums}
 .ev-mv{margin-left:4px;font-weight:700;color:var(--dim)}
 .ev-mv.up{color:var(--tx)}
-.ev-vote{display:inline-flex;align-items:center;gap:4px;min-width:76px;justify-content:center;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--tx);background:transparent;color:var(--tx);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.ev-vote{display:inline-flex;align-items:center;gap:4px;min-width:88px;justify-content:center;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--tx);background:transparent;color:var(--tx);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
 .ev-vote svg{width:14px;height:14px}
 .ev-vote.on{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
-.ev-vote.busy{opacity:.5}
+.ev-vote.busy,.ev-vote.on.busy{background:var(--el);border-color:var(--el);color:var(--dim);cursor:default}
 .ev-vote.spent{opacity:.35}
 .ev-vote.soon{border-color:var(--line);color:var(--dim);white-space:nowrap}
 .ev-row[data-evpost],.ev-rank[data-evpost],.ev-win h2[data-u],.ev-rank b[data-u]{cursor:pointer}
