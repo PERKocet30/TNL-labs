@@ -225,6 +225,29 @@ try {
   const glog = ((await (await call("/api/admin/log", { token: "tok-boss" })).json()).log || []).map((l) => l.action);
   t("opening the door, the pin and forgetting are all in the admin log", ["connector gemini door opened", "connector gemini pinned", "connector gemini forgotten"].every((x) => glog.includes(x)));
   const src = (await import("node:fs")).readFileSync(join(ROOT, "src/server/connector/oauth.js"), "utf8");
+  /* 2026-11-15: the real Gemini (Developer Mode) was refused at registration, though its address had the right shape */
+  {
+    const REAL = "https://oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-6978a8449242beed27fdeec2";
+    const raw = (body, type) => fetch(B + "/oauth/register", { method: "POST", headers: { "CF-Connecting-IP": "203.0.113.9", ...(type ? { "Content-Type": type } : {}) }, body });   // a visitor of its own: the registration door allows 30 tries in ten minutes, and the blocks above used this suite's share
+    const r0 = await raw(JSON.stringify({ redirect_uris: [REAL] }), "text/plain");
+    const why0 = (await (await call("/api/admin/connectors", { token: "tok-boss" })).json()).lastRefusal;
+    t("a registration whose body isn't labelled JSON is still read — with the door shut it's refused for the door, not for 'unknown address'", r0.status === 400 && why0 && why0.why === "door closed" && why0.uris[0] === REAL);
+    t("…and Admin → Systems shows when, why and the address it brought; the server log says so too", !!why0.at && /registration refused \(door closed\)/.test(log));
+    await call("/api/admin/connectors/gemini/open", { method: "POST", token: "tok-boss" });
+    const r1 = await raw(JSON.stringify({ client_name: "Gemini", redirect_uris: [REAL, "https://gemini.google.com/some/other/callback"], grant_types: ["authorization_code", "refresh_token"] }), "text/plain;charset=UTF-8");
+    const j1 = await r1.json();
+    t("the real Gemini's address, unlabelled body and a second address beside it: let in, with only its Google address kept", r1.status === 201 && j1.client_name === "Gemini" && JSON.stringify(j1.redirect_uris) === JSON.stringify([REAL]));
+    const v = "q".repeat(60), ch = createHash("sha256").update(v).digest("base64url");
+    t("…the address it left out can't be used to get a code", (await call(`/oauth/authorize?client_id=${j1.client_id}&redirect_uri=${encodeURIComponent("https://gemini.google.com/some/other/callback")}&state=s&code_challenge=${ch}&code_challenge_method=S256&response_type=code`)).status === 400);
+    const ap = await (await call("/oauth/approve", { method: "POST", token: "tok-boss", body: { client_id: j1.client_id, redirect_uri: REAL, state: "s", code_challenge: ch } })).json();
+    const tk = await (await call("/oauth/token", { method: "POST", form: true, body: { grant_type: "authorization_code", code: new URL(ap.redirect).searchParams.get("code"), client_id: j1.client_id, redirect_uri: REAL, code_verifier: v } })).json();
+    t("…and the whole way through: allowed, a key, reading works", /^labs_mcp_/.test(tk.access_token || "") && (await call("/mcp", { method: "POST", token: tk.access_token, body: { jsonrpc: "2.0", id: 1, method: "ping" } })).status === 200);
+    t("a form-encoded registration is read too (and still needs the door)", (await raw("redirect_uris=" + encodeURIComponent("https://oauth-redirect.googleusercontent.com/r/another-project"), "application/x-www-form-urlencoded")).status === 400
+      && (await (await call("/api/admin/connectors", { token: "tok-boss" })).json()).lastRefusal.why === "door closed");
+    t("a registration with no address at all is refused, and says so", (await raw("{}", "application/json")).status === 400 && (await (await call("/api/admin/connectors", { token: "tok-boss" })).json()).lastRefusal.why === "no addresses");
+    t("a stranger's address next to Claude's is still refused: only Google addresses get the leave-the-rest treatment", (await raw(JSON.stringify({ redirect_uris: [CB, "https://evil.example/cb"] }), "application/json")).status === 400);
+    await call("/api/admin/connectors/gemini", { method: "DELETE", token: "tok-boss" });
+  }
   t("Claude and Grok are untouched by all of it: their callbacks are still matched exactly, and their refresh keys still swapped", src.includes('["claude.ai", "claude.com"].includes(x.hostname) && x.pathname === "/api/mcp/auth_callback"') && src.includes('const MCP_GROK = new Set(["https://grok.com/connectors-oauth-exchange-code/", "https://grok.com/connectors/oauth/callback"]);')
     && /if \(old\.name === "Gemini"\) \{[\s\S]{0,600}?\}\n    db\.prepare\(`UPDATE mcp_tokens SET revoked = 1 WHERE id = \?`\)\.run\(old\.id\);\n    return res\.json\(mcpIssue\(old\.user_id, old\.client_id, old\.name\)\);/.test(src));
   t("the address's shape is strict: one segment under /r/ or /a/, no port, no name, no query — whatever the door says", ["https://oauth-redirect.googleusercontent.com:8443/r/abc", "https://oauth-redirect.googleusercontent.com/r/a/b", "https://evil.example/r/abc", "https://oauth-redirect.googleusercontent.com/r/", "https://oauth-redirect.googleusercontent.com/r/abc#x"]
