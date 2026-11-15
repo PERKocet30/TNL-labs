@@ -241,6 +241,11 @@ try {
     t("…the address it left out can't be used to get a code", (await call(`/oauth/authorize?client_id=${j1.client_id}&redirect_uri=${encodeURIComponent("https://gemini.google.com/some/other/callback")}&state=s&code_challenge=${ch}&code_challenge_method=S256&response_type=code`)).status === 400);
     const ap = await (await call("/oauth/approve", { method: "POST", token: "tok-boss", body: { client_id: j1.client_id, redirect_uri: REAL, state: "s", code_challenge: ch } })).json();
     const tk = await (await call("/oauth/token", { method: "POST", form: true, body: { grant_type: "authorization_code", code: new URL(ap.redirect).searchParams.get("code"), client_id: j1.client_id, redirect_uri: REAL, code_verifier: v } })).json();
+    /* 2026-11-15: right after Allow, Google stopped with "Ciphertext HMAC does not verify" — LABS had cut its state to 500 characters */
+    const longState = "AbC-_" + "x9".repeat(900) + "~end";   // ~1,800 characters, as Google's encrypted state is
+    const page = await (await call(`/oauth/authorize?client_id=${j1.client_id}&redirect_uri=${encodeURIComponent(REAL)}&state=${encodeURIComponent(longState)}&code_challenge=${ch}&code_challenge_method=S256&response_type=code`)).text();
+    const apL = await (await call("/oauth/approve", { method: "POST", token: "tok-boss", body: { client_id: j1.client_id, redirect_uri: REAL, state: longState, code_challenge: ch } })).json();
+    t("a long state goes back to the app exactly as it came — through the allow page and the approval", page.includes(longState) && new URL(apL.redirect).searchParams.get("state") === longState);
     t("…and the whole way through: allowed, a key, reading works", /^labs_mcp_/.test(tk.access_token || "") && (await call("/mcp", { method: "POST", token: tk.access_token, body: { jsonrpc: "2.0", id: 1, method: "ping" } })).status === 200);
     t("a form-encoded registration is read too (and still needs the door)", (await raw("redirect_uris=" + encodeURIComponent("https://oauth-redirect.googleusercontent.com/r/another-project"), "application/x-www-form-urlencoded")).status === 400
       && (await (await call("/api/admin/connectors", { token: "tok-boss" })).json()).lastRefusal.why === "door closed");

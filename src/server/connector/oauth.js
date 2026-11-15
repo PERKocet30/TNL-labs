@@ -1,5 +1,5 @@
 /* ================================================================
-   LABS CONNECTOR · sign-in  v1.5 — 2026-11-15 (the real Gemini, from Developer Mode, was turned away at registration although its address — oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-… — has the right shape: a registration is now read whatever label its body carries, a Gemini registration keeps its Google addresses and leaves any other it sent, and a refused one says why in the server log and in Admin → Systems, so the next surprise is visible at once) · v1.4 — 2026-11-14 ("Gemini should have the same access as Claude or Grok": the Gemini app signs in the way they do, with one difference — Google's callback host is shared by every app built on its platform, so it is not trusted wholesale: the owner opens the door for ten minutes in Admin → Systems, the first Gemini address to register in that window is pinned, and only pinned addresses are accepted after. Gemini's refresh key isn't swapped on renewal, as Google asks.) · v1.3 — 2026-11-04 (v1.3: a tournament's spam check is readable; ui-signals/tools.js adds its paths) · v1.2 — 2026-10-28 (v1.2: a pasted key for apps that take a key instead of signing in — Manus; owner only, shown once, 90 days, same read-only reach) · v1.1 — 2026-10-27 (v1.1: a key only works from /mcp itself; the allow page escapes its data and can't be framed)
+   LABS CONNECTOR · sign-in  v1.6 — 2026-11-15 (the app's state comes back whole: it was cut to 500 characters, and Gemini's is an encrypted blob longer than that — Google couldn't check its own seal and stopped with "Ciphertext HMAC does not verify" right after Allow; now up to 4,000 characters, untouched) · v1.5 — 2026-11-15 (the real Gemini, from Developer Mode, was turned away at registration although its address — oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-… — has the right shape: a registration is now read whatever label its body carries, a Gemini registration keeps its Google addresses and leaves any other it sent, and a refused one says why in the server log and in Admin → Systems, so the next surprise is visible at once) · v1.4 — 2026-11-14 ("Gemini should have the same access as Claude or Grok": the Gemini app signs in the way they do, with one difference — Google's callback host is shared by every app built on its platform, so it is not trusted wholesale: the owner opens the door for ten minutes in Admin → Systems, the first Gemini address to register in that window is pinned, and only pinned addresses are accepted after. Gemini's refresh key isn't swapped on renewal, as Google asks.) · v1.3 — 2026-11-04 (v1.3: a tournament's spam check is readable; ui-signals/tools.js adds its paths) · v1.2 — 2026-10-28 (v1.2: a pasted key for apps that take a key instead of signing in — Manus; owner only, shown once, 90 days, same read-only reach) · v1.1 — 2026-10-27 (v1.1: a key only works from /mcp itself; the allow page escapes its data and can't be framed)
    Claude (and any other MCP client) reads the admin dashboard through
    /mcp (server/connector/tools.js). This part is the key cabinet:
 
@@ -76,6 +76,7 @@ const mcpRedirectOk = (u) => !!mcpAppFor(u);;
    15 minutes, is dropped when the door is opened again, and never becomes Gemini without the owner's tap. */
 db.exec(`CREATE TABLE IF NOT EXISTS mcp_gemini (uri TEXT PRIMARY KEY, pinned_by INTEGER, pinned_at INTEGER NOT NULL, approved INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS mcp_door (app TEXT PRIMARY KEY, until INTEGER NOT NULL, opened_by INTEGER)`);
+const MCP_STATE_MAX = 4000;   // an app's state goes back exactly as it came (Gemini's is an encrypted blob, far over 500 characters)
 const MCP_DOOR_MS = 10 * 60000, MCP_PIN_WAIT_MS = 15 * 60000;
 function mcpGeminiShape(u) {
   try { const x = new URL(String(u)); return x.protocol === "https:" && x.hostname === "oauth-redirect.googleusercontent.com" && !x.username && !x.password && !x.port && !x.search && !x.hash && /^\/(r|a)\/[A-Za-z0-9._~-]{1,200}$/.test(x.pathname); }
@@ -197,7 +198,7 @@ app.get("/oauth/authorize", mcpLimit, (req, res) => {
     response_type !== "code" ? "Only the code flow is supported." : code_challenge_method !== "S256" || !/^[A-Za-z0-9_-]{43,128}$/.test(String(code_challenge || "")) ? "PKCE (S256) is required." : "";
   if (bad) return res.status(400).send(lookPage({ title: "Can't connect — LABS", center: true, body: `${lookEyebrow("Connect")}<h1>Can't connect</h1><p class="p">${lookEsc(bad)}</p>` }));
   res.set("X-Frame-Options", "DENY"); res.set("Content-Security-Policy", "frame-ancestors 'none'");
-  const params = { client_id: String(client_id), redirect_uri: String(redirect_uri), state: String(state).slice(0, 500), code_challenge: String(code_challenge) };
+  const params = { client_id: String(client_id), redirect_uri: String(redirect_uri), state: String(state).slice(0, MCP_STATE_MAX), code_challenge: String(code_challenge) };
   res.send(lookPage({ title: "Connect — LABS", center: true, body: `${lookEyebrow("Connect")}
 <h1>Let ${lookEsc(client.name)} read the admin dashboard and write to Knowledge?</h1>
 <p class="p">Read only. Numbers, orders, reports, systems. Never messages, emails or anything that could expose a member. You can disconnect it any time in Admin → Systems.</p>
@@ -227,7 +228,7 @@ app.post("/oauth/approve", auth, admin, mcpLimit, (req, res) => {
   db.prepare(`DELETE FROM mcp_codes WHERE expires_at < ?`).run(Date.now());
   db.prepare(`INSERT INTO mcp_codes (code, client_id, user_id, redirect_uri, challenge, expires_at) VALUES (?,?,?,?,?,?)`)
     .run(code, client.id, req.user.id, String(redirect_uri), String(code_challenge), Date.now() + MCP_CODE_TTL);
-  const u = new URL(String(redirect_uri)); u.searchParams.set("code", code); if (state) u.searchParams.set("state", String(state).slice(0, 500));
+  const u = new URL(String(redirect_uri)); u.searchParams.set("code", code); if (state) u.searchParams.set("state", String(state).slice(0, MCP_STATE_MAX));
   res.json({ redirect: u.toString() });
 });
 
