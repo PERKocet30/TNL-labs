@@ -104,7 +104,7 @@ process.env.TNL_NO_WATCH = "1";
 const db2 = new (await import("node:sqlite")).DatabaseSync(join(DATA, "tnl.db"));
 const file = db2.prepare(`SELECT name FROM sqlite_master WHERE name = 'glitch_events'`).get();
 if (file) {
-  db2.prepare(`INSERT INTO glitch_events (kind, place, detail, device, username, created_at) VALUES ('rage_tap', 'post creator', 'button Post', 'phone', 'ana', ?), ('rage_tap', 'lab Music / songs', 'button Play', 'phone', 'ana', ?)`).run(now, now);
+  db2.prepare(`INSERT INTO glitch_events (kind, place, detail, device, username, created_at) VALUES ('rage_tap', 'post creator', 'button Post', 'phone', 'ana', ?), ('rage_tap', 'lab Music / songs', 'button Play', 'phone', 'ana', ?), ('rage_tap', 'constructor', 'x', 'phone', 'ana', ?)`).run(now, now, now);
 }
 db2.close();
 const srv2 = spawn(process.execPath, ["--experimental-sqlite", "--no-warnings", "src/server.runtime.js"], {
@@ -114,6 +114,7 @@ try {
   const r = await (await fetch(`http://localhost:${PORT + 1}/api/admin/ui/taps?days=7`, { headers: { Authorization: "Bearer tok-boss" } })).json();
   const sc = (r.rageTaps || []).map((x) => x.screen);
   t("a rage tap filed as \"post creator\" is read as compose; \"lab Music / songs\" as lab:culture/work", !!file && sc.includes("compose") && sc.includes("lab:culture/work"));
+  t("a made-up place stays the text it was, never something off the register's back", sc.includes("constructor") && sc.every((x) => typeof x === "string"));
 } finally { srv2.kill(); }
 
 console.log(`\n${pass} passed, ${fail} failed`);

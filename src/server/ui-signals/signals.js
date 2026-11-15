@@ -58,8 +58,8 @@ const SCREENS = {
 const SCREEN_WAS = { "post creator": "compose", "opened post": "post", "a profile": "profile" };
 const screenLabs = () => (typeof LAB_NAME === "undefined" ? {} : LAB_NAME);   // the labs' names (admin/pulse-labs.js)
 function screenId(place) {
-  const p = String(place || "").trim(), was = SCREEN_WAS[p.toLowerCase()];
-  if (was) return was;
+  const p = String(place || "").trim(), low = p.toLowerCase();   // a place is whatever the app sent: own keys only
+  if (Object.hasOwn(SCREEN_WAS, low)) return SCREEN_WAS[low];
   const lab = /^lab (.+?) \/ (.+)$/i.exec(p);
   const labId = lab && Object.keys(screenLabs()).find((id) => screenLabs()[id].toLowerCase() === lab[1].toLowerCase());
   if (labId) return `lab:${labId}/${/talk/i.test(lab[2]) ? "talk" : "work"}`;
@@ -67,8 +67,8 @@ function screenId(place) {
 }
 function screenName(id) {
   const s = screenId(id), lab = /^lab:([a-z]+)\/(work|talk)$/.exec(s);
-  if (lab && screenLabs()[lab[1]]) return `// ${screenLabs()[lab[1]]} · ${lab[2] === "talk" ? "Talk" : "Work"}`;
-  return SCREENS[s] || s;
+  if (lab && Object.hasOwn(screenLabs(), lab[1])) return `// ${screenLabs()[lab[1]]} · ${lab[2] === "talk" ? "Talk" : "Work"}`;
+  return Object.hasOwn(SCREENS, s) ? SCREENS[s] : s;
 }
 const UI_KINDS = ["view", "exit", "back", "tab", "tap", "double", "flow", "empty", "search_miss", "media_fail", "upload_fail", "feature", "profile"];
 const UI_WORDS = { tap: ["img", "name", "text", "card"], flow: ["start", "done", "abandon"], empty: ["left", "acted", "stayed"], media_fail: ["img", "audio", "video"], upload_fail: ["big", "type", "net"] };

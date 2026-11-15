@@ -1,4 +1,4 @@
-/* LABS admin ui.css v2.0 — 2026-10-20 (v2.0: the v4 shell — grouped sidebar, a bottom bar and More sheet on a phone, the page frame, line charts, breakdowns, funnel, number cards with a share line, table-or-cards). v1.2 — 2026-10-18 (v1.2: soft, not boxy — panels, cards,
+/* LABS admin ui.css v2.1 — 2026-11-15 (the search bar's results come in named groups: .gsec). v2.0 — 2026-10-20 (v2.0: the v4 shell — grouped sidebar, a bottom bar and More sheet on a phone, the page frame, line charts, breakdowns, funnel, number cards with a share line, table-or-cards). v1.2 — 2026-10-18 (v1.2: soft, not boxy — panels, cards,
    charts and boxes round like the app; see the end). v1.1 — 2026-10-14. The shell and the shared page pieces
    (the whole admin dashboard to one standard); loaded after
    admin.html's own styles. Colours only from /palette.css variables. */
@@ -84,6 +84,7 @@
 .gsrch:focus-within{border-color:var(--line2);background:var(--card)}
 .gres{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;background:var(--card);border:1px solid var(--line2);box-shadow:0 10px 30px color-mix(in srgb,var(--tx) 16%,transparent);max-height:70vh;overflow:auto;color:var(--tx)}
 .gres .li{padding:9px 12px;border-bottom:1px solid var(--line)}.gres .li:hover{background:var(--el)}
+.gsec{padding:10px 12px 4px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
 .gres .empty{padding:16px}.gall{display:flex;align-items:center;gap:6px;width:100%;padding:10px 12px;font-size:13px;font-weight:700}.gall:hover{background:var(--el)}
 .bar1{flex-wrap:wrap}.bar1 .gsrch{order:2;flex-basis:100%;max-width:none}
 .side{display:none}

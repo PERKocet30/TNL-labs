@@ -191,6 +191,7 @@ export const SERVER = [
   "admin/report.js",
   "admin/systems-map.js",
   "admin/network.js",
+  "admin/find.js",   // the search bar finds anything in the dashboard (2026-11-15)
 
   // pages
   "pages/seo.js",

@@ -2599,6 +2599,27 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator("#clab").inputValue() === "pharmacy", "the lab filter wasn't set");
     await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
+  /* 2026-11-15: "the search bar should let you find anything in the dashboard" — it found members only */
+  await step(d, "admin → the search bar finds a card, a tab and a member: Ways in opens Analytics on Joining, Backups opens Settings on its tab", async () => {
+    await settledGoto(p, B + "/admin#home");
+    await p.locator("#gq").waitFor();
+    await p.fill("#gq", "ways in");
+    await p.locator("#gres .gsec", { hasText: "Go to" }).waitFor({ timeout: 3000 });
+    ok(await p.locator("#gres .li", { hasText: "Ways in" }).count() === 1, "Ways in isn't found");
+    await p.keyboard.press("Enter");
+    await fast(p, 6000, () => p.locator(".rc h3", { hasText: "Ways in" }).waitFor(), "Analytics → Joining from the search bar");
+    ok(await p.evaluate(() => TAB === "analytics" && ATAB === "reach") && await p.inputValue("#gq") === "", "the result didn't open its tab, or the bar kept the words");
+    await p.fill("#gq", "backups");
+    await p.locator("#gres .li", { hasText: "Backups & email" }).first().dispatchEvent("mousedown");
+    await fast(p, 6000, () => p.locator("h2.sec", { hasText: "Backups" }).first().waitFor(), "Settings → Backups from the search bar");
+    await p.fill("#gq", "tester");
+    await p.locator("#gres .gsec", { hasText: "Members" }).waitFor({ timeout: 4000 });
+    ok(await p.locator("#gres .li", { hasText: "@tester" }).count() >= 1, "a member isn't found any more");
+    await p.fill("#gq", "zzzzqq");
+    await p.locator("#gres .empty").waitFor({ timeout: 4000 });
+    await p.keyboard.press("Escape");
+    ok(await p.locator("#gres").isHidden(), "Esc didn't close the results");
+  });
   /* admin v4 (2026-10-20): every section opens, with its frame; Orders has status tabs; Analytics its four tabs */
   await step(d, "admin → every section opens on a computer: Orders, Listings, Sellers, Analytics, Settings", async () => {
     for (const [tab, want] of [["orders", "[data-os=paid]"], ["listings", "[data-ls=active]"], ["sellers", ".kpi"], ["analytics", "[data-atab=commerce]"], ["settings", "[data-systab=data]"]]) {
