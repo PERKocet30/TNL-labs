@@ -143,6 +143,10 @@
 .pcw-bar{position:relative;flex-shrink:0;max-width:none;background:var(--bg);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
 /* step 3 on a phone: the work is a thumbnail beside the caption, like Instagram (tagging people still shows it) */
 @media(max-width:1023px){.pc-det .pc-media{display:none}}
+/* 2026-11-15: two screens — the second's big Post sits at the bottom; the rest waits under Add more */
+.pcw-details .pc-body{flex:1;min-height:0}
+.pc-more .pc-l{display:flex;flex-direction:column;gap:2px}
+.pc-more .pc-l .dim{font-size:13px;font-weight:400}
 @media(min-width:1024px){
   .pc-det .pc-cap .pce-th{display:none}
   .pcw:not(.pcw-details) .pc-body{display:block;overflow-y:auto}

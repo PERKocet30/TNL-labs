@@ -9,13 +9,16 @@ const w = R("src/app/compose/composer-walk.js"), src = w, comp = R("src/app/comp
   mo = R("src/app/nav/motion.js"), q = R("src/app/compose/queue.js"), order = R("src/app/order.mjs"), css = R("src/app/styles/compose.css");
 
 console.log("\nTHE STEPS");
-t("three steps: your work → where it belongs → caption & details", /const PCW_STEPS=\["media","place","details"\]/.test(w));
+t("two screens (2026-11-15): your work → a line and Post", /const PCW_STEPS=\["media","details"\]/.test(w));
+t("the lab & #tags are a side screen off the second (+ Add a lab), with Done back — not a step", comp.includes('if(!c.edit)return pcwGo(c,"place");') && w.includes('<button class="gx-btn" id="pcwnext">Done</button>') && /if\(pcwStep\(c\)==="place"\)\{pcwGo\(c,"details"\);return true\}/.test(w));
+t("people, music, products, location wait under Add more — open by itself when one is set", comp.includes('id="pcmore"') && /const more=c\.edit\|\|c\.more\|\|c\.collabs\.length\|\|c\.track/.test(comp) && comp.includes('<div class="pc-opts"${more?"":" hidden"}>'));
+t("a big Post at the bottom of the second screen, the same Post as the bar's", comp.includes('id="pcpost"') && comp.includes("if(go2)go2.onclick=()=>go&&go.onclick();"));
 t("loaded right after the composer", order.indexOf('"compose/composer.js"') < order.indexOf('"compose/composer-walk.js"'));
 t("steps 1–2 take over a new post; Edit info keeps its one page", comp.includes('if(!c.edit&&pcwStep(c)!=="details")return pcwHTML(c,media);') && /pcwStep=c=>c&&!c\.edit/.test(w));
 t("the head: Cancel on the first step, Back after; N / 3; Post only on the last", /i\?\{id:"pcwback",back:true\}:\{id:"pccancel",label:"Cancel"\}/.test(w) && /last\?\{id:"pcgo",label:c\.busy\?"Posting…":"Post"/.test(w) && /\$\{i\+1\} \/ \$\{PCW_STEPS\.length\}/.test(w));
 t("a progress bar, the listing walkthrough's", /sw-prog pcw-prog/.test(w));
 t("Next sits at the bottom, a big button; off on step 1 until there's work", /<button class="gx-btn" id="pcwnext" \$\{has\?"":"disabled"\}>Next<\/button>/.test(w));
-t("no picture? words or a song skip ahead", w.includes('id="pcwwords">No picture — just words or a song'));
+t("no picture? words or a song skip ahead", w.includes('id="pcwwords">No picture — just words or a song') && w.includes('if(wd)wd.onclick=()=>pcwGo(c,"details")'));
 t("the phone's back goes a step back", back.includes("else if(PCOMPOSE&&pcwBack()){navRearm(d);return}") && /function pcwBack\(\)/.test(w));
 t("each step is a screen: Next moves forward, Back back (motion)", mo.includes('return "compose:"+pcwStep(PCOMPOSE)') && mo.includes("2+Math.max(0,PCW_STEPS.indexOf(pcwStep(PCOMPOSE)))"));
 t("a restored draft opens on its details", q.includes('draftId:it.d.id,idx:0,step:"details"'));
@@ -26,7 +29,7 @@ console.log("\nWHERE IT BELONGS");
 t("one tap picks its lab — your labs first, each with what it's for; tap again takes it out", /labsOrdered\(\)\.map/.test(w) && /LAB_ID\[l\.id\]\|\|\{\}\)\.for/.test(w) && /if\(pcwLabId\(c\)===l\.id\)c\.ch=null/.test(w) && /const h=labHome\(l\);c\.ch=\{id:h\.id,label:l\.name,lab:l\.name\}/.test(w));
 t("#tags people use in that lab, one tap each (a shimmer while they load)", /papi\.tags\(lab,""\)/.test(w) && /pcw-sk/.test(w));
 t("…or your own", /id="pcwtagq"[^>]*placeholder="Add your own"/.test(w));
-t("skippable — it stays on your profile", w.includes('id="pcwskip">Skip — just my profile'));
+t("optional — it stays on your profile, and the lab screen never blocks posting", !w.includes("pcwskip") && /It's on your profile either way/.test(w));
 t("never explains the ranking", !/showroom|rank|feature|boost/i.test(w.slice(w.indexOf("function pcwHTML"))));
 
 console.log("\n#TAGS GO IN THE CAPTION — the real rules");

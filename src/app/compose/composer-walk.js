@@ -1,4 +1,7 @@
-/* ── POST WALKTHROUGH · v1.1 — 2026-11-05 (your own #tag survives the suggestions landing while you type) · v1.0 ─────────────────────────────
+/* ── POST WALKTHROUGH · v2.0 — 2026-11-15 (two screens: "Pick the picture, add a line, done" — in the 30 days to
+   2026-11-14, 89 posts were started and 11 finished. Your work → a line and Post. The lab and #tags are no longer
+   a step of their own: "+ Add a lab" on the second screen opens them (the "place" screen, Done back), and people,
+   music, products and location fold under "Add more". The fix list, Knowledge, 2026-11-14.) · v1.1 — 2026-11-05 (your own #tag survives the suggestions landing while you type) · v1.0 ─────────────────────────────
    "Make the post composer walk you through the posting process like
    Instagram and the onboarding process or the product listing." And,
    minutes before: "if people don't send their work inside labs and use
@@ -20,18 +23,19 @@
    Edit info (an existing post) keeps the one page (app/compose/post-edit).
    The step lives on the draft (PCOMPOSE.step); a restored draft opens on
    its details. */
-const PCW_STEPS=["media","place","details"];
-const pcwStep=c=>c&&!c.edit&&PCW_STEPS.includes(c.step)?c.step:"media";
+const PCW_STEPS=["media","details"];   // two screens (2026-11-15); "place" is a side screen off the second, not a step
+const pcwStep=c=>c&&!c.edit&&(PCW_STEPS.includes(c.step)||c.step==="place")?c.step:"media";
 const pcwHasMedia=c=>!!(c.imgs.length||c.upN||c.vid||c.vidbusy);
 /* #tags in a caption, the way the labs read them (bodyTags, server/labs/places.js) */
 const PCW_TAG_RE=/(^|[^\w&#/])#([a-z0-9_]{2,30})(?![\w])/gi;
 const pcwTags=b=>{const s=new Set();for(const m of String(b||"").matchAll(PCW_TAG_RE))s.add(m[2].toLowerCase());return [...s]};
 const pcwLabId=c=>c.ch?((labOfCh(c.ch.id)||{}).id||""):"";
 
-function pcwGo(c,step){if(PCOMPOSE!==c||!PCW_STEPS.includes(step))return;c.step=step;if(step==="place")pcwSuggest(c);render();
+function pcwGo(c,step){if(PCOMPOSE!==c||!(PCW_STEPS.includes(step)||step==="place"))return;c.step=step;if(step==="place")pcwSuggest(c);render();
   const b=document.querySelector("#pcov .pc-body");if(b)b.scrollTop=0}
 /* the phone's back (app/nav/back.js): a step back, if there is one */
-function pcwBack(){const c=PCOMPOSE;if(!c||c.edit)return false;const i=PCW_STEPS.indexOf(pcwStep(c));if(i<1)return false;pcwGo(c,PCW_STEPS[i-1]);return true}
+function pcwBack(){const c=PCOMPOSE;if(!c||c.edit)return false;if(pcwStep(c)==="place"){pcwGo(c,"details");return true}
+  const i=PCW_STEPS.indexOf(pcwStep(c));if(i<1)return false;pcwGo(c,PCW_STEPS[i-1]);return true}
 
 /* #tags people already use in the lab you picked (or across LABS), for one-tap adding */
 async function pcwSuggest(c){
@@ -55,12 +59,13 @@ function pcwToggleTag(c,raw){
 }
 
 function pcwHead(c){
+  if(pcwStep(c)==="place")return formHead({id:"pcwback",back:true},"Lab & #tags","");
   const i=PCW_STEPS.indexOf(pcwStep(c)),last=i===PCW_STEPS.length-1;
   const left=i?{id:"pcwback",back:true}:{id:"pccancel",label:"Cancel"};
   const right=last?{id:"pcgo",label:c.busy?"Posting…":"Post",disabled:!pcCan(c)}:`<span class="sw-n">${i+1} / ${PCW_STEPS.length}</span>`;
   return formHead(left,"New post",right)+`<div class="sw-prog pcw-prog" aria-label="Step ${i+1} of ${PCW_STEPS.length}"><i style="width:${Math.round(((i+1)/PCW_STEPS.length)*100)}%"></i></div>`;
 }
-/* steps 1 and 2; step 3 is pcomposeHTML's own page */
+/* step 1, and the lab & #tags screen; step 2 is pcomposeHTML's own page */
 function pcwHTML(c,media){
   const st=pcwStep(c);
   let body,bar;
@@ -80,7 +85,7 @@ function pcwHTML(c,media){
         :all.map(t=>`<button type="button" class="chip pcw-tag${mine.includes(t)?" on":""}" data-pcwtag="${esc(t)}" aria-pressed="${mine.includes(t)}">#${esc(t)}</button>`).join("")}</div>
       <form class="pcw-add" id="pcwtagf"><span class="pc-hash">#</span><input id="pcwtagq" value="${esc(c.pcwQ||"")}" placeholder="Add your own" autocomplete="off" autocapitalize="off" maxlength="31" enterkeyhint="done"><button class="btn sm ghost" type="submit">Add</button></form>
     </div>`;
-    bar=`${!on&&!mine.length?`<button type="button" class="sw-skip" id="pcwskip">Skip — just my profile</button>`:""}<button class="gx-btn" id="pcwnext">Next</button>`;
+    bar=`<button class="gx-btn" id="pcwnext">Done</button>`;
   }
   return `<div class="pcmp-ov" id="pcov"><div class="pc pcw pcw-${st}" role="dialog" aria-label="New post">
     ${pcwHead(c)}
@@ -91,11 +96,10 @@ function pcwHTML(c,media){
 
 function pcwWire(c){
   if(!c||c.edit)return;
-  const st=pcwStep(c),i=PCW_STEPS.indexOf(st);
-  const bk=$("#pcwback");if(bk)bk.onclick=()=>pcwGo(c,PCW_STEPS[i-1]);
-  const nx=$("#pcwnext");if(nx)nx.onclick=()=>{if(st==="media"&&!pcwHasMedia(c)&&!pcCover(c))return;pcwGo(c,PCW_STEPS[i+1])};
-  const wd=$("#pcwwords");if(wd)wd.onclick=()=>pcwGo(c,"place");
-  const sk=$("#pcwskip");if(sk)sk.onclick=()=>pcwGo(c,"details");
+  const st=pcwStep(c);
+  const bk=$("#pcwback");if(bk)bk.onclick=()=>pcwBack();
+  const nx=$("#pcwnext");if(nx)nx.onclick=()=>{if(st==="media"&&!pcwHasMedia(c)&&!pcCover(c))return;pcwGo(c,"details")};   // Next, and the lab screen's Done
+  const wd=$("#pcwwords");if(wd)wd.onclick=()=>pcwGo(c,"details");
   document.querySelectorAll("[data-pcwlab]").forEach(b=>b.onclick=()=>{
     const l=labsOrdered().find(x=>x.id===b.dataset.pcwlab);if(!l)return;
     if(pcwLabId(c)===l.id)c.ch=null;   // tap again: take it out

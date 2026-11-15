@@ -1,3 +1,4 @@
+/* v2026-11-15: two screens — your work, then a line and Post (a big Post at the bottom too). People, music, products, location, Story and Advanced fold under "Add more" (open by itself when anything in it is set); "+ Add a lab" opens the lab & #tags screen (app/compose/composer-walk). */
 /* v2026-11-05 (later): the video bar's words come from pcVidText (app/compose/post-mixed) — the size, and "making it 1080p" after 100% for a big one. */
 /* v2026-11-05 (latest): while iOS gets a picked video ready, the work area says "Getting it from your phone…" (c.picking, app/media/pick onWait) instead of sitting empty.
 /* v2026-11-05 (later): a new post walks you through it — your work → where it belongs → caption & details (app/compose/composer-walk); this page is the last step.
@@ -63,6 +64,8 @@ function pcomposeHTML(){
   else media=`${pdRowHTML(c)}<label class="pc-pick" data-pcpick role="button" tabindex="0">${file}${PC_PICK}<b>Add photos or video</b><span>Up to 10 photos and videos</span></label>`;
   if(!c.edit&&pcwStep(c)!=="details")return pcwHTML(c,media);   // steps 1–2 of a new post (app/compose/composer-walk)
   const tags=c.tags||[];
+  /* "Pick the picture, add a line, done" (2026-11-15): the rest waits under Add more, unless something in it is already set */
+  const more=c.edit||c.more||c.collabs.length||c.track||c.pick||c.musup||tags.length||(c.products||[]).length||c.location||c.vid||c.storyAfter||c.commentsOff||c.hideLikes||c.alt;
 
   /* Where people see it (2026-10-21, "make sharing into labs and posting on profiles
      cohesive"): every post lives on your profile; a lab is where you also show it.
@@ -78,9 +81,10 @@ function pcomposeHTML(){
     <div class="pc-body"><div class="pc-media">${media}</div><div class="pc-side">
       ${to}
       <div class="pc-cap">${pceThumb(c)}
-        <textarea class="pc-ta" id="pcbody" rows="3" maxlength="${PC_CAP_MAX}" placeholder="Write a caption… #tag it so people find it">${esc(c.body||"")}</textarea></div>${pcCapCountHTML(c)}
+        <textarea class="pc-ta" id="pcbody" rows="3" maxlength="${PC_CAP_MAX}" placeholder="${c.edit?"Write a caption… #tag it so people find it":"Add a line about it… #tag it so people find it"}">${esc(c.body||"")}</textarea></div>${pcCapCountHTML(c)}
       <div class="pc-ment" id="pcment" hidden></div>
-      <div class="pc-opts">
+      ${more?"":`<button class="pc-opt pc-more" id="pcmore"><span class="pc-ic">${UI_IC.plus}</span><span class="pc-l">Add more<span class="dim">People, music, products, location</span></span>${PC_CHEV}</button>`}
+      <div class="pc-opts"${more?"":" hidden"}>
         <button class="pc-opt" id="pccollab"><span class="pc-ic">${IG_COLLAB}</span><span class="pc-l">Invite collaborators</span>
           <span class="pc-v">${c.collabs.length?c.collabs.length+" invited":""}</span>${PC_CHEV}</button>
         ${c.collabs.length?`<div class="pc-chips">${c.collabs.map((u,i)=>`<span class="pc-chip">${avHTML(u,"")}@${esc(u.username)}
@@ -110,6 +114,7 @@ function pcomposeHTML(){
         ${pcIgRowsHTML(c)}
       </div>
     </div></div>
+    ${c.edit||c.tagMode?"":`<div class="pf-bar pcw-bar pcw-postbar"><button class="gx-btn" id="pcpost" ${pcCan(c)?"":"disabled"}>${c.busy?"Posting…":"Post"}</button></div>`}
   </div></div>`;
 }
 
@@ -126,7 +131,8 @@ function pcmusRowsHTML(list,searching){
 
 function wirePCompose(){
   const ov=$("#pcov");if(!ov){if(PED&&!PCOMPOSE)pedClose();pcPrevStop();return}const c=PCOMPOSE;
-  const syncGo=()=>{const g=$("#pcgo");if(g)g.disabled=!pcCan(c)};
+  const syncGo=()=>{const g=$("#pcgo");if(g)g.disabled=!pcCan(c);const g2=$("#pcpost");if(g2)g2.disabled=!pcCan(c)};
+  const am=$("#pcmore");if(am)am.onclick=()=>{c.more=true;render()};   // Add more (2026-11-15)
   pcwWire(c);   // Next, Back, the lab and #tags (app/compose/composer-walk)
 
   /* ── media ── */
@@ -220,6 +226,7 @@ function wirePCompose(){
   };
   document.querySelectorAll("[data-pccrm]").forEach(b=>b.onclick=()=>{c.collabs.splice(+b.dataset.pccrm,1);render()});
   const lb=$("#pclab");if(lb)lb.onclick=()=>{
+    if(!c.edit)return pcwGo(c,"place");   // a new post: the lab & #tags screen (app/compose/composer-walk, 2026-11-15)
     /* Labs are places: pick the genre, tag the rest with #hashtags. Your labs first. */
     const items=[];
     for(const l of labsOrdered()){const ch=labHome(l);
@@ -258,7 +265,8 @@ function wirePCompose(){
   const cc=$("#pccancel");if(cc)cc.onclick=async()=>{if(await pcLeave())render()};
 
   /* ── share ── */
-  const go=$("#pcgo");if(go)go.onclick=async()=>{
+  const go=$("#pcgo"),go2=$("#pcpost");if(go2)go2.onclick=()=>go&&go.onclick();   // the big Post at the bottom is the same Post
+  if(go)go.onclick=async()=>{
     if(c.edit)return pceSave(c);   // saves in place (app/compose/post-edit)
     if(!pcCan(c)){if(!c.busy)toast("Add a photo, a video, or write something");return}
     try{if(UI.flow==="post")UI.flowDone=true}catch(e){}   // tapping Post finishes the flow: the post lands after the screen has closed (2026-11-05)
