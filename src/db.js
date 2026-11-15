@@ -713,7 +713,8 @@ const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
 
 export function ensureAdmin() {
   if (ADMIN_EMAIL) {
-    const owner = db.prepare(`SELECT id, username, is_admin FROM users WHERE LOWER(email) = ?`).get(ADMIN_EMAIL);
+    /* 2026-11-15 (the audit): only an address its owner has confirmed. Anyone can type ADMIN_EMAIL into an account. */
+    const owner = db.prepare(`SELECT id, username, is_admin FROM users WHERE LOWER(email) = ? AND (email_verified = 1 OR is_admin = 1) ORDER BY is_admin DESC, id LIMIT 1`).get(ADMIN_EMAIL);
     if (owner && !owner.is_admin) {
       db.prepare(`UPDATE users SET is_admin = 1 WHERE id = ?`).run(owner.id);
       console.log(`[db] @${owner.username} promoted to admin (ADMIN_EMAIL)`);

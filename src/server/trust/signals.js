@@ -113,7 +113,7 @@ function sigRecord(req, body) {
   }
 }
 app.use((req, res, next) => {
-  if (req.method !== "POST" || !/^\/api\/(auth\/(register|login|oauth\/claim)|events\/[^/]+\/vote)$/.test(req.path)) return next();
+  if (req.method !== "POST" || !/^\/api\/(auth\/(register|login|oauth\/claim)|events\/[^/]+\/vote)$/.test(routePath(req))) return next();   // routePath: as the router reads it (2026-11-15)
   let seen = null;
   const json = res.json.bind(res);
   res.json = (b) => { seen = b; return json(b); };

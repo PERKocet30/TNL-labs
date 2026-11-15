@@ -20,6 +20,8 @@ const now = Date.now(), hash = bcrypt.hashSync("violet-kiln-27", 4);
 const mk = (u, email, verified = 1, extra = "") => { const id = Number(db.prepare(`INSERT INTO users (username, display_name, email, password_hash, created_at, email_verified${extra ? ", suspended" : ""}) VALUES (?,?,?,?,?,?${extra ? ",1" : ""})`).run(u, u, email, hash, now, verified).lastInsertRowid);
   db.prepare(`INSERT INTO sessions (token, user_id, created_at) VALUES (?,?,?)`).run("tok-" + u, id, now); return id; };
 mk("boss", "boss@x.test"); mk("ana", "ana@x.test"); mk("squatter", "victim@x.test", 0); mk("banned", "banned@x.test", 1, "s");
+/* 2026-11-15 (the audit): the first person also holds an open reset link — and, once the server has made its table, a Google sign-in of their own (added below) */
+db.prepare(`INSERT INTO reset_tokens (token, user_id, expires_at, created_at) VALUES ('squat-reset', (SELECT id FROM users WHERE username = 'squatter'), ?, ?)`).run(now + 3600000, now);
 db.prepare(`INSERT INTO settings (key, value, updated_at) VALUES ('signinFacebook','1',?)`).run(Date.now());   // Facebook starts off in Settings (2026-10-26); this suite tests it on
 db.close();
 
@@ -112,9 +114,18 @@ try {
     && (await json("/api/auth/login", { identifier: "ana", password: "violet-kiln-27" })).s === 200);
 
   console.log("\nNOBODY GETS IN SIDEWAYS");
+  { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db"));
+    w.prepare(`INSERT INTO user_identities (provider, sub, user_id, email, created_at) VALUES ('google', 'g-squatter', (SELECT id FROM users WHERE username = 'squatter'), 'squatter-own@x.test', ?)`).run(Date.now()); w.close(); }
   const v = await google({ sub: "g-victim", email: "victim@x.test", email_verified: true });
   t("someone who pre-registered your unconfirmed email: linked to you…", (await json("/api/auth/oauth/claim", { code: code(v.loc, "signin") })).j.user.username === "squatter");
   t("…and their password and sessions are wiped", (await json("/api/me", null, "tok-squatter")).s === 401 && (await json("/api/auth/login", { identifier: "squatter", password: "violet-kiln-27" })).s === 401);
+  /* 2026-11-15 (the audit): a Google sign-in of their own, tied to the account before the owner arrived, used to survive — and let them straight back in */
+  { const { DatabaseSync } = await import("node:sqlite"); const w = new DatabaseSync(join(DATA, "tnl.db"));
+    const left = w.prepare(`SELECT provider, sub FROM user_identities WHERE user_id = (SELECT id FROM users WHERE username = 'squatter')`).all();
+    const reset = w.prepare(`SELECT COUNT(*) n FROM reset_tokens WHERE token = 'squat-reset'`).get().n; w.close();
+    t("…and so is every other way in they had: their own Google sign-in on the account, their open reset link", left.length === 1 && left[0].sub === "g-victim" && reset === 0); }
+  const sq = await google({ sub: "g-squatter", email: "squatter-own@x.test", email_verified: true });
+  t("…so their Google no longer opens the account (it's a stranger's sign-in now)", !/signin=/.test(sq.loc || "") );
   t("an unconfirmed email from the provider doesn't link to anything", /oauth_error=noemail/.test((await google({ sub: "g-x", email: "ana@x.test", email_verified: false })).loc));
   t("a token signed by someone else's key", /oauth_error=failed/.test((await google({ sub: "g-y", email: "y@x.test", email_verified: true }, { key: other })).loc));
   t("a token for another app (wrong audience)", /oauth_error=failed/.test((await google({ sub: "g-y", email: "y@x.test", email_verified: true }, { claims: { aud: "someone-else" } })).loc));

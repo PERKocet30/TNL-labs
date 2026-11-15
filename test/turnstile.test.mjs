@@ -40,6 +40,11 @@ try {
   t("the app is told the site key (never the secret)", lv.site?.turnstile === "0xSITE" && !JSON.stringify(lv).includes("sekret"));
   const none = await join_({});
   t("an email join with no token is turned away, asking to try again", none.status === 400 && none.body.human === true && asked.length === 0);
+  /* 2026-11-15 (the audit): the router answers /api/auth/Register and /api/auth/register/ too — the check used to be skipped by either */
+  const sly = async (path) => { n++; const r = await fetch(B + path, { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: "maker" + n, displayName: "Maker " + n, email: `maker${n}@labs-test.org`, password: "violet-orbit-lantern-77", roles: ["Painter"] }) }); return { status: r.status, body: await r.json().catch(() => ({})) }; };
+  const cap = await sly("/api/auth/Register"), slash = await sly("/api/auth/register/");
+  t("a capital letter or a trailing slash in the address doesn't get round the check", cap.status === 400 && cap.body.human === true && slash.status === 400 && slash.body.human === true && asked.length === 0);
   const bad = await join_({ turnstile: "forged" });
   t("a token Cloudflare refuses is turned away", bad.status === 400 && bad.body.human === true);
   const good = await join_({ turnstile: "good" });

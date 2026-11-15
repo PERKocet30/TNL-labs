@@ -16,7 +16,8 @@ const tsSecret = () => String(process.env.TURNSTILE_SECRET || "").trim();
 function tsSiteKey() { const k = String(process.env.TURNSTILE_SITE_KEY || "").trim(); return k && tsSecret() ? k : ""; }
 const TS_VERIFY = process.env.TURNSTILE_VERIFY_URL || "https://challenges.cloudflare.com/turnstile/v0/siteverify";   // a test points this elsewhere
 app.use(async (req, res, next) => {
-  if (req.method !== "POST" || req.path !== "/api/auth/register" || !tsSiteKey() || req.body?.oauth) return next();
+  /* 2026-11-15 (the audit): the router matches /api/auth/Register and /api/auth/register/ too — so must this, or the check is skipped by a capital letter */
+  if (req.method !== "POST" || routePath(req) !== "/api/auth/register" || !tsSiteKey() || req.body?.oauth) return next();
   const token = String(req.body?.turnstile || "");
   if (!token || token.length > 2048) return res.status(400).json({ error: "Couldn't check you're a person — tap Join again.", human: true });
   try {
