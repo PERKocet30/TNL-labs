@@ -4,7 +4,7 @@
 #   tap-through — npm run e2e: a real browser walks the app at phone and
 #                 computer size (test/e2e/run.mjs). Playwright is installed
 #                 here only; it is not an app dependency.
-# A red check means don't merge. Failure screenshots are attached to the run.
+# A red check means don't merge. The tap-through runs on ubuntu-24.04 (2026-11-20) until Playwright supports 26.04. Failure screenshots are attached to the run.
 name: Tests
 on:
   pull_request:
@@ -26,7 +26,7 @@ jobs:
       - run: npm run typecheck   # the money and rep code, typed from JSDoc (tsconfig.json) — dev-only
       - run: npm test
   tap-through:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned 2026-11-20: ubuntu-latest became 26.04, which Playwright 1.56 can't run on
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
