@@ -1,3 +1,4 @@
+// NAMING v1.2 — 2026-11-20 (the legal name is typed once, in src/legal.js, and read from there by the policies, the emails and the Market).
 // NAMING v1.1 — 2026-11-14 (the legal name, TNL LABS LLC, is allowed once: LEGAL_NAME in the policies).
 // NAMING v1.0 — 2026-10-18: "Everything in the app should reference LABS not
 // TNL. TNL is a separate brand." Nothing a member, a buyer, a link preview,
@@ -16,7 +17,7 @@ const LEGAL = "TNL LABS LLC";
 const WORD = /(?<![\w.@/-])TNL(?![\w])/g;
 const files = [
   ...(await import("../src/app/order.mjs")).APP.map((f) => "src/app/" + f), ...(await import("../src/server/order.mjs")).SERVER.map((f) => "src/server/" + f),
-  "src/mail.js", ...readdirSync(join(ROOT, "public/admin-app")).map((f) => "public/admin-app/" + f),
+  "src/mail.js", "src/legal.js", ...readdirSync(join(ROOT, "public/admin-app")).map((f) => "public/admin-app/" + f),
   "public/admin.html", "public/studio.js", "public/door.js", "public/manifest.webmanifest",
 ];
 const hits = [];
@@ -28,8 +29,8 @@ console.log("\nTHE APP IS LABS");
 t("no \"TNL\" anywhere members, buyers, previews, emails or admin read", hits.length === 0);
 hits.slice(0, 10).forEach((h) => console.log("       " + h));
 t("not \"TNL LABS\" either", files.every((f) => !strip(readFileSync(join(ROOT, f), "utf8")).replaceAll(LEGAL, "").includes("TNL LABS")));
-t("the legal name is typed once, in the policies", files.filter((f) => strip(readFileSync(join(ROOT, f), "utf8")).includes(LEGAL)).join() === "src/server/pages/policies.js"
-  && strip(readFileSync(join(ROOT, "src/server/pages/policies.js"), "utf8")).split(LEGAL).length === 2);
+t("the legal name is typed once, in src/legal.js", files.filter((f) => strip(readFileSync(join(ROOT, f), "utf8")).includes(LEGAL)).join() === "src/legal.js"
+  && strip(readFileSync(join(ROOT, "src/legal.js"), "utf8")).split(LEGAL).length === 2);
 const head = readFileSync(join(ROOT, "src/app/shell/head.html"), "utf8");
 t("the page title and link previews say LABS", head.includes("<title>LABS") && head.includes('content="LABS'));
 t("installed on a phone it's called LABS", JSON.parse(readFileSync(join(ROOT, "public/manifest.webmanifest"), "utf8")).name === "LABS");
