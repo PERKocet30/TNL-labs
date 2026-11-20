@@ -1,3 +1,4 @@
+/* SETTINGS · PAYOUTS · MARKET — 2026-11-20 (the Market meta carries the company's legal name for its footer). */
 /* ---- settings. Change the app without a deploy. ---- */
 app.get("/api/admin/settings", auth, admin, (req, res) => {
   res.json({ settings: allSettings(), defaults: SETTING_DEFAULTS });
@@ -127,7 +128,7 @@ app.get("/api/market/meta", maybeAuth, (req, res) => {
   res.json({
     categories: CATEGORIES, conditions: CONDITIONS, sizes, brands, taxonomy: TAXONOMY_META,
     loopCategories: LOOP_CATEGORIES, keys: KEYS,
-    paymentsEnabled: PAYMENTS_ENABLED,
+    paymentsEnabled: PAYMENTS_ENABLED, legalName: LEGAL_NAME,   // the Market's footer (2026-11-20)
     feePct: req.user ? feeFor(req.user) : FEE_BY_LEVEL[1],
     feeLadder: LEVELS.map((l) => ({ level: l.id, name: l.name, at: l.at, fee: FEE_BY_LEVEL[l.id] })),
   });

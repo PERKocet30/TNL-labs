@@ -1,4 +1,4 @@
-/* MUSIC LAB · TRACKS v1.8 — 2026-10-29 (Trending: the songs used in posts lately, above all songs); v1.7 — 2026-10-28 ("Led by" under the pitch); v1.6 — 2026-10-28 (loops are gone; no preview); v1.5 — 2026-10-20 (a song's Story plays 15 seconds of it; Market and loop heads from the screen kit); v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app/music/playlists.js) */
+/* MUSIC LAB · TRACKS v1.9 — 2026-11-20 (the Market's footer ends with © and the company's legal name); v1.8 — 2026-10-29 (Trending: the songs used in posts lately, above all songs); v1.7 — 2026-10-28 ("Led by" under the pitch); v1.6 — 2026-10-28 (loops are gone; no preview); v1.5 — 2026-10-20 (a song's Story plays 15 seconds of it; Market and loop heads from the screen kit); v1.3 — 2026-10-15 (empty Talk lines in TNL's own words); v1.2 (the lab says what to do here, LAB_PITCH); v1.1 — 2026-10-12 (rows play on a tap, ⊕ adds to a playlist; playlists: app/music/playlists.js) */
 /* A lab's Talk with nothing in it yet, by its home channel (2026-10-15: in
    TNL's own words — no rooms, no "the network"). */
 const EMPTY={
@@ -257,7 +257,7 @@ function marketHTML(){
       :!MKT.length?`<div class="empty">Nothing listed yet.</div>`
       :MKT.map(mktCardHTML).join("")}</div>
     <div id="mktrecent">${recentHTML()}</div>
-    <div class="mktfoot mono dim"><a href="/policies" target="_blank" rel="noopener">Shipping &amp; returns</a><a href="/terms" target="_blank" rel="noopener">Terms</a><a href="/privacy" target="_blank" rel="noopener">Privacy</a><a href="/contact" target="_blank" rel="noopener">Contact</a></div>
+    <div class="mktfoot mono dim"><a href="/policies" target="_blank" rel="noopener">Shipping &amp; returns</a><a href="/terms" target="_blank" rel="noopener">Terms</a><a href="/privacy" target="_blank" rel="noopener">Privacy</a><a href="/contact" target="_blank" rel="noopener">Contact</a>${MKTMETA.legalName?`<span>© ${new Date().getFullYear()} ${esc(MKTMETA.legalName)}</span>`:""}</div>
   </div>`}
 
 function mktCardHTML(l){
