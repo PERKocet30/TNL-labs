@@ -1,4 +1,4 @@
-/* LABS admin v4.8 — 2026-11-15 (the date range takes any dates, and a card can be downloaded: 1-range.js). v4.7 — 2026-11-15 (the bar at the top finds anything in the dashboard: 1-find.js). v4.6 — 2026-11-04 (Systems up front: its own section, second in the sidebar and in the phone's bar, opening on the spinning map; Health is Health again). v4.5 — 2026-11-04 (five groups, eleven sections: Market = Orders · Listings · Sellers, Health = Health · Systems; the phone's sheet grouped; old links land on the tab — SUBTAB). v4.4 — 2026-11-04 (Echo Home: the admin opens on Echo — admin-app/2-echo-home.js; the help desk section is "Help desk"). v4.3 — 2026-11-04 (Knowledge: what LABS knows about itself, admin-app/4-knowledge.js). v4.2 — 2026-11-04 (Echo, the help desk, is a section: admin-app/4-echo.js). v4.1 — 2026-10-28 (charts: readable dates and numbers, round scale); v4.0 — 2026-10-20. "Make it more like Shopify's admin, with
+/* LABS admin v4.9 — 2026-11-22 (the side menu scrolls on a short screen, and keeps its place). v4.8 — 2026-11-15 (the date range takes any dates, and a card can be downloaded: 1-range.js). v4.7 — 2026-11-15 (the bar at the top finds anything in the dashboard: 1-find.js). v4.6 — 2026-11-04 (Systems up front: its own section, second in the sidebar and in the phone's bar, opening on the spinning map; Health is Health again). v4.5 — 2026-11-04 (five groups, eleven sections: Market = Orders · Listings · Sellers, Health = Health · Systems; the phone's sheet grouped; old links land on the tab — SUBTAB). v4.4 — 2026-11-04 (Echo Home: the admin opens on Echo — admin-app/2-echo-home.js; the help desk section is "Help desk"). v4.3 — 2026-11-04 (Knowledge: what LABS knows about itself, admin-app/4-knowledge.js). v4.2 — 2026-11-04 (Echo, the help desk, is a section: admin-app/4-echo.js). v4.1 — 2026-10-28 (charts: readable dates and numbers, round scale); v4.0 — 2026-10-20. "Make it more like Shopify's admin, with
    graphs; one tailored for mobile and one for computer; compare against
    Instagram analytics." Ten sections named by what you manage — Home ·
    Orders · Listings · Sellers · Members · Content · Events · Analytics ·
@@ -184,6 +184,7 @@ function paint() {
   const badge = (k) => n(k) ? `<b>${n(k)}</b>` : "";
   /* keep the field you're typing in (and where the cursor is) through a repaint */
   const fo = document.activeElement && document.activeElement.id && app.contains(document.activeElement) ? document.activeElement : null;
+  const sideY = (document.querySelector(".side-nav") || {}).scrollTop || 0;   // the side menu keeps its place through a repaint (2026-11-22)
   const foId = fo && fo.id, foSel = fo && "selectionStart" in fo ? [fo.selectionStart, fo.selectionEnd] : null;
   const name = (k) => (TABS.find(([id]) => id === k) || [k, k === "studio" ? "Studio" : "More"])[1];
   const item = (k, cls) => `<button class="${cls} ${TAB === k ? "on" : ""}" data-tab="${k}" ${TAB === k ? 'aria-current="page"' : ""}>${NAVI[k] || ""}<span>${name(k)}</span>${badge(k)}</button>`;
@@ -207,6 +208,7 @@ function paint() {
   $$(".thm").forEach((t) => t.onclick = () => { const th = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = th; try { localStorage.setItem("tnl-theme", th); } catch (e) {} paint(); });
   WIRES[TAB]?.(); wireTips(); wireCommon(); wireSearch();
+  if (sideY) { const sn = document.querySelector(".side-nav"); if (sn) sn.scrollTop = sideY; }
   if (foId) { const f = document.getElementById(foId); if (f) { f.focus(); if (foSel) try { f.setSelectionRange(...foSel); } catch (e) {} } }
   admMvAfter(mvb);
 }

@@ -26,7 +26,9 @@ jobs:
       - run: npm run typecheck   # the money and rep code, typed from JSDoc (tsconfig.json) — dev-only
       - run: npm test
   tap-through:
-    runs-on: ubuntu-latest
+    # 2026-11-22: pinned. ubuntu-latest became 26.04, which Playwright 1.56.1 can't install its browser on
+    # ("Playwright does not support chromium on ubuntu26.04-x64"). Move both together when Playwright is raised.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
