@@ -1,5 +1,10 @@
 /* ================================================================
-   ECHO · Gemini as the brain v1.0 — 2026-11-22 ("Gemini in the model picker").
+   ECHO · Gemini as the brain v1.1 — 2026-11-22 ("It doesn't seem to be working":
+   the first real question sat on "Thinking" for three minutes and died —
+   Google took the question and sent nothing back in time. Gemini now thinks
+   lightly, streams its thinking as signs of life, and is given up on after
+   90 quiet seconds rather than a flat three minutes; each call's timing is
+   in the log). v1.0 — 2026-11-22 ("Gemini in the model picker").
    A fourth pick under Echo's composer, there only while GEMINI_API_KEY is
    set (the same key admin/assist.js uses). Picked, Google's model answers
    as Echo: the same frozen instructions, Knowledge, the connector's tools
@@ -21,12 +26,16 @@
    What leaves for Google when Gemini is picked: what Claude is sent when it
    is — the instructions with Knowledge, the conversation, the scrubbed tool
    results, attached photos and PDFs. Never messages: there is no tool.
+       ECHO_GEMINI_THINKING  optional, default low (low · medium · high)
        ECHO_GEMINI_MODEL  optional, default gemini-4-hydrogen (Google's pick for new work, Nov 2026;
                           2.5 Pro and 2.5 Flash are being retired on 1 Dec 2026)
    Sits before echo/brain.js in server/order.mjs (the picker reads GEM_PICK).
    test/echo-gemini.test.mjs (a stand-in for Google at GEMINI_API_URL)
 ================================================================ */
 const GEM_MODEL = (process.env.ECHO_GEMINI_MODEL || "gemini-4-hydrogen").trim().replace(/[^a-zA-Z0-9._-]/g, "") || "gemini-4-hydrogen";
+const GEM_THINK = (process.env.ECHO_GEMINI_THINKING || "low").trim().toLowerCase().replace(/[^a-z]/g, "") || "low";   // how hard it thinks before answering: low keeps a chat a chat
+const GEM_QUIET_MS = Math.max(200, +process.env.ECHO_GEMINI_QUIET_MS || 90000);   // no byte from Google for this long: give up (the test shortens it)
+const GEM_CAP_MS = Math.max(GEM_QUIET_MS, 300000);                                // …and never longer than this, whatever arrives
 const gemIs = (id) => /^gemini-/.test(String(id || ""));
 /* gemini-4-hydrogen → "Gemini 4 Hydrogen"; a "-preview" or a date on the end isn't part of the name */
 const gemName = (id) => String(id || "").replace(/-(preview|latest|exp)\b.*$/, "").replace(/-\d{2}-\d{2,4}$/, "").split("-").filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
@@ -60,11 +69,26 @@ function gemContents(messages) {
 async function gemCall({ model, system, tools, messages }, onText) {
   const fail = (plain, status, detail = "") => { const e = new Error(detail || plain); e.plain = plain; e.status = status; return e; };
   if (!asOn()) throw fail("Gemini isn't set up — GEMINI_API_KEY in Railway → Variables. Tap the model's name to pick another.", 401);
-  const r = await fetch(`${AS_URL}/models/${model}:streamGenerateContent?alt=sse`, { method: "POST", signal: AbortSignal.timeout(180000),
+  /* v1.1: Gemini thinks before it speaks, and by default thinks hard — over a long conversation that ran past three
+     silent minutes and the first real question died. So: think lightly (GEM_THINK), ask for the thinking to be streamed
+     as it happens (signs of life — never shown, never kept), and give up on silence (GEM_QUIET_MS without a byte), not
+     on a clock alone. A key or model that doesn't know these settings is asked again without them. */
+  const req = { systemInstruction: { parts: [{ text: (system || []).map((s) => s.text || "").join("\n\n") }] }, contents: gemContents(messages),
+    tools: [{ functionDeclarations: tools.map((t) => ({ name: t.name, description: t.description, parametersJsonSchema: t.input_schema })) }] };
+  const stop = new AbortController(), t0 = Date.now(); let quiet = null, first = 0, slow = "";
+  const alive = () => { clearTimeout(quiet); quiet = setTimeout(() => { slow = "quiet"; stop.abort(); }, GEM_QUIET_MS); };
+  const cap = setTimeout(() => { slow = "long"; stop.abort(); }, GEM_CAP_MS);
+  const send = (think) => fetch(`${AS_URL}/models/${model}:streamGenerateContent?alt=sse`, { method: "POST", signal: stop.signal,
     headers: { "Content-Type": "application/json", "x-goog-api-key": AS_KEY },
-    body: JSON.stringify({ systemInstruction: { parts: [{ text: (system || []).map((s) => s.text || "").join("\n\n") }] }, contents: gemContents(messages),
-      tools: [{ functionDeclarations: tools.map((t) => ({ name: t.name, description: t.description, parametersJsonSchema: t.input_schema })) }],
-      generationConfig: { maxOutputTokens: 16384 } }) });
+    body: JSON.stringify({ ...req, generationConfig: { maxOutputTokens: 16384, ...(think ? { thinkingConfig: { thinkingLevel: GEM_THINK, includeThoughts: true } } : {}) } }) });
+  const tooSlow = () => fail(slow === "quiet" ? "Gemini went quiet and never answered. Ask again — or tap the model's name to pick another." : "Gemini took too long. Ask again — or tap the model's name to pick another.", 0, `Gemini ${slow === "quiet" ? `sent nothing for ${Math.round(GEM_QUIET_MS / 1000)}s` : `was still going after ${Math.round(GEM_CAP_MS / 1000)}s`} (first byte ${first ? Math.round((first - t0) / 100) / 10 + "s" : "never"})`);
+  try {
+  alive();
+  let r = await send(true).catch((e) => { throw slow ? tooSlow() : e; });
+  if (r.status === 400) {   // thinking settings this key or model doesn't take: once more without them
+    const d = await r.clone().json().catch(() => ({}));
+    if (/thinking|includeThoughts/i.test(String((d.error && d.error.message) || ""))) { console.warn("[echo] gemini: thinking settings refused, asking without them"); alive(); r = await send(false).catch((e) => { throw slow ? tooSlow() : e; }); }
+  }
   if (!r.ok) {
     const d = await r.json().catch(() => ({})), m = String((d.error && d.error.message) || "").slice(0, 600);
     throw fail((r.status === 400 && /api key/i.test(m)) || r.status === 401 || r.status === 403 ? "Google turned the key away. Check GEMINI_API_KEY in Railway → Variables."
@@ -95,7 +119,8 @@ async function gemCall({ model, system, tools, messages }, onText) {
   };
   const reader = r.body.getReader(), dec = new TextDecoder(); let buf = "";
   for (;;) {
-    const { value, done } = await reader.read(); if (done) break;
+    const { value, done } = await reader.read().catch((e) => { throw slow ? tooSlow() : e; }); if (done) break;
+    alive(); if (!first) first = Date.now();
     buf += dec.decode(value, { stream: true });
     let i; while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i).replace(/\r$/, ""); buf = buf.slice(i + 1); if (line.startsWith("data:")) take(line.slice(5).trim()); }
   }
@@ -104,5 +129,7 @@ async function gemCall({ model, system, tools, messages }, onText) {
   if (blocked || /SAFETY|PROHIBITED|BLOCKLIST|RECITATION|SPII/.test(finish)) { if (!calls) throw fail("Gemini wouldn't answer that one.", 0, `Gemini stopped: ${blocked || finish}`); }
   if (/MALFORMED|UNEXPECTED_TOOL/.test(finish) && !calls) throw fail("Gemini fumbled a lookup. Ask again.", 0, `Gemini stopped: ${finish}`);
   if (!content.length) throw fail(finish === "MAX_TOKENS" ? "That answer ran too long — ask for a shorter one." : "Gemini answered with nothing. Ask again.", 0, `Gemini: empty answer (${finish || "no finish reason"})`);
+  console.log(`[echo] gemini: ${model} · first byte ${Math.round((first - t0) / 100) / 10}s · done ${Math.round((Date.now() - t0) / 100) / 10}s · ${out} tokens out`);
   return { content, stop_reason: calls ? "tool_use" : finish === "MAX_TOKENS" ? "max_tokens" : "end_turn", usage: { output_tokens: out } };
+  } finally { clearTimeout(quiet); clearTimeout(cap); }
 }

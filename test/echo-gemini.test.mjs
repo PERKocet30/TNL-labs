@@ -37,8 +37,10 @@ const google = createServer((req, res) => {
     G.seen.push({ url: req.url, headers: req.headers, body: j });
     if (G.mode === "busy") return json(429, { error: { message: "Resource has been exhausted" } });
     if (!/\/models\/gemini-4-hydrogen:streamGenerateContent\?alt=sse$/.test(req.url)) return json(404, { error: { message: "models/x is not found" } });
+    if (G.mode === "nothink" && j.generationConfig.thinkingConfig) return json(400, { error: { message: 'Invalid JSON payload received. Unknown name "thinkingConfig" at \'generation_config\'' } });
     res.writeHead(200, { "content-type": "text/event-stream" });
     const ev = (o) => res.write(`data: ${JSON.stringify(o)}\r\n\r\n`);
+    if (G.mode === "silent") { res.write(": ok\n\n"); return; }   // Google takes the question and never says a word
     if (G.mode === "safety") { ev({ candidates: [{ finishReason: "SAFETY" }] }); return res.end(); }
     const parts = G.script.shift() || [{ text: "(script ran out)" }];
     ev({ candidates: [{ content: { role: "model", parts: [{ text: "pondering…", thought: true }] } }] });   // a thought summary: never part of the answer
@@ -75,7 +77,7 @@ await new Promise((r) => claude.listen(0, "127.0.0.1", r));
 const PORT = 18820 + (process.pid % 150);
 const boot = (env) => {
   const srv = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), TNL_DATA: DATA, TNL_NO_WATCH: "1", ECHO_AI_KEY: "sk-ant-test", ANTHROPIC_API_KEY: "", ANTHROPIC_API_BASE: `http://127.0.0.1:${claude.address().port}`, ECHO_MODEL: "claude-opus-5-5", ECHO_HOLD_MS: "150",
-    GEMINI_API_KEY: "AIza-secret", GEMINI_API_URL: `http://127.0.0.1:${google.address().port}/v1beta`, GEMINI_MODEL: "", ECHO_GEMINI_MODEL: "", ...env }, stdio: ["ignore", "pipe", "pipe"] });
+    GEMINI_API_KEY: "AIza-secret", GEMINI_API_URL: `http://127.0.0.1:${google.address().port}/v1beta`, GEMINI_MODEL: "", ECHO_GEMINI_MODEL: "", ECHO_GEMINI_QUIET_MS: "600", ...env }, stdio: ["ignore", "pipe", "pipe"] });
   srv.log = ""; srv.stdout.on("data", (d) => srv.log += d); srv.stderr.on("data", (d) => srv.log += d);
   return srv;
 };
@@ -140,6 +142,13 @@ try {
   G.mode = "safety";
   const b2 = await ask("hm?");
   t("Gemini won't answer: says so, as Gemini", b2 && b2.failed && b2.text === "Gemini wouldn't answer that one.");
+  /* v1.1, "It doesn't seem to be working": the first real question sat on Thinking for three minutes */
+  t("Gemini is asked to think lightly and to stream its thinking", G.seen[0].body.generationConfig.thinkingConfig.thinkingLevel === "low" && G.seen[0].body.generationConfig.thinkingConfig.includeThoughts === true);
+  G.mode = "silent"; const s0 = Date.now(), b5 = await ask("anyone there?");
+  t("Google goes quiet: given up on after the quiet limit, not three minutes — and said plainly", b5 && b5.failed && /went quiet/.test(b5.text) && /pick another/.test(b5.text) && Date.now() - s0 < 5000);
+  G.mode = "nothink"; G.script = [[{ text: "Here without the settings." }]];
+  const n0 = G.seen.length, b6 = await ask("and now?");
+  t("a model that won't take the thinking settings is asked again without them", b6 && b6.text === "Here without the settings." && G.seen.length === n0 + 2 && !G.seen.at(-1).body.generationConfig.thinkingConfig);
   G.mode = "ok"; const before = G.seen.length;
   /* a lookup, then Google fails on the way back: the half-finished lookup must not ride on the next question */
   G.script = [[{ functionCall: { name: "overview", args: {} }, thoughtSignature: "GOOGLE-SEAL-4" }]];
