@@ -25,7 +25,7 @@ const iso = (d) => new Date(now - d * 86400000).toISOString();
 const dayVals = (f) => Array.from({ length: 28 }, (_, i) => ({ value: f(i), end_time: iso(27 - i) }));
 const fake = createServer((req, res) => {
   seen.calls++;
-  const u = new URL(req.url, "http://x"), p = u.pathname.replace(/^\/v21\.0\//, ""), q = Object.fromEntries(u.searchParams);
+  const u = new URL(req.url, "http://x"), p = u.pathname.replace(/^\/v\d+\.\d+\//, ""), q = Object.fromEntries(u.searchParams);
   seen.tokens.add(q.access_token); seen.paths.push(p + "?" + (q.metric || q.fields || ""));
   const json = (code, obj) => { res.writeHead(code, { "Content-Type": "application/json" }); res.end(JSON.stringify(obj)); };
   if (q.access_token !== "EAAB-secret") return json(400, { error: { message: "Invalid OAuth access token.", code: 190 } });
@@ -51,14 +51,15 @@ const fake = createServer((req, res) => {
   if (p === "222/stories") return json(200, { data: [] });
   if (p === "111") return json(200, { name: "LABS", followers_count: 1200, link: "https://www.facebook.com/tnllabs" });
   if (p === "111/insights" && broken) return json(400, { error: { message: "(#100) The value must be a valid insights metric", code: 100 } });
-  if (p === "111/insights") return json(200, { data: [{ name: "page_impressions_unique", values: dayVals(() => 10) }] });
+  if (p === "111/insights" && q.metric !== "page_total_media_view_unique") return json(400, { error: { message: "(#100) The value must be a valid insights metric", code: 100 } });   // 2026-11-21: Meta retired page_impressions_unique; only its replacement answers
+  if (p === "111/insights") return json(200, { data: [{ name: "page_total_media_view_unique", values: dayVals(() => 10) }] });
   if (p === "333") return json(200, { name: "LABS shop", product_count: 3 });
   if (p === "333/products") return json(200, { data: [{ id: "1", retailer_id: "labs-5", name: "Drop 01 Tee", review_status: "approved" }, { id: "2", retailer_id: "labs-7-s1", name: "Camo Shiesty", review_status: "rejected", errors: [{ title: "Image too small", description: "Images must be at least 500×500" }] },
     { id: "3", retailer_id: "labs-7-s2", name: "Camo Shiesty", review_status: "rejected", errors: [{ title: "Image too small", description: "Images must be at least 500×500" }] }] });
   json(404, { error: { message: "Unsupported get request.", code: 100 } });
 });
 await new Promise((r) => fake.listen(0, r));
-const FAKE = `http://localhost:${fake.address().port}/v21.0`;
+const FAKE = `http://localhost:${fake.address().port}/v24.0`;
 const PORT = 8920, B = `http://localhost:${PORT}`;
 const env = { ...process.env, TNL_DATA: DATA, PORT: String(PORT), STRIPE_SECRET_KEY: "", TNL_NO_VIDEO_FIX: "1", TNL_NO_WATCH: "1",
   META_ACCESS_TOKEN: "EAAB-secret", META_GRAPH_URL: FAKE, META_CATALOG_ID: "333", META_PAGE_ID: "", META_IG_USER_ID: "" };
@@ -92,6 +93,8 @@ try {
 
   console.log("\nFACEBOOK AND THE SHOP");
   t("the Page: followers, reach, its link", M.facebook.name === "LABS" && M.facebook.followers === 1200 && M.facebook.reach === 280 && M.facebook.url === "https://www.facebook.com/tnllabs");
+  t("the Page's reach asks for the metric Meta still answers, never the retired one (2026-11-21)", seen.paths.includes("111/insights?page_total_media_view_unique") && !seen.paths.some((x) => x.includes("page_impressions_unique")) && M.facebook.days.length === 28);
+  t("and speaks Graph v24.0 by default, like sign-in and the inbox", readFileSync(join(ROOT, "src/server/admin/systems-meta.js"), "utf8").includes('"https://graph.facebook.com/v24.0"'));
   t("the catalog: what can be tagged, what's rejected and why, naming the pieces with a link", M.shop.counts.approved === 1 && M.shop.counts.rejected === 2 && M.shop.issues[0].title === "Image too small" && M.shop.issues[0].count === 1 && M.shop.issues[0].pieces[0].path === "/m/7");
 
   console.log("\nWHAT TO DO NEXT");
