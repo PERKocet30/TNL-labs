@@ -1,5 +1,12 @@
 /* ================================================================
-   ADMIN · SYSTEMS · META v1.2 — 2026-11-21 ("make sure the app is fully integrated
+   ADMIN · SYSTEMS · META v1.3 — 2026-11-21 (the same evening, read on the live site):
+   with the metric right, Meta's next answer was its code 190 — which this part
+   called "the token is no longer valid" while Instagram read fine on that very
+   token. Meta gives a Page's insights only to the Page's own key. The Page card
+   now asks for that key with the system-user token (GET <page>?fields=access_token)
+   and reads the reach with it; the key stays on the server like the token. And a
+   190 that is about the Page's key says so, in Meta's words, not "make a new token".
+   v1.2 — 2026-11-21 ("make sure the app is fully integrated
    with Meta"): the Facebook Page's reach reads again. Meta retired
    page_impressions_unique on 2025-11-15 ("must be a valid insights metric"); the
    Page card now asks for the one Meta names in its place,
@@ -46,15 +53,15 @@ const mtDay = (t) => { const d = new Date(t); return isNaN(d) ? "" : d.toISOStri
 const mtPct = (a, b) => (b ? Math.round(((a - b) / b) * 1000) / 10 : null);
 /* a link the page may follow: Instagram's or Facebook's own, nothing else */
 const mtUrl = (u) => /^https:\/\/(www\.)?(instagram\.com|facebook\.com)\//.test(String(u || "")) ? String(u).slice(0, 300) : "";
-async function mtGet(path, params = {}) {
+async function mtGet(path, params = {}, token) {
   const u = new URL(`${MT.url()}/${path}`);
   for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") u.searchParams.set(k, String(v));
-  u.searchParams.set("access_token", MT.token());
+  u.searchParams.set("access_token", token || MT.token());
   const r = await fetch(u, { signal: AbortSignal.timeout(12000) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok || j.error) {
     const e = j.error || {}, m = mtLine(e.message || `answered ${r.status}`);
-    const err = new Error(e.code === 190 ? "Meta says the token is no longer valid — make a new system-user token." : /permission|\(#10\)|\(#200\)/i.test(m) ? `Meta says no permission (${m}). Does the token have the five permissions and the Page assigned?` : m);
+    const err = new Error(/page access token/i.test(m) ? `Meta wants the Page's own key for this (${m}). In Business settings, give the system user the Page with "View performance".` : e.code === 190 ? "Meta says the token is no longer valid — make a new system-user token." : /permission|\(#10\)|\(#200\)/i.test(m) ? `Meta says no permission (${m}). Does the token have the five permissions and the Page assigned?` : m);
     err.code = e.code; throw err;
   }
   return j;
@@ -135,7 +142,9 @@ async function mtInstagram(ig) {
 async function mtFacebook(page) {
   const now = Date.now(), since = Math.floor((now - 28 * 86400000) / 1000), until = Math.floor(now / 1000);
   let reachMiss = "";   // 2026-11-10: "0 people reached" when Meta had refused the read was a number that meant nothing
-  const [p, ins] = await Promise.all([mtGet(page, { fields: "name,followers_count,fan_count,link" }), mtGet(`${page}/insights`, { metric: MT_PAGE_REACH, period: "day", since, until }).catch((e) => { reachMiss = /abort|timeout/i.test(e.message) ? "Meta didn't answer in time." : mtLine(e.message); return {}; })]);
+  /* 2026-11-21: Meta reads a Page's insights only with the Page's own key; the system-user token fetches it. No key → ask with the token and let Meta say why. */
+  const key = String((await mtGet(page, { fields: "access_token" }).catch(() => ({}))).access_token || "");
+  const [p, ins] = await Promise.all([mtGet(page, { fields: "name,followers_count,fan_count,link" }), mtGet(`${page}/insights`, { metric: MT_PAGE_REACH, period: "day", since, until }, key).catch((e) => { reachMiss = /abort|timeout/i.test(e.message) ? "Meta didn't answer in time." : mtLine(e.message); return {}; })]);
   const days = mtSeries(ins, MT_PAGE_REACH);
   return { name: String(p.name || "").slice(0, 60), followers: Number(p.followers_count ?? p.fan_count) || 0, url: mtUrl(p.link), reach: mtSum(days.map((d) => d.value)), reachMiss, days };
 }
