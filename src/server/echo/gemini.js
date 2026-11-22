@@ -1,5 +1,10 @@
 /* ================================================================
-   ECHO · Gemini as the brain v1.1 — 2026-11-22 ("It doesn't seem to be working":
+   ECHO · Gemini as the brain v1.2 — 2026-11-22 (Gemini answered in 14s, then
+   "You exceeded your current quota": a megabyte a call used up the free
+   tier's per-minute limit in two. Gemini is now sent the last six questions,
+   with earlier lookups cut short and earlier photos left out — gemTrim — and
+   a limit that clears within 45s is waited out once instead of failing).
+   v1.1 — 2026-11-22 ("It doesn't seem to be working":
    the first real question sat on "Thinking" for three minutes and died —
    Google took the question and sent nothing back in time. Gemini now thinks
    lightly, streams its thinking as signs of life, and is given up on after
@@ -35,6 +40,7 @@
 const GEM_MODEL = (process.env.ECHO_GEMINI_MODEL || "gemini-4-hydrogen").trim().replace(/[^a-zA-Z0-9._-]/g, "") || "gemini-4-hydrogen";
 const GEM_THINK = (process.env.ECHO_GEMINI_THINKING || "low").trim().toLowerCase().replace(/[^a-z]/g, "") || "low";   // how hard it thinks before answering: low keeps a chat a chat
 const GEM_QUIET_MS = Math.max(200, +process.env.ECHO_GEMINI_QUIET_MS || 90000);   // no byte from Google for this long: give up (the test shortens it)
+const GEM_WAIT_MAX = 45;   // seconds: the longest Echo waits for Google's per-minute limit to clear before saying so
 const GEM_CAP_MS = Math.max(GEM_QUIET_MS, 300000);                                // …and never longer than this, whatever arrives
 const gemIs = (id) => /^gemini-/.test(String(id || ""));
 /* gemini-4-hydrogen → "Gemini 4 Hydrogen"; a "-preview" or a date on the end isn't part of the name */
@@ -65,15 +71,32 @@ function gemContents(messages) {
   return out;
 }
 
+/* v1.2 — what Gemini is sent, kept small. Claude is sent the whole thread (40 questions, every lookup's full result,
+   every photo) and caches it; Google's free tier counts every token of every call against a per-minute limit, and a
+   megabyte a call used it up in two. So Gemini gets the last GEM_ASKS questions; in the ones before the current
+   question a lookup's result is cut short and a photo or PDF becomes a line saying one was here. The current
+   question is whole. Nothing on disk changes — pick Claude again and it has everything. */
+const GEM_ASKS = 6, GEM_OLD_RESULT = 1500;
+function gemTrim(messages) {
+  const asks = []; messages.forEach((m, i) => { if (m.role === "user" && !(Array.isArray(m.content) && m.content.some((b) => b.type === "tool_result"))) asks.push(i); });
+  if (!asks.length) return messages;
+  const from = asks[Math.max(0, asks.length - GEM_ASKS)], now = asks[asks.length - 1];
+  return messages.slice(from).map((m, i) => (i + from >= now || !Array.isArray(m.content) ? m : { ...m, content: m.content.map((b) => {
+    if (b.type === "image" || b.type === "document") return { type: "text", text: `(${b.type === "image" ? "a photo" : "a PDF"} was attached here)` };
+    if (b.type === "tool_result") { const t = typeof b.content === "string" ? b.content : brainText(b.content); return t.length > GEM_OLD_RESULT ? { ...b, content: t.slice(0, GEM_OLD_RESULT) + "\n…(an earlier lookup, cut short — look again if you need it)" } : b; }
+    return b; }) }));
+}
+const gemPause = (ms) => new Promise((r) => setTimeout(r, ms));
+
 /* One call, streamed, answered in the shape brainCall answers in: { content, stop_reason, usage }. */
-async function gemCall({ model, system, tools, messages }, onText) {
+async function gemCall({ model, system, tools, messages }, onText, onStatus) {
   const fail = (plain, status, detail = "") => { const e = new Error(detail || plain); e.plain = plain; e.status = status; return e; };
   if (!asOn()) throw fail("Gemini isn't set up — GEMINI_API_KEY in Railway → Variables. Tap the model's name to pick another.", 401);
   /* v1.1: Gemini thinks before it speaks, and by default thinks hard — over a long conversation that ran past three
      silent minutes and the first real question died. So: think lightly (GEM_THINK), ask for the thinking to be streamed
      as it happens (signs of life — never shown, never kept), and give up on silence (GEM_QUIET_MS without a byte), not
      on a clock alone. A key or model that doesn't know these settings is asked again without them. */
-  const req = { systemInstruction: { parts: [{ text: (system || []).map((s) => s.text || "").join("\n\n") }] }, contents: gemContents(messages),
+  const req = { systemInstruction: { parts: [{ text: (system || []).map((s) => s.text || "").join("\n\n") }] }, contents: gemContents(gemTrim(messages)),
     tools: [{ functionDeclarations: tools.map((t) => ({ name: t.name, description: t.description, parametersJsonSchema: t.input_schema })) }] };
   const stop = new AbortController(), t0 = Date.now(); let quiet = null, first = 0, slow = "";
   const alive = () => { clearTimeout(quiet); quiet = setTimeout(() => { slow = "quiet"; stop.abort(); }, GEM_QUIET_MS); };
@@ -89,11 +112,15 @@ async function gemCall({ model, system, tools, messages }, onText) {
     const d = await r.clone().json().catch(() => ({}));
     if (/thinking|includeThoughts/i.test(String((d.error && d.error.message) || ""))) { console.warn("[echo] gemini: thinking settings refused, asking without them"); alive(); r = await send(false).catch((e) => { throw slow ? tooSlow() : e; }); }
   }
+  if (r.status === 429) {   // the per-minute limit: Google says how long until it clears — if that's soon, wait it out once rather than fail the question
+    const d = await r.clone().json().catch(() => ({})), wait = Math.ceil(parseFloat(String((((d.error && d.error.details) || []).find((x) => x && x.retryDelay) || {}).retryDelay || "")) || 0);
+    if (wait > 0 && wait <= GEM_WAIT_MAX) { console.warn(`[echo] gemini: at the limit, waiting ${wait}s`); if (onStatus) onStatus("Waiting on Google's limit"); clearTimeout(quiet); await gemPause(wait * 1000 + 500); alive(); r = await send(true).catch((e) => { throw slow ? tooSlow() : e; }); }
+  }
   if (!r.ok) {
     const d = await r.json().catch(() => ({})), m = String((d.error && d.error.message) || "").slice(0, 600);
     throw fail((r.status === 400 && /api key/i.test(m)) || r.status === 401 || r.status === 403 ? "Google turned the key away. Check GEMINI_API_KEY in Railway → Variables."
       : r.status === 404 ? `Google doesn't know the model "${model}". Set ECHO_GEMINI_MODEL in Railway → Variables to one your key can use.`
-      : r.status === 429 ? "Gemini's limit for this key is used up for now. Try again in a little while, or tap the model's name to pick another."
+      : r.status === 429 ? "Gemini's limit for this key is used up for now. Try again in a minute, or tap the model's name to pick another."
       : r.status === 400 ? "Gemini turned that message down. Ask again — if it keeps happening, tap the pen for a new conversation."
       : "Gemini had a problem on its side. Ask again in a moment.", r.status, m || `Gemini said ${r.status}`);
   }

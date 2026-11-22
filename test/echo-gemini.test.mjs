@@ -35,6 +35,7 @@ const google = createServer((req, res) => {
     if (req.headers["x-goog-api-key"] !== "AIza-secret") return json(400, { error: { message: "API key not valid. Please pass a valid API key." } });
     if (/:generateContent$/.test(req.url)) { G.searches.push({ url: req.url, body: j }); return json(200, { candidates: [{ content: { parts: [{ text: "Reels are reaching more than photos this month." }] }, groundingMetadata: { groundingChunks: [{ web: { uri: "https://example.org/report", title: "A report" } }] } }] }); }
     G.seen.push({ url: req.url, headers: req.headers, body: j });
+    if (G.mode === "busy-once") { G.mode = "ok"; G.seen.pop(); G.waits = (G.waits || 0) + 1; return json(429, { error: { message: "You exceeded your current quota", details: [{ "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "1s" }] } }); }
     if (G.mode === "busy") return json(429, { error: { message: "Resource has been exhausted" } });
     if (!/\/models\/gemini-4-hydrogen:streamGenerateContent\?alt=sse$/.test(req.url)) return json(404, { error: { message: "models/x is not found" } });
     if (G.mode === "nothink" && j.generationConfig.thinkingConfig) return json(400, { error: { message: 'Invalid JSON payload received. Unknown name "thinkingConfig" at \'generation_config\'' } });
@@ -160,11 +161,28 @@ try {
   const roles = G.seen.at(-1).body.contents.map((c) => c.role), calls = JSON.stringify(G.seen.at(-1).body.contents).match(/"functionCall"/g).length, resps = JSON.stringify(G.seen.at(-1).body.contents).match(/"functionResponse"/g).length;
   t("…and the next question goes through: turns still alternate, every lookup has its result", b4 && /Back\. All good\./.test(b4.text) && !b4.failed && roles.every((r, i) => i === 0 || r !== roles[i - 1]) && roles[0] === "user" && calls === resps);
 
+  console.log("\nA FREE KEY — what Gemini is sent stays small, and a short limit is waited out (v1.2)");
+  G.mode = "busy-once"; G.script = [[{ text: "Waited, then answered." }]];
+  const w0 = Date.now(), b7 = await ask("one more");
+  t("Google says the limit clears in a second: Echo waits and asks again instead of failing", b7 && b7.text === "Waited, then answered." && !b7.failed && G.waits === 1 && Date.now() - w0 >= 1000);
+  /* a long thread from before: eight questions, each with a big lookup and a photo — as Claude would have left it */
+  { const big = "x".repeat(20000), put = db.prepare("INSERT INTO echo_brain (user_id, role, kind, content, model, label, created_at) VALUES (?,?,?,?,?,'',?)");
+    for (let i = 0; i < 8; i++) { put.run(admin, "user", "ask", JSON.stringify([{ type: "text", text: "old question " + i }, { type: "image", source: { type: "base64", media_type: "image/png", data: "QUJD".repeat(5000) } }]), "", Date.now());
+      put.run(admin, "assistant", "reply", JSON.stringify([{ type: "tool_use", id: "toolu_old" + i, name: "members", input: {} }]), "claude-opus-5-5", Date.now());
+      put.run(admin, "user", "result", JSON.stringify([{ type: "tool_result", tool_use_id: "toolu_old" + i, content: big }]), "", Date.now());
+      put.run(admin, "assistant", "reply", JSON.stringify([{ type: "text", text: "old answer " + i }]), "claude-opus-5-5", Date.now()); } }
+  G.script = [[{ text: "Short and sweet." }]];
+  const b8 = await ask("what now?"), sent = G.seen.at(-1).body, sflat = JSON.stringify(sent.contents);
+  t("Gemini gets the last six questions, not the whole thread", b8 && b8.text === "Short and sweet." && !/old question 2"/.test(sflat) && /old question 3/.test(sflat) && /old question 7/.test(sflat) && sent.contents.at(-1).parts[0].text === "what now?");
+  t("…earlier lookups cut short and earlier photos left out — a megabyte doesn't ride on every call", !sflat.includes("x".repeat(1600)) && /cut short/.test(sflat) && !/inlineData/.test(sflat) && /a photo was attached here/.test(sflat) && sflat.length < 40000);
+  t("…and every lookup still has its result, turns still alternate", sflat.match(/"functionCall"/g).length === sflat.match(/"functionResponse"/g).length && sent.contents.every((c, i) => i === 0 ? c.role === "user" : c.role !== sent.contents[i - 1].role));
+
   console.log("\nBACK TO CLAUDE — the thread kept, nothing of Google's on it");
   t("pick Opus again", (await call("tok-admin", "POST", "/api/echo/model", { model: "claude-opus-5-5" })).s === 200);
   C.script = [{ stop_reason: "end_turn", content: [{ type: "text", text: "Picking up where Gemini left it." }] }];
   const g0 = G.seen.length, a4 = await ask("carry on");
   const cm = C.seen.at(-1).messages, cflat = JSON.stringify(cm), uses = cm.flatMap((m) => m.content).filter((b) => b.type === "tool_use"), results = cm.flatMap((m) => m.content).filter((b) => b.type === "tool_result");
+  t("Claude still gets the whole thread — nothing was cut on disk", /old question 0/.test(JSON.stringify(C.seen.at(-1).messages)) && JSON.stringify(C.seen.at(-1).messages).includes("x".repeat(20000)));
   t("Claude answers, Google isn't called", a4 && /Picking up/.test(a4.text) && a4.model === "Opus 5.5" && G.seen.length === g0);
   t("Claude gets Gemini's words and lookups as plain blocks — no seal, no Google id", /Nothing posted yet/.test(cflat) && uses.some((b) => b.name === "posts") && !/gsig|gid|GOOGLE-SEAL|call_1/.test(cflat) && uses.every((b) => /^[a-zA-Z0-9_-]{1,64}$/.test(b.id)));
   t("…every lookup still has its result, and no empty text", uses.every((u) => results.some((r) => r.tool_use_id === u.id)) && cm.flatMap((m) => m.content).every((b) => b.type !== "text" || b.text.length > 0));

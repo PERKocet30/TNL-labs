@@ -223,7 +223,7 @@ async function brainAsk(user, token, q, files = [], label = "") {
   /* Last resort (once per question): if Claude still refuses old reasoning, send the history without
      it — every word and tool call stays, only the sealed reasoning goes. Stored rows are untouched. */
   const call = async () => {
-    if (gem) return gemCall({ model, system, tools, messages }, onText);
+    if (gem) return gemCall({ model, system, tools, messages }, onText, (text) => brainTell(user.id, { kind: "status", askId, text }));
     try { return await brainCall({ model, max_tokens: 8192, system, tools, messages }, onText, onBlock); }
     catch (e) {
       if (stripped || e.status !== 400 || !/thinking|signature/i.test(e.message)) throw e;
