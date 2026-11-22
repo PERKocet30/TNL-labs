@@ -2604,10 +2604,11 @@ console.log("\nMEMBER · COMPUTER");
     const size = p.viewportSize();
     await p.setViewportSize({ width: 1280, height: 520 });
     await settledGoto(p, B + "/admin#settings");
-    await p.locator(".side .nv[data-tab=health]").waitFor({ state: "attached" });
+    await fast(p, 6000, () => p.locator("[data-systab=data]").waitFor(), "Settings");   // loaded and repainted: the menu is the one that stays
+    await p.waitForTimeout(300);
     const m = await p.evaluate(() => { const n = document.querySelector(".side-nav"), f = document.querySelector(".side-ft").getBoundingClientRect(); return { scrolls: n.scrollHeight > n.clientHeight + 4, y: getComputedStyle(n).overflowY, foot: f.bottom <= innerHeight + 1 && f.height > 0 }; });
     ok(m.scrolls && m.y === "auto" && m.foot, "the side menu can't scroll, or its foot is off the screen: " + JSON.stringify(m));
-    await p.locator(".side .nv[data-tab=health]").scrollIntoViewIfNeeded();
+    await p.evaluate(() => { const n = document.querySelector(".side-nav"); n.scrollTop = n.scrollHeight; });   // what a wheel or a finger does
     const r = await p.locator(".side .nv[data-tab=health]").boundingBox();
     ok(r && r.y >= 0 && r.y + r.height <= 520, "Health, the last section, can't be reached");
     await p.locator(".side .nv[data-tab=health]").click();
