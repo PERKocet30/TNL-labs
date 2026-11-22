@@ -36,6 +36,9 @@ const google = createServer((req, res) => {
     if (/:generateContent$/.test(req.url)) { G.searches.push({ url: req.url, body: j }); return json(200, { candidates: [{ content: { parts: [{ text: "Reels are reaching more than photos this month." }] }, groundingMetadata: { groundingChunks: [{ web: { uri: "https://example.org/report", title: "A report" } }] } }] }); }
     G.seen.push({ url: req.url, headers: req.headers, body: j });
     if (G.mode === "busy-once") { G.mode = "ok"; G.seen.pop(); G.waits = (G.waits || 0) + 1; return json(429, { error: { message: "You exceeded your current quota", details: [{ "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "1s" }] } }); }
+    if (G.mode === "demand-once") { G.mode = "ok"; G.seen.pop(); G.demand = (G.demand || 0) + 1; return json(503, { error: { message: "This model is currently experiencing high demand." } }); }
+    if (G.mode === "demand") return json(503, { error: { message: "This model is currently experiencing high demand." } });
+    if (G.mode === "broke") return json(402, { error: { message: "Your prepayment credits are depleted." } });
     if (G.mode === "busy") return json(429, { error: { message: "Resource has been exhausted" } });
     if (!/\/models\/gemini-4-hydrogen:streamGenerateContent\?alt=sse$/.test(req.url)) return json(404, { error: { message: "models/x is not found" } });
     if (G.mode === "nothink" && j.generationConfig.thinkingConfig) return json(400, { error: { message: 'Invalid JSON payload received. Unknown name "thinkingConfig" at \'generation_config\'' } });
@@ -78,7 +81,7 @@ await new Promise((r) => claude.listen(0, "127.0.0.1", r));
 const PORT = 18820 + (process.pid % 150);
 const boot = (env) => {
   const srv = spawn(process.execPath, ["--experimental-sqlite", "src/server.js"], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), TNL_DATA: DATA, TNL_NO_WATCH: "1", ECHO_AI_KEY: "sk-ant-test", ANTHROPIC_API_KEY: "", ANTHROPIC_API_BASE: `http://127.0.0.1:${claude.address().port}`, ECHO_MODEL: "claude-opus-5-5", ECHO_HOLD_MS: "150",
-    GEMINI_API_KEY: "AIza-secret", GEMINI_API_URL: `http://127.0.0.1:${google.address().port}/v1beta`, GEMINI_MODEL: "", ECHO_GEMINI_MODEL: "", ECHO_GEMINI_QUIET_MS: "600", ...env }, stdio: ["ignore", "pipe", "pipe"] });
+    GEMINI_API_KEY: "AIza-secret", GEMINI_API_URL: `http://127.0.0.1:${google.address().port}/v1beta`, GEMINI_MODEL: "", ECHO_GEMINI_MODEL: "", ECHO_GEMINI_QUIET_MS: "600", ECHO_GEMINI_BUSY_MS: "60", ...env }, stdio: ["ignore", "pipe", "pipe"] });
   srv.log = ""; srv.stdout.on("data", (d) => srv.log += d); srv.stderr.on("data", (d) => srv.log += d);
   return srv;
 };
@@ -176,6 +179,16 @@ try {
   t("Gemini gets the last six questions, not the whole thread", b8 && b8.text === "Short and sweet." && !/old question 2"/.test(sflat) && /old question 3/.test(sflat) && /old question 7/.test(sflat) && sent.contents.at(-1).parts[0].text === "what now?");
   t("…earlier lookups cut short and earlier photos left out — a megabyte doesn't ride on every call", !sflat.includes("x".repeat(1600)) && /cut short/.test(sflat) && !/inlineData/.test(sflat) && /a photo was attached here/.test(sflat) && sflat.length < 40000);
   t("…and every lookup still has its result, turns still alternate", sflat.match(/"functionCall"/g).length === sflat.match(/"functionResponse"/g).length && sent.contents.every((c, i) => i === 0 ? c.role === "user" : c.role !== sent.contents[i - 1].role));
+
+  console.log("\nGOOGLE'S OWN BAD MOMENTS (v1.3)");
+  G.mode = "demand-once"; G.script = [[{ text: "Got through." }]];
+  const d1 = await ask("busy?");
+  t("\"experiencing high demand\" once: asked again, and the answer comes", d1 && d1.text === "Got through." && !d1.failed && G.demand === 1);
+  G.mode = "demand"; const d0 = G.seen.length, d2 = await ask("still busy?");
+  t("…still busy after two more tries: said plainly as Google's side", d2 && d2.failed && /overloaded right now/.test(d2.text) && G.seen.length === d0 + 3);
+  G.mode = "broke"; const d3 = await ask("and credit?");
+  t("the project is out of credit: says so, and where to top up", d3 && d3.failed && /out of credit/.test(d3.text) && /ai\.studio\/projects/.test(d3.text));
+  G.mode = "ok";
 
   console.log("\nBACK TO CLAUDE — the thread kept, nothing of Google's on it");
   t("pick Opus again", (await call("tok-admin", "POST", "/api/echo/model", { model: "claude-opus-5-5" })).s === 200);

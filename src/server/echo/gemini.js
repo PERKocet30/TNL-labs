@@ -1,5 +1,9 @@
 /* ================================================================
-   ECHO · Gemini as the brain v1.2 — 2026-11-22 (Gemini answered in 14s, then
+   ECHO · Gemini as the brain v1.3 — 2026-11-22 ("I tried another question":
+   Google answered 503, "this model is currently experiencing high demand" —
+   asked again twice, a few seconds apart, before saying so; and "out of
+   credit" (402) and "overloaded" (503) each get their own plain line).
+   v1.2 — 2026-11-22 (Gemini answered in 14s, then
    "You exceeded your current quota": a megabyte a call used up the free
    tier's per-minute limit in two. Gemini is now sent the last six questions,
    with earlier lookups cut short and earlier photos left out — gemTrim — and
@@ -41,6 +45,7 @@ const GEM_MODEL = (process.env.ECHO_GEMINI_MODEL || "gemini-4-hydrogen").trim().
 const GEM_THINK = (process.env.ECHO_GEMINI_THINKING || "low").trim().toLowerCase().replace(/[^a-z]/g, "") || "low";   // how hard it thinks before answering: low keeps a chat a chat
 const GEM_QUIET_MS = Math.max(200, +process.env.ECHO_GEMINI_QUIET_MS || 90000);   // no byte from Google for this long: give up (the test shortens it)
 const GEM_WAIT_MAX = 45;   // seconds: the longest Echo waits for Google's per-minute limit to clear before saying so
+const GEM_BUSY_MS = Math.max(50, +process.env.ECHO_GEMINI_BUSY_MS || 4000);   // the first wait when Google says it's busy; the second is twice this (the test shortens it)
 const GEM_CAP_MS = Math.max(GEM_QUIET_MS, 300000);                                // …and never longer than this, whatever arrives
 const gemIs = (id) => /^gemini-/.test(String(id || ""));
 /* gemini-4-hydrogen → "Gemini 4 Hydrogen"; a "-preview" or a date on the end isn't part of the name */
@@ -116,11 +121,16 @@ async function gemCall({ model, system, tools, messages }, onText, onStatus) {
     const d = await r.clone().json().catch(() => ({})), wait = Math.ceil(parseFloat(String((((d.error && d.error.details) || []).find((x) => x && x.retryDelay) || {}).retryDelay || "")) || 0);
     if (wait > 0 && wait <= GEM_WAIT_MAX) { console.warn(`[echo] gemini: at the limit, waiting ${wait}s`); if (onStatus) onStatus("Waiting on Google's limit"); clearTimeout(quiet); await gemPause(wait * 1000 + 500); alive(); r = await send(true).catch((e) => { throw slow ? tooSlow() : e; }); }
   }
+  for (let again = 0; again < 2 && (r.status === 503 || r.status === 500); again++) {   // v1.3: "experiencing high demand" — Google's own busy moment; twice more, a few seconds apart, before saying so
+    console.warn(`[echo] gemini: Google is busy (${r.status}), asking again`); if (onStatus) onStatus("Google is busy — asking again"); clearTimeout(quiet); await gemPause(GEM_BUSY_MS * (again + 1)); alive(); r = await send(true).catch((e) => { throw slow ? tooSlow() : e; });
+  }
   if (!r.ok) {
     const d = await r.json().catch(() => ({})), m = String((d.error && d.error.message) || "").slice(0, 600);
     throw fail((r.status === 400 && /api key/i.test(m)) || r.status === 401 || r.status === 403 ? "Google turned the key away. Check GEMINI_API_KEY in Railway → Variables."
       : r.status === 404 ? `Google doesn't know the model "${model}". Set ECHO_GEMINI_MODEL in Railway → Variables to one your key can use.`
       : r.status === 429 ? "Gemini's limit for this key is used up for now. Try again in a minute, or tap the model's name to pick another."
+      : r.status === 402 ? "Google says this key's project is out of credit. Top it up at ai.studio/projects, or tap the model's name to pick another."
+      : r.status === 503 ? "Gemini is overloaded right now — Google's side, not yours. Give it a minute and ask again, or tap the model's name to pick another."
       : r.status === 400 ? "Gemini turned that message down. Ask again — if it keeps happening, tap the pen for a new conversation."
       : "Gemini had a problem on its side. Ask again in a moment.", r.status, m || `Gemini said ${r.status}`);
   }
