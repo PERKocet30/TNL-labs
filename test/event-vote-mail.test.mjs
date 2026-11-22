@@ -72,7 +72,7 @@ try {
   t("See the entries opens the tournament in the app", ana.html.includes('href="https://tnllabs.com/?e=art"') && ana.text.includes("See the entries"));
   const unsub = /https:\/\/tnllabs\.com\/mail\/off\?k=([a-f0-9]{36})/.exec(ana.html);
   t("an unsubscribe link and the one-click headers", !!unsub && ana.headers?.["List-Unsubscribe"] === `<${unsub[0]}>`);
-  t("never a TNL in it", !/TNL/.test(ana.subject + ana.text));
+  t("never a TNL in it (the company's legal name at the foot aside)", !/TNL/.test((ana.subject + ana.text).replaceAll("TNL LABS LLC", "")));
   await wait(1500);
   t("nobody gets it twice", votes().length === 5);
 

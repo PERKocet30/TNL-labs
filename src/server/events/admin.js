@@ -1,6 +1,6 @@
 
 /* ================================================================
-   EVENTS v1.6 — 2026-11-14 (the rules name the sponsor by its legal name). v1.5 — 2026-11-14 (weighted votes: the switch, and the rules say so). v1.4 — 2026-11-05 (resultsMail in the admin view). v1.3 — 2026-10-14 (an unused field list out). v1.2 — 2026-10-12 (also: `current`, so admin can show the link to send). Running an event (admin only, enforced
+   EVENTS v1.7 — 2026-11-20 (the event's structured data names the organizer's legal name). v1.6 — 2026-11-14 (the rules name the sponsor by its legal name). v1.5 — 2026-11-14 (weighted votes: the switch, and the rules say so). v1.4 — 2026-11-05 (resultsMail in the admin view). v1.3 — 2026-10-14 (an unused field list out). v1.2 — 2026-10-12 (also: `current`, so admin can show the link to send). Running an event (admin only, enforced
    here) and its public pages: /e/:slug and /e/:slug/rules.
    v1.2: the "entries are open" email to every member (its switch,
    its progress; the sending is in server/events/mail.js).
@@ -211,7 +211,7 @@ app.get("/e/:slug", (req, res) => {
 ${ldJson({ "@context": "https://schema.org", "@type": "Event", name: ev.title, url: base + "/e/" + ev.slug, description: (ev.brief || desc).slice(0, 500), image: abs(img),
   ...(s[0]?.start ? { startDate: new Date(s[0].start).toISOString() } : {}), ...(s.length && s[s.length - 1].start ? { endDate: new Date(s[s.length - 1].start).toISOString() } : {}),
   eventStatus: "https://schema.org/EventScheduled", eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
-  location: { "@type": "VirtualLocation", url: base + "/e/" + ev.slug }, organizer: { "@type": "Organization", name: "LABS", url: base },
+  location: { "@type": "VirtualLocation", url: base + "/e/" + ev.slug }, organizer: { "@type": "Organization", name: "LABS", legalName: LEGAL_NAME, url: base },
   ...(ev.prize ? { offers: { "@type": "Offer", price: "0", priceCurrency: "USD", url: base + "/e/" + ev.slug, availability: "https://schema.org/InStock" } } : {}) })}`,
     body: `${lookEyebrow("Event")}<h1>${esc(ev.title)}</h1>
 <p class="cap" style="margin:0 0 16px">${esc(label)}${ev.prize ? " · " + esc(ev.prize) : ""}</p>

@@ -53,6 +53,15 @@ try {
   t("the Market's foot links all four", ['/policies', '/terms', '/privacy', '/contact'].every((h) => app.includes(`<a href="${h}" target="_blank"`)));
   t("settings menu reaches them", app.includes('"Terms, privacy & help"'));
   t("no 'Paid through TNL' box — the seller line says it quietly", !app.includes('class="dtrust"') && !app.includes("Paid through TNL") && app.includes("Checkout by Stripe"));
+  /* 2026-11-20: the company is named where the law and the platforms look for it */
+  console.log("\nTHE COMPANY BEHIND LABS");
+  const contact = (await get("/contact")).html;
+  t("every policy page tells Google and Meta who runs LABS", /"legalName":"TNL LABS LLC"/.test(contact) && /"@type":"Organization"/.test(contact));
+  t("the footer's © is the LLC", contact.includes("TNL LABS LLC · "));
+  const meta = await (await fetch(BASE + "/api/market/meta")).json();
+  t("the Market's footer gets the legal name", meta.legalName === "TNL LABS LLC" && app.includes("MKTMETA.legalName"));
+  const { nudgeEmail } = await import("../src/mail.js");
+  t("the foot of every email names the company", typeof nudgeEmail === "function" && readFileSync(join(ROOT, "src/mail.js"), "utf8").split("LABS is run by ${LEGAL_NAME}, ${LEGAL_STATE}.").length === 3);
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

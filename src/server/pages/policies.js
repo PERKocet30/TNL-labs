@@ -1,5 +1,7 @@
 
 /* ================================================================
+   THE POLICIES · v1.5 — 2026-11-20 (v1.5: the legal name moves to src/legal.js so the emails and the Market
+   can say it too; every policy page carries the company as structured data for Google and Meta).
    THE POLICIES · v1.4 — 2026-11-15 (v1.4: Privacy says LABS counts visits itself — screens, length, where from,
    device, country — with no outside tracker).
    THE POLICIES · v1.3 — 2026-11-14 (v1.3: the company behind LABS is named —
@@ -22,9 +24,9 @@
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@tnllabs.com";
 const POLICY_UPDATED = "November 15, 2026";
 /* The company that runs LABS (2026-11-14). The app is still LABS everywhere; the legal name shows only where
-   the law wants the company named — policies, the footer's ©, event rules. Typed here and nowhere else
-   (test/naming.test.mjs checks). */
-const LEGAL_NAME = "TNL LABS LLC", LEGAL_STATE = "Virginia";
+   the law wants the company named — policies, the footer's ©, event rules, the Market's footer, every email's
+   foot, the structured data. Typed once, in src/legal.js (test/naming.test.mjs checks). */
+const { LEGAL_NAME, LEGAL_STATE } = await import("./legal.js");   // typed once, in src/legal.js (2026-11-20)
 const POLICY_PAGES = [
   ["/shop", "Shop"], ["/terms", "Terms"], ["/privacy", "Privacy"],
   ["/policies", "Shipping & returns"], ["/contact", "Contact"],
@@ -47,7 +49,8 @@ function policyPage(res, { path, title, eyebrow, lead, sections }) {
   res.set("Cache-Control", "public, max-age=300");
   res.send(lookPage({
     title: `${title} — LABS`,
-    head: `<link rel="canonical" href="https://tnllabs.com${path}"><meta name="description" content="${lookEsc(lead)}">`,
+    head: `<link rel="canonical" href="https://tnllabs.com${path}"><meta name="description" content="${lookEsc(lead)}">
+${orgLd()}`,
     body: `${lookEyebrow(eyebrow)}<h1>${title}</h1><p class="p">${lead}</p>
 <p class="cap">Last updated ${POLICY_UPDATED}</p>${toc}
 ${sections.map(([h, html], i) => `<section class="pol" id="s${i + 1}"><h2>${h}</h2>${html}</section>`).join("\n")}`,
@@ -55,6 +58,10 @@ ${sections.map(([h, html], i) => `<section class="pol" id="s${i + 1}"><h2>${h}</
 }
 
 const mail = () => `<a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>`;
+/* Who runs LABS, as structured data on every policy page (2026-11-20): what Google Merchant Center and Meta
+   read to match the business profile to the website. */
+const orgLd = () => ldJson({ "@context": "https://schema.org", "@type": "Organization", name: "LABS", legalName: LEGAL_NAME,
+  url: "https://tnllabs.com", email: SUPPORT_EMAIL, address: { "@type": "PostalAddress", addressRegion: "VA", addressCountry: "US" } });
 
 /* ── Terms of service ───────────────────────────────────────────── */
 app.get("/terms", (_req, res) => policyPage(res, {
@@ -142,6 +149,7 @@ app.get("/contact", (_req, res) => {
   res.set("Cache-Control", "public, max-age=300");
   res.send(lookPage({
     title: "Contact — LABS",
+    head: orgLd(),
     body: `${lookEyebrow("Contact")}<h1>Get in touch</h1>
 <p class="p">Questions, a problem with an order, a report, or a copyright complaint — email us and a real person answers within 2 business days.</p>
 <a class="btn acc" href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
