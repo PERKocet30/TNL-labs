@@ -1,4 +1,4 @@
-/* ECHO v1.7 — 2026-11-04 ("my message keeps getting deleted": a failed send asks the server whether it arrived, waits for the answer if Echo is still at it, or says it didn't with the words back in the box; coming back to the app re-reads the conversation). v1.6 — 2026-11-04 (the hands: a card under an answer — what Echo set up and why, Confirm · Not now; done, declined or failed after; live when decided). v1.5 — 2026-11-04 (what Claude's app has: photos and PDFs on a message (the photo button, thumbnails over the composer), dictation (the mic — the phone's own speech recognition, no outside service), answers read aloud (the speaker in the header, remembered on this phone), "Searched the web" under an answer). v1.4 — 2026-11-04 (pick the model: tap its name under the composer — a sheet of the three, a line on each; every answer says which one wrote it). v1.3 — 2026-11-04 (modelled on Claude: your words in a quiet card, Echo's answer as plain text on the page, written in as it streams over the live stream, "Thinking" / "Looking at orders" while it works, light markdown, copy, a new conversation from the pen). v1.2 — 2026-11-04 (the brain: for an admin, when the server has a key, Echo is a model that reasons — the same screen, a turn of kind "brain" with what it looked at, Start fresh instead of Talk to a person). v1.1 — 2026-11-04 (answers from Knowledge wear the entry's title; a pick names which kind it was). v1.0 — 2026-11-04. Echo is LABS's help, pinned at the top of Messages:
+/* ECHO v1.8 — 2026-11-22 ("Gemini in the model picker": the sheet lists whatever models the server offers and names each by its own name — Gemini is the fourth while its key is set; "Which model answers"). v1.7 — 2026-11-04 ("my message keeps getting deleted": a failed send asks the server whether it arrived, waits for the answer if Echo is still at it, or says it didn't with the words back in the box; coming back to the app re-reads the conversation). v1.6 — 2026-11-04 (the hands: a card under an answer — what Echo set up and why, Confirm · Not now; done, declined or failed after; live when decided). v1.5 — 2026-11-04 (what Claude's app has: photos and PDFs on a message (the photo button, thumbnails over the composer), dictation (the mic — the phone's own speech recognition, no outside service), answers read aloud (the speaker in the header, remembered on this phone), "Searched the web" under an answer). v1.4 — 2026-11-04 (pick the model: tap its name under the composer — a sheet of the three, a line on each; every answer says which one wrote it). v1.3 — 2026-11-04 (modelled on Claude: your words in a quiet card, Echo's answer as plain text on the page, written in as it streams over the live stream, "Thinking" / "Looking at orders" while it works, light markdown, copy, a new conversation from the pen). v1.2 — 2026-11-04 (the brain: for an admin, when the server has a key, Echo is a model that reasons — the same screen, a turn of kind "brain" with what it looked at, Start fresh instead of Talk to a person). v1.1 — 2026-11-04 (answers from Knowledge wear the entry's title; a pick names which kind it was). v1.0 — 2026-11-04. Echo is LABS's help, pinned at the top of Messages:
    ask in your own words, get an answer from what Echo knows about LABS
    (and about your own orders, shop and standing — nobody else's), thumbs it
    up or down, pick "I meant…" when it wasn't sure, or hand the conversation
@@ -150,7 +150,7 @@ function onEchoLive(d){
   else if(d.kind==="proposal"){echoCardUpdate(d.proposal);return}
   const f=$("#echofeed");if(f&&f.scrollHeight-f.scrollTop-f.clientHeight<160)f.scrollTop=f.scrollHeight;
 }
-const echoModelName=m=>{const p=String(m||"").replace(/^claude-/,"").split("-");if(!p[0])return"";return"Claude "+p[0][0].toUpperCase()+p[0].slice(1)+(p.length>1?" "+p.slice(1).join("."):"")};
+const echoModelName=m=>{const k=(ECHO&&ECHO.models||[]).find(x=>x.id===m);if(k)return k.name;const p=String(m||"").replace(/^claude-/,"").split("-");if(!p[0])return"";return"Claude "+p[0][0].toUpperCase()+p[0].slice(1)+(p.length>1?" "+p.slice(1).join("."):"")};
 function echoComposerHTML(){
   const has=(ECHODRAFT||"").trim();
   if(echoBrain()){const att=ECHO.att||[];
@@ -273,12 +273,12 @@ function echoVoiceToggle(){
   toast(on?"Echo will read answers aloud":"Echo is quiet");
   if(on){const last=[...ECHO.turns].reverse().find(t=>t.kind==="brain"&&t.text&&!t.failed);if(last)echoSay(last.text)}
 }
-/* Pick which Claude answers: a sheet of the three, a line on each, the current one marked. The next message uses it. */
+/* Pick which model answers: a sheet of them (Gemini too, when its key is set — 2026-11-22), a line on each, the current one marked. The next message uses it. */
 function echoPickModel(){
   if(!ECHO||!ECHO.models||ECHOBUSY)return;
   const ov=document.createElement("div");ov.className="ui-ov ui-alertov";
   ov.innerHTML=`<div class="ui-card ui-alert echo-models" role="dialog" aria-modal="true" aria-label="Pick the model">
-      <div class="ui-atext"><div class="ui-title">Which Claude answers</div><div class="ui-body">Takes effect on your next message.</div></div>
+      <div class="ui-atext"><div class="ui-title">Which model answers</div><div class="ui-body">Takes effect on your next message.</div></div>
       <div class="ui-btns">${ECHO.models.map(m=>`<button class="ui-btn echo-mrow ${m.id===ECHO.model?"on":""}" data-model="${esc(m.id)}"><b>${esc(m.name)}</b><span>${esc(m.line)}</span></button>`).join("")}<button class="ui-btn ui-cancel">Cancel</button></div></div>`;
   document.body.appendChild(ov);
   const done=()=>ov.remove();

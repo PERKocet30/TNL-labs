@@ -184,6 +184,7 @@ export const SERVER = [
   "pages/policies.js",
 
   // echo — the brain first (admins, when ECHO_AI_KEY is set), the matcher after it
+  "echo/gemini.js",   // Gemini as a pick in Echo's model picker (2026-11-22); before the brain, which reads GEM_PICK
   "echo/brain.js",
   "echo/hands.js",
   "echo/echo.js",
