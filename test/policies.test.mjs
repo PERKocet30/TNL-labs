@@ -61,7 +61,8 @@ try {
   const meta = await (await fetch(BASE + "/api/market/meta")).json();
   t("the Market's footer gets the legal name", meta.legalName === "TNL LABS LLC" && app.includes("MKTMETA.legalName"));
   const { nudgeEmail } = await import("../src/mail.js");
-  t("the foot of every email names the company", typeof nudgeEmail === "function" && readFileSync(join(ROOT, "src/mail.js"), "utf8").split("LABS is run by ${LEGAL_NAME}, ${LEGAL_STATE}.").length === 3);
+  t("the foot of every email names the company", typeof nudgeEmail === "function" && readFileSync(join(ROOT, "src/mail.js"), "utf8").split("LABS is run by ${LEGAL_NAME}.").length === 3);
+  t("the location is only in the Terms", !/based in|"addressRegion"|Virginia/.test(contact) && terms.includes("a Virginia limited liability company"));
 } finally { srv.kill(); }
 console.log(`\n  ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
