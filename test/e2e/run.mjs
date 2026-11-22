@@ -2599,6 +2599,22 @@ console.log("\nMEMBER · COMPUTER");
     ok(await p.locator("#clab").inputValue() === "pharmacy", "the lab filter wasn't set");
     await settledGoto(p, B + "/"); await p.waitForFunction(() => typeof ME !== "undefined" && ME, null, { timeout: 8000 });
   });
+  /* 2026-11-22: "I can't scroll all the features on the left" — on a laptop the side menu ran off the bottom of the screen */
+  await step(d, "admin → on a short computer screen the side menu scrolls to its last section, the foot stays, and a tap keeps the menu's place", async () => {
+    const size = p.viewportSize();
+    await p.setViewportSize({ width: 1280, height: 520 });
+    await settledGoto(p, B + "/admin#settings");
+    await p.locator(".side .nv[data-tab=health]").waitFor({ state: "attached" });
+    const m = await p.evaluate(() => { const n = document.querySelector(".side-nav"), f = document.querySelector(".side-ft").getBoundingClientRect(); return { scrolls: n.scrollHeight > n.clientHeight + 4, y: getComputedStyle(n).overflowY, foot: f.bottom <= innerHeight + 1 && f.height > 0 }; });
+    ok(m.scrolls && m.y === "auto" && m.foot, "the side menu can't scroll, or its foot is off the screen: " + JSON.stringify(m));
+    await p.locator(".side .nv[data-tab=health]").scrollIntoViewIfNeeded();
+    const r = await p.locator(".side .nv[data-tab=health]").boundingBox();
+    ok(r && r.y >= 0 && r.y + r.height <= 520, "Health, the last section, can't be reached");
+    await p.locator(".side .nv[data-tab=health]").click();
+    await fast(p, 6000, () => p.locator(".pg-hd h1", { hasText: "Health" }).waitFor(), "Health from the side menu");
+    ok(await p.evaluate(() => document.querySelector(".side-nav").scrollTop > 0), "the menu jumped back to the top after the tap");
+    await p.setViewportSize(size);
+  });
   /* 2026-11-15: "the search bar should let you find anything in the dashboard" — it found members only */
   await step(d, "admin → the search bar finds a card, a tab and a member: Ways in opens Analytics on Join, Backups opens Settings on its tab", async () => {
     await settledGoto(p, B + "/admin#home");
