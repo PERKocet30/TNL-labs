@@ -4,4 +4,4 @@
    footer, the foot of every email, event rules, and the structured data Google and
    Meta read. Typed here and nowhere else (test/naming.test.mjs checks). */
 export const LEGAL_NAME = "TNL LABS LLC";
-export const LEGAL_STATE = "Virginia";
+export const LEGAL_STATE = "Virginia";   // only in the Terms (2026-11-22, Jorge: "only on our terms")

@@ -1,5 +1,7 @@
 
 /* ================================================================
+   THE POLICIES · v1.6 — 2026-11-22 (v1.6: Virginia shows only in the Terms — Jorge, "only on our terms";
+   emails, Contact and the structured data name the company without a location).
    THE POLICIES · v1.5 — 2026-11-20 (v1.5: the legal name moves to src/legal.js so the emails and the Market
    can say it too; every policy page carries the company as structured data for Google and Meta).
    THE POLICIES · v1.4 — 2026-11-15 (v1.4: Privacy says LABS counts visits itself — screens, length, where from,
@@ -61,7 +63,7 @@ const mail = () => `<a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>`;
 /* Who runs LABS, as structured data on every policy page (2026-11-20): what Google Merchant Center and Meta
    read to match the business profile to the website. */
 const orgLd = () => ldJson({ "@context": "https://schema.org", "@type": "Organization", name: "LABS", legalName: LEGAL_NAME,
-  url: "https://tnllabs.com", email: SUPPORT_EMAIL, address: { "@type": "PostalAddress", addressRegion: "VA", addressCountry: "US" } });
+  url: "https://tnllabs.com", email: SUPPORT_EMAIL });
 
 /* ── Terms of service ───────────────────────────────────────────── */
 app.get("/terms", (_req, res) => policyPage(res, {
@@ -154,7 +156,7 @@ app.get("/contact", (_req, res) => {
 <p class="p">Questions, a problem with an order, a report, or a copyright complaint — email us and a real person answers within 2 business days.</p>
 <a class="btn acc" href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
 <section class="pol"><h2>Order problems</h2><p>Include your order number and username. Start by messaging the seller — see <a href="/policies#s4">If something goes wrong</a>.</p></section>
-<section class="pol"><h2>About LABS</h2><p>Social media by creatives, for creatives: share work, collaborate, enter events, and buy and sell in the Market. Run by ${LEGAL_NAME}, based in ${LEGAL_STATE}, United States.</p></section>`,
+<section class="pol"><h2>About LABS</h2><p>Social media by creatives, for creatives: share work, collaborate, enter events, and buy and sell in the Market. Run by ${LEGAL_NAME}.</p></section>`,
   }));
 });
 

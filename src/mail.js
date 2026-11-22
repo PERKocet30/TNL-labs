@@ -1,5 +1,6 @@
 /* ================================================================
-   MAIL v2.5 — 2026-11-20 (the foot of every email names the company: "LABS is run by TNL LABS LLC, Virginia" — from src/legal.js).
+   MAIL v2.6 — 2026-11-22 (the foot says "LABS is run by TNL LABS LLC." — no location; Virginia shows only in the Terms).
+   MAIL v2.5 — 2026-11-20 (the foot of every email names the company, from src/legal.js).
    MAIL v2.4 — 2026-11-05 (resultsEmail: the tournament's over, the winner, what's next — to everyone who voted). v2.3 — 2026-10-28 (roleEmail: "anytime someone is made a Mod or a Lab Lead they're emailed"). v2.2 — 2026-10-23. Verification and password-reset emails,
    in the app's design language (see THE LOOK below).
    v2.2: the weekly "finish your page" reminder (nudgeEmail): one email
@@ -25,7 +26,7 @@
 ================================================================ */
 
 import { PALETTE, inkFor } from "./palette.js";
-import { LEGAL_NAME, LEGAL_STATE } from "./legal.js";
+import { LEGAL_NAME } from "./legal.js";
 
 const KEY = process.env.RESEND_API_KEY || "";
 const FROM = process.env.MAIL_FROM || "LABS <onboarding@resend.dev>";
@@ -116,12 +117,12 @@ export function renderEmail({ eyebrow, title, lines, cta, url, note, preheader, 
       </div>
     </td></tr>
     <tr><td style="padding:18px 4px 0;font-family:${FONT}">
-      <p class="t2" style="margin:0;color:${C.ink2};font-size:12px;line-height:16px">Social media by creatives, for creatives.<br><a class="t2" href="${origin}" style="color:${C.ink2};text-decoration:none">${escapeHtml(origin.replace(/^https?:\/\//, ""))}</a><br>LABS is run by ${LEGAL_NAME}, ${LEGAL_STATE}.${unsub ? `<br><a class="t2" href="${escapeHtml(unsub)}" style="color:${C.ink2};text-decoration:underline">Unsubscribe from LABS emails</a>` : ""}</p>
+      <p class="t2" style="margin:0;color:${C.ink2};font-size:12px;line-height:16px">Social media by creatives, for creatives.<br><a class="t2" href="${origin}" style="color:${C.ink2};text-decoration:none">${escapeHtml(origin.replace(/^https?:\/\//, ""))}</a><br>LABS is run by ${LEGAL_NAME}.${unsub ? `<br><a class="t2" href="${escapeHtml(unsub)}" style="color:${C.ink2};text-decoration:underline">Unsubscribe from LABS emails</a>` : ""}</p>
     </td></tr>
   </table>
 </td></tr></table>
 </body></html>`;
-  const text = [`LABS ®`, ``, `// ${eyebrow.toUpperCase()}`, title, ``, ...lines, ``, `${cta}: ${url}`, ``, note, ``, `Social media by creatives, for creatives.`, origin, `LABS is run by ${LEGAL_NAME}, ${LEGAL_STATE}.`, ...(unsub ? [``, `Unsubscribe from LABS emails: ${unsub}`] : [])].join("\n");
+  const text = [`LABS ®`, ``, `// ${eyebrow.toUpperCase()}`, title, ``, ...lines, ``, `${cta}: ${url}`, ``, note, ``, `Social media by creatives, for creatives.`, origin, `LABS is run by ${LEGAL_NAME}.`, ...(unsub ? [``, `Unsubscribe from LABS emails: ${unsub}`] : [])].join("\n");
   return { html, text };
 }
 
