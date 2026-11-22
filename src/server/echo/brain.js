@@ -1,5 +1,5 @@
 /* ================================================================
-   ECHO · the brain v1.9 — 2026-11-15 ("the same way Claude already works": Echo carries Knowledge's core in full and a one-line index of the rest — knowBrief, server/knowledge — and opens an entry by its id when the question needs it, so every conversation stops carrying every feature and every finished audit). v1.8 — 2026-11-14 ("integrate Echo with Gemini": one more tool, ask_gemini, offered only when GEMINI_API_KEY is set — Echo asks Google's model for a second opinion or a Google-grounded answer; it lives in admin/assist.js). v1.7 — 2026-11-04 ("my message keeps getting deleted": a phone drops a request that sits silent for the 10–60s Claude takes; the answer's headers now go out at once and a space every 10s until the JSON — brainHold; JSON allows leading whitespace, so the page reads it as before). v1.6 — 2026-11-04 (the brief: POST /api/echo/brief asks Echo for the day in five lines — what moved, what needs Jorge, what it would do first; a labelled question, shown as "Brief" not as the prompt; briefToday on the hello so Echo Home asks once a day). v1.5 — 2026-11-04 (hands: the tools in echo/hands.js propose, a card with Confirm runs — see that file; what was confirmed rides on the next question). v1.4 — 2026-11-04 (what Claude's own app has: photos and PDFs in a message — POST /api/echo/attach, kept on the volume, sent to Claude as the bytes; the web — web_search, a server-side tool, so Echo can see outside LABS and says when it did; pause_turn resumed). v1.3 — 2026-11-04 (switch models in the app: tap the model's name under the composer — Opus 5.5 the default, Sonnet 5.5 for speed, Fable 5.1 for the hard ones; the echoModel setting; every answer says which one wrote it). v1.2 — 2026-11-04 ("I like option 2" → "Invalid signature in thinking block": Echo's instructions carried Knowledge and the date, so a Knowledge write — or midnight — changed them mid-conversation, and Claude refuses reasoning sealed to other instructions. Now the instructions are frozen per conversation (a "system" row; the date rides on each question), the API is told to drop stale reasoning rather than refuse (thinking-binding-controls), and a refusal of that kind is retried once without the old reasoning). v1.1 — 2026-11-04 (modelled on Claude: the answer streams in word by word over the live stream, with "Thinking…" / "Looking at orders…" while it works; light markdown). v1.0 — 2026-11-04. "I want my own AI, like Jarvis."
+   ECHO · the brain v2.0 — 2026-11-22 ("Gemini in the model picker": a fourth pick, there while GEMINI_API_KEY is set — Google's model answers as Echo with the same instructions, memory, tools and Confirm cards; the conversation stays in one shape on disk, so a switch either way keeps the thread; echo/gemini.js does the translating). v1.9 — 2026-11-15 ("the same way Claude already works": Echo carries Knowledge's core in full and a one-line index of the rest — knowBrief, server/knowledge — and opens an entry by its id when the question needs it, so every conversation stops carrying every feature and every finished audit). v1.8 — 2026-11-14 ("integrate Echo with Gemini": one more tool, ask_gemini, offered only when GEMINI_API_KEY is set — Echo asks Google's model for a second opinion or a Google-grounded answer; it lives in admin/assist.js). v1.7 — 2026-11-04 ("my message keeps getting deleted": a phone drops a request that sits silent for the 10–60s Claude takes; the answer's headers now go out at once and a space every 10s until the JSON — brainHold; JSON allows leading whitespace, so the page reads it as before). v1.6 — 2026-11-04 (the brief: POST /api/echo/brief asks Echo for the day in five lines — what moved, what needs Jorge, what it would do first; a labelled question, shown as "Brief" not as the prompt; briefToday on the hello so Echo Home asks once a day). v1.5 — 2026-11-04 (hands: the tools in echo/hands.js propose, a card with Confirm runs — see that file; what was confirmed rides on the next question). v1.4 — 2026-11-04 (what Claude's own app has: photos and PDFs in a message — POST /api/echo/attach, kept on the volume, sent to Claude as the bytes; the web — web_search, a server-side tool, so Echo can see outside LABS and says when it did; pause_turn resumed). v1.3 — 2026-11-04 (switch models in the app: tap the model's name under the composer — Opus 5.5 the default, Sonnet 5.5 for speed, Fable 5.1 for the hard ones; the echoModel setting; every answer says which one wrote it). v1.2 — 2026-11-04 ("I like option 2" → "Invalid signature in thinking block": Echo's instructions carried Knowledge and the date, so a Knowledge write — or midnight — changed them mid-conversation, and Claude refuses reasoning sealed to other instructions. Now the instructions are frozen per conversation (a "system" row; the date rides on each question), the API is told to drop stale reasoning rather than refuse (thinking-binding-controls), and a refusal of that kind is retried once without the old reasoning). v1.1 — 2026-11-04 (modelled on Claude: the answer streams in word by word over the live stream, with "Thinking…" / "Looking at orders…" while it works; light markdown). v1.0 — 2026-11-04. "I want my own AI, like Jarvis."
    Echo for the founder: a model that reasons (Claude, through a key kept in
    Railway — ECHO_AI_KEY), with the connector's tools as its eyes (live
    numbers, never saved copies) and Knowledge as its memory (the creed, the
@@ -30,9 +30,12 @@ const BRAIN_MODELS = [
   { id: "claude-sonnet-5-5", name: "Claude Sonnet 5.5", short: "Sonnet 5.5", line: "Faster and half the price. Quick questions, captions, lookups." },
   { id: "claude-fable-5-1", name: "Claude Fable 5.1", short: "Fable 5.1", line: "The most capable there is. Slower and about 2½× the price — for the hard questions, not the quick ones." },
 ];
-const brainModelOf = (id) => BRAIN_MODELS.find((m) => m.id === id) || null;
-const brainModel = () => { const picked = setting("echoModel"); return brainModelOf(picked) ? picked : BRAIN_MODEL; };
-const brainShort = (id) => { const m = brainModelOf(id); return m ? m.short : String(id || "").replace(/^claude-/, "").replace(/-(\d)/g, " $1").replace(/(\d) (\d)/g, "$1.$2"); };
+/* Gemini beside them (2026-11-22, "Gemini in the model picker"): there only while GEMINI_API_KEY is set. Picked, Google's
+   model answers as Echo — same instructions, memory, tools and Confirm cards — through echo/gemini.js. */
+const brainModels = () => (asOn() ? [...BRAIN_MODELS, GEM_PICK] : BRAIN_MODELS);
+const brainModelOf = (id) => brainModels().find((m) => m.id === id) || null;
+const brainModel = () => { const picked = setting("echoModel"); return brainModelOf(picked) ? picked : BRAIN_MODEL; };   // the Gemini key taken away → back to the default
+const brainShort = (id) => { const m = brainModelOf(id); return m ? m.short : gemIs(id) ? gemName(id) : String(id || "").replace(/^claude-/, "").replace(/-(\d)/g, " $1").replace(/(\d) (\d)/g, "$1.$2"); };
 const BRAIN_ROUNDS = 8;            // tool rounds per question
 const BRAIN_RESULT_MAX = 30000;    // characters of one tool result the model sees
 const BRAIN_ASKS = 40;             // how many of this admin's questions ride along as context (a New conversation starts over)
@@ -84,7 +87,8 @@ const brainToday = () => { const d = new Date(); return `(Today is ${d.toLocaleD
 /* The connector's tools, in Claude's shape. Same list the connector offers, so what
    Claude can see from outside, Echo can see from inside — and nothing more. */
 const BRAIN_WEB = { type: "web_search_20260209", name: "web_search", max_uses: 5 };   // Anthropic runs it; nothing of LABS's leaves but the query Claude writes
-const brainTools = () => [...mcpToolList().map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema })), ...echoHandTools(), ...(asOn() ? [AS_ECHO_TOOL] : []), BRAIN_WEB];   // ask_gemini: admin/assist.js, there only when GEMINI_API_KEY is set (2026-11-14)
+const brainTools = (gem = false) => gem ? [...mcpToolList().map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema })), ...echoHandTools(), GEM_WEB]   // Gemini as Echo: the same eyes and hands; the web through Google Search (echo/gemini.js)
+  : [...mcpToolList().map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema })), ...echoHandTools(), ...(asOn() ? [AS_ECHO_TOOL] : []), BRAIN_WEB];   // ask_gemini: admin/assist.js, there only when GEMINI_API_KEY is set (2026-11-14)
 
 /* ---- what Jorge attaches: photos and PDFs, kept on the volume, sent to Claude as the bytes ---- */
 const BRAIN_FILE_MAX = 8 * 1024 * 1024;
@@ -113,6 +117,7 @@ function brainExpand(block) {
 async function brainRun(user, token, name, args, askId = 0) {
   const a = args && typeof args === "object" ? args : {};
   if (echoIsHand(name)) return echoHandPropose(user, askId, name, a);   // a card, not an act (echo/hands.js)
+  if (name === "web_search") return gemSearch(user, a);   // only Gemini-as-Echo asks for it here: Claude's web search runs on Anthropic's side and never reaches this
   if (name === "ask_gemini") return asEchoAsk(user, a);   // Echo asks Google's model; only the question it wrote leaves (admin/assist.js)
   if (name === "knowledge_add" || name === "knowledge_edit") {
     const r = name === "knowledge_add" ? knowAdd(a, user.id, "echo")
@@ -136,11 +141,11 @@ function brainKeep(userId, role, kind, content, model = "", label = "") {
 }
 /* The last BRAIN_ASKS questions and everything after each — always starting at a question, so
    every tool_use has its tool_result and the thinking that went with it. */
-function brainHistory(userId) {
+function brainHistory(userId, gem = false) {
   const rows = brainRows(userId).filter((r) => r.kind !== "system");
   const asks = rows.filter((r) => r.kind === "ask");
   const from = asks.length > BRAIN_ASKS ? asks[asks.length - BRAIN_ASKS].id : 0;
-  return rows.filter((r) => r.id >= from).map((r) => ({ role: r.role, content: JSON.parse(r.content).map(brainExpand) }));
+  return rows.filter((r) => r.id >= from).map((r) => ({ role: r.role, content: JSON.parse(r.content).map(brainExpand).map((b) => (gem || (b.gsig == null && b.gid == null) ? b : gemPlain(b))) }));   // Google's seal on a lookup Gemini made is Google's alone: Claude never gets it
 }
 const brainText = (content) => (Array.isArray(content) ? content : []).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
 /* What the app shows: one turn per question — the words asked, the final words back, what was looked at. */
@@ -209,14 +214,16 @@ async function brainAsk(user, token, q, files = [], label = "") {
     return { type: "labs_file", url: "/uploads/" + m[1], kind, media, name: String((f && f.name) || "").slice(0, 80) };
   }).filter(Boolean);
   if (!asked && !attach.length) return null;
-  const system = brainFrozenSystem(user), tools = brainTools(), model = brainModel();
+  const model = brainModel(), gem = gemIs(model), who = gem ? "Gemini" : "Claude";
+  const system = brainFrozenSystem(user), tools = brainTools(gem);
   const news = echoHandNews(user.id);
   const askId = brainKeep(user.id, "user", "ask", [{ type: "text", text: asked || (attach.some((a) => a.kind === "pdf") ? "Have a look at this." : "Have a look at this photo.") }, ...attach, ...(news ? [{ type: "text", text: news }] : []), { type: "text", text: brainToday() }], "", label);
-  let messages = brainHistory(user.id);
+  let messages = brainHistory(user.id, gem);
   let stripped = false;
   /* Last resort (once per question): if Claude still refuses old reasoning, send the history without
      it — every word and tool call stays, only the sealed reasoning goes. Stored rows are untouched. */
   const call = async () => {
+    if (gem) return gemCall({ model, system, tools, messages }, onText);
     try { return await brainCall({ model, max_tokens: 8192, system, tools, messages }, onText, onBlock); }
     catch (e) {
       if (stripped || e.status !== 400 || !/thinking|signature/i.test(e.message)) throw e;
@@ -240,7 +247,7 @@ async function brainAsk(user, token, q, files = [], label = "") {
       messages.push({ role: "assistant", content: res.content });
       if (res.stop_reason === "pause_turn") continue;   // a long web search: Claude asks to carry on from where it stopped
       if (res.stop_reason !== "tool_use") {
-        if (res.stop_reason === "refusal") brainKeep(user.id, "assistant", "error", [{ type: "text", text: "Claude wouldn't answer that one." }]);
+        if (res.stop_reason === "refusal") brainKeep(user.id, "assistant", "error", [{ type: "text", text: `${who} wouldn't answer that one.` }]);
         else if (res.stop_reason === "max_tokens" && !brainText(res.content)) brainKeep(user.id, "assistant", "error", [{ type: "text", text: "That answer ran too long — ask for a shorter one." }]);
         break;
       }
@@ -255,9 +262,9 @@ async function brainAsk(user, token, q, files = [], label = "") {
       if (round === BRAIN_ROUNDS) brainKeep(user.id, "assistant", "error", [{ type: "text", text: "I looked at a lot and lost the thread — ask me that in two parts." }]);
     }
   } catch (e) {
-    const text = BRAIN_SORRY[e.status] || (e.name === "TimeoutError" ? "Claude took too long. Ask again." : e.status === 400 ? "Claude turned that message down. Ask again — if it keeps happening, tap the pen for a new conversation." : e.status ? "Claude had a problem on its side. Ask again in a moment." : "I couldn't reach Claude just now. Ask again in a moment.");
+    const text = e.plain || (!gem && BRAIN_SORRY[e.status]) || (e.name === "TimeoutError" ? `${who} took too long. Ask again.` : e.status === 400 ? `${who} turned that message down. Ask again — if it keeps happening, tap the pen for a new conversation.` : e.status ? `${who} had a problem on its side. Ask again in a moment.` : `I couldn't reach ${who} just now. Ask again in a moment.`);
     console.error("[echo] brain:", e.status || "", e.message, e.cause ? "— " + e.cause.message : "");
-    try { logError("echo", `Echo: Claude ${e.status || "unreachable"}`, String(e.message || "").slice(0, 1500), "/api/echo/ask", user.username); } catch {}
+    try { logError("echo", `Echo: ${who} ${e.status || "unreachable"}`, String(e.message || "").slice(0, 1500), "/api/echo/ask", user.username); } catch {}
     /* an unanswered question must not leave a dangling tool_use for the next replay */
     const rows = brainRows(user.id); const last = rows[rows.length - 1];
     if (last && last.kind === "reply" && JSON.parse(last.content).some((b) => b.type === "tool_use")) db.prepare(`UPDATE echo_brain SET archived = 1 WHERE id = ?`).run(last.id);
@@ -273,7 +280,7 @@ async function brainAsk(user, token, q, files = [], label = "") {
 const brainHello = (user) => `${user.display_name ? user.display_name.split(" ")[0] : "Hey"} — I'm Echo. I know LABS, I can see the numbers as they are right now, and I remember what we've decided. What are we working on?`;
 app.get("/api/echo", auth, (req, res, next) => {
   if (!brainFor(req.user)) return next();
-  res.json({ name: "Echo", brain: true, model: brainModel(), models: BRAIN_MODELS, sub: "LABS's own", hello: brainHello(req.user), preview: false, topics: [], turns: brainTurns(req.user.id), briefToday: brainBriefToday(req.user.id),
+  res.json({ name: "Echo", brain: true, model: brainModel(), models: brainModels(), sub: "LABS's own", hello: brainHello(req.user), preview: false, topics: [], turns: brainTurns(req.user.id), briefToday: brainBriefToday(req.user.id),
     starters: ["How are we doing this week?", "What should I build next, and why?", "Who's stuck setting up payouts?", "Write down what we decided today"].map((q, i) => ({ id: -1 - i, src: "brain", question: q })) });
 });
 const brainLimit = rateLimit({ max: 20, windowMs: 60000, key: "user" });   // counted only for the brain, so a member's questions to the matcher aren't
@@ -336,4 +343,4 @@ app.post("/api/echo/reset", auth, admin, (req, res) => {
   echoHandsReset(req.user.id);
   res.json({ ok: true, putAway: n });
 });
-app.get("/api/echo/brain", auth, admin, (req, res) => res.json({ on: brainOn(), model: brainOn() ? brainModel() : "", models: BRAIN_MODELS, turns: brainOn() ? brainRows(req.user.id).filter((r) => r.kind === "ask").length : 0 }));
+app.get("/api/echo/brain", auth, admin, (req, res) => res.json({ on: brainOn(), model: brainOn() ? brainModel() : "", models: brainModels(), turns: brainOn() ? brainRows(req.user.id).filter((r) => r.kind === "ask").length : 0 }));

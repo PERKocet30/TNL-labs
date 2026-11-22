@@ -1,5 +1,12 @@
 /* ================================================================
-   ADMIN · SYSTEMS · META v1.1 — 2026-11-10 ("fix the Instagram integration" — the
+   ADMIN · SYSTEMS · META v1.2 — 2026-11-21 ("make sure the app is fully integrated
+   with Meta"): the Facebook Page's reach reads again. Meta retired
+   page_impressions_unique on 2025-11-15 ("must be a valid insights metric"); the
+   Page card now asks for the one Meta names in its place,
+   page_total_media_view_unique (people who saw the Page's posts, a line per day).
+   And this part speaks the same Graph version as sign-in and the inbox (v24.0, was
+   v21.0).
+   v1.1 — 2026-11-10 ("fix the Instagram integration" — the
    numbers): people reached is the 28-day count Instagram itself shows (each person
    once), not the 28 days added up; the hours followers are online are asked for
    the way Meta wants (a week's range), and a read Meta refuses is no longer
@@ -30,8 +37,9 @@
    test/admin-systems-meta.test.mjs runs it against a pretend Meta.
 ================================================================ */
 const MT_ENV = (k, d = "") => (process.env[k] || "").trim() || d;
-const MT = { token: () => MT_ENV("META_ACCESS_TOKEN"), url: () => MT_ENV("META_GRAPH_URL", "https://graph.facebook.com/v21.0"),
+const MT = { token: () => MT_ENV("META_ACCESS_TOKEN"), url: () => MT_ENV("META_GRAPH_URL", "https://graph.facebook.com/v24.0"),
   page: () => MT_ENV("META_PAGE_ID").replace(/\D/g, ""), ig: () => MT_ENV("META_IG_USER_ID").replace(/\D/g, ""), catalog: () => MT_ENV("META_CATALOG_ID").replace(/\D/g, "") };
+const MT_PAGE_REACH = "page_total_media_view_unique";   // 2026-11-21: Meta's replacement for page_impressions_unique (retired 2025-11-15)
 const MT_CACHE = { at: 0, body: null };
 const mtLine = (s) => String(s || "").split("\n")[0].trim().slice(0, 200);
 const mtDay = (t) => { const d = new Date(t); return isNaN(d) ? "" : d.toISOString().slice(0, 10); };
@@ -127,8 +135,8 @@ async function mtInstagram(ig) {
 async function mtFacebook(page) {
   const now = Date.now(), since = Math.floor((now - 28 * 86400000) / 1000), until = Math.floor(now / 1000);
   let reachMiss = "";   // 2026-11-10: "0 people reached" when Meta had refused the read was a number that meant nothing
-  const [p, ins] = await Promise.all([mtGet(page, { fields: "name,followers_count,fan_count,link" }), mtGet(`${page}/insights`, { metric: "page_impressions_unique", period: "day", since, until }).catch((e) => { reachMiss = /abort|timeout/i.test(e.message) ? "Meta didn't answer in time." : mtLine(e.message); return {}; })]);
-  const days = mtSeries(ins, "page_impressions_unique");
+  const [p, ins] = await Promise.all([mtGet(page, { fields: "name,followers_count,fan_count,link" }), mtGet(`${page}/insights`, { metric: MT_PAGE_REACH, period: "day", since, until }).catch((e) => { reachMiss = /abort|timeout/i.test(e.message) ? "Meta didn't answer in time." : mtLine(e.message); return {}; })]);
+  const days = mtSeries(ins, MT_PAGE_REACH);
   return { name: String(p.name || "").slice(0, 60), followers: Number(p.followers_count ?? p.fan_count) || 0, url: mtUrl(p.link), reach: mtSum(days.map((d) => d.value)), reachMiss, days };
 }
 async function mtShop(catalog) {
