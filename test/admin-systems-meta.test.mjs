@@ -20,6 +20,7 @@ let pass = 0, fail = 0;
 const t = (n, ok) => { ok ? pass++ : fail++; console.log("  " + (ok ? "✓" : "✗") + "  " + n); };
 
 const seen = { tokens: new Set(), calls: 0, paths: [] };
+let noKey = false;   // 2026-11-21: Meta not handing over the Page's own key
 let broken = false;   // 2026-11-10: Meta refusing the newer reads — the page has to say so, not show zeros
 const iso = (d) => new Date(now - d * 86400000).toISOString();
 const dayVals = (f) => Array.from({ length: 28 }, (_, i) => ({ value: f(i), end_time: iso(27 - i) }));
@@ -28,7 +29,9 @@ const fake = createServer((req, res) => {
   const u = new URL(req.url, "http://x"), p = u.pathname.replace(/^\/v\d+\.\d+\//, ""), q = Object.fromEntries(u.searchParams);
   seen.tokens.add(q.access_token); seen.paths.push(p + "?" + (q.metric || q.fields || ""));
   const json = (code, obj) => { res.writeHead(code, { "Content-Type": "application/json" }); res.end(JSON.stringify(obj)); };
-  if (q.access_token !== "EAAB-secret") return json(400, { error: { message: "Invalid OAuth access token.", code: 190 } });
+  if (p === "111/insights" && q.access_token !== "PAGE-key" && !broken) return json(400, { error: { message: "(#190) This method must be called with a Page Access Token", code: 190 } });   // 2026-11-21: as the real Meta does
+  if (p === "111" && q.fields === "access_token") return q.access_token === "EAAB-secret" && !noKey ? json(200, { access_token: "PAGE-key", id: "111" }) : json(400, { error: { message: "(#200) Requires pages_read_engagement", code: 200 } });
+  if (q.access_token !== "EAAB-secret" && !(q.access_token === "PAGE-key" && p === "111/insights")) return json(400, { error: { message: "Invalid OAuth access token.", code: 190 } });
   const prev = q.since && Number(q.since) < Math.floor((now - 29 * 86400000) / 1000);
   if (p === "me/accounts") return json(200, { data: [{ id: "111", name: "LABS", instagram_business_account: { id: "222" } }] });
   if (p === "222" ) return json(200, { username: "tnl.labs", name: "LABS", followers_count: 4581, follows_count: 2566, media_count: 499 });
@@ -94,6 +97,7 @@ try {
   console.log("\nFACEBOOK AND THE SHOP");
   t("the Page: followers, reach, its link", M.facebook.name === "LABS" && M.facebook.followers === 1200 && M.facebook.reach === 280 && M.facebook.url === "https://www.facebook.com/tnllabs");
   t("the Page's reach asks for the metric Meta still answers, never the retired one (2026-11-21)", seen.paths.includes("111/insights?page_total_media_view_unique") && !seen.paths.some((x) => x.includes("page_impressions_unique")) && M.facebook.days.length === 28);
+  t("the Page's reach is read with the Page's own key, fetched with the token — and neither reaches the page (2026-11-21)", seen.paths.includes("111?access_token") && seen.tokens.has("PAGE-key") && M.facebook.reach === 280 && !raw.includes("PAGE-key"));
   t("and speaks Graph v24.0 by default, like sign-in and the inbox", readFileSync(join(ROOT, "src/server/admin/systems-meta.js"), "utf8").includes('"https://graph.facebook.com/v24.0"'));
   t("the catalog: what can be tagged, what's rejected and why, naming the pieces with a link", M.shop.counts.approved === 1 && M.shop.counts.rejected === 2 && M.shop.issues[0].title === "Image too small" && M.shop.issues[0].count === 1 && M.shop.issues[0].pieces[0].path === "/m/7");
 
@@ -131,6 +135,11 @@ try {
   t("the Facebook Page's reach: Meta's reason instead of 0", /valid insights metric/.test(B2.facebook.reachMiss) && B2.facebook.followers === 1200);
   t("the rest still loads", B2.instagram.followers === 4581 && B2.instagram.top.length === 3 && !JSON.stringify(B2).includes("EAAB"));
   broken = false;
+  srv.kill(); await new Promise((r) => setTimeout(r, 300));
+  noKey = true; srv = start(); await ready();
+  const B3 = await (await get("/api/admin/systems/meta", "boss")).json();
+  t("no Page key to be had: the card says Meta wants the Page's own key, not \"make a new token\" (2026-11-21)", /Page's own key/.test(B3.facebook.reachMiss) && !/no longer valid/.test(B3.facebook.reachMiss) && B3.facebook.followers === 1200 && B3.instagram.followers === 4581 && !JSON.stringify(B3).includes("EAAB"));
+  noKey = false;
 
   console.log("\nTHE PAGE");
   const page = readFileSync(join(ROOT, "public/admin-app/7-systems3-meta.js"), "utf8"), html = readFileSync(join(ROOT, "public/admin.html"), "utf8");
